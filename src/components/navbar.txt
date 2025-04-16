@@ -1,7 +1,7 @@
 
 import './Navbar.scss'; 
 import logo1 from "../media/logo1.png";
-import {Volunteer , LGU, Response, Donations} from './Icons';
+import {Volunteer , LGU, HeartHandsIcon, Response, Donations} from './Icons';
 import {useState} from 'react';
 
 const Navbar = () => {
@@ -21,53 +21,65 @@ const Navbar = () => {
 
       <div id="nav-links">
 
-      <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('lgu')}}>
+      <a href='#' className="nav-items" id="lgu-profiling" onClick={(e) => {
+        e.preventDefault();
+        toggleNav('lgu');
+      }}>
+          <div className="flex-control">
             <LGU width={14} height={14} className='sidebar-icons' />
-            <a href="#" >LGU PROFILING</a>
+            LGU PROFILING
           </div>
-          <div className={`nav-sub-items ${activeNav === 'lgu' ? 'active' : ''}`}>
+          <div className="nav-sub-items">
             {/* Sub items here */}
 
             <a href="#" className='nav-sub-item'id='cebu-map'>Map of Cebu</a>
 
           </div>
-        </div>
+        </a>
 
-        <div className="nav-items" id="lgu-profiling">
-          <div className="flex-control" onClick={() => { toggleNav('volunteer')}}>
+        <a href='#' className="nav-items" id="lgu-profiling" onClick={(e) => {
+          e.preventDefault();
+          toggleNav('volunteer');
+        }}>
+          <div className="flex-control">
             <Volunteer width={14} height={14} className='sidebar-icons' />
-            <a href="#">VOLUNTEER MANAGEMENT</a>
+            VOLUNTEER DASHBOARD
           </div>
-          <div className={`nav-sub-items ${activeNav === 'volunteer' ? 'active' : ''}`}>
+          <div className="nav-sub-items">
             {/* Sub items here */}
             <a href="#" className='nav-sub-item'id='cebu-map'>Track Volunteer Application</a>
             <a href="#" className='nav-sub-item'id='cebu-map'>Volunteer Profiles</a>
           </div>
-        </div>
+        </a>
 
 
-        <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('donations')}}>
+        <a href='#' className="nav-items" id="lgu-profiling" onClick={(e) => {
+          e.preventDefault();
+          toggleNav('donations');
+        }}>
+          <div className="flex-control">
             <Donations width={14} height={14} className='sidebar-icons' />
-            <a href="#">DONATIONS MANAGEMENT</a>
+            DONATIONS MANAGEMENT
           </div>
-          <div className={`nav-sub-items ${activeNav === 'donations' ? 'active' : ''}`}>
+          <div className="nav-sub-items">
             {/* Sub items here */}
             <a href="#" className='nav-sub-item'id='cebu-map'>List of RAFI Donors</a>
             <a href="#" className='nav-sub-item'id='cebu-map'>Funding Proposals</a>
           </div>
-        </div>
+        </a>
 
-        <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('response')}}>
+        <a href='#' className="nav-items" id="lgu-profiling" onClick={(e) => {
+          e.preventDefault();
+          toggleNav('response');
+        }}>
+          <div className="flex-control">
             <Response width={14} height={14} className='sidebar-icons' />
-            <a href="#">RESPONSE DASHBOARD</a>
+            RESPONSE DASHBOARD
           </div>
-          <div className={`nav-sub-items ${activeNav === 'response' ? 'active' : ''}`}>
+          <div className="nav-sub-items">
             {/* Sub items here */}
           </div>
-        </div>
+        </a>
 
       </div>
     </nav>

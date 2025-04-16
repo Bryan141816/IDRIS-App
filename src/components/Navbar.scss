@@ -1,0 +1,62 @@
+@use "../styles/variables" as *;
+@import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
+
+.navbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: $steel-blue;
+  height: 100%;
+  width: 208px;
+  gap: 5px;
+  padding: 5px 0;
+}
+
+#sidebar-logo-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 15px;
+
+  p{
+    font-family: 'Philosopher', Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 29.36px;
+    letter-spacing: 5%;
+    align-items: center;
+    margin: 0;
+  }
+}
+
+#nav-links {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#nav-links .nav-items{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px 8px;
+  gap: 10px;
+
+  font-size: 14px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.nav-items:hover {
+  background-color: $semi-light;
+  color: $primary-color;
+}
+
+.iconcontainer{
+  width: 14px;
+  height: 14px;
+}

@@ -1,0 +1,114 @@
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(116, 154, 182, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+
+  /* Modal Content */
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Modal Header */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    color: white;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: red;
+  }
+
+  /* Form Styling */
+  .form-group {
+    margin-bottom: 15px;
+    color: black;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+  }
+
+  /* Modal Actions */
+  .modal-actions {
+    margin-top: 50px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .cancel-btn, .save-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 40%;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  .cancel-btn {
+    background-color: #ccc;
+    color: white;
+  }
+
+  .save-btn {
+    background-color: #749AB6;
+    color: white;
+  }
+
+
+
+  .custom-height-modal {
+    height: 260px !important; /* or max-height */
+    border-radius: 15px;
+  }
+
+  .custom-swal-title {
+    font-size: 25px;
+    font-weight: bold;
+  }
+
+  .custom-swal-button {
+    font-size: 14px;
+    padding: 6px 12px;
+    width: 120px;
+    border-radius: 10px;
+    font-size: 16px;
+  }
+
+  .custom-swal-icon {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .custom-swal-icon .swal2-success-ring,
+  .custom-swal-icon .swal2-success-line-tip,
+  .custom-swal-icon .swal2-success-line-long {
+    transform: scale(1.2); /* adjust for animation size */
+  }

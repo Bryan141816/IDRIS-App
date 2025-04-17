@@ -40,6 +40,8 @@
   width: 100%;
   margin: 0;
   padding: 0;
+
+  user-select: none;
 }
 
 .nav-items{
@@ -79,6 +81,16 @@
       color: $primary-color;
     }
   }
+
+  &.active{
+    background-color: $semi-light;
+    color: $primary-color;
+    border-right: 5px solid $primary-color;
+
+    a, svg {
+      color: $primary-color;
+    }
+  }
 }
 
 .nav-sub-items {
@@ -106,5 +118,6 @@
   max-height: fit-content;
   opacity: 1;
 }
+
 
 

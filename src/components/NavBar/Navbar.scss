@@ -61,21 +61,24 @@
   align-items: center;
   color: #000;
 
-  a{
+  a, svg{
     color: white;
   }
-
-  svg{
-    color: white;
-  }
+  
   svg path{
     stroke-width: 2px;
   }
 }
 
-.flex-control:hover, .flex-control:hover a {
-  background-color: $semi-light;
-  color: $primary-color;
+.flex-control {
+  &:hover {
+    background-color: $semi-light;
+    color: $primary-color;
+
+    a, svg {
+      color: $primary-color;
+    }
+  }
 }
 
 .nav-sub-items {
@@ -86,8 +89,8 @@
   overflow: hidden;
   opacity: 0;
   transition: max-height 0.5s ease, opacity 0.3s ease;
-  color: white;
-}
+  // color: white;
+} 
 
 .nav-sub-item {
   padding: 10px 8px 10px 40px;

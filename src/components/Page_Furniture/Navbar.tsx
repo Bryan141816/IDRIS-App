@@ -23,7 +23,7 @@ const Navbar = () => {
       <div id="nav-links">
 
       <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('lgu')}}>
+          <div className={`flex-control ${activeNav === 'lgu' ? 'active' : ''}`} onClick={() => { toggleNav('lgu')}}>
             <LGU width={14} height={14} className='sidebar-icons' />
             <a href="#" >LGU PROFILING</a>
           </div>
@@ -34,7 +34,7 @@ const Navbar = () => {
         </div>
 
         <div className="nav-items" id="lgu-profiling">
-          <div className="flex-control" onClick={() => { toggleNav('volunteer')}}>
+          <div className={`flex-control ${activeNav === 'volunteer' ? 'active' : ''}`} onClick={() => { toggleNav('volunteer')}}>
             <Volunteer width={14} height={14} className='sidebar-icons' />
             <a href="#">VOLUNTEER MANAGEMENT</a>
           </div>
@@ -48,7 +48,7 @@ const Navbar = () => {
 
 
         <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('donations')}}>
+          <div className={`flex-control ${activeNav === 'donations' ? 'active' : ''}`} onClick={() => { toggleNav('donations')}}>
             <Donations width={14} height={14} className='sidebar-icons' />
             <a href="#">DONATIONS MANAGEMENT</a>
           </div>
@@ -60,7 +60,7 @@ const Navbar = () => {
         </div>
 
         <div className="nav-items" id="lgu-profiling" >
-          <div className="flex-control" onClick={() => { toggleNav('response')}}>
+          <div className={`flex-control ${activeNav === 'response' ? 'active' : ''}`} onClick={() => { toggleNav('response')}}>
             <Response width={14} height={14} className='sidebar-icons' />
             <Link to="/response_dashboard">RESPONSE DASHBOARD</Link>
           </div>

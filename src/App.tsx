@@ -2,6 +2,8 @@ import Navbar from './components/NavBar/Navbar'
 import './styles/App.scss'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
+import LGU from './pages/lgu_profiling/map_of_cebu/LGU';
+import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
 import TrackVolunteerApplication from './pages/volunteer_management/track_volunteer_application/TrackVolunteerApplication';
 import VolunteerDashboard from './pages/volunteer_management/volunteer_dashboard/VolunteerDashboard';
 import VolunteerProfiles from './pages/volunteer_management/volunteer_profiles/VolunteerPofiles';
@@ -19,6 +21,8 @@ function App() {
         <main>
           <Routes>
             <Route path='/lgu_profiling/map_of_cebu' element={<Page title='IDRIS | Map of Cebu'><MapOfCebu/></Page>}/>
+            <Route path='/lgu_profiling/LGU' element={<Page title='IDRIS | LGU'><LGU/></Page>} />
+            <Route path='/lgu_profiling/LGUSeeMore' element={<Page title='IDRIS | LGUSeeMore'><LGUSeeMore/></Page>} />
             <Route path='/volunteer_management/track_volunteer_application' element={<Page title='IDRIS | Track Volunteer Application'><TrackVolunteerApplication/></Page> }/>
             <Route path='/volunteer_management/volunteer_dashboard' element={<Page title='IDRIS | Volunteer Profiles'><VolunteerDashboard/></Page>}/>
             <Route path='/volunteer_management/volunteer_profiles' element={<Page title='IDRIS | Volunteer Profiles'><VolunteerProfiles/></Page>}/>

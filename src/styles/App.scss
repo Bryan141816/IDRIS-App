@@ -29,3 +29,9 @@ main{
   height: 100%;
   color: #000;
 }
+
+#right-body-section{
+  display: flex; 
+  flex-direction: column;
+  width: 100%;
+}

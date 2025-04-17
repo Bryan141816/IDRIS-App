@@ -1,8 +1,8 @@
-import Navbar from './components/NavBar/Navbar'
+import Navbar from './components/Page_Furniture/Navbar'
 import './styles/App.scss'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
-import LGU from './pages/lgu_profiling/map_of_cebu/LGU';
+import LGU from './pages/lgu_profiling/map_of_cebu/lgu';
 import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
 import TrackVolunteerApplication from './pages/volunteer_management/track_volunteer_application/TrackVolunteerApplication';
 import VolunteerDashboard from './pages/volunteer_management/volunteer_dashboard/VolunteerDashboard';
@@ -11,6 +11,7 @@ import ListOfRAFIDonors from './pages/donations_management/list_of_rafi_donors/L
 import FundingProposals from './pages/donations_management/funding_proposals/FundingProposals';
 import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
 import Page from './components/Pages/Pages';
+
 
 function App() {
 

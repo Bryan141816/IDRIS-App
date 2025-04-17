@@ -200,3 +200,71 @@ export const HeartHandsIcon: React.FC<IconProps> = ({
     </svg>
   );
 
+
+export const ArrowDown: React.FC<IconProps> = ({
+  width = 24,
+  height = 24,
+  className = "",
+  }) => {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 -4.5 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="currentColor"
+    >
+      <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+        <g transform="translate(-220.000000, -6684.000000)" fill="currentColor">
+          <g transform="translate(56.000000, 160.000000)">
+            <path d="M164.292308,6524.36583 C163.902564,6524.77071 163.902564,6525.42619 164.292308,6525.83004 L172.555873,6534.39267 C173.33636,6535.20244 174.602528,6535.20244 175.383014,6534.39267 L183.70754,6525.76791 C184.093286,6525.36716 184.098283,6524.71997 183.717533,6524.31405 C183.328789,6523.89985 182.68821,6523.89467 182.29347,6524.30266 L174.676479,6532.19636 C174.285736,6532.60124 173.653152,6532.60124 173.262409,6532.19636 L165.705379,6524.36583 C165.315635,6523.96094 164.683051,6523.96094 164.292308,6524.36583" />
+          </g>
+        </g>
+      </g>
+    </svg>
+  );
+};
+
+export const MenuDots: React.FC<IconProps> = ({
+  width = 24,
+  height = 24,
+  className = "",
+}) => {
+  return (
+    <svg
+      fill="currentColor"
+      width={width}
+      height={height}
+      viewBox="0 0 32 32"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path d="M29,16c0,1.104-0.896,2-2,2H11c-1.104,0-2-0.896-2-2s0.896-2,2-2h16C28.104,14,29,14.896,29,16z" />
+      <path d="M29,6c0,1.104-0.896,2-2,2H11C9.896,8,9,7.104,9,6s0.896-2,2-2h16C28.104,4,29,4.896,29,6z" />
+      <path d="M29,26c0,1.104-0.896,2-2,2H11c-1.104,0-2-0.896-2-2s0.896-2,2-2h16C28.104,24,29,24.896,29,26z" />
+      <path d="M3,6c0,1.103,0.897,2,2,2s2-0.897,2-2S6.103,4,5,4S3,4.897,3,6z" />
+      <path d="M3,16c0,1.103,0.897,2,2,2s2-0.897,2-2s-0.897-2-2-2S3,14.897,3,16z" />
+      <path d="M3,26c0,1.103,0.897,2,2,2s2-0.897,2-2s-0.897-2-2-2S3,24.897,3,26z" />
+    </svg>
+  );
+};
+
+export const CircleDot: React.FC<IconProps> = ({
+  width = 24,
+  height = 24,
+  className = "",
+}) => {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 16 16"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M8 3a5 5 0 100 10A5 5 0 008 3z" />
+    </svg>
+  );
+};

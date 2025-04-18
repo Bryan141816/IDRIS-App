@@ -65,7 +65,7 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           </div>
           <div className={`nav-sub-items ${activeNav === 'volunteer' ? 'active' : ''}`}>
             {/* Sub items here */}
-             <Link to="/volunteer_management/volunteer_dashboard" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Dashboard</Link>
+            <Link to="/volunteer_management/volunteer_dashboard" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Dashboard</Link>
             <Link to="/volunteer_management/track_volunteer_application" className='nav-sub-item' onClick={() => {onClose()}}>Track Volunteer Application</Link>
             <Link to="/volunteer_management/volunteer_profiles" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Profiles</Link>
           </div>

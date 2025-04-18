@@ -1,0 +1,25 @@
+@use '../styles/variables' as *;
+
+.downLoadFileBtn{ //button
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    
+    img {
+        width: 24px;
+    }
+
+    span{
+        color: #000;
+    }
+
+    svg{
+        height: 24px;
+        color: $primary-color;
+        background-color: #fff;
+    }
+}

@@ -1,0 +1,25 @@
+@use '../../../styles/variables';
+@import url('https://fonts.googleapis.com/css2?family=INTER:wght@200;400;600;700&display=swap');
+
+.donationRecord{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    border: 2px solid #b0b0b0;
+    border-radius: 40px;
+    padding: 10px 15px;
+
+    p{
+        font-size: 24px;
+        font-family: "Inter", sans-serif;
+    }
+}
+
+@media  screen and (max-width: 720px) {
+    .donationRecord{
+        padding: 5px 10px;
+        p{
+            font-size: 12px;
+        }
+    }
+}

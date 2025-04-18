@@ -19,11 +19,11 @@
   /* Styling for map buttons */
   .map-buttons {
     position: fixed; /* Fixed positioning for buttons */
-    top: 20px;
+    top: 60px;
     right: 20px;
     z-index: 1000; /* Ensure buttons stay above the map */
     display: flex;
-    gap: 10px;
+    gap: 10px ;
     transition: right 0.3s ease; /* Transition for right property */
   }
   
@@ -41,6 +41,7 @@
     border-radius: 4px;
     text-decoration: none;
     font-weight: 500;
+    cursor: pointer !important;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
   }
@@ -146,3 +147,32 @@
     text-decoration: underline; /* Underline the text when hovered */
   }
   
+/* Modern Close Button Styling */
+.close-sidebar {
+  background-color: #e74c3c; /* Strong red for the button */
+  color: white;
+  border: none;
+  padding: 5px 10px; /* Increase padding for a more clickable button */
+  font-size: 12px; /* Larger font size for better visibility */
+  border-radius: 5px; /* Rounded corners */
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  z-index: 101;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+  transition: all 0.3s ease; /* Smooth transition for hover effect */
+}
+
+/* Hover effect */
+.close-sidebar:hover {
+  background-color: #c0392b; /* Darker red for the hover effect */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Increase shadow on hover */
+  transform: translateY(-2px); /* Slightly raise the button */
+}
+
+/* Focus effect for accessibility */
+.close-sidebar:focus {
+  outline: none; /* Remove default outline */
+  box-shadow: 0 0 5px rgba(255, 99, 71, 0.8); /* Focus highlight */
+}

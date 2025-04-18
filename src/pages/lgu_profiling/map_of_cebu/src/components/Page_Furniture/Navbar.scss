@@ -1,0 +1,141 @@
+@use "../../styles/variables" as *;
+@import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
+
+
+.navbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: $steel-blue;
+  // height: 100%;
+  width: 208px;
+  gap: 5px;
+  padding: 5px 0;
+}
+
+#sidebar-logo-container{
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 15px;
+
+  p{
+    font-family: 'Philosopher', Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 29.36px;
+    letter-spacing: 5%;
+    align-items: center;
+    margin: 0;
+  }
+}
+
+#nav-links {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
+  -webkit-user-select: none; /* Safari, Chrome */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE10+/Edge Legacy */
+  user-select: none;         /* Standard syntax */
+}
+
+.nav-items{
+  font-family: 'Roboto', sans-serif;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.flex-control{
+  display: flex;
+  justify-content: flex-start;
+  font-size: 14px;
+  width: 192px;
+  padding: 10px 8px;
+  gap: 10px;
+  align-items: center;
+  color: #000;
+
+  a, svg{
+    color: white;
+  }
+  
+  svg path{
+    stroke-width: 2px;
+  }
+}
+
+.flex-control {
+  &:hover {
+    background-color: $semi-light;
+    color: $primary-color;
+
+    a, svg {
+      color: $primary-color;
+    }
+  }
+
+  &.active{
+    background-color: $semi-light;
+    color: $primary-color;
+    border-right: 5px solid $primary-color;
+
+    a, svg {
+      color: $primary-color;
+    }
+  }
+}
+
+.nav-sub-items {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.5s ease, opacity 0.3s ease;
+  // color: white;
+} 
+
+.nav-sub-item {
+  padding: 10px 8px 10px 40px;
+  color: white;
+}
+
+.nav-sub-item:hover{
+  color: $primary-color;
+  background-color: $semi-light;
+}
+
+.nav-sub-items.active {
+  max-height: fit-content;
+  opacity: 1;
+}
+
+@media screen and (max-width: 389px) {
+  .navbar {
+    // height: 100%;
+    display: none;
+    position: absolute;
+    // opacity: 1;
+    height: 100%;
+    // transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .show-navbar {
+    display: flex;
+    position: absolute;
+    // opacity: 1;
+    transform: translateY(0);
+  }
+}

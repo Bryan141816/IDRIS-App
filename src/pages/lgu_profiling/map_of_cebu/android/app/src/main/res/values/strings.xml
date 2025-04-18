@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">idris</string>
+    <string name="title_activity_main">idris</string>
+    <string name="package_name">com.rafi.app</string>
+    <string name="custom_url_scheme">com.rafi.app</string>
+</resources>

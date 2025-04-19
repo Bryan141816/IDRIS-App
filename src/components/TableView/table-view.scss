@@ -1,0 +1,21 @@
+.row{
+    display: flex;
+    flex-direction: row;
+    min-width: 100%;
+    padding: 10px 5px;
+    justify-content: space-between;
+    align-items: center;
+    flex-grow: 1;
+    max-height: fit-content;
+}
+.table-data{
+    border: 1px solid black;
+}
+.button-container{
+    display: flex;
+    align-items: center;
+
+    & button{
+        padding: 10px;
+    }
+}

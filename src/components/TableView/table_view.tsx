@@ -4,6 +4,10 @@ import './table-view.scss';
 interface TableProps{
     children: ReactNode;
 }
+interface TableRowProps{
+    children: ReactNode;
+    iSborder: boolean;
+}
 export interface Cell {
     type: "Text" | "Button";
     text: string;
@@ -43,9 +47,9 @@ const TableHead: React.FC<TableProps> = ({children}) => {
         <div className="row">{children}</div>
     );
 }
-const TableData: React.FC<TableProps> = ({children}) => {
+const TableData: React.FC<TableRowProps> = ({children, iSborder}) => {
     return (
-        <div className="row table-data">{children}</div>
+        <div className="row table-data" style={{borderBottom: iSborder ? '1px solid black' : 'none'}}>{children}</div>
     )
 }
 const TableCell: React.FC<TableCellProps> = ({cell}) => {
@@ -70,7 +74,7 @@ export const TableView: React.FC<TableJSON> = ({tableJSON}) =>{
             </TableHead>
             <div id="table-data-container">
                 {tableJSON.table_datas.map((row, rowIndex)=>(
-                    <TableData key={rowIndex}>
+                    <TableData key={rowIndex} iSborder={rowIndex !== tableJSON.table_datas.length - 1}>
                         {row.data.map((cellValue, cellIndex) => (
                             <TableCell cell={cellValue}></TableCell>
                         ))}

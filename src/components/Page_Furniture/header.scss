@@ -18,6 +18,12 @@ header{
     justify-content: flex-start;
     flex-direction: row;
     gap: 10px;
+
+    button{
+        border: none;
+        background-color: transparent;
+    }
+
     .header-icon{
         color: $steel-blue;
     }

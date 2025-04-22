@@ -1,0 +1,144 @@
+@use '../../../styles/variables' as *;
+@import url('https://fonts.googleapis.com/css2?family=REM:wght@200;400;600;700&display=swap');
+
+
+#dashboard {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 20px;
+}
+
+#grid-container{
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: #f2f5f9;
+  border-radius: 10px;
+  gap: 5px;
+  width: auto;
+  max-width: 70%;
+}
+
+#donation-statistic {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+  
+.stat-card {
+  background-color: $primary-color;
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  &.large {
+    grid-column: span 2;
+    .stat-data {
+        font-size: 32px;
+    }
+  }
+
+  .title {
+  font-family: 'REM', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.0;
+  }
+
+  .stat-data {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 10px;
+  }
+
+}
+
+#donation-record-container{
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+#transparency-report {
+  background-color: white;
+  border-radius: 25px;
+  border: 2px solid #B0B0B0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  width: 30%;
+
+  .title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  button{
+    margin-top: 10px;
+  }
+}
+
+
+#donations-pie-chart{
+  background-color: $semi-light;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  
+  canvas{
+    margin: auto auto;
+  }
+}
+
+#funding-proposals{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
+
+@media  screen and (max-width: 450px){
+  #dashboard{
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+  }
+
+  #grid-container{
+    // flex: 1;
+    // width: 100%;
+    max-width: 100%;
+  }
+  
+  #donation-statistic{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    .stat-card{
+      padding: 8px;
+
+      .title{
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.0;
+      }
+    }
+  }
+
+  #transparency-report {
+    width: 100%;
+    button{
+      margin-top: 8px;
+    }  
+  }
+
+  #funding-proposals{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 2fr 2fr;
+  }
+  
+}

@@ -1,0 +1,257 @@
+/* VolunteerProfile.css */
+
+.volunteer-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    padding: 16px;
+
+  }
+
+  .page-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .main-content1 {
+    flex: 1;
+    background-color: #f5f5f5;
+    margin-top: 20px;
+  }
+
+  .profile-container {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    height: 100%;
+  }
+
+  /* Profile Header with Banner */
+  .profile-header {
+    position: relative;
+  }
+
+  .profile-banner {
+    height: 180px;
+    background-image: url('https://images.unsplash.com/photo-1579446565308-427218a2c60e');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .profile-info {
+    display: flex;
+    padding: 0 20px;
+    margin-top: -50px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid #fff;
+    overflow: hidden;
+    margin-right: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .profile-details {
+    padding-top: 10px;
+  }
+
+  .volunteer-name {
+    margin: 0;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+
+  .name-text {
+    color: #0066cc;
+  }
+
+  .certified-badge {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+  }
+
+  .volunteer-role {
+    margin: 0;
+    color: #666;
+  }
+
+  /* Profile Content Layout */
+  .profile-content {
+    display: flex;
+    padding: 20px;
+  }
+
+  .profile-left {
+    width: 250px;
+    margin-right: 30px;
+    text-align: center;
+  }
+
+  .address-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .map-placeholder {
+    height: 250px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+  }
+
+  .address-text {
+    font-size: 14px;
+    color: #333;
+  }
+
+  .profile-right {
+    flex: 1;
+  }
+
+  .about-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+
+  .about-container {
+    display: flex;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 200px;
+  }
+
+  .about-sidebar {
+    width: 200px;
+    background-color: #f0f0f0;
+  }
+
+  .sidebar-item {
+    padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-left: 4px solid transparent;
+  }
+
+  .sidebar-item:hover {
+    background-color: #e4e4e4;
+  }
+
+  .sidebar-item.active {
+    background-color: #e4e4e4;
+    border-left: 4px solid #0066cc;
+    font-weight: 500;
+  }
+
+  .about-content {
+    flex: 1;
+    padding: 20px;
+  }
+
+  .info-content {
+    padding: 10px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-gap: 15px;
+  }
+
+  .info-item {
+    display: flex;
+    margin-bottom: 10px;
+  }
+
+  .info-label {
+    width: 120px;
+    font-weight: 500;
+    color: #555;
+  }
+
+  .info-value {
+    display: flex;
+    align-items: center;
+  }
+
+  .info-icon {
+    margin-right: 8px;
+    font-size: 16px;
+    opacity: 0.7;
+  }
+
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .profile-content {
+      flex-direction: column;
+    }
+
+    .profile-left {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: 20px;
+    }
+
+    .about-container {
+      flex-direction: column;
+    }
+
+    .about-sidebar {
+      width: 100%;
+      display: flex;
+      overflow-x: auto;
+    }
+
+    .sidebar-item {
+      padding: 10px 15px;
+      white-space: nowrap;
+      border-left: none;
+      border-bottom: 4px solid transparent;
+    }
+
+    .sidebar-item.active {
+      border-left: none;
+      border-bottom: 4px solid #0066cc;
+    }
+  }
+
+  /* Make all sidebar items properly clickable */
+  .sidebar-item {
+    user-select: none;
+    position: relative;
+  }
+
+  .sidebar-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }

@@ -11,6 +11,7 @@
   width: 208px;
   gap: 5px;
   padding: 5px 0;
+  z-index: 999;
 }
 
 #sidebar-logo-container{
@@ -68,7 +69,7 @@
   a, svg{
     color: white;
   }
-  
+
   svg path{
     stroke-width: 2px;
   }
@@ -104,7 +105,7 @@
   opacity: 0;
   transition: max-height 0.5s ease, opacity 0.3s ease;
   // color: white;
-} 
+}
 
 .nav-sub-item {
   padding: 10px 8px 10px 40px;

@@ -1,9 +1,12 @@
 import React, { useState,useEffect } from 'react';
 import './css/VolunteerDashboard.css'; // We'll create this CSS file separately
 import Modal from './Modal'; // Import Modal component
-
+import { useNavigate } from 'react-router-dom';
 
 export default function IDRISDashboard() {
+
+    const navigate = useNavigate();
+
     const [currentDate, setCurrentDate] = useState(new Date());
     const [viewDate, setViewDate] = useState(new Date());
     const [today] = useState(new Date());
@@ -173,16 +176,7 @@ export default function IDRISDashboard() {
 
   return (
     <div className="dashboard-container">
-      {/* Top navigation */}
-      <div className="top-nav">
-        <div className="user-role">
-          <div className="role-badge">User Role</div>
-        </div>
-        <div className="user-badges">
-          <div className="rafi-badge">RAFI</div>
-          <div className="un-badge">UN</div>
-        </div>
-      </div>
+
 
       {/* Main container */}
       <div className="main-container">
@@ -198,7 +192,7 @@ export default function IDRISDashboard() {
                   <div className="card-title-white">Total Applicants</div>
                   <div className="card-number">{totalApplicants}</div>
                 </div>
-                <button className="manage-btn">Manage Applicants</button>
+                <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>Manage Applicants</button>
               </div>
 
               {/* Total Volunteers */}
@@ -207,7 +201,7 @@ export default function IDRISDashboard() {
                   <div className="card-title-white">Total Volunteers</div>
                   <div className="card-number">{totalVolunteers}</div>
                 </div>
-                <button className="manage-btn">Manage Volunteers</button>
+                <button className="manage-btn"onClick={() => navigate('/volunteer_management/manage_volunteers')}>Manage Volunteers</button>
               </div>
 
               {/* Cards grid */}
@@ -339,11 +333,7 @@ export default function IDRISDashboard() {
         </div>
       </div>
       <Modal isOpen={isModalOpen} onClose={closeModal} />
-      {/* Footer */}
-      <div className="footer">
-        <span>© 2025 | </span>
-        <span className="bold">IDRIS</span>
-      </div>
+
     </div>
   );
 

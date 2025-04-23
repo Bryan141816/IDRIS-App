@@ -1,0 +1,197 @@
+/* Main container */
+.applicants-container {
+    padding: 16px;
+  }
+
+
+  /* Breadcrumb section */
+  .breadcrumb-section {
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: black;
+  }
+
+  /* Main layout */
+  .main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+
+  /* Card styles */
+  .applicants-list-card{
+    width: 112%;
+    height: 100%;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  }
+
+  .applicant-details-card {
+    padding: 24px;
+    width: 70%;
+    margin-left: 110px;
+    height: 100%;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  }
+
+  /* Section titles */
+  .section-title {
+    font-size: 25px;
+    font-weight: 670;
+    margin-bottom: 16px;
+    margin-left: 15px;
+    white-space: nowrap; /* Prevents wrapping */
+  }
+
+  .details-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: #749AB6;
+    margin-bottom: 24px;
+  }
+
+  /* Table container */
+  .table-container {
+    height: 100%;
+    width: 100%;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+
+  ::-webkit-scrollbar {::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+
+  /* Pagination info */
+  .pagination-info {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 8px;
+  }
+
+  /* Search container */
+  .search-container {
+    display: flex;
+    gap: 450px;
+    padding: 8px;
+    margin-left: auto;
+  }
+
+  .search-input {
+    width: 200px;
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-accept {
+    color: #1890ff;
+    cursor: pointer;
+  }
+
+  .action-decline {
+    color: red;
+    cursor: pointer;
+  }
+
+  /* Details container */
+  .details-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .detail-item {
+    margin-bottom: 8px;
+  }
+
+  .detail-label {
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+
+  .detail-value {
+    font-weight: 500;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+    color: black;
+  }
+
+  /* View credentials button */
+  .view-credentials-container {
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  .view-credentials-button {
+    background-color: #749AB6;
+    margin-top: 40px;
+  }
+
+
+
+  .my-confirm-button {
+    background-color: #749AB6;
+    color: white;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.3s;
+  }
+
+
+  .my-cancel-button {
+    background-color: #8B8B8B;
+    color: white;
+    padding: 8px 18px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+  }
+
+  .custom-swal-popup {
+
+    border-radius: 15px;
+  }

@@ -93,6 +93,11 @@
   }
 }
 
+#funding-proposals{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+}
 
 @media  screen and (max-width: 450px){
   #dashboard{
@@ -130,5 +135,10 @@
     }  
   }
 
+  #funding-proposals{
+    width: 100%;
+    display: grid;
+    grid-template-columns: 2fr 2fr;
+  }
   
 }

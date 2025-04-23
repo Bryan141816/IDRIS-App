@@ -3,7 +3,11 @@ import DownloadableFile from '../../../components/Downloadable_File'; '../../../
 import pdf_logo from '../files/pdf-logo.png';
 import PieChart from '../../../components/PieChart';
 import { DonationRecord } from './DonationRecord';
-
+import { FundingCard } from './FundingCard';
+import image1 from '../test_images/Group 20.png';
+import image2 from '../test_images/Group 21.png';
+import image3 from '../test_images/image (1).png';
+import image4 from '../test_images/image (2).png';
 
 const reportsSample = [
   {
@@ -43,13 +47,44 @@ const DonationRecordSample = [
   },
 ]
 
+const FundingProposals = [
+  {
+    "image": image1,
+    "message": "A devastating fire has left many families homeless, without food, and ...",
+    "funded": 250000,
+    "target": 500000,
+    "anchor": 'A0',
+  },
+  { 
+    "image": image2,
+    "message": "A powerful typhoon has left thousands of families displaced, without ...",
+    "funded": 50000,
+    "target": 500000,
+    "anchor": 'A0',
+  },
+  {
+    "image": image3,
+    "message": "A tragic fire has left countless families homeless and in desperate need ...",
+    "funded": 200000,
+    "target": 500000,
+    "anchor": 'A0',
+  },
+  {
+    "image": image4,
+    "message": "Super Typhoon Yolanda (Haiyan), one of the most powerful storms in ...",
+    "funded": 100000,
+    "target": 500000,
+    "anchor": 'A0',
+  },
+]
+
 const DonationsDashboard = () => {
 
-    let statistics = {
-        overall_donations: 1000000,
-        total_donors: 138,
-        retention: 78
-    }
+  let statistics = {
+      overall_donations: 1000000,
+      total_donors: 138,
+      retention: 78
+  }
 
   return (
     <>
@@ -110,6 +145,21 @@ const DonationsDashboard = () => {
               className='donation-record'
             />
           ))}
+        </div>
+
+        <h3>Recent Programs:</h3>
+        <div id="funding-proposals">
+          {FundingProposals.map((funding, index) => (
+            <FundingCard
+              key={index}
+              image={funding.image}
+              message={funding.message}
+              funded={funding.funded}
+              target={funding.target}
+              anchorLink={funding.anchor}
+              className='funding-item'
+            />
+            ))}
         </div>
       </div>
     </>

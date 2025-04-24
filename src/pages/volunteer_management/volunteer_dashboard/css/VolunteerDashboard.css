@@ -4,6 +4,7 @@
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+
   }
 
   body {
@@ -23,51 +24,12 @@
     width: 100%;
   }
 
-  /* Top navigation */
-  .top-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: white;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .role-badge {
-    background-color: #60a5fa;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-
-  .user-badges {
-    display: flex;
-    align-items: center;
-  }
-
-  .rafi-badge {
-    background-color: #94a3b8;
-    color: white;
-    padding: 4px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-  }
-
-  .un-badge {
-    margin-left: 8px;
-    padding: 4px 16px;
-    border: 1px solid #ef4444;
-    color: #ef4444;
-    border-radius: 20px;
-    font-size: 14px;
-  }
-
   /* Main container */
   .main-container {
     display: flex;
     flex: 1;
     overflow: hidden;
+
   }
 
   /* Sidebar */
@@ -128,8 +90,7 @@
     flex: 1;
     padding: 16px;
     overflow: auto;
-
-
+    z-index: 0;
   }
 
   .content-grid {
@@ -155,6 +116,7 @@
     background-position: center;
     overflow: hidden;
     border-radius: 20px;
+    z-index: 1;
   }
 
   .total-card::before {
@@ -214,6 +176,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    height: 300px;
   }
 
   .blue-title {
@@ -297,6 +260,7 @@
   /* Deployment & Calendar */
   .deployment-calendar {
     overflow: hidden;
+    height: 320px;
   }
 
   .deployment-calendar-grid {
@@ -309,6 +273,7 @@
     color: white;
     padding: 16px;
     width: 85%;
+    height: 131%;
   }
 
   .deployment-title {
@@ -318,7 +283,7 @@
 
   .deployment-list {
     font-size: 14px;
-    height: 160px;
+    height: 360px;
     overflow-y: auto;
   }
 
@@ -466,7 +431,7 @@
   /* News & Announcements */
   .news-card {
     padding: 16px;
-    height: 50%;
+    height: 43%;
   }
 
   .news-header {
@@ -570,4 +535,20 @@
 
   .bold {
     font-weight: bold;
+  }
+
+
+  /*  ≤768 px  = “tablet / phone” */
+@media (max-width: 768px) {
+
+    /* 1‑A. Stop using absolute positioning */
+    .manage-btn {
+      display: block;
+      width: 30%;             /* full card width */
+      margin-top: 12px;
+      padding: 10px 0;
+      font-size: 11px;         /* smaller text on small screens */
+      border-radius: 8px;
+    }
+
   }

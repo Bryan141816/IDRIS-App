@@ -6,9 +6,12 @@ import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
 import LGU from './pages/lgu_profiling/map_of_cebu/lgu';
 import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
 import TrackVolunteerApplication from './pages/volunteer_management/track_volunteer_application/TrackVolunteerApplication';
+import ManageApplicant from './pages/volunteer_management/manage_applicant/ManageApplicant';
 import VolunteerDashboard from './pages/volunteer_management/volunteer_dashboard/VolunteerDashboard';
 import VolunteerProfiles from './pages/volunteer_management/volunteer_profiles/VolunteerPofiles';
+import ManageVolunteer from './pages/volunteer_management/manage_volunteers/ManageVolunteer';
 import DonationsDashboard from './pages/donations_management/donations_dashboard/Donations_Dashboard';
+import ViewCredentials from './pages/volunteer_management/manage_applicant/view_credentials';
 import ListOfRAFIDonors from './pages/donations_management/list_of_rafi_donors/ListOfRAFIDonors';
 import FundingProposals from './pages/donations_management/funding_proposals/FundingProposals';
 import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
@@ -52,7 +55,10 @@ function AppRoutes() {
               <Route path='/lgu_profiling/LGUSeeMore' element={<Page title='IDRIS | LGUSeeMore'><LGUSeeMore/></Page>} />
               <Route path='/volunteer_management/track_volunteer_application' element={<Page title='IDRIS | Track Volunteer Application'><TrackVolunteerApplication/></Page> }/>
               <Route path='/volunteer_management/volunteer_dashboard' element={<Page title='IDRIS | Volunteer Profiles'><VolunteerDashboard/></Page>}/>
+              <Route path='/volunteer_management/manage_applicant' element={<Page title='IDRIS | Manage Applicant'><ManageApplicant/></Page>}/>
+              <Route path='/volunteer_management/view_credentials' element={<Page title='IDRIS | View Credentials'><ViewCredentials/></Page>}/>
               <Route path='/volunteer_management/volunteer_profiles' element={<Page title='IDRIS | Volunteer Profiles'><VolunteerProfiles/></Page>}/>
+              <Route path='/volunteer_management/manage_volunteers' element={<Page title='IDRIS | Manage Volunteer'><ManageVolunteer/></Page>}/>
               <Route path='/donations_management/donations_dashboard' element={<Page title='IDRIS | Donations Dashboard'><DonationsDashboard/></Page>} />
               <Route path='/donations_management/list_of_rafi_donors' element={<Page title='IDRIS | List of RAFI Donors'><ListOfRAFIDonors/></Page>}/>
               <Route path='/donations_management/funding_proposals' element={<Page title='IDRIS | Funding Proposals'><FundingProposals/></Page>}/>
@@ -60,7 +66,7 @@ function AppRoutes() {
             </Routes>
           </main>
         {!shouldHideHeaderFooter && <Footer />}
-      </div>      
+      </div>
     </>
   );
 }

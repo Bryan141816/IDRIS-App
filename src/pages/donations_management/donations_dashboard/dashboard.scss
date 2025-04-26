@@ -99,7 +99,7 @@
   grid-template-columns: 1fr 1fr 1fr 1fr;
 }
 
-@media  screen and (max-width: 450px){
+@media  screen and (max-width: 720px){
   #dashboard{
     display: flex;
     flex-direction: column;

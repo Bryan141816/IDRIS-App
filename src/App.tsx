@@ -15,6 +15,7 @@ import ViewCredentials from './pages/volunteer_management/manage_applicant/view_
 import ListOfRAFIDonors from './pages/donations_management/list_of_rafi_donors/ListOfRAFIDonors';
 import FundingProposals from './pages/donations_management/funding_proposals/FundingProposals';
 import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
+import ReportList from './pages/response_dashboard/report_list/ReportList';
 import Page from './components/Pages/Pages';
 import Header from './components/Page_Furniture/Header';
 import Footer from './components/Page_Furniture/Footer';
@@ -63,6 +64,7 @@ function AppRoutes() {
               <Route path='/donations_management/list_of_rafi_donors' element={<Page title='IDRIS | List of RAFI Donors'><ListOfRAFIDonors/></Page>}/>
               <Route path='/donations_management/funding_proposals' element={<Page title='IDRIS | Funding Proposals'><FundingProposals/></Page>}/>
               <Route path='/response_dashboard' element={<Page title='IDRIS | Response Dashboard'><ResponseDashboard/></Page>}/>
+              <Route path='/response_dashboard/report_list' element={<Page title='IDRIS | Report List'><ReportList/></Page>}/>
             </Routes>
           </main>
         {!shouldHideHeaderFooter && <Footer />}

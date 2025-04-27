@@ -1,0 +1,21 @@
+
+#funding{
+    padding: 0 14px 14px 14px;
+}
+
+.page-settings-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    height: 30px;
+}
+
+#funding-body{
+    display: grid;
+    // align-items: center;
+    justify-items: center;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding-top: 20px;
+}

@@ -25,8 +25,15 @@ export const DonationRecord: React.FC<RecordProps> = ({
 
   return (
     <div className={`${styles.donationRecord} ${className}`}>
-      <p className="info">{donor} donated PHP {amount} to {site}</p>
-      <p className="date">{formattedDate}</p>
+      <p className={styles.info}>{donor} donated PHP {formatAmount(amount)} to {site}</p>
+      <p className={styles.date}>{formattedDate}</p>
     </div>
   )
+}
+
+function formatAmount(amount?: number | string): string {
+  if (amount === undefined || amount === null) return '';
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(num)) return '';
+  return num.toLocaleString();
 }

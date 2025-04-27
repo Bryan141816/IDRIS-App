@@ -1,0 +1,125 @@
+@use '../../../styles/variables' as *;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
+
+.fundingCard{
+    width: 90%;
+    // max-height: 340px;
+    border: 1px solid #000;
+    border-radius: 10px;
+    padding: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.fundingHead{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 8px;
+    min-height: 46.4px;
+
+    p{
+        display: -webkit-box;
+        -webkit-line-clamp: 2; // number of lines you want
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        font-size: 16px;
+    }
+}
+
+.menuContainer {
+    // background-color: aqua;
+    position: relative;
+
+    .iconsContainer{
+        display: flex; 
+        flex-direction: row;
+        align-items: center;
+
+        svg{
+            color: $steel-blue;
+        }
+    }
+
+    .menuItems {
+        position: absolute;
+        display: none;
+        gap: 0;
+
+        &.active{
+            display: block;
+        }
+
+        button{
+            background-color: #fff;
+            color: #000;
+            border: none;
+            width: 100%;
+            height: auto;
+            padding: 8px;
+            text-align: left;
+
+            &:hover{
+                background-color: $steel-blue;
+                color: #fff;
+            }
+        }
+    }
+}
+
+.fundingBody{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 8px 0;
+    gap: 8px;
+    height: 204px;
+
+    .description {
+        // background-color: aqua;
+        font-size: 16px !important;
+        line-height: 1.2; 
+        height: auto;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 10;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .image{
+        object-fit: cover;
+        height: 100%;
+        width: 45%;
+    }
+}
+
+.fundingFooter{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 8px 0;
+
+    .progressContainer{
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        width: 50%;
+    }
+
+    p{
+        font-size: 8px;
+        text-align: center;
+    }
+
+    .donateButton{
+        width: 45%;
+        background-color: $primary-color;
+        color: #fff;
+        border: 2px solid rgba(0, 0, 0, 0.34);
+        border-radius: 10px;
+    }
+}

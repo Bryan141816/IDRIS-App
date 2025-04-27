@@ -1,5 +1,6 @@
 @use '../styles/variables' as *;
 @import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -8,7 +9,7 @@
 }
 
 *, *::before, *::after {
-  box-sizing: inherit;
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
@@ -17,12 +18,17 @@ html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100dvh;
   display: flex;
   flex-direction: row;
   // background-color: aqua;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+body{
+  height: 100dvh;
+}
+#root{
+  height: 100%;
 }
 
 body {
@@ -36,14 +42,16 @@ main {
   flex-direction: column;
   justify-content: flex-start;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   color: #000;
+  overflow: auto;
 }
 
 #right-body-section {
   display: flex;
   flex-direction: column;
   width: 100%;
+  height: 100%;
 }
 
 @media screen and (max-width: 720px) {

@@ -1,9 +1,12 @@
 import React, { useState,useEffect } from 'react';
 import './css/VolunteerDashboard.css'; // We'll create this CSS file separately
 import Modal from './Modal'; // Import Modal component
+import VolunteerModal from './VolunteerModal';
 import { useNavigate } from 'react-router-dom';
 
 export default function IDRISDashboard() {
+
+    const userRole = 'admin'; // or 'user'
 
     const navigate = useNavigate();
 
@@ -11,18 +14,24 @@ export default function IDRISDashboard() {
     const [viewDate, setViewDate] = useState(new Date());
     const [today] = useState(new Date());
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
+    const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState(false);
 
-    // Function to open the modal
-    const openModal = () => {
-      setIsModalOpen(true);
+    // Functions for Program Modal
+    const openProgramModal = () => {
+    setIsProgramModalOpen(true);
+    };
+    const closeProgramModal = () => {
+    setIsProgramModalOpen(false);
     };
 
-    // Function to close the modal
-    const closeModal = () => {
-      setIsModalOpen(false);
+    // Functions for Volunteer Modal
+    const openVolunteerModal = () => {
+    setIsVolunteerModalOpen(true);
     };
-
+    const closeVolunteerModal = () => {
+    setIsVolunteerModalOpen(false);
+    };
   // Mock data
   const totalApplicants = "100,000";
   const totalVolunteers = "100,000";
@@ -187,23 +196,39 @@ export default function IDRISDashboard() {
             {/* Left column */}
             <div className="left-column">
               {/* Total Applicants */}
-              <div className="card total-card applicants">
-                <div className="card-content">
-                  <div className="card-title-white">Total Applicants</div>
-                  <div className="card-number">{totalApplicants}</div>
-                </div>
-                <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>Manage Applicants</button>
-              </div>
+                    <div className="card total-card applicants">
+                    <div className="card-content">
+                    <div className="card-title-white">Total Applicants</div>
+                    <div className="card-number">{totalApplicants}</div>
+                    </div>
+                    {userRole === 'admin' ? (
+                    <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>
+                    Manage Applicants
+                    </button>
+                    ) : (
+                        <button  className="manage-btn" style={{ fontSize: '17.4px' }} onClick={openVolunteerModal}>
+                        Become a Volunteer
+                        </button>
+                        )}
+                    </div>
+
 
               {/* Total Volunteers */}
               <div className="card total-card volunteers">
                 <div className="card-content">
-                  <div className="card-title-white">Total Volunteers</div>
-                  <div className="card-number">{totalVolunteers}</div>
-                </div>
-                <button className="manage-btn"onClick={() => navigate('/volunteer_management/manage_volunteers')}>Manage Volunteers</button>
-              </div>
-
+                <div className="card-title-white">Total Volunteers</div>
+                <div className="card-number">{totalVolunteers}</div>
+             </div>
+            {userRole === 'admin' ? (
+            <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_volunteers')}>
+            Manage Volunteers
+            </button>
+            ) : (
+            <button className="manage-btn" style={{display:'none'}} onClick={() => navigate('/volunteer_management/become_volunteer')}>
+            Become a Volunteer
+            </button>
+            )}
+            </div>
               {/* Cards grid */}
               <div className="cards-grid">
                 {/* Active Volunteers */}
@@ -265,17 +290,17 @@ export default function IDRISDashboard() {
                   {/* Calendar */}
                   <div className="calendar-section">
                   <div className="calendar-header">
-  <button onClick={prevMonth} className="calendar-nav-btn">&lt;</button>
-  <div>
-    {/* Update dayName, month, and year based on viewDate */}
-    <div className="day-name">{formatDate(viewDate).dayName}</div>
-    <div className="date-display">
-      <span className="month-day">{formatDate(viewDate).month} {formattedDate.day}</span>
-      <span className="year">{formatDate(viewDate).year}</span>
-    </div>
-  </div>
-  <button onClick={nextMonth} className="calendar-nav-btn">&gt;</button>
-</div>
+                    <button onClick={prevMonth} className="calendar-nav-btn">&lt;</button>
+                    <div>
+                        <div className="day-name">{formatDate(currentDate).dayName}</div> {/* CHANGE TO currentDate */}
+                        <div className="date-display">
+                        <span className="month-day">{formattedDate.month} {formattedDate.day}</span> {/* use formattedDate */}
+                        <span className="year">{formattedDate.year}</span> {/* use formattedDate */}
+                        </div>
+                    </div>
+                    <button onClick={nextMonth} className="calendar-nav-btn">&gt;</button>
+                    </div>
+
 
 
                     <div className="calendar">
@@ -309,7 +334,14 @@ export default function IDRISDashboard() {
               <div className="card news-card">
                 <div className="news-header">
                   <h2 className="news-title">News & Announcements</h2>
-                  <button onClick={openModal} className="add-program-btn">+ Add Program</button>
+                  {userRole === 'admin' ? (
+            <button onClick={openProgramModal} className="add-program-btn">+ Add Program</button>
+            ) : (
+            <button className="manage-btn" style={{display:'none'}} onClick={() => navigate('/volunteer_management/become_volunteer')}>
+            Become a Volunteer
+            </button>
+            )}
+
                 </div>
 
                 <div className="news-list">
@@ -332,8 +364,8 @@ export default function IDRISDashboard() {
           </div>
         </div>
       </div>
-      <Modal isOpen={isModalOpen} onClose={closeModal} />
-
+      <Modal isOpen={isProgramModalOpen} onClose={closeProgramModal} />
+      <VolunteerModal isOpen={isVolunteerModalOpen} onClose={closeVolunteerModal} />
     </div>
   );
 

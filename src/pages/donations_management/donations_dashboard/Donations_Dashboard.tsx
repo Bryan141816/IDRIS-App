@@ -29,7 +29,7 @@ const PieChartSample = {
 const DonationRecordSample = [
   {
     "donor": "Clement",
-    "amount": 250000,
+    "amount": 250000000,
     "site": "Site A",
     "date": "04/18/2025",
   },
@@ -44,7 +44,12 @@ const DonationRecordSample = [
     "amount": 500000,
     "site": "Site C",
     "date": "01/01/2000",
-  },
+  },  {
+    "donor": "Anonymous",
+    "amount": 500000,
+    "site": "Site C",
+    "date": "12/01/2000",
+  }
 ]
 
 const FundingProposals = [
@@ -114,8 +119,8 @@ const DonationsDashboard = () => {
           </div>  
             <div id="transparency-report">
               <p className="title">Transparency Reports</p>
-              {reportsSample.map((report) => (
-                <DownloadableFile icon={pdf_logo} filename={report.filename} fileUrl={report.fileUrl} className='transparency-report-file' />
+              {reportsSample.map((report, index) => (
+                <DownloadableFile key={index} icon={pdf_logo} filename={report.filename} fileUrl={report.fileUrl} className='transparency-report-file' />
               ))}
           </div>
           

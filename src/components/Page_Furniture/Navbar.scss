@@ -1,5 +1,6 @@
 @use "../../styles/variables" as *;
 @import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
 
 
 .navbar {
@@ -76,6 +77,7 @@
 }
 
 .flex-control {
+  width: 100%;
   &:hover {
     background-color: $semi-light;
     color: $primary-color;
@@ -122,7 +124,7 @@
   opacity: 1;
 }
 
-@media screen and (max-width: 450px) {
+@media screen and (max-width: 720px) {
   .navbar {
     // height: 100%;
     display: none;

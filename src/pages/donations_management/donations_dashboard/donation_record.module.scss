@@ -12,14 +12,31 @@
     p{
         font-size: 24px;
         font-family: "Inter", sans-serif;
+        margin: 0;
     }
 }
 
-@media  screen and (max-width: 720px) {
+@media  screen and (max-width: 720px){
     .donationRecord{
         padding: 5px 10px;
+        
         p{
             font-size: 12px;
         }
+    }
+    
+    .donationRecord .info{
+        flex: 1;
+        overflow-wrap: break-word;
+    }
+
+    .donationRecord .date{
+        display: flex;
+        justify-content: right;
+        align-items: center;
+        margin-left: 12px;
+        width: auto;
+        white-space: nowrap;
+        overflow: hidden;
     }
 }

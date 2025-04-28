@@ -38,7 +38,7 @@ const MapView: React.FC<MapViewProps> = ({ center, markers, onMarkerClick }) => 
   };
 
   return (
-    <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}>
+    <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }}  attributionControl={false}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'

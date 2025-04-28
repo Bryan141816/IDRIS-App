@@ -1,0 +1,71 @@
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(116, 154, 182, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+
+  /* Modal Content */
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 400px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Modal Header */
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    color: white;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: red;
+  }
+
+  /* Modal Actions */
+  .modal-action {
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    gap: 10px; /* Space between buttons (optional) */
+    align-items: center;
+
+  }
+
+  .cancel-btn, .save-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 70%;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 2px;
+  }
+
+  .cancel-btn {
+    background-color: #749AB6;
+    color: white;
+  }
+
+  .save-btn {
+    background-color: #749AB6;
+    color: white;
+  }

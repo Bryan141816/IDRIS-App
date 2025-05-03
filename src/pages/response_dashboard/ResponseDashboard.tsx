@@ -72,7 +72,7 @@ const data = {
     plugins: {
       title: {
         display: true,
-        text: 'Monthly Report Growth',
+        text: 'Raised',
       },
       legend: {
         display: true,
@@ -232,7 +232,7 @@ const ResponseDashboard = () => {
             <div className='sub-items'>
                 <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
                     <div className='sub-item-info' style={{gridColumn: 'span 2'}}>
-                        <h3>Reports</h3>
+                        <h3>Budget</h3>
                         <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link>
                     </div>
                     <div className='sub-item-grid-content' style={{ aspectRatio: '2/1', padding: '15px' }}>

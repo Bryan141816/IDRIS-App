@@ -1,7 +1,7 @@
-import Navbar from './components/Page_Furniture/Navbar';
-import './styles/App.scss';
 import {useState} from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { UserContext } from './UserContext';
+import './styles/App.scss';
 import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
 import LGU from './pages/lgu_profiling/map_of_cebu/lgu';
 import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
@@ -16,15 +16,20 @@ import ListOfRAFIDonors from './pages/donations_management/list_of_rafi_donors/L
 import FundingProposals from './pages/donations_management/funding_proposals/FundingProposals';
 import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
 import ReportList from './pages/response_dashboard/report_list/ReportList';
+import Navbar from './components/Page_Furniture/Navbar';
 import Page from './components/Pages/Pages';
 import Header from './components/Page_Furniture/Header';
 import Footer from './components/Page_Furniture/Footer';
 
 function App() {
+  let userType = { userType: 'user'}
+
   return (
-    <Router>
-      <AppRoutes />
-    </Router>
+    <UserContext.Provider value={userType}>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </UserContext.Provider>
   );
 }
 

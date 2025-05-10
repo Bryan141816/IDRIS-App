@@ -2,6 +2,8 @@ import styles from './fundingCard.module.scss';
 import defaultFundingImage from '../files/default_image.jpg';
 import {CircleDot} from '../../../components/Icons';
 import { useState, useEffect, useRef } from 'react';
+import { useUserContext } from '../../../UserContext';
+
 
 type FundingProp = {
     id?: number;
@@ -19,6 +21,8 @@ const FundingCard: React.FC<FundingProp> = ({
     donated = 0, 
     target = 100
 }) => {
+    const userType = useUserContext();
+
     const [activeStatus, setActive] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -48,7 +52,7 @@ const FundingCard: React.FC<FundingProp> = ({
                 <p className={styles.title}>{title}</p>
                 <div className={styles.menuContainer} ref={menuRef}>
                     {/* TRIPLE CIRLE ICONS */}
-                    <div className={styles.iconsContainer} onClick={toggleActive}>
+                    <div className={`${styles.iconsContainer} ${userType.userType !== 'admin' ? styles.hidden : ''}`} onClick={toggleActive}>
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />
@@ -71,8 +75,8 @@ const FundingCard: React.FC<FundingProp> = ({
             {/* FUNDING FOOTER */}
             <div className={styles.fundingFooter}>
                 <div className={styles.progressContainer}>
-                    <p>PHP {donated} / {target}</p>
-                    <p>{percentage}%</p>
+                    <p className={styles.progress}>PHP {donated} / {target}</p>
+                    <p className={styles.percentage}>{percentage}%</p>
                 </div>
 
                 <button className={styles.donateButton}>Donate</button>

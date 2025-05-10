@@ -2,6 +2,8 @@ import styles from './styles/search.module.scss';
 import {SearchIcon} from '../../components/Icons';
 
 
+// NOTE: This component will take 100% of parent width
+
 type SearchProps = {
     placeholder?: string;
     value?: string;
@@ -23,10 +25,6 @@ const SearchBar: React.FC<SearchProps> = ({ placeholder, value, onChange }) => {
         <div className={styles.searchBox}>
             <SearchIcon width={14} height={14} />
         </div>
-    </div>
-
-    <div className={styles.filterContainer}>
-
     </div>
     </>
   );

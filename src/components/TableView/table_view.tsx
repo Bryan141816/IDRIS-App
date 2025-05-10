@@ -53,12 +53,12 @@ const TableData: React.FC<TableRowProps> = ({children, iSborder}) => {
 }
 const TableCell: React.FC<TableCellProps> = ({cell}) => {
     if(cell.type === "Text"){
-        return (<span style={{width: cell.width, color: cell.color, fontWeight: cell.font_weight}}>{cell.text}</span>);
+        return (<span style={{minWidth: cell.width, color: cell.color, fontWeight: cell.font_weight}}>{cell.text}</span>);
     }
     if(cell.type === "Button"){
         return (
-            <div style={{width: cell.container_width}} className='button-container'>
-                <button style={{width: cell.button_width, backgroundColor: cell.background_color, color: cell.color}}>{cell.text}</button>
+            <div style={{minWidth: cell.container_width}} className='button-container'>
+                <button style={{minWidth: cell.button_width, backgroundColor: cell.background_color, color: cell.color}}>{cell.text}</button>
             </div>
         )
     }
@@ -68,7 +68,7 @@ export const TableView: React.FC<TableJSON> = ({tableJSON}) =>{
         <div id="table-container">
             <TableHead>
                 {tableJSON.table_head.map((header,index) => (
-                    <h3 key={index} style={{width: header.width}}>{header.text}</h3>
+                    <h3 key={index} style={{minWidth: header.width}}>{header.text}</h3>
                 ))}
             </TableHead>
             <div id="table-data-container">

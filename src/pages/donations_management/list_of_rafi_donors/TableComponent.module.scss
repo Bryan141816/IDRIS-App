@@ -1,0 +1,84 @@
+@use '../../../styles/variables' as *;
+
+.table {
+    width: 100%;
+    height: fit-content;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.tableBody td {
+    border-top: 1px solid #000;
+    border-bottom: 1px solid #000;
+}
+
+.tableBody td:first-child {
+    border-left: 1px solid #000;
+}   
+
+.tableBody td:last-child {
+    border-right: 1px solid #000;
+}
+
+.tableHead{
+    font-size: 1.5rem;
+}
+
+.tableBody{
+    font-size: 1.2rem;
+}
+
+.tableRow  td{
+    position: relative;
+    height: 56px;
+
+    img{
+        position: inherit;
+        width: auto;
+        height: 90%;
+    }
+}
+
+.rankCell {
+    background-color: #fff;
+    text-align: center;
+    justify-items: center;
+}
+
+.rankIcon {
+    width: auto;
+    height: 70%;
+    aspect-ratio: 1 / 1;
+    margin-right: 5px;
+    background-color: $primary-color;
+    border-radius: 50%;
+    // center text
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .rankNumber {
+        // add text shadow from text to bottom right corner
+        text-shadow: 2px 2px 1px rgba(0, 0, 0, 0.5);
+        /* x-offset y-offset blur-radius color */
+        color: white;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .tableBody{
+        font-size: 1rem;
+    }
+    .tableHead{
+        font-size: 1.2rem;
+    }
+    .rankIcon {
+        height: 50%;
+    }
+    .rankNumber {
+        font-size: 0.8rem;
+    }
+    .dateCell{
+        font-size: 0.8rem;
+    }
+}

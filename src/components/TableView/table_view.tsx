@@ -9,7 +9,7 @@ interface TableRowProps{
     iSborder: boolean;
 }
 export interface Cell {
-    type: "Text" | "Button";
+    type: "Text" | "Button" | "Image";
     text: string;
     width?: string;
     font_weight: number;
@@ -40,7 +40,6 @@ interface TableJSON{
     tableJSON: TableReponse;
 }
   
-
 
 const TableHead: React.FC<TableProps> = ({children}) => {
     return (

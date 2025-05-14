@@ -1,6 +1,7 @@
 @use '../../../styles/variables' as *;
 
 .table {
+    margin-top: 12px;
     width: 100%;
     height: fit-content;
     border-collapse: separate;
@@ -67,10 +68,10 @@
 
 @media screen and (max-width: 768px) {
     .tableBody{
-        font-size: 1rem;
+        font-size: 0.7em;
     }
     .tableHead{
-        font-size: 1.2rem;
+        font-size: 0.8em;
     }
     .rankIcon {
         height: 50%;
@@ -79,6 +80,7 @@
         font-size: 0.8rem;
     }
     .dateCell{
-        font-size: 0.8rem;
+        font-weight: 500;
+        font-size: 0.7em;
     }
 }

@@ -4,11 +4,12 @@ import FilterBar from "../../../components/Public/Filter";
 import { PlusCircle, Gift } from "../../../components/Icons";
 import './ListOfRAFIDonors.scss';
 import { DonorTable, TableResponse } from "./TableComponent";
-
+import { useUserContext } from "../../../UserContext";
 import Profile1 from '../../donations_management/test_images/profile1.png';
 import Profile2 from '../../donations_management/test_images/profile2.png';
 import Profile3 from '../../donations_management/test_images/profile3.png';
 
+import { Modal } from "./Modals";
 
 const tableData: TableResponse = {
   table_head: [
@@ -152,6 +153,11 @@ const ListOfRAFIDonors = () => {
   const filterItems = ["Ascending", "Descending"];
   const [searched, searchState] = useState("");
   const [filtered, setSelectedFilter] = useState<string>("");
+  const {userType} = useUserContext();
+
+  const [isModalOpen, setShowModal] = useState(false);
+  const openModal = () => setShowModal(true);
+  const closeModal = () => setShowModal(false);
 
   return (
     <div id="donors">
@@ -161,18 +167,23 @@ const ListOfRAFIDonors = () => {
         <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
         <FilterBar items={filterItems} value={filtered} onChange={setSelectedFilter} />
 
-        <button type="button" className="settings-button">
+        <button type="button" className={"settings-button" + (userType === "admin" ? "" : " hidden")} onClick={openModal}>
           Add Donor
           <PlusCircle width={24} height={24} className="add_donor" />
         </button>
 
-        <button type="button" className="settings-button">
+        <button type="button" className={"settings-button" + (userType === "admin" ? "" : " hidden")}>
           Gift Donor
           <Gift width={24} height={24} />
         </button>
       </div>
 
       <DonorTable tableData={tableData} />
+
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <h2>Hello from Modal</h2>
+        <p>This is the modal content</p>
+      </Modal>
     </div>
   );
 }

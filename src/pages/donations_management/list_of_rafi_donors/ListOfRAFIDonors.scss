@@ -3,7 +3,7 @@
 #donors{
     // height will consume remaining space
     height: calc(100vh - 48px - 34px);
-    padding: 0px 10px;
+    padding: 0 10px;
 }
 #settings-container{
     display: flex;
@@ -49,6 +49,10 @@
     }
 }
 
+button.hidden{
+    display: none;
+}
+
 @media screen and (max-width: 720px) {
     #settings-container{
         display: grid;
@@ -58,5 +62,7 @@
         align-items: center;
         // item width is auto
         grid-auto-columns: min-content;
+        height: auto;
+        margin-bottom: 0;
     }
 }

@@ -22,7 +22,7 @@ import Header from './components/Page_Furniture/Header';
 import Footer from './components/Page_Furniture/Footer';
 
 function App() {
-  let userType = { userType: 'user'}
+  let userType = { userType: 'admin'}
 
   return (
     <UserContext.Provider value={userType}>

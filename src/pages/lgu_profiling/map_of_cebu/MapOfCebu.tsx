@@ -117,47 +117,57 @@ const MapOfCebu = () => {
       </div>
 
       {sidebarOpen && selectedMarker && (
-        <div className="sidebar">
-          <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
-          <img src={selectedMarker.image} alt={selectedMarker.lguName} />
-          <h2>{selectedMarker.lguName}</h2>
-          <hr />
-          <p>{selectedMarker.description}</p>
-          <hr />
+  <div className="sidebar">
+    <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
+    <img src={selectedMarker.image} alt={selectedMarker.lguName} />
+    <h2>{selectedMarker.lguName}</h2>
+    <hr />
+    <p>{selectedMarker.description}</p>
+    <hr />
 
-          {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
-            <>
-              <p><strong>Population:</strong> {selectedMarker.population}</p>
-              <p><strong>Available Resources:</strong> {selectedMarker.resources}</p>
-              <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
-              {selectedMarker.type === "lgu" && (
-                <Link to="/lgu_profiling/LGUSeeMore" className="see-more-link">See More</Link>
-              )}
-              {selectedMarker.type === "barangay" && (
-                <button
-                  className="map-button"
-                  style={{ marginTop: "10px" }}
-                  onClick={handleNearestEvacuation}
-                >
-                  Nearest Evacuation
-                </button>
-              )}
-              {selectedMarker.hazardAreas && selectedMarker.hazardAreas.length > 0 && (
-                <>
-                  <hr />
-                  <div className="small-map">
-                    <h3 style={{ marginTop: "-15px", marginBottom: "5px" }}>Hazard Area</h3>
-                    <MapView
-                      center={[selectedMarker.lat, selectedMarker.lng]}
-                      markers={selectedMarker.hazardAreas}
-                    />
-                  </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      )}
+    {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
+      <>
+        <p><strong>Population:</strong> {selectedMarker.population}</p>
+        <p><strong>Available Resources:</strong> {selectedMarker.resources}</p>
+        <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
+
+        {selectedMarker.type === "lgu" && (
+         <Link 
+         to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguName?.replace(/\s/g, "") ?? ""}`} 
+         className="see-more-link"
+       >
+         See More
+       </Link>
+       
+        )}
+
+        {selectedMarker.type === "barangay" && (
+          <button
+            className="map-button"
+            style={{ marginTop: "10px" }}
+            onClick={handleNearestEvacuation}
+          >
+            Nearest Evacuation
+          </button>
+        )}
+
+        {selectedMarker.hazardAreas && selectedMarker.hazardAreas.length > 0 && (
+          <>
+            <hr />
+            <div className="small-map">
+              <h3 style={{ marginTop: "-15px", marginBottom: "5px" }}>Hazard Area</h3>
+              <MapView
+                center={[selectedMarker.lat, selectedMarker.lng]}
+                markers={selectedMarker.hazardAreas}
+              />
+            </div>
+          </>
+        )}
+      </>
+    )}
+  </div>
+)}
+
     </div>
   );
 };

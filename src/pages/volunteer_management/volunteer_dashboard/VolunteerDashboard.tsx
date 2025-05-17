@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function IDRISDashboard() {
 
-    const userRole = 'admin'; // or 'user'
+    const userRole = 'user'; // or 'user'
 
     const navigate = useNavigate();
 

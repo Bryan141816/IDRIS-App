@@ -1,9 +1,11 @@
 import React from 'react';
+import { useUserContext } from '../UserContext'; // used by logout icon
 
 interface IconProps {
   width?: number | string;
   height?: number | string;
   className?: string;
+  onClick?: () => void; // optional click handler
 }
 
 export const Volunteer: React.FC<IconProps> = ({ width = "800px", height = "800px", className="icon"}) => (
@@ -380,3 +382,29 @@ export const UploadArrow: React.FC<IconProps> = ({
     />
   </svg>
 );
+
+export const LogoutIcon: React.FC<IconProps> = ({
+  width = 22,
+  height = 25,
+  className = "",
+  onClick,
+}) => {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 22 25"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      fill="currentColor"
+      onClick={onClick}
+      style={{ cursor: onClick ? "pointer" : "default" }}
+    >
+      <path
+        opacity="0.5"
+        d="M10 0.93335C10.6904 0.93335 11.25 1.51041 11.25 2.22224C11.25 2.88322 10.7675 3.428 10.1458 3.50246L10 3.51113H3.75C3.10896 3.51113 2.58062 4.0087 2.50841 4.64971L2.5 4.80002V20.2667C2.5 20.9277 2.98256 21.4725 3.60422 21.5469L3.75 21.5556H9.375C10.0654 21.5556 10.625 22.1326 10.625 22.8445C10.625 23.5055 10.1425 24.0502 9.52078 24.1247L9.375 24.1334H3.75C1.7529 24.1334 0.120424 22.5237 0.00636578 20.4939L0 20.2667V4.80002C0 2.74079 1.56115 1.05752 3.52966 0.939913L3.75 0.93335H10ZM17.1337 7.97645L20.6694 11.622C21.1575 12.1253 21.1575 12.9414 20.6694 13.4447L17.1337 17.0902C16.6456 17.5937 15.8542 17.5937 15.366 17.0902C14.8779 16.5869 14.8779 15.7708 15.366 15.2675L16.7677 13.8222H10C9.30962 13.8222 8.75 13.2452 8.75 12.5334C8.75 11.8215 9.30962 11.2445 10 11.2445H16.7677L15.366 9.79921C14.8779 9.29587 14.8779 8.47978 15.366 7.97645C15.8542 7.4731 16.6456 7.4731 17.1337 7.97645Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};

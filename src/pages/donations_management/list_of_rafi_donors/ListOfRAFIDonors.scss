@@ -1,11 +1,12 @@
 @use '../../../styles/variables' as *;
 
-#donors{
+#donors {
     // height will consume remaining space
     height: calc(100vh - 48px - 34px);
     padding: 0 10px;
 }
-#settings-container{
+
+#settings-container {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -14,12 +15,12 @@
     position: relative;
     height: 30px;
 
-    #settingsContainer{
+    #settingsContainer {
         height: 100%;
     }
 }
 
-.settings-button{
+.settings-button {
     font-size: 16px;
     background-color: $primary-color;
     outline: none;
@@ -32,29 +33,177 @@
     border-radius: 10px;
     height: 100%;
     margin: 0;
-    
+
 }
 
-.donors-table{
+.donors-table {
     width: 100%;
     height: fit-content;
 
-    #table-container{
+    #table-container {
         padding: 0;
 
         // align table head and data to center  
-        .ant-table-thead > tr > th{
+        .ant-table-thead>tr>th {
             text-align: center;
         }
     }
 }
 
-button.hidden{
+button.hidden {
     display: none;
 }
 
+// Modal styles
+#donor-profile-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+
+    #new-donor-profile {
+        width: 20%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+}
+
+.modal-title{
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+// Hide the placeholder text in date input (yyyymmdd)
+input[type="date"].no-placeholder::-webkit-datetime-edit {
+    color: transparent;
+    display: none;
+}
+
+// Change the color of the date icon
+.entry::-webkit-calendar-picker-indicator {
+    filter: invert(1) sepia(1) saturate(5) hue-rotate(180deg);
+    cursor: pointer;
+  }
+  
+
+#new-donor-form-contianer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 25px;
+
+    .text-entry {
+        position: relative;
+        width: 100%;
+        // height: 75px;
+        background-color: aquamarine;
+    }
+
+    .entry-label {
+        position: absolute;
+        font-size: 1em;
+        bottom: 10px;
+        left: 5px;
+        color: #000000;
+        padding: 0 5px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .entry {
+        font-size: 1em;
+        border-width: 0 0 1px 0;
+        border-style: solid;
+        border-color: #000;
+        border-radius: 0;
+        // background-color: rgb(18, 36, 52);
+        padding-top: 1em;
+        color: #000
+    }
+
+    /* Move label when input is focused or has text */
+    .entry:focus+.entry-label,
+    .entry:not(:placeholder-shown)+.entry-label {
+        font-size: 0.8em;
+        left: 5px;
+        transform: translateY(-200%) scale(0.9);
+        background-color: #fff;
+    }
+}
+
+.modal-instruction{
+    font-size: 0.8em;
+    color: #000;
+    margin-top: 10px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+#gift-donor-profile-container{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 24px;
+
+    #gift-donor-profile{
+        width: 20%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    #gift-donor-email{
+        color: #B0B0B0;
+    }
+}
+
+// Gift Donor Styles
+#gift-donor-form{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+}
+
+.modal-button-container{ // Not used if there is only one button
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.green-modal-button, .yellow-modal-button {
+    padding: 10px;
+    color: #000;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+
+.green-modal-button {
+    background-color: $green;
+
+    &:hover {
+        background-color: saturate($green, 30%);
+        cursor: pointer;
+    }
+}
+
+.yellow-modal-button {
+    background-color: $saffron-yellow;
+
+    &:hover {
+        background-color: darken($saffron-yellow, 10%);
+        cursor: pointer;
+    }
+}
+
 @media screen and (max-width: 720px) {
-    #settings-container{
+    #settings-container {
         display: grid;
         grid-template-columns: 1fr 1fr; // 2 columns
         grid-template-rows: 2fr;
@@ -65,4 +214,8 @@ button.hidden{
         height: auto;
         margin-bottom: 0;
     }
+}
+
+.hidden{
+    display: none;
 }

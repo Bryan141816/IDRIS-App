@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import SearchBar from "../../../components/Public/Search";
 import FilterBar from "../../../components/Public/Filter";
+import UploadFile from "../../../components/Public/UploadFile";
 import { PlusCircle, Gift } from "../../../components/Icons";
 import './ListOfRAFIDonors.scss';
 import { DonorTable, TableResponse } from "./TableComponent";
@@ -150,14 +151,45 @@ const tableData: TableResponse = {
 };
 
 const ListOfRAFIDonors = () => {
-  const filterItems = ["Ascending", "Descending"];
-  const [searched, searchState] = useState("");
-  const [filtered, setSelectedFilter] = useState<string>("");
-  const {userType} = useUserContext();
+  const { userType } = useUserContext(); // Define UserType - User or Admin
 
-  const [isModalOpen, setShowModal] = useState(false);
-  const openModal = () => setShowModal(true);
-  const closeModal = () => setShowModal(false);
+  const filterItems = ["Ascending", "Descending"];
+  const [filtered, setSelectedFilter] = useState<string>("");
+
+  const [searched, searchState] = useState(""); // Search bar for Rafi Donors
+  const [addDonorSearch, setAddDonorSearch] = useState(""); // Search bar for Add New Donor Modal
+  const [newDonorProfile, setNewDonorProfile] = useState<string>(Profile1); // New Donor Profile Image (accepts image directories/links)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [activeModal, setActiveModal] = useState<string | null>(null); // Active Modal State
+
+  const toggleModal = (navId: string) => {
+    setActiveModal(prev => (prev === navId ? null : navId));
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  const setNewDonorProfileImage = (image: string) => { // Set New Donor Profile Image
+    if (image === null) {
+      setNewDonorProfile(Profile1);
+      return "";
+    }
+    setNewDonorProfile(image);
+  };
+
+  const handleFileSelect = (file: File | null) => {
+    setSelectedFile(file);
+
+    if (fileInputRef.current) {
+      // Manually create a FileList-like object and assign it
+      const dataTransfer = new DataTransfer();
+      if (file) dataTransfer.items.add(file);
+      fileInputRef.current.files = dataTransfer.files;
+    }
+  };
 
   return (
     <div id="donors">
@@ -167,24 +199,109 @@ const ListOfRAFIDonors = () => {
         <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
         <FilterBar items={filterItems} value={filtered} onChange={setSelectedFilter} />
 
-        <button type="button" className={"settings-button" + (userType === "admin" ? "" : " hidden")} onClick={openModal}>
+        <button // Add Donor Button
+          type="button"
+          className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+          onClick={() => toggleModal("new-donor")}
+        >
           Add Donor
           <PlusCircle width={24} height={24} className="add_donor" />
         </button>
 
-        <button type="button" className={"settings-button" + (userType === "admin" ? "" : " hidden")}>
+        <button // Gift Donor Button
+          type="button"
+          className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+          onClick={() => toggleModal("gift-donor")}
+        >
           Gift Donor
           <Gift width={24} height={24} />
         </button>
       </div>
 
+      {/* Table for Donors */}
       <DonorTable tableData={tableData} />
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <h2>Hello from Modal</h2>
-        <p>This is the modal content</p>
+      {/* Add New Donor Modal */}
+      <Modal isOpen={activeModal === "new-donor"} onClose={closeModal}>
+        <h3 className="modal-title">Add New Donor</h3>
+        <SearchBar placeholder="Search Donor" value={addDonorSearch} onChange={setAddDonorSearch} />
+        <div id="donor-profile-container">
+          <img src={newDonorProfile} alt="userProfile" id="new-donor-profile" />
+          <p id="new-donor-text">User Profile</p>
+        </div>
+        <form action="" id="new-donor-form-contianer">
+          <div className="text-entry">
+            <input type="text" id="donor-name" className="entry" placeholder=" " />
+            <label htmlFor="donor-name" className="entry-label">Donor Name</label>
+          </div>
+
+          <div className="text-entry">
+            <input type="text" id="total-donation" className="entry" placeholder=" " />
+
+            <label htmlFor="total-donation" className="entry-label">Total Donation</label>
+          </div>
+
+          <div className="text-entry">
+            <input type="date" id="date-joined" className="entry no-icon" placeholder=" " />
+            <label htmlFor="date-joined" className="entry-label">Date Joined</label>
+          </div>
+          <button type="button" className="green-modal-button" onClick={() => setActiveModal("donor-saved")}>Add Donor</button>
+        </form>
+
+      </Modal>
+
+
+      <Modal isOpen={activeModal === "gift-donor"} onClose={closeModal}>
+        <h3 className="modal-title">Gift Donor</h3>
+        <SearchBar placeholder="Search Donor" value={addDonorSearch} onChange={setAddDonorSearch} />
+        <p className="modal-instruction">Gift a donor with thank you message, greeting, special information, or updates in a file format.</p>
+
+        <div id="gift-donor-profile-container">
+          <img src={newDonorProfile} alt="userProfile" id="gift-donor-profile" />
+          <p id="gift-donor-text">User Profile</p>
+          <p id="gift-donor-email">sample-email@gmail.com</p>
+        </div>
+
+        <form id="gift-donor-form">
+          {/* Hidden input controlled from FileUploader */}
+          <input
+            type="file"
+            name="giftFile"
+            accept="application/pdf"
+            ref={fileInputRef}
+            className="hidden"
+          />
+
+          <UploadFile
+            accept="application/pdf"
+            showName={true}
+            onFileSelect={handleFileSelect}
+          />
+
+          {/* <div id="modal-button-container"> */}
+          {/* <button type="button" className="modal-button" onClick={closeModal}>Cancel</button> */}
+          <button type="button" className="green-modal-button" onClick={() => setActiveModal("gift-sent")}>Send Gift</button>
+          {/* </div> */}
+        </form>
+      </Modal>
+
+      <Modal isOpen={activeModal === "donor-saved"} onClose={closeModal}>
+        <h3 className="modal-title">Successfully added donor.</h3>
+        <div className="modal-button-container">
+          <button type="button" className="yellow-modal-button" onClick={() => setActiveModal("new-donor")}>Add more</button>
+          <button type="button" className="green-modal-button" onClick={closeModal}>Close</button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === "gift-sent"} onClose={closeModal}>
+        <h3 className="modal-title">Gift Sent Successfully.</h3>
+        <div className="modal-button-container">
+          <button type="button" className="yellow-modal-button" onClick={() => setActiveModal("gift-donor")}>Send more</button>
+          <button type="button" className="green-modal-button" onClick={closeModal}>Close</button>
+        </div>
       </Modal>
     </div>
   );
-}
-export default ListOfRAFIDonors
+};
+
+export default ListOfRAFIDonors;

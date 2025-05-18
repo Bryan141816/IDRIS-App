@@ -10,7 +10,7 @@ import { Modal } from "./Modals"
 const Login = () => {
   const [isModalOpen, setModalStatus] = useState<boolean>(false);
 
-  const { userType, setUserType } = useUserContext();
+    const { setUserType } = useUserContext();
   const navigate = useNavigate();
 
   const loginAs = (newUserType: string) => {

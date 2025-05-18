@@ -1,6 +1,6 @@
-import { useState, createContext, useContext } from 'react';
+import { useState } from 'react';
 import { useUserContext } from './UserContext';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { UserProvider } from './UserContext';
 import './styles/App.scss';
 import ProtectedRoute from './ProtectedRoute';

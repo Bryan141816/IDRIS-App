@@ -1,7 +1,7 @@
 // FileUploader.tsx
 import './styles/uploadFile.scss';
 import React, { useState } from "react";
-import { UploadArrow } from "../../components/Icons";
+import { UploadArrow } from "./Icons";
 import PDFimage from "./images/pdf-logo.png";
 interface FileUploaderProps {
   onFileSelect: (file: File | null) => void;

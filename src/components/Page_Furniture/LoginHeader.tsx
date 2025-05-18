@@ -1,4 +1,4 @@
-import './LoginHeader.scss';
+import './styles/LoginHeader.scss';
 import RAFIShield from '../../media/RAFI_Shield.png';
 
 const LoginHeader = () => {

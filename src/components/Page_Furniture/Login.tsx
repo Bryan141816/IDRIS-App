@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate  } from 'react-router-dom';
-import './Login.scss';
+import './styles/Login.scss';
 import LoginHeader from "./LoginHeader";
 import { useUserContext } from '../../UserContext';
 import Logo1 from "../../media/Logo1.png";
@@ -15,7 +15,7 @@ const Login = () => {
 
   const loginAs = (newUserType: string) => {
     setUserType(newUserType);
-    navigate('/response_dashboard');
+    navigate('/donations_management/donations_dashboard');
   }
 
   return (
@@ -58,6 +58,8 @@ const Login = () => {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setModalStatus(false)}>
+        <h3 id="login-modal-title">Login as</h3>
+        <hr />
         <div id="select-userType">
           <button id="volunteer" onClick={() => loginAs("volunteer")}>Volunteer</button>
           <button id="admin" onClick={() => loginAs("admin")}>Admin</button>

@@ -1,7 +1,7 @@
 // components/DownloadButton.tsx
 import React from "react";
-import {DownloadCloud} from '../components/Icons';
-import styles from './downloadable.module.scss';
+import {DownloadCloud} from './Icons';
+import styles from './styles/downloadable.module.scss';
 
 type DownloadableProps = {
   icon?: string;

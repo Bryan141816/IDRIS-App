@@ -1,6 +1,6 @@
-import './Navbar.scss';
+import './styles/Navbar.scss';
 import logo1 from "../../media/logo1.png";
-import {Volunteer , LGU, Response, Donations} from '../Icons';
+import {Volunteer , LGU, Response, Donations} from './Icons';
 import {useState, useRef, useEffect} from 'react';
 import { Link } from 'react-router-dom';
 

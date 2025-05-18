@@ -10,7 +10,7 @@ import Profile1 from '../../donations_management/test_images/profile1.png';
 import Profile2 from '../../donations_management/test_images/profile2.png';
 import Profile3 from '../../donations_management/test_images/profile3.png';
 
-import { Modal } from "./Modals";
+import { Modal } from "../../../components/Page_Furniture/Modals";
 
 const tableData: TableResponse = {
   table_head: [

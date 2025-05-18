@@ -1,0 +1,29 @@
+@use "../../styles/variables.scss" as *;
+@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC&display=swap');
+
+#login-header{
+    color: #000;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 70px;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.3);
+    background-color: #fff;
+    width: inherit;
+    
+    img{
+        height: 100%;
+        width: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    #login-app-name{
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    #login-org-name{
+        font-family: 'Alegreya SC', serif;
+        font-size: 1rem;
+    }
+}

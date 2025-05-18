@@ -4,20 +4,20 @@ import { Link } from "react-router-dom";
 import "../css/MapOfCebu.css";
 
 
-const markers = [
+const markers: MarkerType[] = [
   {
     lat: 10.313924,
     lng: 123.887082,
     lguName: "Cebu City",
     type: "lgu",
-    description: `Cebu City is the center of commerce, trade, education, and tourism in the Visayas region. It’s one of the Philippines' oldest and most developed cities.`,
+    description: `Cebu City is the center of commerce, trade, education, and tourism in the Visayas region.`,
     population: "964,169",
     resources: `Major hospitals (Chong Hua Hospital, Cebu Doctors’ University Hospital), CDRRMO...`,
     evacuationCenter: "Cebu City Sports Center",
     image: "../images/lgu/cebucity.jpeg",
     hazardAreas: [
-      { lat: 10.313, lng: 123.885 },
-      { lat: 10.315, lng: 123.889 },
+      { lat: 10.313, lng: 123.885, type: "hazard" },
+      { lat: 10.315, lng: 123.889, type: "hazard" },
     ],
   },
   {
@@ -30,26 +30,27 @@ const markers = [
     resources: `Ambulances, Fire trucks, MCDRRMO...`,
     evacuationCenter: "Mandaue Coliseum",
     image: "../images/lgu/mandaue.jpg",
-    hazardAreas: [{ lat: 10.345, lng: 123.899 }],
+    hazardAreas: [{ lat: 10.345, lng: 123.899, type: "hazard" }],
   },
   {
-    lat: 10.3400,
-    lng: 123.9000,
+    lat: 10.34,
+    lng: 123.9,
     lguName: "Barangay Apas",
     type: "barangay",
-    description: "It is a residential area known for its proximity to Cebu IT Park and the bustling business centers in the area. The barangay is home to schools, healthcare facilities, and various residential communities.",
-    population: "15,000", 
+    description:
+      "It is a residential area known for its proximity to Cebu IT Park...",
+    population: "15,000",
     resources: "Basic Medical Kits, Barangay Tanod, Community Health Workers",
     evacuationCenter: "Barangay Apas Hall",
-    image: "../images/baranggay/baranggay.jpg",  
-    hazardAreas: [], 
+    image: "../images/baranggay/baranggay.jpg",
+    hazardAreas: [],
   },
   {
-    lat: 10.3500,
-    lng: 123.9100,
+    lat: 10.35,
+    lng: 123.91,
     lguName: "RAFI Infra A",
     type: "raffi",
-    description: "The facility includes warehouses, transportation hubs, and communication systems to ensure smooth coordination of relief efforts.",
+    description: "The facility includes warehouses and transportation hubs.",
     population: "-",
     resources: "-",
     evacuationCenter: "-",
@@ -62,112 +63,124 @@ const MapOfCebu = () => {
   const [selectedMarker, setSelectedMarker] = useState<MarkerType | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pathCoordinates, setPathCoordinates] = useState<[number, number][] | null>(null);
+  const [evacuationCenter, setEvacuationCenter] = useState<MarkerType | null>(null); // separate evacuation marker
 
   const handleMarkerClick = (marker: MarkerType) => {
     setSelectedMarker(marker);
     setSidebarOpen(true);
+    setPathCoordinates(null);
+    setEvacuationCenter(null); // reset evacuation center when clicking new marker
   };
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
     setSelectedMarker(null);
     setSelectedType(null);
+    setPathCoordinates(null);
+    setEvacuationCenter(null);
   };
 
   const handleNearestEvacuation = () => {
     if (!selectedMarker) return;
+    // Sample random simulated evacuation center (nearby)
+    const simulatedEvac: MarkerType = {
+      lat: selectedMarker.lat + 0.005,
+      lng: selectedMarker.lng + 0.007,
+      lguName: "Simulated Evac Center",
+      type: "evacuation",
+      description: "Temporary shelter facility ",
+      population: "-",
+      resources: "Food packs, water, and beds",
+      evacuationCenter: "Simulated Covered Court",
+      image: "../images/icons/sample.png",
+      
+      hazardAreas: [],
+    };
 
-    const lguMarkers = markers.filter((m) => m.type === "lgu");
-    let nearest: MarkerType | null = null;
-    let minDistance = Infinity;
+    setEvacuationCenter(simulatedEvac);
+    setPathCoordinates([
+      [selectedMarker.lat, selectedMarker.lng],
+      [simulatedEvac.lat, simulatedEvac.lng],
+    ]);
+  };
 
-    lguMarkers.forEach((marker) => {
-      const distance = Math.sqrt(
-        Math.pow(marker.lat - selectedMarker.lat, 2) + Math.pow(marker.lng - selectedMarker.lng, 2)
-      );
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearest = marker;
-      }
-    });
-
-    if (nearest) {
-      alert(`Nearest Evacuation Center: `);
-    } else {
-      alert("No nearby evacuation center found.");
-    }
+  const combinedMarkers = () => {
+    const base = selectedType ? markers.filter((m) => m.type === selectedType) : markers;
+    return evacuationCenter ? [...base, evacuationCenter] : base;
   };
 
   return (
     <div className={`main-container ${sidebarOpen ? "sidebar-open" : ""}`}>
       <div className="map-buttons">
-        <button className="map-button" onClick={() => setSelectedType(null)}>Show All</button>
-        <button className="map-button" onClick={() => setSelectedType("lgu")}>LGU</button>
-        <button className="map-button" onClick={() => setSelectedType("barangay")}>Barangay</button>
-        <button className="map-button" onClick={() => setSelectedType("raffi")}>RAFI Infrastructure</button>
+        <button className="map-button" onClick={() => setSelectedType(null)}>
+          Show All
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("lgu")}>
+          LGU
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("barangay")}>
+          Barangay
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("raffi")}>
+          RAFI Infrastructure
+        </button>
       </div>
 
       <div className="map-container">
         <MapView
           center={[10.313924, 123.887082]}
-          markers={selectedType ? markers.filter((m) => m.type === selectedType) : markers}
+          markers={combinedMarkers()}
           onMarkerClick={handleMarkerClick}
+          pathCoordinates={pathCoordinates}
         />
       </div>
 
       {sidebarOpen && selectedMarker && (
-  <div className="sidebar">
-    <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
-    <img src={selectedMarker.image} alt={selectedMarker.lguName} />
-    <h2>{selectedMarker.lguName}</h2>
-    <hr />
-    <p>{selectedMarker.description}</p>
-    <hr />
-
-    {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
-      <>
-        <p><strong>Population:</strong> {selectedMarker.population}</p>
-        <p><strong>Available Resources:</strong> {selectedMarker.resources}</p>
-        <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
-
-        {selectedMarker.type === "lgu" && (
-         <Link 
-         to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguName?.replace(/\s/g, "") ?? ""}`} 
-         className="see-more-link"
-       >
-         See More
-       </Link>
-       
-        )}
-
-        {selectedMarker.type === "barangay" && (
-          <button
-            className="map-button"
-            style={{ marginTop: "10px" }}
-            onClick={handleNearestEvacuation}
-          >
-            Nearest Evacuation
+        <div className="sidebar">
+          <button className="close-sidebar" onClick={handleCloseSidebar}>
+            x
           </button>
-        )}
+          <img src={selectedMarker.image} alt={selectedMarker.lguName} />
+          <h2>{selectedMarker.lguName}</h2>
+          <hr />
+          <p>{selectedMarker.description}</p>
+          <hr />
 
-        {selectedMarker.hazardAreas && selectedMarker.hazardAreas.length > 0 && (
-          <>
-            <hr />
-            <div className="small-map">
-              <h3 style={{ marginTop: "-15px", marginBottom: "5px" }}>Hazard Area</h3>
-              <MapView
-                center={[selectedMarker.lat, selectedMarker.lng]}
-                markers={selectedMarker.hazardAreas}
-              />
-            </div>
-          </>
-        )}
-      </>
-    )}
-  </div>
-)}
+          {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
+            <>
+              <p><strong>Population:</strong> {selectedMarker.population}</p>
+              <p><strong>Available Resources:</strong> {selectedMarker.resources}</p>
+              <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
 
+              {selectedMarker.type === "lgu" && (
+                <Link
+                  to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguName?.replace(/\s/g, "") ?? ""}`}
+                  className="see-more-link"
+                >
+                  See More
+                </Link>
+              )}
+
+              {selectedMarker.type === "barangay" && (
+                <button className="map-button" style={{ marginTop: "10px" }} onClick={handleNearestEvacuation}>
+                  Nearest Evacuation
+                </button>
+              )}
+
+              {selectedMarker.hazardAreas && selectedMarker.hazardAreas.length > 0 && (
+                <>
+                  <hr />
+                  <div className="small-map">
+                    <h3 style={{ marginTop: "-15px", marginBottom: "5px" }}>Hazard Area</h3>
+                    <MapView markers={selectedMarker.hazardAreas} fitBounds={true} />
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

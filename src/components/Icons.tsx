@@ -1,5 +1,4 @@
 import React from 'react';
-import { useUserContext } from '../UserContext'; // used by logout icon
 
 interface IconProps {
   width?: number | string;

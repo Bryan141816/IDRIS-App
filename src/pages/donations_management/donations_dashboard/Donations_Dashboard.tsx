@@ -1,7 +1,7 @@
 import './dashboard.scss';
-import DownloadableFile from '../../../components/Downloadable_File'; '../../../components/Downloadable_File';
+import DownloadableFile from '../../../components/Page_Furniture/Downloadable_File';
 import pdf_logo from '../files/pdf-logo.png';
-import PieChart from '../../../components/PieChart';
+import PieChart from '../../../components/Page_Furniture/PieChart';
 import { DonationRecord } from './DonationRecord';
 import { FundingCard } from './FundingCard';
 import image1 from '../test_images/Group 20.png';

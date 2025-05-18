@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import SearchBar from "../../../components/Public/Search";
-import FilterBar from "../../../components/Public/Filter";
-import UploadFile from "../../../components/Public/UploadFile";
-import { PlusCircle, Gift } from "../../../components/Icons";
+import SearchBar from "../../../components/Page_Furniture/Search";
+import FilterBar from "../../../components/Page_Furniture/Filter";
+import UploadFile from "../../../components/Page_Furniture/UploadFile";
+import { PlusCircle, Gift } from "../../../components/Page_Furniture/Icons";
 import './ListOfRAFIDonors.scss';
 import { DonorTable, TableResponse } from "./TableComponent";
 import { useUserContext } from "../../../UserContext";

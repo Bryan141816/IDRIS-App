@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ArrowDown, MenuDots, CircleDot } from '../Icons';
-import './header.scss';
+import { ArrowDown, MenuDots, CircleDot } from './Icons';
+import './styles/header.scss';
 import userProfile from '../../media/account-profile.png';
 import { useUserContext } from '../../UserContext';
-import { LogoutIcon } from '../Icons';
+import { LogoutIcon } from './Icons';
 
 interface FooterProps {
   onIconClick: () => void;

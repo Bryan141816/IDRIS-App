@@ -1,5 +1,5 @@
 import styles from './styles/search.module.scss';
-import {SearchIcon} from '../../components/Icons';
+import {SearchIcon} from './Icons';
 
 
 // NOTE: This component will take 100% of parent width

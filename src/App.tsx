@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUserContext } from './UserContext';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation , Navigate } from 'react-router-dom';
 import { UserProvider } from './UserContext';
 import './styles/App.scss';
 import ProtectedRoute from './ProtectedRoute';
@@ -67,7 +67,7 @@ function AppRoutes() {
         <main>
             <Routes>
               {/* Public route (Login) */}
-              {/* <Route path='/' element={<Navigate to='/' replace />} /> */}
+              <Route path='/' element={<Navigate to='/donations_management/donations_dashboard' replace />} />
               <Route path='/login' element={<Page title='IDRIS | Login'><Login /></Page>} />
 
               {/* Protected routes wrapped in ProtectedRoute */}

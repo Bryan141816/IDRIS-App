@@ -1,4 +1,4 @@
-@use "../../styles/variables.scss" as *;
+@use "../../../styles/variables.scss" as *;
 @import url('https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
@@ -41,7 +41,7 @@
       }
     }
 
-    #logo-app-name{
+    #logo-app-name {
       text-align: center;
       font-family: 'Poppins', sans-serif;
       color: $steel-blue;
@@ -51,28 +51,28 @@
     }
   }
 
-  #login-form{
+  #login-form {
     background-color: #fff;
     width: 35%;
     height: auto;
     padding: 20px;
     border-radius: 20px;
 
-    h1{
+    h1 {
       margin: 10px;
     }
 
     .input-group {
       position: relative;
       margin-bottom: 1rem;
-    
+
       input {
         width: 100%;
         padding: 0.75rem 0.75rem 0.75rem 0.75rem; // left padding to fit icon
         border: 1px solid #ccc;
         border-radius: 5px;
       }
-    
+
       .input-icon {
         position: absolute;
         right: 10px;
@@ -93,4 +93,28 @@
       margin: 0 auto;
     }
   }
+}
+
+#select-userType {
+  display: flex;
+  flex-direction: column;
+  justify-items: center;
+  gap: 10px;
+  padding-top: 1rem;
+
+  button {
+    padding: 10px 2px;
+    background-color: $steel-blue;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    outline: none;
+    border: none;
+    border-radius: 10px;
+  }
+}
+
+#login-modal-title{
+  margin-bottom: 0.5rem;
 }

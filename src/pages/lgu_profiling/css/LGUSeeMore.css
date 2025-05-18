@@ -1,0 +1,71 @@
+.lgu-container {
+  position: relative;
+  max-width: 1200px;
+  width: 70%;          /* responsive width, avoid horizontal scroll */
+  margin: 40px auto;   /* center horizontally */
+  padding: 40px;
+  background-color: #fafafa;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: visible;   /* allow container to grow naturally */
+  /* remove any max-height or fixed height */
+}
+
+  .back-button {
+    position: absolute;
+    top: 20px;    /* adjust as needed */
+    left: 20px;   /* adjust as needed */
+    padding: 10px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    width: fit-content !important;
+  }
+
+  .lgu-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 40px;
+    color: #222;
+  }
+
+  .lgu-image {
+    display: block;
+    max-width: 50%;
+    margin: 0 auto 40px auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .lgu-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    row-gap: 20px;
+    column-gap: 40px;
+    font-size: 20px;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  .lgu-key {
+    font-weight: 600;
+    color: #555;
+    text-align: right;
+    padding-right: 15px;
+    user-select: none;
+  }
+
+  .lgu-value ul {
+    margin: 0;
+    padding-left: 22px;
+  }
+
+  .lgu-error {
+    padding: 40px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }

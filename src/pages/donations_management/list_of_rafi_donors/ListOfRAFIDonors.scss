@@ -1,0 +1,68 @@
+@use '../../../styles/variables' as *;
+
+#donors{
+    // height will consume remaining space
+    height: calc(100vh - 48px - 34px);
+    padding: 0 10px;
+}
+#settings-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+    height: 30px;
+
+    #settingsContainer{
+        height: 100%;
+    }
+}
+
+.settings-button{
+    font-size: 16px;
+    background-color: $primary-color;
+    outline: none;
+    border: 1px solid #B0B0B0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+    border-radius: 10px;
+    height: 100%;
+    margin: 0;
+    
+}
+
+.donors-table{
+    width: 100%;
+    height: fit-content;
+
+    #table-container{
+        padding: 0;
+
+        // align table head and data to center  
+        .ant-table-thead > tr > th{
+            text-align: center;
+        }
+    }
+}
+
+button.hidden{
+    display: none;
+}
+
+@media screen and (max-width: 720px) {
+    #settings-container{
+        display: grid;
+        grid-template-columns: 1fr 1fr; // 2 columns
+        grid-template-rows: 2fr;
+        justify-items: end;
+        align-items: center;
+        // item width is auto
+        grid-auto-columns: min-content;
+        height: auto;
+        margin-bottom: 0;
+    }
+}

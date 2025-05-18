@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
 
 .fundingCard{
+    background-color: #fff;
     width: 90%;
     // max-height: 340px;
     border: 1px solid #000;
@@ -26,6 +27,7 @@
         text-overflow: ellipsis;
 
         font-size: 16px;
+        font-weight: bold;
     }
 }
 
@@ -122,4 +124,74 @@
         border: 2px solid rgba(0, 0, 0, 0.34);
         border-radius: 10px;
     }
+}
+
+@media screen and (max-width: 720px) {
+    .fundingCard{
+        width: 100%;
+    }
+
+    .fundingHead{
+        padding: 0;
+        gap: 2px;
+        min-height: 0;
+        p{
+            font-size: 12px;
+        }
+    }
+
+    .menuContainer{
+        .iconsContainer{
+            svg{
+                width: 5px;
+                height: 5px;
+            }
+
+            &.hidden{
+                display: none;
+            }    
+        }
+    }
+
+    .fundingBody{
+        flex-direction: column-reverse;
+        height: fit-content;
+
+
+        .image{
+            width: 100%;
+        }
+
+        .description {
+            // line-height: 1.2; 
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    
+    }
+
+    .fundingFooter{
+        flex-direction: column;
+
+        .progressContainer{
+            width: 100%;
+
+            .progress{
+                text-align: start;
+            }
+
+            .percentage{
+                width: fit-content;
+            }
+        }
+
+        .donateButton{
+            width: 100%;
+        }
+    
+    }
+
 }

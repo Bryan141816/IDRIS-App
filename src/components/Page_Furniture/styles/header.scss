@@ -1,0 +1,139 @@
+@use "../../../styles/variables" as *;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@200;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
+
+header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  color: #000;
+  background-color: #fff;
+  padding: 0 20px;
+  height: 48px;
+}
+
+#left-items {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-direction: row;
+  gap: 10px;
+
+  button {
+    border: none;
+    background-color: transparent;
+  }
+
+  .header-icon {
+    color: $steel-blue;
+  }
+
+  p {
+    font-family: "Roboto", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+}
+
+#right-items {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: row;
+  gap: 15px;
+  padding: 8px 0;
+  width: auto;
+  color: #fff;
+
+  p {
+    display: flex;
+    align-items: center;
+    font-family: "Inter", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: $steel-blue;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 10px 15px;
+    border-radius: 20px;
+
+    svg {
+      padding-left: 15px;
+      width: auto;
+      height: auto;
+    }
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+  }
+
+  .user-icon {
+    position: relative;
+    width: auto;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: visible;
+  }
+
+  .user-icon svg {
+    position: absolute;
+    bottom: -2px;
+    right: -3px;
+    color: $green;
+  }
+}
+
+#user-account-settings-container {
+  height: 50px;
+  width: auto;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 1px;
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 5px 10px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+
+  p {
+    padding: 0;
+    border-radius: 0;
+    background-color: #fff;
+    color: #000;
+    font-weight: 500;
+  }
+
+  .logout-icon {
+    width: auto;
+    height: 60%;
+    aspect-ratio: 1/1;
+    color: $scarlet;
+  }
+}
+
+
+#user-names {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  .user-name {
+    font-size: 0.5rem;
+    font-weight: 600;
+  }
+
+  .user-email {
+    text-wrap: nowrap;
+    width: auto;
+    font-size: 0.5em;
+    line-height: 1;
+  }
+
+}

@@ -1,6 +1,6 @@
 import styles from './fundingCard.module.scss';
 import defaultFundingImage from '../files/default_image.jpg';
-import {CircleDot} from '../../../components/Icons';
+import {CircleDot} from '../../../components/Page_Furniture/Icons';
 import { useState, useEffect, useRef } from 'react';
 import { useUserContext } from '../../../UserContext';
 
@@ -21,7 +21,7 @@ const FundingCard: React.FC<FundingProp> = ({
     donated = 0, 
     target = 100
 }) => {
-    const userType = useUserContext();
+    const {userType} = useUserContext();
 
     const [activeStatus, setActive] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -44,7 +44,7 @@ const FundingCard: React.FC<FundingProp> = ({
     }, []);
 
     const percentage = Math.round(getPercentage(donated, target));
-
+    
     return (
         <div className={styles.fundingCard}>
             {/* FUNDING HEADER */}
@@ -52,11 +52,11 @@ const FundingCard: React.FC<FundingProp> = ({
                 <p className={styles.title}>{title}</p>
                 <div className={styles.menuContainer} ref={menuRef}>
                     {/* TRIPLE CIRLE ICONS */}
-                    <div className={`${styles.iconsContainer} ${userType.userType !== 'admin' ? styles.hidden : ''}`} onClick={toggleActive}>
+                    {userType === "admin" && (<div className={`${styles.iconsContainer}`} onClick={toggleActive}>
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />
-                    </div>
+                    </div>)}
                     <div className={`${styles.menuItems} ${activeStatus ? styles.active : ''}`.trim()}>
                         <button>Edit</button>
                         {/* <button>Delete</button> */}

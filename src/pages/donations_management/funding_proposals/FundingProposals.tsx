@@ -1,6 +1,6 @@
 import './funding.scss';
-import SearchBar from '../../../components/Public/Search';
-import FilterBar from '../../../components/Public/Filter';
+import SearchBar from '../../../components/Page_Furniture/Search';
+import FilterBar from '../../../components/Page_Furniture/Filter';
 import donationFacility from '../files/donations_facility.png';
 import reliefGoods from '../files/donations_facility.png';
 import donationBox from '../files/donation_box.png';

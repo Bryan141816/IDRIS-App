@@ -1,128 +1,95 @@
-/* Main container */
-.application-form {
-    padding: 16px;
-  }
-
-  /* Breadcrumb section */
+/* Add this CSS to your IndividualForm.css file */
   .breadcrumb-section {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
   }
 
-
-.page-title {
+  .page-title {
     font-size: 24px;
-    font-weight: 600;
     margin-bottom: 10px;
-    color: #333;
   }
 
-  /* Form Container */
   .application-form-container {
     display: flex;
     justify-content: center;
   }
 
   .form-card {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 24px;
     width: 100%;
-    max-width: 900px;
+    max-width: 800px;
+    border: 1px solid #e8e8e8;
   }
 
   .form-title {
+    font-size: 22px;
     text-align: center;
-    font-size: 30px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #333;
-    padding-bottom: 4%;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 8px;
   }
 
-  /* Form Sections */
   .form-section {
     margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    padding-top: 20px;
   }
 
-  .form_section {
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-  }
-
-  .section_title {
-    font-size: 26px;
-    font-weight: 500;
+  .section-title {
+    font-size: 18px;
     margin-bottom: 20px;
-    color: black;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 10px;
   }
 
-  /* Form Layout */
+  /* Form Layout Helpers */
   .form-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 10px;
+    gap: 16px;
+    margin-bottom: 0;
   }
 
   .form-item-half {
     flex: 1;
-    min-width: 250px;
   }
 
-  /* Form Controls */
-  .ant-form-item-label > label {
+  .form-item-third {
+    flex: 1;
+  }
+
+  /* Override Ant Design Styles for a clean look */
+  .application-form .ant-form-item-label > label {
     font-weight: 500;
-    color: #555;
+    color: #333;
   }
 
-  .ant-input,
-  .ant-select-selector,
-  .ant-picker {
-    border-radius: 4px !important;
-    border: 1px solid #d9d9d9 !important;
-    height: 40px !important;
-    padding: 8px 12px !important;
-  }
-
-  .ant-input:hover,
-  .ant-select-selector:hover,
-  .ant-picker:hover {
-    border-color: #4096ff !important;
-  }
-
-  .ant-input:focus,
-  .ant-select-selector:focus,
-  .ant-picker-focused {
-    border-color: #4096ff !important;
-    box-shadow: 0 0 0 2px rgba(64, 150, 255, 0.2) !important;
-  }
-
-  .ant-input-textarea textarea {
-    min-height: 80px;
-  }
-
-  /* Select Dropdown */
-  .ant-select-dropdown {
-    border-radius: 4px;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .ant-select-item-option {
+  .application-form .ant-input,
+  .application-form .ant-select-selector,
+  .application-form .ant-picker {
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #d9d9d9;
     padding: 8px 12px;
+    height: auto;
   }
 
-  .ant-select-item-option-selected {
-    background-color: #e6f7ff;
-    font-weight: 500;
+  .application-form .ant-input:focus,
+  .application-form .ant-select-selector:focus,
+  .application-form .ant-picker:focus {
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+    border-color: #40a9ff;
   }
 
-  /* Date Picker */
-  .ant-picker {
-    width: 100%;
+  .application-form .ant-picker-range {
+    padding: 0;
+  }
+
+  .application-form .ant-select-selector {
+    height: 40px;
+    padding: 4px 12px;
+  }
+
+  .application-form .ant-select-selection-item {
+    line-height: 32px;
   }
 
   /* Form Buttons */
@@ -132,59 +99,41 @@
     margin-top: 30px;
   }
 
-  .ant-btn {
-    height: 40px;
-    border-radius: 4px;
-    font-weight: 500;
-    box-shadow: none;
+  .submit-button {
+    background-color: #4a89dc;
+    border-color: #4a89dc;
+    border-radius: 8px;
+    height: 38px;
+    padding: 0 20px;
   }
 
-  .ant-btn-primary {
-    background-color: #1890ff;
-  }
-
-  button.submit-button,
-  .ant-btn-primary {
-    background-color: #4096ff;
-    color: white;
-    border: none;
-    min-width: 100px;
-  }
-
-  button.submit-button:hover,
-  .ant-btn-primary:hover {
-    background-color: #40a9ff;
+  .submit-button:hover {
+    background-color: #5d9cec;
+    border-color: #5d9cec;
   }
 
 
+  .previous-button{
+    margin-left: -510%;
+  }
 
-  /* Responsive Design */
+  .previous-button:hover {
+    background-color: #40a9ff !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: none !important;
+  }
+
+
+  /* Responsive adjustments */
   @media (max-width: 768px) {
     .form-row {
       flex-direction: column;
       gap: 0;
     }
 
-    .form-item-half {
-      width: 100%;
-    }
-
-    .form-card {
-      padding: 20px 15px;
-    }
-
-    .form-buttons {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-    }
-
-    .ant-space {
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .ant-space .ant-btn {
+    .form-item-half,
+    .form-item-third {
       width: 100%;
     }
   }

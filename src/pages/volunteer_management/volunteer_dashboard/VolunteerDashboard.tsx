@@ -3,10 +3,12 @@ import './css/VolunteerDashboard.css'; // We'll create this CSS file separately
 import Modal from './Modal'; // Import Modal component
 import VolunteerModal from './VolunteerModal';
 import { useNavigate } from 'react-router-dom';
+import { useUserContext } from '../../../UserContext';
+
 
 export default function IDRISDashboard() {
 
-    const userRole = 'user'; // or 'user'
+    const {userType} = useUserContext();
 
     const navigate = useNavigate();
 
@@ -201,7 +203,7 @@ export default function IDRISDashboard() {
                     <div className="card-title-white">Total Applicants</div>
                     <div className="card-number">{totalApplicants}</div>
                     </div>
-                    {userRole === 'admin' ? (
+                    {userType === 'admin' ? (
                     <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>
                     Manage Applicants
                     </button>
@@ -219,7 +221,7 @@ export default function IDRISDashboard() {
                 <div className="card-title-white">Total Volunteers</div>
                 <div className="card-number">{totalVolunteers}</div>
              </div>
-            {userRole === 'admin' ? (
+            {userType === 'admin' ? (
             <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_volunteers')}>
             Manage Volunteers
             </button>
@@ -334,7 +336,7 @@ export default function IDRISDashboard() {
               <div className="card news-card">
                 <div className="news-header">
                   <h2 className="news-title">News & Announcements</h2>
-                  {userRole === 'admin' ? (
+                  {userType === 'admin' ? (
             <button onClick={openProgramModal} className="add-program-btn">+ Add Program</button>
             ) : (
             <button className="manage-btn" style={{display:'none'}} onClick={() => navigate('/volunteer_management/become_volunteer')}>

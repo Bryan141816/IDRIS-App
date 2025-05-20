@@ -54,7 +54,7 @@
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    width: 70%;
+    width: 85%;
     font-size: 20px;
     font-weight: 600;
     letter-spacing: 2px;
@@ -68,4 +68,16 @@
   .save-btn {
     background-color: #749AB6;
     color: white;
+  }
+
+  .button-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+  }
+
+  .org-icon {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
   }

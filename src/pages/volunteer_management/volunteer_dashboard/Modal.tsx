@@ -60,8 +60,8 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
                 </select>
               </div>
               <div className="modal-actions">
-                <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
-                <button type="submit" className="save-btn">Save</button>
+                <button type="button" onClick={onClose} className="cancel">Cancel</button>
+                <button type="submit" className="save">Save</button>
               </div>
             </form>
           </div>

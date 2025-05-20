@@ -14,6 +14,7 @@ import VolunteerProfiles from './pages/volunteer_management/volunteer_profiles/V
 import OrganizationForm from './pages/volunteer_management/volunteer_form/OrganizationForm'
 import OtherOrganizationForm from './pages/volunteer_management/volunteer_form/otherOrganizationForm';
 import IndividualForm from './pages/volunteer_management/volunteer_form/IndividualForm';
+import OtherIndividualForm from './pages/volunteer_management/volunteer_form/otherIndividualForm';
 import ManageVolunteer from './pages/volunteer_management/manage_volunteers/ManageVolunteer';
 import DonationsDashboard from './pages/donations_management/donations_dashboard/Donations_Dashboard';
 import ViewCredentials from './pages/volunteer_management/manage_applicant/view_credentials';
@@ -109,6 +110,11 @@ function AppRoutes() {
               <Route path='/volunteer_management/individual_form' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | Volunteer Application'><IndividualForm /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/volunteer_management/otherindividual_form' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Volunteer Application'><OtherIndividualForm/></Page>
                 </ProtectedRoute>
               } />
               <Route path='/volunteer_management/manage_applicant' element={

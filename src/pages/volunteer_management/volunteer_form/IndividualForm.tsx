@@ -1,34 +1,37 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/IndividualForm.css';
 
-const IndividualForm = () =>{
-    const navigate = useNavigate();
+const IndividualForm = () => {
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const { Option } = Select;
-  const onFinish = (values: any) => {
+
+  const onFinish = (values) => {
     console.log('Form values:', values);
     // Handle form submission logic here
-    navigate('/volunteer_management/volunteer_dashboard');
+    navigate('/volunteer_management/otherindividual_form');
   };
-    return(
-        <div className="application-form">
-            {/* Breadcrumb Navigation */}
+
+  return (
+    <div className="application-form">
+      {/* Breadcrumb Navigation */}
       <div className="breadcrumb-section">
         <h2 className="page-title">Individual Application</h2>
         <Breadcrumb>
           <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
           <Breadcrumb.Item><span>Individual Application</span></Breadcrumb.Item>
         </Breadcrumb>
       </div>
-{/* Main Content */}
-<div className="application-form-container">
+
+      {/* Main Content */}
+      <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
 
@@ -39,104 +42,102 @@ const IndividualForm = () =>{
             onFinish={onFinish}
             className="application-form"
           >
+            {/* Personal Information Section */}
             <div className="form-section">
-              <h3 className="section_title">Organization Information</h3>
+              <h3 className="section-title">Personal Information</h3>
 
+              {/* Name Fields */}
               <div className="form-row">
                 <Form.Item
-                  name="orgName"
-                  label="Organization Name"
-                  className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter organization name' }]}
+                  name="firstName"
+                  label="First Name"
+                  className="form-item-third"
+                  rules={[{ required: true, message: 'Please enter first name' }]}
                 >
-                  <Input placeholder="Enter organization name" />
+                  <Input placeholder="First" />
                 </Form.Item>
                 <Form.Item
-                  name="orgType"
-                  label="Type of Organization"
-                  className="form-item-half"
-                  rules={[{ required: true, message: 'Please select organization type' }]}
+                  name="middleName"
+                  label="Middle Name"
+                  className="form-item-third"
                 >
-                  <Select placeholder="Select organization type">
-                    <Option value="private">Private Company</Option>
-                    <Option value="ngo">NGO</Option>
-                    <Option value="government">Government</Option>
-                    <Option value="educational">Educational Institution</Option>
-                    <Option value="other">Other</Option>
-                  </Select>
+                  <Input placeholder="Middle Name" />
+                </Form.Item>
+                <Form.Item
+                  name="lastName"
+                  label="Last Name"
+                  className="form-item-third"
+                  rules={[{ required: true, message: 'Please enter last name' }]}
+                >
+                  <Input placeholder="Last" />
                 </Form.Item>
               </div>
+
+              {/* Email Address */}
               <Form.Item
-                name="orgEmail"
+                name="email"
                 label="Email Address"
                 rules={[
                   { required: true, message: 'Please enter email address' },
                   { type: 'email', message: 'Please enter a valid email' }
                 ]}
               >
-                <Input placeholder="Enter organization email" />
+                <Input placeholder="Enter your email" />
               </Form.Item>
+
+              {/* Phone and Address */}
               <div className="form-row">
                 <Form.Item
-                  name="orgPhone"
+                  name="phone"
                   label="Phone Number"
                   className="form-item-half"
                   rules={[{ required: true, message: 'Please enter phone number' }]}
                 >
-                  <Input placeholder="Enter organization phone" />
+                  <Input placeholder="Enter your phone" />
                 </Form.Item>
                 <Form.Item
-                  name="orgAddress"
+                  name="address"
                   label="Address"
                   className="form-item-half"
                   rules={[{ required: true, message: 'Please enter address' }]}
                 >
-                  <Input placeholder="Enter organization address" />
+                  <Input placeholder="Enter your address" />
                 </Form.Item>
               </div>
-            </div>
-            <div className="form_section">
-              <h3 className="section_title">Representative Information</h3>
 
+              {/* Birth Date, Gender and Age */}
               <div className="form-row">
                 <Form.Item
-                  name="repName"
-                  label="Full Name"
-                  className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter full name' }]}
+                  name="birthDate"
+                  label="Birth Date"
+                  className="form-item-third"
+                  rules={[{ required: true, message: 'Please select birth date' }]}
                 >
-                  <Input placeholder="Enter representative's name" />
+                  <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item
-                  name="repPosition"
-                  label="Position / Role in Organization"
-                  className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter position' }]}
+                  name="gender"
+                  label="Gender"
+                  className="form-item-third"
+                  rules={[{ required: true, message: 'Please select gender' }]}
                 >
-                  <Input placeholder="Enter position/role" />
+                  <Select placeholder="Select gender">
+                    <Option value="male">Male</Option>
+                    <Option value="female">Female</Option>
+
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="age"
+                  label="Age"
+                  className="form-item-third"
+                  rules={[{ required: true, message: 'Please enter age' }]}
+                >
+                  <Input type="number" placeholder="Enter your age" />
                 </Form.Item>
               </div>
-              <div className="form-row">
-                <Form.Item
-                  name="repPhone"
-                  label="Phone Number"
-                  className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter phone number' }]}
-                >
-                  <Input placeholder="Enter representative's phone" />
-                </Form.Item>
-                <Form.Item
-                  name="repEmail"
-                  label="Email Address"
-                  className="form-item-half"
-                  rules={[
-                    { required: true, message: 'Please enter email address' },
-                    { type: 'email', message: 'Please enter a valid email' }
-                  ]}
-                >
-                  <Input placeholder="Enter representative's email" />
-                </Form.Item>
-              </div>
+
+              {/* Availability */}
               <Form.Item
                 name="availability"
                 label="Availability"
@@ -146,11 +147,10 @@ const IndividualForm = () =>{
               </Form.Item>
             </div>
 
+            {/* Form Buttons */}
             <Form.Item className="form-buttons">
               <Space>
-                <Button onClick={() => navigate('/volunteer_management/volunteer_dashboard')}>
-                  Cancel
-                </Button>
+
                 <Button type="primary" htmlType="submit" className="submit-button">
                   Next
                 </Button>
@@ -159,10 +159,8 @@ const IndividualForm = () =>{
           </Form>
         </div>
       </div>
+    </div>
+  );
+};
 
-
-        </div>
-
-    );
-}
-export default IndividualForm
+export default IndividualForm;

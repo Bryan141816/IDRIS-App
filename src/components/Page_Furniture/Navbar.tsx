@@ -1,6 +1,6 @@
-import './Navbar.scss';
+import './styles/Navbar.scss';
 import logo1 from "../../media/logo1.png";
-import {Volunteer , LGU, Response, Donations} from '../Icons';
+import {Volunteer , LGU, Response, Donations} from './Icons';
 import {useState, useRef, useEffect} from 'react';
 import { Link } from 'react-router-dom';
 
@@ -95,6 +95,45 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           </div>
         </div>
 
+        <div className="nav-items" id="reports-generation">
+          <div className={`flex-control ${activeNav === 'reports' ? 'active' : ''}`} onClick={() => { toggleNav('reports')}}>
+            <Response width={14} height={14} className='sidebar-icons' />
+            <Link to="/reports_generation" onClick={() => {onClose()}}>REPORTS GENERATION</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'reports' ? 'active' : ''}`}>
+            {/* Sub items here */}
+          </div>
+        </div>
+
+        <div className="nav-items" id="damage-assessment">
+          <div className={`flex-control ${activeNav === 'damage' ? 'active' : ''}`} onClick={() => { toggleNav('damage')}}>
+            <Response width={14} height={14} className='sidebar-icons' />
+            <Link to="/damage_assessment" onClick={() => {onClose()}}>DAMAGE ASSESSMENT</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'damage' ? 'active' : ''}`}>
+            {/* Sub items here */}
+          </div>
+        </div>
+
+        <div className="nav-items" id="procurement-inventory">
+          <div className={`flex-control ${activeNav === 'procurement' ? 'active' : ''}`} onClick={() => { toggleNav('procurement')}}>
+            <Response width={14} height={14} className='sidebar-icons' />
+            <Link to="/procurement_inventory" onClick={() => {onClose()}}>PROCUREMENT & INVENTORY</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'procurement' ? 'active' : ''}`}>
+            {/* Sub items here */}
+          </div>
+        </div>
+
+        <div className="nav-items" id="finance-admin">
+          <div className={`flex-control ${activeNav === 'finance' ? 'active' : ''}`} onClick={() => { toggleNav('finance')}}>
+            <Response width={14} height={14} className='sidebar-icons' />
+            <Link to="/finance&admin" onClick={() => {onClose()}}>FINANCE & ADMIN</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'finance' ? 'active' : ''}`}>
+            {/* Sub items here */}
+          </div>
+        </div>
       </div>
 
     </nav>

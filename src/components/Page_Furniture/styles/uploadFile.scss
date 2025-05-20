@@ -1,0 +1,70 @@
+@use '../../../styles/variables' as *;
+
+.file-uploader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50%;
+  height: 100%;
+  background-color: #A4A4A4;
+
+  &.has-file{
+    // width: 100%;
+    background-color: #ffffff;
+  }
+
+  .upload-button {
+    padding: 8px 12px;
+    border: none;
+    background-color: #A4A4A4;
+    font-weight: 700;
+    color: #000;
+    cursor: pointer;
+    border-radius: 4px;
+
+    .upload-icon{
+      color: #000;
+    }
+  }
+
+  .drag-instruction {
+    color: #000;
+    font-size: 0.9em;
+    margin-top: 10px;
+  }
+
+  .file-name {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .remove-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: $scarlet;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 8px;
+  }
+
+  #pdf-show-icon{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    img{
+      width: 30%;
+      height: auto;
+    }
+  }
+
+  .drag-instruction{
+    padding-bottom: 10px;
+  }
+}

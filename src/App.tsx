@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useUserContext } from './UserContext';
+import { useUserContext, UserProvider } from './UserContext';
+import { useUserRoleContext, UserRoleProvider } from './UserRoleContext';
 import { BrowserRouter as Router, Routes, Route, useLocation , Navigate } from 'react-router-dom';
-import { UserProvider } from './UserContext';
 import './styles/App.scss';
 import ProtectedRoute from './ProtectedRoute';
 import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
@@ -35,15 +35,19 @@ import Footer from './components/Page_Furniture/Footer';
 function App() {
   return (
     <UserProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <UserRoleProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </UserRoleProvider>
     </UserProvider>
   );}
 
 function AppRoutes() {
   const location = useLocation();
   const { userType } = useUserContext();
+  const { userRole } = useUserRoleContext();
+
   // List of pages where you want to hide both Header and Footer
   const hideHeaderFooterRoutes = ['/lgu_profiling/map_of_cebu'];
 
@@ -55,7 +59,7 @@ function AppRoutes() {
     setIsNavbarVisible(prev => !prev);
   }
 
-  const shouldHideUI = !userType && userType === "";
+  const shouldHideUI = !userRole || userRole === ""; // (!userType || userType === "") &&   
 
   const closeSidebar = () => setIsNavbarVisible(false);
   return (
@@ -177,13 +181,12 @@ function AppRoutes() {
                   <Page title='IDRIS | Procurement Inventory'><ProcurementInventory /></Page>
                 </ProtectedRoute>
               } />
-              <Route path='/finance&admin' element={
+              { userRole == "logistics admin" && <Route path='/finance&admin' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | Finance and Admin'><FinanceAdmin /></Page>
                 </ProtectedRoute>
-              } />
+              } />}
             {/* Add more routes as needed */}
-
 
           </Routes>
         </main>

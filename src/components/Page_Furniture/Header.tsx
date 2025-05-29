@@ -3,6 +3,7 @@ import { ArrowDown, MenuDots, CircleDot } from './Icons';
 import './styles/header.scss';
 import userProfile from '../../media/account-profile.png';
 import { useUserContext } from '../../UserContext';
+import { useUserRoleContext } from '../../UserRoleContext';
 import { LogoutIcon } from './Icons';
 
 interface FooterProps {
@@ -11,10 +12,10 @@ interface FooterProps {
 
 const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   const [isUserSettingsVisible, showUserSettings] = useState<boolean>(false)
-  
   const logOutUser = () => {
     showUserSettings(false);
     setUserType("");
+    setUserRole("");
   }
 
   const toggleUserSettingsVisibility = () => {
@@ -22,14 +23,14 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   }
 
   const { userType, setUserType } = useUserContext();
-
+  const { userRole, setUserRole } = useUserRoleContext();
   return (
     <header>
       <div id="left-items">
         <button onClick={onIconClick} >
           <MenuDots width={24} height={22} className='header-icon' />
         </button>
-        <p id="user_role">{userType.toUpperCase()}</p>
+        <p id="user_role">{`${userRole.toUpperCase()} (${userType.toUpperCase()})`}</p>
       </div>
 
       <div id="right-items">

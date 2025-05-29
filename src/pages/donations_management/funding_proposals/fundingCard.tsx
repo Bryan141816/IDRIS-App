@@ -4,7 +4,6 @@ import {CircleDot} from '../../../components/Page_Furniture/Icons';
 import { useState, useEffect, useRef } from 'react';
 import { useUserContext } from '../../../UserContext';
 
-
 type FundingProp = {
     id?: number;
     title?: string;
@@ -79,7 +78,7 @@ const FundingCard: React.FC<FundingProp> = ({
                     <p className={styles.percentage}>{percentage}%</p>
                 </div>
 
-                <button className={styles.donateButton}>Donate</button>
+                { userType == "user" && <button className={styles.donateButton}>Donate</button> }
             </div>
         </div>
     );

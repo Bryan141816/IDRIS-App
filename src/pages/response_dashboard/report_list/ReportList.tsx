@@ -1,5 +1,8 @@
 import { TableView, Cell } from "../../../components/TableView/table_view";
 import './ReportList.scss'
+import { Modal } from '../../../components/Page_Furniture/Modals';
+import React, { useState } from 'react';
+
 const response_data = {
     table_head: [
         {
@@ -56,8 +59,40 @@ const response_data = {
 }
 
 const ReportList = () =>{
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const openModal = () => setIsModalOpen(true);
+    const closeModal = () => setIsModalOpen(false);
     return(
-        <TableView tableJSON={response_data}></TableView>
+        <div>
+            <Modal isOpen={isModalOpen} onClose={closeModal}>
+                <div className="modal-container">
+                    
+                    <div className="horizontal-container">
+                        <span className="item-details-identifier">Report Type:</span>
+                        <span>EOD Report</span>
+                    </div>
+                    <div className="horizontal-container">
+                        <span className="item-details-identifier">Status:</span>
+                        <span>Completed</span>
+                    </div>
+                    <div className="horizontal-container">
+                        <span className="item-details-identifier">Date:</span>
+                        <span>March 20, 2025</span>
+                    </div>
+                    <div className="action-button">
+                        <button style={{backgroundColor: "#749AB6"}} onClick={closeModal}>Ok</button>
+                        <button style={{backgroundColor: "#F84B4D"}} onClick={closeModal}>Cancel</button>
+                    </div>
+                </div>
+            </Modal>
+            <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button>+ Add Report</button>
+            </div>
+            <TableView tableJSON={response_data} onClickCallback={openModal} ></TableView>
+        </div>
     );
 }
 export default ReportList

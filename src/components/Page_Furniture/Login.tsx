@@ -78,6 +78,7 @@ const Login = () => {
         <hr />
         <div id="select-userRole">
           <button id="staff" onClick={() => loginAs("staff")}>Staff</button>
+          <button id="donor" onClick={() => loginAs("donor")}>Donor</button>
           <button id="volunteer" onClick={() => loginAs("volunteer")}>Volunteer</button>
           <button id="ngo-rep" onClick={() => loginAs("ngo representative")}>NGO Representative</button>
           <button id="lgu-rep" onClick={() => loginAs("lgu representative")}>LGU Representative</button>

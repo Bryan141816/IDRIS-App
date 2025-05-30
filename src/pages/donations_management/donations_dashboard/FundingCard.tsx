@@ -1,6 +1,6 @@
 import styles from './fundingcard.module.scss';
 import { Link } from 'react-router-dom';
-
+import { useUserRoleContext } from '../../../UserRoleContext';
 type FundingProps = {
     image?: string;
     message?: string;
@@ -18,8 +18,11 @@ export const FundingCard: React.FC<FundingProps> = ({
     anchorLink,
     className = ""
 }) => {
-    const filled = Math.min(((funded ?? 0) / (target ?? 1)) * 100, 100);
 
+    const { userRole } = useUserRoleContext();
+
+    const filled = Math.min(((funded ?? 0) / (target ?? 1)) * 100, 100);
+    
     return(
         <div className={`${styles.fundingCard} ${className}`}>
             <img src={image} alt="funding-image" />
@@ -30,7 +33,7 @@ export const FundingCard: React.FC<FundingProps> = ({
                 </div>
                 <p>Raised</p>
             </div>            
-            <Link to={`/donate/${anchorLink}`} className={styles['funding-donate-btn']}>Donate</Link>
+            { userRole === "donor" && <Link to={`/donate/${anchorLink}`} className={styles['funding-donate-btn']}>Donate</Link>}
         </div>
     )
 }

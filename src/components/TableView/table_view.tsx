@@ -50,7 +50,9 @@ const TableHead: React.FC<TableProps> = ({children}) => {
 }
 const TableData: React.FC<TableRowProps> = ({children, iSborder}) => {
     return (
-        <div className="row table-data" style={{borderBottom: iSborder ? '1px solid black' : 'none'}}>{children}</div>
+        <div className="row table-data" style={{borderBottom: iSborder ? '1px solid black' : 'none'}}>
+            {children}
+        </div>
     )
 }
 const TableCell: React.FC<TableCellProps> = ({cell, onClickCallback}) => {

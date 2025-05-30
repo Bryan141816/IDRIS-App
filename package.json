@@ -16,6 +16,7 @@
     "@capacitor/ios": "^7.2.0",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "antd": "^5.24.7",
     "chart.js": "^4.4.9",

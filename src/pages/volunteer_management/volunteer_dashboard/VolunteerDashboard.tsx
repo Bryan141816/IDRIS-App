@@ -4,10 +4,10 @@ import Modal from './Modal'; // Import Modal component
 import VolunteerModal from './VolunteerModal';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../UserContext';
-
+import { useUserRoleContext } from '../../../UserRoleContext';
 
 export default function IDRISDashboard() {
-
+    const { userRole } = useUserRoleContext();
     const {userType} = useUserContext();
 
     const navigate = useNavigate();
@@ -202,8 +202,8 @@ export default function IDRISDashboard() {
                     <div className="card-content">
                     <div className="card-title-white">Total Applicants</div>
                     <div className="card-number">{totalApplicants}</div>
-                    </div>
-                    {userType === 'admin' ? (
+                    </div>  
+                    {userType === 'admin' && userRole === "operations admin" ? (
                     <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>
                     Manage Applicants
                     </button>
@@ -221,7 +221,7 @@ export default function IDRISDashboard() {
                 <div className="card-title-white">Total Volunteers</div>
                 <div className="card-number">{totalVolunteers}</div>
              </div>
-            {userType === 'admin' ? (
+            { userType === 'admin' && userRole === "operations admin" ? (
             <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_volunteers')}>
             Manage Volunteers
             </button>

@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import style from './styles/modal.module.scss';
 
 type ModalProps = {
-  isOpen: boolean;
+  isOpen: boolean | String;
   onClose: () => void;
   children?: ReactNode;
 };

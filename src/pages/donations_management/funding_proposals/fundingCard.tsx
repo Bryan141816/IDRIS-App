@@ -2,6 +2,7 @@ import styles from './fundingCard.module.scss';
 import defaultFundingImage from '../files/default_image.jpg';
 import {CircleDot} from '../../../components/Page_Furniture/Icons';
 import { useState, useEffect, useRef } from 'react';
+import { useUserRoleContext } from '../../../UserRoleContext';
 import { useUserContext } from '../../../UserContext';
 
 type FundingProp = {
@@ -20,7 +21,8 @@ const FundingCard: React.FC<FundingProp> = ({
     donated = 0, 
     target = 100
 }) => {
-    const {userType} = useUserContext();
+    const { userType } = useUserContext();
+    const { userRole } = useUserRoleContext();
 
     const [activeStatus, setActive] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -51,7 +53,7 @@ const FundingCard: React.FC<FundingProp> = ({
                 <p className={styles.title}>{title}</p>
                 <div className={styles.menuContainer} ref={menuRef}>
                     {/* TRIPLE CIRLE ICONS */}
-                    {userType === "admin" && (<div className={`${styles.iconsContainer}`} onClick={toggleActive}>
+                    { userRole === "operations admin" && (<div className={`${styles.iconsContainer}`} onClick={toggleActive}>
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />
                         <CircleDot width={14} height={14} />

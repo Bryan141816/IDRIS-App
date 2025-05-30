@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import './ReponseDashboard.scss'
+import { useUserRoleContext } from '../../UserRoleContext';
 import MapView from '../../components/MapView/MapView';
 import {
     Chart as ChartJS,
@@ -171,13 +172,15 @@ const markers = [
     },
   ];
 const ResponseDashboard = () => {
+    const { userRole } = useUserRoleContext();
+
     return(
         <div id="reponse_container">
             <h3>Reponse Dashboard</h3>
             <div className='sub-items'>
                 <div className='sub-item-info'>
                     <h3>Reports</h3>
-                    <Link to="/response_dashboard/report_list" className='manage-button' >Manage</Link>
+                    { userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button' >Manage</Link> }
                 </div>
                 <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(3, 1fr)'}}>
                     <div className='sub-item-content-big-data'>
@@ -233,7 +236,7 @@ const ResponseDashboard = () => {
                 <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
                     <div className='sub-item-info' style={{gridColumn: 'span 2'}}>
                         <h3>Budget</h3>
-                        <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link>
+                        { userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link>}
                     </div>
                     <div className='sub-item-grid-content' style={{ aspectRatio: '2/1', padding: '15px' }}>
                         <Line data={lineChartData} options={lineChartOptions} />
@@ -248,7 +251,7 @@ const ResponseDashboard = () => {
                 <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
                     <div className='sub-item-info' style={{gridColumn: 'span 2'}}>
                         <h3>In-Kind Monitoring</h3>
-                        <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link>
+                        { userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link> }
                     </div>
                     <div className='sub-item-content-big-data'>
                         <h1>Packs Available</h1>

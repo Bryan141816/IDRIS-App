@@ -1,3 +1,8 @@
+.report-container{
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
 .table-actions{
     display: flex;
     width: 100%;
@@ -22,7 +27,9 @@
 }
 .horizontal-container{
     display: flex;
-    gap: 10px;;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
 }
 .item-details-identifier{
     font-weight: 600;
@@ -37,9 +44,32 @@
     display: flex;
     justify-content: end;
     gap: 5px;
-
     button{
         width: 80px;
         height: 30px;
+    }
+}
+.title-container{
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+.button-title-details{
+    height: 30px;
+    width: 80px;
+}
+.navigator-container{
+    min-width: max-content;
+    white-space: nowrap;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    a{
+        color: black;
+        font-size: 18.72px;
+        font-weight: 700;
+    }
+    h3{
+        min-width: max-content;
     }
 }

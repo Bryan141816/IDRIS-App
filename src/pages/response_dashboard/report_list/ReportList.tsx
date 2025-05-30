@@ -2,7 +2,7 @@ import { TableView, Cell } from "../../../components/TableView/table_view";
 import './ReportList.scss'
 import { Modal } from '../../../components/Page_Furniture/Modals';
 import React, { useState } from 'react';
-
+import { Link } from 'react-router-dom';
 const response_data = {
     table_head: [
         {
@@ -64,10 +64,12 @@ const ReportList = () =>{
     const openModal = () => setIsModalOpen(true);
     const closeModal = () => setIsModalOpen(false);
     return(
-        <div>
+        <div className="report-container">
             <Modal isOpen={isModalOpen} onClose={closeModal}>
-                <div className="modal-container">
-                    
+                <div className="modal-container">          
+                    <div className="horizontal-container">
+                        <span className="details-title">Details</span>
+                    </div>
                     <div className="horizontal-container">
                         <span className="item-details-identifier">Report Type:</span>
                         <span>EOD Report</span>
@@ -86,10 +88,16 @@ const ReportList = () =>{
                     </div>
                 </div>
             </Modal>
-            <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
-                <button>Search</button>
-                <button>+ Add Report</button>
+            <div className="horizontal-container">
+                <div className="navigator-container">
+                    <Link to="/response_dashboard">Response Dashboard</Link>
+                    <h3>/Report List</h3>
+                </div>
+                <div className="table-actions">
+                    <input type="text" placeholder="Search report"></input>
+                    <button>Search</button>
+                    <button>+ Add Report</button>
+                </div>
             </div>
             <TableView tableJSON={response_data} onClickCallback={openModal} ></TableView>
         </div>

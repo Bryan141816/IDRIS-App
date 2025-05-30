@@ -6,6 +6,7 @@ import { PlusCircle, Gift } from "../../../components/Page_Furniture/Icons";
 import './ListOfRAFIDonors.scss';
 import { DonorTable, TableResponse } from "./TableComponent";
 import { useUserContext } from "../../../UserContext";
+import { useUserRoleContext } from "../../../UserRoleContext";
 import Profile1 from '../../donations_management/test_images/profile1.png';
 import Profile2 from '../../donations_management/test_images/profile2.png';
 import Profile3 from '../../donations_management/test_images/profile3.png';
@@ -152,6 +153,7 @@ const tableData: TableResponse = {
 
 const ListOfRAFIDonors = () => {
   const { userType } = useUserContext(); // Define UserType - User or Admin
+  const { userRole } = useUserRoleContext();
 
   const filterItems = ["Ascending", "Descending"];
   const [filtered, setSelectedFilter] = useState<string>("");
@@ -199,23 +201,23 @@ const ListOfRAFIDonors = () => {
         <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
         <FilterBar items={filterItems} value={filtered} onChange={setSelectedFilter} />
 
-        <button // Add Donor Button
+        { userRole == "operations admin" && <button // Add Donor Button
           type="button"
           className={"settings-button" + (userType === "admin" ? "" : " hidden")}
           onClick={() => toggleModal("new-donor")}
         >
           Add Donor
           <PlusCircle width={24} height={24} className="add_donor" />
-        </button>
+        </button> }
 
-        <button // Gift Donor Button
+        {userRole == "operations admin" && <button // Gift Donor Button
           type="button"
           className={"settings-button" + (userType === "admin" ? "" : " hidden")}
           onClick={() => toggleModal("gift-donor")}
         >
           Gift Donor
           <Gift width={24} height={24} />
-        </button>
+        </button>}
       </div>
 
       {/* Table for Donors */}

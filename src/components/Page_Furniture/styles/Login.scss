@@ -95,7 +95,7 @@
   }
 }
 
-#select-userType {
+#select-userType, #select-userRole, #select-adminRole{
   display: flex;
   flex-direction: column;
   justify-items: center;
@@ -111,7 +111,7 @@
     letter-spacing: 2px;
     outline: none;
     border: none;
-    border-radius: 10px;
+    border-radius: 10px; 
   }
 }
 

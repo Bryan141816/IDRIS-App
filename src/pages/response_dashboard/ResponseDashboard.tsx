@@ -7,6 +7,7 @@ import {
     ArcElement,
     Tooltip,
     Legend,
+    plugins,
   } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import {
@@ -32,7 +33,7 @@ ChartJS.register(
   
 
 const data = {
-    labels: ['Cash', 'In-kind', 'Serivices'],
+    labels: ['Cash', 'In-kind', 'Services'],
     datasets: [
       {
         label: 'Modality Distribution',
@@ -176,7 +177,7 @@ const ResponseDashboard = () => {
 
     return(
         <div id="reponse_container">
-            <h3>Reponse Dashboard</h3>
+            <h3>Response Dashboard</h3>
             <div className='sub-items'>
                 <div className='sub-item-info'>
                     <h3>Reports</h3>
@@ -199,10 +200,9 @@ const ResponseDashboard = () => {
             </div>
             <div className='sub-items'>
                 <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(3, 1fr)'}}>
-                    <h3>Reponose Map</h3>
-                    <h3>Demand Map</h3>
+                    <h3 style={{gridColumn: 'span 2'}}>Response and Demand Map</h3>
                     <h3>Modality Distribution</h3>
-                    <div className='sub-item-grid-content' style={{aspectRatio: '1/1'}}>
+                    <div className='sub-item-grid-content' style={{gridColumn: 'span 2'}}>
                         <form action="" className='view-more-container'>
                             <button className='view-more'>View More</button>
                         </form>
@@ -212,21 +212,11 @@ const ResponseDashboard = () => {
                             onMarkerClick={()=>{}}
                             />
                     </div>
-                    <div className='sub-item-grid-content' style={{aspectRatio: '1/1'}}>
+                    <div className='sub-item-grid-content' >
                         <form action="" className='view-more-container'>
                             <button className='view-more'>View More</button>
                         </form>
-                        <MapView
-                            center={[10.313924, 123.887082]}
-                            markers={markers}
-                            onMarkerClick={()=>{}}
-                        />
-                    </div>
-                    <div className='sub-item-grid-content' style={{aspectRatio: '1/1'}}>
-                        <form action="" className='view-more-container'>
-                            <button className='view-more'>View More</button>
-                        </form>
-                        <div style={{display: 'flex', padding: '15px', height: '100%', width: '100%'}}>
+                        <div style={{display: 'flex', padding: '15px', height: '100%', width: '100%',justifyContent: 'center', alignItems:'center'}}>
                             <Doughnut data={data} options={options}/>
                         </div>
                     </div>
@@ -248,29 +238,28 @@ const ResponseDashboard = () => {
                 </div>
             </div>
             <div className='sub-items'>
-                <div className='sub-items-grid' style={{gridTemplateColumns: 'repeat(2, 1fr)'}}>
-                    <div className='sub-item-info' style={{gridColumn: 'span 2'}}>
-                        <h3>In-Kind Monitoring</h3>
-                        { userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link> }
-                    </div>
-                    <div className='sub-item-content-big-data'>
-                        <h1>Packs Available</h1>
-                        <span>5,000</span>
-                    </div>
-                    <div className='sub-item-content-big-data'>
-                        <h1>En Route for Distribution</h1>
-                        <span>2,000</span>
-                    </div>
-                    <div className='sub-item-content-big-data'>
-                        <h1>Total Distributed</h1>
-                        <span>10,000</span>
-                    </div>
-                    <div className='sub-item-content-big-data'>
-                        <h1>Days Left to Complete</h1>
-                        <span>7 Days</span>
-                    </div>
-
+              <div className='sub-items-grid' style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                <div className='sub-item-info' style={{ gridColumn: 'span 2' }}>
+                  <h3>In-Kind Monitoring</h3>
+                  <Link to="/response_dashboard/report_list" className='manage-button'>Manage</Link>
                 </div>
+                <div className='sub-item-content-big-data'>
+                  <h1>Relief Packs Available for Distribution</h1>
+                  <span>5,000</span>
+                </div>
+                <div className='sub-item-content-big-data'>
+                  <h1>Relief Packs Currently in Transit</h1>
+                  <span>2,000</span>
+                </div>
+                <div className='sub-item-content-big-data'>
+                  <h1>Total Relief Packs Already Distributed</h1>
+                  <span>10,000</span>
+                </div>
+                <div className='sub-item-content-big-data'>
+                  <h1>Remaining Days for Distribution Completion</h1>
+                  <span>7 Days</span>
+                </div>
+              </div>
             </div>
         </div>
     );

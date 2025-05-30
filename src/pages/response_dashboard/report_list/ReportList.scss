@@ -1,0 +1,45 @@
+.table-actions{
+    display: flex;
+    width: 100%;
+    justify-content: end;
+    padding: 20px 20px 0px 20px;
+
+    gap: 5px;
+    input{
+        min-width: 100px;
+        max-width: 200px;
+        color: black;
+    }
+    button{
+        background-color: #749AB6;
+        width: max-content;
+        min-width: 80px;
+        padding-left: 10px;
+        padding-right: 10px;
+        border: none;
+        border-radius: 5px;
+    }
+}
+.horizontal-container{
+    display: flex;
+    gap: 10px;;
+}
+.item-details-identifier{
+    font-weight: 600;
+}
+.modal-container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+}
+.action-button{
+    display: flex;
+    justify-content: end;
+    gap: 5px;
+
+    button{
+        width: 80px;
+        height: 30px;
+    }
+}

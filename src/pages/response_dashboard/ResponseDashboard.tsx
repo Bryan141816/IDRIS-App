@@ -193,7 +193,7 @@ const ResponseDashboard = () => {
                         <span>2,000</span>
                     </div>
                     <div className='sub-item-content-big-data'>
-                        <h1>Started Reports</h1>
+                        <h1>Ongoing Reports</h1>
                         <span>3,000</span>
                     </div>
                 </div>

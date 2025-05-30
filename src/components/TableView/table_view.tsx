@@ -20,7 +20,8 @@ export interface Cell {
   }
   
 interface TableCellProps {
-  cell: Cell;
+    cell: Cell;
+    onClickCallback: ()=>void;
 }
 
 export interface TableHead {
@@ -36,8 +37,9 @@ export interface TableReponse {
   table_head: TableHead[];
   table_datas: TableDataRow[];
 }
-interface TableJSON{
+interface TableViewProps{
     tableJSON: TableReponse;
+    onClickCallback: ()=>void;
 }
   
 
@@ -51,19 +53,19 @@ const TableData: React.FC<TableRowProps> = ({children, iSborder}) => {
         <div className="row table-data" style={{borderBottom: iSborder ? '1px solid black' : 'none'}}>{children}</div>
     )
 }
-const TableCell: React.FC<TableCellProps> = ({cell}) => {
+const TableCell: React.FC<TableCellProps> = ({cell, onClickCallback}) => {
     if(cell.type === "Text"){
         return (<span style={{minWidth: cell.width, color: cell.color, fontWeight: cell.font_weight}}>{cell.text}</span>);
     }
     if(cell.type === "Button"){
         return (
             <div style={{minWidth: cell.container_width}} className='button-container'>
-                <button style={{minWidth: cell.button_width, backgroundColor: cell.background_color, color: cell.color}}>{cell.text}</button>
+                <button style={{minWidth: cell.button_width, backgroundColor: cell.background_color, color: cell.color}} onClick={onClickCallback}>{cell.text}</button>
             </div>
         )
     }
 }
-export const TableView: React.FC<TableJSON> = ({tableJSON}) =>{
+export const TableView: React.FC<TableViewProps> = ({tableJSON, onClickCallback}) =>{
     return (
         <div id="table-container">
             <TableHead>
@@ -75,7 +77,7 @@ export const TableView: React.FC<TableJSON> = ({tableJSON}) =>{
                 {tableJSON.table_datas.map((row, rowIndex)=>(
                     <TableData key={rowIndex} iSborder={rowIndex !== tableJSON.table_datas.length - 1}>
                         {row.data.map((cellValue, cellIndex) => (
-                            <TableCell cell={cellValue}></TableCell>
+                            <TableCell cell={cellValue} onClickCallback={onClickCallback}></TableCell>
                         ))}
                     </TableData>
                 ))}

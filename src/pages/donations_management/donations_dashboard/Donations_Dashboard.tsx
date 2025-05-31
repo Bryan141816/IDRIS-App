@@ -94,10 +94,10 @@ const DonationsDashboard = () => {
   return (
     <>
       <div id="dashboard">
-        <h3 className='section-title'>Donations Statistics</h3>
+        <h3 className='public-feed-title'>Donations Statistics</h3>
         <div id="donation-statistic">
           <div id="grid-container">
-            <div className="stat-card large">
+            <div className="donation-stat-card large">
               <p className="title">Overall Donations</p>
               <p className="stat-data">
                 {new Intl.NumberFormat('en-PH', {
@@ -108,11 +108,11 @@ const DonationsDashboard = () => {
               </p>
             </div>
             
-            <div className="stat-card">
+            <div className="donation-stat-card">
               <p className="title">Total Donors</p>
               <p className="stat-data">{statistics.total_donors}</p>
             </div>
-            <div className="stat-card">
+            <div className="donation-stat-card">
               <p className="title">Donor Retention</p>
               <p className="stat-data">{statistics.retention}%</p>
           </div>
@@ -126,7 +126,7 @@ const DonationsDashboard = () => {
           
         </div>
 
-        <h3>Donations Per Site</h3>
+        <h3 className='public-feed-title'>Donations Per Site</h3>
         <div id="donations-pie-chart">
           <PieChart 
             labels={PieChartSample.labels} 
@@ -138,7 +138,7 @@ const DonationsDashboard = () => {
           />
         </div>
 
-        <h3>Donation Record</h3>
+        <h3 className='public-feed-title'>Donation Record</h3>
         <div id="donation-record-container">
           {DonationRecordSample.map((donation, index) => (
             <DonationRecord 
@@ -152,7 +152,7 @@ const DonationsDashboard = () => {
           ))}
         </div>
 
-        <h3>Recent Programs:</h3>
+        <h3 className='public-feed-title'>Recent Programs:</h3>
         <div id="funding-proposals">
           {FundingProposals.map((funding, index) => (
             <FundingCard

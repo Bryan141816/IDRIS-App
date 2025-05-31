@@ -165,11 +165,9 @@
     border: none;
     padding: 4px 12px;
     border-radius: 10px;
-    font-size: 12px;
     cursor: pointer;
     width: 23%;
     height: 25%;
-    font-size: 18px;
   }
 
   .cards-grid {

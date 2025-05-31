@@ -1,27 +1,40 @@
 import styles from './styles/filter.module.scss';
 
 type FilterProp = {
-    items?: string[];
-    value?: string;
-    onChange: (value: string) => void;
-}
+  items?: string[];
+  value?: string;
+  onChange: (value: string) => void;
+  width?: string;  // e.g., "100%", "200px"
+  height?: string; // e.g., "40px"
+};
 
-const FilterBar: React.FC<FilterProp> = ({ items = [], value, onChange }) => {
-return (
-    <div className={styles.filterContainer}>
-        <select
+const FilterBar: React.FC<FilterProp> = ({
+  items = [],
+  value,
+  onChange,
+  width = '100%',
+  height = '100%',
+}) => {
+  return (
+    <div
+      className={styles.filterContainer}
+      style={{ width, height }}
+    >
+      <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={styles.filterSelect}
-        >
-        <option value="">Default</option> {/* Default "empty" option */}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <option value="">Default</option>
         {items.map((item, index) => (
-            <option key={index} value={item}>
+          <option key={index} value={item}>
             {item}
-            </option>
+          </option>
         ))}
-        </select>
+      </select>
     </div>
-    );}
+  );
+};
 
-export default FilterBar
+export default FilterBar;

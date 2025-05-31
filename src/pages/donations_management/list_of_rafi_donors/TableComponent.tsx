@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './TableComponent.module.scss';
+import styles from './TableComponents1.module.scss';
 
 import Rank1 from '../test_images/rank1.png';
 import Rank2 from '../test_images/rank2.png';

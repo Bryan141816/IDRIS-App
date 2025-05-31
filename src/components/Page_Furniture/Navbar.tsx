@@ -26,7 +26,7 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
         onClose();
       }
     };
-    
+
     if(isVisible){
       document.addEventListener('mousedown', handleClickOutside);
     }
@@ -35,7 +35,7 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isVisible, onClose]);
-  
+
 
   return (
     <nav ref={sidebarRef} className={`navbar ${isVisible ? "show-navbar" : ""}`}>
@@ -55,6 +55,10 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           <div className={`nav-sub-items ${activeNav === 'lgu' ? 'active' : ''}`}>
             {/* Sub items here */}
             <Link to="/lgu_profiling/map_of_cebu" className='nav-sub-item' onClick={() => {onClose()}}>Map of Cebu</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'lgu' ? 'active' : ''}`}>
+            {/* Sub items here */}
+            <Link to="/lgu_profiling/evacuationandshelter" className='nav-sub-item' onClick={() => {onClose()}}>Evacuation and Shelter Management</Link>
           </div>
         </div>
 
@@ -118,20 +122,26 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
         <div className="nav-items" id="procurement-inventory">
           <div className={`flex-control ${activeNav === 'procurement' ? 'active' : ''}`} onClick={() => { toggleNav('procurement')}}>
             <Response width={14} height={14} className='sidebar-icons' />
-            <Link to="/procurement_inventory" onClick={() => {onClose()}}>PROCUREMENT & INVENTORY</Link>
+            <a href="#" >PROCUREMENT & INVENTORY</a>
           </div>
           <div className={`nav-sub-items ${activeNav === 'procurement' ? 'active' : ''}`}>
-            {/* Sub items here */}
+            <Link to="/procurement_inventory/procurement_inventory" className='nav-sub-item' onClick={() => {onClose()}}>Inventory and Warehousing</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'procurement' ? 'active' : ''}`}>
+            <Link to="/procurement_inventory/procurement_management" className='nav-sub-item' onClick={() => {onClose()}}>Procurement Management</Link>
+          </div>
+          <div className={`nav-sub-items ${activeNav === 'procurement' ? 'active' : ''}`}>
+            <Link to="/procurement_inventory/distribution_planning" className='nav-sub-item' onClick={() => {onClose()}}>Distribution Planning & Monitoring</Link>
           </div>
         </div>
 
         <div className="nav-items" id="finance-admin">
           <div className={`flex-control ${activeNav === 'finance' ? 'active' : ''}`} onClick={() => { toggleNav('finance')}}>
             <Response width={14} height={14} className='sidebar-icons' />
-            <Link to="/finance&admin" onClick={() => {onClose()}}>FINANCE & ADMIN</Link>
+            <a href="#" >FINANCE & ADMIN</a>
           </div>
           <div className={`nav-sub-items ${activeNav === 'finance' ? 'active' : ''}`}>
-            {/* Sub items here */}
+            <Link to="/finance&admin/finance_management" className='nav-sub-item' onClick={() => {onClose()}}>Finance Management</Link>
           </div>
         </div>
       </div>

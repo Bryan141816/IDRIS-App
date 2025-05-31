@@ -18,9 +18,11 @@
     height: 100%;
     justify-content: center;
     flex-direction: column;
-    background-color: #1890FF;
+    background: linear-gradient(135deg, #fcb814 0%, #e6a612 100%);
     padding: 20px;
     border-radius: 10px;
+    box-shadow: 0 1px 10px rgba(50, 50, 50, 0.4);
+
     h1{
         color: white;
         font-size: 30px;
@@ -40,6 +42,7 @@
     padding: 10px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 10px rgba(50, 50, 50, 0.35);
 
 }
 .horizontal-container{
@@ -55,10 +58,20 @@
     border-radius: 10px;
 }
 .manage-button{
-    background-color: #1890FF;
+    background: linear-gradient(135deg, #fcb814 0%, #e6a612 100%);
     color: white;
     padding: 5px 15px;
     border-radius: 5px;
+    transform: translateY(0px);
+    transition: transform 0.1s ease-in;
+    
+    svg{
+        margin-right: 5px;
+    }
+}
+.manage-button:hover{
+    color: white !important;
+    transform: translateY(-2px);
 }
 .sub-item-content-big-data-inverted{
 
@@ -70,13 +83,23 @@
     padding: 20px;
     border-radius: 10px;
     border: 1px solid #a7a7a7;
+    box-shadow: 0 1px 10px rgba(50, 50, 50, 0.35);
     h1{
-        color: #1890FF;
+        color: #fcb814;
         font-size: 30px;
     }
     span{
-        color: #1890FF;
+        color: #fcb814;
         font-size: 40px;
         font-weight: 600;
     }
+}
+.full-width{
+    width: 100%;
+}
+.comparizon-value{
+    font-size: 20px !important;
+}
+.comparizon-container{
+    align-items: end !important;
 }

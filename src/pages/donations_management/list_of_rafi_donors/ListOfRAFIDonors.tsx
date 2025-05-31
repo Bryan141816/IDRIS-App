@@ -198,7 +198,7 @@ const ListOfRAFIDonors = () => {
       <h3>LIST OF RAFI DONORS</h3>
 
       <div id="settings-container">
-        <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
+        <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} width="100%" height="100%" />
         <FilterBar items={filterItems} value={filtered} onChange={setSelectedFilter} />
 
         { userRole == "operations admin" && <button // Add Donor Button

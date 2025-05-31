@@ -1,6 +1,15 @@
 @use '../../../styles/variables' as *;
 @import url('https://fonts.googleapis.com/css2?family=REM:wght@200;400;600;700&display=swap');
 
+.section-title{
+  color: #749ab6;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
 
 #dashboard {
   display: flex;

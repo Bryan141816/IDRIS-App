@@ -1,197 +1,234 @@
 @use '../../../styles/variables' as *;
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
 
-.fundingCard{
-    background-color: #fff;
-    width: 90%;
-    // max-height: 340px;
-    border: 1px solid #000;
-    border-radius: 10px;
-    padding: 8px;
-    font-family: 'Inter', sans-serif;
+.fundingCard {
+  color: #749ab6;
+  background-color: #fff;
+  width: 90%;
+  // max-height: 340px;
+  border: 1px solid #c5d7e5;
+  border-radius: 10px;
+  // padding: 8px;
+  font-family: 'Inter', sans-serif;
 }
 
-.fundingHead{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 10px;
-    padding-bottom: 8px;
-    min-height: 46.4px;
+.fundingHead {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  min-height: 46.4px;
+  background: linear-gradient(135deg, #e8f0f7 0%, #f8fafc 100%);
+  border-radius: (20px - 10px - 1px);
 
-    p{
-        display: -webkit-box;
-        -webkit-line-clamp: 2; // number of lines you want
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
+  p.title {
+    color: #749ab6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; // number of lines you want
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
-        font-size: 16px;
-        font-weight: bold;
-    }
+    font-size: 16px;
+    font-weight: bold;
+  }
 }
 
 .menuContainer {
-    // background-color: aqua;
-    position: relative;
+  // background-color: aqua;
+  position: relative;
 
-    .iconsContainer{
-        display: flex; 
-        flex-direction: row;
-        align-items: center;
-
-        svg{
-            color: $steel-blue;
-        }
-    }
-
-    .menuItems {
-        position: absolute;
-        display: none;
-        gap: 0;
-
-        &.active{
-            display: block;
-        }
-
-        button{
-            background-color: #fff;
-            color: #000;
-            border: none;
-            width: 100%;
-            height: auto;
-            padding: 8px;
-            text-align: left;
-
-            &:hover{
-                background-color: $steel-blue;
-                color: #fff;
-            }
-        }
-    }
-}
-
-.fundingBody{
+  .iconsContainer {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    padding: 8px 0;
-    gap: 8px;
-    height: 204px;
+    align-items: center;
 
-    .description {
-        // background-color: aqua;
-        font-size: 16px !important;
-        line-height: 1.2; 
-        height: auto;
-        flex: 1;
-        display: -webkit-box;
-        -webkit-line-clamp: 10;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    svg {
+      color: $steel-blue;
+    }
+  }
+
+  .menuItems {
+    position: absolute;
+    display: none;
+    gap: 0;
+
+    &.active {
+      display: block;
     }
 
-    .image{
-        object-fit: cover;
-        height: 100%;
-        width: 45%;
-    }
-}
+    button {
+      background-color: #fff;
+      color: #000;
+      border: none;
+      width: 100%;
+      height: auto;
+      padding: 8px;
+      text-align: left;
 
-.fundingFooter{
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 8px 0;
-
-    .progressContainer{
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        width: 50%;
-    }
-
-    p{
-        font-size: 8px;
-        text-align: center;
-    }
-
-    .donateButton{
-        width: 45%;
-        background-color: $primary-color;
+      &:hover {
+        background-color: $steel-blue;
         color: #fff;
-        border: 2px solid rgba(0, 0, 0, 0.34);
-        border-radius: 10px;
+      }
     }
+  }
+}
+
+.fundingBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px;
+  gap: 8px;
+  height: auto;
+
+  .description {
+    // background-color: aqua;
+    font-size: 16px !important;
+    line-height: 1.2;
+    height: auto;
+    min-height: calc(1.2em * 7.2); // Assuming line-height is 1.2em, this calculates the height for 7 lines of text
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .image {
+    object-fit: cover;
+    border-radius: 10px;
+    height: auto;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow-y: hidden;
+  }
+}
+
+.fundingFooter {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top: 1px solid #c5d7e5;
+
+
+  .progressContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+  }
+
+  .progress {
+    .circleDot {
+      color: $saffron-yellow;
+    }
+  }
+
+  p {
+    padding: 10px;
+    font-size: 1rem;
+    text-align: center;
+  }
+
+  .percentage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 1.5em;
+    padding: 6px 12px;
+    margin-right: 4px;
+    background-color: $ice-blue;
+    border: 2px solid #c5d7e5;
+    border-radius: 20px;
+    color: #fcb814;
+    font-weight: 800;
+
+  }
+
+  .donateButton {
+    width: auto;
+    margin: 0 10px;
+    background-color: $primary-color;
+    color: #fff;
+    border: 2px solid rgba(0, 0, 0, 0.34);
+    border-radius: 10px;
+  }
+
+
 }
 
 @media screen and (max-width: 720px) {
-    .fundingCard{
-        width: 100%;
+  .fundingCard {
+    width: 100%;
+  }
+
+  .fundingHead {
+    padding: 0;
+    gap: 2px;
+    min-height: 0;
+
+    p {
+      font-size: 12px;
+    }
+  }
+
+  .menuContainer {
+    .iconsContainer {
+      svg {
+        width: 5px;
+        height: 5px;
+      }
+
+      &.hidden {
+        display: none;
+      }
+    }
+  }
+
+  .fundingBody {
+    flex-direction: column-reverse;
+    height: fit-content;
+
+
+    .image {
+      width: 100%;
     }
 
-    .fundingHead{
-        padding: 0;
-        gap: 2px;
-        min-height: 0;
-        p{
-            font-size: 12px;
-        }
+    .description {
+      // line-height: 1.2; 
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .menuContainer{
-        .iconsContainer{
-            svg{
-                width: 5px;
-                height: 5px;
-            }
+  }
 
-            &.hidden{
-                display: none;
-            }    
-        }
+  .fundingFooter {
+    flex-direction: column;
+
+    .progressContainer {
+      width: 100%;
+
+      .progress {
+        text-align: start;
+      }
+
+      .percentage {
+        width: fit-content;
+      }
     }
 
-    .fundingBody{
-        flex-direction: column-reverse;
-        height: fit-content;
-
-
-        .image{
-            width: 100%;
-        }
-
-        .description {
-            // line-height: 1.2; 
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    
+    .donateButton {
+      width: 100%;
     }
 
-    .fundingFooter{
-        flex-direction: column;
-
-        .progressContainer{
-            width: 100%;
-
-            .progress{
-                text-align: start;
-            }
-
-            .percentage{
-                width: fit-content;
-            }
-        }
-
-        .donateButton{
-            width: 100%;
-        }
-    
-    }
+  }
 
 }

@@ -15,16 +15,16 @@ const dummyFundingProposals = [
     {
         id: 1,
         title: " Flood-Affected Rural Districts",
-        image: rescue1,        
-        description: "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities. The project will provide emergency food parcels, clean drinking water through mobile purification units, and essential farming inputs to help over 3,000 affected" + 
-        "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities. The project will provide emergency food parcels, clean drinking water through mobile purification units, and essential farming inputs to help over 3,000 affected ... Read more",
+        image: rescue1,
+        description: "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities. The project will provide emergency food parcels, clean drinking water through mobile purification units, and essential farming inputs to help over 3,000 affected" +
+            "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities. The project will provide emergency food parcels, clean drinking water through mobile purification units, and essential farming inputs to help over 3,000 affected ... Read more",
         donated: 45000,
         target: 100000,
     },
     {
         id: 2,
         title: "Rapid Emergency Relief and Recovery for Flood-Affected Communities in Cebu City",
-        image: rescue2,    
+        image: rescue2,
         description: "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities.",
         donated: 120000,
         target: 200000,
@@ -64,20 +64,25 @@ const dummyFundingProposals = [
 ];
 
 
-const FundingProposals = () =>{
+const FundingProposals = () => {
     const [searched, searchState] = useState("");
     const [selectedFilter, setSelectedFilter] = useState<string>("");
 
-    return(
+    return (
         <div id="funding">
-            <h2>Funding Proposals</h2>
-            <div className="page-settings-container">
-                <SearchBar placeholder='Search' value={searched} onChange={searchState} />
-                <FilterBar items={["Ascending", "Descending"]} value={selectedFilter} onChange={setSelectedFilter} />
+            <h3 className="public-feed-title">Funding Proposals</h3>
+            <div id="settings-container">
+                <div id="searchBarContainer">
+                    <SearchBar placeholder='Search' value={searched} onChange={searchState} width='100%' height='100%' />
+                </div>
+                <div id="filterBarContainer">
+                    <FilterBar className='filterBar' items={["Ascending", "Descending"]} value={selectedFilter} onChange={setSelectedFilter} width='100%' height='100%' />
+                </div>
             </div>
+
             <div id="funding-body">
                 {dummyFundingProposals.map((item, index) => (
-                    <FundingCard 
+                    <FundingCard
                         key={index}
                         id={item.id}
                         title={item.title}

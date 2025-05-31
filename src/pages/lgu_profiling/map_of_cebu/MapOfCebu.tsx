@@ -135,7 +135,7 @@ const MapOfCebu = () => {
     <span className="legend-color" style={{ backgroundColor: 'red' }}></span> Barangay
   </div>
   <div className="legend-item">
-    <span className="legend-color" style={{ backgroundColor: 'yellow' }}></span> RAFI Infrastructure
+    <span className="legend-color" style={{ backgroundColor: 'yellow' }}></span> RAFFI Infrastructure
   </div>
 </div>
 

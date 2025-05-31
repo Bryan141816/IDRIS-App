@@ -6,6 +6,7 @@ type FilterProp = {
   onChange: (value: string) => void;
   width?: string;  // e.g., "100%", "200px"
   height?: string; // e.g., "40px"
+  className?: string;
 };
 
 const FilterBar: React.FC<FilterProp> = ({
@@ -14,6 +15,7 @@ const FilterBar: React.FC<FilterProp> = ({
   onChange,
   width = '100%',
   height = '100%',
+  className = "",
 }) => {
   return (
     <div

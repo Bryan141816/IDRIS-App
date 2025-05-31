@@ -262,16 +262,6 @@ const ResponseDashboard = () => {
             {userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button'><FontAwesomeIcon icon={faListUl} /> Manage</Link>}
           </div>
           <div style={{ gridRow: 'span 4', overflow: 'hidden', boxShadow: '0 1px 10px rgba(50, 50, 50, 0.35)', position: 'relative' }} className='bordered-sub-item'>
-            <div className='map-legend-container-mini bordered-sub-item'>
-              <div className='map-legend-mini'>
-                <div style={{backgroundColor: '#44EB6E'}}></div>
-                <span>Demands</span>
-              </div>
-              <div className='map-legend-mini'>
-                <div style={{backgroundColor: '#4468EB'}}></div>
-                <span>Response</span>
-              </div>
-            </div>
             <MapView
               center={[10.313924, 123.887082]}
               markers={markers}

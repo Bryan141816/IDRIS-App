@@ -241,7 +241,7 @@ const ResponseDashboard = () => {
             </div>
           </div>
           <div className='sub-item-content-big-data'>
-            <h1>Started Reports</h1>
+            <h1>Ongoing Reports</h1>
             <div className='horizontal-container full-width space-between-container comparizon-container'>
               <span>2,000</span>
               <span className='comparizon-value'>+10% vs Last Month</span>

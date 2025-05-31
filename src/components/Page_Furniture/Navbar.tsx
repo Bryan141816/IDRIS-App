@@ -1,6 +1,8 @@
 import './styles/Navbar.scss';
 import logo1 from "../../media/logo1.png";
 import {Volunteer , LGU, Response, Donations} from './Icons';
+import { useUserContext } from '../../UserContext';
+import { useUserRoleContext } from '../../UserRoleContext';
 import {useState, useRef, useEffect} from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +12,9 @@ interface NavbarProps {
 }
 
 const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
+  const { userType } = useUserContext();
+  const { userRole } = useUserRoleContext();
+
   // FOR NAVIGATION BAR ACTIVE PAGE
   const [activeNav, setActiveNav] = useState<string | null>(null);
 
@@ -50,7 +55,8 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
       <div className="nav-items" id="lgu-profiling" >
           <div className={`flex-control ${activeNav === 'lgu' ? 'active' : ''}`} onClick={() => { toggleNav('lgu')}}>
             <LGU width={14} height={14} className='sidebar-icons' />
-            <a href="#" >LGU PROFILING</a>
+            { userType == "admin" && <a href="#" >LGU PROFILING</a> }
+            { userType == "user" && <a href="#" >LOCAL GOVERNMENT UNIT</a> }
           </div>
           <div className={`nav-sub-items ${activeNav === 'lgu' ? 'active' : ''}`}>
             {/* Sub items here */}
@@ -65,13 +71,16 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
         <div className="nav-items" id="lgu-profiling">
           <div className={`flex-control ${activeNav === 'volunteer' ? 'active' : ''}`} onClick={() => { toggleNav('volunteer')}}>
             <Volunteer width={14} height={14} className='sidebar-icons' />
-            <a href="#">VOLUNTEER MANAGEMENT</a>
+            {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
+            { userType != "" &&  userRole != "operations admin" && <a href="#">VOLUNTEER</a> } 
+            { userType != "" &&  userRole === "operations admin" && <a href="#">VOLUNTEER MANAGEMENT</a> }
+
           </div>
           <div className={`nav-sub-items ${activeNav === 'volunteer' ? 'active' : ''}`}>
             {/* Sub items here */}
             <Link to="/volunteer_management/volunteer_dashboard" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Dashboard</Link>
-            <Link to="/volunteer_management/track_volunteer_application" className='nav-sub-item' onClick={() => {onClose()}}>Track Volunteer Application</Link>
-            <Link to="/volunteer_management/volunteer_profiles" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Profiles</Link>
+            { userRole == "operations admin" || userRole == "volunteer" && <Link to="/volunteer_management/track_volunteer_application" className='nav-sub-item' onClick={() => {onClose()}}>Track Volunteer Application</Link> }
+            { userRole == "operations admin" && <Link to="/volunteer_management/volunteer_profiles" className='nav-sub-item' onClick={() => {onClose()}}>Volunteer Profiles</Link> }
           </div>
         </div>
 
@@ -79,7 +88,8 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
         <div className="nav-items" id="lgu-profiling" >
           <div className={`flex-control ${activeNav === 'donations' ? 'active' : ''}`} onClick={() => { toggleNav('donations')}}>
             <Donations width={14} height={14} className='sidebar-icons' />
-            <a href="#">DONATIONS MANAGEMENT</a>
+            {userRole === "operations admin" && userType == "admin" && <a href="#">DONATIONS MANAGEMENT</a>}
+            {userRole != "operations admin" && <a href="#">DONATIONS</a>}
           </div>
           <div className={`nav-sub-items ${activeNav === 'donations' ? 'active' : ''}`}>
             {/* Sub items here */}
@@ -99,7 +109,7 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           </div>
         </div>
 
-        <div className="nav-items" id="reports-generation">
+        { userRole === "logistics admin" && userType == "admin" && <div className="nav-items" id="reports-generation">
           <div className={`flex-control ${activeNav === 'reports' ? 'active' : ''}`} onClick={() => { toggleNav('reports')}}>
             <Response width={14} height={14} className='sidebar-icons' />
             <Link to="/reports_generation" onClick={() => {onClose()}}>REPORTS GENERATION</Link>
@@ -107,9 +117,9 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           <div className={`nav-sub-items ${activeNav === 'reports' ? 'active' : ''}`}>
             {/* Sub items here */}
           </div>
-        </div>
+        </div> }
 
-        <div className="nav-items" id="damage-assessment">
+        {  userRole == "disaster response admin" && userType == "admin" && <div className="nav-items" id="damage-assessment">
           <div className={`flex-control ${activeNav === 'damage' ? 'active' : ''}`} onClick={() => { toggleNav('damage')}}>
             <Response width={14} height={14} className='sidebar-icons' />
             <Link to="/damage_assessment" onClick={() => {onClose()}}>DAMAGE ASSESSMENT</Link>
@@ -117,9 +127,9 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           <div className={`nav-sub-items ${activeNav === 'damage' ? 'active' : ''}`}>
             {/* Sub items here */}
           </div>
-        </div>
+        </div> }
 
-        <div className="nav-items" id="procurement-inventory">
+        { userRole == "logistics admin" && userType == "admin" && <div className="nav-items" id="procurement-inventory">
           <div className={`flex-control ${activeNav === 'procurement' ? 'active' : ''}`} onClick={() => { toggleNav('procurement')}}>
             <Response width={14} height={14} className='sidebar-icons' />
             <a href="#" >PROCUREMENT & INVENTORY</a>
@@ -133,9 +143,9 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           <div className={`nav-sub-items ${activeNav === 'procurement' ? 'active' : ''}`}>
             <Link to="/procurement_inventory/distribution_planning" className='nav-sub-item' onClick={() => {onClose()}}>Distribution Planning & Monitoring</Link>
           </div>
-        </div>
+        </div> }
 
-        <div className="nav-items" id="finance-admin">
+        { userRole == "logistics admin" &&  userType == "admin" && <div className="nav-items" id="finance-admin">
           <div className={`flex-control ${activeNav === 'finance' ? 'active' : ''}`} onClick={() => { toggleNav('finance')}}>
             <Response width={14} height={14} className='sidebar-icons' />
             <a href="#" >FINANCE & ADMIN</a>
@@ -143,8 +153,8 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
           <div className={`nav-sub-items ${activeNav === 'finance' ? 'active' : ''}`}>
             <Link to="/finance&admin/finance_management" className='nav-sub-item' onClick={() => {onClose()}}>Finance Management</Link>
           </div>
-        </div>
-      </div>
+        </div> }
+      </div> 
 
     </nav>
 

@@ -1,0 +1,470 @@
+@use '../../../styles/variables' as *;
+
+// Table Container
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
+  border: 1px solid #c5d7e5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+  }
+}
+
+// Table Head
+.tableHead {
+  background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
+  position: relative;
+
+  // Add subtle pattern overlay
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(252, 184, 20, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(197, 215, 229, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  th {
+    padding: 1.25rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: relative;
+    z-index: 1;
+    border-bottom: 2px solid #5a7a8f;
+
+    &:first-child {
+      padding-left: 1.5rem;
+      border-top-left-radius: 12px;
+    }
+
+    &:last-child {
+      padding-right: 1.5rem;
+      border-top-right-radius: 12px;
+    }
+
+    // Add subtle dividers between headers
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 25%;
+      bottom: 25%;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      padding: 1rem 0.75rem;
+      font-size: 0.8rem;
+
+      &:first-child {
+        padding-left: 1rem;
+      }
+
+      &:last-child {
+        padding-right: 1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
+
+      &:first-child {
+        padding-left: 0.75rem;
+      }
+
+      &:last-child {
+        padding-right: 0.75rem;
+      }
+    }
+  }
+}
+
+// Table Body
+.tableBody {
+  background: #ffffff;
+
+  .tableRow {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #c5d7e5;
+
+    &:hover {
+      background: linear-gradient(135deg, #e8f0f7 0%, #f8fafc 100%);
+      transform: translateX(2px);
+      box-shadow: inset 4px 0 0 #fcb814;
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    // Alternating row colors for better readability
+    &:nth-child(even) {
+      background: rgba(197, 215, 229, 0.05);
+
+      &:hover {
+        background: linear-gradient(135deg, #e8f0f7 0%, #f8fafc 100%);
+      }
+    }
+
+    @media (max-width: 768px) {
+      &:hover {
+        transform: none;
+        box-shadow: none;
+        background: #e8f0f7;
+      }
+    }
+  }
+}
+
+// Table Cells
+.rankCell {
+  padding: 1rem;
+  color: #749ab6;
+  font-weight: 500;
+  vertical-align: middle;
+  position: relative;
+
+  &:first-child {
+    padding-left: 1.5rem;
+  }
+
+  &:last-child {
+    padding-right: 1.5rem;
+  }
+
+  // Rank cell specific styling
+  &:first-child {
+    font-weight: 700;
+    color: #fcb814;
+    text-align: center;
+    width: 60px;
+
+    @media (max-width: 768px) {
+      width: 50px;
+    }
+
+    @media (max-width: 480px) {
+      width: 40px;
+    }
+  }
+
+  // Avatar cell styling
+  img {
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(116, 154, 182, 0.2);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.75rem;
+
+    &:first-child {
+      padding-left: 1rem;
+    }
+
+    &:last-child {
+      padding-right: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+
+    &:first-child {
+      padding-left: 0.75rem;
+    }
+
+    &:last-child {
+      padding-right: 0.75rem;
+    }
+  }
+}
+
+// Rank Icon for non-top-3 ranks
+.rankIcon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 2px 6px rgba(116, 154, 182, 0.2);
+  transition: all 0.3s ease;
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(116, 154, 182, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    width: 28px;
+    height: 28px;
+  }
+
+  @media (max-width: 480px) {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.rankNumber {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin: 0;
+
+  @media (max-width: 768px) {
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+  }
+}
+
+// Date Cell Specific Styling
+.dateCell {
+  color: #749ab6;
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.9;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+// Top 3 Rank Images
+.table tbody .tableRow:nth-child(1) .rankCell:first-child {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+  border-radius: 8px;
+}
+
+.table tbody .tableRow:nth-child(2) .rankCell:first-child {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.1) 0%, rgba(192, 192, 192, 0.05) 100%);
+  border-radius: 8px;
+}
+
+.table tbody .tableRow:nth-child(3) .rankCell:first-child {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.1) 0%, rgba(205, 127, 50, 0.05) 100%);
+  border-radius: 8px;
+}
+
+// Top 3 rank image styling
+.table tbody .tableRow:nth-child(-n+3) .rankCell:first-child img {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.2) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  }
+}
+
+// Name cell styling (assuming it's the 3rd column)
+.table tbody .tableRow .rankCell:nth-child(3) {
+  font-weight: 600;
+  color: #749ab6;
+  font-size: 1.05rem;
+
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
+  }
+}
+
+// Donation amount styling (assuming it's the 4th column)
+.table tbody .tableRow .rankCell:nth-child(4) {
+  font-weight: 700;
+  color: #fcb814;
+  font-size: 1.1rem;
+
+  // Add dollar sign styling
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background: #fcb814;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
+}
+
+// Loading state
+.table.loading {
+  opacity: 0.7;
+  pointer-events: none;
+
+  .tableBody .tableRow {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+}
+
+// Empty state
+.emptyState {
+  padding: 3rem;
+  text-align: center;
+  color: #749ab6;
+  opacity: 0.7;
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Table entrance animation
+.table {
+  animation: fadeIn 0.6s ease-out;
+}
+
+// Responsive scrolling for mobile
+@media (max-width: 768px) {
+  .tableWrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    .table {
+      min-width: 600px;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .table {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+
+  .tableHead {
+    background: #749ab6 !important;
+    -webkit-print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  .tableBody .tableRow {
+    &:hover {
+      background: transparent !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+// High contrast mode
+@media (prefers-contrast: high) {
+  .table {
+    border: 2px solid #000;
+  }
+
+  .tableHead {
+    background: #000 !important;
+    color: #fff !important;
+  }
+
+  .rankCell {
+    border: 1px solid #ccc;
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .table,
+  .tableBody .tableRow,
+  .rankIcon,
+  .rankCell img {
+    animation: none !important;
+    transition: none !important;
+
+    &:hover {
+      transform: none !important;
+    }
+  }
+}
+
+// Focus management for accessibility
+.table {
+  &:focus {
+    outline: 2px solid #fcb814;
+    outline-offset: 2px;
+  }
+}
+
+// Screen reader support
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+

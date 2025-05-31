@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation , Navigate } from '
 import './styles/App.scss';
 import ProtectedRoute from './ProtectedRoute';
 import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
+import EvacuationAndShelter from './pages/lgu_profiling/evacuationandshelter/manage_evacuation_and_shelter';
 import LGU from './pages/lgu_profiling/map_of_cebu/lgu';
 import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
 import TrackVolunteerApplication from './pages/volunteer_management/track_volunteer_application/TrackVolunteerApplication';
@@ -24,8 +25,10 @@ import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
 import ReportList from './pages/response_dashboard/report_list/ReportList';
 import ReportsGeneration from './pages/reports_generation/reports_generation';
 import DamageAssessment from './pages/damage_assessment/damage_assessment';
-import ProcurementInventory from './pages/procurement_inventory/procurement_inventory';
-import FinanceAdmin from './pages/finance&admin/finance_admin';
+import ProcurementInventory from './pages/procurement_inventory/procurement_inventory/procurement_inventory';
+import DistributionPlanning from './pages/procurement_inventory/distribution_planning/distribution_planning_and_monitoring';
+import ProcurementManagement from './pages/procurement_inventory/procurement_management/procurement_management';
+import FinanceManagement from './pages/finance&admin/finance_management/finance_management';
 import Login from './components/Page_Furniture/Login';
 import Navbar from './components/Page_Furniture/Navbar';
 import Page from './components/Pages/Pages';
@@ -59,7 +62,7 @@ function AppRoutes() {
     setIsNavbarVisible(prev => !prev);
   }
 
-  const shouldHideUI = !userRole || userRole === ""; // (!userType || userType === "") &&   
+  const shouldHideUI = !userRole || userRole === ""; // (!userType || userType === "") &&
 
   const closeSidebar = () => setIsNavbarVisible(false);
   return (
@@ -79,6 +82,11 @@ function AppRoutes() {
               <Route path='/lgu_profiling/map_of_cebu' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | Map of Cebu'><MapOfCebu /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/lgu_profiling/evacuationandshelter' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Evacuation and Shelter Management'><EvacuationAndShelter /></Page>
                 </ProtectedRoute>
               } />
               <Route path='/lgu_profiling/LGU' element={
@@ -176,14 +184,24 @@ function AppRoutes() {
                   <Page title='IDRIS | Damage Assessment'><DamageAssessment /></Page>
                 </ProtectedRoute>
               } />
-              <Route path='/procurement_inventory' element={
+              <Route path='/procurement_inventory/procurement_inventory' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | Procurement Inventory'><ProcurementInventory /></Page>
                 </ProtectedRoute>
               } />
-              { userRole == "logistics admin" && <Route path='/finance&admin' element={
+              <Route path='/procurement_inventory/distribution_planning' element={
                 <ProtectedRoute>
-                  <Page title='IDRIS | Finance and Admin'><FinanceAdmin /></Page>
+                  <Page title='IDRIS | Distribution Planning'><DistributionPlanning /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/procurement_inventory/procurement_management' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Procurement Management'><ProcurementManagement /></Page>
+                </ProtectedRoute>
+              } />
+              { userRole == "logistics admin" && <Route path='/finance&admin/finance_management' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Finance Management'><FinanceManagement /></Page>
                 </ProtectedRoute>
               } />}
             {/* Add more routes as needed */}

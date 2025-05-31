@@ -94,7 +94,7 @@ const MapOfCebu = () => {
       resources: "Food packs, water, and beds",
       evacuationCenter: "Simulated Covered Court",
       image: "../images/icons/sample.png",
-      
+
       hazardAreas: [],
     };
 

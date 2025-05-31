@@ -94,7 +94,7 @@ const DonationsDashboard = () => {
   return (
     <>
       <div id="dashboard">
-        <h3>Donations Statistics</h3>
+        <h3 className='section-title'>Donations Statistics</h3>
         <div id="donation-statistic">
           <div id="grid-container">
             <div className="stat-card large">

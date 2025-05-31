@@ -53,28 +53,28 @@ const response_data = {
       data: [
         { type: "Text", font_weight: 500, color: "#000", text: "March 20, 2025", width: "150px" } as Cell,
         { type: "Text", font_weight: 500, color: "#000", text: "EOD Report", width: "250px" } as Cell,
-        { type: "Text", font_weight: 700, color: "#22A900", text: "Completed", width: "150px" } as Cell,
+        { type: "Text", font_weight: 700, color: "#44EB6E", text: "Completed", width: "150px" } as Cell,
       ]
     },
     {
       data: [
         { type: "Text", font_weight: 500, color: "#000", text: "March 20, 2025", width: "150px" } as Cell,
         { type: "Text", font_weight: 500, color: "#000", text: "EOD Report", width: "250px" } as Cell,
-        { type: "Text", font_weight: 700, color: "#22A900", text: "Completed", width: "150px" } as Cell,
+        { type: "Text", font_weight: 700, color: "#44EB6E", text: "Completed", width: "150px" } as Cell,
       ]
     },
     {
       data: [
         { type: "Text", font_weight: 500, color: "#000", text: "March 20, 2025", width: "150px" } as Cell,
         { type: "Text", font_weight: 500, color: "#000", text: "EOD Report", width: "250px" } as Cell,
-        { type: "Text", font_weight: 700, color: "#22A900", text: "Completed", width: "150px" } as Cell,
+        { type: "Text", font_weight: 700, color: "#44EB6E", text: "Completed", width: "150px" } as Cell,
       ]
     },
     {
       data: [
         { type: "Text", font_weight: 500, color: "#000", text: "March 20, 2025", width: "150px" } as Cell,
         { type: "Text", font_weight: 500, color: "#000", text: "EOD Report", width: "250px" } as Cell,
-        { type: "Text", font_weight: 700, color: "#22A900", text: "Completed", width: "150px" } as Cell,
+        { type: "Text", font_weight: 700, color: "#44EB6E", text: "Completed", width: "150px" } as Cell,
       ]
     },
   ]
@@ -85,7 +85,7 @@ const data = {
     {
       label: 'Modality Distribution',
       data: [12, 19, 3],
-      backgroundColor: ['#3DE72E', '#3CC3DF', '#FF928A'],
+      backgroundColor: ['#44EB6E', '#4468EB', '#EB4D44'],
       borderWidth: 1,
     },
   ],
@@ -136,7 +136,7 @@ const barChartData = {
     {
       label: '',
       data: [120, 150, 80, 100],
-      backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
+      backgroundColor: ['#44EB6E', '#4468EB', '#EB4D44','#fcb814'],
       borderRadius: 5,
     },
   ],
@@ -261,7 +261,17 @@ const ResponseDashboard = () => {
             <h3>In-Kind Monitoring</h3>
             {userRole == "operations admin" && <Link to="/response_dashboard/report_list" className='manage-button'><FontAwesomeIcon icon={faListUl} /> Manage</Link>}
           </div>
-          <div style={{ gridRow: 'span 4', overflow: 'hidden', boxShadow: '0 1px 10px rgba(50, 50, 50, 0.35)' }} className='bordered-sub-item'>
+          <div style={{ gridRow: 'span 4', overflow: 'hidden', boxShadow: '0 1px 10px rgba(50, 50, 50, 0.35)', position: 'relative' }} className='bordered-sub-item'>
+            <div className='map-legend-container-mini bordered-sub-item'>
+              <div className='map-legend-mini'>
+                <div style={{backgroundColor: '#44EB6E'}}></div>
+                <span>Demands</span>
+              </div>
+              <div className='map-legend-mini'>
+                <div style={{backgroundColor: '#4468EB'}}></div>
+                <span>Response</span>
+              </div>
+            </div>
             <MapView
               center={[10.313924, 123.887082]}
               markers={markers}

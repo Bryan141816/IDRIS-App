@@ -202,13 +202,13 @@ export default function IDRISDashboard() {
                     <div className="card-content">
                     <div className="card-title-white">Total Applicants</div>
                     <div className="card-number">{totalApplicants}</div>
-                    </div>  
+                    </div>
                     {userType === 'admin' && userRole === "operations admin" ? (
                     <button className="manage-btn" onClick={() => navigate('/volunteer_management/manage_applicant')}>
                     Manage Applicants
                     </button>
                     ) : (
-                        <button  className="manage-btn" style={{ fontSize: '17.4px' }} onClick={openVolunteerModal}>
+                        <button  className="manage-btn" style={{ fontSize: '16.4px' }} onClick={openVolunteerModal}>
                         Become a Volunteer
                         </button>
                         )}

@@ -1,0 +1,226 @@
+:root {
+  --clr-bg: #fff;
+  --clr-border: #ddd;
+  --clr-primary: #1e90ff;
+  --clr-primary-hover: #0c7cd5;
+  --clr-secondary: #2563eb;
+  --clr-secondary-hover: #1d4ed8;
+  --clr-muted: #e0e0e0;
+  --clr-muted-hover: #d4d4d4;
+  --clr-text: #333;
+  --spacing: 20px;
+  --radius: 6px;
+}
+
+/* Main container */
+.app-container {
+  max-width: 900px;
+  /* Remove margin auto to avoid horizontal centering */
+  margin: 0;
+  padding: 2rem;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--clr-text);
+  text-align: left; /* explicitly align text left */
+}
+
+/* Headings */
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+/* Tabs container */
+.tabs {
+
+  display: flex;
+  width: 1000px;
+  gap: var(--spacing);
+  margin-bottom: 2rem;
+}
+
+.tabs button {
+  flex: none;
+  padding: 0.625rem 1rem; /* 10px 15px */
+  background-color: var(--clr-muted);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.tabs button.active,
+.tabs button:hover {
+  background-color: var(--clr-muted-hover);
+}
+
+/* Form container */
+.form-container {
+  background-color: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  padding: 1.25rem 1.25rem 1.5rem; /* 20px padding, adjusted bottom for spacing */
+  border-radius: var(--radius);
+  min-height: 500px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  transition: min-height 0.3s ease;
+}
+
+/* Form elements */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing);
+}
+
+form input[type="text"],
+form input[type="number"],
+form textarea {
+  padding: var(--spacing);
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+form button[type="submit"] {
+  align-self: flex-start;
+  background-color: var(--clr-primary);
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+form button[type="submit"]:hover {
+  background-color: var(--clr-primary-hover);
+}
+
+/* Table styles */
+.table {
+  min-width: 1300px;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 14px;
+}
+
+.table thead {
+  background-color: #f0f0f0;
+}
+
+.table th,
+.table td {
+  padding: var(--spacing);
+  border: 1px solid var(--clr-border);
+  text-align: left;
+}
+
+.table tbody tr:nth-child(odd) {
+  background-color: #fafafa;
+}
+
+.table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.table button {
+  padding: 5px 10px;
+  background-color: var(--clr-secondary);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.table button:hover {
+  background-color: var(--clr-secondary-hover);
+}
+
+/* Modal tweaks */
+.edit-modal {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.edit-modal form {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* LGU modal form grid */
+.lgu-modal-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing) 2rem; /* vertical gap var(--spacing), horizontal gap 2rem */
+}
+
+.lgu-modal-form > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.lgu-modal-form textarea {
+  grid-column: span 2;
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Add button styling */
+.add-button {
+  background-color: #007bff; /* Bootstrap blue */
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  user-select: none;
+}
+
+.add-button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+  .tabs {
+    flex-wrap: wrap;
+  }
+  .tabs button {
+    flex: 1 1 auto;
+    text-align: center;
+  }
+  .form-container {
+    padding: 1rem;
+  }
+  .table th,
+  .table td {
+    padding: 8px;
+  }
+  .lgu-modal-form {
+    grid-template-columns: 1fr; /* stack columns on narrow screens */
+    gap: var(--spacing);
+  }
+  .lgu-modal-form textarea {
+    grid-column: 1 / -1;
+  }
+}

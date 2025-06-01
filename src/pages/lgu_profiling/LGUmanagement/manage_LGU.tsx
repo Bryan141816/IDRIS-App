@@ -157,17 +157,42 @@ const MapOfCebu = () => {
         </div>
       );
 
-    case "baranggay":
-      fields = [
-        { name: "name", label: "Barangay Name", required: true },
-        { name: "latitude", label: "Latitude", type: "number", required: true },
-        { name: "longitude", label: "Longitude", type: "number", required: true },
-        { name: "population", label: "Population", type: "number" },
-        { name: "resources", label: "Available Resources" },
-        { name: "evacuationCenter", label: "Evacuation Center" },
-        { name: "nearestEvacuationCenter", label: "Nearest Evacuation Center" },
-      ];
-      break;
+  case "baranggay":
+  fields = [
+    { name: "name", label: "Barangay Name", required: true },
+    { name: "latitude", label: "Latitude", type: "number", required: true },
+    { name: "longitude", label: "Longitude", type: "number", required: true },
+    { name: "population", label: "Population", type: "number" },
+    { name: "resources", label: "Available Resources", multiline: true },
+    { name: "evacuationCenter", label: "Evacuation Center" },
+    { name: "nearestEvacuationCenter", label: "Nearest Evacuation Center" },
+  ];
+
+  return (
+    <div className="lgu-modal-form">
+      {fields.map(({ name, label, type, required, multiline }) => (
+        <div key={name} style={{ marginBottom: "0.5rem" }}>
+          <label style={{ display: "block", fontWeight: "bold" }}>{label}</label>
+          {multiline ? (
+            <textarea
+              name={name}
+              defaultValue={editItem ? editItem[name] : ""}
+              required={required}
+              style={{ width: "100%" }}
+            />
+          ) : (
+            <input
+              name={name}
+              type={type || "text"}
+              defaultValue={editItem ? editItem[name] : ""}
+              required={required}
+              style={{ width: "100%" }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
     case "hazard":
       fields = [

@@ -42,7 +42,7 @@ h1 {
 .tabs button {
   flex: none;
   padding: 0.625rem 1rem; /* 10px 15px */
-  background-color: var(--clr-muted);
+  background-color: #fcb814;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
@@ -53,7 +53,7 @@ h1 {
 
 .tabs button.active,
 .tabs button:hover {
-  background-color: var(--clr-muted-hover);
+  background-color: #5a7a8f;
 }
 
 /* Form container */

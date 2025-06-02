@@ -13,7 +13,7 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Required for accessing other branches
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -31,10 +31,23 @@ jobs:
             --exclude=.git --exclude=backend --exclude=.github
 
           cd ../idris-worktree
+          git status
           git add IDRIS/
           git commit -m "Auto-sync frontend from main branch to IDRIS-w-backed" || echo "No changes to commit"
-          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Bryan141816/IDRIS-App.git IDRIS-w-backed
 
+      - name: Check GH_PAT secret availability
+        run: |
+          if [ -z "${{ secrets.GH_PAT }}" ]; then
+            echo "GH_PAT secret is missing!"
+            exit 1
+          else
+            echo "GH_PAT secret is present."
+          fi
+
+      - name: Push changes with PAT
+        run: |
+          cd ../idris-worktree
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/Bryan141816/IDRIS-App.git IDRIS-w-backed
 
       - name: Clean up
         run: |

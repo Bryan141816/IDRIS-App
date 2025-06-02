@@ -6,6 +6,7 @@ import { useUserContext } from '../../UserContext';
 import { useUserRoleContext } from "../../UserRoleContext";
 import Logo1 from "../../media/Logo1.png";
 import { Modal } from "./Modals"
+import { Link } from "react-router-dom";
 
 
 const Register = () => {
@@ -74,7 +75,7 @@ const Register = () => {
                 </p>
             </div>
             <div id="login-form">
-                <h1>Login</h1>
+                <h1>Signup</h1>
                 <form>
                     <div className="input-group">
                         <i className="fas fa-envelope input-icon"></i>
@@ -112,7 +113,8 @@ const Register = () => {
                             required
                         />
                     </div>
-                    <button type="button" onClick={() => setActiveModal("user-type")}>Login</button>
+                    <Link to="/login">Login</Link>
+                    <button type="button" onClick={() => setActiveModal("user-type")}>Signup</button>
                 </form>
             </div>
             <Modal isOpen={activeModal == "user-type" ? true : false} onClose={() => setActiveModal("")}>

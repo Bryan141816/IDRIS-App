@@ -12,7 +12,7 @@ export default defineConfig({
   //   }
   // }
   server: {
-    host: true, // crucial so it's not restricted to localhost
-    port: 5173,
+    host: "0.0.0.0", // or use host: '0.0.0.0'
+    port: 3000,
   },
 })

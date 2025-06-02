@@ -20,7 +20,15 @@
     margin-bottom: 1rem;
     font-size: 1rem;
     height: 100%;
-  }
+
+    &.fundingMessage {
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 5; // Change the number as needed
+      -webkit-box-orient: vertical;
+      height: auto; // let height adjust if needed, or set a max-height
+    }
+      }
 
   .progress-container {
     display: flex;

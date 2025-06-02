@@ -1,14 +1,14 @@
 @use '../../../styles/variables' as *;
 @import url('https://fonts.googleapis.com/css2?family=REM:wght@200;400;600;700&display=swap');
 
-.section-title{
+.section-title {
   color: #749ab6;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 #dashboard {
@@ -18,7 +18,7 @@
   gap: 20px;
 }
 
-#grid-container{
+#grid-container {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -34,40 +34,48 @@
   flex-direction: row;
   gap: 10px;
 }
-  
+
 .donation-stat-card {
-  background-color: $primary-color;
+  background-color: $steel-blue;
   color: white;
   border-radius: 12px;
   padding: 20px;
   display: flex;
   flex-direction: column;
+
   &.large {
     grid-column: span 2;
+
     .stat-data {
-        font-size: 32px;
+      font-size: 32px;
     }
   }
 
   .title {
-  font-family: 'REM', sans-serif;
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1.0;
+    font-family: 'REM', sans-serif;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.0;
   }
 
   .stat-data {
-  font-size: 28px;
-  font-weight: 700;
-  margin-top: 10px;
+    font-size: 28px;
+    font-weight: 700;
+    margin-top: 10px;
   }
 
 }
 
-#donation-record-container{
+#donation-record-container {
   display: flex;
   flex-direction: column;
   gap: 5px;
+
+  div{
+    p{
+      font-size: 0.5em;
+    }
+  }
 }
 
 #transparency-report {
@@ -84,52 +92,53 @@
     margin-bottom: 10px;
   }
 
-  button{
+  button {
     margin-top: 10px;
   }
 }
 
 
-#donations-pie-chart{
-  background-color: $semi-light;
+#donations-pie-chart {
+  background-color: $ice-blue;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  
-  canvas{
+  padding: 20px;
+
+  canvas {
     margin: auto auto;
   }
 }
 
-#funding-proposals{
+#funding-proposals {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
 }
 
-@media  screen and (max-width: 720px){
-  #dashboard{
+@media screen and (max-width: 720px) {
+  #dashboard {
     display: flex;
     flex-direction: column;
     padding: 5px;
   }
 
-  #grid-container{
+  #grid-container {
     // flex: 1;
     // width: 100%;
     max-width: 100%;
   }
-  
-  #donation-statistic{
+
+  #donation-statistic {
     display: flex;
     flex-direction: column;
     gap: 5px;
 
-    .donation-stat-card{
+    .donation-stat-card {
       padding: 8px;
 
-      .title{
+      .title {
         font-size: 16px;
         font-weight: 700;
         line-height: 1.0;
@@ -139,15 +148,16 @@
 
   #transparency-report {
     width: 100%;
-    button{
+
+    button {
       margin-top: 8px;
-    }  
+    }
   }
 
-  #funding-proposals{
+  #funding-proposals {
     width: 100%;
     display: grid;
     grid-template-columns: 2fr 2fr;
   }
-  
+
 }

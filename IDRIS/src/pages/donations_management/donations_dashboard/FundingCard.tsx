@@ -26,12 +26,12 @@ export const FundingCard: React.FC<FundingProps> = ({
     return(
         <div className={`${styles.fundingCard} ${className}`}>
             <img src={image} alt="funding-image" />
-            <p>{message}</p>
+            <p className={`${styles.fundingMessage}`}>{message}</p>
             <div className={styles["progress-container"]}>
                 <div className={styles["full-bar"]}>
                     <div className={styles["funded-bar"]} style={{ width: `${filled}%` }}></div>
                 </div>
-                <p>Raised</p>
+                <p>{filled}% Raised</p>
             </div>            
             { userRole === "donor" && <Link to={`/donate/${anchorLink}`} className={styles['funding-donate-btn']}>Donate</Link>}
         </div>

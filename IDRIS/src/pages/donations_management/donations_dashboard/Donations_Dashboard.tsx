@@ -54,34 +54,34 @@ const DonationRecordSample = [
 
 const FundingProposals = [
   {
-    "image": image1,
-    "message": "A devastating fire has left many families homeless, without food, and ...",
-    "funded": 250000,
-    "target": 500000,
-    "anchor": 'A0',
+    image: image1,
+    message: "A devastating fire has left many families homeless, without food, clean water, or shelter. Urgent support is needed to provide emergency relief and help them rebuild their lives.",
+    funded: 250000,
+    target: 500000,
+    anchor: 'A0',
   },
   { 
-    "image": image2,
-    "message": "A powerful typhoon has left thousands of families displaced, without ...",
-    "funded": 50000,
-    "target": 500000,
-    "anchor": 'A0',
+    image: image2,
+    message: "A powerful typhoon has left thousands of families displaced, without access to safe housing, electricity, and basic necessities. Your help can bring hope and aid to those in need.",
+    funded: 50000,
+    target: 500000,
+    anchor: 'A0',
   },
   {
-    "image": image3,
-    "message": "A tragic fire has left countless families homeless and in desperate need ...",
-    "funded": 200000,
-    "target": 500000,
-    "anchor": 'A0',
+    image: image3,
+    message: "A tragic fire has left countless families homeless and in desperate need of assistance. Donations will help provide food, temporary housing, and essential supplies.",
+    funded: 200000,
+    target: 500000,
+    anchor: 'A0',
   },
   {
-    "image": image4,
-    "message": "Super Typhoon Yolanda (Haiyan), one of the most powerful storms in ...",
-    "funded": 100000,
-    "target": 500000,
-    "anchor": 'A0',
+    image: image4,
+    message: "Super Typhoon Yolanda (Haiyan), one of the most powerful storms in history, devastated communities and claimed thousands of lives. Help us support the survivors with food, shelter, and medical care.",
+    funded: 100000,
+    target: 500000,
+    anchor: 'A0',
   },
-]
+];
 
 const DonationsDashboard = () => {
 

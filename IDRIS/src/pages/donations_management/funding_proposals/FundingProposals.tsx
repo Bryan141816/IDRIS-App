@@ -1,13 +1,13 @@
 import './funding.scss';
 import SearchBar from '../../../components/Page_Furniture/Search';
 import FilterBar from '../../../components/Page_Furniture/Filter';
-import donationFacility from '../files/donations_facility.png';
-import reliefGoods from '../files/donations_facility.png';
-import donationBox from '../files/donation_box.png';
-import donateKids from '../files/donate_kids.png';
+import donationFacility from '../files/onsite.png';
+import landslide from '../files/landslide.png';
+import coastal from '../files/coastal.png';
+import disaster6 from '../files/disaster6.png';
 import FundingCard from './fundingCard';
-import rescue1 from '../files/rescue1.png';
-import rescue2 from '../files/rescue2.png';
+import rescue1 from '../files/rescue4.png';
+import fires from '../files/fires.png';
 
 import { useState } from 'react';
 
@@ -24,15 +24,15 @@ const dummyFundingProposals = [
     {
         id: 2,
         title: "Rapid Emergency Relief and Recovery for Flood-Affected Communities in Cebu City",
-        image: rescue2,
-        description: "This proposal requests funding to address the urgent food and water needs resulting from severe flooding in rural communities.",
+        image: fires,
+        description: "This proposal requests funding to address the urgent food and water needs resulting from devastating fires in rural communities.",
         donated: 120000,
         target: 200000,
     },
     {
         id: 3,
         title: "Restoring Livelihoods and Infrastructure After Typhoon Yolanda in Coastal Communities",
-        image: reliefGoods,
+        image: landslide,
         description: "This proposal seeks funding to provide immediate relief assistance to families displaced by devastating landslides in mountainous areas. The intervention includes the distribution of essential items such as food packs, drinking water, and sleeping mats.",
         donated: 80000,
         target: 80000, // fully funded
@@ -40,7 +40,7 @@ const dummyFundingProposals = [
     {
         id: 4,
         title: "Rapid Emergency Relief and Recovery for Flood-Affected Communities in Cebu City",
-        image: donateKids,
+        image: disaster6,
         description: "This proposal seeks funding to provide immediate emergency relief and support early recovery efforts for communities devastated.",
         donated: 15000,
         target: 50000,
@@ -56,7 +56,7 @@ const dummyFundingProposals = [
     {
         id: 6,
         title: "Restoring Livelihoods and Infrastructure After Typhoon Yolanda in Coastal Communities",
-        image: donationBox,
+        image: coastal,
         description: "This proposal outlines a plan to support long-term recovery for coastal communities affected by Typhoon Halina. The project will provide cash assistance, rebuild damaged schools and health centers, restore agricultural livelihoods, and offer trauma",
         donated: 25000,
         target: 100000,
@@ -64,20 +64,22 @@ const dummyFundingProposals = [
 ];
 
 
+
 const FundingProposals = () => {
+
+    const filterItems = ["Ascending", "Descending"];
+    const [filtered, setSelectedFilter] = useState<string>("");
+
+
     const [searched, searchState] = useState("");
-    const [selectedFilter, setSelectedFilter] = useState<string>("");
+    const [selectedFilter, setSearchedValue] = useState<string>("");
 
     return (
         <div id="funding">
             <h3 className="public-feed-title">Funding Proposals</h3>
             <div id="settings-container">
-                <div id="searchBarContainer">
-                    <SearchBar placeholder='Search' value={searched} onChange={searchState} width='100%' height='100%' />
-                </div>
-                <div id="filterBarContainer">
-                    <FilterBar className='filterBar' items={["Ascending", "Descending"]} value={selectedFilter} onChange={setSelectedFilter} width='100%' height='100%' />
-                </div>
+                <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
+                <FilterBar items={filterItems} value={filtered} onChange={() => { setSelectedFilter }} />
             </div>
 
             <div id="funding-body">

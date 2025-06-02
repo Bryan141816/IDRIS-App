@@ -126,6 +126,18 @@ const MapOfCebu = () => {
           RAFI Infrastructure
         </button>
       </div>
+<div className="legend-box">
+  <h4>Legend</h4>
+  <div className="legend-item">
+    <span className="legend-color" style={{ backgroundColor: 'blue' }}></span> LGU
+  </div>
+  <div className="legend-item">
+    <span className="legend-color" style={{ backgroundColor: 'red' }}></span> Barangay
+  </div>
+  <div className="legend-item">
+    <span className="legend-color" style={{ backgroundColor: 'yellow' }}></span> RAFFI Infrastructure
+  </div>
+</div>
 
       <div className="map-container">
         <MapView

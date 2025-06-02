@@ -66,6 +66,10 @@ const Navbar:React.FC<NavbarProps> = ({isVisible, onClose}) => {
             {/* Sub items here */}
             <Link to="/lgu_profiling/evacuationandshelter" className='nav-sub-item' onClick={() => {onClose()}}>Evacuation and Shelter Management</Link>
           </div>
+           <div className={`nav-sub-items ${activeNav === 'lgu' ? 'active' : ''}`}>
+            {/* Sub items here */}
+            <Link to="/lgu_profiling/LGUmanagement" className='nav-sub-item' onClick={() => {onClose()}}>Management</Link>
+          </div>
         </div>
 
         <div className="nav-items" id="lgu-profiling">

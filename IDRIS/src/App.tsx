@@ -8,6 +8,7 @@ import MapOfCebu from './pages/lgu_profiling/map_of_cebu/MapOfCebu';
 import EvacuationAndShelter from './pages/lgu_profiling/evacuationandshelter/manage_evacuation_and_shelter';
 import LGU from './pages/lgu_profiling/map_of_cebu/lgu';
 import LGUSeeMore from './pages/lgu_profiling/map_of_cebu/LGUSeeMore';
+import ManageLGU from './pages/lgu_profiling/LGUmanagement/manage_LGU';
 import TrackVolunteerApplication from './pages/volunteer_management/track_volunteer_application/TrackVolunteerApplication';
 import ManageApplicant from './pages/volunteer_management/manage_applicant/ManageApplicant';
 import VolunteerDashboard from './pages/volunteer_management/volunteer_dashboard/VolunteerDashboard';
@@ -92,6 +93,11 @@ function AppRoutes() {
               <Route path='/lgu_profiling/LGU' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | LGU'><LGU /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/lgu_profiling/LGUmanagement' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | LGU Management'><ManageLGU/></Page>
                 </ProtectedRoute>
               } />
               <Route path='/lgu_profiling/LGUSeeMore/:lguName' element={

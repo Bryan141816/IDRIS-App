@@ -8,7 +8,8 @@ type SearchProps = {
   value?: string;
   onChange: (value: string) => void;
   width?: string;  // e.g., "100%", "300px"
-  height?: string; // e.g., "40px", "2.5rem"
+  height?: string; // e.g., "40px", "2.5rem"c
+  classname?: string;
 };
 
 const SearchBar: React.FC<SearchProps> = ({
@@ -17,6 +18,7 @@ const SearchBar: React.FC<SearchProps> = ({
   onChange,
   width = '100%',
   height = '40px',
+  classname = "",
 }) => {
   return (
     <div

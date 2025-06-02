@@ -6,6 +6,7 @@ import { useUserContext } from '../../UserContext';
 import { useUserRoleContext } from "../../UserRoleContext";
 import Logo1 from "../../media/Logo1.png";
 import { Modal } from "./Modals"
+import { Link } from "react-router-dom";
 
 
 const Login = () => {
@@ -60,6 +61,7 @@ const Login = () => {
               // required
             />
           </div>
+          <Link to="/register">Signup</Link>
           <button type="button" onClick={() => setActiveModal("user-type")}>Login</button>
         </form>
       </div>

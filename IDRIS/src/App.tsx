@@ -35,6 +35,7 @@ import Navbar from './components/Page_Furniture/Navbar';
 import Page from './components/Pages/Pages';
 import Header from './components/Page_Furniture/Header';
 import Footer from './components/Page_Furniture/Footer';
+import Register from './components/Page_Furniture/Register';
 
 function App() {
   return (
@@ -78,6 +79,8 @@ function AppRoutes() {
               {/* Public route (Login) */}
               <Route path='/' element={<Navigate to='/donations_management/donations_dashboard' replace />} />
               <Route path='/login' element={<Page title='IDRIS | Login'><Login /></Page>} />
+
+              <Route path="/register" element={<Page title='IDRIS | Register'><Register/></Page>}></Route>
 
               {/* Protected routes wrapped in ProtectedRoute */}
               <Route path='/lgu_profiling/map_of_cebu' element={

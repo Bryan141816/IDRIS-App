@@ -1,0 +1,40 @@
+name: Sync Frontend to IDRIS-w-backed
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Required for accessing other branches
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch and prepare IDRIS-w-backed branch
+        run: |
+          git fetch origin IDRIS-w-backed
+          git worktree add ../idris-worktree IDRIS-w-backed
+
+      - name: Sync IDRIS folder from main to IDRIS-w-backed
+        run: |
+          rsync -av --delete ./ ../idris-worktree/IDRIS/ \
+            --exclude=.git --exclude=backend --exclude=.github
+
+          cd ../idris-worktree
+          git add IDRIS/
+          git commit -m "Auto-sync frontend from main branch to IDRIS-w-backed" || echo "No changes to commit"
+          git push origin IDRIS-w-backed
+
+      - name: Clean up
+        run: |
+          git worktree remove ../idris-worktree --force

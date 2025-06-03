@@ -14,9 +14,11 @@ const Login = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [erroMessage, setErrorMessage] = useState('');
 
   const { setUserRole } = useUserRoleContext();
   const { setUserType } = useUserContext();
+   
 
   const navigate = useNavigate();
 
@@ -27,13 +29,12 @@ const Login = () => {
       const userData = await fetchCurrentUser();
 
       setUserType(userData["user_type"]);
-      console.log(userData)
       setUserRole(userData["roles"][0]);
       navigate('/donations_management/donations_dashboard');
     }
     catch(error){
       console.error('Login failed: ', error);
-      alert('Invalid credentials');
+      setErrorMessage('Incorrect email or password. Please try again.')
     }
   }
 
@@ -61,7 +62,7 @@ const Login = () => {
               placeholder="Email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              // required
+              required
             />
           </div>
           <div className="input-group">
@@ -73,9 +74,10 @@ const Login = () => {
               placeholder="Password"
               value={password}
               onChange={e=>setPassword(e.target.value)}
-              // required
+              required
             />
           </div>
+          <span id="log-in-error-message">{erroMessage}</span>
           <Link to="/register">Signup</Link>
           <button type="submit">Login</button>
         </form>

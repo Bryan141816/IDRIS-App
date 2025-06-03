@@ -2,28 +2,39 @@ import { useState } from "react";
 import { useNavigate  } from 'react-router-dom';
 import './styles/Login.scss';
 import LoginHeader from "./LoginHeader";
-import { useUserContext } from '../../UserContext';
 import { useUserRoleContext } from "../../UserRoleContext";
 import Logo1 from "../../media/Logo1.png";
-import { Modal } from "./Modals"
 import { Link } from "react-router-dom";
+import {loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
+import { useUserContext } from '../../UserContext';
+
 
 
 const Login = () => {
-  const [activeModal, setActiveModal] = useState<String>("");
 
-  const { setUserType } = useUserContext();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
   const { setUserRole } = useUserRoleContext();
+  const { setUserType } = useUserContext();
+
   const navigate = useNavigate();
 
-  const fnSetUserType= (newUserType: string, newModal: string) => {
-    setUserType(newUserType);
-    setActiveModal(newModal);
-  }
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) =>{
+    e.preventDefault();
+    try{
+      await loginUser(username,password);
+      const userData = await fetchCurrentUser();
 
-  const loginAs = (newUserRole: string) => {
-    setUserRole(newUserRole);
-    navigate('/donations_management/donations_dashboard');
+      setUserType("user");
+      console.log(userData["roles"][0])
+      setUserRole(userData["roles"][0]);
+      navigate('/donations_management/donations_dashboard');
+    }
+    catch(error){
+      console.error('Login failed: ', error);
+      alert('Invalid credentials');
+    }
   }
 
   return (
@@ -40,7 +51,7 @@ const Login = () => {
       </div>
       <div id="login-form">
         <h1>Login</h1>
-        <form>
+        <form onSubmit={handleLogin}>
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -48,6 +59,8 @@ const Login = () => {
               id="username"
               name="username"
               placeholder="Email"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
               // required
             />
           </div>
@@ -58,47 +71,15 @@ const Login = () => {
               id="password"
               name="password"
               placeholder="Password"
+              value={password}
+              onChange={e=>setPassword(e.target.value)}
               // required
             />
           </div>
           <Link to="/register">Signup</Link>
-          <button type="button" onClick={() => setActiveModal("user-type")}>Login</button>
+          <button type="submit">Login</button>
         </form>
       </div>
-
-      <Modal isOpen = {activeModal == "user-type" ? true : false} onClose={() => setActiveModal("")}>
-        <h3 id="login-modal-title">Login as</h3>
-        <hr />
-        <div id="select-userType">
-          <button id="admin" onClick={() => fnSetUserType("admin", "admin-role")}>Admin</button>
-          <button id="user" onClick={() => fnSetUserType("user", "user-role")}>User</button>
-        </div>
-      </Modal>
-
-      <Modal isOpen = {activeModal == "user-role" ? true : false } onClose={() => setActiveModal("")}>
-        <h3 id="login-user-role">Select User Role</h3>
-        <hr />
-        <div id="select-userRole">
-          <button id="staff" onClick={() => loginAs("staff")}>Staff</button>
-          <button id="donor" onClick={() => loginAs("donor")}>Donor</button>
-          <button id="volunteer" onClick={() => loginAs("volunteer")}>Volunteer</button>
-          <button id="ngo-rep" onClick={() => loginAs("ngo representative")}>NGO Representative</button>
-          <button id="lgu-rep" onClick={() => loginAs("lgu representative")}>LGU Representative</button>
-          <button id="barangay-rep" onClick={() => loginAs("barangay representative")}>Barangay Representative</button>
-          <button id="field-rep" onClick={() => loginAs("field representative")}>Field Representative</button>
-        </div>
-      </Modal>
-
-      <Modal isOpen = {activeModal == "admin-role" ? true : false } onClose={() => setActiveModal("")}>
-        <h3 id="admin-user-role">Select User Role</h3>
-        <hr />
-        <div id="select-adminRole">
-          <button id="staff" onClick={() => loginAs("disaster response admin")}>Disaster Response Admin</button>
-          <button id="volunteer" onClick={() => loginAs("logistics admin")}>Logistics Admin</button>
-          <button id="ngo-rep" onClick={() => loginAs("operations admin")}>Operations Admin</button>
-        </div>
-      </Modal>
-
     </section>
   );
 }

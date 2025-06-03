@@ -13,15 +13,17 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-export async function loginUser(username: string, password: string): Promise<string> {
-  const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
 
-  const response = await API.post('/login', formData);
-  const token: string = response.data.access_token;  localStorage.setItem('token', token);
+export async function loginUser(email: string, password: string): Promise<string> {
+  const response = await API.post('/login', {
+    email,
+    password,
+  });
+  const token: string = response.data.access_token;
+  localStorage.setItem('token', token);
   return token;
 }
+
 
 export async function fetchCurrentUser(): Promise<any> {
   const response = await API.get('/users/me');

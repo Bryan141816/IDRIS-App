@@ -12,7 +12,7 @@ import { useUserContext } from '../../UserContext';
 
 const Login = () => {
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const { setUserRole } = useUserRoleContext();
@@ -23,11 +23,11 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) =>{
     e.preventDefault();
     try{
-      await loginUser(username,password);
+      await loginUser(email,password);
       const userData = await fetchCurrentUser();
 
-      setUserType("user");
-      console.log(userData["roles"][0])
+      setUserType(userData["user_type"]);
+      console.log(userData)
       setUserRole(userData["roles"][0]);
       navigate('/donations_management/donations_dashboard');
     }
@@ -56,11 +56,11 @@ const Login = () => {
             <i className="fas fa-envelope input-icon"></i>
             <input
               type="email"
-              id="username"
-              name="username"
+              id="email"
+              name="email"
               placeholder="Email"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               // required
             />
           </div>

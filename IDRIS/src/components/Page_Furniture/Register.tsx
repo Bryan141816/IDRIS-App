@@ -12,15 +12,15 @@ import { Link } from "react-router-dom";
 const Register = () => {
     const [activeModal, setActiveModal] = useState<String>("");
 
-    const { setUserType } = useUserContext();
-
     const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
+    const [usertype, setUsertype] = useState("");
     const [password, setPassword] = useState("");
     const [password2, setPassword2] = useState("");
 
 
     const fnSetUserType = (newUserType: string, newModal: string) => {
-        setUserType(newUserType);
+        setUsertype(newUserType);
         setActiveModal(newModal);
     }
 
@@ -39,7 +39,9 @@ const Register = () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    username: email,
+                    email: email,
+                    username: username,
+                    user_type: usertype, 
                     password: password,
                     roles: [newUserRole]
                 })
@@ -81,14 +83,27 @@ const Register = () => {
                         <i className="fas fa-envelope input-icon"></i>
                         <input
                             type="email"
-                            id="username"
-                            name="username"
+                            id="email"
+                            name="email"
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
                         />
                     </div>
+                    <div className="input-group">
+                        <i className="fas fa-user fa-user input-icon"></i>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                    </div>
+
                     <div className="input-group">
                         <i className="fas fa-lock input-icon"></i>
                         <input

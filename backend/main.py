@@ -6,8 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import Base, engine, get_db
 from models import User  # no Role import
-from schemas import UserCreate, User, Token
-from crud import create_user, authenticate_user, get_user_by_username
+from schemas import UserCreate, User, Token, LoginSchema
+from crud import create_user, authenticate_user, get_user_by_email
 from auth import create_access_token, SECRET_KEY, ALGORITHM
 
 Base.metadata.create_all(bind=engine)
@@ -38,15 +38,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise credentials_exception
 
-    user = get_user_by_username(db, username)
+    user = get_user_by_email(db, username)
     if not user:
         raise credentials_exception
     return user
 
 @app.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = create_user(db, user.username, user.password)
-    # Directly assign roles as list of strings on user.roles attribute
+    # Create user with username, password, email, and type
+    db_user = create_user(db, email=user.email, username=user.username, password=user.password, user_type=user.user_type,roles=user.type)
+
+    # Assign roles
     db_user.roles = user.roles
     db.commit()
     db.refresh(db_user)
@@ -55,11 +57,11 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
+def login(form_data: LoginSchema, db: Session = Depends(get_db)):
+    user = authenticate_user(db, email=form_data.email, password=form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/users/me", response_model=User)

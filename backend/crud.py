@@ -37,13 +37,16 @@ def delete(db: Session, model, id):
 
 # User-specific functions
 
-def get_user_by_username(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()
+def get_user_by_email(db: Session, email: str):
+    print("by email")
+    return db.query(User).filter(User.email == email).first()
 
-def create_user(db: Session, username: str, password: str, roles: list[str] = None):
+def create_user(db: Session, email: str, username: str, user_type: str, password: str, roles: list[str] = []):
     hashed = hash_password(password)
     user_data = {
+        "email": email,
         "username": username,
+        "user_type": user_type,
         "hashed_password": hashed,
         "roles": roles or []
     }
@@ -53,8 +56,8 @@ def create_user(db: Session, username: str, password: str, roles: list[str] = No
     db.refresh(user)
     return user
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = get_user_by_username(db, username)
+def authenticate_user(db: Session, email: str, password: str):
+    user = get_user_by_email(db, email)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):

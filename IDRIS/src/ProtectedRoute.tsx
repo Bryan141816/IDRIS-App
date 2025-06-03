@@ -8,7 +8,9 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { userType } = React.useContext(UserContext);
 
-  if (!userType || userType === '') {
+  console.log(userType);
+  if(!userType){
+    //if (!userType || userType === '') {
     // User not authenticated, redirect to login page
     return <Navigate to="/login" replace />;
   }

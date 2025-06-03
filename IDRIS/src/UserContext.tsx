@@ -17,6 +17,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const setUserType = (type: string) => {
+    console.log('test');
+    console.log(type);
     setUserTypeState(type);
     localStorage.setItem('userType', type);
   };

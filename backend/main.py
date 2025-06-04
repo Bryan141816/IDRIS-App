@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
-
+from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from database import Base, engine, get_db
 from models import User  # no Role import
 from schemas import UserCreate, User, Token, LoginSchema
@@ -67,3 +67,32 @@ def login(form_data: LoginSchema, db: Session = Depends(get_db)):
 @app.get("/users/me", response_model=User)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/report_list", response_model=TableResponse)
+def get_table():
+    table_head = [
+        {"text": "Date", "width": "150px"},
+        {"text": "Report Type", "width": "250px"},
+        {"text": "Status", "width": "150px"},
+        {"text": "Actions", "width": "150px"},
+    ]
+
+    row_data = [
+        Cell(type="Text", text="March 20, 2025", font_weight=500, color="#000", width="150px"),
+        Cell(type="Text", text="EOD Report", font_weight=500, color="#000", width="250px"),
+        Cell(type="Text", text="Completed", font_weight=700, color="#22A900", width="150px"),
+        Cell(
+            type="Button",
+            text="View",
+            font_weight=500,
+            color="#fff",
+            background_color="#749AB6",
+            container_width="150px",
+            button_width="120px"
+        )
+    ]
+
+    table_datas = [{"data": row_data} for _ in range(10]
+
+    return TableResponse(table_head=table_head, table_datas=table_datas)

@@ -93,6 +93,6 @@ def get_table():
         )
     ]
 
-    table_datas = [{"data": row_data} for _ in range(10]
+    table_datas = [{"data": row_data} for _ in range(10)]
 
     return TableResponse(table_head=table_head, table_datas=table_datas)

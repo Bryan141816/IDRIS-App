@@ -46,7 +46,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 @app.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     # Create user with username, password, email, and type
-    db_user = create_user(db, email=user.email, username=user.username, password=user.password, user_type=user.user_type,roles=user.type)
+    db_user = create_user(db, email=user.email, username=user.username, password=user.password, user_type=user.user_type,roles=user.roles)
 
     # Assign roles
     db_user.roles = user.roles

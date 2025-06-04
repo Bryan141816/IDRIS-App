@@ -51,7 +51,7 @@ const Login = () => {
         </p>
       </div>
       <div id="login-form">
-        <h1>Login</h1>
+        <h1>login</h1>
         <form onSubmit={handleLogin}>
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>

@@ -17,6 +17,7 @@ const ReportList = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
   const [reportType, setReportType] = useState("");
+  const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => setIsViewModalOpen(false);
@@ -89,39 +90,44 @@ const ReportList = () => {
           </div>
         </div>
       </Modal>
-      <Modal isOpen={isViewModalOpen} onClose={closeViewModal}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Details</span>
+      {isViewModalSelected ? (
+        <Modal isOpen={isViewModalOpen} onClose={closeViewModal}>
+          <div className="modal-container">
+            <div className="horizontal-container">
+              <span className="details-title">Details</span>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Report Type:</span>
+              <span>{isViewModalSelected.data[1].text}</span>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Status:</span>
+              <span>{isViewModalSelected.data[2].text}</span>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Date:</span>
+              <span>{isViewModalSelected.data[0].text}</span>
+            </div>
+            <div className="action-button">
+              <button
+                style={{ backgroundColor: "#749AB6" }}
+                onClick={closeViewModal}
+              >
+                Ok
+              </button>
+              <button
+                style={{ backgroundColor: "#F84B4D" }}
+                onClick={closeViewModal}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Report Type:</span>
-            <span>EOD Report</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Status:</span>
-            <span>Completed</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Date:</span>
-            <span>March 20, 2025</span>
-          </div>
-          <div className="action-button">
-            <button
-              style={{ backgroundColor: "#749AB6" }}
-              onClick={closeViewModal}
-            >
-              Ok
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D" }}
-              onClick={closeViewModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      ) : (
+        <div>No data</div>
+      )}
+
       <div className="horizontal-container">
         <div className="navigator-container">
           <Link to="/response_dashboard">Response Dashboard</Link>
@@ -134,7 +140,14 @@ const ReportList = () => {
         </div>
       </div>
       {response_data ? (
-        <TableView tableJSON={response_data} onClickCallback={openViewModal} />
+        <TableView
+          tableJSON={response_data}
+          onClickCallback={(row: any) => {
+            setIsViewModalSelected(row);
+            openViewModal();
+          }}
+          setCallbackTableData={true}
+        />
       ) : (
         <div>Loading data...</div>
       )}

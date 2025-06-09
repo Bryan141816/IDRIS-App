@@ -15,7 +15,7 @@ class UserCreate(UserBase):
     password: str
     roles: List[str]  # required on creation
 
-class User(UserBase):
+class UserSchema(UserBase):
     id: int
     roles: List[str]  # included when returning user data
 

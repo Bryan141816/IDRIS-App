@@ -6,11 +6,11 @@ from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from database import Base, engine, get_db
-from models import User as UserModel # no Role import
-from schemas import UserCreate, User as UserSchema, Token, LoginSchema
-from crud import create_user, authenticate_user, get_user_by_email, get_all
+from models import User as UserModel, ResponseReport # no Role import
+from schemas import UserCreate, User as UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
+from crud import create_user, authenticate_user, get_user_by_email, create_response_report, get_all
 from auth import create_access_token, SECRET_KEY, ALGORITHM
-
+ 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -78,7 +78,8 @@ def read_users_me(current_user: UserSchema = Depends(get_current_user)):
 
 
 @app.get("/report_list", response_model=TableResponse)
-def get_table():
+def get_table(db: Session = Depends(get_db)):
+    # Table header remains the same
     table_head = [
         {"text": "Date", "width": "150px"},
         {"text": "Report Type", "width": "250px"},
@@ -86,25 +87,50 @@ def get_table():
         {"text": "Actions", "width": "150px"},
     ]
 
-    row_data = [
-        Cell(type="Text", text="March 20, 2025", font_weight=500, color="#000", width="150px"),
-        Cell(type="Text", text="EOD Report", font_weight=500, color="#000", width="250px"),
-        Cell(type="Text", text="Completed", font_weight=700, color="#22A900", width="150px"),
-        Cell(
-            type="Button",
-            text="View",
-            font_weight=500,
-            color="#fff",
-            background_color="#749AB6",
-            container_width="150px",
-            button_width="120px"
-        )
-    ]
+    # Query all reports (limit if needed)
+    reports = db.query(ResponseReport).order_by(ResponseReport.date_time.desc()).all()
 
-    table_datas = [{"data": row_data} for _ in range(10)]
+    table_datas = []
+    for report in reports:
+        row_data = [
+            Cell(
+                type="Text",
+                text=report.date_time.strftime("%B %d, %Y"),  # format date nicely
+                font_weight=500,
+                color="#000",
+                width="150px"
+            ),
+            Cell(
+                type="Text",
+                text=report.report_type,
+                font_weight=500,
+                color="#000",
+                width="250px"
+            ),
+            Cell(
+                type="Text",
+                text=report.status,
+                font_weight=700,
+                color="#22A900" if report.status.lower() == "completed" else "#000",  # color green if completed
+                width="150px"
+            ),
+            Cell(
+                type="Button",
+                text="View",
+                font_weight=500,
+                color="#fff",
+                background_color="#749AB6",
+                container_width="150px",
+                button_width="120px"
+            )
+        ]
+        table_datas.append({"data": row_data})
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
 
+@app.post("/response_dashboar/report_list/add_report", response_model = ResponseReportOut)
+def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
+    return create_response_report(db, report);
 
 @app.get("/users/", response_model=List[UserSchema])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

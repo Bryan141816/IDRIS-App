@@ -41,7 +41,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 
   // Main Dashboard Title
-  > h3 {
+  >h3 {
     color: #749ab6;
     font-size: 2.5rem;
     font-weight: 700;
@@ -392,7 +392,8 @@
       gap: 10px;
       align-items: center;
 
-      select, button {
+      select,
+      button {
         padding: 5px 10px;
         border: 1px solid #c5d7e5;
         border-radius: 5px;
@@ -425,7 +426,8 @@
     min-height: 280px;
 
     // Chart canvas/svg styling
-    canvas, svg {
+    canvas,
+    svg {
       max-width: 100%;
       max-height: 100%;
       border-radius: 8px;
@@ -434,7 +436,7 @@
     // Loading state for charts
     &.loading {
       @include flex-center;
-      
+
       &::before {
         content: '';
         width: 30px;
@@ -513,7 +515,7 @@
 
   @media (max-width: 768px) {
     min-height: 220px;
-    
+
     .chart-content {
       min-height: 150px;
     }
@@ -541,7 +543,7 @@
 
   @media (max-width: 768px) {
     min-height: 300px;
-    
+
     .chart-content {
       min-height: 220px;
     }
@@ -627,6 +629,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -634,17 +637,25 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Animation classes
@@ -673,7 +684,8 @@
     border: 2px solid #749ab6 !important;
     color: black !important;
 
-    h1, span {
+    h1,
+    span {
       color: black !important;
     }
   }
@@ -681,6 +693,7 @@
 
 // High Contrast Mode
 @media (prefers-contrast: high) {
+
   .sub-item-content-big-data,
   .sub-item-content-big-data-inverted {
     border: 2px solid #000000;
@@ -727,22 +740,57 @@
 }
 
 // Additional Utility Classes
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
+.text-center {
+  text-align: center;
+}
 
-.mb-0 { margin-bottom: 0; }
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
+.text-left {
+  text-align: left;
+}
 
-.mt-0 { margin-top: 0; }
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
+.text-right {
+  text-align: right;
+}
 
-.w-full { width: 100%; }
-.h-full { height: 100%; }
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.mb-1 {
+  margin-bottom: 0.5rem;
+}
+
+.mb-2 {
+  margin-bottom: 1rem;
+}
+
+.mb-3 {
+  margin-bottom: 1.5rem;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
+
+.mt-1 {
+  margin-top: 0.5rem;
+}
+
+.mt-2 {
+  margin-top: 1rem;
+}
+
+.mt-3 {
+  margin-top: 1.5rem;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
 
 // Report Container
 .report-container {
@@ -973,7 +1021,9 @@
     align-items: flex-start;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     color: #749ab6;
     margin: 0;
     font-weight: 600;
@@ -1114,4 +1164,10 @@
   background: rgba(116, 154, 182, 0.1);
   border-radius: 4px;
   font-size: 0.85rem;
+}
+
+input,
+option,
+select {
+  color: black !important;
 }

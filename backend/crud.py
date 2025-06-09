@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from models import User
+from models import ResponseReport, User
 from auth import hash_password, verify_password
+from schemas import ResponseReportCreate
 
 # Generic CRUD functions
 
@@ -70,3 +72,14 @@ def assign_roles(db: Session, user: User, role_names: list[str]):
     db.commit()
     db.refresh(user)
     return user
+
+def create_response_report(db: Session, report:ResponseReportCreate) -> ResponseReport:
+    db_report = ResponseReport(
+        date_time = datetime.now(timezone.utc),
+        report_type = report.report_type,
+        status = report.status
+    )
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+    return db_report

@@ -6,9 +6,9 @@ from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from database import Base, engine, get_db
-from models import User as UserModel, ResponseReport # no Role import
-from schemas import UserCreate, User as UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
-from crud import create_user, authenticate_user, get_user_by_email, create_response_report, get_all
+from models import User, ResponseReport  # no Role import
+from schemas import UserCreate, UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
+from crud import create_user, authenticate_user, get_user_by_email, create_response_report, delete
 from auth import create_access_token, SECRET_KEY, ALGORITHM
  
 Base.metadata.create_all(bind=engine)
@@ -94,6 +94,13 @@ def get_table(db: Session = Depends(get_db)):
     for report in reports:
         row_data = [
             Cell(
+                type="Hidden",  # Custom type handled in frontend
+                text=str(report.id),
+                font_weight=0,
+                color="#000",
+                width="0px"
+            ),
+            Cell(
                 type="Text",
                 text=report.date_time.strftime("%B %d, %Y"),  # format date nicely
                 font_weight=500,
@@ -132,15 +139,24 @@ def get_table(db: Session = Depends(get_db)):
 def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
     return create_response_report(db, report);
 
-@app.get("/users/", response_model=List[UserSchema])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = get_all(db, UserModel, skip=skip, limit=limit)
-    print("Users found:", users)
-    return users
+@app.delete("/response_dashboar/report_list/delete_report/{report_id}", response_model=dict)
+def delete_response_report(report_id: int, db: Session = Depends(get_db)):
+    deleted_report = delete(db, ResponseReport, report_id)
+    if not deleted_report:
+        raise HTTPException(status_code=400, detail="Response report not found.")
+    return {"message": f"Response report with ID {report_id} deleted successfully."}
+@app.put("/response_dashboar/report_list/update_report/{report_id}")
+def update_report(report_id: int, update: ResponseReportCreate, db: Session = Depends(get_db)):
+    report = db.query(ResponseReport).get(report_id);
 
-@app.get("/users/{user_id}")
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    if not report:
+        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if update.report_type is not None:
+        report.report_type = update.report_type
+    if update.status is not None:
+        report.status = update.status
+
+    db.commit()
+    db.refresh(report)
+
+    return {"detail": "Report updated succesfully", "report": report}

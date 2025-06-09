@@ -240,20 +240,6 @@
   }
 }
 
-// Layout Containers
-.horizontal-container {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  gap: 15px;
-  align-items: center;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-}
 
 .space-between-container {
   justify-content: space-between !important;
@@ -1170,4 +1156,57 @@ input,
 option,
 select {
   color: black !important;
+}
+
+.title-modal-text {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.more-options-container {
+  display: flex;
+  position: relative;
+
+
+  button {
+    padding: 5px;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    color: black;
+  }
+}
+
+.more-options-viewer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(0, 110%);
+  width: max-content;
+  padding: 5px;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  align-items: start;
+
+  button {
+    display: flex;
+    border-bottom: 1px solid #bbb;
+    font-weight: 500;
+    gap: 5px;
+    align-items: center;
+    width: 100%;
+    color: #3b82f6;
+  }
+}
+
+.mark-as-button {
+  padding: 5px;
+  background-color: #3b82f6;
+  border: none;
+  outline: none;
+  border-radius: 5px;
 }

@@ -4,7 +4,7 @@ from typing import List, Literal, Optional
 
 # --- Cell ---
 class Cell(BaseModel):
-    type: Literal["Text", "Button", "Image"]
+    type: Literal["Text", "Button", "Image", "Hidden"]
     text: str
     font_weight: int
     width: Optional[str] = None  

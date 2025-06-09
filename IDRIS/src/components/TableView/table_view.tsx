@@ -9,7 +9,7 @@ interface TableRowProps {
   iSborder: boolean;
 }
 export interface Cell {
-  type: "Text" | "Button" | "Image";
+  type: "Text" | "Button" | "Image" | "Hidden";
   text: string;
   width?: string;
   font_weight: number;
@@ -92,17 +92,12 @@ export const TableView: React.FC<TableViewProps> = ({
     <div id="table-container">
       <TableHead>
         {tableJSON.table_head.map((header, index) => (
-          <h3 key={index} style={{ minWidth: header.width }}>
-            {header.text}
-          </h3>
+          <h3 style={{ minWidth: header.width }}>{header.text}</h3>
         ))}
       </TableHead>
       <div id="table-data-container">
         {tableJSON.table_datas.map((row, rowIndex) => (
-          <TableData
-            key={rowIndex}
-            iSborder={rowIndex !== tableJSON.table_datas.length - 1}
-          >
+          <TableData iSborder={rowIndex !== tableJSON.table_datas.length - 1}>
             {row.data.map((cellValue, cellIndex) => (
               <TableCell
                 cell={cellValue}

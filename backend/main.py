@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from typing import List
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from database import Base, engine, get_db
-from models import User  # no Role import
-from schemas import UserCreate, User, Token, LoginSchema
-from crud import create_user, authenticate_user, get_user_by_email
+from models import User as UserModel # no Role import
+from schemas import UserCreate, User as UserSchema, Token, LoginSchema
+from crud import create_user, authenticate_user, get_user_by_email, get_all
 from auth import create_access_token, SECRET_KEY, ALGORITHM
 
 Base.metadata.create_all(bind=engine)
@@ -24,7 +25,7 @@ app.add_middleware(
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserSchema:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -42,6 +43,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user:
         raise credentials_exception
     return user
+
+@app.on_event("startup")
+async def on_startup():
+    print("Registered routes:")
+    for route in app.routes:
+        print(route.path)
+
 
 @app.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -64,8 +72,8 @@ def login(form_data: LoginSchema, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/users/me", response_model=User)
-def read_users_me(current_user: User = Depends(get_current_user)):
+@app.get("/users/me", response_model=UserSchema)
+def read_users_me(current_user: UserSchema = Depends(get_current_user)):
     return current_user
 
 
@@ -96,3 +104,17 @@ def get_table():
     table_datas = [{"data": row_data} for _ in range(10)]
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
+
+
+@app.get("/users/", response_model=List[UserSchema])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = get_all(db, UserModel, skip=skip, limit=limit)
+    print("Users found:", users)
+    return users
+
+@app.get("/users/{user_id}")
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

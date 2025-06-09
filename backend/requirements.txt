@@ -26,3 +26,4 @@ SQLAlchemy
 starlette
 typing-inspection
 uvicorn
+passlib[bcrypt]

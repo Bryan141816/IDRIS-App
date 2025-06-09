@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from database import Base, engine, get_db
 from models import User, ResponseReport  # no Role import
-from schemas import UserCreate, User, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
+from schemas import UserCreate, UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
 from crud import create_user, authenticate_user, get_user_by_email, create_response_report, delete
 from auth import create_access_token, SECRET_KEY, ALGORITHM
  

@@ -1,26 +1,48 @@
 // FileUploader.tsx
 import './styles/uploadFile.scss';
-import React, { useState } from "react";
+import React, { useState, useEffect} from "react";
 import { UploadArrow } from "./Icons";
 import PDFimage from "./images/pdf-logo.png";
+
 interface FileUploaderProps {
   onFileSelect: (file: File | null) => void;
   accept?: string;
   showName?: boolean;
+  className?: string;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
   accept = "*",
   showName = true,
+  className = "",
 }) => {
   const [fileName, setFileName] = useState<string>("");
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string>(PDFimage);
 
-  const handleFile = (file: File | null) => {
-    if (file) {
-      setFileName(file.name);
-      onFileSelect(file);
+  // Cleanup object URLs to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (filePreview && filePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(filePreview);
+      }
+    };
+  }, [filePreview]);
+
+  const handleFile = (selectedFile: File | null) => {
+    if (selectedFile) {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+
+      if (selectedFile.type.startsWith("image/")) {
+        setFilePreview(URL.createObjectURL(selectedFile)); // Use this instead of FileReader
+      } else {
+        setFilePreview(PDFimage);
+      }
+
+      onFileSelect(selectedFile);
     }
   };
 
@@ -52,12 +74,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     setFileName("");
+    setFile(null);
+    setFilePreview(PDFimage);
     onFileSelect(null);
   };
 
   return (
     <div
-      className={`file-uploader ${isDragging ? "drag-over" : ""} ${fileName ? "has-file" : ""}`}
+      className={`file-uploader ${isDragging ? "drag-over" : ""} ${fileName ? "has-file" : ""} ${className}`}
       onClick={openFilePicker}
       onDragOver={(e) => {
         e.preventDefault();
@@ -87,11 +111,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         <UploadArrow width={50} height={50} className="upload-icon" />
       </button>
 
-      {showName && fileName && 
-      <div id="pdf-show-icon">
-        <img src={PDFimage} alt="" />
-        <p className="file-name">{fileName}</p>
-      </div>
+      {showName && fileName &&
+        <div id="pdf-show-icon">
+          <img src={filePreview} alt="File Preview" />
+          <p className="file-name">{fileName}</p>
+        </div>
       }
       {!fileName && <p className="drag-instruction">Browse or Drop a File Here</p>}
     </div>

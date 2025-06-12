@@ -39,17 +39,6 @@ import { useEffect, useState } from "react";
 import { fetchData } from "../../API_Handler/response_dashboard";
 import { TableResponse } from "../donations_management/list_of_rafi_donors/TableComponent";
 
-const data = {
-  labels: ["Cash", "In-kind", "Services"],
-  datasets: [
-    {
-      label: "Modality Distribution",
-      data: [12, 19, 3],
-      backgroundColor: ["#44EB6E", "#4468EB", "#EB4D44"],
-      borderWidth: 1,
-    },
-  ],
-};
 const options = {
   responsive: true,
   plugins: {
@@ -191,12 +180,25 @@ type ReportSummary = {
   completed: number;
   started: number;
 };
+
+type PieChartDataset = {
+  label: string;
+  data: number[];
+  backgroundColor: string[];
+  borderWidth: number;
+};
+type PieChartData = {
+  labels: string[];
+  datasets: PieChartDataset[];
+};
+
 const ResponseDashboard = () => {
   const { userRole } = useUserRoleContext();
   const [recentReport, setRecentReport] = useState<TableResponse | null>(null);
   const [reportSummary, setReportSummary] = useState<ReportSummary | null>(
     null,
   );
+  const [modalityChart, setModalityChart] = useState<PieChartData | null>(null);
 
   useEffect(() => {
     fetchData<ReportSummary>(
@@ -204,6 +206,10 @@ const ResponseDashboard = () => {
       setReportSummary,
     );
     fetchData<TableResponse>("/report_list/recent", setRecentReport);
+    fetchData<PieChartData>(
+      "/response_dashboard/modality_chart",
+      setModalityChart,
+    );
   }, []);
 
   return (
@@ -356,7 +362,11 @@ const ResponseDashboard = () => {
                 alignItems: "center",
               }}
             >
-              <Doughnut data={data} options={options} />
+              {modalityChart ? (
+                <Doughnut data={modalityChart} options={options} />
+              ) : (
+                <div>Loading Data</div>
+              )}
             </div>
           </div>
           <div

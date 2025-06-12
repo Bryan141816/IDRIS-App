@@ -50,7 +50,6 @@ const ReportList = () => {
     try {
       const response = await getReportList();
       setResposeData(response);
-      console.log(response_data);
     } catch (error) {
       console.error(error);
     }

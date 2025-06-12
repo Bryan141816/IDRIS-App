@@ -10,6 +10,8 @@ from models import User, ResponseReport  # no Role import
 from schemas import UserCreate, UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
 from crud import create_user, authenticate_user, get_user_by_email, create_response_report, delete
 from auth import create_access_token, SECRET_KEY, ALGORITHM
+from datetime import datetime
+from sqlalchemy import func
  
 Base.metadata.create_all(bind=engine)
 
@@ -135,6 +137,93 @@ def get_table(db: Session = Depends(get_db)):
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
 
+
+@app.get("/report_list/recent", response_model=TableResponse)
+def get_recent_table(db: Session = Depends(get_db)):
+    # Table header without the "Actions" column
+    table_head = [
+        {"text": "Date", "width": "150px"},
+        {"text": "Report Type", "width": "250px"},
+        {"text": "Status", "width": "150px"},
+    ]
+
+    # Get only the 5 most recent reports
+    reports = db.query(ResponseReport).order_by(ResponseReport.date_time.desc()).limit(5).all()
+
+    table_datas = []
+    for report in reports:
+        row_data = [
+            Cell(
+                type="Hidden",
+                text=str(report.id),
+                font_weight=0,
+                color="#000",
+                width="0px"
+            ),
+            Cell(
+                type="Text",
+                text=report.date_time.strftime("%B %d, %Y"),
+                font_weight=500,
+                color="#000",
+                width="150px"
+            ),
+            Cell(
+                type="Text",
+                text=report.report_type,
+                font_weight=500,
+                color="#000",
+                width="250px"
+            ),
+            Cell(
+                type="Text",
+                text=report.status,
+                font_weight=700,
+                color="#22A900" if report.status.lower() == "completed" else "#000",
+                width="150px"
+            )
+        ]
+        table_datas.append({"data": row_data})
+
+    return TableResponse(table_head=table_head, table_datas=table_datas)
+@app.get("/response_dashboard/report_summary")
+def get_report_summary(db: Session = Depends(get_db)):
+    # Get the first and last day of the current month
+    now = datetime.now()
+    start_of_month = datetime(now.year, now.month, 1)
+    
+    # Optional: Calculate first day of next month to use as exclusive upper bound
+    if now.month == 12:
+        start_of_next_month = datetime(now.year + 1, 1, 1)
+    else:
+        start_of_next_month = datetime(now.year, now.month + 1, 1)
+
+    # Query all reports in the current month
+    total_reports = db.query(func.count(ResponseReport.id)) \
+        .filter(ResponseReport.date_time >= start_of_month, ResponseReport.date_time < start_of_next_month) \
+        .scalar()
+
+    # Completed reports
+    total_completed = db.query(func.count(ResponseReport.id)) \
+        .filter(
+            ResponseReport.date_time >= start_of_month,
+            ResponseReport.date_time < start_of_next_month,
+            func.lower(ResponseReport.status) == "completed"
+        ).scalar()
+
+    # Started reports
+    total_started = db.query(func.count(ResponseReport.id)) \
+        .filter(
+            ResponseReport.date_time >= start_of_month,
+            ResponseReport.date_time < start_of_next_month,
+            func.lower(ResponseReport.status) == "started"
+        ).scalar()
+
+    return {
+        "month": now.strftime("%B %Y"),
+        "total_reports": total_reports,
+        "completed": total_completed,
+        "started": total_started
+    }
 @app.post("/response_dashboar/report_list/add_report", response_model = ResponseReportOut)
 def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
     return create_response_report(db, report);

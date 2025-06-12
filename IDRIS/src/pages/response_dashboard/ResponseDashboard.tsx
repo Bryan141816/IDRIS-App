@@ -35,124 +35,10 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
-const response_data = {
-  table_head: [
-    {
-      text: "Date",
-      width: "150px",
-    },
-    {
-      text: "Report Type",
-      width: "250px",
-    },
-    {
-      text: "Status",
-      width: "150px",
-    },
-  ],
-  table_datas: [
-    {
-      data: [
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "March 20, 2025",
-          width: "150px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "EOD Report",
-          width: "250px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 700,
-          color: "#44EB6E",
-          text: "Completed",
-          width: "150px",
-        } as Cell,
-      ],
-    },
-    {
-      data: [
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "March 20, 2025",
-          width: "150px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "EOD Report",
-          width: "250px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 700,
-          color: "#44EB6E",
-          text: "Completed",
-          width: "150px",
-        } as Cell,
-      ],
-    },
-    {
-      data: [
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "March 20, 2025",
-          width: "150px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "EOD Report",
-          width: "250px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 700,
-          color: "#44EB6E",
-          text: "Completed",
-          width: "150px",
-        } as Cell,
-      ],
-    },
-    {
-      data: [
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "March 20, 2025",
-          width: "150px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 500,
-          color: "#000",
-          text: "EOD Report",
-          width: "250px",
-        } as Cell,
-        {
-          type: "Text",
-          font_weight: 700,
-          color: "#44EB6E",
-          text: "Completed",
-          width: "150px",
-        } as Cell,
-      ],
-    },
-  ],
-};
+import { useEffect, useState } from "react";
+import { fetchData } from "../../API_Handler/response_dashboard";
+import { TableResponse } from "../donations_management/list_of_rafi_donors/TableComponent";
+
 const data = {
   labels: ["Cash", "In-kind", "Services"],
   datasets: [
@@ -298,8 +184,28 @@ const markers = [
     hazardAreas: [],
   },
 ];
+
+type ReportSummary = {
+  month: string;
+  total_reports: number;
+  completed: number;
+  started: number;
+};
 const ResponseDashboard = () => {
   const { userRole } = useUserRoleContext();
+  const [recentReport, setRecentReport] = useState<TableResponse | null>(null);
+  const [reportSummary, setReportSummary] = useState<ReportSummary | null>(
+    null,
+  );
+
+  useEffect(() => {
+    fetchData<ReportSummary>(
+      "/response_dashboard/report_summary",
+      setReportSummary,
+    );
+    fetchData<TableResponse>("/report_list/recent", setRecentReport);
+  }, []);
+
   return (
     <div className="response_container">
       <h3>Response Dashboard</h3>
@@ -332,27 +238,44 @@ const ResponseDashboard = () => {
           >
             <h1>Monthly Report Count</h1>
             <div className="horizontal-container full-width space-between-container comparizon-container">
-              <span>5,000</span>
+              {reportSummary ? (
+                <span>{reportSummary.total_reports}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
               <span className="comparizon-value">+12% vs Last Month</span>
             </div>
           </div>
           <div className="recent-report">
-            <TableView
-              tableJSON={response_data}
-              onClickCallback={() => {}}
-            ></TableView>
+            {recentReport ? (
+              <TableView
+                tableJSON={recentReport}
+                onClickCallback={() => {}}
+                setCallbackTableData={false}
+              ></TableView>
+            ) : (
+              <div>Loading Data</div>
+            )}
           </div>
           <div className="sub-item-content-big-data">
             <h1>Completed Reports</h1>
             <div className="horizontal-container full-width space-between-container comparizon-container">
-              <span>3,000</span>
+              {reportSummary ? (
+                <span>{reportSummary.completed}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
               <span className="comparizon-value">+9% vs Last Month</span>
             </div>
           </div>
           <div className="sub-item-content-big-data">
             <h1>Ongoing Reports</h1>
             <div className="horizontal-container full-width space-between-container comparizon-container">
-              <span>2,000</span>
+              {reportSummary ? (
+                <span>{reportSummary.started}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
               <span className="comparizon-value">+10% vs Last Month</span>
             </div>
           </div>

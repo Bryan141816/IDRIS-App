@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
+from data_schemas.modality_schema import PieChartData 
 from database import Base, engine, get_db
 from models import User, ResponseReport  # no Role import
 from schemas import UserCreate, UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
@@ -224,17 +225,32 @@ def get_report_summary(db: Session = Depends(get_db)):
         "completed": total_completed,
         "started": total_started
     }
-@app.post("/response_dashboar/report_list/add_report", response_model = ResponseReportOut)
+
+@app.get("/response_dashboard/modality_chart", response_model = PieChartData)
+def get_modality_chart():
+    return {
+        "labels": ["Cash", "Inkind", "Services"],
+        "datasets": [
+            {
+                "label": "Modality Distribution",
+                "data": [12, 19,3],
+                "backgroundColor": ["#44EB6E", "#4468EB", "#EB4D44"],
+                "borderWidth": 1,            
+            }
+        ]
+    }
+
+@app.post("/response_dashboard/report_list/add_report", response_model = ResponseReportOut)
 def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
     return create_response_report(db, report);
 
-@app.delete("/response_dashboar/report_list/delete_report/{report_id}", response_model=dict)
+@app.delete("/response_dashboard/report_list/delete_report/{report_id}", response_model=dict)
 def delete_response_report(report_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, ResponseReport, report_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Response report not found.")
     return {"message": f"Response report with ID {report_id} deleted successfully."}
-@app.put("/response_dashboar/report_list/update_report/{report_id}")
+@app.put("/response_dashboard/report_list/update_report/{report_id}")
 def update_report(report_id: int, update: ResponseReportCreate, db: Session = Depends(get_db)):
     report = db.query(ResponseReport).get(report_id);
 

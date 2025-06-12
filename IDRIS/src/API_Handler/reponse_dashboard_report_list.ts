@@ -8,7 +8,7 @@ export async function getReportList(): Promise<any> {
 }
 
 export async function addResponseReport(reportType: string): Promise<any> {
-  const response = await API.post("/response_dashboar/report_list/add_report", {
+  const response = await API.post("/response_dashboard/report_list/add_report", {
     report_type: reportType,
     status: "Filed"
   });
@@ -17,7 +17,7 @@ export async function addResponseReport(reportType: string): Promise<any> {
 
 export async function deleteResponseReport(reportId: String): Promise<any> {
   try {
-    const response = await API.delete(`/response_dashboar/report_list/delete_report/${reportId}`)
+    const response = await API.delete(`/response_dashboard/report_list/delete_report/${reportId}`)
     return response;
   }
   catch (error: any) {
@@ -32,7 +32,7 @@ export async function deleteResponseReport(reportId: String): Promise<any> {
 
 export async function updateResponseReport(reportId: String, report_type: String, report_status: String) {
   try {
-    const response = await API.put(`/response_dashboar/report_list/update_report/${reportId}`, {
+    const response = await API.put(`/response_dashboard/report_list/update_report/${reportId}`, {
       report_type: report_type,
       status: report_status
     });

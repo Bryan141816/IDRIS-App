@@ -1,14 +1,9 @@
 
 // src/api/auth.ts
-import axios from 'axios';
-
-const API = axios.create({
-  baseURL: 'http://localhost:8000',
-});
+import { API } from './Axio_API_Handler';
 
 export async function getReportList(): Promise<any> {
   const response = await API.get('/report_list');
-  console.log(response.data)
   return response.data;
 }
 

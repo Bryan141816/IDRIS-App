@@ -24,6 +24,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
 
   const { userType, setUserType } = useUserContext();
   const { userRole, setUserRole } = useUserRoleContext();
+  const { email, username } = useUserContext();
   return (
     <header>
       <div id="left-items">
@@ -49,8 +50,8 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
           </div>
 
           <div id="user-names">
-            <p className='user-name'>User Name</p>
-            <p className="user-email">user-email.@gmail.com</p>
+            <p className='user-name'>{ username }</p>
+            <p className="user-email">{ email }</p>
           </div>
           <LogoutIcon width={24} height={24} className='logout-icon' onClick={logOutUser} />
         </div>}

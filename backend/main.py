@@ -5,25 +5,28 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
+from routers import fundingProposals
 from database import Base, engine, get_db
 from models import User, ResponseReport  # no Role import
 from schemas import UserCreate, UserSchema, Token, LoginSchema, ResponseReportCreate, ResponseReportOut
 from crud import create_user, authenticate_user, get_user_by_email, create_response_report, delete
 from auth import create_access_token, SECRET_KEY, ALGORITHM
- 
+from fastapi.staticfiles import StaticFiles
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # <-- Frontend origin
+    allow_origins=["http://localhost", "http://localhost:5173", "http://127.0.0.1:5173"],  # <-- Frontend origin 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserSchema:
     credentials_exception = HTTPException(
@@ -160,3 +163,13 @@ def update_report(report_id: int, update: ResponseReportCreate, db: Session = De
     db.refresh(report)
 
     return {"detail": "Report updated succesfully", "report": report}
+
+# Mount static file serving (for uploaded images)
+app.mount(
+    "/media/fundingproposals",
+    StaticFiles(directory="media/fundingproposals"),
+    name="fundingproposals"
+)
+
+app.include_router(fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"])
+

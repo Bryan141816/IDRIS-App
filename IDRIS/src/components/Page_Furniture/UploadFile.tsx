@@ -9,6 +9,7 @@ interface FileUploaderProps {
   accept?: string;
   showName?: boolean;
   className?: string;
+  defaultImage?: string | null;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
@@ -16,11 +17,21 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   accept = "*",
   showName = true,
   className = "",
+  defaultImage = "",
 }) => {
   const [fileName, setFileName] = useState<string>("");
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string>(PDFimage);
+
+  // Initialize with default image when component mounts or defaultImage changes
+  useEffect(() => {
+    if (defaultImage && !file) {
+      setFilePreview(defaultImage);
+      // Set a placeholder filename to show the preview
+      setFileName("Current Image");
+    }
+  }, [defaultImage]); // Remove 'file' from dependencies to avoid conflicts
 
   // Cleanup object URLs to avoid memory leaks
   useEffect(() => {
@@ -30,14 +41,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       }
     };
   }, [filePreview]);
-
+  
   const handleFile = (selectedFile: File | null) => {
     if (selectedFile) {
       setFile(selectedFile);
       setFileName(selectedFile.name);
 
       if (selectedFile.type.startsWith("image/")) {
-        setFilePreview(URL.createObjectURL(selectedFile)); // Use this instead of FileReader
+        // Clean up previous blob URL if it exists
+        if (filePreview && filePreview.startsWith("blob:")) {
+          URL.revokeObjectURL(filePreview);
+        }
+        setFilePreview(URL.createObjectURL(selectedFile));
       } else {
         setFilePreview(PDFimage);
       }
@@ -75,7 +90,8 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     e.stopPropagation();
     setFileName("");
     setFile(null);
-    setFilePreview(PDFimage);
+    // Reset to default image if available, otherwise use PDF placeholder
+    setFilePreview(defaultImage || PDFimage);
     onFileSelect(null);
   };
 

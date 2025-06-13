@@ -12,13 +12,13 @@ import { useUserContext } from '../../UserContext';
 
 const Login = () => {
 
-  const [email, setEmail] = useState('');
+  const [email, setEmailEntry] = useState('');
   const [password, setPassword] = useState('');
   const [erroMessage, setErrorMessage] = useState('');
 
   const { setUserRole } = useUserRoleContext();
-  const { setUserType } = useUserContext();
-   
+  const { setUserType, setEmail, setUsername } = useUserContext();
+  
 
   const navigate = useNavigate();
 
@@ -28,9 +28,16 @@ const Login = () => {
       await loginUser(email,password);
       const userData = await fetchCurrentUser();
 
-      setUserType(userData["user_type"]);
-      setUserRole(userData["roles"][0]);
-      navigate('/donations_management/donations_dashboard');
+      if (userData && userData["user_type"] && userData["roles"] && userData["roles"].length > 0) {
+        setUserType(userData["user_type"]);
+        setUserRole(userData["roles"][0]);
+        setEmail(userData["email"]);
+        setUsername(userData["username"]);
+        
+        navigate('/donations_management/donations_dashboard');
+      } else {
+        throw new Error("Invalid user data received.");
+      }
     }
     catch(error){
       console.error('Login failed: ', error);
@@ -61,7 +68,7 @@ const Login = () => {
               name="email"
               placeholder="Email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => setEmailEntry(e.target.value)}
               required
             />
           </div>

@@ -41,3 +41,37 @@ class ResponseReportOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# FUNDING PROPOSALS MODEL SCHEMA
+# Base schema shared by other versions
+class FundingProposalBase(BaseModel):
+    title: str
+    description: str
+    budgetRequired: int
+    status: Optional[str] = "Active"
+
+# Used when creating a new proposal (no ID or timestamps)
+class FundingProposalCreate(FundingProposalBase):
+    image: Optional[str] = None 
+    
+# Used when updating a proposal (all fields optional)
+class FundingProposalUpdate(FundingProposalBase):
+    status: Optional[str] = None
+    image: Optional[str] = None 
+
+class FundingProposalGet(FundingProposalBase):
+    proposalId: int
+    created_at: datetime
+    updated_at: datetime
+    image: Optional[str] = None 
+    class Config:
+        from_attributes = True 
+
+# Used when returning data from the API
+class FundingProposalResponse(FundingProposalBase):
+    proposalId: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

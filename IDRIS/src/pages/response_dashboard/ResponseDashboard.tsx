@@ -2,16 +2,10 @@ import { Link } from "react-router-dom";
 import "./ResponseDashboard.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
 import MapView from "../../components/MapView/MapView";
-import { TableView, Cell } from "../../components/TableView/table_view";
+import { TableView } from "../../components/TableView/table_view";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faListUl } from "@fortawesome/free-solid-svg-icons";
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  plugins,
-} from "chart.js";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import {
   CategoryScale,
@@ -23,7 +17,6 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Bar } from "react-chartjs-2";
-import { divIcon } from "leaflet";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -179,6 +172,20 @@ type ReportSummary = {
   total_reports: number;
   completed: number;
   started: number;
+  comparison: {
+    total_reports_change: {
+      diff: "+" | "-" | " ";
+      percent: string; // e.g. "25.0%"
+    };
+    completed_change: {
+      diff: "+" | "-" | " ";
+      percent: string;
+    };
+    started_change: {
+      diff: "+" | "-" | " ";
+      percent: string;
+    };
+  };
 };
 
 type PieChartDataset = {
@@ -249,7 +256,11 @@ const ResponseDashboard = () => {
               ) : (
                 <span>Loading Data</span>
               )}
-              <span className="comparizon-value">+12% vs Last Month</span>
+              <span className="comparizon-value">
+                {reportSummary?.comparison.total_reports_change.diff}
+                {reportSummary?.comparison.total_reports_change.percent} vs Last
+                Month
+              </span>
             </div>
           </div>
           <div className="recent-report">
@@ -271,7 +282,11 @@ const ResponseDashboard = () => {
               ) : (
                 <span>Loading Data</span>
               )}
-              <span className="comparizon-value">+9% vs Last Month</span>
+              <span className="comparizon-value">
+                {reportSummary?.comparison.completed_change.diff}
+                {reportSummary?.comparison.completed_change.percent} vs Last
+                Month
+              </span>
             </div>
           </div>
           <div className="sub-item-content-big-data">
@@ -282,7 +297,10 @@ const ResponseDashboard = () => {
               ) : (
                 <span>Loading Data</span>
               )}
-              <span className="comparizon-value">+10% vs Last Month</span>
+              <span className="comparizon-value">
+                {reportSummary?.comparison.started_change.diff}
+                {reportSummary?.comparison.started_change.percent} vs Last Month
+              </span>
             </div>
           </div>
         </div>

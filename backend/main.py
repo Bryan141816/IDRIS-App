@@ -188,42 +188,87 @@ def get_recent_table(db: Session = Depends(get_db)):
     return TableResponse(table_head=table_head, table_datas=table_datas)
 @app.get("/response_dashboard/report_summary")
 def get_report_summary(db: Session = Depends(get_db)):
-    # Get the first and last day of the current month
     now = datetime.now()
-    start_of_month = datetime(now.year, now.month, 1)
+    start_of_current_month = datetime(now.year, now.month, 1)
     
-    # Optional: Calculate first day of next month to use as exclusive upper bound
+    # Next month
     if now.month == 12:
         start_of_next_month = datetime(now.year + 1, 1, 1)
     else:
         start_of_next_month = datetime(now.year, now.month + 1, 1)
 
-    # Query all reports in the current month
-    total_reports = db.query(func.count(ResponseReport.id)) \
-        .filter(ResponseReport.date_time >= start_of_month, ResponseReport.date_time < start_of_next_month) \
-        .scalar()
+    # Previous month
+    if now.month == 1:
+        start_of_prev_month = datetime(now.year - 1, 12, 1)
+    else:
+        start_of_prev_month = datetime(now.year, now.month - 1, 1)
+    
+    end_of_prev_month = start_of_current_month
 
-    # Completed reports
-    total_completed = db.query(func.count(ResponseReport.id)) \
-        .filter(
-            ResponseReport.date_time >= start_of_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "completed"
-        ).scalar()
+    # Get current month data
+    current_total = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_current_month,
+        ResponseReport.date_time < start_of_next_month
+    ).scalar()
 
-    # Started reports
-    total_started = db.query(func.count(ResponseReport.id)) \
-        .filter(
-            ResponseReport.date_time >= start_of_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "started"
-        ).scalar()
+    current_completed = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_current_month,
+        ResponseReport.date_time < start_of_next_month,
+        func.lower(ResponseReport.status) == "completed"
+    ).scalar()
+
+    current_started = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_current_month,
+        ResponseReport.date_time < start_of_next_month,
+        func.lower(ResponseReport.status) == "started"
+    ).scalar()
+
+    # Get previous month data
+    prev_total = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_prev_month,
+        ResponseReport.date_time < end_of_prev_month
+    ).scalar()
+
+    prev_completed = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_prev_month,
+        ResponseReport.date_time < end_of_prev_month,
+        func.lower(ResponseReport.status) == "completed"
+    ).scalar()
+
+    prev_started = db.query(func.count(ResponseReport.id)).filter(
+        ResponseReport.date_time >= start_of_prev_month,
+        ResponseReport.date_time < end_of_prev_month,
+        func.lower(ResponseReport.status) == "started"
+    ).scalar()
+
+    # Function to calculate change
+    def compare(current, previous):
+        if previous == 0:
+            if current == 0:
+                return {"diff": " ", "percent": "0%"}
+            else:
+                return {"diff": "+", "percent": "100%"}
+        change = current - previous
+        if change > 0:
+            sign = "+"
+        elif change < 0:
+            sign = "-"
+        else:
+            sign = " "
+        percent = abs(change) / previous * 100
+
+        return {"diff": sign, "percent": f"{percent:.1f}%"}
 
     return {
         "month": now.strftime("%B %Y"),
-        "total_reports": total_reports,
-        "completed": total_completed,
-        "started": total_started
+        "total_reports": current_total,
+        "completed": current_completed,
+        "started": current_started,
+        "comparison": {
+            "total_reports_change": compare(current_total, prev_total),
+            "completed_change": compare(current_completed, prev_completed),
+            "started_change": compare(current_started, prev_started)
+        }
     }
 
 @app.get("/response_dashboard/modality_chart", response_model = PieChartData)

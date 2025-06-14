@@ -16,7 +16,10 @@ node_modules
 
 # Cache files
 .cache
+__pycache__/
 
+# Compiled files
+*.pyc
 
 
 # Editor directories and files

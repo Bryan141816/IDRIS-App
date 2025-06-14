@@ -9,7 +9,7 @@ interface TableRowProps {
   iSborder: boolean;
 }
 export interface Cell {
-  type: "Text" | "Button" | "Image" | "Hidden";
+  type: "Text" | "Button" | "Image" | "Hidden" | "Date";
   text: string;
   width?: string;
   font_weight: number;
@@ -46,7 +46,7 @@ interface TableViewProps {
 const TableHead: React.FC<TableProps> = ({ children }) => {
   return <div className="row">{children}</div>;
 };
-const TableData: React.FC<TableRowProps> = ({ children, iSborder }) => {
+const TableData: React.FC<TableRowProps> = ({ children }) => {
   return <div className="row table-data">{children}</div>;
 };
 const TableCell: React.FC<TableCellProps> = ({ cell, onClickCallback }) => {
@@ -91,14 +91,14 @@ export const TableView: React.FC<TableViewProps> = ({
   return (
     <div id="table-container">
       <TableHead>
-        {tableJSON.table_head.map((header, index) => (
+        {tableJSON.table_head.map((header) => (
           <h3 style={{ minWidth: header.width }}>{header.text}</h3>
         ))}
       </TableHead>
       <div id="table-data-container">
         {tableJSON.table_datas.map((row, rowIndex) => (
           <TableData iSborder={rowIndex !== tableJSON.table_datas.length - 1}>
-            {row.data.map((cellValue, cellIndex) => (
+            {row.data.map((cellValue) => (
               <TableCell
                 cell={cellValue}
                 onClickCallback={() => {

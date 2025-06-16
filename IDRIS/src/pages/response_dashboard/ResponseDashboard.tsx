@@ -41,30 +41,6 @@ const options = {
   },
   cutout: "80%", // or a pixel value like '100px'
 };
-const lineChartData = {
-  labels: [
-    "April 10",
-    "April 11",
-    "April 12",
-    "April 13",
-    "April 14",
-    "April 15",
-    "April 16",
-    "April 17",
-    "April 18",
-    "April 19",
-  ],
-  datasets: [
-    {
-      label: "Budget",
-      data: [500, 700, 800, 1500, 1700, 2000, 2500, 3000, 3500, 4000],
-      fill: false,
-      borderColor: "#fcb814",
-      backgroundColor: "rgba(54, 162, 235, 0.2)",
-      tension: 0.4,
-    },
-  ],
-};
 const lineChartOptions = {
   responsive: true,
   plugins: {
@@ -198,6 +174,34 @@ type PieChartData = {
   labels: string[];
   datasets: PieChartDataset[];
 };
+type LineChartDataset = {
+  label: string;
+  data: number[];
+  fill: boolean;
+  borderColor: string;
+  backgroundColor: string;
+  tension: number;
+};
+type LineChartData = {
+  labels: string[];
+  datasets: LineChartDataset[];
+};
+type BarChartDataset = {
+  label: string;
+  data: number[];
+  backgroundColor: string[];
+  borderRadius: number;
+};
+type BarChartData = {
+  labels: string[];
+  datasets: BarChartDataset[];
+};
+type InKindMonitoring = {
+  available_relief_packs: number;
+  currently_in_transit: number;
+  already_distributed: number;
+  remaining_days: number;
+};
 
 const ResponseDashboard = () => {
   const { userRole } = useUserRoleContext();
@@ -206,16 +210,34 @@ const ResponseDashboard = () => {
     null,
   );
   const [modalityChart, setModalityChart] = useState<PieChartData | null>(null);
+  const [inKindMonitoring, setInKindMonitoring] =
+    useState<InKindMonitoring | null>(null);
+  const [raisedBudget, setRaisedBudget] = useState<LineChartData | null>(null);
+  const [spendingBreakdown, setSpendingBreakdown] =
+    useState<BarChartData | null>(null);
 
   useEffect(() => {
     fetchData<ReportSummary>(
       "/response_dashboard/report_summary",
       setReportSummary,
     );
+    ("/response_dashboard/spending_breakdown");
     fetchData<TableResponse>("/report_list/recent", setRecentReport);
     fetchData<PieChartData>(
       "/response_dashboard/modality_chart",
       setModalityChart,
+    );
+    fetchData<InKindMonitoring>(
+      "/response_dashboard/in_kind_monitoring",
+      setInKindMonitoring,
+    );
+    fetchData<LineChartData>(
+      "/response_dashboard/raised_budget",
+      setRaisedBudget,
+    );
+    fetchData<BarChartData>(
+      "/response_dashboard/spending_breakdown",
+      setSpendingBreakdown,
     );
   }, []);
 
@@ -392,28 +414,44 @@ const ResponseDashboard = () => {
             style={{ gridColumn: "span 2" }}
           >
             <h1>Relief Packs Available for Distribution</h1>
-            <span>5,000</span>
+            {inKindMonitoring ? (
+              <span>{inKindMonitoring?.available_relief_packs}</span>
+            ) : (
+              <span>Loading Data</span>
+            )}
           </div>
           <div
             className="sub-item-content-big-data-inverted"
             style={{ gridColumn: "span 2" }}
           >
             <h1>Relief Packs Currently in Transit</h1>
-            <span>2,000</span>
+            {inKindMonitoring ? (
+              <span>{inKindMonitoring?.currently_in_transit}</span>
+            ) : (
+              <span>Loading Data</span>
+            )}
           </div>
           <div
             className="sub-item-content-big-data-inverted"
             style={{ gridColumn: "span 2" }}
           >
             <h1>Total Relief Packs Already Distributed</h1>
-            <span>10,000</span>
+            {inKindMonitoring ? (
+              <span>{inKindMonitoring?.already_distributed}</span>
+            ) : (
+              <span>Loading Data</span>
+            )}
           </div>
           <div
             className="sub-item-content-big-data-inverted"
             style={{ gridColumn: "span 2" }}
           >
             <h1>Remaining Days for Distribution Completion</h1>
-            <span>7 Days</span>
+            {inKindMonitoring ? (
+              <span>{inKindMonitoring?.remaining_days} Days</span>
+            ) : (
+              <span>Loading Data</span>
+            )}
           </div>
         </div>
         <div
@@ -445,7 +483,11 @@ const ResponseDashboard = () => {
               boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
             }}
           >
-            <Line data={lineChartData} options={lineChartOptions} />
+            {raisedBudget ? (
+              <Line data={raisedBudget} options={lineChartOptions} />
+            ) : (
+              <div>Loading Data</div>
+            )}
           </div>
           <div
             className="bordered-sub-item"
@@ -454,7 +496,11 @@ const ResponseDashboard = () => {
               boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
             }}
           >
-            <Bar data={barChartData} options={barChartOptions} />
+            {spendingBreakdown ? (
+              <Bar data={spendingBreakdown} options={barChartOptions} />
+            ) : (
+              <div>Loading Data</div>
+            )}
           </div>
         </div>
       </div>

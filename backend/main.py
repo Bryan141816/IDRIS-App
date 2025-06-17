@@ -10,7 +10,9 @@ from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication
 from routers.response_dashboard import response_dashboard, report_list
- 
+from routers import fundingProposals
+from fastapi.staticfiles import StaticFiles 
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()

@@ -27,6 +27,13 @@ app.include_router(authentication.router)
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
 
+app.include_router(fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"])
+app.mount(
+    "/media/fundingproposals",
+    StaticFiles(directory="media/fundingproposals"),
+    name="fundingproposals"
+)
+
 @app.on_event("startup")
 async def on_startup():
     print("Registered routes:")

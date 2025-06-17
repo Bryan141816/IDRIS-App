@@ -22,6 +22,8 @@ import DonationsDashboard from './pages/donations_management/donations_dashboard
 import ViewCredentials from './pages/volunteer_management/manage_applicant/view_credentials';
 import ListOfRAFIDonors from './pages/donations_management/list_of_rafi_donors/ListOfRAFIDonors';
 import FundingProposals from './pages/donations_management/funding_proposals/FundingProposals';
+import CreateFunding from './pages/donations_management/funding_proposals/CreateFunding';
+import UpdateFunding from './pages/donations_management/funding_proposals/UpdateFunding';
 import ResponseDashboard from './pages/response_dashboard/ResponseDashboard';
 import ReportList from './pages/response_dashboard/report_list/ReportList';
 import ReportsGeneration from './pages/reports_generation/reports_generation';
@@ -171,6 +173,16 @@ function AppRoutes() {
               <Route path='/donations_management/funding_proposals' element={
                 <ProtectedRoute>
                   <Page title='IDRIS | Funding Proposals'><FundingProposals /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/donations_management/funding_proposals/create' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Create Funding Proposal'><CreateFunding /></Page>
+                </ProtectedRoute>
+              } />
+              <Route path='/donations_management/funding_proposals/update' element={
+                <ProtectedRoute>
+                  <Page title='IDRIS | Update Funding Proposal'><UpdateFunding /></Page>
                 </ProtectedRoute>
               } />
               <Route path='/response_dashboard' element={

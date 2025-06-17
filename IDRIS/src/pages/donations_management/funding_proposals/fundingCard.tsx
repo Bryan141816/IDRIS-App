@@ -1,12 +1,13 @@
 import styles from './fundingCard.module.scss';
 import defaultFundingImage from '../files/default_image.jpg';
-import {CircleDot} from '../../../components/Page_Furniture/Icons';
+import { CircleDot } from '../../../components/Page_Furniture/Icons';
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUserRoleContext } from '../../../UserRoleContext';
 import { useUserContext } from '../../../UserContext';
 
 type FundingProp = {
-    id?: number;
+    proposalId?: number;
     title?: string;
     image?: string; // link to image
     description?: string;
@@ -15,14 +16,24 @@ type FundingProp = {
 }
 
 const FundingCard: React.FC<FundingProp> = ({ 
+    proposalId,
     title = "Title", 
     image = defaultFundingImage, 
     description, 
     donated = 0, 
     target = 100
 }) => {
+    const fundingData = { // Used to send data to the "Update Button". Avoid requerying the database
+        proposalId,
+        title,
+        image,
+        description,
+        target,
+    }
+
     const { userType } = useUserContext();
     const { userRole } = useUserRoleContext();
+    const navigate = useNavigate();
 
     const [activeStatus, setActive] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -46,6 +57,10 @@ const FundingCard: React.FC<FundingProp> = ({
 
     const percentage = Math.round(getPercentage(donated, target));
     
+    const goToUpdatePage = () => {
+        navigate('/donations_management/funding_proposals/update', { state: fundingData });
+      };
+
     return (
         <div className={styles.fundingCard}>
             {/* FUNDING HEADER */}
@@ -59,7 +74,7 @@ const FundingCard: React.FC<FundingProp> = ({
                         <CircleDot width={14} height={14} />
                     </div>)}
                     <div className={`${styles.menuItems} ${activeStatus ? styles.active : ''}`.trim()}>
-                        <button>Edit</button>
+                        <button onClick={goToUpdatePage}>Edit</button>
                         {/* <button>Delete</button> */}
                     </div>
                 </div>

@@ -20,8 +20,80 @@ router = APIRouter()
 UPLOAD_DIR = Path("media/fundingproposals")
 
 @router.get("/")
-def get_all_proposals_route():
+def get_proposals_route():
     return {"message": "This is funding proposals"}
+
+@router.get("/proposals/all_proposals/", response_model=List[FundingProposalGet])
+def read_all_proposals(
+    search: str = Query(None),
+    sort: str = Query("created_at", regex="^(created_at|title)$"),
+    order: str = Query("desc", regex="^(asc|desc)$"),
+    limit: int = Query(None, ge=1),
+    page: int = Query(1, ge=1),
+    db: Session = Depends(get_db)
+):
+    try:
+        query = db.query(FundingProposals)
+        if search:
+            query = query.filter(FundingProposals.title.ilike(f"%{search}%"))
+
+        if sort and hasattr(FundingProposals, sort):
+            order_by_column = getattr(FundingProposals, sort)
+            if order == "desc":
+                order_by_column = order_by_column.desc()
+            else:
+                order_by_column = order_by_column.asc()
+            query = query.order_by(order_by_column)
+
+        if limit:
+            offset = (page - 1) * limit
+            query = query.offset(offset).limit(limit)
+
+        return query.all()
+    except Exception as e:
+        print(f"Error fetching proposals: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching proposals")
+
+
+@router.get("/proposals/get_proposal/{proposal_id}", response_model=FundingProposalGet)
+def read_one_proposal(proposal_id: int, db: Session = Depends(get_db)):
+    try:
+        proposal = db.query(FundingProposals).filter(FundingProposals.proposalId == proposal_id).first()
+        if not proposal:
+            raise HTTPException(status_code=404, detail="Proposal not found")
+        return proposal
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error fetching proposal: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching proposal")
+
+# @router.get("/proposals/get_most_recent_proposals", response_model=List[FundingProposalGet])
+# def get_most_recent_proposals(
+#     limit: int = Query(10, ge=1),
+#     page: int = Query(1, ge=1),
+#     db: Session = Depends(get_db)
+# ):
+#     try:
+#         offset = (page - 1) * limit if page else 0
+
+#         proposals = (
+#             db.query(FundingProposals)
+#             .order_by(FundingProposals.created_at.desc())
+#             .offset(offset)
+#             .limit(limit)
+#             .all()
+#         )
+
+#         if not proposals:
+#             raise HTTPException(status_code=404, detail="No proposals found")
+#         return proposals
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         print(f"Error fetching proposals: {e}")
+#         raise HTTPException(status_code=500, detail="Error fetching proposals")
+        
 
 @router.post("/proposals/create", response_model=FundingProposalResponse)
 def create_proposal_endpoint(    
@@ -62,30 +134,6 @@ def create_proposal_endpoint(
         db.rollback()
         print(f"Database error: {e}")
         raise HTTPException(status_code=500, detail="Database error")
-
-@router.get("/proposals/all_proposals/", response_model=List[FundingProposalGet])
-def read_all_proposals(search: str = Query(None), db: Session = Depends(get_db)):
-    try:
-        query = db.query(FundingProposals)
-        if search:
-            query = query.filter(FundingProposals.title.ilike(f"%{search}%"))
-        return query.all()
-    except Exception as e:
-        print(f"Error fetching proposals: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching proposals")
-
-@router.get("/proposals/get_proposal/{proposal_id}", response_model=FundingProposalGet)
-def read_one_proposal(proposal_id: int, db: Session = Depends(get_db)):
-    try:
-        proposal = db.query(FundingProposals).filter(FundingProposals.proposalId == proposal_id).first()
-        if not proposal:
-            raise HTTPException(status_code=404, detail="Proposal not found")
-        return proposal
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error fetching proposal: {e}")
-        raise HTTPException(status_code=500, detail="Error fetching proposal")
 
 @router.put("/proposals/update_proposal/{proposal_id}", response_model=FundingProposalResponse)
 def update_proposal_endpoint(

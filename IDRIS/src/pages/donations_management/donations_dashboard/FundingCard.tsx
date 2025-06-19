@@ -2,6 +2,7 @@ import styles from './fundingcard.module.scss';
 import { Link } from 'react-router-dom';
 import { useUserRoleContext } from '../../../UserRoleContext';
 type FundingProps = {
+    id?: number | null;
     image?: string;
     message?: string;
     funded?: number;
@@ -11,6 +12,7 @@ type FundingProps = {
 }
 
 export const FundingCard: React.FC<FundingProps> = ({
+    id,
     image,
     message,
     funded,
@@ -18,14 +20,18 @@ export const FundingCard: React.FC<FundingProps> = ({
     anchorLink,
     className = ""
 }) => {
-
+    const BASE_URL = "http://localhost:8000";
+    const fullImageUrl = image?.startsWith("http")
+      ? image
+      : `${BASE_URL}${image?.startsWith("/") ? image : `/media/fundingproposals/${image}`}`;
+        
     const { userRole } = useUserRoleContext();
 
     const filled = Math.min(((funded ?? 0) / (target ?? 1)) * 100, 100);
     
     return(
         <div className={`${styles.fundingCard} ${className}`}>
-            <img src={image} alt="funding-image" />
+            <img src={fullImageUrl} alt="funding-image" />
             <p className={`${styles.fundingMessage}`}>{message}</p>
             <div className={styles["progress-container"]}>
                 <div className={styles["full-bar"]}>

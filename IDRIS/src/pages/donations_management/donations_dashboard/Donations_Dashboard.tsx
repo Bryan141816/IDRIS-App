@@ -1,13 +1,11 @@
 import './dashboard.scss';
+import { useState, useEffect } from 'react';
 import DownloadableFile from '../../../components/Page_Furniture/Downloadable_File';
 import pdf_logo from '../files/pdf-logo.png';
 import PieChart from '../../../components/Page_Furniture/PieChart';
 import { DonationRecord } from './DonationRecord';
 import { FundingCard } from './FundingCard';
-import image1 from '../test_images/Group 20.png';
-import image2 from '../test_images/Group 21.png';
-import image3 from '../test_images/image (1).png';
-import image4 from '../test_images/image (2).png';
+import { getAllFundingProposals } from '../../../API_Handler/donations_funding_proposals_handler';
 
 const reportsSample = [
   {
@@ -52,38 +50,33 @@ const DonationRecordSample = [
   }
 ]
 
-const FundingProposals = [
-  {
-    image: image1,
-    message: "A devastating fire has left many families homeless, without food, clean water, or shelter. Urgent support is needed to provide emergency relief and help them rebuild their lives.",
-    funded: 250000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  { 
-    image: image2,
-    message: "A powerful typhoon has left thousands of families displaced, without access to safe housing, electricity, and basic necessities. Your help can bring hope and aid to those in need.",
-    funded: 50000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  {
-    image: image3,
-    message: "A tragic fire has left countless families homeless and in desperate need of assistance. Donations will help provide food, temporary housing, and essential supplies.",
-    funded: 200000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  {
-    image: image4,
-    message: "Super Typhoon Yolanda (Haiyan), one of the most powerful storms in history, devastated communities and claimed thousands of lives. Help us support the survivors with food, shelter, and medical care.",
-    funded: 100000,
-    target: 500000,
-    anchor: 'A0',
-  },
-];
-
 const DonationsDashboard = () => {
+  interface Proposal {
+    proposalId: number;
+    image: string;
+    description: string;
+    progress: number;
+    budgetRequired: number;
+    anchor: string;
+    status: string;
+  }
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+
+  const [ mostRecentFundingPage ] = useState(1);
+
+  useEffect(() => {
+    const fetchProposals = async () => {
+      try {
+        const response = await getAllFundingProposals(4, mostRecentFundingPage);
+        setProposals(response);
+        console.log(response);
+      } catch (error) {
+        console.error("Error fetching proposals:", error);
+      }
+    };
+
+    fetchProposals();
+  }, []);
 
   let statistics = {
       overall_donations: 1000000,
@@ -154,13 +147,14 @@ const DonationsDashboard = () => {
 
         <h3 className='public-feed-title'>Recent Programs:</h3>
         <div id="funding-proposals">
-          {FundingProposals.map((funding, index) => (
+          {proposals.map((funding, index) => (
             <FundingCard
               key={index}
+              id = { funding.proposalId }
               image={funding.image}
-              message={funding.message}
-              funded={funding.funded}
-              target={funding.target}
+              message={funding.description}
+              funded={funding.progress}
+              target={funding.budgetRequired}
               anchorLink={funding.anchor}
               className='funding-item'
             />

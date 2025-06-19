@@ -27,3 +27,4 @@ starlette
 typing-inspection
 uvicorn
 passlib[bcrypt]
+alembic>=1.8.0

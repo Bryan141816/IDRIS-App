@@ -130,3 +130,4 @@ def delete_proposal(db: Session, proposal_id: int) -> bool:
     db.delete(db_proposal)
     db.commit()
     return True
+

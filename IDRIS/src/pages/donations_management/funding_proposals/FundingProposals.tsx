@@ -4,7 +4,7 @@ import FilterBar from '../../../components/Page_Furniture/Filter';
 import FundingCard from './fundingCard';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllFundingProposals } from '../../../API_Handler/donations_funding_proposals_handler';
+import { getFundingProposals } from '../../../API_Handler/donations_funding_proposals_handler';
 
 interface Proposal {
   proposalId: number;
@@ -26,7 +26,7 @@ const FundingProposals = () => {
   useEffect(() => {
     async function fetchProposals() {
       try {
-        const data = await getAllFundingProposals(10, 1); // or pass search param
+        const data = await getFundingProposals(); // or pass search param
         setProposals(data);
         console.log(data);
       } catch (error) {

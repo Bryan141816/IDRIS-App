@@ -158,13 +158,7 @@ def upgrade(engine):
             BEFORE UPDATE ON organizations 
             FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
         """))
-        
-        conn.execute(text("""
-            CREATE TRIGGER update_donors_last_updated 
-            BEFORE UPDATE ON donors 
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-        """))
-        
+                
         conn.commit()
         print("✅ All tables created successfully!")
 

@@ -59,17 +59,7 @@ const lineChartOptions = {
     },
   },
 };
-const barChartData = {
-  labels: ["Food Supplies", "Medical Aid", "Logistics", "Miscellaneous"],
-  datasets: [
-    {
-      label: "",
-      data: [120, 150, 80, 100],
-      backgroundColor: ["#44EB6E", "#4468EB", "#EB4D44", "#fcb814"],
-      borderRadius: 5,
-    },
-  ],
-};
+
 const barChartOptions = {
   responsive: true,
   plugins: {
@@ -348,7 +338,7 @@ const ResponseDashboard = () => {
             <h3>Modality Distribution</h3>
             {userRole == "operations admin" && (
               <Link
-                to="/response_dashboard/report_list"
+                to="/response_dashboard/modality_distribution"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
@@ -403,7 +393,11 @@ const ResponseDashboard = () => {
               }}
             >
               {modalityChart ? (
-                <Doughnut data={modalityChart} options={options} />
+                modalityChart.labels ? (
+                  <Doughnut data={modalityChart} options={options} />
+                ) : (
+                  <div>No Records</div>
+                )
               ) : (
                 <div>Loading Data</div>
               )}

@@ -3,16 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
 import shutil
-from schemas import FundingProposalCreate, FundingProposalUpdate, FundingProposalResponse, FundingProposalGet
+from data_schemas.funding_proposal_schema import ( FundingProposalCreate, FundingProposalUpdate, FundingProposalGet, 
+                                                  FundingProposalResponse )
 from models import FundingProposals
 
-from crud import (
-    create_proposal,
-    get_all_proposals,
-    get_proposal_by_id,
-    update_proposal,
-    delete_proposal,
-)
+from crud_functions.funding_proposals import FundingProposalCRUD 
+
 from database import get_db
 
 router = APIRouter()
@@ -211,7 +207,7 @@ def update_proposal_endpoint(
 @router.delete("/proposals/delete_proposal/{proposal_id}")
 def delete_proposal_endpoint(proposal_id: int, db: Session = Depends(get_db)):
     try:
-        if not delete_proposal(db, proposal_id):
+        if not FundingProposalCRUD.delete_proposal(db, proposal_id):
             raise HTTPException(status_code=404, detail="Proposal not found")
         return {"detail": "Proposal deleted successfully"}
     except HTTPException:

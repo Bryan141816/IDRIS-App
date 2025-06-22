@@ -6,11 +6,18 @@ def upgrade(engine):
     with engine.connect() as conn:
         try:
             # Create the update_updated_at_column function (if it doesn't exist)
+            # Note: This function should work with both 'updated_at' and 'last_updated' columns
             conn.execute(text("""
                 CREATE OR REPLACE FUNCTION update_updated_at_column()
                 RETURNS TRIGGER AS $$
                 BEGIN
-                    NEW.last_updated = CURRENT_TIMESTAMP;
+                    -- Handle tables with 'updated_at' column (like funding_proposals)
+                    IF TG_TABLE_NAME = 'funding_proposals' THEN
+                        NEW.updated_at = CURRENT_TIMESTAMP;
+                    -- Handle tables with 'last_updated' column (like organizations, donors)
+                    ELSIF TG_TABLE_NAME IN ('organizations', 'donors') THEN
+                        NEW.last_updated = CURRENT_TIMESTAMP;
+                    END IF;
                     RETURN NEW;
                 END;
                 $$ LANGUAGE plpgsql;
@@ -102,7 +109,7 @@ def upgrade(engine):
                 EXECUTE FUNCTION validate_donor_user_role();
             """))
             
-            # Create triggers for donation_records table (NOT donations table)
+            # Create triggers for donation_records table
             conn.execute(text("""
                 CREATE TRIGGER tr_validate_donation_type_consistency
                 BEFORE INSERT OR UPDATE ON donation_records
@@ -115,6 +122,13 @@ def upgrade(engine):
                 BEFORE INSERT OR UPDATE ON donation_records
                 FOR EACH ROW
                 EXECUTE FUNCTION validate_donation_kind_consistency();
+            """))
+            
+            # Add trigger for donors table to update last_updated
+            conn.execute(text("""
+                CREATE TRIGGER update_donors_last_updated 
+                BEFORE UPDATE ON donors 
+                FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
             """))
             
             conn.commit()
@@ -135,12 +149,24 @@ def downgrade(engine):
             conn.execute(text("DROP TRIGGER IF EXISTS tr_validate_donor_user_role ON donors;"))
             conn.execute(text("DROP TRIGGER IF EXISTS tr_validate_donation_type_consistency ON donation_records;"))
             conn.execute(text("DROP TRIGGER IF EXISTS tr_validate_donation_kind_consistency ON donation_records;"))
+            conn.execute(text("DROP TRIGGER IF EXISTS update_donors_last_updated ON donors;"))
             
-            # Drop functions
+            # Drop functions (except update_updated_at_column which was created in migration 001)
             conn.execute(text("DROP FUNCTION IF EXISTS validate_donor_type_and_fk();"))
             conn.execute(text("DROP FUNCTION IF EXISTS validate_donor_user_role();"))
             conn.execute(text("DROP FUNCTION IF EXISTS validate_donation_type_consistency();"))
             conn.execute(text("DROP FUNCTION IF EXISTS validate_donation_kind_consistency();"))
+            
+            # Restore the original update_updated_at_column function from migration 001
+            conn.execute(text("""
+                CREATE OR REPLACE FUNCTION update_updated_at_column()
+                RETURNS TRIGGER AS $$
+                BEGIN
+                    NEW.updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ language 'plpgsql';
+            """))
             
             conn.commit()
             print("✅ All validation functions and triggers removed successfully!")

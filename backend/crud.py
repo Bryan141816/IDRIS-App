@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import ResponseReport, User, FundingProposals
+from models import ResponseReport, User, FundingProposals, ModalityDistribution
 from auth import hash_password, verify_password
-from schemas import ResponseReportCreate
+from schemas import ResponseReportCreate, ModalityDistributionCreate
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):

@@ -51,3 +51,16 @@ class ModalityDistributionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ResponseDashboardBudgetCreate(BaseModel):
+    budget_record_type: str
+    amount: float
+
+class ResponseDashboardBudgetOut(BaseModel):
+    id: int
+    date_time: datetime
+    budget_record_type: str
+    amount: float
+
+    class Config:
+        from_attributes = True

@@ -1,6 +1,6 @@
 from datetime import timezone
 from enum import unique
-from sqlalchemy import Column, Boolean, Integer, String, DateTime, ForeignKey, CheckConstraint, func, Enum, Numeric, Date, Text
+from sqlalchemy import Column, Boolean, Integer, String, DateTime, ForeignKey, CheckConstraint, func, Enum, Numeric, Date, Text, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
@@ -34,6 +34,14 @@ class ModalityDistribution(Base):
     id = Column(Integer, primary_key=True, index=True)
     date_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modality_type = Column(String(255), nullable=False)
+
+class ResponseReportBudget(Base):
+    __tablename__ = "response_report_budget"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date_time = Column(DateTime(timezone=True),server_default=func.now(), nullable=False)
+    budget_record_type = Column(String(255), nullable=False)
+    amount = Column(Float, nullable=False)
 
 class FundingProposals(Base):
     __tablename__ = "funding_proposals"

@@ -463,7 +463,7 @@ const ResponseDashboard = () => {
             <h3>Budget</h3>
             {userRole == "operations admin" && (
               <Link
-                to="/response_dashboard/report_list"
+                to="/response_dashboard/budget_record"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage

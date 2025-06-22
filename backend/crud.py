@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import ResponseReport, User, FundingProposals, ModalityDistribution
+from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget
 from auth import hash_password, verify_password
-from schemas import ResponseReportCreate, ModalityDistributionCreate
+from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -93,4 +93,13 @@ def create_modality_distribution_record(db: Session, modality_report: ModalityDi
     db.refresh(db_record)
     return db_record
 
-
+def create_response_dashboard_budget_create(db: Session, response_budget: ResponseDashboardBudgetCreate ) -> ResponseReportBudget:
+    db_record = ResponseReportBudget(
+        date_time = datetime.now(timezone.utc),
+        budget_record_type = response_budget.budget_record_type,
+        amount = response_budget.amount
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record

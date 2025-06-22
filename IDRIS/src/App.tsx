@@ -45,6 +45,7 @@ import Header from "./components/Page_Furniture/Header";
 import Footer from "./components/Page_Furniture/Footer";
 import Register from "./components/Page_Furniture/Register";
 import ModalityDistribution from "./pages/response_dashboard/modality_distribution/ModalityDistribution";
+import BudgetRecord from "./pages/response_dashboard/budget_record/BudgetRecord";
 function App() {
   return (
     <UserProvider>
@@ -344,6 +345,16 @@ function AppRoutes() {
                 <ProtectedRoute>
                   <Page title="IDRIS | Modality Distribution">
                     <ModalityDistribution />
+                  </Page>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/response_dashboard/budget_record"
+              element={
+                <ProtectedRoute>
+                  <Page title="IDRIS| Budget Record">
+                    <BudgetRecord />
                   </Page>
                 </ProtectedRoute>
               }

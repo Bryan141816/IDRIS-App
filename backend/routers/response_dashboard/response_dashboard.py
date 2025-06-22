@@ -1,13 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
 from data_schemas.in_kind_monitoring_schema import InKindMonitoring
 from database import  get_db
-from models import  ResponseReport  # no Role import
-from datetime import datetime
-from sqlalchemy import func
+from models import  ResponseReport, ModalityDistribution  # no Role import
+from datetime import datetime, timezone
+from sqlalchemy import func, extract
 
 router = APIRouter(
 tags=["response_dashboard"]
@@ -146,16 +146,50 @@ def get_report_summary(db: Session = Depends(get_db)):
         }
     }
 
-@router.get("/response_dashboard/modality_chart", response_model = PieChartData)
-def get_modality_chart():
+@router.get("/response_dashboard/modality_chart", response_model=dict)
+def get_modality_chart(db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    current_year = now.year
+    current_month = now.month
+
+    # Group and count modality types for the current month
+    results = (
+        db.query(ModalityDistribution.modality_type, func.count().label("count"))
+        .filter(
+            extract("year", ModalityDistribution.date_time) == current_year,
+            extract("month", ModalityDistribution.date_time) == current_month
+        )
+        .group_by(ModalityDistribution.modality_type)
+        .all()
+    )
+
+    if not results:
+        # Return empty chart structure
+        return {
+            "labels": None,
+            "datasets": None        
+        }
+
+    # Prepare the chart data
+    labels = [r.modality_type for r in results]
+    data = [r.count for r in results]
+    
+    # Optional: Assign colors dynamically or map known labels to colors
+    color_map = {
+        "Cash": "#44EB6E",
+        "InKind": "#4468EB",
+        "Services": "#EB4D44"
+    }
+    backgroundColor = [color_map.get(label, "#CCCCCC") for label in labels]  # fallback color
+
     return {
-        "labels": ["Cash", "Inkind", "Services"],
+        "labels": labels,
         "datasets": [
             {
                 "label": "Modality Distribution",
-                "data": [12, 19,3],
-                "backgroundColor": ["#44EB6E", "#4468EB", "#EB4D44"],
-                "borderWidth": 1,            
+                "data": data,
+                "backgroundColor": backgroundColor,
+                "borderWidth": 1,
             }
         ]
     }

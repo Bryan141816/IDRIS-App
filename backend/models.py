@@ -28,6 +28,13 @@ class ResponseReport(Base):
     report_type = Column(String(255), nullable=False)
     status = Column(String(50), nullable=False)
 
+class ModalityDistribution(Base):
+    __tablename__ = "modality_distribution"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    modality_type = Column(String(255), nullable=False)
+
 class FundingProposals(Base):
     __tablename__ = "funding_proposals"
 

@@ -41,3 +41,13 @@ class ResponseReportOut(BaseModel):
     class Config:
         from_attributes = True
 
+class ModalityDistributionCreate(BaseModel):
+    modality_type: str
+
+class ModalityDistributionOut(BaseModel):
+    id: int
+    date_time: datetime
+    modality_type: str
+
+    class Config:
+        from_attributes = True

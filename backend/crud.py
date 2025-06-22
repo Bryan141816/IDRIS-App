@@ -83,4 +83,14 @@ def create_response_report(db: Session, report:ResponseReportCreate) -> Response
     db.commit()
     db.refresh(db_report)
     return db_report
+def create_modality_distribution_record(db: Session, modality_report: ModalityDistributionCreate) -> ModalityDistribution:
+    db_record = ModalityDistribution(
+        date_time = datetime.now(timezone.utc),
+        modality_type = modality_report.modality_type
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+
 

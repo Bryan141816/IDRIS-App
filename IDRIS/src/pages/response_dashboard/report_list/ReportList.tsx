@@ -267,7 +267,7 @@ const ReportList = () => {
           </div>
         </Modal>
       ) : (
-        <div>No data</div>
+        <></>
       )}
 
       <div className="horizontal-container">

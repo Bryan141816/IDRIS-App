@@ -239,7 +239,7 @@ const ModalityDistribution = () => {
           </div>
         </Modal>
       ) : (
-        <div>No data</div>
+        <></>
       )}
 
       <div className="horizontal-container">

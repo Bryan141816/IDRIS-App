@@ -31,7 +31,8 @@ class DonorResponse(BaseModel):
     name: str
     donor_type: str
     is_verified: bool
-
+    date_joined: datetime
+    
     class Config:
         from_attributes = True
 

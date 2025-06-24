@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication
 from routers.response_dashboard import response_dashboard, report_list, modality_distribution, budget
-from routers import fundingProposals
+from routers import fundingProposals, donors
 from fastapi.staticfiles import StaticFiles 
 
 Base.metadata.create_all(bind=engine)
@@ -36,6 +36,8 @@ app.mount(
     StaticFiles(directory="media/fundingproposals"),
     name="fundingproposals"
 )
+app.include_router(donors.router, prefix="/donors", tags=["Donors"])
+
 
 @app.on_event("startup")
 async def on_startup():

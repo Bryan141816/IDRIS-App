@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from database import get_db  # Adjust import path
-from schemas import (
+from data_schemas.donors_schema import (
     DonorResponse, 
     DonorListResponse, 
     DonorStatsResponse,
@@ -79,11 +79,45 @@ def create_organization_donor_endpoint(
         )
 
 
+@router.get("/get_donors_list/", response_model=DonorListResponse)
+def get_donors_list(
+    search: str = Query(None),
+    order: str = Query("desc", regex="^(asc|desc)$"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """Get all donors with search, ordering, and pagination."""
+    try:
+        # Get donors with search, ordering, and pagination
+        donors = donor_crud.get_all_donors(
+            db, 
+            search=search, 
+            order=order, 
+            skip=skip, 
+            limit=limit
+        )
+        
+        # Get total count (with search filter if provided)
+        total = donor_crud.count_donors(db, search=search)
+        
+        return DonorListResponse(
+            donors=donors,
+            total=total,
+            skip=skip,
+            limit=limit
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving donors: {str(e)}"
+        )
 # ============================================================================
 # READ ENDPOINTS - SINGLE RECORDS
 # ============================================================================
 
-@router.get("/{donor_id}", response_model=DonorResponse)
+@router.get("/get_by_id/{donor_id}", response_model=DonorResponse)
 def get_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
@@ -132,7 +166,7 @@ def get_donor_by_organization_endpoint(
 # READ ENDPOINTS - MULTIPLE RECORDS & FILTERING
 # ============================================================================
 
-@router.get("/", response_model=DonorListResponse)
+@router.get("/get_all", response_model=DonorListResponse)
 def get_all_donors_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, status
 from models import Donors
@@ -178,33 +179,78 @@ class DonorCRUD:
         ).all()
 
 
-    def get_all_donors(self, db: Session, skip: int = 0, limit: int = 100) -> List[Donors]:
+    def get_all_donors(
+        self, 
+        db: Session, 
+        search: str = None, 
+        order: str = "desc", 
+        skip: int = 0, 
+        limit: int = 100
+    ) -> List[Donors]:
         """
-        Retrieve all donors with pagination.
+        Retrieve all donors with search, ordering, and pagination.
         
         Args:
             db: Database session
+            search: Search term to filter donors (optional)
+            order: Sort order - 'asc' or 'desc' (default: 'desc')
             skip: Number of records to skip (default: 0)
             limit: Maximum number of records to return (default: 100)
         
         Returns:
-            List of all Donors objects
+            List of Donors objects matching the criteria
         """
-        return db.query(Donors).offset(skip).limit(limit).all()
+        query = db.query(Donors)
+        
+        # Apply search filter if provided
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Donors.first_name.ilike(search_term),
+                    Donors.last_name.ilike(search_term),
+                    Donors.email.ilike(search_term),
+                    Donors.phone.ilike(search_term)
+                    # Add other searchable fields as needed
+                )
+            )
+        
+        # Apply ordering (adjust field name based on your model)
+        if order == "asc":
+            query = query.order_by(Donors.date_joined.asc())  # or Donors.id.asc()
+        else:
+            query = query.order_by(Donors.date_joined.desc())  # or Donors.id.desc()
+        
+        return query.offset(skip).limit(limit).all()
 
 
-    def count_donors(self, db: Session) -> int:
+    def count_donors(self, db: Session, search: str = None) -> int:
         """
-        Get total count of donors.
+        Count total number of donors with optional search filter.
         
         Args:
             db: Database session
+            search: Search term to filter donors (optional)
         
         Returns:
-            Total number of donors
+            Total count of donors matching the criteria
         """
-        return db.query(Donors).count()
-
+        query = db.query(Donors)
+        
+        # Apply same search filter for accurate count
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Donors.first_name.ilike(search_term),
+                    Donors.last_name.ilike(search_term),
+                    Donors.email.ilike(search_term),
+                    Donors.phone.ilike(search_term)
+                    # Add other searchable fields as needed
+                )
+            )
+    
+        return query.count()
 
     def count_donors_by_type(self, db: Session, donor_type: str) -> int:
         """

@@ -1,9 +1,9 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import or_
+from sqlalchemy import or_, asc, desc
 from typing import Optional, List, Dict, Any
 from fastapi import HTTPException, status
-from models import Donors
+from models import Donors, User
 
 # CREATE Operations
 class DonorCRUD:
@@ -200,7 +200,7 @@ class DonorCRUD:
         Returns:
             List of Donors objects matching the criteria
         """
-        query = db.query(Donors)
+        query = db.query(Donors).options(joinedload(Donors.user))
         
         # Apply search filter if provided
         if search:
@@ -210,10 +210,11 @@ class DonorCRUD:
                     Donors.first_name.ilike(search_term),
                     Donors.last_name.ilike(search_term),
                     Donors.email.ilike(search_term),
-                    Donors.phone.ilike(search_term)
+                    Donors.phone.ilike(search_term),
+                    User.username.ilike(search_term)  
                     # Add other searchable fields as needed
                 )
-            )
+            ).join(User)
         
         # Apply ordering (adjust field name based on your model)
         if order == "asc":
@@ -463,4 +464,49 @@ class DonorCRUD:
             "unverified_donors": total_donors - verified_donors
         }
         
+    def get_donor_display_info(        
+        self, 
+        db: Session, 
+        search: str = None, 
+        order: str = "desc", 
+        skip: int = 0, 
+        limit: int = 100
+    ) -> List[Donors]:
+
+        query = db.query(Donors).options(joinedload(Donors.user))
+        
+        # Apply search filter if provided
+        if search:
+            search_term = f"%{search.strip()}%"
+            query = query.join(User).filter(
+                or_(
+                    Donors.organization_name.ilike(search_term),
+                    User.username.ilike(search_term)
+                )
+            )
+
+        # Apply ordering
+        if order == "asc":
+            query = query.order_by(asc(Donors.date_joined))
+        else:
+            query = query.order_by(desc(Donors.date_joined))
+
+        # Apply pagination
+        donors = query.offset(skip).limit(limit).all()
+
+        # Build response
+        return_value = []
+        for donor in donors:
+            if donor.donor_type == "Individual" and donor.user:
+                display_name = donor.user.username
+            else:
+                display_name = donor.organization_name or "Unknown Organization"
+
+            return_value.append({
+                "name": display_name,
+                "date_joined": donor.date_joined.isoformat()
+            })
+
+        return return_value
+    
 donor_crud = DonorCRUD()

@@ -58,40 +58,25 @@ class FundingProposals(Base):
     
     # Added missing relationship
     donations = relationship("DonationRecords", back_populates="proposal")
-
-class Organization(Base):
-    __tablename__ = "organizations"
-
-    organizationId = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False, unique=True, index=True)
-    phone_number = Column(String(50), nullable=True)
-    email = Column(String(255), nullable=True)
-    address = Column(String(255), nullable=True)
-    
-    date_created = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    
-    # Fixed relationship name and reference
-    donor_profile = relationship("Donors", back_populates="organization_profile")
     
 class Donors(Base):
     __tablename__ = "donors" 
         
     donorId = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    organization_id = Column(Integer, ForeignKey("organizations.organizationId"), nullable=True)
-    name = Column(String(255))
+    
     donor_type = Column(String(20), nullable=False)
+    organization_name = Column(String(255), nullable=True) # Nullable for individual donors
     is_verified = Column(Boolean, nullable=False, default=False)
     
-    # Fixed relationships
+    # Updated relationships
     user_profile = relationship("User", back_populates="donor_profile")
-    organization_profile = relationship("Organization", back_populates="donor_profile")
     donations = relationship("DonationRecords", back_populates="donor")
     
     date_joined = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
+    user = relationship("User", backref="donors")
 
 class DonationType(enum.Enum):
     ONE_TIME = "one-time"

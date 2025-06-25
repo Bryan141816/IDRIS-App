@@ -38,7 +38,6 @@ app.mount(
 )
 app.include_router(donors.router, prefix="/donors", tags=["Donors"])
 
-
 @app.on_event("startup")
 async def on_startup():
     print("Registered routes:")

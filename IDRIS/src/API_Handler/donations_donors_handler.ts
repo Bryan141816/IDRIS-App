@@ -6,7 +6,7 @@ const API = axios.create({
 
 // GET all donors (optionally with search or filter query)
 export async function getDonorsList(search = ''): Promise<any[]> {
-  const response = await API.get(`/donors/get_donors_list/`, {
+  const response = await API.get(`/donors/get_all_as_lists/`, {
     params: { search }, // if backend accepts it
   });
   return response.data;

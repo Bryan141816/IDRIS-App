@@ -7,8 +7,8 @@ from data_schemas.donors_schema import (
     DonorResponse, 
     DonorListResponse, 
     DonorStatsResponse,
+    ListOfDonorsResponse,
     IndividualDonorCreate,
-    OrganizationDonorCreate,
     DonorUpdate,
     DonorAllAttributes
 )
@@ -17,14 +17,14 @@ from crud_functions.donors import donor_crud
 
 router = APIRouter()
 
-@router.post("/individual/create", response_model=DonorResponse)
+@router.post("/create", response_model=DonorResponse)
 def create_individual_donor_endpoint(
     user_id: int = Form(...),
-    name: str = Form(...),
+    organization_name: Optional[str] = None,
     is_verified: Optional[bool] = Form(False),
     db: Session = Depends(get_db)
 ):
-    """Create a new individual donor linked to a user."""
+    """Create a new donor linked to a user."""
     
     # Check if user already has a donor profile
     if donor_crud.user_has_donor_profile(db, user_id):
@@ -37,7 +37,7 @@ def create_individual_donor_endpoint(
         new_donor = donor_crud.create_individual_donor(
             db=db,
             user_id=user_id,
-            name=name,
+            organization_name = organization_name,
             is_verified=is_verified
         )
         return new_donor
@@ -45,37 +45,6 @@ def create_individual_donor_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create individual donor: {str(e)}"
-        )
-
-
-@router.post("/organization/create", response_model=DonorResponse)
-def create_organization_donor_endpoint(
-    organization_id: int = Form(...),
-    name: str = Form(...),
-    is_verified: Optional[bool] = Form(False),
-    db: Session = Depends(get_db)
-):
-    """Create a new organization donor linked to an organization."""
-    
-    # Check if organization already has a donor profile
-    if donor_crud.organization_has_donor_profile(db, organization_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Organization already has a donor profile"
-        )
-    
-    try:
-        new_donor = donor_crud.create_organization_donor(
-            db=db,
-            organization_id=organization_id,
-            name=name,
-            is_verified=is_verified
-        )
-        return new_donor
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create organization donor: {str(e)}"
         )
 
 
@@ -147,21 +116,6 @@ def get_donor_by_user_endpoint(
     return donor
 
 
-@router.get("/organization/{organization_id}", response_model=DonorResponse)
-def get_donor_by_organization_endpoint(
-    organization_id: int,
-    db: Session = Depends(get_db)
-):
-    """Get a donor by their associated organization ID."""
-    donor = donor_crud.get_donor_by_organization_id(db, organization_id)
-    if not donor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Donor profile not found for this organization"
-        )
-    return donor
-
-
 # ============================================================================
 # READ ENDPOINTS - MULTIPLE RECORDS & FILTERING
 # ============================================================================
@@ -177,6 +131,23 @@ def get_all_donors_endpoint(
     total = donor_crud.count_donors(db)
     
     return DonorListResponse(
+        donors=donors,
+        total=total,
+        skip=skip,
+        limit=limit
+    )
+
+@router.get("/get_all_as_lists", response_model=ListOfDonorsResponse)
+def get_donor_display_info_endpoint(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """Get all donors with pagination."""
+    donors = donor_crud.get_donor_display_info(db, skip=skip, limit=limit)
+    total = donor_crud.count_donors(db)
+    
+    return ListOfDonorsResponse(
         donors=donors,
         total=total,
         skip=skip,
@@ -395,12 +366,3 @@ def check_user_has_donor_profile_endpoint(
     has_profile = donor_crud.user_has_donor_profile(db, user_id)
     return {"has_donor_profile": has_profile}
 
-
-@router.get("/organization/{organization_id}/has-profile")
-def check_organization_has_donor_profile_endpoint(
-    organization_id: int,
-    db: Session = Depends(get_db)
-):
-    """Check if an organization has a donor profile."""
-    has_profile = donor_crud.organization_has_donor_profile(db, organization_id)
-    return {"has_donor_profile": has_profile}

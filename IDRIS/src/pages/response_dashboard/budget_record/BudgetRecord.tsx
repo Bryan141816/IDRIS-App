@@ -64,11 +64,26 @@ const BudgetRecord = () => {
     event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setRecordType(event.target.value);
+    setAmount("");
   };
   const handleAmountTypeChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    setAmount(event.target.value);
+    const val = event.target.value;
+    const num = parseFloat(val);
+    const balance = parseFloat(
+      response_data?.table_datas?.[0]?.data?.[3]?.text ?? "0",
+    );
+    console.log(num);
+    if (recordType === "Add") {
+      setAmount(event.target.value);
+    } else {
+      if (val === "" || (!isNaN(num) && num >= 1 && num <= balance)) {
+        setAmount(event.target.value);
+      } else if (num >= balance) {
+        setAmount(balance.toString());
+      }
+    }
   };
   const handleEditRecordTypeChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
@@ -83,8 +98,18 @@ const BudgetRecord = () => {
 
   const handleAddModalitySubmit = async () => {
     try {
-      const response = await addBudgetRecord(recordType, amount);
-      console.log("LIst added: ", response);
+      const balance = parseFloat(
+        response_data?.table_datas?.[0]?.data?.[3]?.text ?? "0",
+      );
+      let newBalance = 0;
+      if (recordType == "Add") {
+        newBalance = balance + parseFloat(amount);
+      } else {
+        newBalance = balance - parseFloat(amount);
+      }
+      const response = await addBudgetRecord(recordType, newBalance.toString());
+      console.log("Record added: ", response);
+      setAmount("");
       closeAddModal();
       await fetchData();
     } catch (error) {
@@ -180,7 +205,9 @@ const BudgetRecord = () => {
             </select>
           </div>
           <div className="horizontal-container">
-            <span className="item-details-identifier">Amount: </span>
+            <span className="item-details-identifier">
+              Amount: (Current {response_data?.table_datas[0].data[3].text})
+            </span>
             <input
               type="number"
               required
@@ -226,7 +253,6 @@ const BudgetRecord = () => {
                         onClick={() => {
                           closeViewModal();
                           setEditRecordType(isViewModalSelected.data[2].text);
-                          setEditAmount(isViewModalSelected.data[3].text);
                           openEditModal();
                         }}
                       >

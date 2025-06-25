@@ -191,395 +191,463 @@ function AppRoutes() {
         {!shouldHideUI && <Header onIconClick={toggleNavbar} />}
         {/* {!shouldHideHeaderFooter && <Header onIconClick={toggleNavbar}/>} */}
         <main>
-          <Suspense fallback={<div>Loading Page</div>}>
-            <Routes>
-              {/* Public route (Login) */}
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to="/donations_management/donations_dashboard"
-                    replace
-                  />
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  <Page title="IDRIS | Login">
-                    <Login />
-                  </Page>
-                }
-              />
+          <Routes>
+            {/* Public route (Login) */}
+            <Route
+              path="/"
+              element={
+                <Navigate
+                  to="/donations_management/donations_dashboard"
+                  replace
+                />
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <Page title="IDRIS | Login">
+                  <Login />
+                </Page>
+              }
+            />
 
-              <Route
-                path="/register"
-                element={
-                  <Page title="IDRIS | Register">
-                    <Register />
-                  </Page>
-                }
-              ></Route>
+            <Route
+              path="/register"
+              element={
+                <Page title="IDRIS | Register">
+                  <Register />
+                </Page>
+              }
+            ></Route>
 
-              {/* Protected routes wrapped in ProtectedRoute */}
+            {/* Protected routes wrapped in ProtectedRoute */}
+            <Route
+              path="/lgu_profiling"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
+                    <RouteOutlet />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            >
               <Route
-                path="/lgu_profiling"
+                path="map_of_cebu"
                 element={
                   <ProtectedRoute>
-                    <RouteOutlet />
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  path="map_of_cebu"
-                  element={
-                    <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Map of Cebu">
                         <MapOfCebu />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="evacuationandshelter"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="evacuationandshelter"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Evacuation and Shelter Management">
                         <EvacuationAndShelter />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="LGU"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="LGU"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | LGU">
                         <LGU />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="LGUmanagement"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="LGUmanagement"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | LGU Management">
                         <ManageLGU />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="LGUSeeMore/:lguName"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="LGUSeeMore/:lguName"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | LGUSeeMore">
                         <LGUSeeMore />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              <Route
-                path="/volunteer_management"
-                element={
-                  <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            <Route
+              path="/volunteer_management"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
                     <Page title="IDRIS | Volunteer Management">
                       <RouteOutlet />
                     </Page>
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  path="track_volunteer_application"
-                  element={
-                    <ProtectedRoute>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                path="track_volunteer_application"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Track Volunteer Application">
                         <TrackVolunteerApplication />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="volunteer_dashboard"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="volunteer_dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Profiles">
                         <VolunteerDashboard />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="organization_form"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="organization_form"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Application">
                         <OrganizationForm />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="otherorganization_form"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="otherorganization_form"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Application">
                         <OtherOrganizationForm />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="individual_form"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="individual_form"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Application">
                         <IndividualForm />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="otherindividual_form"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="otherindividual_form"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Application">
                         <OtherIndividualForm />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="manage_applicant"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="manage_applicant"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Manage Applicant">
                         <ManageApplicant />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="view_credentials"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="view_credentials"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | View Credentials">
                         <ViewCredentials />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="volunteer_profiles"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="volunteer_profiles"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Volunteer Profiles">
                         <VolunteerProfiles />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="manage_volunteers"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="manage_volunteers"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Manage Volunteer">
                         <ManageVolunteer />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              <Route
-                path="/donations_management"
-                element={
-                  <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            <Route
+              path="/donations_management"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
                     <Page title="IDRIS | Donations Management">
                       <RouteOutlet />
                     </Page>
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  path="donations_dashboard"
-                  element={
-                    <ProtectedRoute>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                path="donations_dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Donations Dashboard">
                         <DonationsDashboard />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="list_of_rafi_donors"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="list_of_rafi_donors"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | List of RAFI Donors">
                         <ListOfRAFIDonors />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="funding_proposals"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="funding_proposals"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Funding Proposals">
                         <FundingProposals />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="funding_proposals/create"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="funding_proposals/create"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Create Funding Proposal">
                         <CreateFunding />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="funding_proposals/update"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="funding_proposals/update"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Update Funding Proposal">
                         <UpdateFunding />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              <Route
-                path="/response_dashboard"
-                element={
-                  <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            <Route
+              path="/response_dashboard"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
                     <Page title="IDRIS | Response Dashboard">
                       <RouteOutlet />
                     </Page>
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    <ProtectedRoute>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                index
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Response Dashboard">
                         <ResponseDashboard />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="report_list"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="report_list"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Report List">
                         <ReportList />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="modality_distribution"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="modality_distribution"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Modality Distribution">
                         <ModalityDistribution />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="budget_record"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="budget_record"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Budget Record">
                         <BudgetRecord />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              <Route
-                path="/reports_generation"
-                element={
-                  <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            <Route
+              path="/reports_generation"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
                     <Page title="IDRIS | Reports Generation">
                       <ReportsGeneration />
                     </Page>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/damage_assessment"
-                element={
-                  <ProtectedRoute>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/damage_assessment"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
                     <Page title="IDRIS | Damage Assessment">
                       <DamageAssessment />
                     </Page>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/procurement_inventory"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading Page</div>}>
+                    <Page title="IDRIS | Procurement Inventory">
+                      <RouteOutlet />
+                    </Page>
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                path="procurement_inventory"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
+                      <Page title="IDRIS | Procurement Inventory">
+                        <ProcurementInventory />
+                      </Page>
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/procurement_inventory"
+                path="distribution_planning"
                 element={
                   <ProtectedRoute>
-                    <Page title="IDRIS | Procurement Inventory">
-                      <RouteOutlet />
-                    </Page>
-                  </ProtectedRoute>
-                }
-              >
-                <Route
-                  path="procurement_inventory"
-                  element={
-                    <ProtectedRoute>
-                      <Page title="IDRIS | Procurement Inventory">
-                        <ProcurementInventory />
-                      </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="distribution_planning"
-                  element={
-                    <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Distribution Planning">
                         <DistributionPlanning />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="procurement_management"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="procurement_management"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Procurement Management">
                         <ProcurementManagement />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
-              {userRole == "logistics admin" && (
-                <Route
-                  path="/finance&admin/finance_management"
-                  element={
-                    <ProtectedRoute>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+            {userRole == "logistics admin" && (
+              <Route
+                path="/finance&admin/finance_management"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Finance Management">
                         <FinanceManagement />
                       </Page>
-                    </ProtectedRoute>
-                  }
-                />
-              )}
-              {/* Add more routes as needed */}
-            </Routes>
-          </Suspense>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+            )}
+            {/* Add more routes as needed */}
+          </Routes>
         </main>
         {!shouldHideUI && !shouldHideHeaderFooter && <Footer />}
       </div>

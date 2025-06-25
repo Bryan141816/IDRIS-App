@@ -93,16 +93,16 @@ main {
   height: 100%;
 }
 
-.green-button{
+.green-button {
   font-size: 1em;
   color: #000;
   font-weight: 600;
   padding: 10px 20px;
-  background-color: $green; 
-  border: 2px solid rgba(0, 0, 0, 0.35); 
+  background-color: $green;
+  border: 2px solid rgba(0, 0, 0, 0.35);
   border-radius: 10px;
 
-  &:hover{
+  &:hover {
     background-color: lighten($green, 10%);
   }
 }
@@ -115,4 +115,14 @@ main {
     flex-direction: row;
     min-height: 100dvh;
   }
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
 }

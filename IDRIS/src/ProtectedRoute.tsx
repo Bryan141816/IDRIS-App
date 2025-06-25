@@ -9,14 +9,13 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { userType } = React.useContext(UserContext);
 
-  console.log(userType);
   if (!userType) {
     //if (!userType || userType === '') {
     // User not authenticated, redirect to login page
     return <Navigate to="/login" replace />;
   }
 
-  return <Suspense fallback={<div>Loading Page...</div>}>{children}</Suspense>;
+  return children;
 };
 
 export default ProtectedRoute;

@@ -3,9 +3,9 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-from data_schemas.in_kind_monitoring_schema import InKindMonitoring
+from data_schemas.in_kind_monitoring_schema import InKindMonitoringSummary
 from database import  get_db
-from models import  ResponseReport, ModalityDistribution,  ResponseReportBudget  # no Role import
+from models import  ResponseReport, ModalityDistribution,  ResponseReportBudget, InKindMonitoring  # no Role import
 from datetime import datetime, timezone
 from sqlalchemy import func, extract, Date, cast 
 from sqlalchemy.orm import aliased
@@ -195,13 +195,29 @@ def get_modality_chart(db: Session = Depends(get_db)):
         ]
     }
 
-@router.get("/response_dashboard/in_kind_monitoring", response_model = InKindMonitoring)
-def get_in_kind_monitoring():
+@router.get("/response_dashboard/in_kind_monitoring", response_model = InKindMonitoringSummary)
+def get_in_kind_monitoring(db: Session = Depends(get_db)):
+    add_sum = (
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "Add")
+        .scalar()
+    )
+    in_transit_sum =(
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "In-Transit")
+        .scalar()
+    )
+    delivered_sum = (        
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "Delivered")
+        .scalar()
+    )
+    available = add_sum - (in_transit_sum + delivered_sum)
+
     return{
-        "available_relief_packs": 5000,
-        "currently_in_transit": 2000,
-        "already_distributed": 10000,
-        "remaining_days": 7
+        "available_relief_packs": int(available),
+        "currently_in_transit": int(in_transit_sum),
+        "already_distributed": int(delivered_sum),
     }
 @router.get("/response_dashboard/raised_budget", response_model=LineChartData)
 def get_raised_budget(db: Session = Depends(get_db)):

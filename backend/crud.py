@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
-from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget
+from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget, InKindMonitoring
 from auth import hash_password, verify_password
-from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate
+from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate, InKindMonitoringCreate
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -88,6 +88,16 @@ def create_modality_distribution_record(db: Session, modality_report: ModalityDi
     db_record = ModalityDistribution(
         date_time = datetime.now(timezone.utc),
         modality_type = modality_report.modality_type
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+def create_in_kind_monitoring_record(db: Session, inkind_record: InKindMonitoringCreate) -> InKindMonitoring:
+    db_record = InKindMonitoring(
+        date_time = datetime.now(timezone.utc),
+        record_type = inkind_record.record_type,
+        quantity = inkind_record.quantity
     )
     db.add(db_record)
     db.commit()

@@ -41,6 +41,20 @@ class ResponseReportOut(BaseModel):
     class Config:
         from_attributes = True
 
+class InKindMonitoringCreate(BaseModel):
+    quantity: int
+    record_type: str
+
+class InKindMonitoringOut(BaseModel):
+    id: int
+    date_time: datetime
+    quantity: int
+    record_type: str
+
+    class Config:
+        from_attributes = True
+
+
 class ModalityDistributionCreate(BaseModel):
     modality_type: str
 

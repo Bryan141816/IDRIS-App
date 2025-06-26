@@ -61,6 +61,7 @@ class ResponseDashboardBudgetOut(BaseModel):
     date_time: datetime
     budget_record_type: str
     amount: float
+    total_amount: float
 
     class Config:
         from_attributes = True

@@ -72,7 +72,7 @@ const BudgetRecord = () => {
     const val = event.target.value;
     const num = parseFloat(val);
     const balance = parseFloat(
-      response_data?.table_datas?.[0]?.data?.[3]?.text ?? "0",
+      response_data?.table_datas?.[0]?.data?.[4]?.text ?? "0",
     );
     console.log(num);
     if (recordType === "Add") {
@@ -98,16 +98,7 @@ const BudgetRecord = () => {
 
   const handleAddModalitySubmit = async () => {
     try {
-      const balance = parseFloat(
-        response_data?.table_datas?.[0]?.data?.[3]?.text ?? "0",
-      );
-      let newBalance = 0;
-      if (recordType == "Add") {
-        newBalance = balance + parseFloat(amount);
-      } else {
-        newBalance = balance - parseFloat(amount);
-      }
-      const response = await addBudgetRecord(recordType, newBalance.toString());
+      const response = await addBudgetRecord(recordType, amount);
       console.log("Record added: ", response);
       setAmount("");
       closeAddModal();
@@ -198,15 +189,36 @@ const BudgetRecord = () => {
             <span className="item-details-identifier">Budget Record Type:</span>
             <select value={recordType} onChange={handleRecordTypeChange}>
               <option value="Add">Add</option>
-              <option value="Food Supplies">Food Supplies</option>
-              <option value="Medical Aid">Medical Aid</option>
-              <option value="Logistics">Logistics</option>
-              <option value="Miscellaneous">Miscellaneous</option>
+              <option
+                disabled={!response_data?.table_datas?.[0]?.data}
+                value="Food Supplies"
+              >
+                Food Supplies
+              </option>
+              <option
+                disabled={!response_data?.table_datas?.[0]?.data}
+                value="Medical Aid"
+              >
+                Medical Aid
+              </option>
+              <option
+                disabled={!response_data?.table_datas?.[0]?.data}
+                value="Logistics"
+              >
+                Logistics
+              </option>
+              <option
+                disabled={!response_data?.table_datas?.[0]?.data}
+                value="Miscellaneous"
+              >
+                Miscellaneous
+              </option>
             </select>
           </div>
           <div className="horizontal-container">
             <span className="item-details-identifier">
-              Amount: (Current {response_data?.table_datas[0].data[3].text})
+              Amount: (Current:{" "}
+              {response_data?.table_datas?.[0]?.data?.[4]?.text ?? 0})
             </span>
             <input
               type="number"
@@ -285,7 +297,10 @@ const BudgetRecord = () => {
               <span className="item-details-identifier">Amount:</span>
               <span>{isViewModalSelected.data[3].text}</span>
             </div>
-
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Total Amount:</span>
+              <span>{isViewModalSelected.data[4].text}</span>
+            </div>
             <div className="horizontal-container">
               <span className="item-details-identifier">Date:</span>
               <span>{isViewModalSelected.data[1].text}</span>

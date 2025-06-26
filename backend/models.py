@@ -41,6 +41,7 @@ class ResponseReportBudget(Base):
     id = Column(Integer, primary_key=True, index=True)
     date_time = Column(DateTime(timezone=True),server_default=func.now(), nullable=False)
     budget_record_type = Column(String(255), nullable=False)
+    total_amount = Column(Float, nullable=False)
     amount = Column(Float, nullable=False)
 
 class FundingProposals(Base):

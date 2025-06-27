@@ -1,13 +1,21 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, aliased
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import nulls_last
 from sqlalchemy import or_, asc, desc
 from typing import Optional, List, Dict, Any
+import datetime
 from fastapi import HTTPException, status
 from models import Donors, User
 
 # CREATE Operations
 class DonorCRUD:
-    def create_individual_donor(self, db: Session, user_id: int, name: str, is_verified: bool = False) -> Donors:
+    def create_donor(self, db: Session, 
+                     user_id: int, 
+                     donor_type: Optional[str] = "Individual",
+                     organization_name: Optional[str] = None, 
+                     date_joined: Optional[datetime.date] = None, 
+                     is_verified: Optional[bool] = False
+                    ) -> Donors:
         """
         Create a new individual donor linked to a user.
         
@@ -26,10 +34,10 @@ class DonorCRUD:
         try:
             db_donor = Donors(
                 user_id=user_id,
-                organization_id=None,
-                name=name,
-                donor_type="Individual",
-                is_verified=is_verified
+                organization_name = organization_name,
+                date_joined = date_joined,
+                donor_type = donor_type,
+                is_verified = is_verified
             )
             db.add(db_donor)
             db.commit()
@@ -41,43 +49,6 @@ class DonorCRUD:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to create individual donor: {str(e)}"
             )
-
-
-    def create_organization_donor(self, db: Session, organization_id: int, name: str, is_verified: bool = False) -> Donors:
-        """
-        Create a new organization donor linked to an organization.
-        
-        Args:
-            db: Database session
-            organization_id: ID of the organization
-            name: Donor name
-            is_verified: Verification status (default: False)
-        
-        Returns:
-            Created Donors object
-        
-        Raises:
-            HTTPException: If creation fails due to constraint violations
-        """
-        try:
-            db_donor = Donors(
-                user_id=None,
-                organization_id=organization_id,
-                name=name,
-                donor_type="Organization",
-                is_verified=is_verified
-            )
-            db.add(db_donor)
-            db.commit()
-            db.refresh(db_donor)
-            return db_donor
-        except IntegrityError as e:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to create organization donor: {str(e)}"
-            )
-
 
     # READ Operations
     def get_donor_by_id(self, db: Session, donor_id: int) -> Optional[Donors]:
@@ -108,23 +79,6 @@ class DonorCRUD:
         return db.query(Donors).filter(
             Donors.user_id == user_id,
             Donors.donor_type == "Individual"
-        ).first()
-
-
-    def get_donor_by_organization_id(self, db: Session, organization_id: int) -> Optional[Donors]:
-        """
-        Retrieve a donor by their associated organization ID.
-        
-        Args:
-            db: Database session
-            organization_id: ID of the organization
-        
-        Returns:
-            Donors object if found, None otherwise
-        """
-        return db.query(Donors).filter(
-            Donors.organization_id == organization_id,
-            Donors.donor_type == "Organization"
         ).first()
 
 
@@ -423,24 +377,6 @@ class DonorCRUD:
             Donors.donor_type == "Individual"
         ).first() is not None
 
-
-    def organization_has_donor_profile(self, db: Session, organization_id: int) -> bool:
-        """
-        Check if an organization already has a donor profile.
-        
-        Args:
-            db: Database session
-            organization_id: ID of the organization
-        
-        Returns:
-            True if organization has donor profile, False otherwise
-        """
-        return db.query(Donors).filter(
-            Donors.organization_id == organization_id,
-            Donors.donor_type == "Organization"
-        ).first() is not None
-
-
     def get_donor_stats(self, db: Session) -> Dict[str, int]:
         """
         Get donor statistics.
@@ -490,7 +426,31 @@ class DonorCRUD:
             query = query.order_by(asc(Donors.date_joined))
         else:
             query = query.order_by(desc(Donors.date_joined))
+            
+        # ------------ ORDERING WITH PRECEDENCE
+         
+        # UserAlias = aliased(User)
 
+        # query = (
+        #     db.query(Donors).options(joinedload(Donors.user))
+        #     .join(UserAlias, Donors.user_id == UserAlias.id, isouter=True)
+        #     .options(joinedload(Donors.user))
+        # )
+        
+        # # Apply ordering
+        # if order == "asc":
+        #     query = query.order_by(
+        #         nulls_last(asc(Donors.organization_name)),
+        #         nulls_last(asc(UserAlias.username)),
+        #         asc(Donors.date_joined)
+        #     )
+        # else:
+        #     query = query.order_by(
+        #         nulls_last(desc(Donors.organization_name)),
+        #         nulls_last(desc(UserAlias.username)),
+        #         desc(Donors.date_joined)
+        #     )
+            
         # Apply pagination
         donors = query.offset(skip).limit(limit).all()
 

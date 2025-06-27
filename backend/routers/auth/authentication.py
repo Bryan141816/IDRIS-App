@@ -1,7 +1,9 @@
 from fastapi import APIRouter
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import  OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from typing import List
 from jose import JWTError, jwt
 from database import get_db
 from schemas import UserCreate, UserSchema, Token, LoginSchema, UserBase
@@ -58,11 +60,4 @@ def login(form_data: LoginSchema, db: Session = Depends(get_db)):
 @router.get("/users/me", response_model=UserSchema)
 def read_users_me(current_user: UserSchema = Depends(get_current_user)):
     return current_user
-
-@router.get("/users/by-email/{email}", response_model=UserSchema)
-def get_user_by_email_endpoint(email: str, db: Session = Depends(get_db)):  # Renamed to avoid conflict
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
 

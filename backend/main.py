@@ -8,9 +8,9 @@ from database import Base, engine, get_db
 from models import  ResponseReport  # no Role import
 from datetime import datetime
 from sqlalchemy import func
-from routers.auth import authentication
+from routers.auth import authentication, users
 from routers.response_dashboard import response_dashboard, report_list, modality_distribution, budget
-from routers import fundingProposals, donors
+from routers.donations_management import fundingProposals, donors_route
 from fastapi.staticfiles import StaticFiles 
 
 Base.metadata.create_all(bind=engine)
@@ -26,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(authentication.router)
+app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
 app.include_router(modality_distribution.router)
@@ -36,7 +37,8 @@ app.mount(
     StaticFiles(directory="media/fundingproposals"),
     name="fundingproposals"
 )
-app.include_router(donors.router, prefix="/donors", tags=["Donors"])
+app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
+
 
 @app.on_event("startup")
 async def on_startup():

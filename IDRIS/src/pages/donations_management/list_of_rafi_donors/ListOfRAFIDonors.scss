@@ -323,6 +323,31 @@
   }
 }
 
+.new-donor-search-container{
+  position: relative;
+  width: 100%;
+
+  background-color: #059669;
+
+  #new-donor-searched-list{
+    position: absolute;
+    width: 100%;
+    height: auto;
+    text-decoration: none;
+    list-style-type: none;
+    border: 1px solid #000;
+    background-color: #fff;
+
+    li{
+      padding: 2px 5px;
+
+      &:hover{
+        background-color: $ice-blue;
+      }
+    }
+  }
+}
+
 .modal-instruction {
   color: #749ab6;
   font-size: 0.9rem;

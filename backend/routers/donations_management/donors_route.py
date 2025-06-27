@@ -1,8 +1,9 @@
-
+import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Form, Query
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from database import get_db  # Adjust import path
+
 from data_schemas.donors_schema import (
     DonorResponse, 
     DonorListResponse, 
@@ -17,71 +18,54 @@ from crud_functions.donors import donor_crud
 
 router = APIRouter()
 
-@router.post("/create", response_model=DonorResponse)
+@router.post("/create/", response_model=DonorResponse)  # Note the trailing slash!
 def create_individual_donor_endpoint(
     user_id: int = Form(...),
-    organization_name: Optional[str] = None,
+    donor_type: Optional[str] = Form("Individual"),
+    organization_name: Optional[str] = Form(None),
+    date_joined: Optional[datetime.date] = Form(None),
     is_verified: Optional[bool] = Form(False),
     db: Session = Depends(get_db)
 ):
-    """Create a new donor linked to a user."""
-    
-    # Check if user already has a donor profile
-    if donor_crud.user_has_donor_profile(db, user_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already has a donor profile"
-        )
-    
+    print("Request received!")
+    print("user_id:", user_id)
+    print("organization_name:", organization_name)
+    print("date_joined:", date_joined)
+    print("is_verified:", is_verified)
+
     try:
-        new_donor = donor_crud.create_individual_donor(
+        print("Calling create_donor()...")
+        new_donor = donor_crud.create_donor(
             db=db,
             user_id=user_id,
-            organization_name = organization_name,
+            donor_type = donor_type,
+            organization_name=organization_name,
+            date_joined=date_joined,
             is_verified=is_verified
         )
         return new_donor
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create individual donor: {str(e)}"
-        )
-
-
-@router.get("/get_donors_list/", response_model=DonorListResponse)
-def get_donors_list(
-    search: str = Query(None),
-    order: str = Query("desc", regex="^(asc|desc)$"),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
-):
-    """Get all donors with search, ordering, and pagination."""
-    try:
-        # Get donors with search, ordering, and pagination
-        donors = donor_crud.get_all_donors(
-            db, 
-            search=search, 
-            order=order, 
-            skip=skip, 
-            limit=limit
-        )
-        
-        # Get total count (with search filter if provided)
-        total = donor_crud.count_donors(db, search=search)
-        
-        return DonorListResponse(
-            donors=donors,
-            total=total,
-            skip=skip,
-            limit=limit
-        )
-    
-    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail=f"Error retrieving donors: {str(e)}"
+            detail=f"Server crashed: {str(e)}"
         )
+
+@router.post("/create/organization", response_model=DonorResponse)
+def create_organization_donor_endpoint(
+    user_id: int = Form(...),
+    organization_name = str,
+    is_verified: Optional[bool] = Form(False),
+    db: Session = Depends(get_db)
+):
+    donor = donor_crud.create_organization_donor(
+        db=db,
+        user_id=user_id,
+        organization_name=organization_name,
+        is_verified=is_verified
+    )
+    return donor
 # ============================================================================
 # READ ENDPOINTS - SINGLE RECORDS
 # ============================================================================
@@ -139,12 +123,13 @@ def get_all_donors_endpoint(
 
 @router.get("/get_all_as_lists", response_model=ListOfDonorsResponse)
 def get_donor_display_info_endpoint(
+    search: Optional[str] = Query(None),    
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db)
 ):
     """Get all donors with pagination."""
-    donors = donor_crud.get_donor_display_info(db, skip=skip, limit=limit)
+    donors = donor_crud.get_donor_display_info(db, search=search, skip=skip, limit=limit)
     total = donor_crud.count_donors(db)
     
     return ListOfDonorsResponse(

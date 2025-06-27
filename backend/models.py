@@ -28,6 +28,17 @@ class ResponseReport(Base):
     report_type = Column(String(255), nullable=False)
     status = Column(String(50), nullable=False)
 
+class DemandAndResponse(Base):
+    __tablename__ = "demand_and_response"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title_lable = Column(String(255), nullable=False)
+    address = Column(String(255), nullable=False)
+    status = Column(String(255), nullable=False)
+    needs = Column(JSON, default=[])
+    submitted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
 class ModalityDistribution(Base):
     __tablename__ = "modality_distribution"
 

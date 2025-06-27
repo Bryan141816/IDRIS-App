@@ -12,6 +12,7 @@ import "./DemandAndResponseMap.scss";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { useNavigate } from "react-router-dom";
 
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
@@ -155,6 +156,7 @@ const MapView: React.FC<{
 );
 
 const DemandAndResponse = () => {
+  const navigate = useNavigate();
   const [selectedMarker, setSelectedMarker] = useState<MapPin | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pathCoordinates, setPathCoordinates] = useState<
@@ -175,6 +177,12 @@ const DemandAndResponse = () => {
 
   return (
     <div className={`main-container ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <div className="map-buttons">
+        <button className="map-button" onClick={() => navigate("list_view")}>
+          Manage
+        </button>
+      </div>
+
       <div className="legend-box">
         <h4>Legend</h4>
         <div className="legend-item">
@@ -250,6 +258,16 @@ const DemandAndResponse = () => {
             Submitted At:{" "}
             {dayjs(selectedMarker.submitted_at).format("MM/DD/YYYY hh:mm A")}
           </p>
+          {selectedMarker.status === "no_response" && (
+            <button id="demand_and_response_action_button">
+              Send Response
+            </button>
+          )}
+          {selectedMarker.status === "responded" && (
+            <button id="demand_and_response_action_button">
+              Mark As Completed
+            </button>
+          )}
         </div>
       )}
     </div>

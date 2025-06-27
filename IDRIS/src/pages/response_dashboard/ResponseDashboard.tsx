@@ -326,7 +326,7 @@ const ResponseDashboard = () => {
             <h3>Demand and Response Map</h3>
             {userRole == "operations admin" && (
               <Link
-                to="/response_dashboard/report_list"
+                to="/response_dashboard/demand_and_response_map"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage

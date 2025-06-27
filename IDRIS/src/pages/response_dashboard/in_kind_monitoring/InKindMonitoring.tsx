@@ -87,9 +87,6 @@ const InKindMonitoring = () => {
     const val = event.target.value;
     const num = parseInt(val);
     const total = inKindSummary?.available_relief_packs ?? 0;
-    console.log(total);
-    console.log(num);
-    console.log(num >= total);
     if (val === "" || (!isNaN(num) && num >= 1 && num <= total)) {
       setDispatch(event.target.value);
     } else if (num >= total) {
@@ -113,6 +110,11 @@ const InKindMonitoring = () => {
       console.log("Report added: ", response);
       setQuantity("");
       closeAddModal();
+      fetchApiData<InKindMonitoring>(
+        "/response_dashboard/in_kind_monitoring",
+        setInKindSummary,
+      );
+
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
@@ -123,6 +125,11 @@ const InKindMonitoring = () => {
       const response = await addRecord("In-Transit", parseInt(dispatch));
       setDispatch("");
       closeDispatchModal();
+      fetchApiData<InKindMonitoring>(
+        "/response_dashboard/in_kind_monitoring",
+        setInKindSummary,
+      );
+
       await fetchData();
     } catch (error) {
       console.error("Failed to Dispatch: ", error);
@@ -133,6 +140,11 @@ const InKindMonitoring = () => {
     try {
       const response = await deleteRecord(report_id);
       closeViewModal();
+      fetchApiData<InKindMonitoring>(
+        "/response_dashboard/in_kind_monitoring",
+        setInKindSummary,
+      );
+
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -142,6 +154,11 @@ const InKindMonitoring = () => {
     try {
       await markAsDelivered(record_id);
       closeViewModal();
+      fetchApiData<InKindMonitoring>(
+        "/response_dashboard/in_kind_monitoring",
+        setInKindSummary,
+      );
+
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);

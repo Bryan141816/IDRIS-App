@@ -35,12 +35,21 @@ class ModalityDistribution(Base):
     date_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     modality_type = Column(String(255), nullable=False)
 
+class InKindMonitoring(Base):
+    __tablename__ = "inkind_monitoring"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date_time = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    quantity = Column(Integer, default=0, nullable=False)
+    record_type = Column(String(255), nullable=False)
+
 class ResponseReportBudget(Base):
     __tablename__ = "response_report_budget"
 
     id = Column(Integer, primary_key=True, index=True)
     date_time = Column(DateTime(timezone=True),server_default=func.now(), nullable=False)
     budget_record_type = Column(String(255), nullable=False)
+    total_amount = Column(Float, nullable=False)
     amount = Column(Float, nullable=False)
 
 class FundingProposals(Base):

@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-from data_schemas.in_kind_monitoring_schema import InKindMonitoring
+
 from database import Base, engine, get_db
 from models import  ResponseReport  # no Role import
 from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication, users
-from routers.response_dashboard import response_dashboard, report_list, modality_distribution, budget
+from routers.response_dashboard import in_kind_monitoring, response_dashboard, report_list, modality_distribution, budget
 from routers.donations_management import fundingProposals, donors_route
 from fastapi.staticfiles import StaticFiles 
 
@@ -31,6 +31,7 @@ app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
 app.include_router(modality_distribution.router)
 app.include_router(budget.router)
+app.include_router(in_kind_monitoring.router)
 app.include_router(fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"])
 app.mount(
     "/media/fundingproposals",

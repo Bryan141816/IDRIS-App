@@ -125,6 +125,10 @@ const ModalityDistribution = lazy(
       "./pages/response_dashboard/modality_distribution/ModalityDistribution"
     ),
 );
+const InKindMonitoring = lazy(
+  () =>
+    import("./pages/response_dashboard/in_kind_monitoring/InKindMonitoring"),
+);
 const BudgetRecord = lazy(
   () => import("./pages/response_dashboard/budget_record/BudgetRecord"),
 );
@@ -541,6 +545,18 @@ function AppRoutes() {
                     <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Modality Distribution">
                         <ModalityDistribution />
+                      </Page>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="in_kind_monitoring"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback=<div>Loading Page</div>>
+                      <Page title="IDRIS | In Kind Monitoring">
+                        <InKindMonitoring />
                       </Page>
                     </Suspense>
                   </ProtectedRoute>

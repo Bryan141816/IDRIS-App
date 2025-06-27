@@ -19,6 +19,7 @@ def get_budget_table(db: Session = Depends(get_db)):
         {"text": "Date", "width": "150px"},
         {"text": "Record Type", "width": "250px"},
         {"text": "Amount", "width": "150px"},
+        {"text": "Total Amount", "width": "150px"},
         {"text": "Actions", "width": "150px"},
     ]
 
@@ -54,6 +55,13 @@ def get_budget_table(db: Session = Depends(get_db)):
                 text=str(report.amount),
                 font_weight=700,
                 color="#000",  # color green if completed
+                width="150px"
+            ),
+            Cell(
+                type="Text",
+                text=str(report.total_amount),
+                font_weight=700,
+                color="#000",
                 width="150px"
             ),
             Cell(

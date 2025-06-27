@@ -3,11 +3,12 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-from data_schemas.in_kind_monitoring_schema import InKindMonitoring
+from data_schemas.in_kind_monitoring_schema import InKindMonitoringSummary
 from database import  get_db
-from models import  ResponseReport, ModalityDistribution  # no Role import
+from models import  ResponseReport, ModalityDistribution,  ResponseReportBudget, InKindMonitoring  # no Role import
 from datetime import datetime, timezone
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, Date, cast 
+from sqlalchemy.orm import aliased
 
 router = APIRouter(
 tags=["response_dashboard"]
@@ -194,33 +195,70 @@ def get_modality_chart(db: Session = Depends(get_db)):
         ]
     }
 
-@router.get("/response_dashboard/in_kind_monitoring", response_model = InKindMonitoring)
-def get_in_kind_monitoring():
+@router.get("/response_dashboard/in_kind_monitoring", response_model = InKindMonitoringSummary)
+def get_in_kind_monitoring(db: Session = Depends(get_db)):
+    add_sum = (
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "Add")
+        .scalar()
+    )
+    in_transit_sum =(
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "In-Transit")
+        .scalar()
+    )
+    delivered_sum = (        
+        db.query(func.coalesce(func.sum(InKindMonitoring.quantity),0))
+        .filter(InKindMonitoring.record_type == "Delivered")
+        .scalar()
+    )
+    available = add_sum - (in_transit_sum + delivered_sum)
+
     return{
-        "available_relief_packs": 5000,
-        "currently_in_transit": 2000,
-        "already_distributed": 10000,
-        "remaining_days": 7
+        "available_relief_packs": int(available),
+        "currently_in_transit": int(in_transit_sum),
+        "already_distributed": int(delivered_sum),
     }
-@router.get("/response_dashboard/raised_budget", response_model = LineChartData)
-def get_raised_budget():
-    return{
-        "labels": [
-            "April 10",
-            "April 11",
-            "April 12",
-            "April 13",
-            "April 14",
-            "April 15",
-            "April 16",
-            "April 17",
-            "April 18",
-            "April 19",        
-        ],
-        "datasets":[
+@router.get("/response_dashboard/raised_budget", response_model=LineChartData)
+def get_raised_budget(db: Session = Depends(get_db)):
+    # Subquery: Get the latest datetime for each day
+    subquery = (
+        db.query(
+            cast(ResponseReportBudget.date_time, Date).label("date"),
+            func.max(ResponseReportBudget.date_time).label("latest_dt")
+        )
+        .group_by(cast(ResponseReportBudget.date_time, Date))
+        .subquery()
+    )
+
+    # Alias the main table for joining
+    budget_alias = aliased(ResponseReportBudget)
+
+    # Join the subquery to the main table on the latest datetime
+    results = (
+        db.query(
+            cast(budget_alias.date_time, Date).label("date"),
+            budget_alias.total_amount
+        )
+        .join(
+            subquery,
+            (cast(budget_alias.date_time, Date) == subquery.c.date) &
+            (budget_alias.date_time == subquery.c.latest_dt)
+        )
+        .order_by(subquery.c.date)
+        .all()
+    )
+
+    # Prepare response
+    labels = [r.date.strftime("%B %d") for r in results]
+    data = [r.total_amount for r in results]
+
+    return {
+        "labels": labels,
+        "datasets": [
             {
                 "label": "Budget",
-                "data": [500, 700, 800, 1500, 1700, 2000, 2500, 3000, 3500, 1000],
+                "data": data,
                 "fill": False,
                 "borderColor": "#fcb814",
                 "backgroundColor": "rgba(54, 162, 235, 0.2)",
@@ -228,16 +266,37 @@ def get_raised_budget():
             }
         ]
     }
-@router.get("/response_dashboard/spending_breakdown", response_model = BarChartData)
-def get_spending_breakdown():
+
+
+@router.get("/response_dashboard/spending_breakdown", response_model=BarChartData)
+def get_spending_breakdown(db: Session = Depends(get_db)):
+    # Sum amounts grouped by record type, excluding 'Add'
+    results = (
+        db.query(
+            ResponseReportBudget.budget_record_type,
+            func.sum(ResponseReportBudget.amount).label("total")
+        )
+        .filter(ResponseReportBudget.budget_record_type != "Add")  # ⛔ Exclude "Add"
+        .group_by(ResponseReportBudget.budget_record_type)
+        .all()
+    )
+
+    # Prepare chart data
+    labels = [r.budget_record_type for r in results]
+    data = [r.total for r in results]
+
+    # Colors (extend or generate as needed)
+    colors = ["#44EB6E", "#4468EB", "#EB4D44", "#fcb814", "#ccc", "#999"]
+    background_colors = colors[:len(data)]
+
     return {
-        "labels": ["Food Supplies", "Medical Aid", "Logistics", "Miscellaneous"],
+        "labels": labels,
         "datasets": [
             {
-                "label": "",
-                "data": [120, 150, 80, 100],
-                "backgroundColor": ["#44EB6E", "#4468EB", "#EB4D44", "#fcb814"],
+                "label": "Spending Breakdown",
+                "data": data,
+                "backgroundColor": background_colors,
                 "borderRadius": 5,
-            },
+            }
         ],
     }

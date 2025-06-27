@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from typing import List, Optional
-from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget
+from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget, InKindMonitoring
 from auth import hash_password, verify_password
-from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate
+from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate, InKindMonitoringCreate
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -92,14 +93,34 @@ def create_modality_distribution_record(db: Session, modality_report: ModalityDi
     db.commit()
     db.refresh(db_record)
     return db_record
-
-def create_response_dashboard_budget_create(db: Session, response_budget: ResponseDashboardBudgetCreate ) -> ResponseReportBudget:
-    db_record = ResponseReportBudget(
+def create_in_kind_monitoring_record(db: Session, inkind_record: InKindMonitoringCreate) -> InKindMonitoring:
+    db_record = InKindMonitoring(
         date_time = datetime.now(timezone.utc),
-        budget_record_type = response_budget.budget_record_type,
-        amount = response_budget.amount
+        record_type = inkind_record.record_type,
+        quantity = inkind_record.quantity
     )
     db.add(db_record)
     db.commit()
     db.refresh(db_record)
+    return db_record
+
+def create_response_dashboard_budget_create(db: Session, response_budget: ResponseDashboardBudgetCreate ) -> ResponseReportBudget:
+    latest_record = db.query(ResponseReportBudget).order_by(desc(ResponseReportBudget.date_time)).first()
+
+    previous_total = latest_record.total_amount if latest_record else 0
+
+    if(response_budget.budget_record_type == "Add"):
+        new_total =  previous_total + response_budget.amount
+    else:
+       new_total = previous_total - response_budget.amount
+
+    db_record = ResponseReportBudget(
+        date_time=datetime.now(timezone.utc),
+        budget_record_type=response_budget.budget_record_type,
+        amount=response_budget.amount,
+        total_amount=new_total
+    )
+
+    db.add(db_record)
+    db.commit()    
     return db_record

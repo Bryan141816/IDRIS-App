@@ -190,7 +190,6 @@ type InKindMonitoring = {
   available_relief_packs: number;
   currently_in_transit: number;
   already_distributed: number;
-  remaining_days: number;
 };
 
 const ResponseDashboard = () => {
@@ -352,7 +351,7 @@ const ResponseDashboard = () => {
             <h3>In-Kind Monitoring</h3>
             {userRole == "operations admin" && (
               <Link
-                to="/response_dashboard/report_list"
+                to="/response_dashboard/in_kind_monitoring"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
@@ -432,17 +431,6 @@ const ResponseDashboard = () => {
             <h1>Total Relief Packs Already Distributed</h1>
             {inKindMonitoring ? (
               <span>{inKindMonitoring?.already_distributed}</span>
-            ) : (
-              <span>Loading Data</span>
-            )}
-          </div>
-          <div
-            className="sub-item-content-big-data-inverted"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h1>Remaining Days for Distribution Completion</h1>
-            {inKindMonitoring ? (
-              <span>{inKindMonitoring?.remaining_days} Days</span>
             ) : (
               <span>Loading Data</span>
             )}

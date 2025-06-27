@@ -24,9 +24,9 @@ class DonorUpdate(BaseModel):
 class DonorResponse(BaseModel):
     donorId: int
     user_id: Optional[int] = None
-    organization_name: str
+    organization_name: Optional[str] = None
     donor_type: str
-    is_verified: bool
+    is_verified: bool = False
     date_joined: datetime
 
     class Config:
@@ -40,6 +40,7 @@ class DonorListResponse(BaseModel):
 
 class DonorItem(BaseModel):
     name: str
+    organization_name: Optional[str] = None
     date_joined: datetime
 
 class ListOfDonorsResponse(BaseModel):

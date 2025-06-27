@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({
   baseURL: 'http://localhost:8000',
-}); 
+});
 
 // GET all donors (optionally with search or filter query)
 export async function getDonorsList(search = ''): Promise<any[]> {
@@ -12,6 +12,21 @@ export async function getDonorsList(search = ''): Promise<any[]> {
   return response.data;
 }
 
+export async function createNewDonor(formData: FormData): Promise<any> {
+  const response = await API.post('/donors/create/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
+export async function searchDonorUsers(search = ''): Promise<any> {
+  const response = await API.get('/users/get_w_type_donor/', {
+    params: { search },
+  });
+  return response.data;
+}
 
 // export const api = {
 //   // GET all items

@@ -18,7 +18,7 @@ class User(Base):
     roles = Column(JSON, default=[])
     
     # Fixed relationship - should reference the correct foreign key
-    donor_profile = relationship("Donors", back_populates="user_profile")
+    donor_profile = relationship("Donors", back_populates="user")
     
 class ResponseReport(Base):
     __tablename__ = "response_reports"
@@ -79,13 +79,12 @@ class Donors(Base):
     is_verified = Column(Boolean, nullable=False, default=False)
     
     # Updated relationships
-    user_profile = relationship("User", back_populates="donor_profile")
     donations = relationship("DonationRecords", back_populates="donor")
     
     date_joined = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
-    user = relationship("User", backref="donors")
+    user = relationship("User", back_populates="donor_profile")
 
 class DonationType(enum.Enum):
     ONE_TIME = "one-time"

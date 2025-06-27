@@ -7,6 +7,7 @@ type SearchProps = {
   placeholder?: string;
   value?: string;
   onChange: (value: string) => void;
+  onSearch?: () => void;
   width?: string;  // e.g., "100%", "300px"
   height?: string; // e.g., "40px", "2.5rem"c
   classname?: string;
@@ -16,6 +17,7 @@ const SearchBar: React.FC<SearchProps> = ({
   placeholder,
   value,
   onChange,
+  onSearch,
   width = '100%',
   height = '40px',
   classname = "",
@@ -33,7 +35,7 @@ const SearchBar: React.FC<SearchProps> = ({
         className={styles.searchInput}
         style={{ height: '100%' }}
       />
-      <div className={styles.searchBox}>
+      <div className={styles.searchBox} onClick={onSearch}>
         <SearchIcon width={14} height={14} />
       </div>
     </div>

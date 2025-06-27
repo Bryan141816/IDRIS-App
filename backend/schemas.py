@@ -5,6 +5,7 @@ from typing import List, Optional
 class LoginSchema(BaseModel):
     email: str
     password: str
+    
 class UserBase(BaseModel):
     username: str
     email: str
@@ -16,13 +17,18 @@ class UserCreate(UserBase):
 
 class UserSchema(UserBase):
     id: int
-    roles: List[str]  # included when returning user data
+    roles: List[str]
 
     class Config:
         from_attributes = True
 
 class UserUpdate(BaseModel):
     roles: Optional[List[str]]  # roles can be updated optionally
+
+class UserSimple(BaseModel):
+    id: int
+    username: str
+    email: str
 
 class Token(BaseModel):
     access_token: str

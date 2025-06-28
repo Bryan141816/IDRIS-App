@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "./DemandAndResponseList.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -31,6 +31,65 @@ const DemandAndResponseList = () => {
   const [editReportType, setEditReportType] = useState("");
   const [editStatus, setEditStatus] = useState("");
 
+  type NeedItem = {
+    id: number;
+    need: string;
+    amount: string;
+  };
+
+  const [addDemand, setAddDemand] = useState<{
+    title: string;
+    address: string;
+    needs: NeedItem[];
+    priority: string;
+  }>({
+    title: "",
+    address: "",
+    needs: [],
+    priority: "",
+  });
+
+  const [needInput, setNeedInput] = useState<{ need: string; amount: string }>({
+    need: "",
+    amount: "",
+  });
+
+  const handleAddModalChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setAddDemand((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+  const handleNeedInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNeedInput((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleAddNeeds = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (needInput.need == "" || needInput.amount == "") {
+      return;
+    }
+    e.preventDefault();
+
+    const newDemand: NeedItem = {
+      id: addDemand.needs.length,
+      need: needInput.need,
+      amount: needInput.amount,
+    };
+
+    setAddDemand((prev) => ({
+      ...prev,
+      needs: [...prev.needs, newDemand],
+    }));
+
+    setNeedInput({ need: "", amount: "" });
+  };
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
     setIsViewModalOpen(false);
@@ -163,19 +222,89 @@ const DemandAndResponseList = () => {
       <Modal isOpen={isAddModalOpen} onClose={closeAddModal}>
         <div className="modal-container">
           <div className="horizontal-container">
-            <span className="details-title">Create Report</span>
+            <span className="details-title">Create Demand Report</span>
           </div>
           <div className="horizontal-container">
-            <span className="item-details-identifier">Report Type:</span>
-            <select value={reportType} onChange={handleReportTypeChange}>
-              <option value="EOD Report">EOD Report</option>
-              <option value="Budget Report">Budget Report</option>
-              <option value="Distribution Report">Distribution Report</option>
-              <option value="Demand Assessment">Demand Assessment</option>
-              <option value="Modality Report">Modality Report</option>
-              <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-            </select>
+            <span className="item-details-identifier">Title:</span>
+            <input
+              type="text"
+              name="title"
+              value={addDemand.title}
+              onChange={handleAddModalChange}
+            />
           </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Address:</span>
+            <input
+              type="text"
+              value={addDemand.address}
+              onChange={handleAddModalChange}
+              name="address"
+            />
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Needs:</span>
+            <div className="dynamic-info-container">
+              <form id="needs-adder">
+                <input
+                  type="text"
+                  placeholder="Enter a need"
+                  id="input-need"
+                  value={needInput.need}
+                  name="need"
+                  onChange={handleNeedInputChange}
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Enter Amount"
+                  id="input-amount"
+                  value={needInput.amount}
+                  name="amount"
+                  onChange={handleNeedInputChange}
+                  required
+                />
+                <button onClick={handleAddNeeds}>Add</button>
+              </form>
+              <div id="needs-content-container">
+                {addDemand.needs.map((need) => (
+                  <div key={need.id} className="needs-content">
+                    <span id="need-label-adder">{need.need}</span>
+                    <span>| {need.amount} |</span>
+                    <button
+                      onClick={() => {
+                        setAddDemand((prev) => ({
+                          ...prev,
+                          needs: prev.needs.filter((n) => n.id !== need.id),
+                        }));
+                      }}
+                      style={{
+                        marginLeft: "10px",
+                        color: "white",
+                        backgroundColor: "red",
+                        border: "none",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Priority:</span>
+            <input
+              type="text"
+              value={addDemand.priority}
+              onChange={handleAddModalChange}
+              name="priority"
+            />
+          </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}

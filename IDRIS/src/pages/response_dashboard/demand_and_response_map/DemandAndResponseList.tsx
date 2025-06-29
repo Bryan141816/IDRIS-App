@@ -10,6 +10,7 @@ import {
   faEllipsisVertical,
   faTrash,
   faPen,
+  faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   getReportList,
@@ -54,6 +55,8 @@ const DemandAndResponseList = () => {
     amount: "",
   });
 
+  const [needItemCounter, setNeedItemCounter] = useState(0);
+
   const handleAddModalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
@@ -78,7 +81,7 @@ const DemandAndResponseList = () => {
     e.preventDefault();
 
     const newDemand: NeedItem = {
-      id: addDemand.needs.length,
+      id: needItemCounter,
       need: needInput.need,
       amount: needInput.amount,
     };
@@ -87,8 +90,9 @@ const DemandAndResponseList = () => {
       ...prev,
       needs: [...prev.needs, newDemand],
     }));
-
+    setNeedItemCounter(needItemCounter + 1);
     setNeedInput({ need: "", amount: "" });
+    console.log(addDemand);
   };
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
@@ -242,6 +246,36 @@ const DemandAndResponseList = () => {
               name="address"
             />
           </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Location:</span>
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                flexDirection: "row",
+                gap: "5px",
+              }}
+            >
+              <input type="text" readOnly placeholder="Select a location"/>
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #ddd",
+                  outline: "none",
+                  color: "#3b82f6",
+                  width: "35px",
+                  borderRadius: "5px",
+                }}
+              >
+                {" "}
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
+              </button>
+            </div>
+          </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Needs:</span>
             <div className="dynamic-info-container">

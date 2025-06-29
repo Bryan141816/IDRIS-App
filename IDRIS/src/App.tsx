@@ -554,7 +554,11 @@ function AppRoutes() {
                 path="demand_and_response_map"
                 element={
                   <ProtectedRoute>
-                    <Suspense fallback={<div>Loading Page</div>}>
+                    <Suspense
+                      fallback={
+                        <div>{console.log("Loading...")}Loading...</div>
+                      }
+                    >
                       <Page title="IDRIS | Demand And Response Map">
                         <DemandAndResponseMap />
                       </Page>

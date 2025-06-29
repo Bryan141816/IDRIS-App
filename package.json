@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "axios": "^1.9.0",
+    "dayjs": "^1.11.13",
     "react-fontawesome": "^1.7.1",
     "react-router-dom": "^7.5.0"
   },

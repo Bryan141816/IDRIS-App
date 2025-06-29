@@ -119,6 +119,18 @@ const ResponseDashboard = lazy(
 const ReportList = lazy(
   () => import("./pages/response_dashboard/report_list/ReportList"),
 );
+const DemandAndResponseMap = lazy(
+  () =>
+    import(
+      "./pages/response_dashboard/demand_and_response_map/DemandAndResponseMap"
+    ),
+);
+const DemandAndResponseList = lazy(
+  () =>
+    import(
+      "./pages/response_dashboard/demand_and_response_map/DemandAndResponseList"
+    ),
+);
 const ModalityDistribution = lazy(
   () =>
     import(
@@ -533,6 +545,30 @@ function AppRoutes() {
                     <Suspense fallback={<div>Loading Page</div>}>
                       <Page title="IDRIS | Report List">
                         <ReportList />
+                      </Page>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="demand_and_response_map"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
+                      <Page title="IDRIS | Demand And Response Map">
+                        <DemandAndResponseMap />
+                      </Page>
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="demand_and_response_map/list_view"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div>Loading Page</div>}>
+                      <Page title="IDRIS | Demand And Response Map List">
+                        <DemandAndResponseList />
                       </Page>
                     </Suspense>
                   </ProtectedRoute>

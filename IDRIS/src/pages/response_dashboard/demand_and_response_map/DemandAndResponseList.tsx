@@ -2,7 +2,7 @@ import {
   TableView,
   TableReponse,
 } from "../../../components/TableView/table_view";
-import "./InKindMonitoring.scss";
+import "./DemandAndResponseList.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -10,41 +10,86 @@ import {
   faEllipsisVertical,
   faTrash,
   faPen,
-  faTruck,
 } from "@fortawesome/free-solid-svg-icons";
-import { updateResponseReport } from "../../../API_Handler/reponse_dashboard_report_list";
-
 import {
-  getInKindList,
-  addRecord,
-  deleteRecord,
-  markAsDelivered,
-} from "../../../API_Handler/response_dashboard_in_kind_monitoring";
-import { fetchData as fetchApiData } from "../../../API_Handler/response_dashboard";
+  getReportList,
+  addResponseReport,
+  deleteResponseReport,
+  updateResponseReport,
+} from "../../../API_Handler/reponse_dashboard_report_list";
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-type InKindMonitoring = {
-  available_relief_packs: number;
-  currently_in_transit: number;
-  already_distributed: number;
-};
-
-const InKindMonitoring = () => {
+const DemandAndResponseList = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
-  const [inKindSummary, setInKindSummary] = useState<InKindMonitoring | null>(
-    null,
-  );
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [isDispatchOpen, setIsDispatchOpen] = useState(false);
-  const [quantity, setQuantity] = useState("");
-  const [dispatch, setDispatch] = useState("");
+  const [reportType, setReportType] = useState("EOD Report");
   const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editReportType, setEditReportType] = useState("");
   const [editStatus, setEditStatus] = useState("");
 
+  type NeedItem = {
+    id: number;
+    need: string;
+    amount: string;
+  };
+
+  const [addDemand, setAddDemand] = useState<{
+    title: string;
+    address: string;
+    needs: NeedItem[];
+    priority: string;
+  }>({
+    title: "",
+    address: "",
+    needs: [],
+    priority: "",
+  });
+
+  const [needInput, setNeedInput] = useState<{ need: string; amount: string }>({
+    need: "",
+    amount: "",
+  });
+
+  const handleAddModalChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setAddDemand((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+  const handleNeedInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNeedInput((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleAddNeeds = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (needInput.need == "" || needInput.amount == "") {
+      return;
+    }
+    e.preventDefault();
+
+    const newDemand: NeedItem = {
+      id: addDemand.needs.length,
+      need: needInput.need,
+      amount: needInput.amount,
+    };
+
+    setAddDemand((prev) => ({
+      ...prev,
+      needs: [...prev.needs, newDemand],
+    }));
+
+    setNeedInput({ need: "", amount: "" });
+  };
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
     setIsViewModalOpen(false);
@@ -54,9 +99,6 @@ const InKindMonitoring = () => {
   const openAddModal = () => setAddModalOpen(true);
   const closeAddModal = () => setAddModalOpen(false);
 
-  const openDispatchModal = () => setIsDispatchOpen(true);
-  const closeDispatchModal = () => setIsDispatchOpen(false);
-
   const openEditModal = () => setIsEditModeEnabled(true);
   const closeEditModal = () => setIsEditModeEnabled(false);
 
@@ -65,7 +107,7 @@ const InKindMonitoring = () => {
 
   async function fetchData() {
     try {
-      const response = await getInKindList();
+      const response = await getReportList();
       setResposeData(response);
     } catch (error) {
       console.error(error);
@@ -74,24 +116,12 @@ const InKindMonitoring = () => {
 
   useEffect(() => {
     fetchData();
-    fetchApiData<InKindMonitoring>(
-      "/response_dashboard/in_kind_monitoring",
-      setInKindSummary,
-    );
   }, []);
 
-  const handleQuanityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setQuantity(event.target.value);
-  };
-  const handleDispatchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const val = event.target.value;
-    const num = parseInt(val);
-    const total = inKindSummary?.available_relief_packs ?? 0;
-    if (val === "" || (!isNaN(num) && num >= 1 && num <= total)) {
-      setDispatch(event.target.value);
-    } else if (num >= total) {
-      setDispatch(total.toString());
-    }
+  const handleReportTypeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setReportType(event.target.value);
   };
   const handleEditReportTypeChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
@@ -106,59 +136,19 @@ const InKindMonitoring = () => {
 
   const handleAddReportSubmit = async () => {
     try {
-      const response = await addRecord("Add", parseInt(quantity));
+      const response = await addResponseReport(reportType);
       console.log("Report added: ", response);
-      setQuantity("");
       closeAddModal();
-      fetchApiData<InKindMonitoring>(
-        "/response_dashboard/in_kind_monitoring",
-        setInKindSummary,
-      );
-
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
     }
   };
-  const handleDispatchSubmit = async () => {
-    try {
-      const response = await addRecord("In-Transit", parseInt(dispatch));
-      setDispatch("");
-      closeDispatchModal();
-      fetchApiData<InKindMonitoring>(
-        "/response_dashboard/in_kind_monitoring",
-        setInKindSummary,
-      );
-
-      await fetchData();
-    } catch (error) {
-      console.error("Failed to Dispatch: ", error);
-    }
-  };
 
   const handleDeleteReport = async (report_id: String) => {
     try {
-      const response = await deleteRecord(report_id);
+      const response = await deleteResponseReport(report_id);
       closeViewModal();
-      fetchApiData<InKindMonitoring>(
-        "/response_dashboard/in_kind_monitoring",
-        setInKindSummary,
-      );
-
-      await fetchData();
-    } catch (error) {
-      console.error("Failed to delete report: ", error);
-    }
-  };
-  const handleMarkAsDelivered = async (record_id: String) => {
-    try {
-      await markAsDelivered(record_id);
-      closeViewModal();
-      fetchApiData<InKindMonitoring>(
-        "/response_dashboard/in_kind_monitoring",
-        setInKindSummary,
-      );
-
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -229,48 +219,92 @@ const InKindMonitoring = () => {
           </div>
         </div>
       </Modal>
-      <Modal isOpen={isDispatchOpen} onClose={closeDispatchModal}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Dispatch Relief Packs</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Quantity:</span>
-            <input
-              type="number"
-              value={dispatch}
-              onChange={handleDispatchChange}
-            />
-          </div>
-          <div className="action-button">
-            <button
-              style={{ backgroundColor: "#749AB6" }}
-              onClick={handleDispatchSubmit}
-            >
-              Add
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D" }}
-              onClick={closeDispatchModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
       <Modal isOpen={isAddModalOpen} onClose={closeAddModal}>
         <div className="modal-container">
           <div className="horizontal-container">
-            <span className="details-title">Add Relief Packs</span>
+            <span className="details-title">Create Demand Report</span>
           </div>
           <div className="horizontal-container">
-            <span className="item-details-identifier">Quantity:</span>
+            <span className="item-details-identifier">Title:</span>
             <input
-              type="number"
-              value={quantity}
-              onChange={handleQuanityChange}
+              type="text"
+              name="title"
+              value={addDemand.title}
+              onChange={handleAddModalChange}
             />
           </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Address:</span>
+            <input
+              type="text"
+              value={addDemand.address}
+              onChange={handleAddModalChange}
+              name="address"
+            />
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Needs:</span>
+            <div className="dynamic-info-container">
+              <form id="needs-adder">
+                <input
+                  type="text"
+                  placeholder="Enter a need"
+                  id="input-need"
+                  value={needInput.need}
+                  name="need"
+                  onChange={handleNeedInputChange}
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Enter Amount"
+                  id="input-amount"
+                  value={needInput.amount}
+                  name="amount"
+                  onChange={handleNeedInputChange}
+                  required
+                />
+                <button onClick={handleAddNeeds}>Add</button>
+              </form>
+              <div id="needs-content-container">
+                {addDemand.needs.map((need) => (
+                  <div key={need.id} className="needs-content">
+                    <span id="need-label-adder">{need.need}</span>
+                    <span>| {need.amount} |</span>
+                    <button
+                      onClick={() => {
+                        setAddDemand((prev) => ({
+                          ...prev,
+                          needs: prev.needs.filter((n) => n.id !== need.id),
+                        }));
+                      }}
+                      style={{
+                        marginLeft: "10px",
+                        color: "white",
+                        backgroundColor: "red",
+                        border: "none",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Priority:</span>
+            <input
+              type="text"
+              value={addDemand.priority}
+              onChange={handleAddModalChange}
+              name="priority"
+            />
+          </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
@@ -296,16 +330,7 @@ const InKindMonitoring = () => {
                 className="horizontal-container"
                 style={{ width: "auto", gap: "5px" }}
               >
-                {isViewModalSelected.data[3].text === "In-Transit" && (
-                  <button
-                    className="mark-as-button"
-                    onClick={() => {
-                      handleMarkAsDelivered(isViewModalSelected.data[0].text);
-                    }}
-                  >
-                    Mark as Delivered
-                  </button>
-                )}
+                <button className="mark-as-button">Mark as Started</button>
                 <div className="more-options-container">
                   <button onClick={toggleMoreOptionVisible}>
                     <FontAwesomeIcon
@@ -315,7 +340,7 @@ const InKindMonitoring = () => {
                   </button>
                   {isMoreOptionVisible && (
                     <div className="more-options-viewer">
-                      {/*<button
+                      <button
                         onClick={() => {
                           closeViewModal();
                           setEditReportType(isViewModalSelected.data[2].text);
@@ -325,7 +350,7 @@ const InKindMonitoring = () => {
                       >
                         <FontAwesomeIcon icon={faPen} />
                         Edit Record
-                      </button>*/}
+                      </button>
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
@@ -343,11 +368,11 @@ const InKindMonitoring = () => {
               <span className="details-title">Details</span>
             </div>
             <div className="horizontal-container">
-              <span className="item-details-identifier">Quantity:</span>
+              <span className="item-details-identifier">Report Type:</span>
               <span>{isViewModalSelected.data[2].text}</span>
             </div>
             <div className="horizontal-container">
-              <span className="item-details-identifier">Type:</span>
+              <span className="item-details-identifier">Status:</span>
               <span>{isViewModalSelected.data[3].text}</span>
             </div>
             <div className="horizontal-container">
@@ -376,44 +401,15 @@ const InKindMonitoring = () => {
 
       <div className="horizontal-container">
         <div className="navigator-container">
-          <Link to="/response_dashboard">Response Dashboard</Link>
-          <h3>/In Kind Monitoring</h3>
+          <Link to="/response_dashboard/demand_and_response_map">
+            Demand And Response Map
+          </Link>
+          <h3>/List View</h3>
         </div>
         <div className="table-actions">
           <input type="text" placeholder="Search report"></input>
           <button>Search</button>
-          <button onClick={openAddModal}>+ Add Relief Packs</button>
-          <button onClick={openDispatchModal}>
-            {" "}
-            <FontAwesomeIcon icon={faTruck} style={{ height: "14px" }} />
-            &nbsp; Dispatch Relief Packs
-          </button>
-        </div>
-      </div>
-      <div id="inKindSummary">
-        <div>
-          {inKindSummary ? (
-            <span>{inKindSummary.available_relief_packs}</span>
-          ) : (
-            <span>Loading Data</span>
-          )}
-          <h2>Available Relief Packs</h2>
-        </div>
-        <div>
-          {inKindSummary ? (
-            <span>{inKindSummary.currently_in_transit}</span>
-          ) : (
-            <span>Loading Data</span>
-          )}
-          <h2>In-Transit Relief Packs</h2>
-        </div>
-        <div>
-          {inKindSummary ? (
-            <span>{inKindSummary.already_distributed}</span>
-          ) : (
-            <span>Loading Data</span>
-          )}
-          <h2>Delivered Relief Packs</h2>
+          <button onClick={openAddModal}>+ Add Report</button>
         </div>
       </div>
       {response_data ? (
@@ -431,4 +427,4 @@ const InKindMonitoring = () => {
     </div>
   );
 };
-export default InKindMonitoring;
+export default DemandAndResponseList;

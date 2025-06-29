@@ -179,20 +179,25 @@ class DonorCRUD:
         return query.offset(skip).limit(limit).all()
 
 
-    def count_donors(self, db: Session, search: str = None) -> int:
+    def count_donors(
+        self, 
+        db: Session, 
+        search: Optional[str] = None, 
+        donor_type: Optional[str] = None
+    ) -> int:
         """
-        Count total number of donors with optional search filter.
-        
+        Count donors, optionally filtering by search term and donor type.
+
         Args:
-            db: Database session
-            search: Search term to filter donors (optional)
-        
+            db: SQLAlchemy session
+            search: Optional search term (name/email/phone)
+            donor_type: Optional donor type ("Individual" or "Organization")
+
         Returns:
-            Total count of donors matching the criteria
+            int: Number of donors matching the criteria
         """
         query = db.query(Donors)
-        
-        # Apply same search filter for accurate count
+
         if search:
             search_term = f"%{search.strip()}%"
             query = query.filter(
@@ -200,26 +205,14 @@ class DonorCRUD:
                     Donors.first_name.ilike(search_term),
                     Donors.last_name.ilike(search_term),
                     Donors.email.ilike(search_term),
-                    Donors.phone.ilike(search_term)
-                    # Add other searchable fields as needed
+                    Donors.phone.ilike(search_term),
                 )
             )
-    
+
+        if donor_type:
+            query = query.filter(Donors.donor_type == donor_type)
+
         return query.count()
-
-    def count_donors_by_type(self, db: Session, donor_type: str) -> int:
-        """
-        Get count of donors by type.
-        
-        Args:
-            db: Database session
-            donor_type: Type of donor ("Individual" or "Organization")
-        
-        Returns:
-            Number of donors of specified type
-        """
-        return db.query(Donors).filter(Donors.donor_type == donor_type).count()
-
 
     # UPDATE Operations
     def update_donor(self, db: Session, donor_id: int, update_data: Dict[str, Any]) -> Optional[Donors]:

@@ -1,9 +1,12 @@
 import './dashboard.scss';
+import { useState, useEffect } from 'react';
+import { AxiosResponse } from 'axios';
 import DownloadableFile from '../../../components/Page_Furniture/Downloadable_File';
 import pdf_logo from '../files/pdf-logo.png';
 import PieChart from '../../../components/Page_Furniture/PieChart';
 import { DonationRecord } from './DonationRecord';
 import { FundingCard } from './FundingCard';
+import { getCountofDonors } from '../../../API_Handler/donations_dashboard_handler';
 import image1 from '../test_images/Group 20.png';
 import image2 from '../test_images/Group 21.png';
 import image3 from '../test_images/image (1).png';
@@ -84,6 +87,7 @@ const FundingProposals = [
 ];
 
 const DonationsDashboard = () => {
+  const [donors_count, setDonorCount] = useState<number>(0);
 
   let statistics = {
       overall_donations: 1000000,
@@ -91,6 +95,23 @@ const DonationsDashboard = () => {
       retention: 78
   }
 
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const response = await getCountofDonors();
+        if (response && typeof response.data.count === 'number') {
+          setDonorCount(response.data.count);
+        } else {
+          console.error("Invalid response format:", response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch donor count:", error);
+      }
+    };
+  
+    fetchCount();
+  }, []);
+  
   return (
     <>
       <div id="dashboard">
@@ -110,7 +131,7 @@ const DonationsDashboard = () => {
             
             <div className="donation-stat-card">
               <p className="title">Total Donors</p>
-              <p className="stat-data">{statistics.total_donors}</p>
+              <p className="stat-data">{donors_count}</p>
             </div>
             <div className="donation-stat-card">
               <p className="title">Donor Retention</p>

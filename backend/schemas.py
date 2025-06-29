@@ -2,6 +2,9 @@ from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
 
+class Number(BaseModel):
+    count: int
+
 class LoginSchema(BaseModel):
     email: str
     password: str

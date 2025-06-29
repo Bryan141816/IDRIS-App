@@ -1,8 +1,11 @@
 import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Form, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_
 from typing import Optional, List
 from database import get_db  # Adjust import path
+from models import Donors
+from schemas import Number
 
 from data_schemas.donors_schema import (
     DonorResponse, 
@@ -139,6 +142,14 @@ def get_donor_display_info_endpoint(
         limit=limit
     )
 
+@router.get("/count", response_model=Number)
+def count_donors(
+    search: Optional[str] = Query(None, description="email/username"),
+    donor_type: Optional[str] = Query(None, description="Filter by Organization or Individual"),
+    db: Session = Depends(get_db)
+):
+    count = donor_crud.count_donors(db, search=search, donor_type=donor_type)    
+    return {"count": count}
 
 @router.get("/type/{donor_type}", response_model=DonorListResponse)
 def get_donors_by_type_endpoint(

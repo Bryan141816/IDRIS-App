@@ -20,7 +20,7 @@ import {
 } from "../../../API_Handler/reponse_dashboard_report_list";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
+import LocationPickerModal from "../../../components/Page_Furniture/LocationPickerModal.tsx";
 const DemandAndResponseList = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -56,6 +56,11 @@ const DemandAndResponseList = () => {
   });
 
   const [needItemCounter, setNeedItemCounter] = useState(0);
+
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+
+  const openLocationPicker = () => setLocationPickerIsOpen(true);
+  const closeLocationPicker = () => setLocationPickerIsOpen(false);
 
   const handleAddModalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -179,6 +184,13 @@ const DemandAndResponseList = () => {
 
   return (
     <div className="report-container">
+      {locationPickerIsOpen && (
+        <LocationPickerModal
+          isOpenProp={locationPickerIsOpen}
+          onCloseProp={closeLocationPicker}
+          onSubmit={() => {}}
+        />
+      )}
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -223,7 +235,7 @@ const DemandAndResponseList = () => {
           </div>
         </div>
       </Modal>
-      <Modal isOpen={isAddModalOpen} onClose={closeAddModal}>
+      <Modal isOpen={isAddModalOpen} onClose={closeAddModal} zIndex={998}>
         <div className="modal-container">
           <div className="horizontal-container">
             <span className="details-title">Create Demand Report</span>
@@ -256,7 +268,7 @@ const DemandAndResponseList = () => {
                 gap: "5px",
               }}
             >
-              <input type="text" readOnly placeholder="Select a location"/>
+              <input type="text" readOnly placeholder="Select a location" />
               <button
                 style={{
                   backgroundColor: "transparent",
@@ -266,6 +278,7 @@ const DemandAndResponseList = () => {
                   width: "35px",
                   borderRadius: "5px",
                 }}
+                onClick={openLocationPicker}
               >
                 {" "}
                 <FontAwesomeIcon

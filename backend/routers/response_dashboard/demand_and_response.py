@@ -7,6 +7,8 @@ from schemas import DemandAndResponseOut, DemandAndResponseCreate
 from database import get_db 
 from crud import delete, create_demand_and_response_record
 from models import  DemandAndResponse  # no Role import datetime
+from datetime import datetime, timezone
+from pydantic import BaseModel
 
 router = APIRouter(
     tags=["demand_and_response"]
@@ -124,20 +126,36 @@ def get_table(db: Session = Depends(get_db)):
 def add_response_report(record: DemandAndResponseCreate, db: Session = Depends(get_db)):
     return create_demand_and_response_record(db, record);
 
-@router.delete("/response_dashboard/demand_and_response/delete_report/{report_id}", response_model=dict)
-def delete_response_report(report_id: int, db: Session = Depends(get_db)):
-    deleted_report = delete(db, DemandAndResponse, report_id)
+@router.delete("/response_dashboard/demand_and_response/delete_record/{record_id}", response_model=dict)
+def delete_response_report(record_id: int, db: Session = Depends(get_db)):
+    deleted_report = delete(db, DemandAndResponse, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Response report not found.")
-    return {"message": f"Response report with ID {report_id} deleted successfully."}
-@router.put("/response_dashboard/demand_and_response/update_report/{report_id}")
-def update_report(report_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)):
-    report = db.query(DemandAndResponse).get(report_id);
+    return {"message": f"Response report with ID {record_id} deleted successfully."}
+@router.put("/response_dashboard/demand_and_response/update_record/{record_id}")
+def update_report(record_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)):
+    record = db.query(DemandAndResponse).get(record_id);
 
-    if not report:
+    if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if update.title_lable is not None:
+        record.title_lable = update.title_lable
+    if update.address is not None:
+        record.address = update.address
+    if update.lat is not None:
+        record.lat = update.lat
+    if update.lng is not None:
+        record.lng = update.lng
+    if update.status is not None:
+        record.status = update.status
+    if update.needs is not None:
+        record.needs = [ item.dict() if isinstance(item, BaseModel) else item for item in update.needs]
+    if update.priority is not None:
+        record.priority = update.priority
+
+    record.last_updated =  datetime.now(timezone.utc)
 
     db.commit()
-    db.refresh(report)
+    db.refresh(record)
 
-    return {"detail": "Report updated succesfully", "report": report}
+    return {"detail": "Report updated succesfully", "report": record}

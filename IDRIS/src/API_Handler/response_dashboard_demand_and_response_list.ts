@@ -29,7 +29,7 @@ export async function addRecord(demand: Demand): Promise<any> {
 
 export async function deleteRecord(recordId: String): Promise<any> {
   try {
-    const response = await API.delete(`/response_dashboard/in_kind_monitoring/delete_record/${recordId}`)
+    const response = await API.delete(`/response_dashboard/demand_and_response/delete_record/${recordId}`)
     return response;
   }
   catch (error: any) {
@@ -42,11 +42,9 @@ export async function deleteRecord(recordId: String): Promise<any> {
   }
 }
 
-export async function updateRecord(recordId: String, modalityType: String) {
+export async function updateRecord(recordId: String, demand: Demand) {
   try {
-    const response = await API.put(`/response_dashboard/in_kind_monitoring/update_record/${recordId}`, {
-      modality_type: modalityType,
-    });
+    const response = await API.put(`/response_dashboard/demand_and_response/update_record/${recordId}`, demand);
     return { sucess: true, data: response.data };
   }
   catch (error: any) {

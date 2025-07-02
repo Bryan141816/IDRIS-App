@@ -1,5 +1,11 @@
-import React, { useState } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import React, { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Modal } from "./Modals.tsx";
@@ -28,23 +34,44 @@ const MapClickHandler: React.FC<{ onAdd: (pos: [number, number]) => void }> = ({
   });
   return null;
 };
+const ChangeMapView: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center);
+  }, [center, map]);
 
+  return null;
+};
 interface PickerProps {
   isOpenProp: boolean;
   onCloseProp: () => void;
   onSubmit: (mapData: MarkerData) => void;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 const LocationPickerModal: React.FC<PickerProps> = ({
   isOpenProp,
   onCloseProp,
   onSubmit,
+  lat,
+  lng,
 }) => {
   const [marker, setMarker] = useState<MarkerData | null>(null);
+
+  const [center, setCenter] = useState<[number, number]>([
+    10.313924, 123.887082,
+  ]);
 
   const handleMapClick = (pos: [number, number]) => {
     setMarker({ lat: pos[0], lng: pos[1] });
   };
+  useEffect(() => {
+    if (lat && lng) {
+      setMarker({ lat: lat, lng: lng });
+      setCenter([lat, lng]);
+    }
+  }, [lat, lng]);
 
   return (
     <Modal isOpen={isOpenProp} onClose={onCloseProp} width="60%" height="90%">
@@ -60,7 +87,7 @@ const LocationPickerModal: React.FC<PickerProps> = ({
       >
         <span>Select a location</span>
         <MapContainer
-          center={[10.313924, 123.887082]}
+          center={center}
           zoom={13}
           style={{ height: "100%", width: "100%" }}
         >
@@ -68,7 +95,7 @@ const LocationPickerModal: React.FC<PickerProps> = ({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
           />
-
+          <ChangeMapView center={center} />
           <MapClickHandler onAdd={handleMapClick} />
 
           {marker && (

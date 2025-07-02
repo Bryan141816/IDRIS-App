@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Any, Dict, Union
 
 # --- Cell ---
 class Cell(BaseModel):
     type: Literal["Text", "Button", "Image", "Hidden"]
     text: str
+    value: Optional[Union[str, int, float, Dict[str, Any], List[Any]]] = None    
     font_weight: int
     width: Optional[str] = None  
     color: Optional[str] = None

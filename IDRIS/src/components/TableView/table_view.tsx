@@ -12,6 +12,7 @@ export interface Cell {
   type: "Text" | "Button" | "Image" | "Hidden" | "Date";
   text: string;
   width?: string;
+  value?: string | number | object | any[];
   font_weight: number;
   color?: string;
   container_width?: string;
@@ -54,10 +55,13 @@ const TableCell: React.FC<TableCellProps> = ({ cell, onClickCallback }) => {
     return (
       <span
         style={{
-          minWidth: cell.width,
+          width: cell.width,
+          maxWidth: cell.width,
           color: cell.color,
           fontWeight: cell.font_weight,
         }}
+        title={cell.text}
+        className="table-cell"
       >
         {cell.text}
       </span>
@@ -65,13 +69,10 @@ const TableCell: React.FC<TableCellProps> = ({ cell, onClickCallback }) => {
   }
   if (cell.type === "Button") {
     return (
-      <div
-        style={{ minWidth: cell.container_width }}
-        className="button-container"
-      >
+      <div style={{ width: cell.container_width }} className="button-container">
         <button
           style={{
-            minWidth: cell.button_width,
+            width: cell.button_width,
             backgroundColor: cell.background_color,
             color: cell.color,
           }}
@@ -92,7 +93,7 @@ export const TableView: React.FC<TableViewProps> = ({
     <div id="table-container">
       <TableHead>
         {tableJSON.table_head.map((header) => (
-          <h3 style={{ minWidth: header.width }}>{header.text}</h3>
+          <h3 style={{ width: header.width }}>{header.text}</h3>
         ))}
       </TableHead>
       <div id="table-data-container">

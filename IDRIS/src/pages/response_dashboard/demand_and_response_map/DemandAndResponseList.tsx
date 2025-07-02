@@ -25,6 +25,46 @@ import {
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import LocationPickerModal from "../../../components/Page_Furniture/LocationPickerModal.tsx";
+
+
+
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Default marker icon fix for newer leaflet versions
+const defaultIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+});
+
+type Props = {
+  lat: number;
+  lng: number;
+};
+
+const MapWithPin: React.FC<Props> = ({ lat, lng }) => {
+  return (
+    <MapContainer
+      center={[lat, lng]}
+      zoom={13}
+      style={{ height: "100%", width: "100%" }}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors"
+      />
+
+      <Marker position={[lat, lng]} icon={defaultIcon} />
+    </MapContainer>
+  );
+};
+
+
 const DemandAndResponseList = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -164,16 +204,7 @@ const DemandAndResponseList = () => {
     setEditStatus(event.target.value);
   };
 
-  const handleAddReportSubmit = async () => {
-    try {
-      const response = await addResponseReport(reportType);
-      console.log("Report added: ", response);
-      closeAddModal();
-      await fetchData();
-    } catch (error) {
-      console.error("Failed to add report: ", error);
-    }
-  };
+
 
   const handleAddDemandSubmit = async () => {
     try {
@@ -222,50 +253,7 @@ const DemandAndResponseList = () => {
           onSubmit={handleLocationPickerSubmit}
         />
       )}
-      <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Edit Report</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Report Type:</span>
-            <select
-              value={editReportType}
-              onChange={handleEditReportTypeChange}
-            >
-              <option value="EOD Report">EOD Report</option>
-              <option value="Budget Report">Budget Report</option>
-              <option value="Distribution Report">Distribution Report</option>
-              <option value="Demand Assessment">Demand Assessment</option>
-              <option value="Modality Report">Modality Report</option>
-              <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-            </select>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Status:</span>
-            <select value={editStatus} onChange={handleEditStatusChange}>
-              <option value="Filed">Filed</option>
-              <option value="Started">Started</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-          <div className="action-button">
-            <button
-              onClick={handleEditReport}
-              style={{ backgroundColor: "#749AB6" }}
-            >
-              Submit
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D" }}
-              onClick={closeEditModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}></Modal>
       <Modal isOpen={isAddModalOpen} onClose={closeAddModal} zIndex={998}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -411,14 +399,14 @@ const DemandAndResponseList = () => {
       </Modal>
       {isViewModalSelected ? (
         <Modal isOpen={isViewModalOpen} onClose={closeViewModal}>
-          <div className="modal-container">
+          <div className="modal-container" style={{ paddingTop: "30px" }}>
             <div className="horizontal-container space-between-container">
               <span className="title-modal-text">View Report</span>
               <div
                 className="horizontal-container"
                 style={{ width: "auto", gap: "5px" }}
               >
-                <button className="mark-as-button">Mark as Started</button>
+                <button className="mark-as-button">Mark as Responded</button>
                 <div className="more-options-container">
                   <button onClick={toggleMoreOptionVisible}>
                     <FontAwesomeIcon
@@ -456,29 +444,61 @@ const DemandAndResponseList = () => {
               <span className="details-title">Details</span>
             </div>
             <div className="horizontal-container">
-              <span className="item-details-identifier">Report Type:</span>
-              <span>{isViewModalSelected.data[2].text}</span>
+              <span className="item-details-identifier">Title:</span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {isViewModalSelected.data[3].text}
+              </span>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Address:</span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {isViewModalSelected.data[4].text}
+              </span>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">
+                Location: (Latitude, Longitude)
+              </span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {isViewModalSelected.data[5].text},{" "}
+                {isViewModalSelected.data[6].text}
+              </span>
+            </div>
+            <div style={{display: "flex", width: "100%", height: "50vh", borderRadius: "10px", overflow: "hidden"}}> 
+
+              <MapWithPin lat={parseFloat(isViewModalSelected.data[5].text)} lng={parseFloat(isViewModalSelected.data[6].text)}></MapWithPin>
             </div>
             <div className="horizontal-container">
               <span className="item-details-identifier">Status:</span>
-              <span>{isViewModalSelected.data[3].text}</span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {isViewModalSelected.data[7].text}
+              </span>
             </div>
             <div className="horizontal-container">
-              <span className="item-details-identifier">Date:</span>
-              <span>{isViewModalSelected.data[1].text}</span>
+              <span className="item-details-identifier">Needs:</span>
+              <div className="dynamic-info-container">
+                <div id="needs-content-container">
+                  {isViewModalSelected.data[1].value.map((need) => (
+                    <div key={need.id} className="needs-content">
+                      <span id="need-label-adder">{need.need}</span>
+                      <span>| {need.amount} |</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Priority:</span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {isViewModalSelected.data[9].text}
+              </span>
             </div>
             <div className="action-button">
-              <button
-                style={{ backgroundColor: "#749AB6" }}
-                onClick={closeViewModal}
-              >
-                Ok
-              </button>
               <button
                 style={{ backgroundColor: "#F84B4D" }}
                 onClick={closeViewModal}
               >
-                Cancel
+                Close
               </button>
             </div>
           </div>

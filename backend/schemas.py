@@ -63,6 +63,33 @@ class InKindMonitoringOut(BaseModel):
     class Config:
         from_attributes = True
 
+class NeedItem(BaseModel):
+    id: int
+    need: str
+    amount: str
+class DemandAndResponseCreate(BaseModel):
+    title_lable: str
+    address: str
+    lat: float
+    lng: float
+    status: str
+    needs: List[NeedItem]
+    priority: str
+
+class DemandAndResponseOut(BaseModel):
+    id: int
+    title_lable: str
+    address: str
+    lat: float
+    lng: float
+    status: str
+    needs: List[NeedItem]
+    priority: str
+    submitted_at: datetime
+    last_updated: datetime
+
+    class Config:
+        from_attributes = True
 
 class ModalityDistributionCreate(BaseModel):
     modality_type: str

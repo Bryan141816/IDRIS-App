@@ -13,6 +13,10 @@ import {
   faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import {
+  getDemandList,
+  addRecord,
+} from "../../../API_Handler/response_dashboard_demand_and_response_list.ts";
+import {
   getReportList,
   addResponseReport,
   deleteResponseReport,
@@ -39,15 +43,21 @@ const DemandAndResponseList = () => {
   };
 
   const [addDemand, setAddDemand] = useState<{
-    title: string;
+    title_lable: string;
     address: string;
+    lat: number | null;
+    lng: number | null;
+    status: string;
     needs: NeedItem[];
     priority: string;
   }>({
-    title: "",
+    title_lable: "",
     address: "",
+    lat: null,
+    lng: null,
+    status: "no response",
     needs: [],
-    priority: "",
+    priority: "Low",
   });
 
   const [needInput, setNeedInput] = useState<{ need: string; amount: string }>({
@@ -99,6 +109,17 @@ const DemandAndResponseList = () => {
     setNeedInput({ need: "", amount: "" });
     console.log(addDemand);
   };
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
+    console.log(mapData);
+    setAddDemand((prev) => ({
+      ...prev,
+      lat: mapData.lat,
+      lng: mapData.lng,
+    }));
+  };
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
     setIsViewModalOpen(false);
@@ -116,7 +137,7 @@ const DemandAndResponseList = () => {
 
   async function fetchData() {
     try {
-      const response = await getReportList();
+      const response = await getDemandList();
       setResposeData(response);
     } catch (error) {
       console.error(error);
@@ -154,6 +175,16 @@ const DemandAndResponseList = () => {
     }
   };
 
+  const handleAddDemandSubmit = async () => {
+    try {
+      const response = await addRecord(addDemand);
+      closeAddModal();
+      await fetchData();
+    } catch (error) {
+      console.error("Faled to add record ", error);
+    }
+  };
+
   const handleDeleteReport = async (report_id: String) => {
     try {
       const response = await deleteResponseReport(report_id);
@@ -188,7 +219,7 @@ const DemandAndResponseList = () => {
         <LocationPickerModal
           isOpenProp={locationPickerIsOpen}
           onCloseProp={closeLocationPicker}
-          onSubmit={() => {}}
+          onSubmit={handleLocationPickerSubmit}
         />
       )}
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
@@ -244,8 +275,8 @@ const DemandAndResponseList = () => {
             <span className="item-details-identifier">Title:</span>
             <input
               type="text"
-              name="title"
-              value={addDemand.title}
+              name="title_lable"
+              value={addDemand.title_lable}
               onChange={handleAddModalChange}
             />
           </div>
@@ -268,7 +299,14 @@ const DemandAndResponseList = () => {
                 gap: "5px",
               }}
             >
-              <input type="text" readOnly placeholder="Select a location" />
+              <input
+                type="text"
+                readOnly
+                placeholder="Select a location"
+                value={
+                  addDemand.lat ? `${addDemand.lat} , ${addDemand.lng}` : ""
+                }
+              />
               <button
                 style={{
                   backgroundColor: "transparent",
@@ -344,18 +382,21 @@ const DemandAndResponseList = () => {
           </div>
           <div className="horizontal-container">
             <span className="item-details-identifier">Priority:</span>
-            <input
-              type="text"
+            <select
               value={addDemand.priority}
               onChange={handleAddModalChange}
               name="priority"
-            />
+            >
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
           </div>
 
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddReportSubmit}
+              onClick={handleAddDemandSubmit}
             >
               Add
             </button>
@@ -459,18 +500,20 @@ const DemandAndResponseList = () => {
           <button onClick={openAddModal}>+ Add Report</button>
         </div>
       </div>
-      {response_data ? (
-        <TableView
-          tableJSON={response_data}
-          onClickCallback={(row: any) => {
-            setIsViewModalSelected(row);
-            openViewModal();
-          }}
-          setCallbackTableData={true}
-        />
-      ) : (
-        <div>Loading data...</div>
-      )}
+      <div style={{ display: "flex", width: "100%" }}>
+        {response_data ? (
+          <TableView
+            tableJSON={response_data}
+            onClickCallback={(row: any) => {
+              setIsViewModalSelected(row);
+              openViewModal();
+            }}
+            setCallbackTableData={true}
+          />
+        ) : (
+          <div>Loading data...</div>
+        )}
+      </div>
     </div>
   );
 };

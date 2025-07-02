@@ -16,7 +16,7 @@
 
 .modalContent {
   width: 90%;
-  height: 90%; // ✅ this is critical
+  height: auto; // ✅ this is critical
   background-color: white;
   padding: 0; // optional: remove padding for full-size children
   border-radius: 8px;

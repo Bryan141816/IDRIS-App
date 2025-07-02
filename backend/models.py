@@ -34,8 +34,11 @@ class DemandAndResponse(Base):
     id = Column(Integer, primary_key=True, index=True)
     title_lable = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
     status = Column(String(255), nullable=False)
     needs = Column(JSON, default=[])
+    priority = Column(String(255), nullable=False)
     submitted_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_updated = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

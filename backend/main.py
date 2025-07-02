@@ -9,7 +9,7 @@ from models import  ResponseReport  # no Role import
 from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication, users
-from routers.response_dashboard import in_kind_monitoring, response_dashboard, report_list, modality_distribution, budget
+from routers.response_dashboard import in_kind_monitoring, response_dashboard, report_list, modality_distribution, budget,demand_and_response
 from routers.donations_management import fundingProposals, donors_route
 from fastapi.staticfiles import StaticFiles 
 
@@ -29,6 +29,7 @@ app.include_router(authentication.router)
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
+app.include_router(demand_and_response.router)
 app.include_router(modality_distribution.router)
 app.include_router(budget.router)
 app.include_router(in_kind_monitoring.router)

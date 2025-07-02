@@ -7,6 +7,7 @@ type ModalProps = {
   children?: ReactNode;
   zIndex?: number; // optional zIndex for stacking
   width?: string;
+  height?: string;
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -15,17 +16,19 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   zIndex,
   width,
+  height,
 }) => {
   if (!isOpen) return null;
 
   const effectiveZIndex = zIndex ?? 1000; // fallback default
   const effectiveMaxWidth = width ?? "500px";
-  
+  const effectiveMaxHeight = height ?? "auto";
+
   return (
     <div className={style.modalOverlay} style={{ zIndex: effectiveZIndex }}>
       <div
         className={style.modalContent}
-        style={{ maxWidth: effectiveMaxWidth }}
+        style={{ maxWidth: effectiveMaxWidth, height: effectiveMaxHeight }}
       >
         <button className={style.closeBtn} onClick={onClose}>
           ×

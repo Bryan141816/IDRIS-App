@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
-from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget, InKindMonitoring
+from models import ResponseReport, User, FundingProposals, ModalityDistribution, ResponseReportBudget, InKindMonitoring, DemandAndResponse
 from auth import hash_password, verify_password
-from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate, InKindMonitoringCreate
+from schemas import ResponseReportCreate, ModalityDistributionCreate, ResponseDashboardBudgetCreate, InKindMonitoringCreate, DemandAndResponseCreate
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -84,6 +84,24 @@ def create_response_report(db: Session, report:ResponseReportCreate) -> Response
     db.commit()
     db.refresh(db_report)
     return db_report
+def create_demand_and_response_record(db: Session, demand_and_response: DemandAndResponseCreate) -> DemandAndResponse:
+    json_needs = [need.dict() for need in demand_and_response.needs]
+    db_record = DemandAndResponse(
+        title_lable = demand_and_response.title_lable,
+        address = demand_and_response.address,
+        lat = demand_and_response.lat,
+        lng = demand_and_response.lng,
+        status = demand_and_response.status,
+        needs = json_needs,
+        priority = demand_and_response.priority,
+        submitted_at = datetime.now(timezone.utc),
+        last_updated = datetime.now(timezone.utc)
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+
 def create_modality_distribution_record(db: Session, modality_report: ModalityDistributionCreate) -> ModalityDistribution:
     db_record = ModalityDistribution(
         date_time = datetime.now(timezone.utc),

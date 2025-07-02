@@ -32,7 +32,7 @@ const MapClickHandler: React.FC<{ onAdd: (pos: [number, number]) => void }> = ({
 interface PickerProps {
   isOpenProp: boolean;
   onCloseProp: () => void;
-  onSubmit: () => void;
+  onSubmit: (mapData: MarkerData) => void;
 }
 
 const LocationPickerModal: React.FC<PickerProps> = ({
@@ -47,7 +47,7 @@ const LocationPickerModal: React.FC<PickerProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpenProp} onClose={onCloseProp} width="60%">
+    <Modal isOpen={isOpenProp} onClose={onCloseProp} width="60%" height="90%">
       <div
         style={{
           display: "flex",
@@ -76,8 +76,21 @@ const LocationPickerModal: React.FC<PickerProps> = ({
           )}
         </MapContainer>
         <div className="action-button">
-          <button style={{ backgroundColor: "#749AB6" }}>Submit</button>
-          <button style={{ backgroundColor: "#F84B4D" }}>Cancel</button>
+          <button
+            style={{ backgroundColor: "#749AB6" }}
+            disabled={!marker}
+            onClick={() => {
+              if (marker) {
+                onSubmit(marker);
+                onCloseProp();
+              }
+            }}
+          >
+            Submit
+          </button>
+          <button style={{ backgroundColor: "#F84B4D" }} onClick={onCloseProp}>
+            Cancel
+          </button>
         </div>
       </div>
     </Modal>

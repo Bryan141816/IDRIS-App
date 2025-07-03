@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useNavigate } from "react-router-dom";
-
+import { fetchData } from "../../../API_Handler/response_dashboard";
 dayjs.extend(localizedFormat);
 dayjs.extend(customParseFormat);
 
@@ -32,68 +32,69 @@ interface DemandPin extends MapPinBase {
     name: string;
     phone: string;
   };
-  status: "no_response" | "responded" | "completed";
+  status: "no response" | "responded" | "completed";
   priority: "low" | "medium" | "high" | "urgent";
   submitted_at: string;
   needs: {
-    item: string;
-    quantity: number | "critical";
+    id: number;
+    need: string;
+    amount: number | "critical";
   }[];
 }
 
 type MapPin = DemandPin;
 
-const markers: MapPin[] = [
-  {
-    id: "d1",
-    type: "demand",
-    label: "Brgy Malinis – Evacuation Center",
-    lat: 10.313924,
-    lng: 123.887082,
-    address: "Sitio Mabuhay, Calamba City",
-    contact: { name: "Santos", phone: "0917-123-4567" },
-    priority: "high",
-    status: "no_response",
-    needs: [
-      { item: "Food Packs", quantity: 120 },
-      { item: "Water", quantity: "critical" },
-    ],
-    submitted_at: "2025-06-26T14:15:00+08:00",
-    last_updated: "2025-06-27T09:30:00+08:00",
-  },
-  {
-    id: "d2",
-    type: "demand",
-    label: "Brgy San Isidro",
-    lat: 10.32111,
-    lng: 123.895,
-    address: "San Isidro, Calamba City",
-    contact: { name: "Lopez", phone: "0917-123-9999" },
-    priority: "medium",
-    status: "responded",
-    needs: [{ item: "Blankets", quantity: 50 }],
-    submitted_at: "2025-06-25T12:00:00+08:00",
-    last_updated: "2025-06-27T08:15:00+08:00",
-  },
-  {
-    id: "d3",
-    type: "demand",
-    label: "Brgy Mabini",
-    lat: 10.328,
-    lng: 123.8901,
-    address: "Mabini, Calamba City",
-    contact: { name: "Reyes", phone: "0917-123-0000" },
-    priority: "low",
-    status: "completed",
-    needs: [{ item: "Hygiene Kits", quantity: 30 }],
-    submitted_at: "2025-06-24T09:00:00+08:00",
-    last_updated: "2025-06-26T18:00:00+08:00",
-  },
-];
+// const markers: MapPin[] = [
+//   {
+//     id: "d1",
+//     type: "demand",
+//     label: "Brgy Malinis – Evacuation Center",
+//     lat: 10.313924,
+//     lng: 123.887082,
+//     address: "Sitio Mabuhay, Calamba City",
+//     contact: { name: "Santos", phone: "0917-123-4567" },
+//     priority: "high",
+//     status: "no_response",
+//     needs: [
+//       { item: "Food Packs", quantity: 120 },
+//       { item: "Water", quantity: "critical" },
+//     ],
+//     submitted_at: "2025-06-26T14:15:00+08:00",
+//     last_updated: "2025-06-27T09:30:00+08:00",
+//   },
+//   {
+//     id: "d2",
+//     type: "demand",
+//     label: "Brgy San Isidro",
+//     lat: 10.32111,
+//     lng: 123.895,
+//     address: "San Isidro, Calamba City",
+//     contact: { name: "Lopez", phone: "0917-123-9999" },
+//     priority: "medium",
+//     status: "responded",
+//     needs: [{ item: "Blankets", quantity: 50 }],
+//     submitted_at: "2025-06-25T12:00:00+08:00",
+//     last_updated: "2025-06-27T08:15:00+08:00",
+//   },
+//   {
+//     id: "d3",
+//     type: "demand",
+//     label: "Brgy Mabini",
+//     lat: 10.328,
+//     lng: 123.8901,
+//     address: "Mabini, Calamba City",
+//     contact: { name: "Reyes", phone: "0917-123-0000" },
+//     priority: "low",
+//     status: "completed",
+//     needs: [{ item: "Hygiene Kits", quantity: 30 }],
+//     submitted_at: "2025-06-24T09:00:00+08:00",
+//     last_updated: "2025-06-26T18:00:00+08:00",
+//   },
+// ];
 
 const getIconByStatus = (status: DemandPin["status"]) => {
   let iconUrl = "/images/icons/gray.png";
-  if (status === "no_response") iconUrl = "/images/icons/baranggay.png";
+  if (status === "no response") iconUrl = "/images/icons/baranggay.png";
   else if (status === "responded") iconUrl = "/images/icons/raffi.png";
   else if (status === "completed") iconUrl = "/images/icons/lgu.png";
 
@@ -162,6 +163,7 @@ const DemandAndResponse = () => {
   const [pathCoordinates, setPathCoordinates] = useState<
     [number, number][] | null
   >(null);
+  const [markers, setMarkers] = useState<MapPin[] | null>(null);
 
   const handleMarkerClick = (marker: MapPin) => {
     setSelectedMarker(marker);
@@ -174,6 +176,12 @@ const DemandAndResponse = () => {
     setSelectedMarker(null);
     setPathCoordinates(null);
   };
+  useEffect(() => {
+    fetchData<MapPin[]>(
+      "/response_dashboard/demand_and_response/get_map_pin",
+      setMarkers,
+    );
+  }, []);
 
   return (
     <div className={`main-container ${sidebarOpen ? "sidebar-open" : ""}`}>
@@ -211,7 +219,7 @@ const DemandAndResponse = () => {
       <div className="map-container">
         <MapView
           center={[10.313924, 123.887082]}
-          markers={markers}
+          markers={markers ?? []}
           onMarkerClick={handleMarkerClick}
           pathCoordinates={pathCoordinates}
           fitBounds={true}
@@ -230,7 +238,7 @@ const DemandAndResponse = () => {
             <strong
               style={{
                 color:
-                  selectedMarker.status === "no_response"
+                  selectedMarker.status === "no response"
                     ? "red"
                     : selectedMarker.status === "responded"
                       ? "orange"
@@ -245,7 +253,7 @@ const DemandAndResponse = () => {
           <ul>
             {selectedMarker.needs.map((need, i) => (
               <li key={i}>
-                {need.item} - {need.quantity}
+                {need.need} - {need.amount}
               </li>
             ))}
           </ul>

@@ -4,18 +4,50 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import DemandAndResponseOut, DemandAndResponseCreate
-from database import get_db 
+from database import get_db
 from crud import delete, create_demand_and_response_record
-from models import  DemandAndResponse  # no Role import datetime
+from models import DemandAndResponse  # no Role import datetime
 from datetime import datetime, timezone
 from pydantic import BaseModel
+from typing import List, Dict, Any
 
-router = APIRouter(
-    tags=["demand_and_response"]
+router = APIRouter(tags=["demand_and_response"])
+
+
+@router.get(
+    "/response_dashboard/demand_and_response/get_map_pin",
+    response_model=List[Dict[str, Any]],
 )
+def get_markers(db: Session = Depends(get_db)):
+    records = db.query(DemandAndResponse).all()
+
+    markers = []
+    for i, record in enumerate(records, 1):
+        marker = {
+            "id": f"d{i}",
+            "type": "demand",
+            "label": record.title_lable,
+            "lat": record.lat,
+            "lng": record.lng,
+            "address": record.address,
+            "contact": {
+                "name": "Unknown",  # Replace if you have these fields
+                "phone": "N/A",  # Replace if available
+            },
+            "priority": record.priority,
+            "status": record.status,
+            "needs": record.needs,
+            "submitted_at": record.submitted_at.isoformat(),
+            "last_updated": record.last_updated.isoformat(),
+        }
+        markers.append(marker)
+
+    return markers
 
 
-@router.get("/response_dashboard/demand_and_response/list_view", response_model=TableResponse)
+@router.get(
+    "/response_dashboard/demand_and_response/list_view", response_model=TableResponse
+)
 def get_table(db: Session = Depends(get_db)):
     # Table header remains the same
     table_head = [
@@ -27,86 +59,92 @@ def get_table(db: Session = Depends(get_db)):
         {"text": "Status", "width": "150px"},
         {"text": "Needs", "width": "400px"},
         {"text": "Priority", "width": "150px"},
-        {"text": "Action", "width": "150px"}
+        {"text": "Action", "width": "150px"},
     ]
 
     # Query all reports (limit if needed)
-    reports = db.query(DemandAndResponse).order_by(DemandAndResponse.last_updated.desc()).all()
+    reports = (
+        db.query(DemandAndResponse)
+        .order_by(DemandAndResponse.last_updated.desc())
+        .all()
+    )
 
     table_datas = []
     for report in reports:
-        needs_list = report.needs  
-        needs_str = ", ".join([f"{need['need']} - {need['amount']}" for need in needs_list])
+        needs_list = report.needs
+        needs_str = ", ".join(
+            [f"{need['need']} - {need['amount']}" for need in needs_list]
+        )
         row_data = [
             Cell(
                 type="Hidden",  # Custom type handled in frontend
                 text=str(report.id),
                 font_weight=0,
                 color="#000",
-                width="0px"
+                width="0px",
             ),
             Cell(
                 type="Hidden",
                 text="no-text",
                 value=report.needs,
                 font_weight=0,
-                width="0px"
+                width="0px",
             ),
             Cell(
                 type="Text",
-                text=report.last_updated.strftime("%B %d, %Y"),                    
+                text=report.last_updated.strftime("%B %d, %Y"),
                 font_weight=500,
                 color="#000",
-                width="200px"
+                width="200px",
             ),
             Cell(
                 type="Text",
-                text=report.title_lable,                    
+                text=report.title_lable,
                 font_weight=500,
                 color="#000",
-                width="250px"
+                width="250px",
             ),
             Cell(
                 type="Text",
-                text=report.address,                    
+                text=report.address,
                 font_weight=500,
                 color="#000",
-                width="250px"
+                width="250px",
             ),
             Cell(
                 type="Text",
-                text=str(report.lat),                    
+                text=str(report.lat),
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
-                text=str(report.lng),                    
+                text=str(report.lng),
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
-                text=report.status,                    
+                text=report.status,
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
-                text=needs_str,                    
+                text=needs_str,
                 font_weight=500,
                 color="#000",
-                width="400px"
+                width="400px",
             ),
             Cell(
                 type="Text",
-                text=report.priority,                    
+                text=report.priority,
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Button",
@@ -115,26 +153,38 @@ def get_table(db: Session = Depends(get_db)):
                 color="#fff",
                 background_color="#749AB6",
                 container_width="150px",
-                button_width="120px"
-            )
+                button_width="120px",
+            ),
         ]
         table_datas.append({"data": row_data})
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
 
-@router.post("/response_dashboard/demand_and_response/add_record", response_model = DemandAndResponseOut)
-def add_response_report(record: DemandAndResponseCreate, db: Session = Depends(get_db)):
-    return create_demand_and_response_record(db, record);
 
-@router.delete("/response_dashboard/demand_and_response/delete_record/{record_id}", response_model=dict)
+@router.post(
+    "/response_dashboard/demand_and_response/add_record",
+    response_model=DemandAndResponseOut,
+)
+def add_response_report(record: DemandAndResponseCreate, db: Session = Depends(get_db)):
+    return create_demand_and_response_record(db, record)
+
+
+@router.delete(
+    "/response_dashboard/demand_and_response/delete_record/{record_id}",
+    response_model=dict,
+)
 def delete_response_report(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, DemandAndResponse, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Response report not found.")
     return {"message": f"Response report with ID {record_id} deleted successfully."}
+
+
 @router.put("/response_dashboard/demand_and_response/update_record/{record_id}")
-def update_report(record_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)):
-    record = db.query(DemandAndResponse).get(record_id);
+def update_report(
+    record_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)
+):
+    record = db.query(DemandAndResponse).get(record_id)
 
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
@@ -149,11 +199,14 @@ def update_report(record_id: int, update: DemandAndResponseCreate, db: Session =
     if update.status is not None:
         record.status = update.status
     if update.needs is not None:
-        record.needs = [ item.dict() if isinstance(item, BaseModel) else item for item in update.needs]
+        record.needs = [
+            item.dict() if isinstance(item, BaseModel) else item
+            for item in update.needs
+        ]
     if update.priority is not None:
         record.priority = update.priority
 
-    record.last_updated =  datetime.now(timezone.utc)
+    record.last_updated = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(record)

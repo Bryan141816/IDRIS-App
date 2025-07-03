@@ -65,6 +65,8 @@ const DemandAndResponseList = () => {
   const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
+  const [needItemCounter, setNeedItemCounter] = useState(0);
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   type NeedItem = {
     id: number;
@@ -94,10 +96,6 @@ const DemandAndResponseList = () => {
     need: "",
     amount: "",
   });
-
-  const [needItemCounter, setNeedItemCounter] = useState(0);
-
-  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);

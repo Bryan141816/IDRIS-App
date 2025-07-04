@@ -25,6 +25,7 @@ import LocationPickerModal from "../../../components/Page_Furniture/LocationPick
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
 
 // Default marker icon fix for newer leaflet versions
 const defaultIcon = new L.Icon({
@@ -56,6 +57,13 @@ const MapWithPin: React.FC<Props> = ({ lat, lng }) => {
       <Marker position={[lat, lng]} icon={defaultIcon} />
     </MapContainer>
   );
+};
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
 };
 
 const DemandAndResponseList = () => {
@@ -99,6 +107,20 @@ const DemandAndResponseList = () => {
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
+
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
 
   const handleAddModalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -200,6 +222,13 @@ const DemandAndResponseList = () => {
       closeAddModal();
       await fetchData();
       resetAddDemand();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record Added successfully",
+        onClose: closeMessageBox,
+      }));
     } catch (error) {
       console.error("Faled to add record ", error);
     }
@@ -211,6 +240,13 @@ const DemandAndResponseList = () => {
         addDemand,
       );
       closeEditModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record Updated successfully",
+        onClose: closeMessageBox,
+      }));
       await fetchData();
       resetAddDemand();
     } catch (error) {
@@ -223,6 +259,14 @@ const DemandAndResponseList = () => {
       const response = await deleteRecord(report_id);
       closeViewModal();
       resetAddDemand();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record Deleted successfully",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -231,6 +275,13 @@ const DemandAndResponseList = () => {
 
   return (
     <div className="report-container">
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
       {locationPickerIsOpen && (
         <LocationPickerModal
           isOpenProp={locationPickerIsOpen}
@@ -382,9 +433,17 @@ const DemandAndResponseList = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleUpdateDemandSubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to edit this record?",
+                  onSubmit: handleUpdateDemandSubmit,
+                }));
+              }}
             >
-              Add
+              Update
             </button>
             <button
               style={{ backgroundColor: "#F84B4D" }}
@@ -525,7 +584,15 @@ const DemandAndResponseList = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddDemandSubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this record?",
+                  onSubmit: handleAddDemandSubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -569,11 +636,7 @@ const DemandAndResponseList = () => {
                             needs: isViewModalSelected.data[1].value,
                             priority: isViewModalSelected.data[9].text,
                           });
-                          console.log(
-                            isViewModalSelected.data[1].value[
-                              isViewModalSelected.data[1].value.length - 1
-                            ].id + 1,
-                          );
+
                           setNeedItemCounter(
                             isViewModalSelected.data[1].value[
                               isViewModalSelected.data[1].value.length - 1
@@ -588,7 +651,17 @@ const DemandAndResponseList = () => {
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
-                          handleDeleteReport(isViewModalSelected.data[0].text);
+                          setMessageBox((prev) => ({
+                            ...prev, // preserves onClose and anything else
+                            isOpen: true, // your new values
+                            type: "confirm",
+                            message:
+                              "Are you sure you want to delete this record?",
+                            onSubmit: () =>
+                              handleDeleteReport(
+                                isViewModalSelected.data[0].text,
+                              ),
+                          }));
                         }}
                       >
                         <FontAwesomeIcon icon={faTrash} /> Delete Record

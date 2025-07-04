@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import "./ResponseDashboard.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
-import MapView from "../../components/MapView/MapView";
 import { TableView } from "../../components/TableView/table_view";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faListUl } from "@fortawesome/free-solid-svg-icons";
@@ -30,7 +29,98 @@ ChartJS.register(
 );
 import { useEffect, useState } from "react";
 import { fetchData } from "../../API_Handler/response_dashboard";
+
 import { TableResponse } from "../donations_management/list_of_rafi_donors/TableComponent";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+  Polyline,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+interface MapPinBase {
+  id: string;
+  type: "demand";
+  label: string;
+  lat: number;
+  lng: number;
+  address: string;
+  last_updated: string;
+}
+
+interface DemandPin extends MapPinBase {
+  contact: {
+    name: string;
+    phone: string;
+  };
+  status: "no response" | "responded" | "completed";
+  priority: "low" | "medium" | "high" | "urgent";
+  submitted_at: string;
+  needs: {
+    id: number;
+    need: string;
+    amount: number | "critical";
+  }[];
+}
+
+type MapPin = DemandPin;
+
+const getIconByStatus = (status: DemandPin["status"]) => {
+  let iconUrl = "/images/icons/gray.png";
+  if (status === "no response") iconUrl = "/images/icons/baranggay.png";
+  else if (status === "responded") iconUrl = "/images/icons/raffi.png";
+  else if (status === "completed") iconUrl = "/images/icons/lgu.png";
+
+  return L.icon({
+    iconUrl,
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30],
+  });
+};
+
+const FitBounds: React.FC<{ markers: MapPin[] }> = ({ markers }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (markers.length === 0) return;
+    const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng]));
+    map.fitBounds(bounds, { padding: [30, 30] });
+  }, [markers, map]);
+
+  return null;
+};
+
+const MapView: React.FC<{
+  center?: [number, number];
+  markers: MapPin[];
+  fitBounds?: boolean;
+  pathCoordinates?: [number, number][] | null;
+}> = ({ center = [0, 0], markers, fitBounds = false, pathCoordinates }) => (
+  <MapContainer
+    center={center}
+    zoom={13}
+    style={{ height: "100%", width: "100%" }}
+    attributionControl={false}
+  >
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+    />
+    {fitBounds && <FitBounds markers={markers} />}
+    {markers.map((point, index) => (
+      <Marker
+        key={index}
+        position={[point.lat, point.lng]}
+        icon={getIconByStatus(point.status)}
+      />
+    ))}
+    {pathCoordinates && <Polyline positions={pathCoordinates} color="red" />}
+  </MapContainer>
+);
 
 const options = {
   responsive: true,
@@ -204,6 +294,7 @@ const ResponseDashboard = () => {
   const [raisedBudget, setRaisedBudget] = useState<LineChartData | null>(null);
   const [spendingBreakdown, setSpendingBreakdown] =
     useState<BarChartData | null>(null);
+  const [demandMapPin, setDemandMapPin] = useState<MapPin[] | null>(null);
 
   useEffect(() => {
     fetchData<ReportSummary>(
@@ -227,6 +318,10 @@ const ResponseDashboard = () => {
     fetchData<BarChartData>(
       "/response_dashboard/spending_breakdown",
       setSpendingBreakdown,
+    );
+    fetchData<MapPin[]>(
+      "/response_dashboard/demand_and_response/get_map_pin",
+      setDemandMapPin,
     );
   }, []);
 
@@ -369,8 +464,9 @@ const ResponseDashboard = () => {
           >
             <MapView
               center={[10.313924, 123.887082]}
-              markers={markers}
-              onMarkerClick={() => {}}
+              markers={demandMapPin ?? []}
+              fitBounds={true}
+              pathCoordinates={null}
             />
           </div>
           <div

@@ -44,54 +44,6 @@ interface DemandPin extends MapPinBase {
 
 type MapPin = DemandPin;
 
-// const markers: MapPin[] = [
-//   {
-//     id: "d1",
-//     type: "demand",
-//     label: "Brgy Malinis – Evacuation Center",
-//     lat: 10.313924,
-//     lng: 123.887082,
-//     address: "Sitio Mabuhay, Calamba City",
-//     contact: { name: "Santos", phone: "0917-123-4567" },
-//     priority: "high",
-//     status: "no_response",
-//     needs: [
-//       { item: "Food Packs", quantity: 120 },
-//       { item: "Water", quantity: "critical" },
-//     ],
-//     submitted_at: "2025-06-26T14:15:00+08:00",
-//     last_updated: "2025-06-27T09:30:00+08:00",
-//   },
-//   {
-//     id: "d2",
-//     type: "demand",
-//     label: "Brgy San Isidro",
-//     lat: 10.32111,
-//     lng: 123.895,
-//     address: "San Isidro, Calamba City",
-//     contact: { name: "Lopez", phone: "0917-123-9999" },
-//     priority: "medium",
-//     status: "responded",
-//     needs: [{ item: "Blankets", quantity: 50 }],
-//     submitted_at: "2025-06-25T12:00:00+08:00",
-//     last_updated: "2025-06-27T08:15:00+08:00",
-//   },
-//   {
-//     id: "d3",
-//     type: "demand",
-//     label: "Brgy Mabini",
-//     lat: 10.328,
-//     lng: 123.8901,
-//     address: "Mabini, Calamba City",
-//     contact: { name: "Reyes", phone: "0917-123-0000" },
-//     priority: "low",
-//     status: "completed",
-//     needs: [{ item: "Hygiene Kits", quantity: 30 }],
-//     submitted_at: "2025-06-24T09:00:00+08:00",
-//     last_updated: "2025-06-26T18:00:00+08:00",
-//   },
-// ];
-
 const getIconByStatus = (status: DemandPin["status"]) => {
   let iconUrl = "/images/icons/gray.png";
   if (status === "no response") iconUrl = "/images/icons/baranggay.png";

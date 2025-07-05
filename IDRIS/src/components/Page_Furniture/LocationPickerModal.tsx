@@ -74,7 +74,13 @@ const LocationPickerModal: React.FC<PickerProps> = ({
   }, [lat, lng]);
 
   return (
-    <Modal isOpen={isOpenProp} onClose={onCloseProp} width="60%" height="90%">
+    <Modal
+      isOpen={isOpenProp}
+      onClose={onCloseProp}
+      width="60%"
+      height="90%"
+      zIndex={999}
+    >
       <div
         style={{
           display: "flex",

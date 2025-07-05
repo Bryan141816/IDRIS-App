@@ -20,6 +20,16 @@ import {
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
+
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
+
 const ModalityDistribution = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -29,6 +39,21 @@ const ModalityDistribution = () => {
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editModalityType, setEditModalityType] = useState("");
+
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
@@ -75,6 +100,13 @@ const ModalityDistribution = () => {
       const response = await addModalityRecord(modalityType);
       console.log("LIst added: ", response);
       closeAddModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is added successfuly",
+        onClose: closeMessageBox,
+      }));
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
@@ -85,6 +117,13 @@ const ModalityDistribution = () => {
     try {
       const response = await deleteModalityRecord(record_id);
       closeViewModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is deleted successfuly",
+        onClose: closeMessageBox,
+      }));
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -100,6 +139,14 @@ const ModalityDistribution = () => {
       closeEditModal();
       console.log(response.data);
       isViewModalSelected.data[2].text = response.data.report.modality_type;
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is updated successfuly",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
       openViewModal();
     } else {
@@ -109,6 +156,14 @@ const ModalityDistribution = () => {
 
   return (
     <div className="report-container">
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
+
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -127,7 +182,15 @@ const ModalityDistribution = () => {
           </div>
           <div className="action-button">
             <button
-              onClick={handleEditRecord}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to edit this record?",
+                  onSubmit: handleEditRecord,
+                }));
+              }}
               style={{ backgroundColor: "#749AB6" }}
             >
               Submit
@@ -157,7 +220,15 @@ const ModalityDistribution = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddModalitySubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this record?",
+                  onSubmit: handleAddModalitySubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -201,7 +272,17 @@ const ModalityDistribution = () => {
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
-                          handleDeleteRecord(isViewModalSelected.data[0].text);
+                          setMessageBox((prev) => ({
+                            ...prev, // preserves onClose and anything else
+                            isOpen: true, // your new values
+                            type: "confirm",
+                            message:
+                              "Are you sure you want to delete this record?",
+                            onSubmit: () =>
+                              handleDeleteRecord(
+                                isViewModalSelected.data[0].text,
+                              ),
+                          }));
                         }}
                       >
                         <FontAwesomeIcon icon={faTrash} /> Delete Record

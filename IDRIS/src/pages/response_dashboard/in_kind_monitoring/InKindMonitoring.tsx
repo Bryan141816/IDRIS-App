@@ -23,6 +23,16 @@ import {
 import { fetchData as fetchApiData } from "../../../API_Handler/response_dashboard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
+
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
+
 type InKindMonitoring = {
   available_relief_packs: number;
   currently_in_transit: number;
@@ -44,6 +54,21 @@ const InKindMonitoring = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editReportType, setEditReportType] = useState("");
   const [editStatus, setEditStatus] = useState("");
+
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
@@ -114,7 +139,13 @@ const InKindMonitoring = () => {
         "/response_dashboard/in_kind_monitoring",
         setInKindSummary,
       );
-
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record added successfuly?",
+        onClose: closeMessageBox,
+      }));
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
@@ -129,6 +160,13 @@ const InKindMonitoring = () => {
         "/response_dashboard/in_kind_monitoring",
         setInKindSummary,
       );
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Relief packs dispatched?",
+        onClose: closeMessageBox,
+      }));
 
       await fetchData();
     } catch (error) {
@@ -139,6 +177,13 @@ const InKindMonitoring = () => {
   const handleDeleteReport = async (report_id: String) => {
     try {
       const response = await deleteRecord(report_id);
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record deleted successfuly?",
+        onClose: closeMessageBox,
+      }));
       closeViewModal();
       fetchApiData<InKindMonitoring>(
         "/response_dashboard/in_kind_monitoring",
@@ -158,7 +203,13 @@ const InKindMonitoring = () => {
         "/response_dashboard/in_kind_monitoring",
         setInKindSummary,
       );
-
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record ?",
+        onClose: closeMessageBox,
+      }));
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -185,6 +236,14 @@ const InKindMonitoring = () => {
 
   return (
     <div className="report-container">
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
+
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -215,7 +274,15 @@ const InKindMonitoring = () => {
           </div>
           <div className="action-button">
             <button
-              onClick={handleEditReport}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to edit this report?",
+                  onSubmit: handleEditReport,
+                }));
+              }}
               style={{ backgroundColor: "#749AB6" }}
             >
               Submit
@@ -245,7 +312,15 @@ const InKindMonitoring = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleDispatchSubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to dispatch?",
+                  onSubmit: handleDispatchSubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -274,7 +349,15 @@ const InKindMonitoring = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddReportSubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this record?",
+                  onSubmit: handleAddReportSubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -300,7 +383,17 @@ const InKindMonitoring = () => {
                   <button
                     className="mark-as-button"
                     onClick={() => {
-                      handleMarkAsDelivered(isViewModalSelected.data[0].text);
+                      setMessageBox((prev) => ({
+                        ...prev, // preserves onClose and anything else
+                        isOpen: true, // your new values
+                        type: "confirm",
+                        message:
+                          "Are you sure you want to mark it as delievered?",
+                        onSubmit: () =>
+                          handleMarkAsDelivered(
+                            isViewModalSelected.data[0].text,
+                          ),
+                      }));
                     }}
                   >
                     Mark as Delivered
@@ -329,7 +422,17 @@ const InKindMonitoring = () => {
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
-                          handleDeleteReport(isViewModalSelected.data[0].text);
+                          setMessageBox((prev) => ({
+                            ...prev, // preserves onClose and anything else
+                            isOpen: true, // your new values
+                            type: "confirm",
+                            message:
+                              "Are you sure you want to delete this record?",
+                            onSubmit: () =>
+                              handleDeleteReport(
+                                isViewModalSelected.data[0].text,
+                              ),
+                          }));
                         }}
                       >
                         <FontAwesomeIcon icon={faTrash} /> Delete Record

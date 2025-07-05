@@ -19,6 +19,15 @@ import {
 } from "../../../API_Handler/reponse_dashboard_report_list";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
+
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
 
 const ReportList = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
@@ -30,6 +39,21 @@ const ReportList = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editReportType, setEditReportType] = useState("");
   const [editStatus, setEditStatus] = useState("");
+
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
@@ -80,6 +104,14 @@ const ReportList = () => {
       const response = await addResponseReport(reportType);
       console.log("Report added: ", response);
       closeAddModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Report is successfuly added?",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
@@ -90,6 +122,14 @@ const ReportList = () => {
     try {
       const response = await deleteResponseReport(report_id);
       closeViewModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Report is successfuly deleted?",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -107,6 +147,14 @@ const ReportList = () => {
       console.log(response.data);
       isViewModalSelected.data[2].text = response.data.report.report_type;
       isViewModalSelected.data[3].text = response.data.report.status;
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Report is successfuly updated?",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
       openViewModal();
     } else {
@@ -116,6 +164,14 @@ const ReportList = () => {
 
   return (
     <div className="report-container">
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
+
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -146,7 +202,15 @@ const ReportList = () => {
           </div>
           <div className="action-button">
             <button
-              onClick={handleEditReport}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to edit this report?",
+                  onSubmit: handleEditReport,
+                }));
+              }}
               style={{ backgroundColor: "#749AB6" }}
             >
               Submit
@@ -179,7 +243,15 @@ const ReportList = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddReportSubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this report?",
+                  onSubmit: handleAddReportSubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -225,7 +297,17 @@ const ReportList = () => {
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
-                          handleDeleteReport(isViewModalSelected.data[0].text);
+                          setMessageBox((prev) => ({
+                            ...prev, // preserves onClose and anything else
+                            isOpen: true, // your new values
+                            type: "confirm",
+                            message:
+                              "Are you sure you want to delete this report?",
+                            onSubmit: () =>
+                              handleDeleteReport(
+                                isViewModalSelected.data[0].text,
+                              ),
+                          }));
                         }}
                       >
                         <FontAwesomeIcon icon={faTrash} /> Delete Record

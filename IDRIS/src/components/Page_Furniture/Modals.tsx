@@ -20,7 +20,7 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const effectiveZIndex = zIndex ? zIndex - 3 : 998; // fallback default
+  const effectiveZIndex = zIndex ? zIndex - 3 : 990; // fallback default
   const effectiveMaxWidth = width ?? "500px";
   const effectiveMaxHeight = height ?? "auto";
 

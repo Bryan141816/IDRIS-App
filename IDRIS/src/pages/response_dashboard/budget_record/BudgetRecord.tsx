@@ -19,6 +19,19 @@ import {
 } from "../../../API_Handler/response_dashboard_budget_record";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
+
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
+
+// TODO
+// Fix the way it caculate the total budget.
+
 const BudgetRecord = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -30,6 +43,21 @@ const BudgetRecord = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editRecordType, setEditRecordType] = useState("");
   const [editAmount, setEditAmount] = useState("");
+
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
 
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
@@ -102,6 +130,14 @@ const BudgetRecord = () => {
       console.log("Record added: ", response);
       setAmount("");
       closeAddModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is added successfuly",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
     } catch (error) {
       console.error("Failed to add report: ", error);
@@ -112,6 +148,14 @@ const BudgetRecord = () => {
     try {
       const response = await deleteBudgetRecord(record_id);
       closeViewModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is deleted successfuly",
+        onClose: closeMessageBox,
+      }));
+
       await fetchData();
     } catch (error) {
       console.error("Failed to delete report: ", error);
@@ -127,9 +171,19 @@ const BudgetRecord = () => {
     if (response.sucess) {
       closeEditModal();
       console.log(response.data);
-      isViewModalSelected.data[2].text = response.data.report.modality_type;
+      isViewModalSelected.data[2].text =
+        response.data.record.budget_record_type;
+      isViewModalSelected.data[3].text = response.data.record.amount;
+      isViewModalSelected.data[3].text = response.data.record.total_amount;
       await fetchData();
       openViewModal();
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record is updated successfuly",
+        onClose: closeMessageBox,
+      }));
     } else {
       console.error("Error updating report: " + response.error);
     }
@@ -137,6 +191,14 @@ const BudgetRecord = () => {
 
   return (
     <div className="report-container">
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
+
       <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
         <div className="modal-container">
           <div className="horizontal-container">
@@ -166,7 +228,15 @@ const BudgetRecord = () => {
           </div>
           <div className="action-button">
             <button
-              onClick={handleEditRecord}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to edit this record?",
+                  onSubmit: handleEditRecord,
+                }));
+              }}
               style={{ backgroundColor: "#749AB6" }}
             >
               Submit
@@ -230,7 +300,15 @@ const BudgetRecord = () => {
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={handleAddModalitySubmit}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this record?",
+                  onSubmit: handleAddModalitySubmit,
+                }));
+              }}
             >
               Add
             </button>
@@ -274,7 +352,17 @@ const BudgetRecord = () => {
                       <button
                         style={{ color: "red" }}
                         onClick={() => {
-                          handleDeleteRecord(isViewModalSelected.data[0].text);
+                          setMessageBox((prev) => ({
+                            ...prev, // preserves onClose and anything else
+                            isOpen: true, // your new values
+                            type: "confirm",
+                            message:
+                              "Are you sure you want to delete this record?",
+                            onSubmit: () =>
+                              handleDeleteRecord(
+                                isViewModalSelected.data[0].text,
+                              ),
+                          }));
                         }}
                       >
                         <FontAwesomeIcon icon={faTrash} /> Delete Record

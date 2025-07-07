@@ -1,6 +1,8 @@
 import './dashboard.scss';
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AxiosResponse } from 'axios';
+import { MenuDots } from '../../../components/Page_Furniture/Icons'
 import DownloadableFile from '../../../components/Page_Furniture/Downloadable_File';
 import pdf_logo from '../files/pdf-logo.png';
 import PieChart from '../../../components/Page_Furniture/PieChart';
@@ -47,7 +49,7 @@ const DonationRecordSample = [
     "amount": 500000,
     "site": "Site C",
     "date": "01/01/2000",
-  },  {
+  }, {
     "donor": "Anonymous",
     "amount": 500000,
     "site": "Site C",
@@ -63,7 +65,7 @@ const FundingProposals = [
     target: 500000,
     anchor: 'A0',
   },
-  { 
+  {
     image: image2,
     message: "A powerful typhoon has left thousands of families displaced, without access to safe housing, electricity, and basic necessities. Your help can bring hope and aid to those in need.",
     funded: 50000,
@@ -90,9 +92,9 @@ const DonationsDashboard = () => {
   const [donors_count, setDonorCount] = useState<number>(0);
 
   let statistics = {
-      overall_donations: 1000000,
-      total_donors: 138,
-      retention: 78
+    overall_donations: 1000000,
+    total_donors: 138,
+    retention: 78
   }
 
   useEffect(() => {
@@ -108,10 +110,22 @@ const DonationsDashboard = () => {
         console.error("Failed to fetch donor count:", error);
       }
     };
-  
+
     fetchCount();
   }, []);
-  
+
+  // TRANSPARENCY REPORT
+  const [selectedTransparencyDate, setSelectedTransparencyDate] = useState('');
+
+  useEffect(() => { // default transparency report
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const formattedToday = `${yyyy}-${mm}-${dd}`;
+    setSelectedTransparencyDate(formattedToday);
+  }, []);
+
   return (
     <>
       <div id="dashboard">
@@ -122,13 +136,13 @@ const DonationsDashboard = () => {
               <p className="title">Overall Donations</p>
               <p className="stat-data">
                 {new Intl.NumberFormat('en-PH', {
-                style: 'currency',
-                currency: 'PHP',
-                minimumFractionDigits: 0
+                  style: 'currency',
+                  currency: 'PHP',
+                  minimumFractionDigits: 0
                 }).format(statistics.overall_donations)}
               </p>
             </div>
-            
+
             <div className="donation-stat-card">
               <p className="title">Total Donors</p>
               <p className="stat-data">{donors_count}</p>
@@ -136,22 +150,26 @@ const DonationsDashboard = () => {
             <div className="donation-stat-card">
               <p className="title">Donor Retention</p>
               <p className="stat-data">{statistics.retention}%</p>
+            </div>
           </div>
-          </div>  
-            <div id="transparency-report">
-              <p className="title">Transparency Reports</p>
-              {reportsSample.map((report, index) => (
-                <DownloadableFile key={index} icon={pdf_logo} filename={report.filename} fileUrl={report.fileUrl} className='transparency-report-file' />
-              ))}
+          <div id="transparency-report">
+            <p className="title">Transparency Reports</p>
+            <Link to="/transparency_report">
+              <MenuDots />
+            </Link>
+            <input type="date" id="t-report-date" className="entry no-icon" placeholder=" " value={selectedTransparencyDate} onChange={(e) => setSelectedTransparencyDate(e.target.value)} />
+            {reportsSample.map((report, index) => (
+              <DownloadableFile key={index} icon={pdf_logo} filename={report.filename} fileUrl={report.fileUrl} className='transparency-report-file' />
+            ))}
           </div>
-          
+
         </div>
 
         <h3 className='public-feed-title'>Donations Per Site</h3>
         <div id="donations-pie-chart">
-          <PieChart 
-            labels={PieChartSample.labels} 
-            backgroundColor={PieChartSample.colors} 
+          <PieChart
+            labels={PieChartSample.labels}
+            backgroundColor={PieChartSample.colors}
             data={PieChartSample.datasets}
             width={300}
             height={300}
@@ -162,10 +180,10 @@ const DonationsDashboard = () => {
         <h3 className='public-feed-title'>Donation Record</h3>
         <div id="donation-record-container">
           {DonationRecordSample.map((donation, index) => (
-            <DonationRecord 
+            <DonationRecord
               key={index}
-              donor={donation.donor} 
-              amount={donation.amount} 
+              donor={donation.donor}
+              amount={donation.amount}
               site={donation.site}
               date={new Date(donation.date)}
               className='donation-record'
@@ -185,7 +203,7 @@ const DonationsDashboard = () => {
               anchorLink={funding.anchor}
               className='funding-item'
             />
-            ))}
+          ))}
         </div>
       </div>
     </>

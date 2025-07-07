@@ -31,3 +31,7 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# UPLOADED FILES
+/backend/media/fundingproposals/
+/backend/media/transparency_reports/

@@ -1,6 +1,6 @@
 @use '../../../styles/variables' as *;
 
-.file-uploader {
+.fileUploader {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -9,12 +9,12 @@
   height: 100%;
   background-color: #A4A4A4;
 
-  &.has-file{
+  &.hasFile{
     // width: 100%;
     background-color: #ffffff;
   }
 
-  .upload-button {
+  .uploadButton {
     padding: 8px 12px;
     border: none;
     background-color: #A4A4A4;
@@ -23,24 +23,18 @@
     cursor: pointer;
     border-radius: 4px;
 
-    .upload-icon{
+    .uploadIcon{
       color: #000;
     }
   }
 
-  .drag-instruction {
-    color: #000;
-    font-size: 0.9em;
-    margin-top: 10px;
-  }
-
-  .file-name {
+  .fileName {
     margin-top: 10px;
     font-size: 14px;
     color: #333;
   }
 
-  .remove-button {
+  .removeButton {
     position: absolute;
     top: 0;
     right: 0;
@@ -52,7 +46,7 @@
     padding: 4px 8px;
   }
 
-  #pdf-show-icon{
+  #pdfFileIcon{
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -64,7 +58,14 @@
     }
   }
 
-  .drag-instruction{
+  .dragInstruction{
+    color: #000;
+    font-size: 0.9em;
+    margin-top: 10px;
     padding-bottom: 10px;
+  }
+
+  .hidden{
+    display: none;
   }
 }

@@ -43,7 +43,7 @@ const ListOfRAFIDonors = () => {
   // User view Options
   const { userType } = useUserContext();
   const { userRole } = useUserRoleContext();
-  const donorSearchRef = useRef<HTMLDivElement>(null);
+  const donorSearchRef = useRef<HTMLDivElement>(null); // For Donor Search at Add New Donor Modal
 
   // Preset Variables
   const dateToday = new Date().toISOString().split('T')[0];
@@ -313,7 +313,7 @@ const ListOfRAFIDonors = () => {
         >Organization</button>
       </Modal>
 
-      <Modal isOpen={activeModal === "new-donor-form-create"} onClose={closeModal}>
+      <Modal isOpen={activeModal === "new-donor-form-create"} onClose={closeModal}> 
         <h3 className="modal-title">Add New Donor</h3>
         <div className="new-donor-search-container" ref={donorSearchRef}>
           <SearchBar placeholder="Search Donor" value={addDonorSearch} onChange={setAddDonorSearch} onSearch={() => handleAddDonorSearch()} />

@@ -66,6 +66,8 @@ class ResponseReportBudget(Base):
     total_amount = Column(Float, nullable=False)
     amount = Column(Float, nullable=False)
 
+# ------------------ DONATIONS MANAGEMENT MODELS
+
 class FundingProposals(Base):
     __tablename__ = "funding_proposals"
 
@@ -100,6 +102,17 @@ class Donors(Base):
     
     user = relationship("User", back_populates="donor_profile")
 
+class TransparencyReports(Base):
+    __tablename__ = 'transparency_report'
+    
+    transparency_id = Column(Integer, primary_key=True, index=True)
+    file = Column(String, nullable = False)
+    file_name = Column(String(50), nullable=False)
+    date_issued = Column(DateTime(timezone=True), nullable=False)
+    
+    date_uploaded = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    
 class DonationType(enum.Enum):
     ONE_TIME = "one-time"
     RECURRING = "recurring"

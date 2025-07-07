@@ -7,7 +7,7 @@ from data_schemas.funding_proposal_schema import ( FundingProposalCreate, Fundin
                                                   FundingProposalResponse )
 from models import FundingProposals
 
-from crud_functions.funding_proposals import FundingProposalCRUD 
+from crud_functions.donations_management.funding_proposals import FundingProposalCRUD 
 
 from database import get_db
 

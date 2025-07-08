@@ -110,6 +110,12 @@ const CreateFunding = lazy(
 const UpdateFunding = lazy(
   () => import("./pages/donations_management/funding_proposals/UpdateFunding"),
 );
+
+// Transparency Report
+const TransparencyReport = lazy(
+  () => import("./pages/donations_management/transparency_report_management/TransparencyReport"),
+);
+
 //Response Dashboard
 const RouteOutlet = lazy(() => import("./RouteOulet"));
 
@@ -511,8 +517,20 @@ function AppRoutes() {
                       </Page>
                     </Suspense>
                   </ProtectedRoute>
-                }
-              />
+                }>
+              </Route>
+            </Route>
+            <Route
+              path="/transparency_report"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<div>Loading T-report Page</div>}>
+                    <Page title="IDRIS | Transparency Report Management">
+                      <TransparencyReport />
+                    </Page>
+                  </Suspense>
+                </ProtectedRoute>
+              }>
             </Route>
             <Route
               path="/response_dashboard"

@@ -1,11 +1,12 @@
 // FileUploader.tsx
-import './styles/uploadFile.scss';
+import style from './styles/uploadFile.module.scss';
 import React, { useState, useEffect} from "react";
 import { UploadArrow } from "./Icons";
 import PDFimage from "./images/pdf-logo.png";
 
 interface FileUploaderProps {
-  onFileSelect: (file: File | null) => void;
+  onFileSelect: (file: File | null, action: "create" | "update" | null) => void;
+  action?: "create" | "update" | null;
   accept?: string;
   showName?: boolean;
   className?: string;
@@ -14,6 +15,7 @@ interface FileUploaderProps {
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
+  action = null,
   accept = "*",
   showName = true,
   className = "",
@@ -27,12 +29,17 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   // Initialize with default image when component mounts or defaultImage changes
   useEffect(() => {
     if (defaultImage && !file) {
-      setFilePreview(defaultImage);
-      // Set a placeholder filename to show the preview
-      setFileName("Current Image");
+      const isPdf = accept?.includes("pdf");
+  
+      // Always use PDF icon if accept indicates PDF
+      setFilePreview(isPdf ? PDFimage : defaultImage);
+  
+      // Extract filename from URL or show fallback name
+      const name = defaultImage.split("/").pop() || "Current File";
+      setFileName(name);
     }
-  }, [defaultImage]); // Remove 'file' from dependencies to avoid conflicts
-
+  }, [defaultImage, accept]);
+  
   // Cleanup object URLs to avoid memory leaks
   useEffect(() => {
     return () => {
@@ -57,7 +64,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         setFilePreview(PDFimage);
       }
 
-      onFileSelect(selectedFile);
+      onFileSelect(selectedFile, action);
     }
   };
 
@@ -92,12 +99,15 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     setFile(null);
     // Reset to default image if available, otherwise use PDF placeholder
     setFilePreview(defaultImage || PDFimage);
-    onFileSelect(null);
+    onFileSelect(null, action);
   };
+
+  // Check if we should show content (either file selected or default image)
+  const hasContent = !!file || !!defaultImage;
 
   return (
     <div
-      className={`file-uploader ${isDragging ? "drag-over" : ""} ${fileName ? "has-file" : ""} ${className}`}
+      className={`${style.fileUploader} ${isDragging ? style.dragOver : ""} ${hasContent ? style.hasFile : ""} ${className}`}
       onClick={openFilePicker}
       onDragOver={(e) => {
         e.preventDefault();
@@ -111,7 +121,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       <button
         type="button"
         onClick={handleClear}
-        className={`remove-button ${fileName ? "" : "hidden"}`}
+        className={`${style.removeButton} ${hasContent ? "" : style.hidden}`}
       >
         X
       </button>
@@ -122,18 +132,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           e.stopPropagation();
           openFilePicker();
         }}
-        className={`upload-button ${fileName ? "hidden" : ""}`}
+        className={`${style.uploadButton} ${hasContent ? style.hidden : ""}`}
       >
-        <UploadArrow width={50} height={50} className="upload-icon" />
+        <UploadArrow width={50} height={50} className={style.uploadIcon} />
       </button>
 
-      {showName && fileName &&
-        <div id="pdf-show-icon">
+      {showName && hasContent &&
+        <div id={style.pdfFileIcon}>
           <img src={filePreview} alt="File Preview" />
-          <p className="file-name">{fileName}</p>
+          <p className={style.fileName}>{fileName || "Default Image"}</p>
         </div>
       }
-      {!fileName && <p className="drag-instruction">Browse or Drop a File Here</p>}
+      {!hasContent && <p className={style.dragInstruction}>Browse or Drop a File Here</p>}
     </div>
   );
 };

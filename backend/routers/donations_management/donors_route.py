@@ -17,7 +17,7 @@ from data_schemas.donors_schema import (
     DonorAllAttributes
 )
 
-from crud_functions.donors import donor_crud
+from crud_functions.donations_management.donors import donor_crud
 
 router = APIRouter()
 

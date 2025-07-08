@@ -9,7 +9,10 @@ from crud import delete, create_modality_distribution_record
 from models import ModalityDistribution  # no Role import datetime
 from routers.role_checker import RoleChecker
 
-router = APIRouter(tags=["modality_distribution"])
+router = APIRouter(
+    tags=["modality_distribution"],
+    dependencies=[Depends(RoleChecker(["operations admin"]))],
+)
 
 
 @router.get(

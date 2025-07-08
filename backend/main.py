@@ -5,13 +5,20 @@ from data_schemas.report_schema import TableResponse, Cell, TableHead, TableData
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
 
 from database import Base, engine, get_db
-from models import  ResponseReport  # no Role import
+from models import ResponseReport  # no Role import
 from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication, users
-from routers.response_dashboard import in_kind_monitoring, response_dashboard, report_list, modality_distribution, budget,demand_and_response
+from routers.response_dashboard import (
+    in_kind_monitoring,
+    response_dashboard,
+    report_list,
+    modality_distribution,
+    budget,
+    demand_and_response,
+)
 from routers.donations_management import fundingProposals, donors_route
-from fastapi.staticfiles import StaticFiles 
+from fastapi.staticfiles import StaticFiles
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,11 +40,13 @@ app.include_router(demand_and_response.router)
 app.include_router(modality_distribution.router)
 app.include_router(budget.router)
 app.include_router(in_kind_monitoring.router)
-app.include_router(fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"])
+app.include_router(
+    fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"]
+)
 app.mount(
     "/media/fundingproposals",
     StaticFiles(directory="media/fundingproposals"),
-    name="fundingproposals"
+    name="fundingproposals",
 )
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 

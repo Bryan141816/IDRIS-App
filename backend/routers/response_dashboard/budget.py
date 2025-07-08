@@ -4,13 +4,16 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import ResponseDashboardBudgetOut, ResponseDashboardBudgetCreate
-from database import get_db 
+from database import get_db
 from crud import delete, create_response_dashboard_budget_create
-from models import  ResponseReportBudget  # no Role import datetime
+from models import ResponseReportBudget  # no Role import datetime
+from routers.role_checker import RoleChecker
 
 router = APIRouter(
-    tags=["budget_record"]
+    tags=["budget_record"],
+    dependencies=[Depends(RoleChecker(["operations admin"]))],
 )
+
 
 @router.get("/response_dashboard/budget_record/get_list", response_model=TableResponse)
 def get_budget_table(db: Session = Depends(get_db)):
@@ -24,7 +27,11 @@ def get_budget_table(db: Session = Depends(get_db)):
     ]
 
     # Query all reports (limit if needed)
-    reports = db.query(ResponseReportBudget).order_by(ResponseReportBudget.date_time.desc()).all()
+    reports = (
+        db.query(ResponseReportBudget)
+        .order_by(ResponseReportBudget.date_time.desc())
+        .all()
+    )
 
     table_datas = []
     for report in reports:
@@ -34,35 +41,35 @@ def get_budget_table(db: Session = Depends(get_db)):
                 text=str(report.id),
                 font_weight=0,
                 color="#000",
-                width="0px"
+                width="0px",
             ),
             Cell(
                 type="Text",
                 text=report.date_time.strftime("%B %d, %Y"),  # format date nicely
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
-                text=report.budget_record_type ,
+                text=report.budget_record_type,
                 font_weight=500,
                 color="#000",
-                width="250px"
+                width="250px",
             ),
             Cell(
                 type="Text",
                 text=str(report.amount),
                 font_weight=700,
                 color="#000",  # color green if completed
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
                 text=str(report.total_amount),
                 font_weight=700,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Button",
@@ -71,27 +78,39 @@ def get_budget_table(db: Session = Depends(get_db)):
                 color="#fff",
                 background_color="#749AB6",
                 container_width="150px",
-                button_width="120px"
-            )
+                button_width="120px",
+            ),
         ]
         table_datas.append({"data": row_data})
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
 
-@router.post("/response_dashboard/budget_record/add_record", response_model = ResponseDashboardBudgetOut)
-def add_budget_record(record: ResponseDashboardBudgetCreate, db: Session = Depends(get_db)):
-    return create_response_dashboard_budget_create(db, record);
 
-@router.delete("/response_dashboard/budget_record/delete_record/{record_id}", response_model=dict)
+@router.post(
+    "/response_dashboard/budget_record/add_record",
+    response_model=ResponseDashboardBudgetOut,
+)
+def add_budget_record(
+    record: ResponseDashboardBudgetCreate, db: Session = Depends(get_db)
+):
+    return create_response_dashboard_budget_create(db, record)
+
+
+@router.delete(
+    "/response_dashboard/budget_record/delete_record/{record_id}", response_model=dict
+)
 def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, ResponseReportBudget, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Response report not found.")
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
+
 @router.put("/response_dashboard/budget_record/update_record/{record_id}")
-def update_budget_record(record_id: int, update: ResponseDashboardBudgetCreate, db: Session = Depends(get_db)):
-    record = db.query(ResponseReportBudget).get(record_id);
+def update_budget_record(
+    record_id: int, update: ResponseDashboardBudgetCreate, db: Session = Depends(get_db)
+):
+    record = db.query(ResponseReportBudget).get(record_id)
 
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")

@@ -4,16 +4,18 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import ModalityDistributionOut, ModalityDistributionCreate
-from database import get_db 
+from database import get_db
 from crud import delete, create_modality_distribution_record
-from models import  ModalityDistribution  # no Role import datetime
+from models import ModalityDistribution  # no Role import datetime
+from routers.role_checker import RoleChecker
 
-router = APIRouter(
-    tags=["modality_distribution"]
+router = APIRouter(tags=["modality_distribution"])
+
+
+@router.get(
+    "/response_dashboard/modality_distribution/record_list",
+    response_model=TableResponse,
 )
-
-
-@router.get("/response_dashboard/modality_distribution/record_list", response_model=TableResponse)
 def get_modality_table(db: Session = Depends(get_db)):
     # Table header remains the same
     table_head = [
@@ -23,7 +25,11 @@ def get_modality_table(db: Session = Depends(get_db)):
     ]
 
     # Query all reports (limit if needed)
-    reports = db.query(ModalityDistribution).order_by(ModalityDistribution.date_time.desc()).all()
+    reports = (
+        db.query(ModalityDistribution)
+        .order_by(ModalityDistribution.date_time.desc())
+        .all()
+    )
 
     table_datas = []
     for report in reports:
@@ -33,21 +39,21 @@ def get_modality_table(db: Session = Depends(get_db)):
                 text=str(report.id),
                 font_weight=0,
                 color="#000",
-                width="0px"
+                width="0px",
             ),
             Cell(
                 type="Text",
                 text=report.date_time.strftime("%B %d, %Y"),  # format date nicely
                 font_weight=500,
                 color="#000",
-                width="150px"
+                width="150px",
             ),
             Cell(
                 type="Text",
                 text=report.modality_type,
                 font_weight=500,
                 color="#000",
-                width="250px"
+                width="250px",
             ),
             Cell(
                 type="Button",
@@ -56,28 +62,41 @@ def get_modality_table(db: Session = Depends(get_db)):
                 color="#fff",
                 background_color="#749AB6",
                 container_width="150px",
-                button_width="120px"
-            )
+                button_width="120px",
+            ),
         ]
         table_datas.append({"data": row_data})
 
     return TableResponse(table_head=table_head, table_datas=table_datas)
 
-@router.post("/response_dashboard/modality_distribution/add_record", response_model = ModalityDistributionOut)
-def add_modality_record(modality_report: ModalityDistributionCreate, db: Session = Depends(get_db)):
-    return create_modality_distribution_record(db, modality_report);
 
-@router.delete("/response_dashboard/modality_distribution/delete_record/{record_id}", response_model=dict)
+@router.post(
+    "/response_dashboard/modality_distribution/add_record",
+    response_model=ModalityDistributionOut,
+)
+def add_modality_record(
+    modality_report: ModalityDistributionCreate, db: Session = Depends(get_db)
+):
+    return create_modality_distribution_record(db, modality_report)
+
+
+@router.delete(
+    "/response_dashboard/modality_distribution/delete_record/{record_id}",
+    response_model=dict,
+)
 def delete_modality_report(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, ModalityDistribution, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Modality record not found.")
     return {"message": f"Modality Record with ID {record_id} deleted successfully."}
 
+
 @router.put("/response_dashboard/modality_distribution/update_record/{record_id}")
-def update_modality_record(record_id: int, update: ModalityDistributionCreate, db: Session = Depends(get_db)):
-    record = db.query(ModalityDistribution).get(record_id);
-    print(update);
+def update_modality_record(
+    record_id: int, update: ModalityDistributionCreate, db: Session = Depends(get_db)
+):
+    record = db.query(ModalityDistribution).get(record_id)
+    print(update)
     if not record:
         raise HTTPException(status_code=404, detail="Modality record doesn't exist")
     if update.modality_type is not None:

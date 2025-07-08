@@ -2,6 +2,15 @@
 // src/api/auth.ts
 import { API } from './Axio_API_Handler';
 
+
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export async function getInKindList(): Promise<any> {
   const response = await API.get("/response_dashboard/in_kind_monitoring/record_list");
   return response.data;

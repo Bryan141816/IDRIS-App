@@ -10,8 +10,12 @@ from models import DemandAndResponse  # no Role import datetime
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
+from routers.role_checker import RoleChecker
 
-router = APIRouter(tags=["demand_and_response"])
+router = APIRouter(
+    tags=["demand_and_response"],
+    dependencies=[Depends(RoleChecker(["operations admin"]))],
+)
 
 
 @router.get(

@@ -1,14 +1,6 @@
 // src/api/auth.ts
 import { API } from './Axio_API_Handler';
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 
 export async function loginUser(email: string, password: string): Promise<string> {
   const response = await API.post('/login', {

@@ -2,16 +2,6 @@
 // src/api/auth.ts
 import { API } from './Axio_API_Handler';
 
-
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-
 export async function getReportList(): Promise<any> {
   const response = await API.get('/report_list');
   return response.data;

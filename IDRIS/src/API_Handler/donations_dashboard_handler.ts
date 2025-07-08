@@ -1,14 +1,11 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 
-const API = axios.create({
-  baseURL: 'http://localhost:8000',
-});
-
+import { API } from './Axio_API_Handler';
 type DonorCountResponse = {
-    count: number;
-  };
+  count: number;
+};
 
-export async function getCountofDonors(search = '', donor_type=''): Promise<AxiosResponse<DonorCountResponse>> {
+export async function getCountofDonors(search = '', donor_type = ''): Promise<AxiosResponse<DonorCountResponse>> {
   return await API.get(`/donors/count/`, {
     params: { search, donor_type },
   });

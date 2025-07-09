@@ -33,6 +33,5 @@ __pycache__/
 *.sw?
 
 # UPLOADED FILES
-backend/media/*
-!backend/media/**/
 backend/media/**/*.*
+!backend/media/**/.gitkeep

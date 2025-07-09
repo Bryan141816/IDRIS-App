@@ -1,15 +1,18 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import SortingBar from "../../../components/Page_Furniture/Filter";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { PlusCircle } from "../../../components/Page_Furniture/Icons";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { TransparencyReportTable, TransparencyReport as ReportType } from './Transparency_table';
+import { TransparencyReportTable } from './Transparency_table';
 import './transparency_report.scss';
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import { createTransparencyReport, getTransparencyReports, getTransparencyReportById, updateTransparencyReport } from '../../../API_Handler/donations_transparency_report';
-
+import { createTransparencyReport,
+          getTransparencyReports,
+          getTransparencyReportById,
+          updateTransparencyReport 
+        } from '../../../API_Handler/donations_transparency_report';
 
 interface ReportTypeShema {
   transparency_id: number;

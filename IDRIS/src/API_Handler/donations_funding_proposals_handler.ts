@@ -1,8 +1,9 @@
 
-import { API } from './Axio_API_Handler';// GET all donors (optionally with search or filter query)
+import { API } from './Axio_API_Handler';
+
 export async function getDonorsList(search = ''): Promise<any[]> {
   const response = await API.get(`/donors/get_all_as_lists/`, {
-    params: { search }, // if backend accepts it
+    params: { search }, 
   });
   return response.data;
 }

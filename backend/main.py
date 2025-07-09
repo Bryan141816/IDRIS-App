@@ -9,6 +9,7 @@ from models import ResponseReport  # no Role import
 from datetime import datetime
 from sqlalchemy import func
 from routers.auth import authentication, users
+
 from routers.response_dashboard import (
     in_kind_monitoring,
     response_dashboard,
@@ -18,10 +19,11 @@ from routers.response_dashboard import (
     demand_and_response,
 )
 from routers.donations_management import (
-    fundingProposals,
+    funding_proposals_route,
     donors_route,
     transparency_report_route,
 )
+
 from fastapi.staticfiles import StaticFiles
 
 Base.metadata.create_all(bind=engine)
@@ -36,15 +38,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(
-    transparency_report_route.router, prefix="/transparency_report", tags=["Dashboard"]
-)
-app.mount(
-    "/media/transparency_reports",
-    StaticFiles(directory="media/transparency_reports"),
-    name="transparencyreports",
-)
-
 app.include_router(authentication.router)
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(response_dashboard.router)
@@ -54,15 +47,25 @@ app.include_router(modality_distribution.router)
 app.include_router(budget.router)
 app.include_router(in_kind_monitoring.router)
 app.include_router(
-    fundingProposals.router, prefix="/funding_proposals", tags=["Funding Proposals"]
+    funding_proposals_route.router, prefix="/funding_proposals", tags=["Funding Proposals"]
 )
+
+app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
+app.include_router(
+    transparency_report_route.router, prefix="/transparency_report", tags=["Transparency Report"]
+)
+
+app.mount(
+    "/media/transparency_reports",
+    StaticFiles(directory="media/transparency_reports"),
+    name="transparencyreports",
+)
+
 app.mount(
     "/media/fundingproposals",
     StaticFiles(directory="media/fundingproposals"),
     name="fundingproposals",
 )
-app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
-
 
 @app.on_event("startup")
 async def on_startup():

@@ -1,9 +1,10 @@
 
 
-import { API } from './Axio_API_Handler';// GET all donors (optionally with search or filter query)
+import { API } from './Axio_API_Handler';
+
 export async function getDonorsList(search = ''): Promise<any[]> {
   const response = await API.get(`/donors/get_all_as_lists/`, {
-    params: { search }, // if backend accepts it
+    params: { search }, 
   });
   return response.data;
 }
@@ -89,8 +90,6 @@ export async function getFundingProposalsById(id: number): Promise<any> {
   const response = await API.get(`/funding_proposals/proposals/get_proposal/${id}/`);
   return response.data;
 }
-
-
 
 
 export async function createTransparencyReport(formData: FormData): Promise<any> {

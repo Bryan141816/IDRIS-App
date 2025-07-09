@@ -6,6 +6,7 @@ from typing import Optional, List
 from database import get_db  # Adjust import path
 from models import Donors
 from schemas import Number
+from routers.role_checker import RoleChecker
 
 from data_schemas.donors_schema import (
     DonorResponse, 
@@ -19,9 +20,20 @@ from data_schemas.donors_schema import (
 
 from crud_functions.donations_management.donors import donor_crud
 
-router = APIRouter()
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+)
 
-@router.post("/create/", response_model=DonorResponse)  # Note the trailing slash!
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+)
+
+
+@router_admin.post("/create/", response_model=DonorResponse)  # mark used
 def create_individual_donor_endpoint(
     user_id: int = Form(...),
     donor_type: Optional[str] = Form("Individual"),
@@ -30,12 +42,6 @@ def create_individual_donor_endpoint(
     is_verified: Optional[bool] = Form(False),
     db: Session = Depends(get_db)
 ):
-    print("Request received!")
-    print("user_id:", user_id)
-    print("organization_name:", organization_name)
-    print("date_joined:", date_joined)
-    print("is_verified:", is_verified)
-
     try:
         print("Calling create_donor()...")
         new_donor = donor_crud.create_donor(
@@ -55,30 +61,16 @@ def create_individual_donor_endpoint(
             detail=f"Server crashed: {str(e)}"
         )
 
-@router.post("/create/organization", response_model=DonorResponse)
-def create_organization_donor_endpoint(
-    user_id: int = Form(...),
-    organization_name = str,
-    is_verified: Optional[bool] = Form(False),
-    db: Session = Depends(get_db)
-):
-    donor = donor_crud.create_organization_donor(
-        db=db,
-        user_id=user_id,
-        organization_name=organization_name,
-        is_verified=is_verified
-    )
-    return donor
 # ============================================================================
 # READ ENDPOINTS - SINGLE RECORDS
 # ============================================================================
 
-@router.get("/get_by_id/{donor_id}", response_model=DonorResponse)
+@router_admin.get("/get_by_id/{donor_id}", response_model=DonorResponse) 
 def get_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
 ):
-    """Get a donor by their ID."""
+    """Get a donor by their DONOR ID."""
     donor = donor_crud.get_donor_by_id(db, donor_id)
     if not donor:
         raise HTTPException(
@@ -88,12 +80,12 @@ def get_donor_endpoint(
     return donor
 
 
-@router.get("/user/{user_id}", response_model=DonorAllAttributes)
+@router_admin.get("/user/{user_id}", response_model=DonorAllAttributes) 
 def get_donor_by_user_endpoint(
     user_id: int,
     db: Session = Depends(get_db)
 ):
-    """Get a donor by their associated user ID."""
+    """Get a donor by their associated USER ID."""
     donor = donor_crud.get_donor_by_user_id(db, user_id)
     if not donor:
         raise HTTPException(
@@ -107,24 +99,7 @@ def get_donor_by_user_endpoint(
 # READ ENDPOINTS - MULTIPLE RECORDS & FILTERING
 # ============================================================================
 
-@router.get("/get_all", response_model=DonorListResponse)
-def get_all_donors_endpoint(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
-):
-    """Get all donors with pagination."""
-    donors = donor_crud.get_all_donors(db, skip=skip, limit=limit)
-    total = donor_crud.count_donors(db)
-    
-    return DonorListResponse(
-        donors=donors,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
-
-@router.get("/get_all_as_lists", response_model=ListOfDonorsResponse)
+@router_admin_or_donor.get("/get_all_as_lists", response_model=ListOfDonorsResponse) # mark used
 def get_donor_display_info_endpoint(
     search: Optional[str] = Query(None),    
     skip: int = Query(0, ge=0),
@@ -142,7 +117,7 @@ def get_donor_display_info_endpoint(
         limit=limit
     )
 
-@router.get("/count", response_model=Number)
+@router_admin.get("/count", response_model=Number) # mark used
 def count_donors(
     search: Optional[str] = Query(None, description="email/username"),
     donor_type: Optional[str] = Query(None, description="Filter by Organization or Individual"),
@@ -151,33 +126,8 @@ def count_donors(
     count = donor_crud.count_donors(db, search=search, donor_type=donor_type)    
     return {"count": count}
 
-@router.get("/type/{donor_type}", response_model=DonorListResponse)
-def get_donors_by_type_endpoint(
-    donor_type: str,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db)
-):
-    """Get donors by type (Individual or Organization)."""
-    if donor_type not in ["Individual", "Organization"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid donor type. Must be 'Individual' or 'Organization'"
-        )
-    
-    donors = donor_crud.get_donors_by_type(db, donor_type, skip=skip, limit=limit)
-    # Get count for this specific type
-    total = len(donor_crud.get_donors_by_type(db, donor_type, skip=0, limit=10000))  # Or create a count method
-    
-    return DonorListResponse(
-        donors=donors,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
 
-
-@router.get("/verified/list", response_model=DonorListResponse)
+@router_admin_or_donor.get("/verified/list", response_model=DonorListResponse) 
 def get_verified_donors_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -196,7 +146,7 @@ def get_verified_donors_endpoint(
     )
 
 
-@router.get("/search/name", response_model=List[DonorResponse])
+@router_admin_or_donor.get("/search/name", response_model=List[DonorResponse]) # mark used
 def search_donors_by_name_endpoint(
     name: str = Query(..., min_length=1),
     db: Session = Depends(get_db)
@@ -210,7 +160,7 @@ def search_donors_by_name_endpoint(
 # READ ENDPOINTS - STATISTICS
 # ============================================================================
 
-@router.get("/stats/overview", response_model=DonorStatsResponse)
+@router_admin_or_donor.get("/stats/overview", response_model=DonorStatsResponse)
 def get_donor_stats_endpoint(db: Session = Depends(get_db)):
     """Get comprehensive donor statistics."""
     stats = donor_crud.get_donor_stats(db)
@@ -221,46 +171,7 @@ def get_donor_stats_endpoint(db: Session = Depends(get_db)):
 # UPDATE ENDPOINTS
 # ============================================================================
 
-@router.put("/{donor_id}/update", response_model=DonorResponse)
-def update_donor_endpoint(
-    donor_id: int,
-    name: Optional[str] = Form(None),
-    is_verified: Optional[bool] = Form(None),
-    db: Session = Depends(get_db)
-):
-    """Update a donor's information."""
-    
-    # Check if donor exists
-    if not donor_crud.donor_exists(db, donor_id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Donor not found"
-        )
-    
-    # Prepare update data
-    update_data = {}
-    if name is not None:
-        update_data["name"] = name
-    if is_verified is not None:
-        update_data["is_verified"] = is_verified
-    
-    if not update_data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No update data provided"
-        )
-    
-    try:
-        updated_donor = donor_crud.update_donor(db, donor_id, update_data)
-        return updated_donor
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update donor: {str(e)}"
-        )
-
-
-@router.patch("/{donor_id}/verify", response_model=DonorResponse)
+@router_admin.patch("/{donor_id}/verify", response_model=DonorResponse)
 def verify_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
@@ -283,7 +194,7 @@ def verify_donor_endpoint(
         )
 
 
-@router.patch("/{donor_id}/unverify", response_model=DonorResponse)
+@router_admin.patch("/{donor_id}/unverify", response_model=DonorResponse)
 def unverify_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
@@ -305,12 +216,11 @@ def unverify_donor_endpoint(
             detail=f"Failed to unverify donor: {str(e)}"
         )
 
-
 # ============================================================================
 # DELETE ENDPOINTS
 # ============================================================================
 
-@router.delete("/{donor_id}/delete")
+@router_admin.delete("/{donor_id}/delete")
 def delete_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
@@ -338,27 +248,7 @@ def delete_donor_endpoint(
             detail=f"Cannot delete donor: {str(e)}"
         )
 
-
-# ============================================================================
-# UTILITY ENDPOINTS
-# ============================================================================
-
-@router.get("/{donor_id}/exists")
-def check_donor_exists_endpoint(
-    donor_id: int,
-    db: Session = Depends(get_db)
-):
-    """Check if a donor exists."""
-    exists = donor_crud.donor_exists(db, donor_id)
-    return {"exists": exists}
-
-
-@router.get("/user/{user_id}/has-profile")
-def check_user_has_donor_profile_endpoint(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """Check if a user has a donor profile."""
-    has_profile = donor_crud.user_has_donor_profile(db, user_id)
-    return {"has_donor_profile": has_profile}
-
+router = APIRouter()
+router.include_router(router_admin)
+router.include_router(router_donor)
+router.include_router(router_admin_or_donor)

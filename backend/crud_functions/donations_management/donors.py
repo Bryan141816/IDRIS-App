@@ -82,24 +82,6 @@ class DonorCRUD:
         ).first()
 
 
-    def get_donors_by_type(self, db: Session, donor_type: str, skip: int = 0, limit: int = 100) -> List[Donors]:
-        """
-        Retrieve donors by their type with pagination.
-        
-        Args:
-            db: Database session
-            donor_type: Type of donor ("Individual" or "Organization")
-            skip: Number of records to skip (default: 0)
-            limit: Maximum number of records to return (default: 100)
-        
-        Returns:
-            List of Donors objects
-        """
-        return db.query(Donors).filter(
-            Donors.donor_type == donor_type
-        ).offset(skip).limit(limit).all()
-
-
     def get_verified_donors(self, db: Session, skip: int = 0, limit: int = 100) -> List[Donors]:
         """
         Retrieve all verified donors with pagination.
@@ -179,7 +161,7 @@ class DonorCRUD:
         return query.offset(skip).limit(limit).all()
 
 
-    def count_donors(
+    def count_donors( # mark used
         self, 
         db: Session, 
         search: Optional[str] = None, 
@@ -277,22 +259,6 @@ class DonorCRUD:
         """
         return DonorCRUD.update_donor(db, donor_id, {"is_verified": False})
 
-
-    def update_donor_name(self, db: Session, donor_id: int, new_name: str) -> Optional[Donors]:
-        """
-        Update a donor's name.
-        
-        Args:
-            db: Database session
-            donor_id: ID of the donor
-            new_name: New name for the donor
-        
-        Returns:
-            Updated Donors object if found, None otherwise
-        """
-        return DonorCRUD.update_donor(db, donor_id, {"name": new_name})
-
-
     # DELETE Operations
     def delete_donor(self, db: Session, donor_id: int) -> bool:
         """
@@ -324,21 +290,6 @@ class DonorCRUD:
             )
 
 
-    def soft_delete_donor(self, db: Session, donor_id: int) -> Optional[Donors]:
-        """
-        Soft delete a donor by marking as unverified (alternative approach).
-        Note: This assumes you want to keep the record but mark it as inactive.
-        
-        Args:
-            db: Database session
-            donor_id: ID of the donor to soft delete
-        
-        Returns:
-            Updated Donors object if found, None otherwise
-        """
-        return DonorCRUD.update_donor(db, donor_id, {"is_verified": False})
-
-
     # UTILITY Functions
     def donor_exists(self, db: Session, donor_id: int) -> bool:
         """
@@ -353,22 +304,6 @@ class DonorCRUD:
         """
         return db.query(Donors).filter(Donors.donorId == donor_id).first() is not None
 
-
-    def user_has_donor_profile(self, db: Session, user_id: int) -> bool:
-        """
-        Check if a user already has a donor profile.
-        
-        Args:
-            db: Database session
-            user_id: ID of the user
-        
-        Returns:
-            True if user has donor profile, False otherwise
-        """
-        return db.query(Donors).filter(
-            Donors.user_id == user_id,
-            Donors.donor_type == "Individual"
-        ).first() is not None
 
     def get_donor_stats(self, db: Session) -> Dict[str, int]:
         """

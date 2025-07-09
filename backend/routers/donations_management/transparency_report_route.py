@@ -12,13 +12,25 @@ from crud_functions.donations_management.transparency_report import Transparency
 from models import TransparencyReports
 import shutil
 import os
+from routers.role_checker import RoleChecker
 
-router = APIRouter()
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+)
+
 
 UPLOAD_DIR = Path("media/transparency_reports")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-@router.post("/create")
+@router_admin.post("/create")
 def create_transparency_report_endpoint(
     file_name: str = Form(...),
     file: UploadFile = File(...),
@@ -32,7 +44,7 @@ def create_transparency_report_endpoint(
         date_issued=date_issued
     )
         
-@router.get("/get_transparency_reports", response_model=List[TransparencyReportOut])
+@router_admin_or_donor.get("/get_transparency_reports", response_model=List[TransparencyReportOut])
 def get_all_transparency_report_endpoint(
     file_name: Optional[str] = Query(None),
     date: Optional[datetime] = Query(None),
@@ -48,7 +60,7 @@ def get_all_transparency_report_endpoint(
     )
     return CRUD.get_transparency_report(db, filters)
 
-@router.get("/get_by_id", response_model= TransparencyReportUpdate)
+@router_admin.get("/get_by_id", response_model= TransparencyReportUpdate)
 def get_transparency_report_by_id(
     transparency_id: int,
     db: Session = Depends(get_db)
@@ -61,7 +73,7 @@ def get_transparency_report_by_id(
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error occurred")
     
-@router.put("/update/{transparency_id}", response_model=TransparencyReportBase)
+@router_admin.put("/update/{transparency_id}", response_model=TransparencyReportBase)
 def update_transparency_report_handler(
     transparency_id: int,
     file: UploadFile = File(...),
@@ -76,3 +88,10 @@ def update_transparency_report_handler(
         file_name=file_name,
         date_issued=date_issued
     )
+    
+router = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+)
+router.include_router(router_admin)
+router.include_router(router_donor)
+router.include_router(router_admin_or_donor)

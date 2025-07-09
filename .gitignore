@@ -33,5 +33,7 @@ __pycache__/
 *.sw?
 
 # UPLOADED FILES
-/backend/media/fundingproposals/
-/backend/media/transparency_reports/
+/backend/media/fundingproposals/*
+!/backend/media/fundingproposals/**/
+/backend/media/transparency_reports/*
+!/backend/media/transparency_reports/**/

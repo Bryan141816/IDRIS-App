@@ -4,6 +4,9 @@ from typing import List, Optional
 from pathlib import Path
 from database import get_db
 from routers.role_checker import RoleChecker
+from math import ceil
+from models import FundingProposals
+from schemas import Number  
 from crud_functions.donations_management.funding_proposals import FundingProposalCRUD  as CRUD
 
 from data_schemas.funding_proposal_schema import ( 
@@ -16,11 +19,11 @@ router_admin = APIRouter(
 )
 
 router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor"]))],
+    dependencies=[Depends(RoleChecker(["donor", "volunteer", "contributor"]))],
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor", "volunteer", "contributor"]))],
 )
 
 
@@ -113,6 +116,12 @@ def delete_proposal_endpoint(proposal_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Delete error: {e}")
         raise HTTPException(status_code=500, detail="Error deleting proposal")
+
+@router_admin_or_donor.get("/proposals/get_limit", response_model=Number)
+def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
+    total_records = db.query(FundingProposals).count()
+    pages = ceil(total_records / limit) if limit > 0 else 1
+    return {"count": pages}
     
 router = APIRouter()
 router.include_router(router_admin)

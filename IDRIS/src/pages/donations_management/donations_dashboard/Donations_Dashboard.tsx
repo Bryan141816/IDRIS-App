@@ -1,29 +1,31 @@
 import './dashboard.scss';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AxiosResponse } from 'axios';
 import { MenuDots } from '../../../components/Page_Furniture/Icons'
 import DownloadableFile from '../../../components/Page_Furniture/Downloadable_File';
 import pdf_logo from '../files/pdf-logo.png';
 import PieChart from '../../../components/Page_Furniture/PieChart';
 import { DonationRecord } from './DonationRecord';
 import { FundingCard } from './FundingCard';
-import { getCountofDonors } from '../../../API_Handler/donations_dashboard_handler';
-import image1 from '../test_images/Group 20.png';
-import image2 from '../test_images/Group 21.png';
-import image3 from '../test_images/image (1).png';
-import image4 from '../test_images/image (2).png';
+import { getCountofDonors, getFundingProposals, getFundingProposalMaxPage } from '../../../API_Handler/donations_dashboard_handler';
+import {
+  getTransparencyReportsMini, getMaxPage
+} from '../../../API_Handler/donations_transparency_report';
 
-const reportsSample = [
-  {
-    "filename": "Annual_Donations_Report.pdf",
-    "fileUrl": "../files/Annual_Donations_Report.pdf",
-  },
-  {
-    "filename": "Monthly_Donations_Report.pdf",
-    "fileUrl": "../files/Monthly_Donations_Report.pdf",
-  },
-]
+interface TransparencyReportInterface {
+  file_name: string;
+  file: string;
+}
+
+interface FundingProposalInterface {
+  iproposalId: number;
+  title: string;
+  description: string;
+  progress: number;
+  budgetRequired: number;
+  status: string;
+  image: string;
+}
 
 const PieChartSample = {
   "labels": ["Site A", "Site B", "Site C"],
@@ -57,46 +59,16 @@ const DonationRecordSample = [
   }
 ]
 
-const FundingProposals = [
-  {
-    image: image1,
-    message: "A devastating fire has left many families homeless, without food, clean water, or shelter. Urgent support is needed to provide emergency relief and help them rebuild their lives.",
-    funded: 250000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  {
-    image: image2,
-    message: "A powerful typhoon has left thousands of families displaced, without access to safe housing, electricity, and basic necessities. Your help can bring hope and aid to those in need.",
-    funded: 50000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  {
-    image: image3,
-    message: "A tragic fire has left countless families homeless and in desperate need of assistance. Donations will help provide food, temporary housing, and essential supplies.",
-    funded: 200000,
-    target: 500000,
-    anchor: 'A0',
-  },
-  {
-    image: image4,
-    message: "Super Typhoon Yolanda (Haiyan), one of the most powerful storms in history, devastated communities and claimed thousands of lives. Help us support the survivors with food, shelter, and medical care.",
-    funded: 100000,
-    target: 500000,
-    anchor: 'A0',
-  },
-];
-
 const DonationsDashboard = () => {
-  const [donors_count, setDonorCount] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
+  const [donors_count, setDonorCount] = useState<number>(0);
   let statistics = {
     overall_donations: 1000000,
-    total_donors: 138,
     retention: 78
   }
 
+  // GET TOTAL DONORS
   useEffect(() => {
     const fetchCount = async () => {
       try {
@@ -115,17 +87,102 @@ const DonationsDashboard = () => {
   }, []);
 
   // TRANSPARENCY REPORT
+  const [transparencyReports, setTransparencyReports] = useState<TransparencyReportInterface[]>([]);
   const [selectedTransparencyDate, setSelectedTransparencyDate] = useState('');
+  const [transparencyReportPage, setTransparencyReportPage] = useState<number>(1);
+  const transparencyReportLimit = 5;
+  const [transparencyReportMaxPage, setTransparencyReportMaxPage] = useState<number>(1);
 
-  useEffect(() => { // default transparency report
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const formattedToday = `${yyyy}-${mm}-${dd}`;
-    setSelectedTransparencyDate(formattedToday);
+  useEffect(() => {
+    const fetchMaxPage = async () => {
+      try {
+        const response = await getMaxPage(transparencyReportLimit);
+        if (response && typeof response.count === 'number') {
+          setTransparencyReportMaxPage(response.count);
+        } else {
+          console.error("Invalid response format:", response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch donor count:", error);
+      }
+    };
+
+    fetchMaxPage();
   }, []);
 
+  // GET TRANSPARENCY REPORTS
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const response = await getTransparencyReportsMini(
+          "",
+          selectedTransparencyDate,
+          transparencyReportPage,
+          transparencyReportLimit
+        );
+        setTransparencyReports(response.data);
+      } catch (error) {
+        console.error('Failed to fetch reports:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchReports();
+  }, [transparencyReportPage, selectedTransparencyDate]);
+
+  type DirectType = "prev" | "next";
+  const handleTransparencyReportPage = (direct: DirectType) => {
+    setTransparencyReportPage((prevPage) => {
+      if (direct === "prev") {
+        return Math.max(prevPage - 1, 1); // Prevent going below page 1
+      } else {
+        return Math.min(prevPage + 1, transparencyReportMaxPage); // Prevent going above max page 
+      }
+    });
+  };
+
+  const fundingProposalsLimit = 4; // Number of fundingproposals per query
+  const [fundingProposals, setFundingProposals] = useState<FundingProposalInterface[]>([]);
+  const [fundingProposalsPage, setFundingProposalsPage] = useState<number>(1);
+  const [ fundingProposalMaxPage, setFundingProposalMaxPage] = useState<number>(1);
+
+  // GET FUNDING PROPOSALS MAX PAGE
+  useEffect(() => {
+    async function fetchFundingProposalsMaxPage() {
+      try{
+        const maxpage = await getFundingProposalMaxPage(fundingProposalsLimit);
+        console.log(maxpage);
+        setFundingProposalMaxPage(maxpage.count);
+      } catch(error){
+        console.log("Failed to fetch funding proposals max page", error);
+      }
+    }
+
+    fetchFundingProposalsMaxPage();
+  }, []);
+
+  // GET FUNDING PROPOSALS
+  useEffect(() => {
+    async function fetchFundingProposals() {
+      try {
+        const proposals = await getFundingProposals(fundingProposalsLimit, fundingProposalsPage);
+        setFundingProposals(proposals);
+      } catch (error) {
+        console.error('Failed to fetch funding proposals:', error);
+      };
+    }
+
+    fetchFundingProposals();
+  }, [fundingProposalsPage]);
+
+  const handleFundingProposalPage = (direct: DirectType) => {
+    setFundingProposalsPage((prevPage) => {
+      return direct === "prev" ? Math.max( prevPage - 1, 1) : Math.min( prevPage + 1, fundingProposalMaxPage);
+    })
+  }
+
+  if (loading) return <p>Loading...</p>;
   return (
     <>
       <div id="dashboard">
@@ -158,9 +215,22 @@ const DonationsDashboard = () => {
               <MenuDots />
             </Link>
             <input type="date" id="t-report-date" className="entry no-icon" placeholder=" " value={selectedTransparencyDate} onChange={(e) => setSelectedTransparencyDate(e.target.value)} />
-            {reportsSample.map((report, index) => (
-              <DownloadableFile key={index} icon={pdf_logo} filename={report.filename} fileUrl={report.fileUrl} className='transparency-report-file' />
+            {transparencyReports.map((report, index) => (
+              <DownloadableFile key={index} icon={pdf_logo} filename={report.file_name} fileUrl={report.file} className='transparency-report-file' />
             ))}
+
+            <div id="transparency-report-page-control">
+              <button
+                className="prev-page"
+                onClick={() => handleTransparencyReportPage("prev")}
+              >Previous</button>
+              <p>Page: {transparencyReportPage} / {transparencyReportMaxPage} </p>
+              <button
+                className="next-page"
+                onClick={() => handleTransparencyReportPage("next")}
+              >Next</button>
+            </div>
+
           </div>
 
         </div>
@@ -193,17 +263,19 @@ const DonationsDashboard = () => {
 
         <h3 className='public-feed-title'>Recent Programs:</h3>
         <div id="funding-proposals">
-          {FundingProposals.map((funding, index) => (
+          <button className="prev-page" onClick={() => handleFundingProposalPage("prev")}>Prev</button>
+          {fundingProposals.map((funding, index) => (
             <FundingCard
               key={index}
               image={funding.image}
-              message={funding.message}
-              funded={funding.funded}
-              target={funding.target}
-              anchorLink={funding.anchor}
+              message={funding.description}
+              funded={funding.progress}
+              target={funding.budgetRequired}
+              anchorLink={funding.iproposalId}
               className='funding-item'
             />
           ))}
+          <button className="next-page" onClick={() => handleFundingProposalPage("next")}>Next</button>
         </div>
       </div>
     </>

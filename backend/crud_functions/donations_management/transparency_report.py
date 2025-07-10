@@ -78,6 +78,30 @@ class TransparencyReport_CRUD:
         return query.offset(skip).limit(filters.limit).all()
     
     @staticmethod
+    def get_transparency_report_mini_data(db: Session, filters: TransparencyReportBase):
+        query = db.query(TransparencyReports)
+
+        # Filter by file name
+        if filters.file_name:
+            query = query.filter(
+                TransparencyReports.file_name.ilike(f"%{filters.file_name}%")
+            )
+            
+        # Filter by date
+        if filters.date:
+            query = query.filter(
+                func.date(TransparencyReports.date_issued) == filters.date.date()
+            )
+
+        skip = (filters.page - 1) * filters.limit        
+        # Pagination logic
+        query = query.order_by(TransparencyReports.date_uploaded.desc())
+
+        # Query result
+        return query.offset(skip).limit(filters.limit).all()
+
+    
+    @staticmethod
     def get_transparency_by_id(db:Session, id: int):
         return db.query(TransparencyReports).filter(TransparencyReports.transparency_id == id).first()
 
@@ -119,3 +143,4 @@ class TransparencyReport_CRUD:
         db.refresh(report)
 
         return report
+    

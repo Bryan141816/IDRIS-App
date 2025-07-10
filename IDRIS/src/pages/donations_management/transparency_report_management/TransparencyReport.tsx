@@ -35,8 +35,9 @@ const TransparencyReport = () => {
   const [searchedReport, setSearchedReport] = useState("");
   const [sorting, setSelectedSorting] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<string>("");
-
   const [reports, setReports] = useState<ReportTypeShema[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const limit = 10;
   const [loading, setLoading] = useState(true);
 
   // FORM VALUES - CREATE TRANSPARENCY REPORT
@@ -76,9 +77,11 @@ const TransparencyReport = () => {
       try {
         const response = await getTransparencyReports(
           searchedReport,
-          dateFilter
-
+          dateFilter,
+          page,
+          limit
         );
+
         setReports(response.data);
         console.log(response.data);
       } catch (error) {
@@ -89,7 +92,7 @@ const TransparencyReport = () => {
     }
 
     fetchReports();
-  }, [searchedReport, dateFilter]);
+  }, [page, searchedReport, dateFilter]);
 
   if (loading) return <p>Loading...</p>;
 

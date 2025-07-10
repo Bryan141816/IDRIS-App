@@ -18,13 +18,6 @@ class TransparencyReportUpdate(TransparencyReportBase):
     transparency_id: int
     pass
 
-# For updating (optional fields)
-# class TransparencyReportUpdate(BaseModel):
-#     file: str | None = None
-#     file_name: str | None = None
-#     date_issued: datetime | None = None
-
-
 # For reading/response
 class TransparencyReportOut(TransparencyReportBase):
     transparency_id: int
@@ -38,3 +31,4 @@ class TransparencyReportFilter(BaseModel):
     date: Optional[datetime] = None
     limit: int = 5
     page: int = 1
+    

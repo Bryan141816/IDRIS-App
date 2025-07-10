@@ -2,6 +2,7 @@ import React, { useState, useRef  } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './createFunding.scss';
 import UploadFile from '../../../components/Page_Furniture/UploadFile';
+import { createFundingproposals } from '../../../API_Handler/donations_funding_proposals_handler';
 
 const CreateFunding: React.FC = () => {
   const Navigate = useNavigate();
@@ -34,22 +35,20 @@ const CreateFunding: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/funding_proposals/proposals/create', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await createFundingproposals(formData);
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to create proposal');
       }
 
-      const result = await response.json();
-      console.log('Created Proposal:', result);
+      console.log('Created Proposal:', response);
       alert('Proposal created successfully!');
       Navigate(-1);
+      return;
+
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to create proposal.');
+      throw error;
     }
   };
 

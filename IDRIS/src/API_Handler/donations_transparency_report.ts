@@ -4,7 +4,7 @@ import { API } from './Axio_API_Handler';
 
 export async function getDonorsList(search = ''): Promise<any[]> {
   const response = await API.get(`/donors/get_all_as_lists/`, {
-    params: { search }, 
+    params: { search },
   });
   return response.data;
 }
@@ -120,6 +120,24 @@ export async function getTransparencyReports(
   return response;
 }
 
+export async function getTransparencyReportsMini(
+  search: string = '',
+  date: string = '',
+  page: number = 1,
+  limit: number = 5
+):
+  Promise<any> {
+
+  const params: any = {};
+  if (search) params.file_name = search;
+  if (date) params.date = date;
+  if (page) params.page = page;
+  if (limit) params.limit = limit;
+
+  const response = await API.get('/transparency_report/get_transparency_reports/mini', { params });
+  return response;
+}
+
 export async function getTransparencyReportById(id: number): Promise<any> {
   return await API.get('/transparency_report/get_by_id', {
     params: { transparency_id: id },
@@ -134,4 +152,11 @@ export async function updateTransparencyReport(id: number, formData: FormData): 
   });
 }
 
+export async function getMaxPage(limit: number): Promise<any> {
+  const response =  await API.get('/transparency_report/get_limit',
+    {
+      params: { limit }
+    });
 
+  return response.data;
+}

@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Q
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
-from uuid import uuid4
+from math import ceil
 from database import get_db
 from datetime import datetime
 from typing import List, Optional
+from schemas import Number
 from data_schemas.transparency_report_schema import ( TransparencyReportBase, TransparencyReportCreate, TransparencyReportFilter, 
                                                     TransparencyReportOut, TransparencyReportUpdate )
 from crud_functions.donations_management.transparency_report import TransparencyReport_CRUD as CRUD 
 from models import TransparencyReports
-import shutil
-import os
+
 from routers.role_checker import RoleChecker
 
 router_admin = APIRouter(
@@ -19,11 +19,11 @@ router_admin = APIRouter(
 )
 
 router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor"]))],
+    dependencies=[Depends(RoleChecker(["donor", "volunteer", "contributor"]))],
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor", "volunteer", "contributor"]))],
 )
 
 
@@ -60,6 +60,22 @@ def get_all_transparency_report_endpoint(
     )
     return CRUD.get_transparency_report(db, filters)
 
+@router_admin_or_donor.get("/get_transparency_reports/mini", response_model=List[TransparencyReportBase])
+def get_all_transparency_report_mini_data_endpoint(
+    file_name: Optional[str] = Query(None),
+    date: Optional[datetime] = Query(None),
+    limit: int = Query(5),
+    page: int = Query(1),
+    db: Session = Depends(get_db)
+):
+    filters = TransparencyReportFilter(
+        file_name=file_name,
+        date=date,
+        limit=limit,
+        page=page
+    )
+    return CRUD.get_transparency_report_mini_data(db, filters)
+
 @router_admin.get("/get_by_id", response_model= TransparencyReportUpdate)
 def get_transparency_report_by_id(
     transparency_id: int,
@@ -89,8 +105,14 @@ def update_transparency_report_handler(
         date_issued=date_issued
     )
     
+@router_admin_or_donor.get("/get_limit", response_model=Number)
+def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
+    total_records = db.query(TransparencyReports).count()
+    pages = ceil(total_records / limit) if limit > 0 else 1
+    return {"count": pages}
+
 router = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
+    # dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
 )
 router.include_router(router_admin)
 router.include_router(router_donor)

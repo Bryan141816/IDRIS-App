@@ -272,7 +272,7 @@ const ListOfRAFIDonors = () => {
       <h3 className="public-feed-title">LIST OF RAFI DONORS</h3>
 
       <div id="settings-container">
-        <SearchBar placeholder="Search Donor" value={searched} onChange={searchState} />
+        <SearchBar placeholder="Search Donor" classname="search-bar" value={searched} onChange={searchState} />
         <FilterBar items={sortingItems} value={sorting} onChange={setSelectedSorting} />
 
         {userRole === "operations admin" && (

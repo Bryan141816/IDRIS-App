@@ -66,7 +66,7 @@ const FundingProposals = () => {
             description={item.description}
             donated={item.donated ?? 0}
             target={item.budgetRequired}
-            image={item.image ? `http://localhost:8000/media/fundingproposals/${item.image}` : undefined}
+            image={item.image ? `${item.image}` : undefined}
           />
         ))}
       </div>

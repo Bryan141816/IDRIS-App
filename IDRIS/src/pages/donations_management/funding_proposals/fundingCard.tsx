@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useUserRoleContext } from '../../../UserRoleContext';
 import { useUserContext } from '../../../UserContext';
 
+const backendUrl = 'http://127.0.0.1:8000';
+
 type FundingProp = {
     proposalId?: number;
     title?: string;
@@ -83,7 +85,7 @@ const FundingCard: React.FC<FundingProp> = ({
             {/* FUNDING BODY */}
             <div className={styles.fundingBody}>
                 <p className={styles.description}>{description}</p>
-                <img src={image} alt="funding_image" className={styles.image} />
+                <img src={`${backendUrl}/${image}`} alt="funding_image" className={styles.image} />
             </div>
 
             {/* <hr className={styles.hLine} /> */}

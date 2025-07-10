@@ -1,12 +1,15 @@
 import styles from './fundingcard.module.scss';
 import { Link } from 'react-router-dom';
 import { useUserRoleContext } from '../../../UserRoleContext';
+
+const backendUrl = 'http://127.0.0.1:8000';
+
 type FundingProps = {
     image?: string;
     message?: string;
     funded?: number;
     target?: number;
-    anchorLink?: string;
+    anchorLink?: number;
     className?: string;
 }
 
@@ -25,7 +28,7 @@ export const FundingCard: React.FC<FundingProps> = ({
     
     return(
         <div className={`${styles.fundingCard} ${className}`}>
-            <img src={image} alt="funding-image" />
+            <img src={`${backendUrl}/${image}`} alt="funding-image" />
             <p className={`${styles.fundingMessage}`}>{message}</p>
             <div className={styles["progress-container"]}>
                 <div className={styles["full-bar"]}>

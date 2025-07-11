@@ -3,7 +3,7 @@ import "./ResponseDashboard.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { TableView } from "../../components/TableView/table_view";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faListUl } from "@fortawesome/free-solid-svg-icons";
+import { faListUl } from "@fortawesome/free-solid-svg-icons/faListUl";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import {

@@ -1,47 +1,44 @@
-from fastapi import APIRouter
-from fastapi import Depends, HTTPException, status, Query
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
-from typing import List
 from jose import JWTError, jwt
-from database import get_db
-from schemas import UserCreate, UserSchema, Token, LoginSchema, UserBase
-from models import User  # Import the User model
+
+from schemas import UserCreate, UserSchema, LoginSchema
+from models import User
 from crud import create_user, authenticate_user, get_user_by_email
 from auth import create_access_token, SECRET_KEY, ALGORITHM
+from database import get_db
 
 router = APIRouter(tags=["users"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+COOKIE_NAME = "access_token"
+
+
+def get_token_from_cookie(request: Request):
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing token")
+    return token
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
-) -> UserSchema:
-    print(token)
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    token: str = Depends(get_token_from_cookie), db: Session = Depends(get_db)
+) -> User:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
-        raise credentials_exception
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = get_user_by_email(db, username)
+    user = get_user_by_email(db, email)
     if not user:
-        raise credentials_exception
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
-@router.post("/register", response_model=Token)
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Create user with username, password, email, and type
+@router.post("/register", response_model=UserSchema)
+def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
     db_user = create_user(
         db,
         email=user.email,
@@ -50,25 +47,43 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         user_type=user.user_type,
         roles=user.roles,
     )
+    token = create_access_token(data={"sub": db_user.email})
 
-    # Assign roles
-    db_user.roles = user.roles
-    db.commit()
-    db.refresh(db_user)
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        max_age=60 * 60 * 24,
+        samesite="Lax",
+        secure=False,  # Use True in production with HTTPS
+    )
+    return db_user
 
-    access_token = create_access_token(data={"sub": db_user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
 
-
-@router.post("/login", response_model=Token)
-def login(form_data: LoginSchema, db: Session = Depends(get_db)):
+@router.post("/login", response_model=UserSchema)
+def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_db)):
     user = authenticate_user(db, email=form_data.email, password=form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    token = create_access_token(data={"sub": user.email})
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        max_age=60 * 60 * 24,
+        samesite="Lax",
+        secure=False,
+    )
+    return user
 
 
 @router.get("/users/me", response_model=UserSchema)
-def read_users_me(current_user: UserSchema = Depends(get_current_user)):
+def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(COOKIE_NAME)
+    return {"message": "Logged out"}

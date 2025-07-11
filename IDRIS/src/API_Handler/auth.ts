@@ -1,24 +1,31 @@
 // src/api/auth.ts
+
+// src/api/auth.ts
 import { API } from './Axio_API_Handler';
 
-
-export async function loginUser(email: string, password: string): Promise<string> {
-  const response = await API.post('/login', {
-    email,
-    password,
-  });
-  const token: string = response.data.access_token;
-  localStorage.setItem('token', token);
-  return token;
+/**
+ * Logs in the user by setting the HttpOnly cookie from FastAPI.
+ * No need to manually handle the token.
+ */
+export async function loginUser(email: string, password: string): Promise<void> {
+  await API.post(
+    '/login',
+    { email, password },
+  );
 }
 
-
+/**
+ * Fetches the currently authenticated user using the cookie token.
+ */
 export async function fetchCurrentUser(): Promise<any> {
   const response = await API.get('/users/me');
   return response.data;
 }
 
-export function logoutUser(): void {
-  localStorage.removeItem('token');
+/**
+ * Logs out the user by telling the backend to clear the cookie.
+ */
+export async function logoutUser(): Promise<void> {
+  await API.post('/logout', {});
 }
 

@@ -53,16 +53,7 @@ function PageLayout() {
       <div id="right-body-section">
         {!shouldHideUI && <Header onIconClick={toggleNavbar} />}
         {/* {!shouldHideHeaderFooter && <Header onIconClick={toggleNavbar}/>} */}
-        <main>
-          {/* {isAuthPage ? ( */}
-          {/*   <Outlet /> */}
-          {/* ) : ( */}
-          {/*   <ProtectedRoute> */}
-          {/*     <Outlet /> */}
-          {/*   </ProtectedRoute> */}
-          {/* )} */}
-          {content}
-        </main>
+        <main>{content}</main>
         {!shouldHideUI && !shouldHideHeaderFooter && <Footer />}
       </div>
     </>

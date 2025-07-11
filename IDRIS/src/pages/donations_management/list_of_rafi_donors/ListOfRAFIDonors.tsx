@@ -180,7 +180,6 @@ const ListOfRAFIDonors = () => {
   const handleAddDonorSearch = async () => {
     try {
       const response = await searchDonorUsers(addDonorSearch); // Assuming this is allowed
-      console.log(response);
       if (Array.isArray(response)) {
         setNewDonorSearchedItems(response);
       } else if (
@@ -275,7 +274,6 @@ const ListOfRAFIDonors = () => {
     formData.append("date_joined", dateJoinedInput);
     try {
       const result = await createNewDonor(formData);
-      console.log("Created donor:", result);
       alert("Donor created successfully!");
       setActiveModal("donor-saved");
     } catch (error) {

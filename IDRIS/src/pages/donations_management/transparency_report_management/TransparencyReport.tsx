@@ -89,7 +89,6 @@ const TransparencyReport = () => {
         );
 
         setReports(response.data);
-        console.log(response.data);
       } catch (error) {
         console.error("Failed to fetch reports:", error);
       } finally {
@@ -105,7 +104,6 @@ const TransparencyReport = () => {
   const getReportById = async function (id: number) {
     try {
       const report = await getTransparencyReportById(id);
-      console.log("Fetched report:", report.data);
       setUpdateSelectedId(report.data.transparency_id);
       setUpdateFileName(report.data.file_name);
       setUpdateFilePreview(report.data.file_name);
@@ -141,7 +139,6 @@ const TransparencyReport = () => {
 
     try {
       const response = await createTransparencyReport(formData);
-      console.log("Uploaded:", response.data);
       alert("Report uploaded successfully!");
     } catch (error) {
       console.error("Upload failed:", error);
@@ -167,7 +164,6 @@ const TransparencyReport = () => {
           updateSelectedId,
           formData,
         );
-        console.log("Updated:", response.data);
       } else {
         console.error("Update ID is null. Cannot update transparency report.");
         alert("Update failed: Invalid report ID.");

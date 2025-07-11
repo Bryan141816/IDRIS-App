@@ -1,9 +1,9 @@
 // components/DownloadButton.tsx
 import React from "react";
-import {DownloadCloud} from './Icons';
-import styles from './styles/downloadable.module.scss';
+import { DownloadCloud } from "./Icons";
+import styles from "./styles/downloadable.module.scss";
 
-const backendUrl = 'http://127.0.0.1:8000';
+const backendUrl = "http://127.0.0.1:8000";
 
 type DownloadableProps = {
   icon?: string;
@@ -16,28 +16,28 @@ const DownloadableFile: React.FC<DownloadableProps> = ({
   icon,
   filename,
   fileUrl,
-  className = 'downloadable-file-btn',
+  className = "downloadable-file-btn",
 }) => {
   const handleDownload = async () => {
-    console
+    console;
     try {
       const url = fileUrl.startsWith("http")
         ? fileUrl
         : `${backendUrl}/${fileUrl}`;
-  
-      console.log(url);
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
           Accept: "application/pdf",
         },
       });
-  
-      if (!response.ok) throw new Error(`Failed to download: ${response.status}`);
-  
+
+      if (!response.ok)
+        throw new Error(`Failed to download: ${response.status}`);
+
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-  
+
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
@@ -50,7 +50,7 @@ const DownloadableFile: React.FC<DownloadableProps> = ({
       alert("Failed to download file. Check backend or CORS settings.");
     }
   };
-    
+
   return (
     <button
       onClick={handleDownload}
@@ -58,7 +58,7 @@ const DownloadableFile: React.FC<DownloadableProps> = ({
     >
       <img src={icon} alt="file_logo" />
       <span>{filename}</span>
-      <DownloadCloud className="download-icon"/>
+      <DownloadCloud className="download-icon" />
     </button>
   );
 };

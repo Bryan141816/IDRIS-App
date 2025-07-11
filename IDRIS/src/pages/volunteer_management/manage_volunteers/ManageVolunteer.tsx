@@ -1,135 +1,241 @@
-import React, { useState } from 'react';
-import { Button, Breadcrumb, Input, Switch } from 'antd';
-import DataTable, { TableColumn } from 'react-data-table-component';
-import './css/ManageVolunteer.css';
-import { Link, useNavigate} from 'react-router-dom';
-import Swal from 'sweetalert2';
+import React, { useState } from "react";
+import { Button, Breadcrumb, Input, Switch } from "antd";
+import DataTable, { TableColumn } from "react-data-table-component";
+import "./css/ManageVolunteer.css";
+import { Link, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 
 export default function ManageVolunteer() {
-    const navigate = useNavigate();
-    const onChange = (checked: boolean) => {
-        console.log(`switch to ${checked}`);
-      };
+  const navigate = useNavigate();
+  const onChange = (checked: boolean) => {};
 
   const applicants = [
-    { id:  <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-    { id: <Switch defaultChecked onChange={onChange} />, name: '123456789', contactNumber: 'Kent Dayag', dateApplied: '09567834214', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
 
     // ... more data
   ];
 
-
   const showAlert = () => {
     Swal.fire({
-        title: 'You have successfully accepted the applicant.',
-        icon: 'success',
-        confirmButtonColor: '#749AB6', // Change OK button color (e.g. blue)
-        width: '380px', // Resize the modal
-        showConfirmButton: false,
-        customClass: {
-            popup: 'custom-height-modal',
-            title: 'custom-swal-title',
-            htmlContainer: 'custom-swal-text',
-            confirmButton: 'custom-swal-button',
-            icon: 'custom-swal-icon',
-          },
-      });
-}
+      title: "You have successfully accepted the applicant.",
+      icon: "success",
+      confirmButtonColor: "#749AB6", // Change OK button color (e.g. blue)
+      width: "380px", // Resize the modal
+      showConfirmButton: false,
+      customClass: {
+        popup: "custom-height-modal",
+        title: "custom-swal-title",
+        htmlContainer: "custom-swal-text",
+        confirmButton: "custom-swal-button",
+        icon: "custom-swal-icon",
+      },
+    });
+  };
 
-
-const handleDelete = () => {
+  const handleDelete = () => {
     const swalWithCustomButtons = Swal.mixin({
       customClass: {
-        popup: 'custom-swal-popup', // 👈 custom popup size
-        confirmButton: 'my-confirm-button',
-        cancelButton: 'my-cancel-button',
+        popup: "custom-swal-popup", // 👈 custom popup size
+        confirmButton: "my-confirm-button",
+        cancelButton: "my-cancel-button",
       },
       buttonsStyling: false,
     });
 
-    swalWithCustomButtons.fire({
-      title: 'Are you sure you want to decline this applicant?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'No, cancel!',
-      reverseButtons: true,
-      width: '380px', // 👈 sets width directly
-    }).then((result) => {
-      if (result.isConfirmed) {
-        swalWithCustomButtons.fire({
-          title: 'Deleted!',
-          text: 'Applicant has been deleted.',
-          icon: 'success',
-          width: '380px',
-        });
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        swalWithCustomButtons.fire({
-          title: 'Cancelled',
-          text: 'The applicant’s application has been cancelled.',
-          icon: 'error',
-          width: '380px',
-        });
-      }
-    });
+    swalWithCustomButtons
+      .fire({
+        title: "Are you sure you want to decline this applicant?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, delete it!",
+        cancelButtonText: "No, cancel!",
+        reverseButtons: true,
+        width: "380px", // 👈 sets width directly
+      })
+      .then((result) => {
+        if (result.isConfirmed) {
+          swalWithCustomButtons.fire({
+            title: "Deleted!",
+            text: "Applicant has been deleted.",
+            icon: "success",
+            width: "380px",
+          });
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          swalWithCustomButtons.fire({
+            title: "Cancelled",
+            text: "The applicant’s application has been cancelled.",
+            icon: "error",
+            width: "380px",
+          });
+        }
+      });
   };
 
-
-
-
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [selectedApplicant, setSelectedApplicant] = useState(applicants[0]);
 
-  const filteredApplicants = applicants.filter(applicant =>
-    applicant.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    applicant.contactNumber.includes(searchText)
+  const filteredApplicants = applicants.filter(
+    (applicant) =>
+      applicant.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      applicant.contactNumber.includes(searchText),
   );
 
-  const columns: TableColumn<typeof applicants[0]>[] = [
+  const columns: TableColumn<(typeof applicants)[0]>[] = [
     {
-        name: 'Status',
-        selector: (row) => row.id,
-        sortable: true,
-        width: '150px',
-        // Align the cell content
-        center: true,
+      name: "Status",
+      selector: (row) => row.id,
+      sortable: true,
+      width: "150px",
+      // Align the cell content
+      center: true,
     },
     {
-      name: 'Volunteer ID',
+      name: "Volunteer ID",
       selector: (row) => row.name,
       sortable: true,
-
     },
     {
-      name: 'Name',
+      name: "Name",
       selector: (row) => row.contactNumber,
     },
     {
-      name: 'Contact Number',
+      name: "Contact Number",
       selector: (row) => row.dateApplied,
-
     },
     {
-      name: 'Action',
+      name: "Action",
       selector: (row) => row.dateApplied,
       ignoreRowClick: true,
       allowOverflow: true,
       button: true,
-      width: '200px',
+      width: "200px",
     },
   ];
 
@@ -139,13 +245,17 @@ const handleDelete = () => {
       <div className="breadcrumb-section">
         <h2 className="page-title">Voolunteer Lists</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
+          <Breadcrumb.Item href="#">
+            <span>Home</span>
+          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
-          <Breadcrumb.Item><span>Volunteers</span></Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <span>Volunteers</span>
+          </Breadcrumb.Item>
         </Breadcrumb>
       </div>
 
@@ -174,9 +284,7 @@ const handleDelete = () => {
               customStyles={{
                 rows: {
                   style: {
-                    cursor: 'pointer',
-
-
+                    cursor: "pointer",
                   },
                 },
               }}
@@ -199,7 +307,9 @@ const handleDelete = () => {
 
               <div className="detail-item">
                 <p className="detail-label">Contact Number</p>
-                <p className="detail-value">{selectedApplicant.contactNumber}</p>
+                <p className="detail-value">
+                  {selectedApplicant.contactNumber}
+                </p>
               </div>
 
               <div className="detail-item">
@@ -218,7 +328,15 @@ const handleDelete = () => {
               </div>
 
               <div className="view-credentials-container">
-                <Button type="primary" className="view-credentials-button" onClick={() => navigate("/volunteer_management/volunteer_profiles")}>View Volunteer Profile</Button>
+                <Button
+                  type="primary"
+                  className="view-credentials-button"
+                  onClick={() =>
+                    navigate("/volunteer_management/volunteer_profiles")
+                  }
+                >
+                  View Volunteer Profile
+                </Button>
               </div>
             </div>
           )}

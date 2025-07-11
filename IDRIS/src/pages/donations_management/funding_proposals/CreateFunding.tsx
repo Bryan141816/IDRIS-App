@@ -1,15 +1,15 @@
-import React, { useState, useRef  } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './createFunding.scss';
-import UploadFile from '../../../components/Page_Furniture/UploadFile';
-import { createFundingproposals } from '../../../API_Handler/donations_funding_proposals_handler';
+import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import "./createFunding.scss";
+import UploadFile from "../../../components/Page_Furniture/UploadFile";
+import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
 
 const CreateFunding: React.FC = () => {
   const Navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [budgetRequired, setBudgetRequired] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [budgetRequired, setBudgetRequired] = useState("");
   const [notifyDonors, setNotifyDonors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,28 +26,26 @@ const CreateFunding: React.FC = () => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('budgetRequired', budgetRequired.toString());
-    formData.append('status', 'pending'); // or whatever default status
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("budgetRequired", budgetRequired.toString());
+    formData.append("status", "pending"); // or whatever default status
     if (selectedFile) {
-      formData.append('image', selectedFile);
+      formData.append("image", selectedFile);
     }
 
     try {
       const response = await createFundingproposals(formData);
 
       if (response.status !== 200 && response.status !== 201) {
-        throw new Error('Failed to create proposal');
+        throw new Error("Failed to create proposal");
       }
 
-      console.log('Created Proposal:', response);
-      alert('Proposal created successfully!');
+      alert("Proposal created successfully!");
       Navigate(-1);
       return;
-
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Error:", error);
       throw error;
     }
   };
@@ -56,7 +54,7 @@ const CreateFunding: React.FC = () => {
     <>
       <h1 className="public-feed-title">Create Funding Proposal</h1>
       <form onSubmit={handleSubmit}>
-        <section id='create-funding' className='create-funding'>
+        <section id="create-funding" className="create-funding">
           <div id="description-container">
             <div className="text-input">
               <label htmlFor="title">Project Title: </label>
@@ -106,7 +104,11 @@ const CreateFunding: React.FC = () => {
               <label htmlFor="notifyDonors">Notify Donors?</label>
             </div>
 
-            <input className="submit-btn green-btn" type="submit" value="Submit" />
+            <input
+              className="submit-btn green-btn"
+              type="submit"
+              value="Submit"
+            />
           </div>
 
           <div id="image-side">

@@ -42,6 +42,25 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isVisible, onClose]);
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      const anchor = target.closest("a");
+
+      if (anchor) {
+        if (anchor.classList.contains("non-redirect")) {
+          event.preventDefault();
+          return;
+        }
+      }
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   return (
     <nav
@@ -62,8 +81,16 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             }}
           >
             <LGU width={14} height={14} className="sidebar-icons" />
-            {userType == "admin" && <a href="#">LGU PROFILING</a>}
-            {userType == "user" && <a href="#">LOCAL GOVERNMENT UNIT</a>}
+            {userType == "admin" && (
+              <a href="" className="non-redirect">
+                LGU PROFILING
+              </a>
+            )}
+            {userType == "user" && (
+              <a href="#" className="non-redirect">
+                LOCAL GOVERNMENT UNIT
+              </a>
+            )}
           </div>
           <div
             className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
@@ -119,10 +146,14 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             <Volunteer width={14} height={14} className="sidebar-icons" />
             {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
             {userType != "" && !userRoles.includes("operations admin") && (
-              <a href="#">VOLUNTEER</a>
+              <a href="#" className="non-redirect">
+                VOLUNTEER
+              </a>
             )}
             {userType != "" && userRoles.includes("operations admin") && (
-              <a href="#">VOLUNTEER MANAGEMENT</a>
+              <a href="#" className="non-redirect">
+                VOLUNTEER MANAGEMENT
+              </a>
             )}
           </div>
           <div
@@ -173,10 +204,14 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           >
             <Donations width={14} height={14} className="sidebar-icons" />
             {userRoles.includes("operations admin") && userType == "admin" && (
-              <a href="#">DONATIONS MANAGEMENT</a>
+              <a href="#" className="non-redirect">
+                DONATIONS MANAGEMENT
+              </a>
             )}
             {!userRoles.includes("operations admin") && (
-              <a href="#">DONATIONS</a>
+              <a href="#" className="non-redirect">
+                DONATIONS
+              </a>
             )}
           </div>
           <div
@@ -299,7 +334,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               }}
             >
               <Response width={14} height={14} className="sidebar-icons" />
-              <a href="#">PROCUREMENT & INVENTORY</a>
+              <a href="#" className="non-redirect">
+                PROCUREMENT & INVENTORY
+              </a>
             </div>
             <div
               className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}
@@ -352,7 +389,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               }}
             >
               <Response width={14} height={14} className="sidebar-icons" />
-              <a href="#">FINANCE & ADMIN</a>
+              <a href="#" className="non-redirect">
+                FINANCE & ADMIN
+              </a>
             </div>
             <div
               className={`nav-sub-items ${activeNav === "finance" ? "active" : ""}`}

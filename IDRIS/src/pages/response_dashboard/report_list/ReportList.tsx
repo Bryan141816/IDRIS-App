@@ -102,7 +102,6 @@ const ReportList = () => {
   const handleAddReportSubmit = async () => {
     try {
       const response = await addResponseReport(reportType);
-      console.log("Report added: ", response);
       closeAddModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -144,7 +143,6 @@ const ReportList = () => {
     );
     if (response.sucess) {
       closeEditModal();
-      console.log(response.data);
       isViewModalSelected.data[2].text = response.data.report.report_type;
       isViewModalSelected.data[3].text = response.data.report.status;
       setMessageBox((prev) => ({

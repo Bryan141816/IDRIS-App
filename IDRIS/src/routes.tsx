@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
+import { authLoader } from "./AuthLoader";
 const ReportsGeneration = () =>
   import("./pages/reports_generation/reports_generation").then((module) => ({
     Component: module.default,
@@ -192,6 +193,7 @@ export const router = createBrowserRouter([
     path: "/",
     HydrateFallback: PageLoader,
     element: <PageLayout />,
+    loader: authLoader,
     children: [
       {
         index: true,

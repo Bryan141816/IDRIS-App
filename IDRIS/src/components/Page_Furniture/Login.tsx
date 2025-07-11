@@ -30,7 +30,6 @@ const Login = () => {
         userData["roles"] &&
         userData["roles"].length > 0
       ) {
-        console.log(userData);
         setUserType(userData["user_type"]);
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);

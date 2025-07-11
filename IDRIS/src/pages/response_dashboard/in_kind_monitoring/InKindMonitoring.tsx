@@ -132,7 +132,6 @@ const InKindMonitoring = () => {
   const handleAddReportSubmit = async () => {
     try {
       const response = await addRecord("Add", parseInt(quantity));
-      console.log("Report added: ", response);
       setQuantity("");
       closeAddModal();
       fetchApiData<InKindMonitoring>(
@@ -224,7 +223,6 @@ const InKindMonitoring = () => {
     );
     if (response.sucess) {
       closeEditModal();
-      console.log(response.data);
       isViewModalSelected.data[2].text = response.data.report.report_type;
       isViewModalSelected.data[3].text = response.data.report.status;
       await fetchData();

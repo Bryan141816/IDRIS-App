@@ -7,8 +7,12 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { userType } = React.useContext(UserContext);
-  console.log(userType);
+  const { userType, isUserReady } = React.useContext(UserContext);
+  if (!isUserReady) {
+    // Still loading, avoid rendering or redirecting
+    return null; // or a spinner if you want
+  }
+
   if (!userType) {
     //if (!userType || userType === '') {
     // User not authenticated, redirect to login page

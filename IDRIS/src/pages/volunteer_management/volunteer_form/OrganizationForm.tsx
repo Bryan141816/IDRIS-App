@@ -1,34 +1,45 @@
-import React, { useState } from 'react';
-import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
-import './css/OrganizationForm.css';
+import React, { useState } from "react";
+import {
+  Button,
+  Breadcrumb,
+  Input,
+  Form,
+  Select,
+  DatePicker,
+  Space,
+} from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import "./css/OrganizationForm.css";
 
-const OrganizationForm = () =>{
-    const navigate = useNavigate();
+const OrganizationForm = () => {
+  const navigate = useNavigate();
   const [form] = Form.useForm();
   const { Option } = Select;
   const onFinish = (values: any) => {
-    console.log('Form values:', values);
     // Handle form submission logic here
-    navigate('/volunteer_management/volunteer_dashboard');
+    navigate("/volunteer_management/volunteer_dashboard");
   };
-    return(
-        <div className="application-form">
-            {/* Breadcrumb Navigation */}
+  return (
+    <div className="application-form">
+      {/* Breadcrumb Navigation */}
       <div className="breadcrumb-section">
         <h2 className="page-title">Organization Application</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
+          <Breadcrumb.Item href="#">
+            <span>Home</span>
+          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
-          <Breadcrumb.Item><span>Organization Application</span></Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <span>Organization Application</span>
+          </Breadcrumb.Item>
         </Breadcrumb>
       </div>
-{/* Main Content */}
-<div className="application-form-container">
+      {/* Main Content */}
+      <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
 
@@ -47,7 +58,12 @@ const OrganizationForm = () =>{
                   name="orgName"
                   label="Organization Name"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter organization name' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please enter organization name",
+                    },
+                  ]}
                 >
                   <Input placeholder="Enter organization name" />
                 </Form.Item>
@@ -55,7 +71,12 @@ const OrganizationForm = () =>{
                   name="orgType"
                   label="Type of Organization"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please select organization type' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please select organization type",
+                    },
+                  ]}
                 >
                   <Select placeholder="Select organization type">
                     <Option value="private">Private Company</Option>
@@ -70,8 +91,8 @@ const OrganizationForm = () =>{
                 name="orgEmail"
                 label="Email Address"
                 rules={[
-                  { required: true, message: 'Please enter email address' },
-                  { type: 'email', message: 'Please enter a valid email' }
+                  { required: true, message: "Please enter email address" },
+                  { type: "email", message: "Please enter a valid email" },
                 ]}
               >
                 <Input placeholder="Enter organization email" />
@@ -81,7 +102,9 @@ const OrganizationForm = () =>{
                   name="orgPhone"
                   label="Phone Number"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                  rules={[
+                    { required: true, message: "Please enter phone number" },
+                  ]}
                 >
                   <Input placeholder="Enter organization phone" />
                 </Form.Item>
@@ -89,7 +112,7 @@ const OrganizationForm = () =>{
                   name="orgAddress"
                   label="Address"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter address' }]}
+                  rules={[{ required: true, message: "Please enter address" }]}
                 >
                   <Input placeholder="Enter organization address" />
                 </Form.Item>
@@ -103,7 +126,9 @@ const OrganizationForm = () =>{
                   name="repName"
                   label="Full Name"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter full name' }]}
+                  rules={[
+                    { required: true, message: "Please enter full name" },
+                  ]}
                 >
                   <Input placeholder="Enter representative's name" />
                 </Form.Item>
@@ -111,7 +136,7 @@ const OrganizationForm = () =>{
                   name="repPosition"
                   label="Position / Role in Organization"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter position' }]}
+                  rules={[{ required: true, message: "Please enter position" }]}
                 >
                   <Input placeholder="Enter position/role" />
                 </Form.Item>
@@ -121,7 +146,9 @@ const OrganizationForm = () =>{
                   name="repPhone"
                   label="Phone Number"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                  rules={[
+                    { required: true, message: "Please enter phone number" },
+                  ]}
                 >
                   <Input placeholder="Enter representative's phone" />
                 </Form.Item>
@@ -130,8 +157,8 @@ const OrganizationForm = () =>{
                   label="Email Address"
                   className="form-item-half"
                   rules={[
-                    { required: true, message: 'Please enter email address' },
-                    { type: 'email', message: 'Please enter a valid email' }
+                    { required: true, message: "Please enter email address" },
+                    { type: "email", message: "Please enter a valid email" },
                   ]}
                 >
                   <Input placeholder="Enter representative's email" />
@@ -140,16 +167,24 @@ const OrganizationForm = () =>{
               <Form.Item
                 name="availability"
                 label="Availability"
-                rules={[{ required: true, message: 'Please select availability' }]}
+                rules={[
+                  { required: true, message: "Please select availability" },
+                ]}
               >
-                <DatePicker.RangePicker style={{ width: '100%' }} />
+                <DatePicker.RangePicker style={{ width: "100%" }} />
               </Form.Item>
             </div>
 
             <Form.Item className="form-buttons">
               <Space>
-                
-                <Button type="primary" htmlType="submit" className="submit-button" onClick={() => navigate('/volunteer_management/otherorganization_form')}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  className="submit-button"
+                  onClick={() =>
+                    navigate("/volunteer_management/otherorganization_form")
+                  }
+                >
                   Next
                 </Button>
               </Space>
@@ -157,10 +192,7 @@ const OrganizationForm = () =>{
           </Form>
         </div>
       </div>
-
-
-        </div>
-
-    );
-}
-export default OrganizationForm
+    </div>
+  );
+};
+export default OrganizationForm;

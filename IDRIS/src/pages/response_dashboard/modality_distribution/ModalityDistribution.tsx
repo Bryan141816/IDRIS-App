@@ -73,7 +73,6 @@ const ModalityDistribution = () => {
   async function fetchData() {
     try {
       const response = await getModalityList();
-      console.log(response);
       setResposeData(response);
     } catch (error) {
       console.error(error);
@@ -98,7 +97,6 @@ const ModalityDistribution = () => {
   const handleAddModalitySubmit = async () => {
     try {
       const response = await addModalityRecord(modalityType);
-      console.log("LIst added: ", response);
       closeAddModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -137,7 +135,6 @@ const ModalityDistribution = () => {
     );
     if (response.sucess) {
       closeEditModal();
-      console.log(response.data);
       isViewModalSelected.data[2].text = response.data.report.modality_type;
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else

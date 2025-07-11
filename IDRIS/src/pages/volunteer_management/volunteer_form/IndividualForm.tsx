@@ -1,7 +1,15 @@
-import React from 'react';
-import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
-import './css/IndividualForm.css';
+import React from "react";
+import {
+  Button,
+  Breadcrumb,
+  Input,
+  Form,
+  Select,
+  DatePicker,
+  Space,
+} from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import "./css/IndividualForm.css";
 
 const IndividualForm = () => {
   const navigate = useNavigate();
@@ -9,9 +17,8 @@ const IndividualForm = () => {
   const { Option } = Select;
 
   const onFinish = (values) => {
-    console.log('Form values:', values);
     // Handle form submission logic here
-    navigate('/volunteer_management/otherindividual_form');
+    navigate("/volunteer_management/otherindividual_form");
   };
 
   return (
@@ -20,13 +27,17 @@ const IndividualForm = () => {
       <div className="breadcrumb-section">
         <h2 className="page-title">Individual Application</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
+          <Breadcrumb.Item href="#">
+            <span>Home</span>
+          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
               Volunteer Dashboard
             </Link>
           </Breadcrumb.Item>
-          <Breadcrumb.Item><span>Individual Application</span></Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <span>Individual Application</span>
+          </Breadcrumb.Item>
         </Breadcrumb>
       </div>
 
@@ -52,7 +63,9 @@ const IndividualForm = () => {
                   name="firstName"
                   label="First Name"
                   className="form-item-third"
-                  rules={[{ required: true, message: 'Please enter first name' }]}
+                  rules={[
+                    { required: true, message: "Please enter first name" },
+                  ]}
                 >
                   <Input placeholder="First" />
                 </Form.Item>
@@ -67,7 +80,9 @@ const IndividualForm = () => {
                   name="lastName"
                   label="Last Name"
                   className="form-item-third"
-                  rules={[{ required: true, message: 'Please enter last name' }]}
+                  rules={[
+                    { required: true, message: "Please enter last name" },
+                  ]}
                 >
                   <Input placeholder="Last" />
                 </Form.Item>
@@ -78,8 +93,8 @@ const IndividualForm = () => {
                 name="email"
                 label="Email Address"
                 rules={[
-                  { required: true, message: 'Please enter email address' },
-                  { type: 'email', message: 'Please enter a valid email' }
+                  { required: true, message: "Please enter email address" },
+                  { type: "email", message: "Please enter a valid email" },
                 ]}
               >
                 <Input placeholder="Enter your email" />
@@ -91,7 +106,9 @@ const IndividualForm = () => {
                   name="phone"
                   label="Phone Number"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter phone number' }]}
+                  rules={[
+                    { required: true, message: "Please enter phone number" },
+                  ]}
                 >
                   <Input placeholder="Enter your phone" />
                 </Form.Item>
@@ -99,7 +116,7 @@ const IndividualForm = () => {
                   name="address"
                   label="Address"
                   className="form-item-half"
-                  rules={[{ required: true, message: 'Please enter address' }]}
+                  rules={[{ required: true, message: "Please enter address" }]}
                 >
                   <Input placeholder="Enter your address" />
                 </Form.Item>
@@ -111,27 +128,28 @@ const IndividualForm = () => {
                   name="birthDate"
                   label="Birth Date"
                   className="form-item-third"
-                  rules={[{ required: true, message: 'Please select birth date' }]}
+                  rules={[
+                    { required: true, message: "Please select birth date" },
+                  ]}
                 >
-                  <DatePicker style={{ width: '100%' }} />
+                  <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
                 <Form.Item
                   name="gender"
                   label="Gender"
                   className="form-item-third"
-                  rules={[{ required: true, message: 'Please select gender' }]}
+                  rules={[{ required: true, message: "Please select gender" }]}
                 >
                   <Select placeholder="Select gender">
                     <Option value="male">Male</Option>
                     <Option value="female">Female</Option>
-
                   </Select>
                 </Form.Item>
                 <Form.Item
                   name="age"
                   label="Age"
                   className="form-item-third"
-                  rules={[{ required: true, message: 'Please enter age' }]}
+                  rules={[{ required: true, message: "Please enter age" }]}
                 >
                   <Input type="number" placeholder="Enter your age" />
                 </Form.Item>
@@ -141,17 +159,22 @@ const IndividualForm = () => {
               <Form.Item
                 name="availability"
                 label="Availability"
-                rules={[{ required: true, message: 'Please select availability' }]}
+                rules={[
+                  { required: true, message: "Please select availability" },
+                ]}
               >
-                <DatePicker.RangePicker style={{ width: '100%' }} />
+                <DatePicker.RangePicker style={{ width: "100%" }} />
               </Form.Item>
             </div>
 
             {/* Form Buttons */}
             <Form.Item className="form-buttons">
               <Space>
-
-                <Button type="primary" htmlType="submit" className="submit-button">
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  className="submit-button"
+                >
                   Next
                 </Button>
               </Space>

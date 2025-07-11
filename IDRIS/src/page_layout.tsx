@@ -2,16 +2,36 @@ import { useState, lazy } from "react";
 import { useUserContext, UserProvider } from "./UserContext";
 import { useUserRoleContext, UserRoleProvider } from "./UserRoleContext";
 import { Outlet, useLocation, useNavigation } from "react-router-dom";
-import { Import } from "lucide-react";
 import PageLoader from "./components/Page_Furniture/Loader";
 const Navbar = lazy(() => import("./components/Page_Furniture/Navbar"));
 const Header = lazy(() => import("./components/Page_Furniture/Header"));
 const Footer = lazy(() => import("./components/Page_Furniture/Footer"));
 const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
+import { useEffect } from "react";
+import { useLoaderData } from "react-router-dom";
 function PageLayout() {
+  const { setUserType, setEmail, setUsername, setUserReady } = useUserContext();
+  const { setUserRoles } = useUserRoleContext();
+  const [shouldHideUI, setShouldHideUI] = useState(true);
+  const userData = useLoaderData() as {
+    user_type: string;
+    email: string;
+    username: string;
+    roles: string[];
+  };
+
+  useEffect(() => {
+    setUserType(userData.user_type);
+    setEmail(userData.email);
+    setUsername(userData.username);
+    setUserRoles(userData.roles);
+    setUserReady(true);
+    if (userData.roles && userData.roles.length > 0) {
+      setShouldHideUI(false);
+    }
+  }, [userData]);
+
   const location = useLocation();
-  const { userType } = useUserContext();
-  const { userRoles } = useUserRoleContext();
   const navigation = useNavigation();
 
   const isAuthPage =
@@ -41,7 +61,6 @@ function PageLayout() {
       </ProtectedRoute>
     );
   }
-  const shouldHideUI = !userRoles || userRoles.length <= 0; // (!userType || userType === "") &&
 
   const closeSidebar = () => setIsNavbarVisible(false);
   return (

@@ -77,7 +77,6 @@ const BudgetRecord = () => {
   async function fetchData() {
     try {
       const response = await getBudgetRecordList();
-      console.log(response);
       setResposeData(response);
     } catch (error) {
       console.error(error);
@@ -102,7 +101,6 @@ const BudgetRecord = () => {
     const balance = parseFloat(
       response_data?.table_datas?.[0]?.data?.[4]?.text ?? "0",
     );
-    console.log(num);
     if (recordType === "Add") {
       setAmount(event.target.value);
     } else {
@@ -127,7 +125,6 @@ const BudgetRecord = () => {
   const handleAddModalitySubmit = async () => {
     try {
       const response = await addBudgetRecord(recordType, amount);
-      console.log("Record added: ", response);
       setAmount("");
       closeAddModal();
       setMessageBox((prev) => ({
@@ -170,7 +167,6 @@ const BudgetRecord = () => {
     );
     if (response.sucess) {
       closeEditModal();
-      console.log(response.data);
       isViewModalSelected.data[2].text =
         response.data.record.budget_record_type;
       isViewModalSelected.data[3].text = response.data.record.amount;

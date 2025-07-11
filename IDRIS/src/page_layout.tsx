@@ -1,6 +1,6 @@
 import { useState, lazy } from "react";
-import { useUserContext, UserProvider } from "./UserContext";
-import { useUserRoleContext, UserRoleProvider } from "./UserRoleContext";
+import { useUserContext } from "./UserContext";
+import { useUserRoleContext } from "./UserRoleContext";
 import { Outlet, useLocation, useNavigation } from "react-router-dom";
 import PageLoader from "./components/Page_Furniture/Loader";
 const Navbar = lazy(() => import("./components/Page_Furniture/Navbar"));
@@ -11,23 +11,28 @@ import { useEffect } from "react";
 import { useLoaderData } from "react-router-dom";
 function PageLayout() {
   const { setUserType, setEmail, setUsername, setUserReady } = useUserContext();
-  const { setUserRoles } = useUserRoleContext();
-  const [shouldHideUI, setShouldHideUI] = useState(true);
+  const { setUserRoles, userRoles } = useUserRoleContext();
+
   const userData = useLoaderData() as {
     user_type: string;
     email: string;
     username: string;
     roles: string[];
-  };
+  } | null;
 
   useEffect(() => {
-    setUserType(userData.user_type);
-    setEmail(userData.email);
-    setUsername(userData.username);
-    setUserRoles(userData.roles);
-    setUserReady(true);
-    if (userData.roles && userData.roles.length > 0) {
-      setShouldHideUI(false);
+    if (userData) {
+      setUserType(userData.user_type);
+      setEmail(userData.email);
+      setUsername(userData.username);
+      setUserRoles(userData.roles);
+      setUserReady(true);
+    } else {
+      setUserType("");
+      setEmail("");
+      setUsername("");
+      setUserRoles([]);
+      setUserReady(true);
     }
   }, [userData]);
 
@@ -62,6 +67,7 @@ function PageLayout() {
     );
   }
 
+  const shouldHideUI = !userRoles || userRoles.length === 0;
   const closeSidebar = () => setIsNavbarVisible(false);
   return (
     <>

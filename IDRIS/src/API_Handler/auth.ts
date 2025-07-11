@@ -17,10 +17,19 @@ export async function loginUser(email: string, password: string): Promise<void> 
 /**
  * Fetches the currently authenticated user using the cookie token.
  */
-export async function fetchCurrentUser(): Promise<any> {
-  const response = await API.get('/users/me');
-  return response.data;
+
+export async function fetchCurrentUser(): Promise<any | null> {
+  try {
+    const response = await API.get('/users/me');
+    return response.data;
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+      return null;
+    }
+    throw error; // rethrow other errors
+  }
 }
+
 
 /**
  * Logs out the user by telling the backend to clear the cookie.

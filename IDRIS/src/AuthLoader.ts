@@ -1,5 +1,4 @@
 
-// loaders/authLoader.ts
 import { fetchCurrentUser } from "./API_Handler/auth";
 
 export async function authLoader() {
@@ -13,9 +12,10 @@ export async function authLoader() {
     ) {
       return userData;
     } else {
-      throw new Response("Invalid user data", { status: 401 });
+      return null; // handle as unauthenticated
     }
   } catch (err) {
-    throw new Response("Failed to load user", { status: 401 });
+    return null; // treat fetch error as unauthenticated
   }
 }
+

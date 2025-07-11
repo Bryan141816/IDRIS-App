@@ -5,25 +5,32 @@ import userProfile from "../../media/account-profile.png";
 import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { LogoutIcon } from "./Icons";
-
+import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 interface FooterProps {
   onIconClick: () => void;
 }
 
 const Header: React.FC<FooterProps> = ({ onIconClick }) => {
+  const navigate = useNavigate();
   const [isUserSettingsVisible, showUserSettings] = useState<boolean>(false);
+  const { setUserType, setEmail, setUsername, setUserReady, userType } =
+    useUserContext();
+  const { setUserRoles, userRoles } = useUserRoleContext();
   const logOutUser = () => {
     showUserSettings(false);
     setUserType("");
+    setEmail("");
+    setUsername("");
     setUserRoles([]);
+    setUserReady(false);
+    navigate("/login");
   };
 
   const toggleUserSettingsVisibility = () => {
     showUserSettings((prevState) => !prevState);
   };
 
-  const { userType, setUserType } = useUserContext();
-  const { userRoles, setUserRoles } = useUserRoleContext();
   const { email, username } = useUserContext();
   return (
     <header>
@@ -72,4 +79,3 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
 };
 
 export default Header;
-

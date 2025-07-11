@@ -13,7 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [erroMessage, setErrorMessage] = useState("");
 
-  const { setUserRole } = useUserRoleContext();
+  const { setUserRoles } = useUserRoleContext();
   const { setUserType, setEmail, setUsername } = useUserContext();
 
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const Login = () => {
       ) {
         console.log(userData);
         setUserType(userData["user_type"]);
-        setUserRole(userData["roles"][0]);
+        setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
         setUsername(userData["username"]);
 

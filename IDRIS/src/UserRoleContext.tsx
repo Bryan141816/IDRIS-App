@@ -1,28 +1,24 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from "react";
 
 type UserRoleContextType = {
-  userRole: string;
-  setUserRole: (role: string) => void;
+  userRoles: string[];
+  setUserRoles: (roles: string[]) => void;
 };
 
 export const UserRoleContext = createContext<UserRoleContextType>({
-  userRole: '',
-  setUserRole: () => {},
+  userRoles: [],
+  setUserRoles: () => {},
 });
 
 export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
-  // Initialize from localStorage if it exists
-  const [userRole, setUserRoleState] = useState(() => {
-    return localStorage.getItem('userRole') || '';
-  });
+  const [userRoles, setUserRolesState] = useState<string[]>([]);
 
-  const setUserRole = (role: string) => {
-    setUserRoleState(role);
-    localStorage.setItem('userRole', role);
+  const setUserRoles = (roles: string[]) => {
+    setUserRolesState(roles);
   };
 
   return (
-    <UserRoleContext.Provider value={{ userRole, setUserRole }}>
+    <UserRoleContext.Provider value={{ userRoles, setUserRoles }}>
       {children}
     </UserRoleContext.Provider>
   );
@@ -31,8 +27,8 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
 // Custom hook to access full context
 export const useUserRoleContext = () => useContext(UserRoleContext);
 
-// Optional: Custom hook to get just the userRole
-export const useUserRole = () => {
-  const { userRole } = useUserRoleContext();
-  return userRole;
+// Optional: Hook to check if user has a specific role
+export const useHasRole = (role: string): boolean => {
+  const { userRoles } = useUserRoleContext();
+  return userRoles.includes(role);
 };

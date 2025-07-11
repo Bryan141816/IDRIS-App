@@ -167,61 +167,6 @@ const barChartOptions = {
     },
   },
 };
-const markers = [
-  {
-    lat: 10.313924,
-    lng: 123.887082,
-    lguName: "Cebu City",
-    type: "lgu",
-    description: `Cebu City is the center of commerce, trade, education, and tourism in the Visayas region. It’s one of the Philippines' oldest and most developed cities.`,
-    population: "964,169",
-    resources: `Major hospitals (Chong Hua Hospital, Cebu Doctors’ University Hospital), CDRRMO...`,
-    evacuationCenter: "Cebu City Sports Center",
-    image: "../images/lgu/cebucity.jpeg",
-    hazardAreas: [
-      { lat: 10.313, lng: 123.885 },
-      { lat: 10.315, lng: 123.889 },
-    ],
-  },
-  {
-    lat: 10.346693,
-    lng: 123.898476,
-    lguName: "Mandaue City",
-    type: "lgu",
-    description: `Mandaue City is known for its manufacturing and commercial establishments.`,
-    population: "364,116",
-    resources: `Ambulances, Fire trucks, MCDRRMO...`,
-    evacuationCenter: "Mandaue Coliseum",
-    image: "../images/lgu/mandaue.jpg",
-    hazardAreas: [{ lat: 10.345, lng: 123.899 }],
-  },
-  {
-    lat: 10.34,
-    lng: 123.9,
-    lguName: "Barangay Apas",
-    type: "barangay",
-    description:
-      "It is a residential area known for its proximity to Cebu IT Park and the bustling business centers in the area. The barangay is home to schools, healthcare facilities, and various residential communities.",
-    population: "15,000",
-    resources: "Basic Medical Kits, Barangay Tanod, Community Health Workers",
-    evacuationCenter: "Barangay Apas Hall",
-    image: "../images/baranggay/baranggay.jpg",
-    hazardAreas: [],
-  },
-  {
-    lat: 10.35,
-    lng: 123.91,
-    lguName: "RAFI Infra A",
-    type: "raffi",
-    description:
-      "The facility includes warehouses, transportation hubs, and communication systems to ensure smooth coordination of relief efforts.",
-    population: "-",
-    resources: "-",
-    evacuationCenter: "-",
-    image: "../images/raffi/raffi.jpg",
-    hazardAreas: [],
-  },
-];
 
 type ReportSummary = {
   month: string;
@@ -283,7 +228,7 @@ type InKindMonitoring = {
 };
 
 const ResponseDashboard = () => {
-  const { userRole } = useUserRoleContext();
+  const { userRoles } = useUserRoleContext();
   const [recentReport, setRecentReport] = useState<TableResponse | null>(null);
   const [reportSummary, setReportSummary] = useState<ReportSummary | null>(
     null,
@@ -342,7 +287,7 @@ const ResponseDashboard = () => {
             style={{ gridColumn: "span 2" }}
           >
             <h3>Recent Reports</h3>
-            {userRole == "operations admin" && (
+            {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/report_list"
                 className="manage-button"
@@ -419,7 +364,7 @@ const ResponseDashboard = () => {
         >
           <div className="horizontal-container space-between-container">
             <h3>Demand and Response Map</h3>
-            {userRole == "operations admin" && (
+            {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/demand_and_response_map"
                 className="manage-button"
@@ -430,7 +375,7 @@ const ResponseDashboard = () => {
           </div>
           <div className="horizontal-container space-between-container">
             <h3>Modality Distribution</h3>
-            {userRole == "operations admin" && (
+            {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/modality_distribution"
                 className="manage-button"
@@ -444,7 +389,7 @@ const ResponseDashboard = () => {
             style={{ gridColumn: "span 2" }}
           >
             <h3>In-Kind Monitoring</h3>
-            {userRole == "operations admin" && (
+            {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/in_kind_monitoring"
                 className="manage-button"
@@ -545,7 +490,7 @@ const ResponseDashboard = () => {
             style={{ gridColumn: "span 2" }}
           >
             <h3>Budget</h3>
-            {userRole == "operations admin" && (
+            {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/budget_record"
                 className="manage-button"

@@ -11,7 +11,7 @@ const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
 function PageLayout() {
   const location = useLocation();
   const { userType } = useUserContext();
-  const { userRole } = useUserRoleContext();
+  const { userRoles } = useUserRoleContext();
   const navigation = useNavigation();
 
   const isAuthPage =
@@ -41,7 +41,7 @@ function PageLayout() {
       </ProtectedRoute>
     );
   }
-  const shouldHideUI = !userRole || userRole === ""; // (!userType || userType === "") &&
+  const shouldHideUI = !userRoles || userRoles.length <= 0; // (!userType || userType === "") &&
 
   const closeSidebar = () => setIsNavbarVisible(false);
   return (

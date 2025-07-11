@@ -3,16 +3,19 @@ import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { PlusCircle, Gift } from "../../../components/Page_Furniture/Icons";
-import './ListOfRAFIDonors.scss';
+import "./ListOfRAFIDonors.scss";
 import { DonorTable, TableResponse } from "./TableComponent";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { getDonorsList } from "../../../API_Handler/donations_donors_handler";
-import Profile1 from '../../donations_management/test_images/profile1.png';
-import Profile2 from '../../donations_management/test_images/profile2.png';
-import Profile3 from '../../donations_management/test_images/profile3.png';
+import Profile1 from "../../donations_management/test_images/profile1.png";
+import Profile2 from "../../donations_management/test_images/profile2.png";
+import Profile3 from "../../donations_management/test_images/profile3.png";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { createNewDonor, searchDonorUsers } from '../../../API_Handler/donations_donors_handler';
+import {
+  createNewDonor,
+  searchDonorUsers,
+} from "../../../API_Handler/donations_donors_handler";
 
 interface DonorData {
   donorId: number;
@@ -42,11 +45,11 @@ interface SearchedDonorsAPIResponse {
 const ListOfRAFIDonors = () => {
   // User view Options
   const { userType } = useUserContext();
-  const { userRole } = useUserRoleContext();
+  const { userRoles } = useUserRoleContext();
   const donorSearchRef = useRef<HTMLDivElement>(null); // For Donor Search at Add New Donor Modal
 
   // Preset Variables
-  const dateToday = new Date().toISOString().split('T')[0];
+  const dateToday = new Date().toISOString().split("T")[0];
   const [dateJoined, setDateJoined] = useState<string>(dateToday);
 
   // Donors Lists
@@ -72,17 +75,20 @@ const ListOfRAFIDonors = () => {
         const response = await getDonorsList(searched);
         if (Array.isArray(response)) {
           setDonors(response);
-        } else if (response && typeof response === 'object' && 'donors' in response) {
+        } else if (
+          response &&
+          typeof response === "object" &&
+          "donors" in response
+        ) {
           setDonors((response as DonorsApiResponse).donors || []);
         } else {
           setDonors([]);
         }
       } catch (error) {
-        console.error('Error fetching donors:', error);
+        console.error("Error fetching donors:", error);
         setDonors([]);
       }
     }
-
 
     fetchDonors();
   }, [searched]);
@@ -121,37 +127,43 @@ const ListOfRAFIDonors = () => {
     table_datas: filteredDonors.map((donor, index) => ({
       data: [
         {
-          type: 'Text',
+          type: "Text",
           text: (index + 1).toString(),
           font_weight: 600,
         },
         {
-          type: 'Image',
-          text: index % 3 === 0 ? Profile1 : index % 3 === 1 ? Profile2 : Profile3,
+          type: "Image",
+          text:
+            index % 3 === 0 ? Profile1 : index % 3 === 1 ? Profile2 : Profile3,
           font_weight: 400,
           width: "40px",
         },
         {
-          type: 'Text',
-          text: donor.organization_name === null ? donor.name : donor.organization_name,
+          type: "Text",
+          text:
+            donor.organization_name === null
+              ? donor.name
+              : donor.organization_name,
           font_weight: 500,
         },
         {
-          type: 'Text',
+          type: "Text",
           text: "Php" + (Math.random() * 100000).toFixed(2),
           font_weight: 400,
         },
         {
-          type: 'Date',
-          text: donor.date_joined ? new Date(donor.date_joined).toLocaleDateString() : 'N/A',
+          type: "Date",
+          text: donor.date_joined
+            ? new Date(donor.date_joined).toLocaleDateString()
+            : "N/A",
           font_weight: 400,
         },
-      ]
+      ],
     })),
   };
 
   const toggleModal = (navId: string) => {
-    setActiveModal(prev => (prev === navId ? null : navId));
+    setActiveModal((prev) => (prev === navId ? null : navId));
   };
 
   const closeModal = () => {
@@ -161,7 +173,9 @@ const ListOfRAFIDonors = () => {
   // -==========>  Modal: Add New Donor things
   const [newDonorProfile, setNewDonorProfile] = useState<string>(Profile1); // Donor profile image
   const [addDonorSearch, setAddDonorSearch] = useState(""); // text of search bar
-  const [newDonorSearchedItems, setNewDonorSearchedItems] = useState<SearchedDonors[] | null>(null) // List items under search bar
+  const [newDonorSearchedItems, setNewDonorSearchedItems] = useState<
+    SearchedDonors[] | null
+  >(null); // List items under search bar
 
   const handleAddDonorSearch = async () => {
     try {
@@ -169,20 +183,27 @@ const ListOfRAFIDonors = () => {
       console.log(response);
       if (Array.isArray(response)) {
         setNewDonorSearchedItems(response);
-      } else if (response && typeof response === 'object' && 'donors' in response) {
-        const filtered = (response as SearchedDonorsAPIResponse).donors.filter((donor) =>
-          donor.username.toLowerCase().includes(addDonorSearch.toLowerCase())
+      } else if (
+        response &&
+        typeof response === "object" &&
+        "donors" in response
+      ) {
+        const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
+          (donor) =>
+            donor.username.toLowerCase().includes(addDonorSearch.toLowerCase()),
         );
-        setNewDonorSearchedItems(filtered.map(donor => ({
-          id: donor.id,
-          username: donor.username,
-          email: donor.email || undefined,
-        })));
+        setNewDonorSearchedItems(
+          filtered.map((donor) => ({
+            id: donor.id,
+            username: donor.username,
+            email: donor.email || undefined,
+          })),
+        );
       } else {
         setNewDonorSearchedItems([]);
       }
     } catch (error) {
-      console.error('Error fetching donors:', error);
+      console.error("Error fetching donors:", error);
       setNewDonorSearchedItems([]);
     }
   };
@@ -195,7 +216,8 @@ const ListOfRAFIDonors = () => {
     }
   }, [addDonorSearch]);
 
-  useEffect(() => { // set searched item to null when outside of search bar is clicked
+  useEffect(() => {
+    // set searched item to null when outside of search bar is clicked
     const handleClickOutside = (event: MouseEvent) => {
       if (
         donorSearchRef.current &&
@@ -209,12 +231,12 @@ const ListOfRAFIDonors = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  })
+  });
 
   // Selected New Donor Variable
   const [newUserId, setNewUserId] = useState<number | null>(null);
-  const [newDonorName, setNewDonorName] = useState<string>("sample@gmail.com")
-  const [isOrganization, setIsOrganization] = useState<boolean>(false)
+  const [newDonorName, setNewDonorName] = useState<string>("sample@gmail.com");
+  const [isOrganization, setIsOrganization] = useState<boolean>(false);
 
   // Assign Profile of selected new Donor
   const setSelectedNewDonorProfile = (donor: SearchedDonors) => {
@@ -225,7 +247,7 @@ const ListOfRAFIDonors = () => {
   const setNewDonorType = (is_organization: boolean) => {
     setIsOrganization(is_organization);
     setActiveModal("new-donor-form-create");
-  }
+  };
 
   const handleNewDonorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,13 +257,17 @@ const ListOfRAFIDonors = () => {
     }
 
     const donor_type = isOrganization ? "Organization" : "Individual";
-    const dateJoinedInput = (document.getElementById("date-joined") as HTMLInputElement).value;
+    const dateJoinedInput = (
+      document.getElementById("date-joined") as HTMLInputElement
+    ).value;
     const formData = new FormData();
 
     formData.append("user_id", newUserId.toString()); // You must set this
 
     if (isOrganization) {
-      const orgName = (document.getElementById("organization-name") as HTMLInputElement).value;
+      const orgName = (
+        document.getElementById("organization-name") as HTMLInputElement
+      ).value;
       formData.append("organization_name", orgName);
     }
 
@@ -272,14 +298,25 @@ const ListOfRAFIDonors = () => {
       <h3 className="public-feed-title">LIST OF RAFI DONORS</h3>
 
       <div id="settings-container">
-        <SearchBar placeholder="Search Donor" classname="search-bar" value={searched} onChange={searchState} />
-        <FilterBar items={sortingItems} value={sorting} onChange={setSelectedSorting} />
+        <SearchBar
+          placeholder="Search Donor"
+          classname="search-bar"
+          value={searched}
+          onChange={searchState}
+        />
+        <FilterBar
+          items={sortingItems}
+          value={sorting}
+          onChange={setSelectedSorting}
+        />
 
-        {userRole === "operations admin" && (
+        {userRoles.includes("operations admin") && (
           <>
             <button
               type="button"
-              className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+              className={
+                "settings-button" + (userType === "admin" ? "" : " hidden")
+              }
               onClick={() => toggleModal("new-donor-type-selection")}
             >
               Add Donor
@@ -287,7 +324,9 @@ const ListOfRAFIDonors = () => {
             </button>
             <button
               type="button"
-              className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+              className={
+                "settings-button" + (userType === "admin" ? "" : " hidden")
+              }
               onClick={() => toggleModal("gift-donor")}
             >
               Gift Donor
@@ -299,63 +338,117 @@ const ListOfRAFIDonors = () => {
 
       <DonorTable tableData={tableData} />
 
-      <Modal isOpen={activeModal === "new-donor-type-selection"} onClose={closeModal}>
+      <Modal
+        isOpen={activeModal === "new-donor-type-selection"}
+        onClose={closeModal}
+      >
         <h3 className="modal-title">Select Type of New Donor</h3>
         <button
           type="button"
-          className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+          className={
+            "settings-button" + (userType === "admin" ? "" : " hidden")
+          }
           onClick={() => setNewDonorType(false)}
-        >Individual</button>
+        >
+          Individual
+        </button>
         <button
           type="button"
-          className={"settings-button" + (userType === "admin" ? "" : " hidden")}
+          className={
+            "settings-button" + (userType === "admin" ? "" : " hidden")
+          }
           onClick={() => setNewDonorType(true)}
-        >Organization</button>
+        >
+          Organization
+        </button>
       </Modal>
 
-      <Modal isOpen={activeModal === "new-donor-form-create"} onClose={closeModal}> 
+      <Modal
+        isOpen={activeModal === "new-donor-form-create"}
+        onClose={closeModal}
+      >
         <h3 className="modal-title">Add New Donor</h3>
         <div className="new-donor-search-container" ref={donorSearchRef}>
-          <SearchBar placeholder="Search Donor" value={addDonorSearch} onChange={setAddDonorSearch} onSearch={() => handleAddDonorSearch()} />
-          {newDonorSearchedItems != null && <ul id="new-donor-searched-list">
-            {newDonorSearchedItems === null ? (
-              <li>Loading or no results yet...</li>
-            ) : newDonorSearchedItems.length === 0 ? (
-              <li>No donors found.</li>
-            ) : (
-              newDonorSearchedItems.map((donor, index) => (
-                <li key={index} onClick={() => setSelectedNewDonorProfile(donor)}>
-                  {donor.username}
-                </li>
-              ))
-            )}
-          </ul>}
+          <SearchBar
+            placeholder="Search Donor"
+            value={addDonorSearch}
+            onChange={setAddDonorSearch}
+            onSearch={() => handleAddDonorSearch()}
+          />
+          {newDonorSearchedItems != null && (
+            <ul id="new-donor-searched-list">
+              {newDonorSearchedItems === null ? (
+                <li>Loading or no results yet...</li>
+              ) : newDonorSearchedItems.length === 0 ? (
+                <li>No donors found.</li>
+              ) : (
+                newDonorSearchedItems.map((donor, index) => (
+                  <li
+                    key={index}
+                    onClick={() => setSelectedNewDonorProfile(donor)}
+                  >
+                    {donor.username}
+                  </li>
+                ))
+              )}
+            </ul>
+          )}
         </div>
         <div id="donor-profile-container">
           <img src={newDonorProfile} alt="userProfile" id="new-donor-profile" />
           <p id="new-donor-text">{newDonorName}</p>
         </div>
         <form id="new-donor-form-contianer" onSubmit={handleNewDonorSubmit}>
-          {isOrganization == true && <div className="text-entry">
-            <input type="text" id="organization-name" className="entry" placeholder=" " />
-            <label htmlFor="organization-name" className="entry-label">Organization Name</label>
-          </div>}
+          {isOrganization == true && (
+            <div className="text-entry">
+              <input
+                type="text"
+                id="organization-name"
+                className="entry"
+                placeholder=" "
+              />
+              <label htmlFor="organization-name" className="entry-label">
+                Organization Name
+              </label>
+            </div>
+          )}
           <div className="text-entry">
-            <input type="date" id="date-joined" className="entry no-icon" placeholder=" " value={dateJoined} onChange={(e) => setDateJoined(e.target.value)} />
-            <label htmlFor="date-joined" className="entry-label">Date Joined</label>
+            <input
+              type="date"
+              id="date-joined"
+              className="entry no-icon"
+              placeholder=" "
+              value={dateJoined}
+              onChange={(e) => setDateJoined(e.target.value)}
+            />
+            <label htmlFor="date-joined" className="entry-label">
+              Date Joined
+            </label>
           </div>
-          <button type="submit" className="green-modal-button">Add Donor</button>
+          <button type="submit" className="green-modal-button">
+            Add Donor
+          </button>
         </form>
       </Modal>
 
       <Modal isOpen={activeModal === "gift-donor"} onClose={closeModal}>
         <h3 className="modal-title">Gift Donor</h3>
-        <SearchBar placeholder="Search Donor" value={addDonorSearch} onChange={setAddDonorSearch} onSearch={handleAddDonorSearch} />
+        <SearchBar
+          placeholder="Search Donor"
+          value={addDonorSearch}
+          onChange={setAddDonorSearch}
+          onSearch={handleAddDonorSearch}
+        />
         <p className="modal-instruction">
-          Gift a donor with thank you message, greeting, special information, or updates in a file format.
+          Gift a donor with thank you message, greeting, special information, or
+          updates in a file format.
         </p>
         <div id="gift-donor-profile-container">
-          <img src={newDonorProfile} alt="userProfile" id="gift-donor-profile" />
+          <img
+            src={newDonorProfile}
+            alt="userProfile"
+            id="gift-donor-profile"
+          />
           <p id="gift-donor-text">User Profile</p>
           <p id="gift-donor-email">sample-email@gmail.com</p>
         </div>
@@ -372,23 +465,53 @@ const ListOfRAFIDonors = () => {
             showName={true}
             onFileSelect={handleFileSelect}
           />
-          <button type="button" className="green-modal-button" onClick={() => setActiveModal("gift-sent")}>Send Gift</button>
+          <button
+            type="button"
+            className="green-modal-button"
+            onClick={() => setActiveModal("gift-sent")}
+          >
+            Send Gift
+          </button>
         </form>
       </Modal>
 
       <Modal isOpen={activeModal === "donor-saved"} onClose={closeModal}>
         <h3 className="modal-title">Successfully added donor.</h3>
         <div className="modal-button-container">
-          <button type="button" className="yellow-modal-button" onClick={() => setActiveModal("new-donor-type-selection")}>Add more</button>
-          <button type="button" className="green-modal-button" onClick={closeModal}>Close</button>
+          <button
+            type="button"
+            className="yellow-modal-button"
+            onClick={() => setActiveModal("new-donor-type-selection")}
+          >
+            Add more
+          </button>
+          <button
+            type="button"
+            className="green-modal-button"
+            onClick={closeModal}
+          >
+            Close
+          </button>
         </div>
       </Modal>
 
       <Modal isOpen={activeModal === "gift-sent"} onClose={closeModal}>
         <h3 className="modal-title">Gift Sent Successfully.</h3>
         <div className="modal-button-container">
-          <button type="button" className="yellow-modal-button" onClick={() => setActiveModal("gift-donor")}>Send more</button>
-          <button type="button" className="green-modal-button" onClick={closeModal}>Close</button>
+          <button
+            type="button"
+            className="yellow-modal-button"
+            onClick={() => setActiveModal("gift-donor")}
+          >
+            Send more
+          </button>
+          <button
+            type="button"
+            className="green-modal-button"
+            onClick={closeModal}
+          >
+            Close
+          </button>
         </div>
       </Modal>
     </div>

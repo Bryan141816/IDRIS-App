@@ -1,49 +1,50 @@
 import { useState } from "react";
-import { useNavigate  } from 'react-router-dom';
-import './styles/Login.scss';
+import { useNavigate } from "react-router-dom";
+import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
 import { useUserRoleContext } from "../../UserRoleContext";
 import Logo1 from "../../media/Logo1.png";
 import { Link } from "react-router-dom";
-import {loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
-import { useUserContext } from '../../UserContext';
-
-
+import { loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
+import { useUserContext } from "../../UserContext";
 
 const Login = () => {
-
-  const [email, setEmailEntry] = useState('');
-  const [password, setPassword] = useState('');
-  const [erroMessage, setErrorMessage] = useState('');
+  const [email, setEmailEntry] = useState("");
+  const [password, setPassword] = useState("");
+  const [erroMessage, setErrorMessage] = useState("");
 
   const { setUserRole } = useUserRoleContext();
   const { setUserType, setEmail, setUsername } = useUserContext();
-  
 
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) =>{
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try{
-      await loginUser(email,password);
+    try {
+      await loginUser(email, password);
       const userData = await fetchCurrentUser();
 
-      if (userData && userData["user_type"] && userData["roles"] && userData["roles"].length > 0) {
+      if (
+        userData &&
+        userData["user_type"] &&
+        userData["roles"] &&
+        userData["roles"].length > 0
+      ) {
+        console.log(userData);
         setUserType(userData["user_type"]);
         setUserRole(userData["roles"][0]);
         setEmail(userData["email"]);
         setUsername(userData["username"]);
-        
-        navigate('/donations_management/donations_dashboard');
+
+        navigate("/donations_management/donations_dashboard");
       } else {
         throw new Error("Invalid user data received.");
       }
+    } catch (error) {
+      console.error("Login failed: ", error);
+      setErrorMessage("Incorrect email or password. Please try again.");
     }
-    catch(error){
-      console.error('Login failed: ', error);
-      setErrorMessage('Incorrect email or password. Please try again.')
-    }
-  }
+  };
 
   return (
     <section id="login-section">
@@ -68,7 +69,7 @@ const Login = () => {
               name="email"
               placeholder="Email"
               value={email}
-              onChange={e => setEmailEntry(e.target.value)}
+              onChange={(e) => setEmailEntry(e.target.value)}
               required
             />
           </div>
@@ -80,7 +81,7 @@ const Login = () => {
               name="password"
               placeholder="Password"
               value={password}
-              onChange={e=>setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
@@ -91,5 +92,5 @@ const Login = () => {
       </div>
     </section>
   );
-}
+};
 export default Login;

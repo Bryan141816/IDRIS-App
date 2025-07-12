@@ -41,7 +41,8 @@ function PageLayout() {
         setUsername("");
         setUserRoles([]);
       }
-      setUserReady(true);
+      const timeout = setTimeout(() => setUserReady(true), 0);
+      return () => clearTimeout(timeout);
       setIsInit(true);
     }
   }, [userData, isInit]);

@@ -1,18 +1,21 @@
-import React, { useState } from "react";
-import {
-  Button,
-  Breadcrumb,
-  Input,
-  Form,
-  Select,
-  DatePicker,
-  Space,
-} from "antd";
-import { Link, useNavigate } from "react-router-dom";
-import "./css/OrganizationForm.css";
+import React, { useState } from 'react';
+import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import './css/OrganizationForm.css';
 
-const OrganizationForm = () => {
-  const navigate = useNavigate();
+const daysOfWeekOptions = [
+  { label: 'Sunday', value: 'Sunday' },
+  { label: 'Monday', value: 'Monday' },
+  { label: 'Tuesday', value: 'Tuesday' },
+  { label: 'Wednesday', value: 'Wednesday' },
+  { label: 'Thursday', value: 'Thursday' },
+  { label: 'Friday', value: 'Friday' },
+  { label: 'Saturday', value: 'Saturday' },
+];
+
+
+const OrganizationForm = () =>{
+    const navigate = useNavigate();
   const [form] = Form.useForm();
   const { Option } = Select;
   const onFinish = (values: any) => {
@@ -165,26 +168,18 @@ const OrganizationForm = () => {
                 </Form.Item>
               </div>
               <Form.Item
-                name="availability"
-                label="Availability"
-                rules={[
-                  { required: true, message: "Please select availability" },
-                ]}
-              >
-                <DatePicker.RangePicker style={{ width: "100%" }} />
-              </Form.Item>
+                     name="availability"
+                     label="Availability"
+                     rules={[{ required: true, message: 'Please select at least one available day' }]}
+                     >
+                    <Checkbox.Group options={daysOfWeekOptions} />
+                    </Form.Item>
             </div>
 
             <Form.Item className="form-buttons">
               <Space>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  className="submit-button"
-                  onClick={() =>
-                    navigate("/volunteer_management/otherorganization_form")
-                  }
-                >
+
+                <Button type="primary" htmlType="submit" className="submit-button" onClick={() => navigate('/volunteer_management/otherorganization_form')}>
                   Next
                 </Button>
               </Space>

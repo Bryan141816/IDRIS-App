@@ -254,7 +254,7 @@ export const router = createBrowserRouter([
             lazy: OtherOrganizationForm,
           },
           {
-            path: "indiviual_form",
+            path: "individual_form",
             lazy: IndividualForm,
           },
           {

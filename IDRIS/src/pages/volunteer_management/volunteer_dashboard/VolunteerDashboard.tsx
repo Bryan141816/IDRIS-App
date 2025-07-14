@@ -265,7 +265,7 @@ export default function IDRISDashboard() {
                 ) : (
                   <button
                     className="manage-btn"
-                    style={{ fontSize: "16.4px" }}
+                    style={{ fontSize: "90%" }}
                     onClick={openVolunteerModal}
                   >
                     Become a Volunteer

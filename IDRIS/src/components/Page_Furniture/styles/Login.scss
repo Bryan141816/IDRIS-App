@@ -2,6 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
+
 #login-section {
   background-color: $ice-blue;
   display: flex;
@@ -45,7 +46,7 @@
       text-align: center;
       font-family: 'Poppins', sans-serif;
       color: $steel-blue;
-      font-size: 40px;
+      font-size: 21px;
       font-weight: 400;
       text-wrap: wrap;
     }
@@ -132,7 +133,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px rgba(70, 130, 180, 0.3);
-
+      margin-top: 10px; // Added margin for spacing
       &:hover {
         background: linear-gradient(135deg, darken($steel-blue, 5%) 0%, $steel-blue 100%);
         transform: translateY(-2px);
@@ -151,9 +152,10 @@
   display: flex;
   flex-direction: column;
   justify-items: center;
+  align-items: center;
   gap: 10px;
   padding-top: 1rem;
-
+  margin-bottom: 10px;
   button {
     padding: 10px 2px;
     background-color: $steel-blue;
@@ -163,7 +165,7 @@
     letter-spacing: 2px;
     outline: none;
     border: none;
-    border-radius: 10px; 
+    border-radius: 10px;
   }
 }
 
@@ -203,7 +205,7 @@
     box-shadow: 0 3px 10px rgba(70, 130, 180, 0.2);
     position: relative;
     overflow: hidden;
-
+    width: 50%;
     &::before {
       content: '';
       position: absolute;

@@ -1,15 +1,17 @@
-import React from "react";
-import {
-  Button,
-  Breadcrumb,
-  Input,
-  Form,
-  Select,
-  DatePicker,
-  Space,
-} from "antd";
-import { Link, useNavigate } from "react-router-dom";
-import "./css/IndividualForm.css";
+import React from 'react';
+import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import './css/IndividualForm.css';
+
+const daysOfWeekOptions = [
+  { label: 'Sunday', value: 'Sunday' },
+  { label: 'Monday', value: 'Monday' },
+  { label: 'Tuesday', value: 'Tuesday' },
+  { label: 'Wednesday', value: 'Wednesday' },
+  { label: 'Thursday', value: 'Thursday' },
+  { label: 'Friday', value: 'Friday' },
+  { label: 'Saturday', value: 'Saturday' },
+];
 
 const IndividualForm = () => {
   const navigate = useNavigate();
@@ -159,12 +161,29 @@ const IndividualForm = () => {
               <Form.Item
                 name="availability"
                 label="Availability"
-                rules={[
-                  { required: true, message: "Please select availability" },
-                ]}
-              >
-                <DatePicker.RangePicker style={{ width: "100%" }} />
-              </Form.Item>
+                rules={[{ required: true, message: 'Please select at least one available day' }]}
+                >
+                <Checkbox.Group options={daysOfWeekOptions} />
+                </Form.Item>
+
+                <Form.Item
+                    name="medicalCondition"
+                    label="Do you have any medical condition?"
+                    rules={[{ required: true, message: 'Please select an option' }]}
+                    >
+                    <Select placeholder="Select an option">
+                        <Option value="none">None</Option>
+                        <Option value="asthma">Asthma</Option>
+                        <Option value="heart_condition">Heart Condition</Option>
+                        <Option value="diabetes">Diabetes</Option>
+                        <Option value="other">Other (please specify below)</Option>
+                    </Select>
+                    </Form.Item>
+
+                    {/* Optional description if they choose "Other" */}
+                    <Form.Item name="medicalDescription" label="If Other, please describe">
+                    <Input.TextArea rows={3} placeholder="Describe your condition" />
+                    </Form.Item>
             </div>
 
             {/* Form Buttons */}

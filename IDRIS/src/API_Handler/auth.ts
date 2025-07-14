@@ -2,16 +2,18 @@
 
 // src/api/auth.ts
 import { API } from './Axio_API_Handler';
-
+import { setAccessToken, clearAccessToken } from './token_store';
 /**
  * Logs in the user by setting the HttpOnly cookie from FastAPI.
  * No need to manually handle the token.
  */
 export async function loginUser(email: string, password: string): Promise<void> {
-  await API.post(
+  const res = await API.post(
     '/login',
     { email, password },
   );
+  const token = res.data.access_token;
+  setAccessToken(token)
 }
 
 /**
@@ -36,5 +38,6 @@ export async function fetchCurrentUser(): Promise<any | null> {
  */
 export async function logoutUser(): Promise<void> {
   await API.post('/logout', {});
+  clearAccessToken()
 }
 

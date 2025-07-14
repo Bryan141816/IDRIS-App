@@ -14,7 +14,7 @@ const Login = () => {
   const [erroMessage, setErrorMessage] = useState("");
 
   const { setUserRoles } = useUserRoleContext();
-  const { setUserType, setEmail, setUsername } = useUserContext();
+  const { setUserType, setEmail, setUsername, setUserReady } = useUserContext();
 
   const navigate = useNavigate();
 
@@ -34,7 +34,7 @@ const Login = () => {
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
         setUsername(userData["username"]);
-
+        setUserReady(true);
         navigate("/donations_management/donations_dashboard");
       } else {
         throw new Error("Invalid user data received.");

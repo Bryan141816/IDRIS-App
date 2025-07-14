@@ -5,8 +5,8 @@ import userProfile from "../../media/account-profile.png";
 import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { LogoutIcon } from "./Icons";
-import { Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../../API_Handler/auth.ts";
 interface FooterProps {
   onIconClick: () => void;
 }
@@ -17,14 +17,19 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   const { setUserType, setEmail, setUsername, setUserReady, userType } =
     useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();
-  const logOutUser = () => {
+  const logOutUser = async () => {
     showUserSettings(false);
     setUserType("");
     setEmail("");
     setUsername("");
     setUserRoles([]);
     setUserReady(false);
-    navigate("/login");
+    await logoutUser();
+
+    // Delay navigation slightly to let state update flush
+    setTimeout(() => {
+      navigate("/login", { replace: true });
+    }, 10); // 10ms is enough
   };
 
   const toggleUserSettingsVisibility = () => {

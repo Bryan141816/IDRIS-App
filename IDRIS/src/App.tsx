@@ -1,15 +1,15 @@
 // App.tsx
 import { UserProvider } from "./UserContext";
 import { UserRoleProvider } from "./UserRoleContext";
-import AppShell from "./AppShell";
-
+import { RouterProvider } from "react-router-dom";
+import { router } from "./routes.tsx";
 import "./styles/App.scss";
 
 function App() {
   return (
     <UserProvider>
       <UserRoleProvider>
-        <AppShell />
+        <RouterProvider router={router} />;
       </UserRoleProvider>
     </UserProvider>
   );

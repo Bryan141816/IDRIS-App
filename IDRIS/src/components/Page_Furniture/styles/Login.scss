@@ -236,3 +236,51 @@
 #log-in-error-message{
   color: red;
 }
+
+
+.password-validation,
+.password-match-validation {
+  margin-top: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.validation-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  i {
+    margin-right: 8px;
+    width: 16px;
+    font-size: 12px;
+  }
+
+  span {
+    font-weight: 500;
+  }
+
+  &.valid {
+    color: #28a745;
+
+    i {
+      color: #28a745;
+    }
+  }
+
+  &.invalid {
+    color: #dc3545;
+
+    i {
+      color: #dc3545;
+    }
+  }
+}

@@ -8,9 +8,10 @@ import {
   ChartOptions,
   ChartData,
 } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 type PieChartProps = {
   labels: string[];
@@ -56,6 +57,26 @@ const PieChart: React.FC<PieChartProps> = ({
             return `${context.label}: ${context.parsed}`;
           },
         },
+      },
+      datalabels: {
+        color: '#000',
+        font: {
+          weight: 'bold',
+        },
+        formatter: (value, context) => {
+          const dataset = context.chart.data.datasets[0];
+          const total = dataset.data.reduce((acc: number, val) => {
+            if (typeof val === 'number') {
+              return acc + val;
+            }
+            return acc;
+          }, 0 as number);
+        
+          const val = typeof value === 'number' ? value : 0;
+          const percentage = (val / total) * 100;
+        
+          return `${percentage.toFixed(1)}%`;
+        }
       },
     },
   };

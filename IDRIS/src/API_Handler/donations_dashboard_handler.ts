@@ -12,7 +12,7 @@ export async function getCountofDonors(search = '', donor_type = ''): Promise<Ax
   });
 }
 
-export async function getFundingProposals(limit = 4, page = 1): Promise<any[]> {
+export async function getFundingProposals(limit = 4, page = 1): Promise<any> {
   const response = await API.get(`/funding_proposals/proposals/all_proposals/`, {
     params: { limit , page }, 
   });

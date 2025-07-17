@@ -12,14 +12,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   animation: fadeIn 0.6s ease-out;
 
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 0.8rem;
-  }
-
   // Table Head
   thead {
     background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
@@ -192,6 +184,29 @@
         }
       }
     }
+  }
+
+  .yellowButton{
+    padding: 5px 10px;
+    background-color: $saffron-yellow;
+    font-weight: 700;
+    border-radius: 20px;
+    border: none;
+
+    &:hover {
+      background: linear-gradient(135deg, #e6a612 0%, #d4940e 100%);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(252, 184, 20, 0.4);
+    }
+
+  }
+
+  @media (max-width: 768px) {
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
   }
 }
 

@@ -1,4 +1,4 @@
-
+@use '../../../styles/variables' as *;
 
 // Mixins
 @mixin flex-center {
@@ -35,14 +35,16 @@
 }
 
 #funding{
+  display: flex;
+  flex-direction: column;
   padding: 20px;
+  gap: 20px;
 
   #settings-container {
     display: grid;
     justify-items: center;
     grid-template-columns: 1fr 200px auto auto;
     gap: 15px;
-    margin-bottom: 25px;
     align-items: center;
     background: #ffffff;
     padding: 20px;
@@ -230,6 +232,33 @@
     }
   }
   
+  .page-contorol {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: baseline;
+    width: 100%;
+    
+    p {
+      margin: 0 10px;
+    }
+
+    button {
+      padding: 5px 10px;
+      background-color: $saffron-yellow;
+      font-weight: 700;
+      border-radius: 20px;
+      border: none;
+  
+      &:hover {
+        background: linear-gradient(135deg, #e6a612 0%, #d4940e 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(252, 184, 20, 0.4);
+      }
+    }
+  }
+
 }
 
 #funding-body{
@@ -238,7 +267,6 @@
   justify-items: center;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
-  padding-top: 20px;
 }
 
 @media screen and (max-width: 720px) {

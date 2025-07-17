@@ -25,56 +25,8 @@ export async function searchDonorUsers(search = ''): Promise<any> {
   return response.data;
 }
 
-// export const api = {
-//   // GET all items
-//   getDonors: async () => {
-//     const response = await fetch(`${API}/items/`);
-//     if (!response.ok) throw new Error('Failed to fetch items');
-//     return response.json();
-//   },
-
-//   // GET single item
-//   getById: async (id: number) => {
-//     const response = await fetch(`${API}/items/${id}`);
-//     if (!response.ok) throw new Error('Failed to fetch item');
-//     return response.json();
-//   },
-
-//   // POST create item
-//   createItem: async (item: Record<string, unknown>) => {
-//     const response = await fetch(`${API}/items/`, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(item)
-//     });
-//     if (!response.ok) throw new Error('Failed to create item');
-//     return response.json();
-//   },
-
-//   // PUT update item
-//   updateItem: async (id: number, item: Record<string, unknown>) => {
-//     const response = await fetch(`${API}/items/${id}`, {
-//       method: 'PUT',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(item)
-//     });
-//     if (!response.ok) throw new Error('Failed to update item');
-//     return response.json();
-//   },
-
-//   // DELETE item
-//   deleteItem: async (id: number) => {
-//     const response = await fetch(`${API}/items/${id}`, {
-//       method: 'DELETE'
-//     });
-//     if (!response.ok) throw new Error('Failed to delete item');
-//     return response.json();
-//   }
-// };
-
-
 // GET all proposals (optionally with search or filter query)
-export async function getFundingProposals(search = ''): Promise<any[]> {
+export async function getFundingProposals(search = ''): Promise<any> {
   const response = await API.get(`/funding_proposals/proposals/all_proposals/`, {
     params: { search }, // if backend accepts it
   });
@@ -135,7 +87,7 @@ export async function getTransparencyReportsMini(
   if (limit) params.limit = limit;
 
   const response = await API.get('/transparency_report/get_transparency_reports/mini', { params });
-  return response;
+  return response.data;
 }
 
 export async function getTransparencyReportById(id: number): Promise<any> {

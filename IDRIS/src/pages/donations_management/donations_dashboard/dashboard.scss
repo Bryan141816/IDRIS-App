@@ -16,106 +16,196 @@
   flex-direction: column;
   padding: 20px;
   gap: 20px;
-}
 
-#grid-container {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  // background-color: #f2f5f9;
-  border-radius: 10px;
-  gap: 5px;
-  width: auto;
-  max-width: 70%;
-}
+  #grid-container {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    // background-color: #f2f5f9;
+    border-radius: 10px;
+    gap: 5px;
+    width: auto;
+    max-width: 70%;
+  }
 
-#donation-statistic {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
+  #donation-statistic {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
 
-.donation-stat-card {
-  background-color: $steel-blue;
-  color: white;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
+  .donation-stat-card {
+    background-color: $steel-blue;
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
 
-  &.large {
-    grid-column: span 2;
+    &.large {
+      grid-column: span 2;
+
+      .stat-data {
+        font-size: 32px;
+      }
+    }
+
+    .title {
+      font-family: 'REM', sans-serif;
+      font-size: 32px;
+      font-weight: 600;
+      line-height: 1.0;
+    }
 
     .stat-data {
-      font-size: 32px;
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+  }
+
+  #donation-record-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    div {
+      p {
+        font-size: 0.5em;
+      }
     }
   }
 
-  .title {
-    font-family: 'REM', sans-serif;
-    font-size: 32px;
-    font-weight: 600;
-    line-height: 1.0;
-  }
+  #transparency-report {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-radius: 25px;
+    border: 2px solid #B0B0B0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 30%;
+    height: 250px;
 
-  .stat-data {
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 10px;
-  }
+    .head-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: space-between;
 
-}
+      .title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+    }
 
-#donation-record-container {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+    .entry {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #c5d7e5;
+      border-radius: 10px;
+      font-size: 1rem;
+      color: #749ab6;
+      background: #ffffff;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      font-weight: 500;
 
-  div{
-    p{
-      font-size: 0.5em;
+      &:focus {
+        outline: none;
+        border-color: #749ab6;
+        box-shadow: 0 0 0 4px rgba(116, 154, 182, 0.1);
+        background: #f8fafc;
+      }
+
+      &:focus+.entry-label,
+      &:not(:placeholder-shown)+.entry-label {
+        transform: translateY(-28px) scale(0.85);
+        color: #749ab6;
+        background: #ffffff;
+        padding: 0 8px;
+        font-weight: 600;
+      }
+
+      &.no-icon {
+        color-scheme: light;
+
+        &::-webkit-calendar-picker-indicator {
+          filter: invert(0.5) sepia(1) saturate(2) hue-rotate(180deg);
+        }
+      }
+    }
+
+    button {
+      margin-top: 8px;
+    }
+
+    #t-report-date{
+      color: red;
+      padding: 2px 5px;
     }
   }
-}
 
-#transparency-report {
-  background-color: white;
-  border-radius: 25px;
-  border: 2px solid #B0B0B0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  width: 30%;
+  #donations-pie-chart {
+    background-color: $ice-blue;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 20px;
 
-  .title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    canvas {
+      margin: auto auto;
+    }
   }
 
-  button {
-    margin-top: 10px;
+  #funding-proposals-title{
+    margin: 20px 0 0 0;
   }
-}
 
+  #funding-proposals {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
 
-#donations-pie-chart {
-  background-color: $ice-blue;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 20px;
-
-  canvas {
-    margin: auto auto;
   }
+
+  #transparency-report-page-control{
+    margin-top: auto;
+  }
+
+  .page-contorol {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: baseline;
+    width: 100%;
+    
+    p {
+      margin: 0 10px;
+    }
+
+    button {
+      padding: 5px 10px;
+      background-color: $saffron-yellow;
+      font-weight: 700;
+      border-radius: 20px;
+      border: none;
+  
+      &:hover {
+        background: linear-gradient(135deg, #e6a612 0%, #d4940e 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(252, 184, 20, 0.4);
+      }
+    }
+  }
+
 }
 
-#funding-proposals {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-}
+// #dashboard
 
 @media screen and (max-width: 720px) {
   #dashboard {

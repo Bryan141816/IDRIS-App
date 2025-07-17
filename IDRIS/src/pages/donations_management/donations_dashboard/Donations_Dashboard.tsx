@@ -14,7 +14,6 @@ import {
 } from "../../../API_Handler/donations_dashboard_handler";
 import {
   getTransparencyReportsMini,
-  getMaxPage,
 } from "../../../API_Handler/donations_transparency_report";
 
 interface TransparencyReportInterface {
@@ -93,53 +92,34 @@ const DonationsDashboard = () => {
   }, []);
 
   // TRANSPARENCY REPORT
-  const [transparencyReports, setTransparencyReports] = useState<
-    TransparencyReportInterface[]
-  >([]);
+  const [transparencyReports, setTransparencyReports] = useState<TransparencyReportInterface[]>([]);
   const [selectedTransparencyDate, setSelectedTransparencyDate] = useState("");
-  const [transparencyReportPage, setTransparencyReportPage] =
-    useState<number>(1);
-  const transparencyReportLimit = 5;
-  const [transparencyReportMaxPage, setTransparencyReportMaxPage] =
-    useState<number>(1);
+  const [transparencyReportPage, setTransparencyReportPage] = useState<number>(1);
 
-  useEffect(() => {
-    const fetchMaxPage = async () => {
-      try {
-        const response = await getMaxPage(transparencyReportLimit);
-        if (response && typeof response.count === "number") {
-          setTransparencyReportMaxPage(response.count);
-        } else {
-          console.error("Invalid response format:", response);
+  const transparencyReportLimit = 3;
+  const [transparencyReportMaxPage, setTransparencyReportMaxPage] = useState<number>(1);
+
+    // GET TRANSPARENCY REPORTS
+    useEffect(() => {
+      async function fetchReports() {
+        try {
+          const response = await getTransparencyReportsMini(
+            "",
+            selectedTransparencyDate,
+            transparencyReportPage,
+            transparencyReportLimit,
+          );
+          setTransparencyReportMaxPage(response.max_page);
+          setTransparencyReports(response.reports);
+        } catch (error) {
+          console.error("Failed to fetch reports:", error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Failed to fetch donor count:", error);
       }
-    };
 
-    fetchMaxPage();
-  }, []);
-
-  // GET TRANSPARENCY REPORTS
-  useEffect(() => {
-    async function fetchReports() {
-      try {
-        const response = await getTransparencyReportsMini(
-          "",
-          selectedTransparencyDate,
-          transparencyReportPage,
-          transparencyReportLimit,
-        );
-        setTransparencyReports(response.data);
-      } catch (error) {
-        console.error("Failed to fetch reports:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchReports();
-  }, [transparencyReportPage, selectedTransparencyDate]);
+      fetchReports();
+    }, [transparencyReportPage, selectedTransparencyDate]);
 
   type DirectType = "prev" | "next";
   const handleTransparencyReportPage = (direct: DirectType) => {
@@ -153,26 +133,9 @@ const DonationsDashboard = () => {
   };
 
   const fundingProposalsLimit = 4; // Number of fundingproposals per query
-  const [fundingProposals, setFundingProposals] = useState<
-    FundingProposalInterface[]
-  >([]);
+  const [fundingProposals, setFundingProposals] = useState<FundingProposalInterface[]>([]);
   const [fundingProposalsPage, setFundingProposalsPage] = useState<number>(1);
-  const [fundingProposalMaxPage, setFundingProposalMaxPage] =
-    useState<number>(1);
-
-  // GET FUNDING PROPOSALS MAX PAGE
-  useEffect(() => {
-    async function fetchFundingProposalsMaxPage() {
-      try {
-        const maxpage = await getFundingProposalMaxPage(fundingProposalsLimit);
-        setFundingProposalMaxPage(maxpage.count);
-      } catch (error) {
-        console.error("Failed to fetch funding proposals max page", error);
-      }
-    }
-
-    fetchFundingProposalsMaxPage();
-  }, []);
+  const [fundingProposalMaxPage, setFundingProposalMaxPage] = useState<number>(1);
 
   // GET FUNDING PROPOSALS
   useEffect(() => {
@@ -182,7 +145,8 @@ const DonationsDashboard = () => {
           fundingProposalsLimit,
           fundingProposalsPage,
         );
-        setFundingProposals(proposals);
+        setFundingProposals(proposals.records);
+        setFundingProposalMaxPage(proposals.max_page);
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
       }
@@ -227,10 +191,12 @@ const DonationsDashboard = () => {
             </div>
           </div>
           <div id="transparency-report">
-            <p className="title">Transparency Reports</p>
-            <Link to="/transparency_report">
-              <MenuDots />
-            </Link>
+            <div className="head-container">
+              <p className="title">Transparency Reports</p>
+              <Link to="/transparency_report">
+                <MenuDots />
+              </Link>
+            </div>
             <input
               type="date"
               id="t-report-date"
@@ -249,7 +215,7 @@ const DonationsDashboard = () => {
               />
             ))}
 
-            <div id="transparency-report-page-control">
+            <div id="transparency-report-page-control" className="page-contorol">
               <button
                 className="prev-page"
                 onClick={() => handleTransparencyReportPage("prev")}
@@ -257,8 +223,8 @@ const DonationsDashboard = () => {
                 Previous
               </button>
               <p>
-                Page: {transparencyReportPage} /{" "}
-                {transparencyReportMaxPage}{" "}
+                Page: {transparencyReportPage}/{""}
+                {transparencyReportMaxPage}{""}
               </p>
               <button
                 className="next-page"
@@ -296,14 +262,13 @@ const DonationsDashboard = () => {
           ))}
         </div>
 
-        <h3 className="public-feed-title">Recent Programs:</h3>
+        <h3 id="funding-proposals-title" className="public-feed-title">
+          Recent Programs:
+          <Link to="/donations_management/funding_proposals">
+            <MenuDots />
+          </Link>
+        </h3>
         <div id="funding-proposals">
-          <button
-            className="prev-page"
-            onClick={() => handleFundingProposalPage("prev")}
-          >
-            Prev
-          </button>
           {fundingProposals.map((funding, index) => (
             <FundingCard
               key={index}
@@ -315,13 +280,25 @@ const DonationsDashboard = () => {
               className="funding-item"
             />
           ))}
-          <button
-            className="next-page"
-            onClick={() => handleFundingProposalPage("next")}
-          >
-            Next
-          </button>
         </div>
+        <div id="funding-proposal-page-control" className="page-contorol">
+            <button
+              className="prev-page"
+              onClick={() => handleFundingProposalPage("prev")}
+            >
+              Previous
+            </button>
+            <p>
+              Page: {fundingProposalsPage}/{""}
+              {fundingProposalMaxPage}{""}
+            </p>
+            <button
+              className="next-page"
+              onClick={() => handleFundingProposalPage("next")}
+            >
+              Next
+            </button>
+          </div>
       </div>
     </>
   );

@@ -3,12 +3,17 @@
 .downLoadFileBtn{ //button
     width: 100%;
     background-color: transparent;
+    margin-top: none;
     border: none;
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: space-between;
     align-items: center;
     
+    &:hover{
+        background-color: $ice-blue;
+    }
+
     img {
         width: 24px;
     }
@@ -20,6 +25,6 @@
     svg{
         height: 24px;
         color: $primary-color;
-        background-color: #fff;
+        background-color: transparent;
     }
 }

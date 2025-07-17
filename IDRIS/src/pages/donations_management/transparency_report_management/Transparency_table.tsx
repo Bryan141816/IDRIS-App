@@ -60,14 +60,14 @@ export const TransparencyReportTable: React.FC<Props> = ({ reports, updateFuncti
                 Download
               </a>
             </td>
-            <td>
-              { userType == "admin" && <button
+            { userType == "admin" && <td>
+              <button
                 className={styles.yellowButton}
                 onClick={() => updateFunction?.(report.transparency_id)}>
                 Update
               </button>
-              }
-            </td>
+              
+            </td> }
           </tr>
         ))}
       </tbody>

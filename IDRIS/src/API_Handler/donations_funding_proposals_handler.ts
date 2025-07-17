@@ -22,10 +22,12 @@ export async function createFundingproposals(formData: FormData): Promise<any>{
 }
 
 // GET all proposals (optionally with search or filter query)
-export async function getFundingProposals(search = ''): Promise<any[]> {
-  const response = await API.get(`/funding_proposals/proposals/all_proposals/`, {
-    params: { search }, 
-  });
+export async function getFundingProposals(search = '', limit = 4, page = 1): Promise<any> {
+  const params: any={};
+  if(search) params.search = search;
+  if(limit) params.limit = limit;
+  if(page) params.page = page;
+  const response = await API.get(`/funding_proposals/proposals/all_proposals/`, {params});
   return response.data;
 }
 

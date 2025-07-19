@@ -4,7 +4,8 @@ from typing import List, Optional
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 from models import FundingProposals
-from data_schemas.funding_proposal_schema import FundingProposalCreate, FundingProposalUpdate
+from data_schemas.funding_proposal_schema import FundingProposalCreate, FundingProposalUpdate, FundingProposalResponsePaginated
+from math import ceil
 
 import shutil
 
@@ -59,7 +60,6 @@ class FundingProposalCRUD:
             raise HTTPException(status_code=500, detail="Database error")
         
     # Get all proposals
-    @staticmethod
     def get_all_proposals(
         db: Session,
         search: Optional[str] = None,
@@ -67,13 +67,17 @@ class FundingProposalCRUD:
         order: str = "desc",
         limit: Optional[int] = None,
         page: int = 1
-    ) -> List[FundingProposals]:
+    ) -> FundingProposalResponsePaginated:
         try:
             query = db.query(FundingProposals)
 
             if search:
                 query = query.filter(FundingProposals.title.ilike(f"%{search}%"))
 
+            # Get total count BEFORE pagination
+            total_count = query.count()
+
+            # Apply sorting
             if sort and hasattr(FundingProposals, sort):
                 order_by_column = getattr(FundingProposals, sort)
                 if order == "desc":
@@ -82,15 +86,25 @@ class FundingProposalCRUD:
                     order_by_column = order_by_column.asc()
                 query = query.order_by(order_by_column)
 
+            # Apply pagination
             if limit:
                 offset = (page - 1) * limit
                 query = query.offset(offset).limit(limit)
+                max_page = max(ceil(total_count / limit), 1)
+            else:
+                max_page = 1  # or 0 if you prefer no pagination fallback
 
-            return query.all()
+            records = query.all()
+
+            return FundingProposalResponsePaginated(
+                max_page=max_page,
+                records=records
+            )
+            
         except Exception as e:
             print(f"Error fetching proposals in CRUD: {e}")
-            raise
-    
+            raise    
+        
     @staticmethod
     # Get a single proposal by ID
     def get_proposal_by_id(db: Session, proposal_id: int) -> Optional[FundingProposals]:

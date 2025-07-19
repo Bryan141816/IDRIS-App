@@ -8,7 +8,8 @@ class TransparencyReportBase(BaseModel):
     file: str
     file_name: str
     date_issued: datetime
-
+    class Config:
+        from_attributes = True
 
 # For creation (date_uploaded and date_updated are auto)
 class TransparencyReportCreate(TransparencyReportBase):
@@ -32,3 +33,8 @@ class TransparencyReportFilter(BaseModel):
     limit: int = 5
     page: int = 1
     
+class TransparencyReportMiniPaginated(BaseModel):
+    max_page: int
+    reports: List[TransparencyReportBase]
+    class Config:
+        from_attributes = True

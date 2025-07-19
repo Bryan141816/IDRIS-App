@@ -9,6 +9,7 @@ from data_schemas.transparency_report_schema import TransparencyReportBase, Tran
 from pathlib import Path
 from datetime import datetime
 from fastapi import UploadFile
+from math import ceil
 
 import os
 UPLOAD_DIR = Path("media/transparency_reports")
@@ -81,26 +82,30 @@ class TransparencyReport_CRUD:
     def get_transparency_report_mini_data(db: Session, filters: TransparencyReportBase):
         query = db.query(TransparencyReports)
 
-        # Filter by file name
+        # Apply filters
         if filters.file_name:
             query = query.filter(
                 TransparencyReports.file_name.ilike(f"%{filters.file_name}%")
             )
-            
-        # Filter by date
+
         if filters.date:
             query = query.filter(
                 func.date(TransparencyReports.date_issued) == filters.date.date()
             )
 
-        skip = (filters.page - 1) * filters.limit        
-        # Pagination logic
-        query = query.order_by(TransparencyReports.date_uploaded.desc())
+        total_count = query.count()
+        max_page = max(ceil(total_count / filters.limit), 1) if filters.limit > 0 else 1 # get the max page count
 
-        # Query result
-        return query.offset(skip).limit(filters.limit).all()
+        # ---- Apply pagination
+        skip = (filters.page - 1) * filters.limit
+        records = query.order_by(TransparencyReports.date_uploaded.desc())\
+                    .offset(skip).limit(filters.limit).all()
 
-    
+        return {
+            "reports": records,
+            "max_page": max_page
+        }    
+        
     @staticmethod
     def get_transparency_by_id(db:Session, id: int):
         return db.query(TransparencyReports).filter(TransparencyReports.transparency_id == id).first()

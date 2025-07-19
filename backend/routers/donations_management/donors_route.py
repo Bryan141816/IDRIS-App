@@ -13,8 +13,6 @@ from data_schemas.donors_schema import (
     DonorListResponse, 
     DonorStatsResponse,
     ListOfDonorsResponse,
-    IndividualDonorCreate,
-    DonorUpdate,
     DonorAllAttributes
 )
 
@@ -102,20 +100,12 @@ def get_donor_by_user_endpoint(
 @router_admin_or_donor.get("/get_all_as_lists", response_model=ListOfDonorsResponse) # mark used
 def get_donor_display_info_endpoint(
     search: Optional[str] = Query(None),    
-    skip: int = Query(0, ge=0),
+    page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db)
 ):
     """Get all donors with pagination."""
-    donors = donor_crud.get_donor_display_info(db, search=search, skip=skip, limit=limit)
-    total = donor_crud.count_donors(db)
-    
-    return ListOfDonorsResponse(
-        donors=donors,
-        total=total,
-        skip=skip,
-        limit=limit
-    )
+    return donor_crud.get_donor_display_info(db, search=search, page=page, limit=limit)
 
 @router_admin.get("/count", response_model=Number) # mark used
 def count_donors(

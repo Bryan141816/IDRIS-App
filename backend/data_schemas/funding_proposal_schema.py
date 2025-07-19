@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import  Optional
+from typing import  Optional, List
 
 # Base schema shared by other versions
 class FundingProposalBase(BaseModel):
@@ -33,5 +33,12 @@ class FundingProposalResponse(FundingProposalBase):
     created_at: datetime
     updated_at: datetime
 
+    class Config:
+        from_attributes = True
+        
+class FundingProposalResponsePaginated(BaseModel):
+    max_page: int
+    records: List[FundingProposalGet]
+    
     class Config:
         from_attributes = True

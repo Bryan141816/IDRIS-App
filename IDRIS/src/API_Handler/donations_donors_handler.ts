@@ -1,8 +1,8 @@
 import { API } from './Axio_API_Handler';
 
-export async function getDonorsList(search = ''): Promise<any[]> {
+export async function getDonorsList(search = '', page = 1, limit = 1): Promise<any> {
   const response = await API.get(`/donors/get_all_as_lists/`, {
-    params: { search }, 
+    params: { search, page, limit }, 
   });
   return response.data;
 }

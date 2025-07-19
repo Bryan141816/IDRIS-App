@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 from schemas import Number
 from data_schemas.transparency_report_schema import ( TransparencyReportBase, TransparencyReportCreate, TransparencyReportFilter, 
-                                                    TransparencyReportOut, TransparencyReportUpdate )
+                                                    TransparencyReportOut, TransparencyReportUpdate, TransparencyReportMiniPaginated )
 from crud_functions.donations_management.transparency_report import TransparencyReport_CRUD as CRUD 
 from models import TransparencyReports
 
@@ -60,7 +60,7 @@ def get_all_transparency_report_endpoint(
     )
     return CRUD.get_transparency_report(db, filters)
 
-@router_admin_or_donor.get("/get_transparency_reports/mini", response_model=List[TransparencyReportBase])
+@router_admin_or_donor.get("/get_transparency_reports/mini", response_model=TransparencyReportMiniPaginated)
 def get_all_transparency_report_mini_data_endpoint(
     file_name: Optional[str] = Query(None),
     date: Optional[datetime] = Query(None),
@@ -105,11 +105,6 @@ def update_transparency_report_handler(
         date_issued=date_issued
     )
     
-@router_admin_or_donor.get("/get_limit", response_model=Number)
-def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
-    total_records = db.query(TransparencyReports).count()
-    pages = ceil(total_records / limit) if limit > 0 else 1
-    return {"count": pages}
 
 router = APIRouter(
     # dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],

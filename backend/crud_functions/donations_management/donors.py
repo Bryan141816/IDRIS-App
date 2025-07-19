@@ -3,9 +3,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import nulls_last
 from sqlalchemy import or_, asc, desc
 from typing import Optional, List, Dict, Any
+from math import ceil
 import datetime
 from fastapi import HTTPException, status
 from models import Donors, User
+from data_schemas.donors_schema import ListOfDonorsResponse
 
 # CREATE Operations
 class DonorCRUD:
@@ -304,7 +306,7 @@ class DonorCRUD:
         """
         return db.query(Donors).filter(Donors.donorId == donor_id).first() is not None
 
-
+    @staticmethod
     def get_donor_stats(self, db: Session) -> Dict[str, int]:
         """
         Get donor statistics.
@@ -327,74 +329,81 @@ class DonorCRUD:
             "verified_donors": verified_donors,
             "unverified_donors": total_donors - verified_donors
         }
-        
+    
+    @staticmethod
     def get_donor_display_info(        
-        self, 
         db: Session, 
-        search: str = None, 
+        search: Optional[str] = None, 
         order: str = "desc", 
-        skip: int = 0, 
-        limit: int = 100
-    ) -> List[Donors]:
+        page: int = 1, 
+        limit: Optional[int] = 100
+    ) -> ListOfDonorsResponse:
+        try:
+            UserAlias = aliased(User)
 
-        query = db.query(Donors).options(joinedload(Donors.user))
-        
-        # Apply search filter if provided
-        if search:
-            search_term = f"%{search.strip()}%"
-            query = query.join(User).filter(
-                or_(
-                    Donors.organization_name.ilike(search_term),
-                    User.username.ilike(search_term)
-                )
+            # Base query
+            query = (
+                db.query(Donors)
+                .join(UserAlias, Donors.user_id == UserAlias.id, isouter=True)
+                .options(joinedload(Donors.user))
             )
 
-        # Apply ordering
-        if order == "asc":
-            query = query.order_by(asc(Donors.date_joined))
-        else:
-            query = query.order_by(desc(Donors.date_joined))
-            
-        # ------------ ORDERING WITH PRECEDENCE
-         
-        # UserAlias = aliased(User)
+            # Search filter
+            if search:
+                search_term = f"%{search.strip()}%"
+                query = query.filter(
+                    or_(
+                        Donors.organization_name.ilike(search_term),
+                        UserAlias.username.ilike(search_term)
+                    )
+                )
 
-        # query = (
-        #     db.query(Donors).options(joinedload(Donors.user))
-        #     .join(UserAlias, Donors.user_id == UserAlias.id, isouter=True)
-        #     .options(joinedload(Donors.user))
-        # )
-        
-        # # Apply ordering
-        # if order == "asc":
-        #     query = query.order_by(
-        #         nulls_last(asc(Donors.organization_name)),
-        #         nulls_last(asc(UserAlias.username)),
-        #         asc(Donors.date_joined)
-        #     )
-        # else:
-        #     query = query.order_by(
-        #         nulls_last(desc(Donors.organization_name)),
-        #         nulls_last(desc(UserAlias.username)),
-        #         desc(Donors.date_joined)
-        #     )
-            
-        # Apply pagination
-        donors = query.offset(skip).limit(limit).all()
+            # Total count before pagination
+            total_count = query.count()
 
-        # Build response
-        return_value = []
-        for donor in donors:
-            if donor.donor_type == "Individual" and donor.user:
-                display_name = donor.user.username
+            # Ordering
+            if order == "asc":
+                query = query.order_by(
+                    nulls_last(asc(Donors.organization_name)),
+                    nulls_last(asc(UserAlias.username)),
+                    asc(Donors.date_joined)
+                )
             else:
-                display_name = donor.organization_name or "Unknown Organization"
+                query = query.order_by(
+                    nulls_last(desc(Donors.organization_name)),
+                    nulls_last(desc(UserAlias.username)),
+                    desc(Donors.date_joined)
+                )
 
-            return_value.append({
-                "name": display_name,
-                "date_joined": donor.date_joined.isoformat()
-            })
+            # Pagination
+            if limit:
+                offset = (page - 1) * limit
+                query = query.offset(offset).limit(limit)
+                max_page = max(ceil(total_count / limit), 1)
+            else:
+                max_page = 1  # fallback if no pagination
 
-        return return_value
-    
+            donors = query.all()
+
+            # Build response
+            records = []
+            for donor in donors:
+                if donor.donor_type == "Individual" and donor.user:
+                    display_name = donor.user.username
+                else:
+                    display_name = donor.organization_name or "Unknown Organization"
+
+                records.append({
+                    "name": display_name,
+                    "date_joined": donor.date_joined.isoformat()
+                })
+
+            return ListOfDonorsResponse(
+                max_page=max_page,
+                donors = records
+            )
+
+        except Exception as e:
+            print(f"Error fetching donors: {e}")
+            raise    
 donor_crud = DonorCRUD()

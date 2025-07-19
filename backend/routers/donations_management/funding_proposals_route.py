@@ -11,7 +11,7 @@ from crud_functions.donations_management.funding_proposals import FundingProposa
 
 from data_schemas.funding_proposal_schema import ( 
     FundingProposalCreate, FundingProposalUpdate, FundingProposalGet, 
-    FundingProposalResponse 
+    FundingProposalResponse , FundingProposalResponsePaginated
     )
 
 router_admin = APIRouter(
@@ -33,13 +33,13 @@ UPLOAD_DIR = Path("media/fundingproposals")
 def get_proposals_route():
     return {"message": "This is funding proposals"}
 
-@router_admin_or_donor.get("/proposals/all_proposals/", response_model=List[FundingProposalGet])
+@router_admin_or_donor.get("/proposals/all_proposals/", response_model=FundingProposalResponsePaginated)
 def read_all_proposals(
     search: Optional[str] = Query(None),
     sort: str = Query("created_at", pattern="^(created_at|title)$"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
     limit: Optional[int] = Query(None, ge=1),
-    page: int = Query(1, ge=1),
+    page: Optional[int] = Query(1, ge=1),
     db: Session = Depends(get_db)
 ):
     try:

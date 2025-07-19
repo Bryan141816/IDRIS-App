@@ -1,24 +1,12 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 # Base Donor Schema
 class DonorBase(BaseModel):
     organization_name: str
     donor_type: str
     is_verified: Optional[bool] = False
-
-# Request Schemas
-class IndividualDonorCreate(BaseModel):
-    user_id: int
-    organization_name: str
-    is_verified: Optional[bool] = False
-
-# Removed: OrganizationDonorCreate
-
-class DonorUpdate(BaseModel):
-    organization_name: Optional[str] = None
-    is_verified: Optional[bool] = None
 
 # Response Schemas
 class DonorResponse(BaseModel):
@@ -45,9 +33,7 @@ class DonorItem(BaseModel):
 
 class ListOfDonorsResponse(BaseModel):
     donors: List[DonorItem]
-    total: int
-    skip: int
-    limit: int
+    max_page: int
 
 class DonorStatsResponse(BaseModel):
     total_donors: int

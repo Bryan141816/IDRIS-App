@@ -99,27 +99,27 @@ const DonationsDashboard = () => {
   const transparencyReportLimit = 3;
   const [transparencyReportMaxPage, setTransparencyReportMaxPage] = useState<number>(1);
 
-    // GET TRANSPARENCY REPORTS
-    useEffect(() => {
-      async function fetchReports() {
-        try {
-          const response = await getTransparencyReportsMini(
-            "",
-            selectedTransparencyDate,
-            transparencyReportPage,
-            transparencyReportLimit,
-          );
-          setTransparencyReportMaxPage(response.max_page);
-          setTransparencyReports(response.reports);
-        } catch (error) {
-          console.error("Failed to fetch reports:", error);
-        } finally {
-          setLoading(false);
-        }
+  // GET TRANSPARENCY REPORTS
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const response = await getTransparencyReportsMini(
+          "",
+          selectedTransparencyDate,
+          transparencyReportPage,
+          transparencyReportLimit,
+        );
+        setTransparencyReportMaxPage(response.max_page);
+        setTransparencyReports(response.reports);
+      } catch (error) {
+        console.error("Failed to fetch reports:", error);
+      } finally {
+        setLoading(false);
       }
+    }
 
-      fetchReports();
-    }, [transparencyReportPage, selectedTransparencyDate]);
+    fetchReports();
+  }, [transparencyReportPage, selectedTransparencyDate]);
 
   type DirectType = "prev" | "next";
   const handleTransparencyReportPage = (direct: DirectType) => {
@@ -265,8 +265,12 @@ const DonationsDashboard = () => {
         <h3 id="funding-proposals-title" className="public-feed-title">
           Recent Programs:
           <Link to="/donations_management/funding_proposals">
-            <MenuDots />
+            <div className="icon-container">
+              <MenuDots className="menu-icon" />
+              Manage
+            </div>
           </Link>
+
         </h3>
         <div id="funding-proposals">
           {fundingProposals.map((funding, index) => (
@@ -282,23 +286,23 @@ const DonationsDashboard = () => {
           ))}
         </div>
         <div id="funding-proposal-page-control" className="page-contorol">
-            <button
-              className="prev-page"
-              onClick={() => handleFundingProposalPage("prev")}
-            >
-              Previous
-            </button>
-            <p>
-              Page: {fundingProposalsPage}/{""}
-              {fundingProposalMaxPage}{""}
-            </p>
-            <button
-              className="next-page"
-              onClick={() => handleFundingProposalPage("next")}
-            >
-              Next
-            </button>
-          </div>
+          <button
+            className="prev-page"
+            onClick={() => handleFundingProposalPage("prev")}
+          >
+            Previous
+          </button>
+          <p>
+            Page: {fundingProposalsPage}/{""}
+            {fundingProposalMaxPage}{""}
+          </p>
+          <button
+            className="next-page"
+            onClick={() => handleFundingProposalPage("next")}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </>
   );

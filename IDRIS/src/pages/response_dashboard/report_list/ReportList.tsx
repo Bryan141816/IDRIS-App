@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "./ReportList.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -29,16 +29,242 @@ type MessageBoxState = {
   onClose: () => void;
 };
 
+type BaseModalProps = {
+  isModalOpen: boolean;
+  closeModal: () => void;
+  setMessageBox: React.Dispatch<React.SetStateAction<MessageBoxState>>;
+};
+type AddReportListProps = BaseModalProps & {
+  handleAddReportSubmit: (reportType: string) => void;
+};
+type EditReportModalProps = BaseModalProps & {
+  handleEditReport: (editReportType: string, editStatus: string) => void;
+  defaultReportType: string;
+  defaultStatus: string;
+};
+type ViewReportModalProps = BaseModalProps & {
+  handleDeleteReport: (report_id: string) => void;
+  openEditModal: () => void;
+  isViewModalSelected: any;
+};
+
+const ViewReportModal = ({
+  isModalOpen,
+  closeModal,
+  setMessageBox,
+  handleDeleteReport,
+  openEditModal,
+  isViewModalSelected,
+}: ViewReportModalProps) => {
+  const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
+  useEffect(() => {
+    if (!isModalOpen) {
+      setMoreOptionVisible(false);
+    }
+  }, [isModalOpen]);
+  const toggleMoreOptionVisible = () =>
+    setMoreOptionVisible(!isMoreOptionVisible);
+
+  return (
+    <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <div className="modal-container">
+        <div className="horizontal-container space-between-container">
+          <span className="title-modal-text">View Report</span>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
+            <button className="mark-as-button">Mark as Started</button>
+            <div className="more-options-container">
+              <button onClick={toggleMoreOptionVisible}>
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
+              </button>
+              {isMoreOptionVisible && (
+                <div className="more-options-viewer">
+                  <button
+                    onClick={() => {
+                      closeModal();
+                      openEditModal();
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faPen} />
+                    Edit Record
+                  </button>
+                  <button
+                    style={{ color: "red" }}
+                    onClick={() => {
+                      setMessageBox((prev) => ({
+                        ...prev, // preserves onClose and anything else
+                        isOpen: true, // your new values
+                        type: "confirm",
+                        message: "Are you sure you want to delete this report?",
+                        onSubmit: () =>
+                          handleDeleteReport(isViewModalSelected.data[0].text),
+                      }));
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faTrash} /> Delete Record
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="horizontal-container">
+          <span className="details-title">Details</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Report Type:</span>
+          <span>{isViewModalSelected.data[2].text}</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Status:</span>
+          <span>{isViewModalSelected.data[3].text}</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Date:</span>
+          <span>{isViewModalSelected.data[1].text}</span>
+        </div>
+        <div className="action-button">
+          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            Close
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+const EditReportModal = ({
+  isModalOpen,
+  closeModal,
+  setMessageBox,
+  handleEditReport,
+  defaultReportType,
+  defaultStatus,
+}: EditReportModalProps) => {
+  const [editReportType, setEditReportType] = useState(defaultReportType);
+  const [editStatus, setEditStatus] = useState(defaultStatus);
+  const handleEditReportTypeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setEditReportType(event.target.value);
+  };
+  const handleEditStatusChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setEditStatus(event.target.value);
+  };
+  return (
+    <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <div className="modal-container">
+        <div className="horizontal-container">
+          <span className="details-title">Edit Report</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Report Type:</span>
+          <select value={editReportType} onChange={handleEditReportTypeChange}>
+            <option value="EOD Report">EOD Report</option>
+            <option value="Budget Report">Budget Report</option>
+            <option value="Distribution Report">Distribution Report</option>
+            <option value="Demand Assessment">Demand Assessment</option>
+            <option value="Modality Report">Modality Report</option>
+            <option value="In-Kind Monitoring">In-Kind Monitoring</option>
+          </select>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Status:</span>
+          <select value={editStatus} onChange={handleEditStatusChange}>
+            <option value="Filed">Filed</option>
+            <option value="Started">Started</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div className="action-button">
+          <button
+            onClick={() => {
+              setMessageBox((prev) => ({
+                ...prev, // preserves onClose and anything else
+                isOpen: true, // your new values
+                type: "confirm",
+                message: "Are you sure you want to edit this report?",
+                onSubmit: () => handleEditReport(editReportType, editStatus),
+              }));
+            }}
+            style={{ backgroundColor: "#749AB6" }}
+          >
+            Submit
+          </button>
+          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+const AddReportList = ({
+  isModalOpen,
+  closeModal,
+  setMessageBox,
+  handleAddReportSubmit,
+}: AddReportListProps) => {
+  const [reportType, setReportType] = useState("EOD Report");
+  const handleReportTypeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setReportType(event.target.value);
+  };
+  return (
+    <Modal isOpen={isModalOpen} onClose={closeModal}>
+      <div className="modal-container">
+        <div className="horizontal-container">
+          <span className="details-title">Create Report</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Report Type:</span>
+          <select value={reportType} onChange={handleReportTypeChange}>
+            <option value="EOD Report">EOD Report</option>
+            <option value="Budget Report">Budget Report</option>
+            <option value="Distribution Report">Distribution Report</option>
+            <option value="Demand Assessment">Demand Assessment</option>
+            <option value="Modality Report">Modality Report</option>
+            <option value="In-Kind Monitoring">In-Kind Monitoring</option>
+          </select>
+        </div>
+        <div className="action-button">
+          <button
+            style={{ backgroundColor: "#749AB6" }}
+            onClick={() => {
+              setMessageBox((prev) => ({
+                ...prev, // preserves onClose and anything else
+                isOpen: true, // your new values
+                type: "confirm",
+                message: "Are you sure you want to add this report?",
+                onSubmit: () => handleAddReportSubmit(reportType),
+              }));
+            }}
+          >
+            Add
+          </button>
+          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
 const ReportList = () => {
   const [response_data, setResposeData] = useState<TableReponse | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [reportType, setReportType] = useState("EOD Report");
   const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
-  const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
-  const [editReportType, setEditReportType] = useState("");
-  const [editStatus, setEditStatus] = useState("");
 
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -58,7 +284,6 @@ const ReportList = () => {
   const openViewModal = () => setIsViewModalOpen(true);
   const closeViewModal = () => {
     setIsViewModalOpen(false);
-    setMoreOptionVisible(false);
   };
 
   const openAddModal = () => setAddModalOpen(true);
@@ -66,9 +291,6 @@ const ReportList = () => {
 
   const openEditModal = () => setIsEditModeEnabled(true);
   const closeEditModal = () => setIsEditModeEnabled(false);
-
-  const toggleMoreOptionVisible = () =>
-    setMoreOptionVisible(!isMoreOptionVisible);
 
   async function fetchData() {
     try {
@@ -83,25 +305,9 @@ const ReportList = () => {
     fetchData();
   }, []);
 
-  const handleReportTypeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setReportType(event.target.value);
-  };
-  const handleEditReportTypeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setEditReportType(event.target.value);
-  };
-  const handleEditStatusChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setEditStatus(event.target.value);
-  };
-
-  const handleAddReportSubmit = async () => {
+  const handleAddReportSubmit = async (reportType: string) => {
     try {
-      const response = await addResponseReport(reportType);
+      await addResponseReport(reportType);
       closeAddModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -119,7 +325,7 @@ const ReportList = () => {
 
   const handleDeleteReport = async (report_id: String) => {
     try {
-      const response = await deleteResponseReport(report_id);
+      await deleteResponseReport(report_id);
       closeViewModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -135,7 +341,10 @@ const ReportList = () => {
     }
   };
 
-  const handleEditReport = async () => {
+  const handleEditReport = async (
+    editReportType: string,
+    editStatus: string,
+  ) => {
     const response = await updateResponseReport(
       isViewModalSelected.data[0].text,
       editReportType,
@@ -170,184 +379,32 @@ const ReportList = () => {
         onSubmit={messageBox.onSubmit}
       ></MessageBox>
 
-      <Modal isOpen={isEditModeEnabled} onClose={closeEditModal}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Edit Report</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Report Type:</span>
-            <select
-              value={editReportType}
-              onChange={handleEditReportTypeChange}
-            >
-              <option value="EOD Report">EOD Report</option>
-              <option value="Budget Report">Budget Report</option>
-              <option value="Distribution Report">Distribution Report</option>
-              <option value="Demand Assessment">Demand Assessment</option>
-              <option value="Modality Report">Modality Report</option>
-              <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-            </select>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Status:</span>
-            <select value={editStatus} onChange={handleEditStatusChange}>
-              <option value="Filed">Filed</option>
-              <option value="Started">Started</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-          <div className="action-button">
-            <button
-              onClick={() => {
-                setMessageBox((prev) => ({
-                  ...prev, // preserves onClose and anything else
-                  isOpen: true, // your new values
-                  type: "confirm",
-                  message: "Are you sure you want to edit this report?",
-                  onSubmit: handleEditReport,
-                }));
-              }}
-              style={{ backgroundColor: "#749AB6" }}
-            >
-              Submit
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D" }}
-              onClick={closeEditModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal isOpen={isAddModalOpen} onClose={closeAddModal}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Create Report</span>
-          </div>
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Report Type:</span>
-            <select value={reportType} onChange={handleReportTypeChange}>
-              <option value="EOD Report">EOD Report</option>
-              <option value="Budget Report">Budget Report</option>
-              <option value="Distribution Report">Distribution Report</option>
-              <option value="Demand Assessment">Demand Assessment</option>
-              <option value="Modality Report">Modality Report</option>
-              <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-            </select>
-          </div>
-          <div className="action-button">
-            <button
-              style={{ backgroundColor: "#749AB6" }}
-              onClick={() => {
-                setMessageBox((prev) => ({
-                  ...prev, // preserves onClose and anything else
-                  isOpen: true, // your new values
-                  type: "confirm",
-                  message: "Are you sure you want to add this report?",
-                  onSubmit: handleAddReportSubmit,
-                }));
-              }}
-            >
-              Add
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D" }}
-              onClick={closeAddModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
-      {isViewModalSelected ? (
-        <Modal isOpen={isViewModalOpen} onClose={closeViewModal}>
-          <div className="modal-container">
-            <div className="horizontal-container space-between-container">
-              <span className="title-modal-text">View Report</span>
-              <div
-                className="horizontal-container"
-                style={{ width: "auto", gap: "5px" }}
-              >
-                <button className="mark-as-button">Mark as Started</button>
-                <div className="more-options-container">
-                  <button onClick={toggleMoreOptionVisible}>
-                    <FontAwesomeIcon
-                      icon={faEllipsisVertical}
-                      style={{ height: "20px" }}
-                    />
-                  </button>
-                  {isMoreOptionVisible && (
-                    <div className="more-options-viewer">
-                      <button
-                        onClick={() => {
-                          closeViewModal();
-                          setEditReportType(isViewModalSelected.data[2].text);
-                          setEditStatus(isViewModalSelected.data[3].text);
-                          openEditModal();
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faPen} />
-                        Edit Record
-                      </button>
-                      <button
-                        style={{ color: "red" }}
-                        onClick={() => {
-                          setMessageBox((prev) => ({
-                            ...prev, // preserves onClose and anything else
-                            isOpen: true, // your new values
-                            type: "confirm",
-                            message:
-                              "Are you sure you want to delete this report?",
-                            onSubmit: () =>
-                              handleDeleteReport(
-                                isViewModalSelected.data[0].text,
-                              ),
-                          }));
-                        }}
-                      >
-                        <FontAwesomeIcon icon={faTrash} /> Delete Record
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="horizontal-container">
-              <span className="details-title">Details</span>
-            </div>
-            <div className="horizontal-container">
-              <span className="item-details-identifier">Report Type:</span>
-              <span>{isViewModalSelected.data[2].text}</span>
-            </div>
-            <div className="horizontal-container">
-              <span className="item-details-identifier">Status:</span>
-              <span>{isViewModalSelected.data[3].text}</span>
-            </div>
-            <div className="horizontal-container">
-              <span className="item-details-identifier">Date:</span>
-              <span>{isViewModalSelected.data[1].text}</span>
-            </div>
-            <div className="action-button">
-              <button
-                style={{ backgroundColor: "#749AB6" }}
-                onClick={closeViewModal}
-              >
-                Ok
-              </button>
-              <button
-                style={{ backgroundColor: "#F84B4D" }}
-                onClick={closeViewModal}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </Modal>
-      ) : (
-        <></>
+      {isViewModalSelected && (
+        <EditReportModal
+          isModalOpen={isEditModeEnabled}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          handleEditReport={handleEditReport}
+          defaultReportType={isViewModalSelected.data[2].text}
+          defaultStatus={isViewModalSelected.data[3].text}
+        ></EditReportModal>
+      )}
+
+      <AddReportList
+        isModalOpen={isAddModalOpen}
+        closeModal={closeAddModal}
+        handleAddReportSubmit={handleAddReportSubmit}
+        setMessageBox={setMessageBox}
+      />
+      {isViewModalSelected && (
+        <ViewReportModal
+          isModalOpen={isViewModalOpen}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          isViewModalSelected={isViewModalSelected}
+          handleDeleteReport={handleDeleteReport}
+          openEditModal={openEditModal}
+        ></ViewReportModal>
       )}
 
       <div className="horizontal-container">
@@ -361,6 +418,7 @@ const ReportList = () => {
           <button onClick={openAddModal}>+ Add Report</button>
         </div>
       </div>
+
       {response_data ? (
         <TableView
           tableJSON={response_data}

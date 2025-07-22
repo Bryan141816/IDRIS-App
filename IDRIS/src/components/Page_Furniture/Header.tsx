@@ -7,6 +7,7 @@ import { useUserRoleContext } from "../../UserRoleContext";
 import { LogoutIcon } from "./Icons";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../API_Handler/auth.ts";
+import React from "react";
 interface FooterProps {
   onIconClick: () => void;
 }
@@ -83,4 +84,4 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   );
 };
 
-export default Header;
+export default React.memo(Header);

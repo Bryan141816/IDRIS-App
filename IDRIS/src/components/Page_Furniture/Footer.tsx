@@ -1,13 +1,13 @@
-import './styles/footer.scss';
-
+import "./styles/footer.scss";
+import React from "react";
 const Footer = () => {
-    return (
+  return (
     <footer>
-        <span>© 2025 | </span>
-        <span className="bold">IDRIS</span>
+      <span>© 2025 | </span>
+      <span className="bold">IDRIS</span>
     </footer>
+  );
+};
 
-    )
-}
+export default React.memo(Footer);
 
-export default Footer

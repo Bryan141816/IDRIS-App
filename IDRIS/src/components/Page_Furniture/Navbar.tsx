@@ -5,6 +5,7 @@ import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
+import React from "react";
 
 interface NavbarProps {
   isVisible: boolean;
@@ -413,4 +414,4 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

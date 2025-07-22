@@ -40,7 +40,6 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-
 interface MapPinBase {
   id: string;
   type: "demand";
@@ -291,6 +290,7 @@ const ResponseDashboard = () => {
               <Link
                 to="/response_dashboard/report_list"
                 className="manage-button"
+                prefetch-link="/response_dashboard/report_list"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
               </Link>
@@ -367,6 +367,7 @@ const ResponseDashboard = () => {
             {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/demand_and_response_map"
+                prefetch-link="/response_dashboard/demand_and_response_map"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
@@ -378,6 +379,7 @@ const ResponseDashboard = () => {
             {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/modality_distribution"
+                prefetch-link="/response_dashboard/modality_distribution"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
@@ -392,6 +394,7 @@ const ResponseDashboard = () => {
             {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/in_kind_monitoring"
+                prefetch-link="/response_dashboard/in_kind_monitoring"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage
@@ -493,6 +496,7 @@ const ResponseDashboard = () => {
             {userRoles.includes("operations admin") && (
               <Link
                 to="/response_dashboard/budget_record"
+                prefetch-link="/response_dashboard/budget_record"
                 className="manage-button"
               >
                 <FontAwesomeIcon icon={faListUl} /> Manage

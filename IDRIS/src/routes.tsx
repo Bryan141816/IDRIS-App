@@ -383,3 +383,51 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+export const prefetchMap: Record<string, () => Promise<any>> = {
+  "/login": Login,
+  "/register": Register,
+
+  "/lgu_profiling/map_of_cebu": MapOfCebu,
+  "/lgu_profiling/evacuationandshelter": EvacuationAndShelter,
+  "/lgu_profiling/LGU": LGU,
+  "/lgu_profiling/LGUmanagement": ManageLGU,
+  "/lgu_profiling/LGUSeeMore": LGUSeeMore, // dynamic segment ignored in key
+
+  "/volunteer_management/track_volunteer_application":
+    TrackVolunteerApplication,
+  "/volunteer_management/volunteer_dashboard": VolunteerDashboard,
+  "/volunteer_management/organization_form": OrganizationForm,
+  "/volunteer_management/otherorganization_form": OtherOrganizationForm,
+  "/volunteer_management/individual_form": IndividualForm,
+  "/volunteer_management/otherindividual_form": OtherIndividualForm,
+  "/volunteer_management/manage_applicant": ManageApplicant,
+  "/volunteer_management/view_credentials": ViewCredentials,
+  "/volunteer_management/volunteer_profiles": VolunteerProfiles,
+  "/volunteer_management/manage_volunteers": ManageVolunteer,
+
+  "/donations_management/donations_dashboard": DonationsDashboard,
+  "/donations_management/list_of_rafi_donors": ListOfRafiDonors,
+  "/donations_management/funding_proposals": FundingProposals,
+  "/donations_management/funding_proposals/create": CreateFunding,
+  "/donations_management/funding_proposals/update": UpdateFunding,
+
+  "/transparency_report": TransparencyReport,
+
+  "/response_dashboard": ResponseDashboard,
+  "/response_dashboard/report_list": ReportList,
+  "/response_dashboard/demand_and_response_map": DemandAndResponseMap,
+  "/response_dashboard/demand_and_response_map/list_view":
+    DemandAndResponseList,
+  "/response_dashboard/modality_distribution": ModalityDistribution,
+  "/response_dashboard/in_kind_monitoring": InKindMonitoring,
+  "/response_dashboard/budget_record": BudgetRecord,
+
+  "/reports_generation": ReportsGeneration,
+  "/damange_assessment": DamageAssessment,
+
+  "/procurement_inventory/procurement_inventory": ProcurementInventory,
+  "/procurement_inventory/distribution_planning": DistributionPlanning,
+  "/procurement_inventory/procurement_management": ProcurementManagement,
+
+  "/finance&admin/finance_management": FinanceManagement,
+};

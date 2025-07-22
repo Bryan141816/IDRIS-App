@@ -8,6 +8,7 @@ import {
   useLoaderData,
 } from "react-router-dom";
 import PageLoader from "./components/Page_Furniture/Loader";
+import { usePrefectLink } from "./PrefetchLink";
 
 const Navbar = lazy(() => import("./components/Page_Furniture/Navbar"));
 const Header = lazy(() => import("./components/Page_Furniture/Header"));
@@ -15,6 +16,7 @@ const Footer = lazy(() => import("./components/Page_Furniture/Footer"));
 const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
 
 function PageLayout() {
+  usePrefectLink();
   const { setUserType, setEmail, setUsername, setUserReady, isUserReady } =
     useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();

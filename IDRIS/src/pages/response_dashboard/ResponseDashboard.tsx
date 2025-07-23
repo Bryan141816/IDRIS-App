@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import "./ResponseDashboard.scss";
+import "./DefaultListViewStyle.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { TableView } from "../../components/TableView/table_view";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

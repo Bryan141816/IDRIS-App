@@ -63,7 +63,14 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
         {isUserSettingsVisible && (
           <div id="user-account-settings-container">
             <div className="user-icon">
-              <img src={userProfile} alt="user-profile" />
+              <img
+                src={userProfile}
+                alt="user-profile"
+                style={{
+                  height: "32px",
+                  width: "32px",
+                }}
+              />
               <CircleDot width={16} height={16} />
             </div>
 

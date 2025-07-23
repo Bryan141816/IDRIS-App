@@ -69,7 +69,14 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       className={`navbar ${isVisible ? "show-navbar" : ""}`}
     >
       <div id="sidebar-logo-container">
-        <img src={logo1} alt="sidebar-logo.png" />
+        <img
+          src={logo1}
+          alt="sidebar-logo.png"
+          style={{
+            width: "3.5vw",
+            height: "3.5vw",
+          }}
+        />
         <p>IDRIS</p>
       </div>
 

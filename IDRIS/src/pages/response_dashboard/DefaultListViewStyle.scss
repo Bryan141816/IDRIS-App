@@ -1,5 +1,6 @@
 // Mixins
 @use '../../styles/mixins.scss';
+
 // Main Response Container
 .response_container {
   display: flex;
@@ -11,24 +12,7 @@
   overflow-y: auto;
   background-color: #c5d7e5;
 
-  // Main Dashboard Title
-  >h3 {
-    color: #749ab6;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 1rem 0;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 
-    @media (max-width: 768px) {
-      font-size: 2rem;
-    }
-
-    @media (max-width: 480px) {
-      font-size: 1.75rem;
-    }
-  }
 }
 
 // Response Content Container

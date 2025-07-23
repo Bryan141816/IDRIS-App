@@ -1,5 +1,5 @@
 @use '../styles/variables' as *;
-@import "../styles/mixins.scss";
+
 :root {
 
   background-color: rgb(255, 255, 255);
@@ -40,6 +40,7 @@ body {
   font-family: 'Roboto', sans-serif;
   line-height: 1.2;
 }
+
 main {
   display: flex;
   flex-direction: column;
@@ -86,7 +87,7 @@ main {
 #right-body-section {
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: calc(100% - 208px);
   height: 100%;
 }
 

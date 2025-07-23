@@ -240,6 +240,19 @@ const ResponseDashboard = () => {
     useState<BarChartData | null>(null);
   const [demandMapPin, setDemandMapPin] = useState<MapPin[] | null>(null);
 
+  const [isPageFullyLoaded, setIsPageFullyLoaded] = useState(false);
+
+  useEffect(() => {
+    const handleLoad = () => setIsPageFullyLoaded(true);
+
+    if (document.readyState === "complete") {
+      setTimeout(() => setIsPageFullyLoaded(true), 1200);
+    } else {
+      window.addEventListener("load", handleLoad);
+      return () => window.removeEventListener("load", handleLoad);
+    }
+  }, []);
+
   useEffect(() => {
     fetchData<ReportSummary>(
       "/response_dashboard/report_summary",
@@ -271,7 +284,18 @@ const ResponseDashboard = () => {
 
   return (
     <div className="response_container">
-      <h3>Response Dashboard</h3>
+      <h3
+        style={{
+          color: "#749ab6",
+          fontSize: "2.6vw",
+          fontWeight: "700",
+          margin: "0 0 1rem 0",
+          textAlign: "center",
+          letterSpacing: "0.05em",
+        }}
+      >
+        RESPONSE DASHBOARD
+      </h3>
       <div className="response-content">
         <div
           style={{
@@ -280,7 +304,13 @@ const ResponseDashboard = () => {
             gap: "15px",
           }}
         >
-          <h3 style={{ gridColumn: "span 2" }}>Reports</h3>
+          <h3
+            style={{
+              gridColumn: "span 2",
+            }}
+          >
+            Reports
+          </h3>
           <div
             className="horizontal-container space-between-container"
             style={{ gridColumn: "span 2" }}
@@ -410,12 +440,14 @@ const ResponseDashboard = () => {
             }}
             className="bordered-sub-item"
           >
-            <MapView
-              center={[10.313924, 123.887082]}
-              markers={demandMapPin ?? []}
-              fitBounds={true}
-              pathCoordinates={null}
-            />
+            {isPageFullyLoaded && (
+              <MapView
+                center={[10.313924, 123.887082]}
+                markers={demandMapPin ?? []}
+                fitBounds={true}
+                pathCoordinates={null}
+              />
+            )}
           </div>
           <div
             style={{

@@ -1,7 +1,6 @@
 @use '../../../styles/variables' as *;
 
-// Mixins
-@import "../../styles/mixins.scss";
+@use '../../../styles/mixins.scss';
 
 // Main Response Container
 .response_container {
@@ -43,8 +42,8 @@
   background: #ffffff;
   border-radius: 12px;
   gap: 35px;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
 
   @media (max-width: 768px) {
     padding: 15px;
@@ -64,8 +63,8 @@
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
   padding: 20px;
   border-radius: 10px;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -128,7 +127,7 @@
   border-radius: 10px;
   border: 1px solid #c5d7e5;
   box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
-  @include hover-lift;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -186,7 +185,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
-  @include hover-lift;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -228,7 +227,7 @@
   border: 1px solid #c5d7e5;
   border-radius: 10px;
   background-color: #ffffff;
-  @include hover-lift;
+  @include mixins.hover-lift;
   transition: all 0.3s ease;
 
   &:hover {
@@ -238,8 +237,8 @@
 
 // Button Styles - keeping your original orange for accent/action color
 .manage-button {
-  @include button-base;
-  @include flex-center;
+  @include mixins.button-base;
+  @include mixins.flex-center;
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
   color: #ffffff;
   padding: 8px 20px;
@@ -321,8 +320,8 @@
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
   min-height: 350px;
   padding: 20px;
   flex-direction: column;
@@ -395,7 +394,7 @@
 
     // Loading state for charts
     &.loading {
-      @include flex-center;
+      @include mixins.flex-center;
 
       &::before {
         content: '';
@@ -545,13 +544,13 @@
 
 // Loading and Empty States
 .loading-state {
-  @include flex-center;
+  @include mixins.flex-center;
   color: #749ab6;
   font-style: italic;
   min-height: 200px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   &::before {
     content: '';
@@ -566,7 +565,8 @@
 }
 
 .empty-state {
-  @include flex-center;
+  @include mixins.flex-center;
+
   flex-direction: column;
   color: #749ab6;
   opacity: 0.7;
@@ -574,7 +574,7 @@
   gap: 1rem;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   svg {
     color: #c5d7e5;
@@ -759,7 +759,7 @@
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
   margin-bottom: 20px;
 
   @media (max-width: 768px) {
@@ -813,7 +813,7 @@
   }
 
   button {
-    @include button-base;
+    @include mixins.button-base;
     background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
     color: #ffffff;
     width: max-content;
@@ -884,7 +884,7 @@
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   @media (max-width: 768px) {
     gap: 15px;
@@ -909,7 +909,7 @@
   }
 
   button {
-    @include button-base;
+    @include mixins.button-base;
     width: 100px;
     height: 38px;
     font-size: 0.9rem;
@@ -996,7 +996,7 @@
 
 // Button Title Details
 .button-title-details {
-  @include button-base;
+  @include mixins.button-base;
   height: 38px;
   width: 100px;
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
@@ -1033,7 +1033,7 @@
   padding: 12px 20px;
   background: #ffffff;
   border-radius: 8px;
-  @include card-shadow;
+  @include mixins.card-shadow;
   gap: 15px;
 
   @media (max-width: 768px) {
@@ -1221,8 +1221,8 @@ select {
     background: #ffffff;
     padding: 20px;
     border-radius: 16px;
-    @include card-shadow;
-    @include hover-lift;
+    @include mixins.card-shadow;
+    @include mixins.hover-lift;
 
     // Search Bar Component
     .search-bar {
@@ -1355,7 +1355,7 @@ select {
 
     // Settings Buttons
     .settings-button {
-      @include button-base;
+      @include mixins.button-base;
       background: linear-gradient(135deg, #fcb814 0%, #e6a612 100%);
       color: #ffffff;
       padding: 12px 20px;
@@ -1454,7 +1454,7 @@ select {
   @media (max-width: 768px) {
     padding: 15px;
   }
-  
+
   @media (max-width: 1024px) {
     grid-template-columns: 1fr 1fr;
     gap: 15px;
@@ -1481,7 +1481,7 @@ select {
 .green-modal-button,
 .yellow-modal-button,
 .modal-button {
-  @include button-base;
+  @include mixins.button-base;
   padding: 12px 24px;
   font-size: 0.95rem;
   font-weight: 700;
@@ -1547,6 +1547,7 @@ select {
   color-scheme: light;
   border: 1px solid #000;
   height: 100%;
+
   &::-webkit-calendar-picker-indicator {
     // height: 200px;
     // width: auto;

@@ -1,5 +1,6 @@
 @use "../../../styles/variables" as *;
-@import "../../../styles/mixins.scss";
+@use "../../../styles/mixins.scss";
+
 // Main Container
 #donors {
 
@@ -24,8 +25,8 @@
     background: #ffffff;
     padding: 20px;
     border-radius: 16px;
-    @include card-shadow;
-    @include hover-lift;
+    @include mixins.card-shadow;
+    @include mixins.hover-lift;
 
     @media (max-width: 1024px) {
       grid-template-columns: 1fr 1fr;
@@ -127,7 +128,7 @@
 
     // Settings Buttons
     .settings-button {
-      @include button-base;
+      @include mixins.button-base;
       background: linear-gradient(135deg, #fcb814 0%, #e6a612 100%);
       color: #ffffff;
       padding: 12px 20px;
@@ -171,8 +172,8 @@
     background: #ffffff;
     border-radius: 16px;
     overflow: hidden;
-    @include card-shadow;
-    @include hover-lift;
+    @include mixins.card-shadow;
+    @include mixins.hover-lift;
     margin-bottom: 30px;
   }
 
@@ -318,7 +319,7 @@
     background: linear-gradient(135deg, #e8f0f7 0%, #f8fafc 100%);
     border-radius: 16px;
     border: 2px dashed #c5d7e5;
-    @include card-shadow;
+    @include mixins.card-shadow;
 
     #new-donor-profile,
     #gift-donor-profile {
@@ -416,12 +417,12 @@
     }
   }
 
-  #gift-dimension-control{
+  #gift-dimension-control {
     display: flex;
     justify-content: center;
     height: 190px;
 
-    .gift-content{
+    .gift-content {
       height: 100%;
       display: flex;
       flex-direction: column;
@@ -445,7 +446,7 @@
   .green-modal-button,
   .yellow-modal-button,
   .modal-button {
-    @include button-base;
+    @include mixins.button-base;
     padding: 12px 24px;
     font-size: 0.95rem;
     font-weight: 700;
@@ -521,7 +522,7 @@
     text-align: center;
     transition: all 0.3s ease;
     cursor: pointer;
-    @include card-shadow;
+    @include mixins.card-shadow;
 
     &:hover {
       border-color: #749ab6;

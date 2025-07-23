@@ -17,56 +17,55 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
 
-const [passwordValidation, setPasswordValidation] = useState({
-  length: false,
-  uppercase: false,
-  lowercase: false,
-  number: false,
-  special: false,
-  match: false
-});
+  const [passwordValidation, setPasswordValidation] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false,
+    match: false,
+  });
 
-const [showValidation, setShowValidation] = useState(false);
-const [showMatchValidation, setShowMatchValidation] = useState(false);
-
+  const [showValidation, setShowValidation] = useState(false);
+  const [showMatchValidation, setShowMatchValidation] = useState(false);
 
   const fnSetUserType = (newUserType: string, newModal: string) => {
     setUsertype(newUserType);
     setActiveModal(newModal);
   };
 
-  const validatePassword = (pwd) => {
-  return {
-    length: pwd.length >= 8,
-    uppercase: /[A-Z]/.test(pwd),
-    lowercase: /[a-z]/.test(pwd),
-    number: /\d/.test(pwd),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
-    match: pwd === password2 && pwd !== ""
+  const validatePassword = (pwd: string) => {
+    return {
+      length: pwd.length >= 8,
+      uppercase: /[A-Z]/.test(pwd),
+      lowercase: /[a-z]/.test(pwd),
+      number: /\d/.test(pwd),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
+      match: pwd === password2 && pwd !== "",
+    };
   };
-};
 
-useEffect(() => {
-  if (password) {
-    const validation = validatePassword(password);
-    setPasswordValidation(validation);
-    setShowValidation(true);
-  } else {
-    setShowValidation(false);
-  }
-}, [password, password2]);
+  useEffect(() => {
+    if (password) {
+      const validation = validatePassword(password);
+      setPasswordValidation(validation);
+      setShowValidation(true);
+    } else {
+      setShowValidation(false);
+    }
+  }, [password, password2]);
 
-useEffect(() => {
-  if (password2) {
-    setShowMatchValidation(true);
-    setPasswordValidation(prev => ({
-      ...prev,
-      match: password === password2 && password !== ""
-    }));
-  } else {
-    setShowMatchValidation(false);
-  }
-}, [password, password2]);
+  useEffect(() => {
+    if (password2) {
+      setShowMatchValidation(true);
+      setPasswordValidation((prev) => ({
+        ...prev,
+        match: password === password2 && password !== "",
+      }));
+    } else {
+      setShowMatchValidation(false);
+    }
+  }, [password, password2]);
 
   const navigate = useNavigate(); // make sure this is declared at the top
 
@@ -75,8 +74,10 @@ useEffect(() => {
     const isValid = Object.values(validation).every(Boolean);
 
     if (!isValid) {
-    alert("Please ensure your password meets all requirements and passwords match");
-    return;
+      alert(
+        "Please ensure your password meets all requirements and passwords match",
+      );
+      return;
     }
 
     try {
@@ -163,28 +164,48 @@ useEffect(() => {
           </div>
           {showValidation && (
             <div className="password-validation">
-                <div className={`validation-item ${passwordValidation.length ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.length ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.length ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.length ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>At least 8 characters</span>
-                </div>
-                <div className={`validation-item ${passwordValidation.uppercase ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.uppercase ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+              </div>
+              <div
+                className={`validation-item ${passwordValidation.uppercase ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.uppercase ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One uppercase letter</span>
-                </div>
-                <div className={`validation-item ${passwordValidation.lowercase ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.lowercase ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+              </div>
+              <div
+                className={`validation-item ${passwordValidation.lowercase ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.lowercase ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One lowercase letter</span>
-                </div>
-                <div className={`validation-item ${passwordValidation.number ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.number ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+              </div>
+              <div
+                className={`validation-item ${passwordValidation.number ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.number ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One number</span>
-                </div>
-                <div className={`validation-item ${passwordValidation.special ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.special ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+              </div>
+              <div
+                className={`validation-item ${passwordValidation.special ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.special ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One special character</span>
-                </div>
+              </div>
             </div>
-            )}
+          )}
           <div className="input-group">
             <i className="fas fa-lock input-icon"></i>
             <input
@@ -199,12 +220,20 @@ useEffect(() => {
           </div>
           {showMatchValidation && (
             <div className="password-match-validation">
-                <div className={`validation-item ${passwordValidation.match ? 'valid' : 'invalid'}`}>
-                <i className={`fas ${passwordValidation.match ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
-                <span>{passwordValidation.match ? 'Passwords match' : 'Passwords do not match'}</span>
-                </div>
+              <div
+                className={`validation-item ${passwordValidation.match ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.match ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
+                <span>
+                  {passwordValidation.match
+                    ? "Passwords match"
+                    : "Passwords do not match"}
+                </span>
+              </div>
             </div>
-            )}
+          )}
           <Link to="/login">Login</Link>
           <button type="button" onClick={() => setActiveModal("user-type")}>
             Signup

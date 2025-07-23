@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Breadcrumb,
@@ -8,25 +8,25 @@ import {
   Upload,
   Space,
   message,
-} from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
-import { InboxOutlined, PlusOutlined } from '@ant-design/icons';
-import Swal from 'sweetalert2';
-import './css/IndividualForm.css';
-import { createVolunteer } from '../../../API_Handler/individual_volunteer_handler';
+} from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
+import Swal from "sweetalert2";
+import "./css/IndividualForm.css";
+import { createVolunteer } from "../../../API_Handler/individual_volunteer_handler";
 
 const showAlert = () => {
   Swal.fire({
-    title: 'Upload Successfully',
-    icon: 'success',
-    confirmButtonColor: '#749AB6',
-    width: '380px',
+    title: "Upload Successfully",
+    icon: "success",
+    confirmButtonColor: "#749AB6",
+    width: "380px",
     customClass: {
-      popup: 'custom-height-modal',
-      title: 'custom-swal-title',
-      htmlContainer: 'custom-swal-text',
-      confirmButton: 'custom-swal-button',
-      icon: 'custom-swal-icon',
+      popup: "custom-height-modal",
+      title: "custom-swal-title",
+      htmlContainer: "custom-swal-text",
+      confirmButton: "custom-swal-button",
+      icon: "custom-swal-icon",
     },
   });
 };
@@ -34,12 +34,12 @@ const showAlert = () => {
 const OtherIndividualForm = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-  const [profilePreview, setProfilePreview] = useState('');
+  const [profilePreview, setProfilePreview] = useState("");
   const [personalInfo, setPersonalInfo] = useState(null);
   const [understood, setUnderstood] = useState(false);
 
   useEffect(() => {
-    const storedData = localStorage.getItem('personalInfo');
+    const storedData = localStorage.getItem("personalInfo");
     if (storedData) {
       setPersonalInfo(JSON.parse(storedData));
     }
@@ -47,15 +47,14 @@ const OtherIndividualForm = () => {
 
   // Upload validations
   const beforeProfileUpload = (file) => {
-    const isJpgOrPng =
-      file.type === 'image/jpeg' || file.type === 'image/png';
+    const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
     if (!isJpgOrPng) {
-      message.error('You can only upload JPG/PNG file!');
+      message.error("You can only upload JPG/PNG file!");
       return Upload.LIST_IGNORE;
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
+      message.error("Image must be smaller than 2MB!");
       return Upload.LIST_IGNORE;
     }
     return false; // prevent auto upload
@@ -71,29 +70,28 @@ const OtherIndividualForm = () => {
     }
   };
 
-const onFinish = async (values) => {
-  if (!personalInfo) {
-    message.error('Personal information not found.');
-    return;
-  }
+  const onFinish = async (values) => {
+    if (!personalInfo) {
+      message.error("Personal information not found.");
+      return;
+    }
 
-  const combinedData = {
-    ...personalInfo,
-    understood: values.understood,
+    const combinedData = {
+      ...personalInfo,
+      understood: values.understood,
+    };
+
+    try {
+      const result = await createVolunteer(combinedData);
+      console.log("Volunteer created:", result);
+      showAlert();
+      localStorage.removeItem("personalInfo");
+      navigate("/volunteer_management/volunteer_dashboard");
+    } catch (err) {
+      console.error("Error uploading data:", err);
+      message.error("Upload failed!");
+    }
   };
-
-  try {
-    const result = await createVolunteer(combinedData);
-    console.log('Volunteer created:', result);
-    showAlert();
-    localStorage.removeItem('personalInfo');
-    navigate('/volunteer_management/volunteer_dashboard');
-  } catch (err) {
-    console.error('Error uploading data:', err);
-    message.error('Upload failed!');
-  }
-};
-
 
   const uploadButton = (
     <div className="profile-upload-circle">
@@ -184,7 +182,7 @@ const onFinish = async (values) => {
               <div className="note-section">
                 <h4 className="note-title">Note:</h4>
                 <p className="note-text">
-                  Please preview all your documents before clicking the{' '}
+                  Please preview all your documents before clicking the{" "}
                   <strong>Upload</strong> button. Once you submit your
                   documents, you cannot delete them.
                 </p>
@@ -197,7 +195,7 @@ const onFinish = async (values) => {
                         value
                           ? Promise.resolve()
                           : Promise.reject(
-                              new Error('Please confirm you understand')
+                              new Error("Please confirm you understand"),
                             ),
                     },
                   ]}
@@ -217,7 +215,7 @@ const onFinish = async (values) => {
                 <Button
                   className="previous-button"
                   onClick={() =>
-                    navigate('/volunteer_management/individual_form')
+                    navigate("/volunteer_management/individual_form")
                   }
                 >
                   Previous

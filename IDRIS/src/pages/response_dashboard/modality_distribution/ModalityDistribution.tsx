@@ -2,7 +2,7 @@ import {
   TableView,
   TableReponse,
 } from "../../../components/TableView/table_view";
-import "./ModalityDistribution.scss";
+import "../DefaultListViewStyle.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";

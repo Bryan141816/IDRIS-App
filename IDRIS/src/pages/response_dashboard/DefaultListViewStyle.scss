@@ -1,33 +1,5 @@
 // Mixins
-@mixin flex-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-@mixin button-base {
-  border: none;
-  outline: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  border-radius: 8px;
-  font-family: inherit;
-}
-
-@mixin card-shadow {
-  box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
-  border: 1px solid #c5d7e5;
-}
-
-@mixin hover-lift {
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(116, 154, 182, 0.15);
-  }
-}
-
+@use '../../styles/mixins.scss';
 // Main Response Container
 .response_container {
   display: flex;
@@ -68,8 +40,8 @@
   background: #ffffff;
   border-radius: 12px;
   gap: 35px;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
 
   @media (max-width: 768px) {
     padding: 15px;
@@ -89,8 +61,8 @@
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
   padding: 20px;
   border-radius: 10px;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -153,7 +125,7 @@
   border-radius: 10px;
   border: 1px solid #c5d7e5;
   box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
-  @include hover-lift;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -211,7 +183,7 @@
   display: flex;
   flex-direction: column;
   box-shadow: 0 2px 8px rgba(116, 154, 182, 0.1);
-  @include hover-lift;
+  @include mixins.hover-lift;
   position: relative;
   overflow: hidden;
 
@@ -253,7 +225,7 @@
   border: 1px solid #c5d7e5;
   border-radius: 10px;
   background-color: #ffffff;
-  @include hover-lift;
+  @include mixins.hover-lift;
   transition: all 0.3s ease;
 
   &:hover {
@@ -263,8 +235,8 @@
 
 // Button Styles - keeping your original orange for accent/action color
 .manage-button {
-  @include button-base;
-  @include flex-center;
+  @include mixins.button-base;
+  @include mixins.flex-center;
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
   color: #ffffff;
   padding: 8px 20px;
@@ -346,8 +318,8 @@
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  @include card-shadow;
-  @include hover-lift;
+  @include mixins.card-shadow;
+  @include mixins.hover-lift;
   min-height: 350px;
   padding: 20px;
   flex-direction: column;
@@ -420,7 +392,7 @@
 
     // Loading state for charts
     &.loading {
-      @include flex-center;
+      @include mixins.flex-center;
 
       &::before {
         content: '';
@@ -570,13 +542,13 @@
 
 // Loading and Empty States
 .loading-state {
-  @include flex-center;
+  @include mixins.flex-center;
   color: #749ab6;
   font-style: italic;
   min-height: 200px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   &::before {
     content: '';
@@ -591,7 +563,7 @@
 }
 
 .empty-state {
-  @include flex-center;
+  @include mixins.flex-center;
   flex-direction: column;
   color: #749ab6;
   opacity: 0.7;
@@ -599,7 +571,7 @@
   gap: 1rem;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   svg {
     color: #c5d7e5;
@@ -784,7 +756,7 @@
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
   margin-bottom: 20px;
 
   @media (max-width: 768px) {
@@ -838,7 +810,7 @@
   }
 
   button {
-    @include button-base;
+    @include mixins.button-base;
     background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
     color: #ffffff;
     width: max-content;
@@ -909,7 +881,7 @@
   padding: 20px;
   background: #ffffff;
   border-radius: 12px;
-  @include card-shadow;
+  @include mixins.card-shadow;
 
   @media (max-width: 768px) {
     gap: 15px;
@@ -934,7 +906,7 @@
   }
 
   button {
-    @include button-base;
+    @include mixins.button-base;
     width: 100px;
     height: 38px;
     font-size: 0.9rem;
@@ -1021,7 +993,7 @@
 
 // Button Title Details
 .button-title-details {
-  @include button-base;
+  @include mixins.button-base;
   height: 38px;
   width: 100px;
   background: linear-gradient(135deg, #749ab6 0%, #5a7a8f 100%);
@@ -1058,7 +1030,7 @@
   padding: 12px 20px;
   background: #ffffff;
   border-radius: 8px;
-  @include card-shadow;
+  @include mixins.card-shadow;
   gap: 15px;
 
   @media (max-width: 768px) {
@@ -1121,34 +1093,6 @@
       font-size: 0.9em;
     }
   }
-}
-
-// Status indicators
-.status-active {
-  color: #28a745;
-  font-weight: 600;
-  padding: 4px 8px;
-  background: rgba(40, 167, 69, 0.1);
-  border-radius: 4px;
-  font-size: 0.85rem;
-}
-
-.status-inactive {
-  color: #dc3545;
-  font-weight: 600;
-  padding: 4px 8px;
-  background: rgba(220, 53, 69, 0.1);
-  border-radius: 4px;
-  font-size: 0.85rem;
-}
-
-.status-pending {
-  color: #749ab6;
-  font-weight: 600;
-  padding: 4px 8px;
-  background: rgba(116, 154, 182, 0.1);
-  border-radius: 4px;
-  font-size: 0.85rem;
 }
 
 input,

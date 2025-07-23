@@ -99,6 +99,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {/* Sub items here */}
             <Link
               to="/lgu_profiling/map_of_cebu"
+              prefetch-link="/lgu_profiling/map_of_cebu"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -113,6 +114,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {/* Sub items here */}
             <Link
               to="/lgu_profiling/evacuationandshelter"
+              prefetch-link="/lgu_profiling/evacuationandshelter"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -127,6 +129,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {/* Sub items here */}
             <Link
               to="/lgu_profiling/LGUmanagement"
+              prefetch-link="/lgu_profiling/LGUmanagement"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -163,6 +166,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {/* Sub items here */}
             <Link
               to="/volunteer_management/volunteer_dashboard"
+              prefetch-link="/volunteer_management/volunteer_dashboard"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -174,6 +178,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               (userRoles.includes("volunteer") && (
                 <Link
                   to="/volunteer_management/track_volunteer_application"
+                  prefetch-link="/volunteer_management/track_volunteer_application"
                   className="nav-sub-item"
                   onClick={() => {
                     onClose();
@@ -185,6 +190,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {userRoles.includes("operations admin") && (
               <Link
                 to="/volunteer_management/volunteer_profiles"
+                prefetch-link="/volunteer_management/volunteer_profiles"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();
@@ -221,6 +227,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             {/* Sub items here */}
             <Link
               to="/donations_management/donations_dashboard"
+              prefetch-link="/donations_management/donations_dashboard"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -230,6 +237,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </Link>
             <Link
               to="/donations_management/list_of_rafi_donors"
+              prefetch-link="/donations_management/list_of_rafi_donors"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -239,6 +247,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </Link>
             <Link
               to="/donations_management/funding_proposals"
+              prefetch-link="/donations_management/funding_proposals"
               className="nav-sub-item"
               onClick={() => {
                 onClose();
@@ -259,6 +268,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             <Response width={14} height={14} className="sidebar-icons" />
             <Link
               to="/response_dashboard"
+              prefetch-link="/response_dashboard"
               onClick={() => {
                 onClose();
               }}
@@ -284,6 +294,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               <Response width={14} height={14} className="sidebar-icons" />
               <Link
                 to="/reports_generation"
+                prefetch-link="/reports_generation"
                 onClick={() => {
                   onClose();
                 }}
@@ -311,6 +322,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 <Response width={14} height={14} className="sidebar-icons" />
                 <Link
                   to="/damage_assessment"
+                  prefetch-link="/damage_assessment"
                   onClick={() => {
                     onClose();
                   }}
@@ -344,6 +356,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <Link
                 to="/procurement_inventory/procurement_inventory"
+                prefetch-link="/procurement_inventory/procurement_inventory"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();
@@ -357,6 +370,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <Link
                 to="/procurement_inventory/procurement_management"
+                prefetch-link="/procurement_inventory/procurement_management"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();
@@ -370,6 +384,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <Link
                 to="/procurement_inventory/distribution_planning"
+                prefetch-link="/procurement_inventory/distribution_planning"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();
@@ -399,6 +414,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <Link
                 to="/finance&admin/finance_management"
+                prefetch-link="/finance&admin/finance_management"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();

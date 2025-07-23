@@ -1,9 +1,7 @@
 @use '../styles/variables' as *;
-@import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
-
+@import "../styles/mixins.scss";
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
   background-color: rgb(255, 255, 255);
   box-sizing: border-box;
 }
@@ -39,10 +37,9 @@ body {
 
 body {
   background-color: $ice-blue;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Roboto', sans-serif;
   line-height: 1.2;
 }
-
 main {
   display: flex;
   flex-direction: column;

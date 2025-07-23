@@ -1,6 +1,5 @@
 @use "../../../styles/variables.scss" as *;
-@import url('https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 
 
 #login-section {
@@ -31,7 +30,6 @@
       p {
         text-align: center;
         width: 100%;
-        font-family: 'Philosopher', sans-serif;
         letter-spacing: 10px;
         font-size: 7em;
         font-weight: 700;
@@ -44,7 +42,6 @@
 
     #logo-app-name {
       text-align: center;
-      font-family: 'Poppins', sans-serif;
       color: $steel-blue;
       font-size: 21px;
       font-weight: 400;
@@ -65,7 +62,6 @@
     flex-shrink: 0; // Prevent form from shrinking
 
     h1 {
-      font-family: 'Poppins', sans-serif;
       font-size: 1.8rem; // Reduced from 2rem
       font-weight: 600;
       color: $steel-blue;
@@ -84,7 +80,6 @@
         padding: 0.9rem 2.5rem 0.9rem 0.9rem; // Reduced padding
         border: 2px solid #e1e5e9;
         border-radius: 10px; // Reduced from 12px
-        font-family: 'Poppins', sans-serif;
         font-size: 0.95rem; // Slightly reduced
         background-color: #fafbfc;
         transition: all 0.3s ease;
@@ -123,7 +118,6 @@
       padding: 0.9rem 1.5rem; // Reduced from 1rem 2rem
       background: linear-gradient(135deg, $steel-blue 0%, lighten($steel-blue, 10%) 100%);
       color: #ffffff;
-      font-family: 'Poppins', sans-serif;
       font-size: 1rem; // Reduced from 1.1rem
       font-weight: 600;
       letter-spacing: 1px;
@@ -172,7 +166,6 @@
 #login-modal-title,
   #login-user-role,
   #admin-user-role {
-    font-family: 'Poppins', sans-serif;
     font-size: 1.4rem;
     font-weight: 600;
     color: $steel-blue;
@@ -193,7 +186,6 @@
     padding: 1rem 1.5rem;
     background: linear-gradient(135deg, $steel-blue 0%, lighten($steel-blue, 10%) 100%);
     color: #ffffff;
-    font-family: 'Poppins', sans-serif;
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 1px;

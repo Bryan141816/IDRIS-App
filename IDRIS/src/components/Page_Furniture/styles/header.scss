@@ -1,6 +1,4 @@
 @use "../../../styles/variables" as *;
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@200;400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;600;700&display=swap');
 
 header {
   display: flex;
@@ -29,7 +27,6 @@ header {
   }
 
   p {
-    font-family: "Roboto", sans-serif;
     font-size: 20px;
     font-weight: 700;
   }
@@ -49,7 +46,6 @@ header {
   p {
     display: flex;
     align-items: center;
-    font-family: "Inter", sans-serif;
     font-size: 12px;
     font-weight: 600;
     background-color: $steel-blue;

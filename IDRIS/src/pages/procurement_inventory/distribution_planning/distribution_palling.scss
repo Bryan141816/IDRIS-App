@@ -3,7 +3,6 @@
     padding-top: 20px;
     min-height: calc(100vh - 60px); /* Account for any top bars */
     background: $backgroundColor;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-y: auto;
    
     @media (max-width: 1000px) {

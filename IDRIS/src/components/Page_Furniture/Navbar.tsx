@@ -1,5 +1,5 @@
 import "./styles/Navbar.scss";
-import logo1 from "../../media/logo1.png";
+import logo1 from "../../media/logo1.webp";
 import { Volunteer, LGU, Response, Donations } from "./Icons";
 import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";

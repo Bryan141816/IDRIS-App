@@ -18,7 +18,6 @@
   /* Remove margin auto to avoid horizontal centering */
   margin: 0;
   padding: 2rem;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--clr-text);
   text-align: left; /* explicitly align text left */
 }
@@ -32,7 +31,6 @@ h1 {
 
 /* Tabs container */
 .tabs {
-
   display: flex;
   width: 1000px;
   gap: var(--spacing);

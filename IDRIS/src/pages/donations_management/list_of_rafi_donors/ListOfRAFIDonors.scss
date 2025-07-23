@@ -1,41 +1,9 @@
 @use "../../../styles/variables" as *;
-
+@import "../../../styles/mixins.scss";
 // Main Container
 #donors {
 
-  // Mixins
-  @mixin flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
 
-  @mixin button-base {
-    border: none;
-    outline: none;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    border-radius: 8px;
-    font-family: inherit;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  @mixin card-shadow {
-    box-shadow: 0 4px 12px rgba(116, 154, 182, 0.15);
-    border: 1px solid #c5d7e5;
-  }
-
-  @mixin hover-lift {
-    &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(116, 154, 182, 0.2);
-    }
-  }
 
   display: flex;
   flex-direction: column;
@@ -44,11 +12,7 @@
   // background-color: $backgroundColor;
   min-height: unset;
   height: auto;
-  font-family: -apple-system,
-  BlinkMacSystemFont,
-  'Segoe UI',
-  'Roboto',
-  sans-serif;
+
 
   // Settings Container
   #settings-container {

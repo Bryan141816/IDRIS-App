@@ -1,6 +1,4 @@
 @use "../../../styles/variables" as *;
-@import url('https://fonts.googleapis.com/css2?family=Philosopher&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
 
 
 .navbar {
@@ -24,7 +22,6 @@
   padding: 15px;
 
   p{
-    font-family: 'Philosopher', Arial, Helvetica, sans-serif;
     font-weight: bold;
     font-size: 29.36px;
     letter-spacing: 5%;
@@ -49,7 +46,6 @@
 }
 
 .nav-items{
-  font-family: 'Roboto', sans-serif;
   width: 100%;
   display: flex;
   flex-direction: column;

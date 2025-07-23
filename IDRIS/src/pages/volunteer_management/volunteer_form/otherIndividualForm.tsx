@@ -13,7 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import Swal from "sweetalert2";
 import "./css/IndividualForm.css";
-import { createVolunteer } from "../../../API_Handler/individual_volunteer_handler";
+// import { createVolunteer } from "../../../API_Handler/individual_volunteer_handler";
 
 const showAlert = () => {
   Swal.fire({
@@ -82,8 +82,8 @@ const OtherIndividualForm = () => {
     };
 
     try {
-      const result = await createVolunteer(combinedData);
-      console.log("Volunteer created:", result);
+      // const result = await createVolunteer(combinedData);
+      // console.log("Volunteer created:", result);
       showAlert();
       localStorage.removeItem("personalInfo");
       navigate("/volunteer_management/volunteer_dashboard");

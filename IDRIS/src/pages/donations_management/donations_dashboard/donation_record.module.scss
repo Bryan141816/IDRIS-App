@@ -1,5 +1,4 @@
 @use '../../../styles/variables';
-@import url('https://fonts.googleapis.com/css2?family=INTER:wght@200;400;600;700&display=swap');
 
 .donationRecord{
     display: flex;
@@ -11,7 +10,6 @@
 
     p{
         font-size: 24px;
-        font-family: "Inter", sans-serif;
         margin: 0;
     }
 }

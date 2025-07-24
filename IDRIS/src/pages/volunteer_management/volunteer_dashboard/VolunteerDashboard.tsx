@@ -1,56 +1,91 @@
 import React, { useState, useEffect } from "react";
-import "./css/VolunteerDashboard.css"; // We'll create this CSS file separately
-import Modal from "./Modal"; // Import Modal component
+import "./css/VolunteerDashboard.css";
+import Modal from "./Modal";
 import VolunteerModal from "./VolunteerModal";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
 
-export default function IDRISDashboard() {
+// Type definitions
+interface Volunteer {
+  id: number;
+  name: string;
+  programs: number;
+  status: string;
+}
+
+interface Partner {
+  id: number;
+  name: string;
+}
+
+interface NewsAnnouncement {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  ongoing: boolean;
+}
+
+interface DeploymentSchedule {
+  date: string;
+  title: string;
+  location: string;
+}
+
+interface FormattedDate {
+  dayName: string;
+  day: number;
+  month: string;
+  year: number;
+}
+
+export default function IDRISDashboard(): JSX.Element {
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
-
   const navigate = useNavigate();
 
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewDate, setViewDate] = useState(new Date());
-  const [today] = useState(new Date());
-
-  const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
-  const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [viewDate, setViewDate] = useState<Date>(new Date());
+  const [today] = useState<Date>(new Date());
+  const [isProgramModalOpen, setIsProgramModalOpen] = useState<boolean>(false);
+  const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
 
   // Functions for Program Modal
-  const openProgramModal = () => {
+  const openProgramModal = (): void => {
     setIsProgramModalOpen(true);
   };
-  const closeProgramModal = () => {
+
+  const closeProgramModal = (): void => {
     setIsProgramModalOpen(false);
   };
 
   // Functions for Volunteer Modal
-  const openVolunteerModal = () => {
+  const openVolunteerModal = (): void => {
     setIsVolunteerModalOpen(true);
   };
-  const closeVolunteerModal = () => {
+
+  const closeVolunteerModal = (): void => {
     setIsVolunteerModalOpen(false);
   };
-  // Mock data
-  const totalApplicants = "100,000";
-  const totalVolunteers = "100,000";
 
-  const activeVolunteers = [
+  // Mock data
+  const totalApplicants: string = "100,000";
+  const totalVolunteers: string = "100,000";
+
+  const activeVolunteers: Volunteer[] = [
     { id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
     { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
     { id: 3, name: "Volunteer Name", programs: 10, status: "joined" },
   ];
 
-  const accreditedPartners = [
+  const accreditedPartners: Partner[] = [
     { id: 1, name: "Sample Organization" },
     { id: 2, name: "Sample Organization" },
     { id: 3, name: "Sample Organization" },
   ];
 
-  const newsAnnouncements = [
+  const newsAnnouncements: NewsAnnouncement[] = [
     {
       id: 1,
       title: "Example Program",
@@ -100,22 +135,23 @@ export default function IDRISDashboard() {
     localStorage.setItem("viewDate", viewDate.toISOString());
   }, [viewDate]);
 
-  const daysInMonth = (year: number, month: number) =>
+  const daysInMonth = (year: number, month: number): number =>
     new Date(year, month + 1, 0).getDate();
-  const getFirstDayOfMonth = (year: number, month: number) =>
+
+  const getFirstDayOfMonth = (year: number, month: number): number =>
     new Date(year, month, 1).getDay();
 
-  const prevMonth = () => {
+  const prevMonth = (): void => {
     setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
   };
 
-  const nextMonth = () => {
+  const nextMonth = (): void => {
     setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
   };
 
   // Format date for display
-  const formatDate = (date: Date) => {
-    const days = [
+  const formatDate = (date: Date): FormattedDate => {
+    const days: string[] = [
       "Sunday",
       "Monday",
       "Tuesday",
@@ -124,7 +160,7 @@ export default function IDRISDashboard() {
       "Friday",
       "Saturday",
     ];
-    const months = [
+    const months: string[] = [
       "January",
       "February",
       "March",
@@ -138,6 +174,7 @@ export default function IDRISDashboard() {
       "November",
       "December",
     ];
+
     return {
       dayName: days[date.getDay()],
       day: date.getDate(),
@@ -147,23 +184,25 @@ export default function IDRISDashboard() {
   };
 
   // Generate calendar days
-  const generateCalendarDays = () => {
+  const generateCalendarDays = (): (number | null)[] => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
     const totalDays = daysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
+    const days: (number | null)[] = [];
 
-    const days = [];
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
+
     for (let i = 1; i <= totalDays; i++) {
       days.push(i);
     }
+
     return days;
   };
 
-  const isToday = (day: number) => {
+  const isToday = (day: number): boolean => {
     return (
       day === today.getDate() &&
       viewDate.getMonth() === today.getMonth() &&
@@ -171,7 +210,7 @@ export default function IDRISDashboard() {
     );
   };
 
-  const isSelected = (day: number) => {
+  const isSelected = (day: number): boolean => {
     return (
       day === currentDate.getDate() &&
       viewDate.getMonth() === currentDate.getMonth() &&
@@ -179,10 +218,10 @@ export default function IDRISDashboard() {
     );
   };
 
-  const selectDate = (day: number | undefined) => {
+  const selectDate = (day: number | undefined): void => {
     if (day) {
       setCurrentDate(
-        new Date(viewDate.getFullYear(), viewDate.getMonth(), day),
+        new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
       );
     }
   };
@@ -190,10 +229,10 @@ export default function IDRISDashboard() {
   // Get formatted date
   const formattedDate = formatDate(currentDate);
   const days = generateCalendarDays();
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const weekdays: string[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // Mock deployment schedules
-  const deploymentSchedules = [
+  const deploymentSchedules: DeploymentSchedule[] = [
     {
       date: "2025-01-05",
       title: "Field Deployment",
@@ -231,9 +270,11 @@ export default function IDRISDashboard() {
   });
 
   // Check if a day has a schedule
-  const hasSchedule = (day: number) => {
+  const hasSchedule = (day: number): boolean => {
     if (!day) return false;
-    const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dateStr = `${viewDate.getFullYear()}-${String(
+      viewDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return deploymentSchedules.some((schedule) => schedule.date === dateStr);
   };
 
@@ -301,6 +342,7 @@ export default function IDRISDashboard() {
                   </button>
                 )}
               </div>
+
               {/* Cards grid */}
               <div className="cards-grid">
                 {/* Active Volunteers */}
@@ -380,24 +422,18 @@ export default function IDRISDashboard() {
                       <div>
                         <div className="day-name">
                           {formatDate(currentDate).dayName}
-                        </div>{" "}
-                        {/* CHANGE TO currentDate */}
+                        </div>
                         <div className="date-display">
                           <span className="month-day">
                             {formattedDate.month} {formattedDate.day}
-                          </span>{" "}
-                          {/* use formattedDate */}
-                          <span className="year">
-                            {formattedDate.year}
-                          </span>{" "}
-                          {/* use formattedDate */}
+                          </span>
+                          <span className="year">{formattedDate.year}</span>
                         </div>
                       </div>
                       <button onClick={nextMonth} className="calendar-nav-btn">
                         &gt;
                       </button>
                     </div>
-
                     <div className="calendar">
                       <div className="weekdays">
                         {weekdays.map((day) => (
@@ -406,14 +442,19 @@ export default function IDRISDashboard() {
                           </div>
                         ))}
                       </div>
-
                       <div className="days">
                         {days.map((day, idx) => (
                           <div key={idx} className="calendar-day-container">
                             {day && (
                               <div
                                 onClick={() => selectDate(day)}
-                                className={`calendar-day ${isToday(day) ? "today" : ""} ${isSelected(day) && !isToday(day) ? "selected" : ""} ${hasSchedule(day) ? "has-schedule" : ""}`}
+                                className={`calendar-day ${
+                                  isToday(day) ? "today" : ""
+                                } ${
+                                  isSelected(day) && !isToday(day)
+                                    ? "selected"
+                                    : ""
+                                } ${hasSchedule(day) ? "has-schedule" : ""}`}
                               >
                                 {day}
                                 {hasSchedule(day) && (
@@ -452,7 +493,6 @@ export default function IDRISDashboard() {
                     </button>
                   )}
                 </div>
-
                 <div className="news-list">
                   {newsAnnouncements.map((item) => (
                     <div key={item.id} className="news-item">

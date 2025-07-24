@@ -2,41 +2,47 @@ import React, { useState } from 'react';
 import { Button, Breadcrumb, Input, Form, Checkbox, Upload, Space, message } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import { InboxOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
+import type { UploadChangeParam, RcFile, UploadFile } from 'antd/es/upload';
+import type { FormInstance } from 'antd/es/form';
 import Swal from 'sweetalert2';
 import './css/OrganizationForm.css';
 
-const showAlert = () => {
-    Swal.fire({
-        title: 'Upload Successfully',
-        icon: 'success',
-        confirmButtonColor: '#749AB6', // Change OK button color (e.g. blue)
-        width: '380px', // Resize the modal
-        customClass: {
-            popup: 'custom-height-modal',
-            title: 'custom-swal-title',
-            htmlContainer: 'custom-swal-text',
-            confirmButton: 'custom-swal-button',
-            icon: 'custom-swal-icon',
-          },
-      });
-
+// Define form values interface
+interface OrganizationFormValues {
+  profilePicture?: UploadFile;
+  additionalDocuments?: UploadFile[];
+  understood?: boolean;
 }
 
+const showAlert = (): void => {
+  Swal.fire({
+    title: 'Upload Successfully',
+    icon: 'success',
+    confirmButtonColor: '#749AB6',
+    width: '380px',
+    customClass: {
+      popup: 'custom-height-modal',
+      title: 'custom-swal-title',
+      htmlContainer: 'custom-swal-text',
+      confirmButton: 'custom-swal-button',
+      icon: 'custom-swal-icon',
+    },
+  });
+};
 
+const OtherOrganizationForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [form] = Form.useForm<OrganizationFormValues>();
+  const [profilePreview, setProfilePreview] = useState<string>('');
 
-const OtherOrganizationForm = () =>{
-    const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const [profilePreview, setProfilePreview] = useState('');
-
-  const onFinish = (values: any) => {
+  const onFinish = (values: OrganizationFormValues): void => {
     console.log('Form values:', values);
     showAlert();
     navigate('/volunteer_management/volunteer_dashboard');
-
   };
-// Handle profile picture upload
-const beforeProfileUpload = (file) => {
+
+  // Handle profile picture upload
+  const beforeProfileUpload = (file: RcFile): boolean => {
     const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isJpgOrPng) {
       message.error('You can only upload JPG/PNG file!');
@@ -48,13 +54,15 @@ const beforeProfileUpload = (file) => {
     return false;
   };
 
-  const handleProfileChange = (info) => {
+  const handleProfileChange = (info: UploadChangeParam<UploadFile>): void => {
     if (info.file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfilePreview(e.target.result);
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (e.target?.result) {
+          setProfilePreview(e.target.result as string);
+        }
       };
-      reader.readAsDataURL(info.file);
+      reader.readAsDataURL(info.file as RcFile);
     }
   };
 
@@ -76,38 +84,34 @@ const beforeProfileUpload = (file) => {
     </div>
   );
 
-
-    return(
-        <div className="application-form">
-            {/* Breadcrumb Navigation */}
+  return (
+    <div className="application-form">
+      {/* Breadcrumb Navigation */}
       <div className="breadcrumb-section">
         <h2 className="page-title">Organization Application</h2>
         <Breadcrumb>
           <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
           <Breadcrumb.Item><span>Organization Application</span></Breadcrumb.Item>
         </Breadcrumb>
       </div>
-{/* Main Content */}
-<div className="application-form-container">
+
+      {/* Main Content */}
+      <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
-
-          <Form
-
+          <Form<OrganizationFormValues>
             form={form}
             name="volunteerApplication"
             layout="vertical"
             onFinish={onFinish}
             className="application-form"
-
           >
             <div className="form-section">
-
               <h3 className="section-title">Profile Picture</h3>
               {/* Updated profile picture upload section */}
               <Form.Item
@@ -131,6 +135,7 @@ const beforeProfileUpload = (file) => {
                   Upload a profile picture (JPG/PNG, max 2MB)
                 </div>
               </Form.Item>
+
               <h3 className="section-title upload-title">Upload Files</h3>
               <Form.Item
                 name="profilePicture"
@@ -142,7 +147,7 @@ const beforeProfileUpload = (file) => {
                     multiple={false}
                     listType="picture"
                     maxCount={6}
-                    beforeUpload={() => false}
+                    beforeUpload={(): boolean => false}
                   >
                     <p className="ant-upload-drag-icon">
                       <InboxOutlined />
@@ -158,7 +163,6 @@ const beforeProfileUpload = (file) => {
                 name="additionalDocuments"
                 className="upload-item"
               >
-
               </Form.Item>
 
               <div className="note-section">
@@ -192,10 +196,8 @@ const beforeProfileUpload = (file) => {
           </Form>
         </div>
       </div>
+    </div>
+  );
+};
 
-
-        </div>
-
-    );
-}
-export default OtherOrganizationForm
+export default OtherOrganizationForm;

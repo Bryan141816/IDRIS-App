@@ -3,13 +3,24 @@ import { Button, Breadcrumb, Input } from 'antd';
 import DataTable, { TableColumn } from 'react-data-table-component';
 import './css/ManageApplicant.css';
 import { Link, useNavigate } from 'react-router-dom';
+import Swal, { SweetAlertResult } from 'sweetalert2';
 
-import Swal from 'sweetalert2';
+// Define the applicant data interface
+interface Applicant {
+  id: number;
+  name: string;
+  contactNumber: string;
+  dateApplied: string;
+  dateOfBirth: string;
+  nationality: string;
+}
 
-export default function ManageApplicant() {
-
+// Define the component
+const ManageApplicant: React.FC = () => {
   const navigate = useNavigate();
-  const applicants = [
+
+  // Initialize applicants data with proper typing
+  const applicants: Applicant[] = [
     { id: 1, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/15/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
     { id: 2, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/20/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
     { id: 3, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/20/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
@@ -26,33 +37,32 @@ export default function ManageApplicant() {
     { id: 1, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/15/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
     { id: 1, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/15/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
     { id: 1, name: 'Kent Dayag', contactNumber: '09567834214', dateApplied: '3/15/2025', dateOfBirth: '2003/10/10', nationality: 'Filipino' },
-
     // ... more data
   ];
 
-
-  const showAlert = () => {
+  // Alert function with proper typing
+  const showAlert = (): void => {
     Swal.fire({
-        title: 'You have successfully accepted the applicant.',
-        icon: 'success',
-        confirmButtonColor: '#749AB6', // Change OK button color (e.g. blue)
-        width: '380px', // Resize the modal
-        showConfirmButton: false,
-        customClass: {
-            popup: 'custom-height-modal',
-            title: 'custom-swal-title',
-            htmlContainer: 'custom-swal-text',
-            confirmButton: 'custom-swal-button',
-            icon: 'custom-swal-icon',
-          },
-      });
-}
+      title: 'You have successfully accepted the applicant.',
+      icon: 'success',
+      confirmButtonColor: '#749AB6',
+      width: '380px',
+      showConfirmButton: false,
+      customClass: {
+        popup: 'custom-height-modal',
+        title: 'custom-swal-title',
+        htmlContainer: 'custom-swal-text',
+        confirmButton: 'custom-swal-button',
+        icon: 'custom-swal-icon',
+      },
+    });
+  };
 
-
-const handleDelete = () => {
+  // Delete handler with proper typing
+  const handleDelete = (): void => {
     const swalWithCustomButtons = Swal.mixin({
       customClass: {
-        popup: 'custom-swal-popup', // 👈 custom popup size
+        popup: 'custom-swal-popup',
         confirmButton: 'my-confirm-button',
         cancelButton: 'my-cancel-button',
       },
@@ -66,8 +76,8 @@ const handleDelete = () => {
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'No, cancel!',
       reverseButtons: true,
-      width: '380px', // 👈 sets width directly
-    }).then((result) => {
+      width: '380px',
+    }).then((result: SweetAlertResult) => {
       if (result.isConfirmed) {
         swalWithCustomButtons.fire({
           title: 'Deleted!',
@@ -78,7 +88,7 @@ const handleDelete = () => {
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         swalWithCustomButtons.fire({
           title: 'Cancelled',
-          text: 'The applicant’s application has been cancelled.',
+          text: 'The applicant\'s application has been cancelled.',
           icon: 'error',
           width: '380px',
         });
@@ -86,60 +96,74 @@ const handleDelete = () => {
     });
   };
 
+  // State with proper typing
+  const [searchText, setSearchText] = useState<string>('');
+  const [selectedApplicant, setSelectedApplicant] = useState<Applicant>(applicants[0]);
 
-
-
-  const [searchText, setSearchText] = useState('');
-  const [selectedApplicant, setSelectedApplicant] = useState(applicants[0]);
-
-  const filteredApplicants = applicants.filter(applicant =>
+  // Filtered applicants with proper typing
+  const filteredApplicants: Applicant[] = applicants.filter((applicant: Applicant) =>
     applicant.name.toLowerCase().includes(searchText.toLowerCase()) ||
     applicant.contactNumber.includes(searchText)
   );
 
-  const columns: TableColumn<typeof applicants[0]>[] = [
+  // Event handlers with proper typing
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setSearchText(e.target.value);
+  };
+
+  const handleRowClick = (row: Applicant): void => {
+    setSelectedApplicant(row);
+  };
+
+  const handleViewCredentials = (): void => {
+    navigate("/volunteer_management/view_credentials");
+  };
+
+  const handleAcceptClick = (e: React.MouseEvent<HTMLSpanElement>): void => {
+    e.preventDefault();
+    showAlert();
+  };
+
+  const handleDeclineClick = (e: React.MouseEvent<HTMLSpanElement>): void => {
+    e.preventDefault();
+    handleDelete();
+  };
+
+  // Columns definition with proper typing
+  const columns: TableColumn<Applicant>[] = [
     {
       name: 'No.',
-      selector: (row) => row.id,
+      selector: (row: Applicant) => row.id,
       sortable: true,
       width: '70px',
     },
     {
       name: 'Name',
-      selector: (row) => row.name,
+      selector: (row: Applicant) => row.name,
       sortable: true,
     },
     {
       name: 'Contact Number',
-      selector: (row) => row.contactNumber,
+      selector: (row: Applicant) => row.contactNumber,
     },
     {
       name: 'Date Applied',
-      selector: (row) => row.dateApplied,
-
+      selector: (row: Applicant) => row.dateApplied,
     },
     {
       name: 'Action',
-      cell: (row) => (
-
+      cell: (row: Applicant) => (
         <div className="action-buttons">
           <span
             className="action-accept"
-            onClick={(e) => {
-              e.preventDefault(); // Prevent form from submitting and reloading
-              showAlert();
-            }}
+            onClick={handleAcceptClick}
           >
             Accept
           </span>
           {' | '}
           <span
             className="action-decline"
-            onClick={(e) => {
-                e.preventDefault(); // Prevent form from submitting and reloading
-                handleDelete();
-            }}
-
+            onClick={handleDeclineClick}
           >
             Decline
           </span>
@@ -158,13 +182,17 @@ const handleDelete = () => {
       <div className="breadcrumb-section">
         <h2 className="page-title">Applicants</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
+          <Breadcrumb.Item href="#">
+            <span>Home</span>
+          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
-          <Breadcrumb.Item><span>Applicants</span></Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
+          <Breadcrumb.Item>
+            <span>Applicants</span>
+          </Breadcrumb.Item>
         </Breadcrumb>
       </div>
 
@@ -177,11 +205,10 @@ const handleDelete = () => {
             <Input.Search
               placeholder="Search by name or contact number"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ maxWidth: 300, marginBottom: 10 }}
             />
           </div>
-
           <div className="table-container">
             <DataTable
               columns={columns}
@@ -189,13 +216,11 @@ const handleDelete = () => {
               pagination
               highlightOnHover
               pointerOnHover
-              onRowClicked={(row) => setSelectedApplicant(row)}
+              onRowClicked={handleRowClick}
               customStyles={{
                 rows: {
                   style: {
                     cursor: 'pointer',
-
-
                   },
                 },
               }}
@@ -208,31 +233,32 @@ const handleDelete = () => {
           <h3 className="details-title">
             Applicant Details - {selectedApplicant?.name}
           </h3>
-
           {selectedApplicant && (
             <div className="details-container">
               <div className="detail-item">
                 <p className="detail-label">Full Name</p>
                 <p className="detail-value">{selectedApplicant.name}</p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Contact Number</p>
                 <p className="detail-value">{selectedApplicant.contactNumber}</p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Date Of Birth</p>
                 <p className="detail-value">{selectedApplicant.dateOfBirth}</p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Nationality</p>
                 <p className="detail-value">{selectedApplicant.nationality}</p>
               </div>
-
               <div className="view-credentials-container">
-                <Button type="primary" className="view-credentials-button" onClick={() => navigate("/volunteer_management/view_credentials")}>View Credentials</Button>
+                <Button
+                  type="primary"
+                  className="view-credentials-button"
+                  onClick={handleViewCredentials}
+                >
+                  View Credentials
+                </Button>
               </div>
             </div>
           )}
@@ -240,4 +266,6 @@ const handleDelete = () => {
       </div>
     </div>
   );
-}
+};
+
+export default ManageApplicant;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './css/VolunteerProfile.css';
@@ -14,11 +15,41 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-export default function VolunteerProfile() {
-  const [activeTab, setActiveTab] = useState('personalInfo');
+// Define interfaces for type safety
+interface PersonalInfo {
+  age: number;
+  dateOfBirth: string;
+  phoneNumber: string;
+  address: string;
+  gender: string;
+}
+
+interface Location {
+  lat: number;
+  lng: number;
+}
+
+interface VolunteerData {
+  name: string;
+  role: string;
+  certified: boolean;
+  address: string;
+  personalInfo: PersonalInfo;
+  location: Location;
+  description?: string;
+  skillsAndInterest?: string[];
+  availability?: string;
+  credentials?: string[];
+}
+
+// Define tab types
+type TabType = 'personalInfo' | 'description' | 'skillsAndInterest' | 'availability' | 'credentials';
+
+const VolunteerProfile: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabType>('personalInfo');
 
   // Sample volunteer data
-  const volunteerData = {
+  const volunteerData: VolunteerData = {
     name: "Volunteer name",
     role: "Role Assigned (Volunteer ID)",
     certified: true,
@@ -31,12 +62,12 @@ export default function VolunteerProfile() {
       gender: "Male"
     },
     location: {
-        lat: 10.3157,
-        lng: 123.8854
+      lat: 10.3157,
+      lng: 123.8854
     }
   };
 
-  const renderTabContent = () => {
+  const renderTabContent = (): React.ReactNode => {
     switch(activeTab) {
       case 'personalInfo':
         return (
@@ -78,25 +109,41 @@ export default function VolunteerProfile() {
       case 'description':
         return (
           <div className="info-content">
-            <p>No description available for this volunteer.</p>
+            <p>{volunteerData.description || 'No description available for this volunteer.'}</p>
           </div>
         );
       case 'skillsAndInterest':
         return (
           <div className="info-content">
-            <p>No skills and interests listed for this volunteer.</p>
+            {volunteerData.skillsAndInterest && volunteerData.skillsAndInterest.length > 0 ? (
+              <ul>
+                {volunteerData.skillsAndInterest.map((skill, index) => (
+                  <li key={index}>{skill}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No skills and interests listed for this volunteer.</p>
+            )}
           </div>
         );
       case 'availability':
         return (
           <div className="info-content">
-            <p>Availability schedule not set.</p>
+            <p>{volunteerData.availability || 'Availability schedule not set.'}</p>
           </div>
         );
       case 'credentials':
         return (
           <div className="info-content">
-            <p>No credentials uploaded.</p>
+            {volunteerData.credentials && volunteerData.credentials.length > 0 ? (
+              <ul>
+                {volunteerData.credentials.map((credential, index) => (
+                  <li key={index}>{credential}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No credentials uploaded.</p>
+            )}
           </div>
         );
       default:
@@ -104,27 +151,32 @@ export default function VolunteerProfile() {
     }
   };
 
+  const handleTabClick = (tab: TabType): void => {
+    setActiveTab(tab);
+  };
+
+  const mapCenter: LatLngExpression = [volunteerData.location.lat, volunteerData.location.lng];
+
   return (
     <div className="volunteer-container">
       {/* Breadcrumb Navigation */}
-        <h2 className="page-title">Volunteer Profile</h2>
-        <Breadcrumb>
-          <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link to="/volunteer_management/volunteer_dashboard">
-              Volunteer Dashboard
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link to="/volunteer_management/manage_volunteers">
-              Volunteer
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <span>Volunteer Profile</span>
-          </Breadcrumb.Item>
-        </Breadcrumb>
-
+      <h2 className="page-title">Volunteer Profile</h2>
+      <Breadcrumb>
+        <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <Link to="/volunteer_management/volunteer_dashboard">
+            Volunteer Dashboard
+          </Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <Link to="/volunteer_management/manage_volunteers">
+            Volunteer
+          </Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Item>
+          <span>Volunteer Profile</span>
+        </Breadcrumb.Item>
+      </Breadcrumb>
 
       {/* Main Content */}
       <div className="main-content1">
@@ -136,12 +188,17 @@ export default function VolunteerProfile() {
             </div>
             <div className="profile-info">
               <div className="profile-avatar">
-              <img src="https://ui-avatars.com/api/?name=Volunteer+Name&size=200" alt="Volunteer" />
+                <img
+                  src="https://ui-avatars.com/api/?name=Volunteer+Name&size=200"
+                  alt="Volunteer"
+                />
               </div>
               <div className="profile-details">
                 <h2 className="volunteer-name">
-                  <span className="name-text">Volunteer name</span>
-                  <span className="certified-badge">Certified</span>
+                  <span className="name-text">{volunteerData.name}</span>
+                  {volunteerData.certified && (
+                    <span className="certified-badge">Certified</span>
+                  )}
                 </h2>
                 <p className="volunteer-role">{volunteerData.role}</p>
               </div>
@@ -154,7 +211,7 @@ export default function VolunteerProfile() {
               <div className="address-label">( Volunteer Address )</div>
               <div className="map-placeholder">
                 <MapContainer
-                  center={[volunteerData.location.lat, volunteerData.location.lng]}
+                  center={mapCenter}
                   zoom={13}
                   scrollWheelZoom={false}
                   style={{ height: '100%', width: '100%' }}
@@ -163,7 +220,7 @@ export default function VolunteerProfile() {
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  <Marker position={[volunteerData.location.lat, volunteerData.location.lng]}>
+                  <Marker position={mapCenter}>
                     <Popup>
                       {volunteerData.address}
                     </Popup>
@@ -179,31 +236,31 @@ export default function VolunteerProfile() {
                 <div className="about-sidebar">
                   <div
                     className={`sidebar-item ${activeTab === 'personalInfo' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('personalInfo')}
+                    onClick={() => handleTabClick('personalInfo')}
                   >
                     Personal Information
                   </div>
                   <div
                     className={`sidebar-item ${activeTab === 'description' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('description')}
+                    onClick={() => handleTabClick('description')}
                   >
                     Description
                   </div>
                   <div
                     className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('skillsAndInterest')}
+                    onClick={() => handleTabClick('skillsAndInterest')}
                   >
                     Skills and Interest
                   </div>
                   <div
                     className={`sidebar-item ${activeTab === 'availability' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('availability')}
+                    onClick={() => handleTabClick('availability')}
                   >
                     Availability
                   </div>
                   <div
                     className={`sidebar-item ${activeTab === 'credentials' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('credentials')}
+                    onClick={() => handleTabClick('credentials')}
                   >
                     Credentials
                   </div>
@@ -218,4 +275,6 @@ export default function VolunteerProfile() {
       </div>
     </div>
   );
-}
+};
+
+export default VolunteerProfile;

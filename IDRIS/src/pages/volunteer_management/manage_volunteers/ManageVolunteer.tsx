@@ -3,151 +3,168 @@ import { Button, Breadcrumb, Input, Switch } from "antd";
 import DataTable, { TableColumn } from "react-data-table-component";
 import "./css/ManageVolunteer.css";
 import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import Swal, { SweetAlertResult } from "sweetalert2";
 
-export default function ManageVolunteer() {
+// Define the volunteer data interface
+interface Volunteer {
+  id: React.ReactNode;
+  name: string;
+  contactNumber: string;
+  dateApplied: string;
+  dateOfBirth: string;
+  nationality: string;
+}
+
+// Define the component
+const ManageVolunteer: React.FC = () => {
   const navigate = useNavigate();
-  const onChange = (checked: boolean) => {};
 
-  const applicants = [
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
-    {
-      id: <Switch defaultChecked onChange={onChange} />,
-      name: "123456789",
-      contactNumber: "Kent Dayag",
-      dateApplied: "09567834214",
-      dateOfBirth: "2003/10/10",
-      nationality: "Filipino",
-    },
+  // Event handler for switch change
+  const onChange = (checked: boolean): void => {
+    // Handle switch change logic here
+    console.log('Switch changed:', checked);
+  };
 
+  // Initialize applicants data with proper typing
+  const applicants: Volunteer[] = [
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
+    {
+      id: <Switch defaultChecked onChange={onChange} />,
+      name: "123456789",
+      contactNumber: "Kent Dayag",
+      dateApplied: "09567834214",
+      dateOfBirth: "2003/10/10",
+      nationality: "Filipino",
+    },
     // ... more data
   ];
 
-  const showAlert = () => {
+  // Alert function with proper typing
+  const showAlert = (): void => {
     Swal.fire({
       title: "You have successfully accepted the applicant.",
       icon: "success",
-      confirmButtonColor: "#749AB6", // Change OK button color (e.g. blue)
-      width: "380px", // Resize the modal
+      confirmButtonColor: "#749AB6",
+      width: "380px",
       showConfirmButton: false,
       customClass: {
         popup: "custom-height-modal",
@@ -159,10 +176,11 @@ export default function ManageVolunteer() {
     });
   };
 
-  const handleDelete = () => {
+  // Delete handler with proper typing
+  const handleDelete = (): void => {
     const swalWithCustomButtons = Swal.mixin({
       customClass: {
-        popup: "custom-swal-popup", // 👈 custom popup size
+        popup: "custom-swal-popup",
         confirmButton: "my-confirm-button",
         cancelButton: "my-cancel-button",
       },
@@ -177,9 +195,9 @@ export default function ManageVolunteer() {
         confirmButtonText: "Yes, delete it!",
         cancelButtonText: "No, cancel!",
         reverseButtons: true,
-        width: "380px", // 👈 sets width directly
+        width: "380px",
       })
-      .then((result) => {
+      .then((result: SweetAlertResult) => {
         if (result.isConfirmed) {
           swalWithCustomButtons.fire({
             title: "Deleted!",
@@ -190,7 +208,7 @@ export default function ManageVolunteer() {
         } else if (result.dismiss === Swal.DismissReason.cancel) {
           swalWithCustomButtons.fire({
             title: "Cancelled",
-            text: "The applicant’s application has been cancelled.",
+            text: "The applicant's application has been cancelled.",
             icon: "error",
             width: "380px",
           });
@@ -198,40 +216,48 @@ export default function ManageVolunteer() {
       });
   };
 
-  const [searchText, setSearchText] = useState("");
-  const [selectedApplicant, setSelectedApplicant] = useState(applicants[0]);
+  // State with proper typing
+  const [searchText, setSearchText] = useState<string>("");
+  const [selectedApplicant, setSelectedApplicant] = useState<Volunteer>(applicants[0]);
 
-  const filteredApplicants = applicants.filter(
+  // Filtered applicants with proper typing
+  const filteredApplicants: Volunteer[] = applicants.filter(
     (applicant) =>
       applicant.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      applicant.contactNumber.includes(searchText),
+      applicant.contactNumber.includes(searchText)
   );
 
-  const columns: TableColumn<(typeof applicants)[0]>[] = [
+  // Columns definition with proper typing
+  const columns: TableColumn<Volunteer>[] = [
     {
       name: "Status",
-      selector: (row) => row.id,
+      selector: (row: Volunteer) => row.id,
       sortable: true,
       width: "150px",
-      // Align the cell content
       center: true,
     },
     {
       name: "Volunteer ID",
-      selector: (row) => row.name,
+      selector: (row: Volunteer) => row.name,
       sortable: true,
     },
     {
       name: "Name",
-      selector: (row) => row.contactNumber,
+      selector: (row: Volunteer) => row.contactNumber,
     },
     {
       name: "Contact Number",
-      selector: (row) => row.dateApplied,
+      selector: (row: Volunteer) => row.dateApplied,
     },
     {
       name: "Action",
-      selector: (row) => row.dateApplied,
+      cell: (row: Volunteer) => (
+        <div>
+          {/* Add action buttons here */}
+          <Button size="small" onClick={showAlert}>Accept</Button>
+          <Button size="small" danger onClick={handleDelete}>Decline</Button>
+        </div>
+      ),
       ignoreRowClick: true,
       allowOverflow: true,
       button: true,
@@ -239,11 +265,26 @@ export default function ManageVolunteer() {
     },
   ];
 
+  // Input change handler
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setSearchText(e.target.value);
+  };
+
+  // Row click handler
+  const handleRowClick = (row: Volunteer): void => {
+    setSelectedApplicant(row);
+  };
+
+  // Navigate handler
+  const handleViewProfile = (): void => {
+    navigate("/volunteer_management/volunteer_profiles");
+  };
+
   return (
     <div className="applicants-container">
       {/* Breadcrumb Navigation */}
       <div className="breadcrumb-section">
-        <h2 className="page-title">Voolunteer Lists</h2>
+        <h2 className="page-title">Volunteer Lists</h2>
         <Breadcrumb>
           <Breadcrumb.Item href="#">
             <span>Home</span>
@@ -268,11 +309,10 @@ export default function ManageVolunteer() {
             <Input.Search
               placeholder="Search by name or contact number"
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={handleSearchChange}
               style={{ maxWidth: 300, marginBottom: 10 }}
             />
           </div>
-
           <div className="table-container">
             <DataTable
               columns={columns}
@@ -280,7 +320,7 @@ export default function ManageVolunteer() {
               pagination
               highlightOnHover
               pointerOnHover
-              onRowClicked={(row) => setSelectedApplicant(row)}
+              onRowClicked={handleRowClick}
               customStyles={{
                 rows: {
                   style: {
@@ -297,43 +337,35 @@ export default function ManageVolunteer() {
           <h3 className="details-title">
             Volunteer Details - {selectedApplicant?.name}
           </h3>
-
           {selectedApplicant && (
             <div className="details-container">
               <div className="detail-item">
                 <p className="detail-label">Full Name</p>
                 <p className="detail-value">{selectedApplicant.name}</p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Contact Number</p>
                 <p className="detail-value">
                   {selectedApplicant.contactNumber}
                 </p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Date Of Birth</p>
                 <p className="detail-value">{selectedApplicant.dateOfBirth}</p>
               </div>
-
               <div className="detail-item">
                 <p className="detail-label">Nationality</p>
                 <p className="detail-value">{selectedApplicant.nationality}</p>
               </div>
-
               <div className="detail-item-joined">
                 <p className="detail-label">Number of Programs Joined</p>
                 <p className="detail-value">20</p>
               </div>
-
               <div className="view-credentials-container">
                 <Button
                   type="primary"
                   className="view-credentials-button"
-                  onClick={() =>
-                    navigate("/volunteer_management/volunteer_profiles")
-                  }
+                  onClick={handleViewProfile}
                 >
                   View Volunteer Profile
                 </Button>
@@ -344,4 +376,6 @@ export default function ManageVolunteer() {
       </div>
     </div>
   );
-}
+};
+
+export default ManageVolunteer;

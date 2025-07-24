@@ -1,9 +1,28 @@
 import React from 'react';
 import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
+import type { CheckboxOptionType } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
+import type { Dayjs } from 'dayjs';
 import './css/IndividualForm.css';
 
-const daysOfWeekOptions = [
+// Define types for form values
+interface IndividualFormValues {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  birthDate: Dayjs;
+  gender: 'male' | 'female';
+  age: number;
+  availability: string[];
+  medicalCondition: 'none' | 'asthma' | 'heart_condition' | 'diabetes' | 'other';
+  medicalDescription?: string;
+}
+
+// Define days of week options with proper typing
+const daysOfWeekOptions: CheckboxOptionType[] = [
   { label: 'Sunday', value: 'Sunday' },
   { label: 'Monday', value: 'Monday' },
   { label: 'Tuesday', value: 'Tuesday' },
@@ -13,13 +32,14 @@ const daysOfWeekOptions = [
   { label: 'Saturday', value: 'Saturday' },
 ];
 
-const IndividualForm = () => {
+const IndividualForm: React.FC = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<IndividualFormValues>();
   const { Option } = Select;
 
-  const onFinish = (values) => {
+  const onFinish = (values: IndividualFormValues): void => {
     // Handle form submission logic here
+    console.log(values); // Optional: for debugging
     navigate("/volunteer_management/otherindividual_form");
   };
 
@@ -47,8 +67,7 @@ const IndividualForm = () => {
       <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
-
-          <Form
+          <Form<IndividualFormValues>
             form={form}
             name="volunteerApplication"
             layout="vertical"
@@ -71,6 +90,7 @@ const IndividualForm = () => {
                 >
                   <Input placeholder="First" />
                 </Form.Item>
+
                 <Form.Item
                   name="middleName"
                   label="Middle Name"
@@ -78,6 +98,7 @@ const IndividualForm = () => {
                 >
                   <Input placeholder="Middle Name" />
                 </Form.Item>
+
                 <Form.Item
                   name="lastName"
                   label="Last Name"
@@ -114,6 +135,7 @@ const IndividualForm = () => {
                 >
                   <Input placeholder="Enter your phone" />
                 </Form.Item>
+
                 <Form.Item
                   name="address"
                   label="Address"
@@ -136,6 +158,7 @@ const IndividualForm = () => {
                 >
                   <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
+
                 <Form.Item
                   name="gender"
                   label="Gender"
@@ -147,6 +170,7 @@ const IndividualForm = () => {
                     <Option value="female">Female</Option>
                   </Select>
                 </Form.Item>
+
                 <Form.Item
                   name="age"
                   label="Age"
@@ -162,28 +186,28 @@ const IndividualForm = () => {
                 name="availability"
                 label="Availability"
                 rules={[{ required: true, message: 'Please select at least one available day' }]}
-                >
+              >
                 <Checkbox.Group options={daysOfWeekOptions} />
-                </Form.Item>
+              </Form.Item>
 
-                <Form.Item
-                    name="medicalCondition"
-                    label="Do you have any medical condition?"
-                    rules={[{ required: true, message: 'Please select an option' }]}
-                    >
-                    <Select placeholder="Select an option">
-                        <Option value="none">None</Option>
-                        <Option value="asthma">Asthma</Option>
-                        <Option value="heart_condition">Heart Condition</Option>
-                        <Option value="diabetes">Diabetes</Option>
-                        <Option value="other">Other (please specify below)</Option>
-                    </Select>
-                    </Form.Item>
+              <Form.Item
+                name="medicalCondition"
+                label="Do you have any medical condition?"
+                rules={[{ required: true, message: 'Please select an option' }]}
+              >
+                <Select placeholder="Select an option">
+                  <Option value="none">None</Option>
+                  <Option value="asthma">Asthma</Option>
+                  <Option value="heart_condition">Heart Condition</Option>
+                  <Option value="diabetes">Diabetes</Option>
+                  <Option value="other">Other (please specify below)</Option>
+                </Select>
+              </Form.Item>
 
-                    {/* Optional description if they choose "Other" */}
-                    <Form.Item name="medicalDescription" label="If Other, please describe">
-                    <Input.TextArea rows={3} placeholder="Describe your condition" />
-                    </Form.Item>
+              {/* Optional description if they choose "Other" */}
+              <Form.Item name="medicalDescription" label="If Other, please describe">
+                <Input.TextArea rows={3} placeholder="Describe your condition" />
+              </Form.Item>
             </div>
 
             {/* Form Buttons */}

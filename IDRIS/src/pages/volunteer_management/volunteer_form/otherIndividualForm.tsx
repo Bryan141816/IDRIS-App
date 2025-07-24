@@ -9,13 +9,41 @@ import {
   Space,
   message,
 } from "antd";
+import type { UploadChangeParam, UploadFile, RcFile } from "antd/es/upload/interface";
+import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import Swal from "sweetalert2";
 import "./css/IndividualForm.css";
 // import { createVolunteer } from "../../../API_Handler/individual_volunteer_handler";
 
-const showAlert = () => {
+// Define interfaces for form values and personal info
+interface OtherIndividualFormValues {
+  profilePicture?: UploadFile;
+  supportingFiles?: UploadFile[];
+  understood: boolean;
+}
+
+interface PersonalInfo {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  birthDate: string;
+  gender: 'male' | 'female';
+  age: number;
+  availability: string[];
+  medicalCondition: string;
+  medicalDescription?: string;
+}
+
+interface CombinedVolunteerData extends PersonalInfo {
+  understood: boolean;
+}
+
+const showAlert = (): void => {
   Swal.fire({
     title: "Upload Successfully",
     icon: "success",
@@ -31,22 +59,28 @@ const showAlert = () => {
   });
 };
 
-const OtherIndividualForm = () => {
+const OtherIndividualForm: React.FC = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const [profilePreview, setProfilePreview] = useState("");
-  const [personalInfo, setPersonalInfo] = useState(null);
-  const [understood, setUnderstood] = useState(false);
+  const [form] = Form.useForm<OtherIndividualFormValues>();
+  const [profilePreview, setProfilePreview] = useState<string>("");
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null);
+  const [understood, setUnderstood] = useState<boolean>(false);
 
   useEffect(() => {
     const storedData = localStorage.getItem("personalInfo");
     if (storedData) {
-      setPersonalInfo(JSON.parse(storedData));
+      try {
+        const parsedData = JSON.parse(storedData) as PersonalInfo;
+        setPersonalInfo(parsedData);
+      } catch (error) {
+        console.error("Error parsing personal info:", error);
+        message.error("Failed to load personal information");
+      }
     }
   }, []);
 
   // Upload validations
-  const beforeProfileUpload = (file) => {
+  const beforeProfileUpload = (file: RcFile): boolean | Upload.LIST_IGNORE => {
     const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
     if (!isJpgOrPng) {
       message.error("You can only upload JPG/PNG file!");
@@ -60,23 +94,25 @@ const OtherIndividualForm = () => {
     return false; // prevent auto upload
   };
 
-  const handleProfileChange = (info) => {
-    if (info.file) {
+  const handleProfileChange = (info: UploadChangeParam<UploadFile>): void => {
+    if (info.file.originFileObj) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfilePreview(e.target.result);
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        if (e.target?.result && typeof e.target.result === 'string') {
+          setProfilePreview(e.target.result);
+        }
       };
-      reader.readAsDataURL(info.file);
+      reader.readAsDataURL(info.file.originFileObj as Blob);
     }
   };
 
-  const onFinish = async (values) => {
+  const onFinish = async (values: OtherIndividualFormValues): Promise<void> => {
     if (!personalInfo) {
       message.error("Personal information not found.");
       return;
     }
 
-    const combinedData = {
+    const combinedData: CombinedVolunteerData = {
       ...personalInfo,
       understood: values.understood,
     };
@@ -132,8 +168,7 @@ const OtherIndividualForm = () => {
       <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
-
-          <Form
+          <Form<OtherIndividualFormValues>
             form={form}
             name="volunteerApplication"
             layout="vertical"
@@ -201,7 +236,7 @@ const OtherIndividualForm = () => {
                   ]}
                 >
                   <Checkbox
-                    onChange={(e) => setUnderstood(e.target.checked)}
+                    onChange={(e: CheckboxChangeEvent) => setUnderstood(e.target.checked)}
                     className="understand-checkbox"
                   >
                     I understand

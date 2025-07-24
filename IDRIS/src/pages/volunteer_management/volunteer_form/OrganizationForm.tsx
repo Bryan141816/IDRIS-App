@@ -1,9 +1,25 @@
 import React, { useState } from 'react';
 import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
+import type { CheckboxOptionType } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/OrganizationForm.css';
 
-const daysOfWeekOptions = [
+// Define types for form values
+interface OrganizationFormValues {
+  orgName: string;
+  orgType: 'private' | 'ngo' | 'government' | 'educational' | 'other';
+  orgEmail: string;
+  orgPhone: string;
+  orgAddress: string;
+  repName: string;
+  repPosition: string;
+  repPhone: string;
+  repEmail: string;
+  availability: string[];
+}
+
+// Define days of week options with proper typing
+const daysOfWeekOptions: CheckboxOptionType[] = [
   { label: 'Sunday', value: 'Sunday' },
   { label: 'Monday', value: 'Monday' },
   { label: 'Tuesday', value: 'Tuesday' },
@@ -13,15 +29,17 @@ const daysOfWeekOptions = [
   { label: 'Saturday', value: 'Saturday' },
 ];
 
-
-const OrganizationForm = () =>{
-    const navigate = useNavigate();
-  const [form] = Form.useForm();
+const OrganizationForm: React.FC = () => {
+  const navigate = useNavigate();
+  const [form] = Form.useForm<OrganizationFormValues>();
   const { Option } = Select;
-  const onFinish = (values: any) => {
+
+  const onFinish = (values: OrganizationFormValues): void => {
     // Handle form submission logic here
+    console.log(values); // Optional: for debugging
     navigate("/volunteer_management/volunteer_dashboard");
   };
+
   return (
     <div className="application-form">
       {/* Breadcrumb Navigation */}
@@ -41,12 +59,12 @@ const OrganizationForm = () =>{
           </Breadcrumb.Item>
         </Breadcrumb>
       </div>
+
       {/* Main Content */}
       <div className="application-form-container">
         <div className="form-card">
           <h2 className="form-title">Disaster Relief Volunteer Form</h2>
-
-          <Form
+          <Form<OrganizationFormValues>
             form={form}
             name="volunteerApplication"
             layout="vertical"
@@ -70,6 +88,7 @@ const OrganizationForm = () =>{
                 >
                   <Input placeholder="Enter organization name" />
                 </Form.Item>
+
                 <Form.Item
                   name="orgType"
                   label="Type of Organization"
@@ -90,6 +109,7 @@ const OrganizationForm = () =>{
                   </Select>
                 </Form.Item>
               </div>
+
               <Form.Item
                 name="orgEmail"
                 label="Email Address"
@@ -100,6 +120,7 @@ const OrganizationForm = () =>{
               >
                 <Input placeholder="Enter organization email" />
               </Form.Item>
+
               <div className="form-row">
                 <Form.Item
                   name="orgPhone"
@@ -111,6 +132,7 @@ const OrganizationForm = () =>{
                 >
                   <Input placeholder="Enter organization phone" />
                 </Form.Item>
+
                 <Form.Item
                   name="orgAddress"
                   label="Address"
@@ -121,6 +143,7 @@ const OrganizationForm = () =>{
                 </Form.Item>
               </div>
             </div>
+
             <div className="form_section">
               <h3 className="section_title">Representative Information</h3>
 
@@ -135,6 +158,7 @@ const OrganizationForm = () =>{
                 >
                   <Input placeholder="Enter representative's name" />
                 </Form.Item>
+
                 <Form.Item
                   name="repPosition"
                   label="Position / Role in Organization"
@@ -144,6 +168,7 @@ const OrganizationForm = () =>{
                   <Input placeholder="Enter position/role" />
                 </Form.Item>
               </div>
+
               <div className="form-row">
                 <Form.Item
                   name="repPhone"
@@ -155,6 +180,7 @@ const OrganizationForm = () =>{
                 >
                   <Input placeholder="Enter representative's phone" />
                 </Form.Item>
+
                 <Form.Item
                   name="repEmail"
                   label="Email Address"
@@ -167,19 +193,24 @@ const OrganizationForm = () =>{
                   <Input placeholder="Enter representative's email" />
                 </Form.Item>
               </div>
+
               <Form.Item
-                     name="availability"
-                     label="Availability"
-                     rules={[{ required: true, message: 'Please select at least one available day' }]}
-                     >
-                    <Checkbox.Group options={daysOfWeekOptions} />
-                    </Form.Item>
+                name="availability"
+                label="Availability"
+                rules={[{ required: true, message: 'Please select at least one available day' }]}
+              >
+                <Checkbox.Group options={daysOfWeekOptions} />
+              </Form.Item>
             </div>
 
             <Form.Item className="form-buttons">
               <Space>
-
-                <Button type="primary" htmlType="submit" className="submit-button" onClick={() => navigate('/volunteer_management/otherorganization_form')}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  className="submit-button"
+                  onClick={() => navigate('/volunteer_management/otherorganization_form')}
+                >
                   Next
                 </Button>
               </Space>
@@ -190,4 +221,5 @@ const OrganizationForm = () =>{
     </div>
   );
 };
+
 export default OrganizationForm;

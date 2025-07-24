@@ -3,13 +3,20 @@ import { Button, Breadcrumb, Modal } from 'antd';
 import './css/view_credentials.css';
 import { Link, useNavigate } from 'react-router-dom';
 
+// Define interface for credential data
+interface Credential {
+  id: number;
+  src: string;
+  alt: string;
+}
 
-export default function ViewCredentials() {
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
+const ViewCredentials: React.FC = () => {
+  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
+  const [previewImage, setPreviewImage] = useState<string>('');
   const navigate = useNavigate();
+
   // Mock credential images (in a real app, these would be uploaded images)
-  const credentials = [
+  const credentials: Credential[] = [
     { id: 1, src: 'https://dummyimage.com/350x220/cccccc/808080&text=350x220', alt: 'Certificate 1' },
     { id: 2, src: 'https://dummyimage.com/350x220/cccccc/808080&text=350x220', alt: 'Certificate 2' },
     { id: 3, src: 'https://dummyimage.com/350x220/cccccc/808080&text=350x220', alt: 'Certificate 3' },
@@ -18,12 +25,12 @@ export default function ViewCredentials() {
     { id: 6, src: 'https://dummyimage.com/350x220/cccccc/808080&text=350x220', alt: 'Certificate 6' },
   ];
 
-  const handlePreview = (image: { id?: number; src: any; alt?: string; }) => {
+  const handlePreview = (image: Credential): void => {
     setPreviewImage(image.src);
     setPreviewVisible(true);
   };
 
-  const handleCancel = () => {
+  const handleCancel = (): void => {
     setPreviewVisible(false);
   };
 
@@ -36,9 +43,9 @@ export default function ViewCredentials() {
           <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
-                Volunteer Dashboard
-             </Link>
-            </Breadcrumb.Item>
+              Volunteer Dashboard
+            </Link>
+          </Breadcrumb.Item>
           <Breadcrumb.Item><span>Applicants</span></Breadcrumb.Item>
         </Breadcrumb>
       </div>
@@ -48,15 +55,29 @@ export default function ViewCredentials() {
         <div className="credentials-container">
           <h2>Credentials</h2>
           <div className="credentials-grid">
-            {credentials.map(image => (
-              <div key={image.id} className="credential-card" onClick={() => handlePreview(image)}>
+            {credentials.map((image: Credential) => (
+              <div
+                key={image.id}
+                className="credential-card"
+                onClick={() => handlePreview(image)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handlePreview(image);
+                  }
+                }}
+              >
                 <img src={image.src} alt={image.alt} />
               </div>
             ))}
           </div>
           <div className="navigation-buttons">
-            <Button className="back-button" onClick={() => navigate("/volunteer_management/manage_applicant")}>
-            Go Back
+            <Button
+              className="back-button"
+              onClick={() => navigate("/volunteer_management/manage_applicant")}
+            >
+              Go Back
             </Button>
           </div>
         </div>
@@ -71,10 +92,14 @@ export default function ViewCredentials() {
         width="auto"
         className="image-preview-modal"
       >
-        <img alt="Credential Preview" src={previewImage} style={{ maxWidth: '100%' }} />
+        <img
+          alt="Credential Preview"
+          src={previewImage}
+          style={{ maxWidth: '100%' }}
+        />
       </Modal>
-
-
     </div>
   );
-}
+};
+
+export default ViewCredentials;

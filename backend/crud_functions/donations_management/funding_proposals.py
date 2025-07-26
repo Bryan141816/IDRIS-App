@@ -8,8 +8,32 @@ from data_schemas.funding_proposal_schema import FundingProposalCreate, FundingP
 from math import ceil
 
 import shutil
+from PIL import Image
+import io
 
 UPLOAD_DIR = Path("media/fundingproposals")
+
+def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
+    # Read file bytes
+    contents = upload_file.file.read()
+
+    # Open image with Pillow
+    image = Image.open(io.BytesIO(contents))
+
+    # Convert to RGB if needed (e.g., PNG with alpha)
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+
+    # Resize while keeping aspect ratio
+    image.thumbnail(max_size)
+
+    # Save to BytesIO as WebP
+    output = io.BytesIO()
+    image.save(output, format="WEBP", quality=quality, optimize=True)
+    output.seek(0)
+
+    return output.read()
+
 
 
 # FUNDING PROPOSALS CRUD FUNCTIONS
@@ -31,8 +55,13 @@ class FundingProposalCRUD:
                 unique_filename = f"{uuid4().hex}{ext}"
                 file_path = UPLOAD_DIR / unique_filename
 
-                with file_path.open("wb") as buffer:
-                    shutil.copyfileobj(image.file, buffer)
+               
+                processed_bytes = process_image_to_webp(image)
+
+                with file_path.with_suffix(".webp").open("wb") as buffer:
+                    buffer.write(processed_bytes)
+                file_path = file_path.with_suffix(".webp")  # Ensure correct path
+
 
             except Exception as e:
                 print(f"Error saving file: {e}")
@@ -136,10 +165,15 @@ class FundingProposalCRUD:
                 unique_name = f"{uuid.uuid4().hex}{ext}"
                 file_location = UPLOAD_DIR / unique_name
 
-                with open(file_location, "wb") as buffer:
-                    shutil.copyfileobj(image.file, buffer)
+                
+                processed_bytes = process_image_to_webp(image)
 
-                filename = unique_name
+                file_location = file_location.with_suffix(".webp")  # Force .webp
+                with open(file_location, "wb") as buffer:
+                    buffer.write(processed_bytes)
+
+                filename = str(file_location).replace("\\", "/")
+
             except Exception as e:
                 print(f"Error saving image: {e}")
                 raise HTTPException(status_code=500, detail="Error saving image")

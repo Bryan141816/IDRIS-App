@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-
 from database import Base, engine, get_db
 from models import ResponseReport  # no Role import
 from datetime import datetime
@@ -22,6 +21,7 @@ from routers.donations_management import (
     funding_proposals_route,
     donors_route,
     transparency_report_route,
+    donations_route
 )
 
 from fastapi.staticfiles import StaticFiles
@@ -39,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(authentication.router)
+app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)

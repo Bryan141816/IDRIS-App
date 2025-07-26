@@ -129,6 +129,12 @@ const TransparencyReport = () =>
   import(
     "./pages/donations_management/transparency_report_management/TransparencyReport"
   ).then((module) => ({ Component: module.default }));
+
+const FundingDonation = () =>
+  import(
+    "./pages/donations_management/donations/FundingDonation"
+  ).then((module) => ({ Component: module.default }));
+
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -307,6 +313,11 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          {
+            path: "funding_donation",
+            lazy: FundingDonation,
+          },
+    
         ],
       },
       {

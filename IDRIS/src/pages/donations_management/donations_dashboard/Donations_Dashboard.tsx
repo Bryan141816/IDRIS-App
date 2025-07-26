@@ -10,11 +10,14 @@ import { FundingCard } from "./FundingCard";
 import {
   getCountofDonors,
   getFundingProposals,
-  getFundingProposalMaxPage,
 } from "../../../API_Handler/donations_dashboard_handler";
 import {
   getTransparencyReportsMini,
 } from "../../../API_Handler/donations_transparency_report";
+import {
+  getTotalDonations,
+  getRetentionRate
+} from "../../../API_Handler/donations_donation_handler";
 
 interface TransparencyReportInterface {
   file_name: string;
@@ -67,13 +70,48 @@ const DonationRecordSample = [
 const DonationsDashboard = () => {
   const [loading, setLoading] = useState(true);
 
-  const [donors_count, setDonorCount] = useState<number>(0);
+  // TOTAL DONATIONS VARIABLES
+  const currentDate = new Date();
+  const [total_donations, setTotalDonations] = useState<number>(0);
+  const [donations_year, setDonationsYear] = useState<number>(currentDate.getFullYear());
+  const [donations_month, setDonationsMonth] = useState<number | null>(currentDate.getMonth() + 1);
+
   let statistics = {
     overall_donations: 1000000,
     retention: 78,
   };
 
-  // GET TOTAL DONORS
+  // GET TOTAL DONATIONS
+  useEffect(() => {
+    const fetchDonations = async () => {
+      try {
+        const response = await getTotalDonations(donations_year, donations_month);
+        console.log(response);
+        if (response && typeof response.data.total_donations === "number") {
+          setTotalDonations(response.data.total_donations);
+        } else {
+          console.error("Invalid response format:", response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch donor count:", error);
+      }
+
+    }
+    fetchDonations();
+  }, [donations_month]);
+
+  type DonationsFilterType = "yearly" | "monthly";
+  const handleTotalDonationsFilter = (type: DonationsFilterType) => {
+    if(type == "yearly"){
+      setDonationsMonth(null);
+    } else {
+      setDonationsMonth(currentDate.getMonth() + 1);
+    }
+  }
+
+  // =======================================> TOTAL DONORS
+  const [donors_count, setDonorCount] = useState<number>(0);
+  //  GET TOTAL DONORS
   useEffect(() => {
     const fetchCount = async () => {
       try {
@@ -91,7 +129,26 @@ const DonationsDashboard = () => {
     fetchCount();
   }, []);
 
-  // TRANSPARENCY REPORT
+  // =======================================> DONATION RETENTION
+  const [ donation_retention, setDonationRetention] = useState<number>(0);
+  useEffect(() => {
+    const fetchRetention = async() =>{
+      try{
+        const response = await getRetentionRate(currentDate.getFullYear());
+        console.log(response.data);
+        if(response && typeof response.data.retention_rate == 'number'){
+          setDonationRetention(response.data.retention_rate);
+        } else {
+          console.error("Invalid response format:", response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch donor count:", error);
+      }
+    }
+    fetchRetention();
+  }, []);
+
+  // =======================================> TRANSPARENCY REPORT
   const [transparencyReports, setTransparencyReports] = useState<TransparencyReportInterface[]>([]);
   const [selectedTransparencyDate, setSelectedTransparencyDate] = useState("");
   const [transparencyReportPage, setTransparencyReportPage] = useState<number>(1);
@@ -137,7 +194,7 @@ const DonationsDashboard = () => {
   const [fundingProposalsPage, setFundingProposalsPage] = useState<number>(1);
   const [fundingProposalMaxPage, setFundingProposalMaxPage] = useState<number>(1);
 
-  // GET FUNDING PROPOSALS
+  // =======================================> GET FUNDING PROPOSALS
   useEffect(() => {
     async function fetchFundingProposals() {
       try {
@@ -171,14 +228,24 @@ const DonationsDashboard = () => {
         <div id="donation-statistic">
           <div id="grid-container">
             <div className="donation-stat-card large">
-              <p className="title">Overall Donations</p>
+              <p className="title">
+                Overall Donations as of{" "}
+                {donations_month != null && new Date(donations_year, donations_month - 1).toLocaleString("default", {
+                  month: "long",
+                })}{" "}
+                {donations_year}
+              </p>
               <p className="stat-data">
                 {new Intl.NumberFormat("en-PH", {
                   style: "currency",
                   currency: "PHP",
                   minimumFractionDigits: 0,
-                }).format(statistics.overall_donations)}
+                }).format(total_donations)}
               </p>
+              <div className="total_donations_settings">
+                <button onClick={() => handleTotalDonationsFilter("monthly")}>Monthly</button>
+                <button onClick={() => handleTotalDonationsFilter("yearly")}>Yearly</button>
+              </div>
             </div>
 
             <div className="donation-stat-card">
@@ -187,7 +254,7 @@ const DonationsDashboard = () => {
             </div>
             <div className="donation-stat-card">
               <p className="title">Donor Retention</p>
-              <p className="stat-data">{statistics.retention}%</p>
+              <p className="stat-data">{donation_retention}%</p>
             </div>
           </div>
           <div id="transparency-report">

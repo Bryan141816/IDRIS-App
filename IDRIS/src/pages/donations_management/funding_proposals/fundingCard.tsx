@@ -2,7 +2,7 @@ import styles from "./fundingCard.module.scss";
 import defaultFundingImage from "../files/default_image.jpg";
 import { CircleDot } from "../../../components/Page_Furniture/Icons";
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 
@@ -112,7 +112,9 @@ const FundingCard: React.FC<FundingProp> = ({
         </div>
 
         {userType == "user" && (
+          <Link to={"/donations_management/funding_donation"} className={styles.anchorButton}>
           <button className={styles.donateButton}>Donate</button>
+          </Link>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 from datetime import timezone
 from enum import unique
-from sqlalchemy import Column, Boolean, Integer, String, DateTime, ForeignKey, CheckConstraint, func, Enum, Numeric, Date, Text, Float
+from sqlalchemy import Column, Boolean, Integer, String, DateTime, ForeignKey, CheckConstraint, func, Enum as SqlEnum, Numeric, Date, Text, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
@@ -114,14 +114,14 @@ class TransparencyReports(Base):
     date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
 class DonationType(enum.Enum):
-    ONE_TIME = "one-time"
-    RECURRING = "recurring"
+    ONE_TIME = "ONE_TIME"
+    RECURRING = "RECURRING"
 
 class DonationStatus(enum.Enum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 class DonationRecords(Base):
     __tablename__ = "donation_records"
@@ -129,13 +129,12 @@ class DonationRecords(Base):
     # Primary key should come first
     donationRecordId = Column(Integer, primary_key=True, index=True)
     
-    # Core attributes - FIXED: Changed to match actual column name in Donors table
+    # Core attributes - FIXED
     donor_id = Column(Integer, ForeignKey("donors.donorId"), nullable=False)
-    donation_type = Column(Enum(DonationType), nullable=False)
+    donation_type = Column(SqlEnum(DonationType), nullable=False)
     amount = Column(Numeric(10, 2), nullable=True)  # Nullable for in-kind donations
-    description = Column(Text, nullable=True)
-    date_received = Column(Date, nullable=False)
-    status = Column(Enum(DonationStatus), nullable=False, default=DonationStatus.PENDING)
+    description = Column(String(255), nullable=True)
+    status = Column(SqlEnum(DonationStatus), nullable=False, default=DonationStatus.PENDING)
     
     # Additional fields
     proposal_id = Column(Integer, ForeignKey("funding_proposals.proposalId"), nullable=True)
@@ -154,7 +153,6 @@ class DonationRecords(Base):
     is_active_recurring = Column(Boolean, nullable=True, default=True)
     
     payment_method = Column(String(50), nullable=True)
-    notes = Column(String, nullable=True)
     
     # Fixed relationships
     donor = relationship("Donors", back_populates="donations")

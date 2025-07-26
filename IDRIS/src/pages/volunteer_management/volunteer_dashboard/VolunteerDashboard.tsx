@@ -40,7 +40,7 @@ interface FormattedDate {
   year: number;
 }
 
-export default function IDRISDashboard(): JSX.Element {
+export default function IDRISDashboard() {
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
   const navigate = useNavigate();
@@ -49,7 +49,8 @@ export default function IDRISDashboard(): JSX.Element {
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [today] = useState<Date>(new Date());
   const [isProgramModalOpen, setIsProgramModalOpen] = useState<boolean>(false);
-  const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
+  const [isVolunteerModalOpen, setIsVolunteerModalOpen] =
+    useState<boolean>(false);
 
   // Functions for Program Modal
   const openProgramModal = (): void => {
@@ -221,7 +222,7 @@ export default function IDRISDashboard(): JSX.Element {
   const selectDate = (day: number | undefined): void => {
     if (day) {
       setCurrentDate(
-        new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
+        new Date(viewDate.getFullYear(), viewDate.getMonth(), day),
       );
     }
   };
@@ -273,7 +274,7 @@ export default function IDRISDashboard(): JSX.Element {
   const hasSchedule = (day: number): boolean => {
     if (!day) return false;
     const dateStr = `${viewDate.getFullYear()}-${String(
-      viewDate.getMonth() + 1
+      viewDate.getMonth() + 1,
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return deploymentSchedules.some((schedule) => schedule.date === dateStr);
   };

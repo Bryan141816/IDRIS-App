@@ -22,7 +22,7 @@ const ManageVolunteer: React.FC = () => {
   // Event handler for switch change
   const onChange = (checked: boolean): void => {
     // Handle switch change logic here
-    console.log('Switch changed:', checked);
+    console.log("Switch changed:", checked);
   };
 
   // Initialize applicants data with proper typing
@@ -218,44 +218,50 @@ const ManageVolunteer: React.FC = () => {
 
   // State with proper typing
   const [searchText, setSearchText] = useState<string>("");
-  const [selectedApplicant, setSelectedApplicant] = useState<Volunteer>(applicants[0]);
+  const [selectedApplicant, setSelectedApplicant] = useState<Volunteer>(
+    applicants[0],
+  );
 
   // Filtered applicants with proper typing
   const filteredApplicants: Volunteer[] = applicants.filter(
     (applicant) =>
       applicant.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      applicant.contactNumber.includes(searchText)
+      applicant.contactNumber.includes(searchText),
   );
 
   // Columns definition with proper typing
   const columns: TableColumn<Volunteer>[] = [
     {
       name: "Status",
-      selector: (row: Volunteer) => row.id,
+      cell: (row: Volunteer) => row.id,
       sortable: true,
       width: "150px",
       center: true,
     },
     {
       name: "Volunteer ID",
-      selector: (row: Volunteer) => row.name,
+      cell: (row: Volunteer) => row.name,
       sortable: true,
     },
     {
       name: "Name",
-      selector: (row: Volunteer) => row.contactNumber,
+      cell: (row: Volunteer) => row.contactNumber,
     },
     {
       name: "Contact Number",
-      selector: (row: Volunteer) => row.dateApplied,
+      cell: (row: Volunteer) => row.dateApplied,
     },
     {
       name: "Action",
       cell: (row: Volunteer) => (
         <div>
           {/* Add action buttons here */}
-          <Button size="small" onClick={showAlert}>Accept</Button>
-          <Button size="small" danger onClick={handleDelete}>Decline</Button>
+          <Button size="small" onClick={showAlert}>
+            Accept
+          </Button>
+          <Button size="small" danger onClick={handleDelete}>
+            Decline
+          </Button>
         </div>
       ),
       ignoreRowClick: true,

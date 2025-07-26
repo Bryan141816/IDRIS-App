@@ -218,7 +218,7 @@ const DemandAndResponse = () => {
             Submitted At:{" "}
             {dayjs(selectedMarker.submitted_at).format("MM/DD/YYYY hh:mm A")}
           </p>
-          {selectedMarker.status === "no_response" && (
+          {selectedMarker.status === "no response" && (
             <button id="demand_and_response_action_button">
               Send Response
             </button>

@@ -719,7 +719,7 @@ const DemandAndResponseList = () => {
               <span className="item-details-identifier">Needs:</span>
               <div className="dynamic-info-container">
                 <div id="needs-content-container">
-                  {isViewModalSelected.data[1].value.map((need) => (
+                  {isViewModalSelected.data[1].value.map((need: NeedItem) => (
                     <div key={need.id} className="needs-content">
                       <span id="need-label-adder">{need.need}</span>
                       <span>| {need.amount} |</span>

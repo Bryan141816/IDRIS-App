@@ -8,8 +8,13 @@ import {
   Upload,
   Space,
   message,
+  UploadProps,
 } from "antd";
-import type { UploadChangeParam, UploadFile, RcFile } from "antd/es/upload/interface";
+import type {
+  UploadChangeParam,
+  UploadFile,
+  RcFile,
+} from "antd/es/upload/interface";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import { Link, useNavigate } from "react-router-dom";
 import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
@@ -32,7 +37,7 @@ interface PersonalInfo {
   phone: string;
   address: string;
   birthDate: string;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   age: number;
   availability: string[];
   medicalCondition: string;
@@ -80,7 +85,7 @@ const OtherIndividualForm: React.FC = () => {
   }, []);
 
   // Upload validations
-  const beforeProfileUpload = (file: RcFile): boolean | Upload.LIST_IGNORE => {
+  const beforeProfileUpload: UploadProps["beforeUpload"] = (file) => {
     const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
     if (!isJpgOrPng) {
       message.error("You can only upload JPG/PNG file!");
@@ -91,14 +96,14 @@ const OtherIndividualForm: React.FC = () => {
       message.error("Image must be smaller than 2MB!");
       return Upload.LIST_IGNORE;
     }
-    return false; // prevent auto upload
+    return false; // Prevent auto-upload
   };
 
   const handleProfileChange = (info: UploadChangeParam<UploadFile>): void => {
     if (info.file.originFileObj) {
       const reader = new FileReader();
       reader.onload = (e: ProgressEvent<FileReader>) => {
-        if (e.target?.result && typeof e.target.result === 'string') {
+        if (e.target?.result && typeof e.target.result === "string") {
           setProfilePreview(e.target.result);
         }
       };
@@ -236,7 +241,9 @@ const OtherIndividualForm: React.FC = () => {
                   ]}
                 >
                   <Checkbox
-                    onChange={(e: CheckboxChangeEvent) => setUnderstood(e.target.checked)}
+                    onChange={(e: CheckboxChangeEvent) =>
+                      setUnderstood(e.target.checked)
+                    }
                     className="understand-checkbox"
                   >
                     I understand

@@ -1,9 +1,18 @@
-import React from 'react';
-import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
-import type { CheckboxOptionType } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
-import type { Dayjs } from 'dayjs';
-import './css/IndividualForm.css';
+import React from "react";
+import {
+  Button,
+  Breadcrumb,
+  Input,
+  Form,
+  Select,
+  DatePicker,
+  Space,
+  Checkbox,
+} from "antd";
+import type { CheckboxOptionType } from "antd";
+import { Link, useNavigate } from "react-router-dom";
+import type { Dayjs } from "dayjs";
+import "./css/IndividualForm.css";
 
 // Define types for form values
 interface IndividualFormValues {
@@ -14,22 +23,27 @@ interface IndividualFormValues {
   phone: string;
   address: string;
   birthDate: Dayjs;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   age: number;
   availability: string[];
-  medicalCondition: 'none' | 'asthma' | 'heart_condition' | 'diabetes' | 'other';
+  medicalCondition:
+    | "none"
+    | "asthma"
+    | "heart_condition"
+    | "diabetes"
+    | "other";
   medicalDescription?: string;
 }
 
 // Define days of week options with proper typing
 const daysOfWeekOptions: CheckboxOptionType[] = [
-  { label: 'Sunday', value: 'Sunday' },
-  { label: 'Monday', value: 'Monday' },
-  { label: 'Tuesday', value: 'Tuesday' },
-  { label: 'Wednesday', value: 'Wednesday' },
-  { label: 'Thursday', value: 'Thursday' },
-  { label: 'Friday', value: 'Friday' },
-  { label: 'Saturday', value: 'Saturday' },
+  { label: "Sunday", value: "Sunday" },
+  { label: "Monday", value: "Monday" },
+  { label: "Tuesday", value: "Tuesday" },
+  { label: "Wednesday", value: "Wednesday" },
+  { label: "Thursday", value: "Thursday" },
+  { label: "Friday", value: "Friday" },
+  { label: "Saturday", value: "Saturday" },
 ];
 
 const IndividualForm: React.FC = () => {
@@ -185,7 +199,12 @@ const IndividualForm: React.FC = () => {
               <Form.Item
                 name="availability"
                 label="Availability"
-                rules={[{ required: true, message: 'Please select at least one available day' }]}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select at least one available day",
+                  },
+                ]}
               >
                 <Checkbox.Group options={daysOfWeekOptions} />
               </Form.Item>
@@ -193,7 +212,7 @@ const IndividualForm: React.FC = () => {
               <Form.Item
                 name="medicalCondition"
                 label="Do you have any medical condition?"
-                rules={[{ required: true, message: 'Please select an option' }]}
+                rules={[{ required: true, message: "Please select an option" }]}
               >
                 <Select placeholder="Select an option">
                   <Option value="none">None</Option>
@@ -205,8 +224,14 @@ const IndividualForm: React.FC = () => {
               </Form.Item>
 
               {/* Optional description if they choose "Other" */}
-              <Form.Item name="medicalDescription" label="If Other, please describe">
-                <Input.TextArea rows={3} placeholder="Describe your condition" />
+              <Form.Item
+                name="medicalDescription"
+                label="If Other, please describe"
+              >
+                <Input.TextArea
+                  rows={3}
+                  placeholder="Describe your condition"
+                />
               </Form.Item>
             </div>
 

@@ -74,11 +74,11 @@ const options = {
       max: 100,
       title: { display: true, text: "Occupancy (%)" },
       ticks: {
-        callback: (value: number) => `${value}%`,
+        callback: (value: string | number) => `${value}%`,
       },
     },
   },
-};
+} as const;
 
 const EvacuationAndShelter = () => {
   return (

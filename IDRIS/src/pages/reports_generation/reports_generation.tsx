@@ -16,13 +16,26 @@ import {
 import "./css/reports_generation.css";
 
 const ReportsGeneration = () => {
+  type ReportStatus = "completed" | "processing" | "failed" | "pending";
+
+  interface Report {
+    id: number;
+    title: string;
+    description: string;
+    type: string;
+    date: string;
+    status: ReportStatus;
+    size: string;
+    archivedDate?: string;
+  }
+
   const [filterType, setFilterType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [viewMode, setViewMode] = useState("active"); // 'active' or 'archived'
 
   // Sample reports data
-  const [activeReports, setActiveReports] = useState([
+  const [activeReports, setActiveReports] = useState<Report[]>([
     {
       id: 1,
       title: "Monthly Sales Report - Q3 2024",
@@ -79,7 +92,7 @@ const ReportsGeneration = () => {
     },
   ]);
 
-  const [archivedReports, setArchivedReports] = useState([]);
+  const [archivedReports, setArchivedReports] = useState<Report[]>([]);
 
   // Stats calculation
   const totalReports = activeReports.length + archivedReports.length;
@@ -108,7 +121,7 @@ const ReportsGeneration = () => {
     return matchesType && matchesSearch;
   });
 
-  const handleArchive = (reportId) => {
+  const handleArchive = (reportId: number) => {
     const reportToArchive = activeReports.find((r) => r.id === reportId);
     if (reportToArchive) {
       setActiveReports(activeReports.filter((r) => r.id !== reportId));
@@ -119,7 +132,7 @@ const ReportsGeneration = () => {
     }
   };
 
-  const handleUnarchive = (reportId) => {
+  const handleUnarchive = (reportId: number) => {
     const reportToUnarchive = archivedReports.find((r) => r.id === reportId);
     if (reportToUnarchive) {
       setArchivedReports(archivedReports.filter((r) => r.id !== reportId));
@@ -128,9 +141,9 @@ const ReportsGeneration = () => {
     }
   };
 
-  const handleDownload = (report) => {};
+  const handleDownload = (report: Report) => {};
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: ReportStatus) => {
     const statusConfig = {
       completed: {
         icon: CheckCircle,

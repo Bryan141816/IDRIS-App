@@ -127,11 +127,11 @@ body {
 }
 
 .total-card.applicants {
-  background-image: url("/src/pages/volunteer_management/volunteer_dashboard/images/applicantbg.png");
+  background-image: url("/src/pages/volunteer_management/volunteer_dashboard/images/applicantbg.webp");
 }
 
 .total-card.volunteers {
-  background-image: url("/src/pages/volunteer_management/volunteer_dashboard/images/volunteerbg.png");
+  background-image: url("/src/pages/volunteer_management/volunteer_dashboard/images/volunteerbg.webp");
 }
 
 .card-content {

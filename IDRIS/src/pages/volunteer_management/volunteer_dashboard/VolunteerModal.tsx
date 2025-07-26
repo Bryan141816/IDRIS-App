@@ -27,7 +27,7 @@ const VolunteerModal = ({ isOpen, onClose }: ModalProps) => {
             className="cancel-btn"
           >
             <img
-              src="/src/pages/volunteer_management/volunteer_dashboard/images/individual.png"
+              src="/src/pages/volunteer_management/volunteer_dashboard/images/individual.webp"
               className="button-icon"
             />
             As an Individual
@@ -38,7 +38,7 @@ const VolunteerModal = ({ isOpen, onClose }: ModalProps) => {
             onClick={() => navigate("/volunteer_management/organization_form")}
           >
             <img
-              src="/src/pages/volunteer_management/volunteer_dashboard/images/group.png"
+              src="/src/pages/volunteer_management/volunteer_dashboard/images/group.webp"
               className="org-icon"
             />
             {[...Array(4)].map((_, i) => (

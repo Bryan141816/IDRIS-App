@@ -10,10 +10,10 @@
   width: 208px;
   gap: 5px;
   padding: 5px 0;
-  z-index: 999;
+  z-index: 1000;
 }
 
-#sidebar-logo-container{
+#sidebar-logo-container {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -21,7 +21,7 @@
   gap: 8px;
   padding: 15px;
 
-  p{
+  p {
     font-weight: bold;
     font-size: 29.36px;
     letter-spacing: 5%;
@@ -39,13 +39,17 @@
   margin: 0;
   padding: 0;
 
-  -webkit-user-select: none; /* Safari, Chrome */
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* IE10+/Edge Legacy */
-  user-select: none;         /* Standard syntax */
+  -webkit-user-select: none;
+  /* Safari, Chrome */
+  -moz-user-select: none;
+  /* Firefox */
+  -ms-user-select: none;
+  /* IE10+/Edge Legacy */
+  user-select: none;
+  /* Standard syntax */
 }
 
-.nav-items{
+.nav-items {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -53,7 +57,7 @@
   align-items: center;
 }
 
-.flex-control{
+.flex-control {
   display: flex;
   justify-content: flex-start;
   font-size: 14px;
@@ -63,32 +67,36 @@
   align-items: center;
   color: #000;
 
-  a, svg{
+  a,
+  svg {
     color: white;
   }
 
-  svg path{
+  svg path {
     stroke-width: 2px;
   }
 }
 
 .flex-control {
   width: 100%;
+
   &:hover {
     background-color: $semi-light;
     color: $primary-color;
 
-    a, svg {
+    a,
+    svg {
       color: $primary-color;
     }
   }
 
-  &.active{
+  &.active {
     background-color: $semi-light;
     color: $primary-color;
     border-right: 5px solid $primary-color;
 
-    a, svg {
+    a,
+    svg {
       color: $primary-color;
     }
   }
@@ -110,7 +118,7 @@
   color: white;
 }
 
-.nav-sub-item:hover{
+.nav-sub-item:hover {
   color: $primary-color;
   background-color: $semi-light;
 }

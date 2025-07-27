@@ -40,6 +40,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import "./ResponseDashboard.scss";
 interface MapPinBase {
   id: string;
   type: "demand";
@@ -287,7 +288,7 @@ const ResponseDashboard = () => {
       <h3
         style={{
           color: "#749ab6",
-          fontSize: "2.6vw",
+          fontSize: "clamp(1.5rem, 2vw, 2rem)",
           fontWeight: "700",
           margin: "0 0 1rem 0",
           textAlign: "center",
@@ -296,270 +297,266 @@ const ResponseDashboard = () => {
       >
         RESPONSE DASHBOARD
       </h3>
+
       <div className="response-content">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "15px",
-          }}
-        >
-          <h3
+        <div id="report-container">
+          <div
+            id="reports-value"
             style={{
-              gridColumn: "span 2",
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: "15px",
             }}
           >
-            Reports
-          </h3>
-          <div
-            className="horizontal-container space-between-container"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h3>Recent Reports</h3>
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/response_dashboard/report_list"
-                className="manage-button"
-                prefetch-link="/response_dashboard/report_list"
-              >
-                <FontAwesomeIcon icon={faListUl} /> Manage
-              </Link>
-            )}
-          </div>
-          <div
-            className="sub-item-content-big-data"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h1>Monthly Report Count</h1>
-            <div className="horizontal-container full-width space-between-container comparizon-container">
-              {reportSummary ? (
-                <span>{reportSummary.total_reports}</span>
-              ) : (
-                <span>Loading Data</span>
-              )}
-              <span className="comparizon-value">
-                {reportSummary?.comparison.total_reports_change.diff}
-                {reportSummary?.comparison.total_reports_change.percent} vs Last
-                Month
-              </span>
-            </div>
-          </div>
-          <div className="recent-report">
-            {recentReport ? (
-              <TableView
-                tableJSON={recentReport}
-                onClickCallback={() => {}}
-                setCallbackTableData={false}
-              ></TableView>
-            ) : (
-              <div>Loading Data</div>
-            )}
-          </div>
-          <div className="sub-item-content-big-data">
-            <h1>Completed Reports</h1>
-            <div className="horizontal-container full-width space-between-container comparizon-container">
-              {reportSummary ? (
-                <span>{reportSummary.completed}</span>
-              ) : (
-                <span>Loading Data</span>
-              )}
-              <span className="comparizon-value">
-                {reportSummary?.comparison.completed_change.diff}
-                {reportSummary?.comparison.completed_change.percent} vs Last
-                Month
-              </span>
-            </div>
-          </div>
-          <div className="sub-item-content-big-data">
-            <h1>Ongoing Reports</h1>
-            <div className="horizontal-container full-width space-between-container comparizon-container">
-              {reportSummary ? (
-                <span>{reportSummary.started}</span>
-              ) : (
-                <span>Loading Data</span>
-              )}
-              <span className="comparizon-value">
-                {reportSummary?.comparison.started_change.diff}
-                {reportSummary?.comparison.started_change.percent} vs Last Month
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "15px",
-          }}
-        >
-          <div className="horizontal-container space-between-container">
-            <h3>Demand and Response Map</h3>
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/response_dashboard/demand_and_response_map"
-                prefetch-link="/response_dashboard/demand_and_response_map"
-                className="manage-button"
-              >
-                <FontAwesomeIcon icon={faListUl} /> Manage
-              </Link>
-            )}
-          </div>
-          <div className="horizontal-container space-between-container">
-            <h3>Modality Distribution</h3>
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/response_dashboard/modality_distribution"
-                prefetch-link="/response_dashboard/modality_distribution"
-                className="manage-button"
-              >
-                <FontAwesomeIcon icon={faListUl} /> Manage
-              </Link>
-            )}
-          </div>
-          <div
-            className="horizontal-container space-between-container"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h3>In-Kind Monitoring</h3>
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/response_dashboard/in_kind_monitoring"
-                prefetch-link="/response_dashboard/in_kind_monitoring"
-                className="manage-button"
-              >
-                <FontAwesomeIcon icon={faListUl} /> Manage
-              </Link>
-            )}
-          </div>
-          <div
-            style={{
-              gridRow: "span 4",
-              overflow: "hidden",
-              boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
-              position: "relative",
-            }}
-            className="bordered-sub-item"
-          >
-            {isPageFullyLoaded && (
-              <MapView
-                center={[10.313924, 123.887082]}
-                markers={demandMapPin ?? []}
-                fitBounds={true}
-                pathCoordinates={null}
-              />
-            )}
-          </div>
-          <div
-            style={{
-              gridRow: "span 4",
-              backgroundColor: "white",
-              boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
-            }}
-            className="bordered-sub-item"
-          >
-            <div
+            <h3
               style={{
-                display: "flex",
-                padding: "15px",
-                height: "100%",
-                width: "100%",
-                justifyContent: "center",
-                alignItems: "center",
+                gridColumn: "span 2",
               }}
             >
-              {modalityChart ? (
-                modalityChart.labels ? (
-                  <Doughnut data={modalityChart} options={options} />
+              Reports
+            </h3>
+
+            <div
+              className="sub-item-content-big-data"
+              style={{ gridColumn: "span 2" }}
+            >
+              <h1>Monthly Report Count</h1>
+              <div className="horizontal-container full-width space-between-container comparizon-container">
+                {reportSummary ? (
+                  <span>{reportSummary.total_reports}</span>
                 ) : (
-                  <div>No Records</div>
-                )
+                  <span>Loading Data</span>
+                )}
+                <span className="comparizon-value">
+                  {reportSummary?.comparison.total_reports_change.diff}
+                  {reportSummary?.comparison.total_reports_change.percent} vs
+                  Last Month
+                </span>
+              </div>
+            </div>
+
+            <div className="sub-item-content-big-data">
+              <h1>Completed Reports</h1>
+              <div className="horizontal-container full-width space-between-container comparizon-container">
+                {reportSummary ? (
+                  <span>{reportSummary.completed}</span>
+                ) : (
+                  <span>Loading Data</span>
+                )}
+                <span className="comparizon-value">
+                  {reportSummary?.comparison.completed_change.diff}
+                  {reportSummary?.comparison.completed_change.percent} vs Last
+                  Month
+                </span>
+              </div>
+            </div>
+            <div className="sub-item-content-big-data">
+              <h1>Ongoing Reports</h1>
+              <div className="horizontal-container full-width space-between-container comparizon-container">
+                {reportSummary ? (
+                  <span>{reportSummary.started}</span>
+                ) : (
+                  <span>Loading Data</span>
+                )}
+                <span className="comparizon-value">
+                  {reportSummary?.comparison.started_change.diff}
+                  {reportSummary?.comparison.started_change.percent} vs Last
+                  Month
+                </span>
+              </div>
+            </div>
+          </div>
+          <div id="recent-report-container">
+            <div className="horizontal-container space-between-container">
+              <h3>Recent Reports</h3>
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/response_dashboard/report_list"
+                  className="manage-button"
+                  prefetch-link="/response_dashboard/report_list"
+                >
+                  <FontAwesomeIcon icon={faListUl} /> Manage
+                </Link>
+              )}
+            </div>
+            <div className="recent-report">
+              {recentReport ? (
+                <TableView
+                  tableJSON={recentReport}
+                  onClickCallback={() => {}}
+                  setCallbackTableData={false}
+                ></TableView>
               ) : (
                 <div>Loading Data</div>
               )}
             </div>
           </div>
-          <div
-            className="sub-item-content-big-data-inverted"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h1>Relief Packs Available for Distribution</h1>
-            {inKindMonitoring ? (
-              <span>{inKindMonitoring?.available_relief_packs}</span>
-            ) : (
-              <span>Loading Data</span>
-            )}
+        </div>
+        <div className="horizontal-container-dash">
+          <div className="vertical-container" id="demand-map-container">
+            <div className="horizontal-container space-between-container">
+              <h3>Demand and Response Map</h3>
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/response_dashboard/demand_and_response_map"
+                  prefetch-link="/response_dashboard/demand_and_response_map"
+                  className="manage-button"
+                >
+                  <FontAwesomeIcon icon={faListUl} /> Manage
+                </Link>
+              )}
+            </div>
+            <div
+              style={{
+                overflow: "hidden",
+                boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
+                position: "relative",
+              }}
+              className="bordered-sub-item"
+            >
+              {isPageFullyLoaded && (
+                <MapView
+                  center={[10.313924, 123.887082]}
+                  markers={demandMapPin ?? []}
+                  fitBounds={true}
+                  pathCoordinates={null}
+                />
+              )}
+            </div>
           </div>
-          <div
-            className="sub-item-content-big-data-inverted"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h1>Relief Packs Currently in Transit</h1>
-            {inKindMonitoring ? (
-              <span>{inKindMonitoring?.currently_in_transit}</span>
-            ) : (
-              <span>Loading Data</span>
-            )}
+          <div className="vertical-container" id="modality-container">
+            <div className="horizontal-container space-between-container">
+              <h3>Modality Distribution</h3>
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/response_dashboard/modality_distribution"
+                  prefetch-link="/response_dashboard/modality_distribution"
+                  className="manage-button"
+                >
+                  <FontAwesomeIcon icon={faListUl} /> Manage
+                </Link>
+              )}
+            </div>
+            <div
+              style={{
+                gridRow: "span 4",
+                backgroundColor: "white",
+                boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
+              }}
+              className="bordered-sub-item"
+            >
+              <div
+                style={{
+                  display: "flex",
+                  padding: "15px",
+                  height: "100%",
+                  width: "100%",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                {modalityChart ? (
+                  modalityChart.labels ? (
+                    <Doughnut data={modalityChart} options={options} />
+                  ) : (
+                    <div>No Records</div>
+                  )
+                ) : (
+                  <div>Loading Data</div>
+                )}
+              </div>
+            </div>
           </div>
-          <div
-            className="sub-item-content-big-data-inverted"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h1>Total Relief Packs Already Distributed</h1>
-            {inKindMonitoring ? (
-              <span>{inKindMonitoring?.already_distributed}</span>
-            ) : (
-              <span>Loading Data</span>
-            )}
+          <div className="vertical-container" id="in-kind-container">
+            <div className="horizontal-container space-between-container">
+              <h3>In-Kind Monitoring</h3>
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/response_dashboard/in_kind_monitoring"
+                  prefetch-link="/response_dashboard/in_kind_monitoring"
+                  className="manage-button"
+                >
+                  <FontAwesomeIcon icon={faListUl} /> Manage
+                </Link>
+              )}
+            </div>
+            <div
+              className="sub-item-content-big-data-inverted"
+              style={{ gridColumn: "span 2" }}
+            >
+              <h1>Relief Packs Available for Distribution</h1>
+              {inKindMonitoring ? (
+                <span>{inKindMonitoring?.available_relief_packs}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
+            </div>
+            <div
+              className="sub-item-content-big-data-inverted"
+              style={{ gridColumn: "span 2" }}
+            >
+              <h1>Relief Packs Currently in Transit</h1>
+              {inKindMonitoring ? (
+                <span>{inKindMonitoring?.currently_in_transit}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
+            </div>
+            <div
+              className="sub-item-content-big-data-inverted"
+              style={{ gridColumn: "span 2" }}
+            >
+              <h1>Total Relief Packs Already Distributed</h1>
+              {inKindMonitoring ? (
+                <span>{inKindMonitoring?.already_distributed}</span>
+              ) : (
+                <span>Loading Data</span>
+              )}
+            </div>
           </div>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: "15px",
-            paddingBottom: "30px",
-          }}
-        >
-          <div
-            className="horizontal-container space-between-container"
-            style={{ gridColumn: "span 2" }}
-          >
-            <h3>Budget</h3>
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/response_dashboard/budget_record"
-                prefetch-link="/response_dashboard/budget_record"
-                className="manage-button"
+        <div className="horizontal-container-dash">
+          <div className="vertical-container" id="budget-container">
+            <div className="horizontal-container space-between-container">
+              <h3>Budget</h3>
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/response_dashboard/budget_record"
+                  prefetch-link="/response_dashboard/budget_record"
+                  className="manage-button"
+                >
+                  <FontAwesomeIcon icon={faListUl} /> Manage
+                </Link>
+              )}
+            </div>
+            <div id="budget-value">
+              <div
+                className="bordered-sub-item budget-value"
+                style={{
+                  padding: "15px",
+                  boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
+                }}
               >
-                <FontAwesomeIcon icon={faListUl} /> Manage
-              </Link>
-            )}
-          </div>
-          <div
-            className="bordered-sub-item"
-            style={{
-              padding: "15px",
-              boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
-            }}
-          >
-            {raisedBudget ? (
-              <Line data={raisedBudget} options={lineChartOptions} />
-            ) : (
-              <div>Loading Data</div>
-            )}
-          </div>
-          <div
-            className="bordered-sub-item"
-            style={{
-              padding: "15px",
-              boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
-            }}
-          >
-            {spendingBreakdown ? (
-              <Bar data={spendingBreakdown} options={barChartOptions} />
-            ) : (
-              <div>Loading Data</div>
-            )}
+                {raisedBudget ? (
+                  <Line data={raisedBudget} options={lineChartOptions} />
+                ) : (
+                  <div>Loading Data</div>
+                )}
+              </div>
+              <div
+                className="bordered-sub-item budget-value"
+                style={{
+                  padding: "15px",
+                  boxShadow: "0 1px 10px rgba(50, 50, 50, 0.35)",
+                }}
+              >
+                {spendingBreakdown ? (
+                  <Bar data={spendingBreakdown} options={barChartOptions} />
+                ) : (
+                  <div>Loading Data</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

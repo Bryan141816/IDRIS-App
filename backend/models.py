@@ -4,6 +4,7 @@ from sqlalchemy import Column, Boolean, Integer, String, DateTime, ForeignKey, C
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
+from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base 
 import enum
 
@@ -74,7 +75,7 @@ class FundingProposals(Base):
     proposalId = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(String, nullable=False)
-    progress = Column(Integer, default=0, nullable=False) 
+    progress = Column(Integer, default=0, nullable=False) # UNUSED
     budgetRequired = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -102,6 +103,14 @@ class Donors(Base):
     
     user = relationship("User", back_populates="donor_profile")
 
+    @property
+    def donor_name(self):
+            if self.donor_type == "organization" and self.organization_name:
+                return self.organization_name
+            elif self.user:
+                return self.user.username
+            return "Unknown Donor"
+            
 class TransparencyReports(Base):
     __tablename__ = 'transparency_report'
     

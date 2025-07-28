@@ -4,6 +4,7 @@ from typing import List, Optional
 from pathlib import Path
 from database import get_db
 from routers.role_checker import RoleChecker
+from datetime import date
 from math import ceil
 from models import FundingProposals
 from schemas import Number  
@@ -11,7 +12,7 @@ from crud_functions.donations_management.funding_proposals import FundingProposa
 
 from data_schemas.funding_proposal_schema import ( 
     FundingProposalCreate, FundingProposalUpdate, FundingProposalGet, 
-    FundingProposalResponse , FundingProposalResponsePaginated
+    FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
     )
 
 router_admin = APIRouter(
@@ -122,8 +123,19 @@ def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
     total_records = db.query(FundingProposals).count()
     pages = ceil(total_records / limit) if limit > 0 else 1
     return {"count": pages}
-    
+
 router = APIRouter()
+
+@router.get("/total_holding", response_model=List[FundingPieChart])
+def get_total_holding(
+    date_since: date = Query(default=date.today().replace(year=date.today().year - 1), description="Start date (default: 1 year ago)"),
+    date_to: date = Query(default=date.today(), description="End date (default: today)"),
+    db: Session = Depends(get_db)
+):
+    return CRUD.total_holding(db, date_since, date_to)
+
+
+# router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

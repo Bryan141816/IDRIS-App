@@ -64,6 +64,39 @@
 
   }
 
+  .horizontal-container{
+    display: flex;
+    flex-direction: row;
+
+    .total_donations_settings{
+      margin-left: auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      gap: 5px;
+
+      button{
+        padding: 5px 10px;
+        background-color: $saffron-yellow;
+        font-weight: 700;
+        border-radius: 20px;
+        border: none;
+    
+        &.inactive {
+          background: linear-gradient(135deg, #e6a612 0%, #d4940e 100%);
+          transform: translateY(-3px);
+          box-shadow: 0 4px 10px rgb(37, 48, 93);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, #fcb814 0%, #e8a904 100%);
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(255, 250, 210, 0.8);
+        }
+      }
+    }
+  }
+
   #donation-record-container {
     display: flex;
     flex-direction: column;

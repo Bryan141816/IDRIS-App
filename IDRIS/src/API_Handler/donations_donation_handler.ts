@@ -12,3 +12,9 @@ export async function getRetentionRate(year: number = 2025): Promise<any> {
         params: { year },
     });
 }
+
+export async function getDonationRecord(limit: number = 1): Promise<any> {
+    return await API.get(`/donations/recent/details`, {
+        params: { limit },
+    })
+}

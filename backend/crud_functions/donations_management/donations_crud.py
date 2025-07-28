@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import extract, func
 from models import DonationRecords, DonationStatus
 from data_schemas.donation_schema import DonationCreate
-from datetime import datetime, timedelta
 
 class DonationCRUD:
     @staticmethod
@@ -62,3 +61,27 @@ class DonationCRUD:
             "retained_donors": retained_donors,
             "retention_rate": round((retained_donors / total_prev_donors) * 100, 2) if total_prev_donors else 0.0
         }
+
+    @staticmethod
+    def get_donations_with_details(db: Session, limit: int = 10):
+        """
+        Get recent donations with donation_date, donor name, and funding proposal title.
+        """
+        results = (
+            db.query(DonationRecords)
+            .join(DonationRecords.donor)
+            .join(DonationRecords.proposal, isouter=True)
+            .order_by(DonationRecords.donation_date.desc())
+            .limit(limit)
+            .all()
+        )
+
+        return [
+            {
+                "donation_date": r.donation_date,
+                "donor_name": r.donor.donor_name,
+                "funding_title": r.proposal.title if r.proposal else None,
+                "amount": r.amount
+            }
+            for r in results
+        ]

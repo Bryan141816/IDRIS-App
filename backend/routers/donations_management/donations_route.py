@@ -29,3 +29,7 @@ def total_donations(
 def donor_retention(year: int = datetime.now(timezone.utc).year, db: Session = Depends(get_db)):
     result = CRUD.get_donor_retention_by_year(db, year)
     return result
+
+@router.get("/recent/details")
+def recent_donations(limit: int = 10, db: Session = Depends(get_db)):
+    return CRUD.get_donations_with_details(db, limit=limit)

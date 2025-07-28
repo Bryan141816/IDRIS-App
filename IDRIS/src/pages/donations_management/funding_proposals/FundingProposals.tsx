@@ -12,7 +12,7 @@ interface Proposal {
   description: string;
   budgetRequired: number;
   image?: string;
-  donated?: number; // optional unless you're tracking donations
+  total_donated?: number; // optional unless you're tracking donations
 }
 
 const FundingProposals = () => {
@@ -116,7 +116,7 @@ const FundingProposals = () => {
             proposalId={item.proposalId}
             title={item.title}
             description={item.description}
-            donated={item.donated ?? 0}
+            donated={item.total_donated ?? 0}
             target={item.budgetRequired}
             image={item.image ? `${item.image}` : undefined}
           />

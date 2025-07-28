@@ -40,3 +40,11 @@ export async function getFundingProposalsById(id: number): Promise<any> {
   const response = await API.get(`/funding_proposals/proposals/get_proposal/${id}/`);
   return response.data;
 } 
+
+export async function getFundingProposalTotalDonations(date_since: string, date_to: string): Promise<any>{
+  const response = await API.get(`/funding_proposals/total_holding`,{
+    params: { date_since, date_to }
+  },
+  )
+  return response.data
+}

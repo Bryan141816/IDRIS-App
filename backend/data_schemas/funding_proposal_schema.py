@@ -6,7 +6,6 @@ from typing import  Optional, List
 class FundingProposalBase(BaseModel):
     title: str
     description: str
-    progress: int = 0  
     budgetRequired: int
     status: Optional[str] = "Active"
 
@@ -21,6 +20,7 @@ class FundingProposalUpdate(FundingProposalBase):
 
 class FundingProposalGet(FundingProposalBase):
     proposalId: int
+    total_donated: float
     created_at: datetime
     updated_at: datetime
     image: Optional[str] = None 
@@ -42,3 +42,7 @@ class FundingProposalResponsePaginated(BaseModel):
     
     class Config:
         from_attributes = True
+
+class FundingPieChart(BaseModel):
+    title: str
+    total_donated: float

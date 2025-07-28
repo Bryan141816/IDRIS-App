@@ -7,7 +7,7 @@ const backendUrl = "http://127.0.0.1:8000";
 type FundingProps = {
   image?: string;
   message?: string;
-  funded?: number;
+  donated?: number;
   target?: number;
   anchorLink?: number;
   className?: string;
@@ -16,14 +16,14 @@ type FundingProps = {
 export const FundingCard: React.FC<FundingProps> = ({
   image,
   message,
-  funded,
+  donated,
   target,
   anchorLink,
   className = "",
 }) => {
   const { userRoles } = useUserRoleContext();
 
-  const filled = Math.min(((funded ?? 0) / (target ?? 1)) * 100, 100);
+  const filled = Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100);
 
   return (
     <div className={`${styles.fundingCard} ${className}`}>

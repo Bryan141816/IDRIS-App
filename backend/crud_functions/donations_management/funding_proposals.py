@@ -1,11 +1,16 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
-from models import FundingProposals
-from data_schemas.funding_proposal_schema import FundingProposalCreate, FundingProposalUpdate, FundingProposalResponsePaginated
+from models import FundingProposals, DonationRecords
+from data_schemas.funding_proposal_schema import ( FundingProposalCreate, FundingProposalUpdate, 
+                                                  FundingProposalResponsePaginated, FundingPieChart,
+                                                  FundingProposalGet,
+)
 from math import ceil
+from datetime import datetime, date, time
 
 import shutil
 from PIL import Image
@@ -123,7 +128,39 @@ class FundingProposalCRUD:
             else:
                 max_page = 1  # or 0 if you prefer no pagination fallback
 
-            records = query.all()
+            proposals = query.all()
+
+            # Build list of FundingProposalGet with total_donated
+            proposal_ids = [p.proposalId for p in proposals]
+
+            # Aggregate total_donated from Donation table
+            donations_subquery = (
+                db.query(
+                    DonationRecords.proposal_id.label("proposal_id"),
+                    func.coalesce(func.sum(DonationRecords.amount), 0).label("total_donated")
+                )
+                .filter(DonationRecords.proposal_id.in_(proposal_ids))
+                .group_by(DonationRecords.proposal_id)
+                .all()
+            )
+
+            # Build map from proposal_id to total_donated
+            donation_map = {d.proposal_id: d.total_donated for d in donations_subquery}
+
+            # Prepare records for Pydantic model
+            records = []
+            for proposal in proposals:
+                record = FundingProposalGet(
+                    proposalId=proposal.proposalId,
+                    title=proposal.title,
+                    description=proposal.description,
+                    budgetRequired=proposal.budgetRequired,
+                    created_at=proposal.created_at,
+                    updated_at=proposal.updated_at,
+                    image=proposal.image,
+                    total_donated=donation_map.get(proposal.proposalId, 0.0)
+                )
+                records.append(record)
 
             return FundingProposalResponsePaginated(
                 max_page=max_page,
@@ -204,3 +241,20 @@ class FundingProposalCRUD:
         db.commit()
         return True
 
+    @staticmethod
+    def total_holding(db: Session, date_since: date, date_to: date) -> List[FundingPieChart]:
+        # Convert to datetime ranges
+        date_from_dt = datetime.combine(date_since, time.min)  # 00:00:00
+        date_to_dt = datetime.combine(date_to, time.max)
+        results = (
+            db.query(
+                FundingProposals.title.label("title"),
+                func.coalesce(func.sum(DonationRecords.amount), 0).label("total_donated")
+            )
+            .join(DonationRecords, FundingProposals.proposalId == DonationRecords.proposal_id)
+            .filter(DonationRecords.amount != None)
+            .filter(DonationRecords.donation_date.between(date_from_dt, date_to_dt))
+            .group_by(FundingProposals.title)
+            .all()
+        )
+        return [{"title": row.title, "total_donated": float(row.total_donated)} for row in results]

@@ -34,7 +34,17 @@ export const API = axios.create({
 });
 
 // Attach token & refresh if needed
+
 API.interceptors.request.use(async (config) => {
+  // Check if the request is for /login or /register
+  const skipRefresh =
+    config.url?.includes("/login") || config.url?.includes("/register");
+
+  // If the request is login/register → skip token logic
+  if (skipRefresh) {
+    return config;
+  }
+
   let token = getAccessToken() ?? "";
 
   // If token expired → try refreshing
@@ -54,8 +64,10 @@ API.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
+
 
 API.interceptors.response.use(
   (res) => res,

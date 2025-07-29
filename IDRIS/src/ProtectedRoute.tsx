@@ -26,8 +26,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const current = matches[matches.length - 1];
   const handle = current.handle as RouteHandle | undefined;
   const allowedRoles = handle?.allowedRoles;
-  console.log(allowedRoles);
-  console.log(userRoles);
+
   if (allowedRoles) {
     const userRoleAllowed = userRoles.some((value) =>
       allowedRoles.includes(value),

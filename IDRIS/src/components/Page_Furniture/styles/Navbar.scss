@@ -7,7 +7,8 @@
   align-items: center;
   background-color: $steel-blue;
   // height: 100%;
-  width: 208px;
+  min-width: 250px;
+  max-width: 20vw;
   gap: 5px;
   padding: 5px 0;
   z-index: 1000;
@@ -128,7 +129,7 @@
   opacity: 1;
 }
 
-@media screen and (max-width: 720px) {
+@media (max-aspect-ratio: 4/3) {
   .navbar {
     // height: 100%;
     display: none;

@@ -351,24 +351,29 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 lazy: DemandAndResponseMap,
+                handle: { allowedRoles: ["operations admin"] },
               },
               {
                 path: "list_view",
                 lazy: DemandAndResponseList,
+                handle: { allowedRoles: ["operations admin"] },
               },
             ],
           },
           {
             path: "modality_distribution",
             lazy: ModalityDistribution,
+            handle: { allowedRoles: ["operations admin"] },
           },
           {
             path: "in_kind_monitoring",
             lazy: InKindMonitoring,
+            handle: { allowedRoles: ["operations admin"] },
           },
           {
             path: "budget_record",
             lazy: BudgetRecord,
+            handle: { allowedRoles: ["operations admin"] },
           },
         ],
       },

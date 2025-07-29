@@ -399,7 +399,7 @@ const ResponseDashboard = () => {
             <div className="horizontal-container space-between-container">
               <h3
                 style={{
-                  fontSize: "clamp(0.9rem, 1vw, 2rem)",
+                  fontSize: "clamp(0.9rem, 1vw, 1rem)",
                 }}
               >
                 Demand and Response Map
@@ -436,7 +436,7 @@ const ResponseDashboard = () => {
             <div className="horizontal-container space-between-container">
               <h3
                 style={{
-                  fontSize: "clamp(0.9rem, 1vw, 2rem)",
+                  fontSize: "clamp(0.9rem, 1vw, 1.8rem)",
                 }}
               >
                 Modality Distribution

@@ -26,6 +26,8 @@
   gap: 35px;
   @include mixins.card-shadow;
   @include mixins.hover-lift;
+  flex-grow: 1;
+  height: fit-content;
 
   @media (max-width: 768px) {
     padding: 15px;

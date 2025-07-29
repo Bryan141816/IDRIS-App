@@ -133,6 +133,7 @@ const options = {
 };
 const lineChartOptions = {
   responsive: true,
+  maintainAspectRatio: false,
   plugins: {
     title: {
       display: true,
@@ -152,6 +153,7 @@ const lineChartOptions = {
 
 const barChartOptions = {
   responsive: true,
+  maintainAspectRatio: false,
   plugins: {
     title: {
       display: true,
@@ -392,10 +394,16 @@ const ResponseDashboard = () => {
             </div>
           </div>
         </div>
-        <div className="horizontal-container-dash">
+        <div className="horizontal-container-dash" id="second-dash">
           <div className="vertical-container" id="demand-map-container">
             <div className="horizontal-container space-between-container">
-              <h3>Demand and Response Map</h3>
+              <h3
+                style={{
+                  fontSize: "clamp(0.9rem, 1vw, 2rem)",
+                }}
+              >
+                Demand and Response Map
+              </h3>
               {userRoles.includes("operations admin") && (
                 <Link
                   to="/response_dashboard/demand_and_response_map"
@@ -426,7 +434,13 @@ const ResponseDashboard = () => {
           </div>
           <div className="vertical-container" id="modality-container">
             <div className="horizontal-container space-between-container">
-              <h3>Modality Distribution</h3>
+              <h3
+                style={{
+                  fontSize: "clamp(0.9rem, 1vw, 2rem)",
+                }}
+              >
+                Modality Distribution
+              </h3>
               {userRoles.includes("operations admin") && (
                 <Link
                   to="/response_dashboard/modality_distribution"

@@ -39,12 +39,11 @@
   display: flex;
   flex-direction: row;
   gap: 15px;
-  height: fit-content;
+  align-items: stretch;
 
   .vertical-container {
     display: flex;
     flex-direction: column;
-    height: 100;
     gap: 10px;
   }
 
@@ -74,11 +73,11 @@
 
   .budget-value {
     width: 100%;
-
+    min-height: 25vh;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-aspect-ratio: 4/3) {
   #report-container {
     flex-direction: column !important;
 
@@ -100,6 +99,7 @@
 
   .horizontal-container-dash {
     flex-direction: column !important;
+    height: fit-content;
   }
 
   #demand-map-container,
@@ -111,15 +111,17 @@
   #demand-map-container,
   #modality-container {
     aspect-ratio: 1/1;
-
-
   }
 
-  #demand-map-container h3 {
-    font-size: 0.8rem;
-  }
+
 
   #budget-value {
+    flex-direction: column !important;
+  }
+}
+
+@media(max-width: 786px) {
+  #second-dash {
     flex-direction: column !important;
   }
 }

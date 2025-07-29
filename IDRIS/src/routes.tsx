@@ -2,6 +2,12 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
+
+const UserNotAllowed = () =>
+  import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
+    Component: module.default,
+  }));
+
 const ReportsGeneration = () =>
   import("./pages/reports_generation/reports_generation").then((module) => ({
     Component: module.default,
@@ -131,9 +137,9 @@ const TransparencyReport = () =>
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
-  import(
-    "./pages/donations_management/donations/FundingDonation"
-  ).then((module) => ({ Component: module.default }));
+  import("./pages/donations_management/donations/FundingDonation").then(
+    (module) => ({ Component: module.default }),
+  );
 
 // Response Dashboard
 
@@ -214,6 +220,10 @@ export const router = createBrowserRouter([
       {
         path: "register",
         lazy: Register,
+      },
+      {
+        path: "user_not_allowed",
+        lazy: UserNotAllowed,
       },
       {
         path: "lgu_profiling",
@@ -317,7 +327,6 @@ export const router = createBrowserRouter([
             path: "funding_donation",
             lazy: FundingDonation,
           },
-    
         ],
       },
       {
@@ -334,6 +343,7 @@ export const router = createBrowserRouter([
           {
             path: "report_list",
             lazy: ReportList,
+            handle: { allowedRoles: ["operations admin"] },
           },
           {
             path: "demand_and_response_map",

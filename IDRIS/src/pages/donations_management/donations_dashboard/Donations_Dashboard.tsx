@@ -20,6 +20,7 @@ import {
   getRetentionRate,
   getDonationRecord
 } from "../../../API_Handler/donations_donation_handler";
+import { StringGradients } from "antd/es/progress/progress";
 
 interface TransparencyReportInterface {
   file_name: string;
@@ -40,7 +41,9 @@ interface DonationRecord {
   donation_date: Date;
   donor_name: string;
   funding_title: string;
-  amount: number
+  amount: number;
+  donation_kind: string;
+  item_description: string;
 }
 
 const DonationsDashboard = () => {
@@ -199,7 +202,6 @@ const DonationsDashboard = () => {
           fundingProposalsLimit,
           fundingProposalsPage,
         );
-        console.log(proposals);
         setFundingProposals(proposals.records);
         setFundingProposalMaxPage(proposals.max_page);
       } catch (error) {
@@ -329,6 +331,8 @@ const DonationsDashboard = () => {
               amount={donation.amount}
               site={donation.funding_title}
               date={new Date(donation.donation_date)}
+              kind={donation.donation_kind}
+              description={donation.item_description}
               className="donation-record"
             />
           ))}

@@ -105,10 +105,19 @@ class DonationCRUD:
             DonationRecords.status == 'COMPLETED'
         )            
 
+        filters = [
+            extract('year', DonationRecords.donation_date) == year,
+            DonationRecords.status == 'COMPLETED'
+        ]
+        
         if month is not None:
             query = query.filter(extract('month', DonationRecords.donation_date) == month)
 
-        total = query.scalar()
+        total = db.query(
+            func.coalesce(func.sum(DonationRecords.amount), 0) +
+            func.coalesce(func.sum(DonationRecords.estimated_value), 0)
+        ).filter(*filters).scalar()
+        
         return total
 
     @staticmethod
@@ -148,6 +157,7 @@ class DonationCRUD:
             db.query(DonationRecords)
             .join(DonationRecords.donor)
             .join(DonationRecords.proposal, isouter=True)
+            .filter(DonationRecords.status == DonationStatus.COMPLETED)
             .order_by(DonationRecords.donation_date.desc())
             .limit(limit)
             .all()
@@ -158,7 +168,9 @@ class DonationCRUD:
                 "donation_date": r.donation_date,
                 "donor_name": r.donor.donor_name,
                 "funding_title": r.proposal.title if r.proposal else None,
-                "amount": r.amount
+                "donation_kind": r.donation_kind,
+                "amount": r.amount if r.donation_kind == "cash" else r.estimated_value,
+                "item_description": r.item_description if r.donation_kind == "inkind" else None,
             }
             for r in results
         ]

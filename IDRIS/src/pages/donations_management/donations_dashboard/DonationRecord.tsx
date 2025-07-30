@@ -5,27 +5,39 @@ type RecordProps = {
   amount?: number | string;
   site?: string;
   date?: Date;
+  kind?: string;
+  description?: string;
   className?: string;
 }
 
 export const DonationRecord: React.FC<RecordProps> = ({
-  donor, 
-  amount, 
-  site, 
+  donor,
+  amount,
+  site,
   date,
+  kind,
+  description,
   className = ""
 }) => {
   const formattedDate = date
     ? date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : "";
 
   return (
     <div className={`${styles.donationRecord} ${className}`}>
-      <p className={styles.info}>{donor} donated PHP {formatAmount(amount)} to {site}</p>
+      {kind === "inkind" ? (
+        <p className={styles.info}>
+          {donor} donated <strong>in-kind</strong> items ({description?.toLowerCase() || "no description"}) worth {amount} to {site}
+        </p>
+      ) : (
+        <p className={styles.info}>
+          {donor} donated PHP {formatAmount(amount)} to {site}
+        </p>
+      )}
       <p className={styles.date}>{formattedDate}</p>
     </div>
   )

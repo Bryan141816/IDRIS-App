@@ -1,6 +1,6 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, literal
+from sqlalchemy import func, case, literal, or_
 from typing import List, Optional
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
@@ -262,10 +262,17 @@ class FundingProposalCRUD:
         results = (
             db.query(
                 FundingProposals.title.label("title"),
-                func.coalesce(func.sum(DonationRecords.amount), 0).label("total_donated")
+                func.coalesce(func.sum(
+                    func.coalesce(DonationRecords.amount, 0) +
+                    func.coalesce(DonationRecords.estimated_value, 0)
+                ), 0).label("total_donated")
             )
             .join(DonationRecords, FundingProposals.proposalId == DonationRecords.proposal_id)
-            .filter(DonationRecords.amount != None)
+            .filter(
+                or_(
+                    DonationRecords.amount != None,
+                    DonationRecords.estimated_value != None
+                ),)
             .filter(DonationRecords.donation_date.between(date_from_dt, date_to_dt))
             .group_by(FundingProposals.title)
             .all()

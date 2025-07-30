@@ -23,7 +23,7 @@ export const FundingCard: React.FC<FundingProps> = ({
 }) => {
   const { userRoles } = useUserRoleContext();
 
-  const filled = Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100);
+  const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
 
   return (
     <div className={`${styles.fundingCard} ${className}`}>

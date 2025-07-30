@@ -1,10 +1,10 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case, literal
 from typing import List, Optional
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
-from models import FundingProposals, DonationRecords
+from models import FundingProposals, DonationRecords, DonationStatus
 from data_schemas.funding_proposal_schema import ( FundingProposalCreate, FundingProposalUpdate, 
                                                   FundingProposalResponsePaginated, FundingPieChart,
                                                   FundingProposalGet,
@@ -137,12 +137,25 @@ class FundingProposalCRUD:
             donations_subquery = (
                 db.query(
                     DonationRecords.proposal_id.label("proposal_id"),
-                    func.coalesce(func.sum(DonationRecords.amount), 0).label("total_donated")
+                    func.coalesce(
+                        func.sum(
+                            case(
+                                (DonationRecords.donation_kind == "cash", DonationRecords.amount),
+                                (DonationRecords.donation_kind == "inkind", DonationRecords.estimated_value),
+                                else_=literal(0)
+                            )
+                        ),
+                        0
+                    ).label("total_donated")
                 )
-                .filter(DonationRecords.proposal_id.in_(proposal_ids))
+                .filter(
+                    DonationRecords.proposal_id.in_(proposal_ids),
+                    DonationRecords.status == DonationStatus.COMPLETED
+                )
                 .group_by(DonationRecords.proposal_id)
                 .all()
             )
+            print(donations_subquery)
 
             # Build map from proposal_id to total_donated
             donation_map = {d.proposal_id: d.total_donated for d in donations_subquery}
@@ -199,7 +212,7 @@ class FundingProposalCRUD:
 
                 # Generate unique name using UUID and preserve file extension
                 ext = Path(image.filename).suffix  # e.g., ".png", ".jpg"
-                unique_name = f"{uuid.uuid4().hex}{ext}"
+                unique_name = f"{uuid4().hex}{ext}"
                 file_location = UPLOAD_DIR / unique_name
 
                 

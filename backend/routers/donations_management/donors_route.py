@@ -19,7 +19,7 @@ from data_schemas.donors_schema import (
 from crud_functions.donations_management.donors import donor_crud
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
 )
 
 router_donor = APIRouter(
@@ -27,7 +27,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor", "volunteer", "contributor"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
 )
 
 

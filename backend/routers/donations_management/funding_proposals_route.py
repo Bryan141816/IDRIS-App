@@ -16,7 +16,7 @@ from data_schemas.funding_proposal_schema import (
     )
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
 )
 
 router_donor = APIRouter(
@@ -24,7 +24,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor", "volunteer", "contributor"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
 )
 
 
@@ -124,9 +124,7 @@ def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
     pages = ceil(total_records / limit) if limit > 0 else 1
     return {"count": pages}
 
-router = APIRouter()
-
-@router.get("/total_holding", response_model=List[FundingPieChart])
+@router_admin_or_donor.get("/total_holding", response_model=List[FundingPieChart])
 def get_total_holding(
     date_since: date = Query(default=date.today().replace(year=date.today().year - 1), description="Start date (default: 1 year ago)"),
     date_to: date = Query(default=date.today(), description="End date (default: today)"),
@@ -135,7 +133,7 @@ def get_total_holding(
     return CRUD.total_holding(db, date_since, date_to)
 
 
-# router = APIRouter()
+router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

@@ -316,10 +316,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 lazy: CreateFunding,
+                handle: { allowedRoles: ["finance admin"] },
               },
               {
                 path: "update",
                 lazy: UpdateFunding,
+                handle: { allowedRoles: ["finance admin"] },
               },
             ],
           },
@@ -332,6 +334,7 @@ export const router = createBrowserRouter([
       {
         path: "transparency_report",
         lazy: TransparencyReport,
+        handle: { allowedRoles: ["finance admin"] },
       },
       {
         path: "response_dashboard",

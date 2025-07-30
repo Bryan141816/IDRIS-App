@@ -73,7 +73,7 @@ const FundingCard: React.FC<FundingProp> = ({
         <p className={styles.title}>{title}</p>
         <div className={styles.menuContainer} ref={menuRef}>
           {/* TRIPLE CIRLE ICONS */}
-          {userRoles.includes("operations admin") && (
+          {userRoles.includes("finance admin") && (
             <div className={`${styles.iconsContainer}`} onClick={toggleActive}>
               <CircleDot width={14} height={14} />
               <CircleDot width={14} height={14} />

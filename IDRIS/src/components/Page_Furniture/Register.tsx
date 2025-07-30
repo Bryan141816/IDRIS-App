@@ -309,11 +309,17 @@ const Register = () => {
           >
             Disaster Response Admin
           </button>
-          <button id="volunteer" onClick={() => RegisterAs("logistics admin")}>
+          <button id="logistics-admin" onClick={() => RegisterAs("logistics admin")}>
             Logistics Admin
           </button>
-          <button id="ngo-rep" onClick={() => RegisterAs("operations admin")}>
+          <button id="operations-admin" onClick={() => RegisterAs("operations admin")}>
             Operations Admin
+          </button>
+          <button id="finance-admin" onClick={() => RegisterAs("finance admin")}>
+            Finance Admin
+          </button>
+          <button id="lgu-ofc-admin" onClick={() => RegisterAs("lgu officer admin")}>
+            LGU Officer Admin
           </button>
         </div>
       </Modal>

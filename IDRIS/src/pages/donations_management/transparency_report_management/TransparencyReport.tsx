@@ -197,7 +197,7 @@ const TransparencyReport = () => {
             onChange={(e) => setDateFilter(e.target.value)}
           />
 
-          {userRoles.includes("operations admin") && (
+          {userRoles.includes("finance admin") && (
             <>
               <button
                 type="button"

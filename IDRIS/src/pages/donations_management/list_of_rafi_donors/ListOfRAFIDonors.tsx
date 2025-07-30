@@ -396,7 +396,7 @@ const ListOfRAFIDonors = () => {
           onChange={setSelectedSorting}
         />
 
-        {userRoles.includes("operations admin") && (
+        {userRoles.includes("finance admin") && (
           <>
             <button
               type="button"

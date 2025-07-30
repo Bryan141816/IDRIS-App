@@ -146,8 +146,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </Link>
           </div>
         </div>
+        
 
-        <div className="nav-items" id="lgu-profiling">
+        <div className="nav-items" id="volunteer">
           <div
             className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
             onClick={() => {
@@ -209,7 +210,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           </div>
         </div>
 
-        <div className="nav-items" id="lgu-profiling">
+        <div className="nav-items" id="donations">
           <div
             className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
             onClick={() => {
@@ -217,12 +218,12 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             }}
           >
             <Donations width={14} height={14} className="sidebar-icons" />
-            {userRoles.includes("operations admin") && userType == "admin" && (
+            {userRoles.includes("finance admin") && userType == "admin" && (
               <a href="#" className="non-redirect">
                 DONATIONS MANAGEMENT
               </a>
             )}
-            {!userRoles.includes("operations admin") && (
+            {!userRoles.includes("finance admin") && (
               <a href="#" className="non-redirect">
                 DONATIONS
               </a>
@@ -265,7 +266,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           </div>
         </div>
 
-        <div className="nav-items" id="lgu-profiling">
+        <div className="nav-items" id="response">
           <div
             className={`flex-control ${activeNav === "response" ? "active" : ""}`}
             onClick={() => {
@@ -403,7 +404,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           </div>
         )}
 
-        {userRoles.includes("logistics admin") && userType == "admin" && (
+        {userRoles.includes("finance admin") && userType == "admin" && (
           <div className="nav-items" id="finance-admin">
             <div
               className={`flex-control ${activeNav === "finance" ? "active" : ""}`}

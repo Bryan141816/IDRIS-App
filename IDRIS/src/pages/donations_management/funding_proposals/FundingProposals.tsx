@@ -1,6 +1,7 @@
 import "./funding.scss";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
+import { useUserRoleContext } from "../../../UserRoleContext";
 import FundingCard from "./fundingCard";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ interface Proposal {
 }
 
 const FundingProposals = () => {
+  const { userRoles } = useUserRoleContext();
   const navigate = useNavigate();
   const filterItems = ["Ascending", "Descending"];
 
@@ -81,14 +83,16 @@ const FundingProposals = () => {
           value={filtered}
           onChange={setFiltered}
         />
-        <button
-          className="green-button"
-          onClick={() =>
-            navigate("/donations_management/funding_proposals/create")
-          }
-        >
-          Create New Proposal
-        </button>
+        {userRoles.includes("finance admin") &&
+          <button
+            className="green-button"
+            onClick={() =>
+              navigate("/donations_management/funding_proposals/create")
+            }
+          >
+            Create New Proposal
+          </button>
+        }
       </div>
       <div id="transparency-report-page-control" className="page-contorol">
         <button

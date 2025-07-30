@@ -2,6 +2,7 @@ import "./dashboard.scss";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MenuDots } from "../../../components/Page_Furniture/Icons";
+import { useUserRoleContext } from "../../../UserRoleContext";
 import DownloadableFile from "../../../components/Page_Furniture/Downloadable_File";
 import DashboardPieChart from "./Donation_dashboard_piechart";
 import pdf_logo from "../files/pdf-logo.png";
@@ -43,6 +44,7 @@ interface DonationRecord {
 }
 
 const DonationsDashboard = () => {
+  const { userRoles } = useUserRoleContext();
   const [loading, setLoading] = useState(true);
 
   // TOTAL DONATIONS VARIABLES
@@ -267,9 +269,13 @@ const DonationsDashboard = () => {
           <div id="transparency-report">
             <div className="head-container">
               <p className="title">Transparency Reports</p>
-              <Link to="/transparency_report">
-                <MenuDots />
-              </Link>
+
+              {userRoles.includes("finance admin") &&
+                <Link to="/transparency_report">
+                  <MenuDots />
+                </Link>
+              }
+
             </div>
             <input
               type="date"
@@ -330,13 +336,14 @@ const DonationsDashboard = () => {
 
         <h3 id="funding-proposals-title" className="public-feed-title">
           Recent Programs:
-          <Link to="/donations_management/funding_proposals">
-            <div className="icon-container">
-              <MenuDots className="menu-icon" />
-              Manage
-            </div>
-          </Link>
-
+          {userRoles.includes("finance admin") &&
+            <Link to="/donations_management/funding_proposals">
+              <div className="icon-container">
+                <MenuDots className="menu-icon" />
+                Manage
+              </div>
+            </Link>
+          }
         </h3>
         <div id="funding-proposals">
           {fundingProposals.map((funding, index) => (

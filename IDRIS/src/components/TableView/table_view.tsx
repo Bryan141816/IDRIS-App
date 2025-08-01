@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import "./table-view.scss";
 import { API } from "../../API_Handler/Axio_API_Handler";
+import PageLoader from "../Page_Furniture/Loader";
 interface TableProps {
   children: ReactNode;
 }
@@ -108,10 +109,9 @@ export const TableView: React.FC<TableViewProps> = ({
   const totalCount = tableJSON.count;
   const totalPages = Math.ceil(totalCount / rowsPerPage);
 
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
   const [displayedRows, setDisplayRows] = useState<TableDataRow[] | null>(null);
 
+  const [isloadingPage, setIsLoadingPage] = useState(false);
   // Pagination logic
   const maxVisiblePages = 4;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
@@ -132,6 +132,7 @@ export const TableView: React.FC<TableViewProps> = ({
       null;
     if (!row) {
       const fetchPage = async () => {
+        setIsLoadingPage(true);
         let pageCount = currentPage;
         if (currentPage % 2 == 0) pageCount--;
         if (pageRequest) {
@@ -141,6 +142,7 @@ export const TableView: React.FC<TableViewProps> = ({
             tableJSON.table_datas.find((item) => item.page === currentPage)
               ?.row ?? null,
           );
+          setIsLoadingPage(false);
         }
       };
       fetchPage();
@@ -200,27 +202,33 @@ export const TableView: React.FC<TableViewProps> = ({
       </TableHead>
 
       <div id="table-data-container">
-        {displayedRows &&
-          displayedRows.map((row, rowIndex) => (
-            <TableData
-              key={rowIndex}
-              iSborder={rowIndex !== displayedRows.length - 1}
-            >
-              {row.data.map((cellValue, cellIndex) => (
-                <TableCell
-                  key={cellIndex}
-                  cell={cellValue}
-                  onClickCallback={() => {
-                    if (setCallbackTableData) {
-                      onClickCallback(row);
-                    } else {
-                      onClickCallback();
-                    }
-                  }}
-                />
+        {isloadingPage ? (
+          <PageLoader />
+        ) : (
+          <>
+            {displayedRows &&
+              displayedRows.map((row, rowIndex) => (
+                <TableData
+                  key={rowIndex}
+                  iSborder={rowIndex !== displayedRows.length - 1}
+                >
+                  {row.data.map((cellValue, cellIndex) => (
+                    <TableCell
+                      key={cellIndex}
+                      cell={cellValue}
+                      onClickCallback={() => {
+                        if (setCallbackTableData) {
+                          onClickCallback(row);
+                        } else {
+                          onClickCallback();
+                        }
+                      }}
+                    />
+                  ))}
+                </TableData>
               ))}
-            </TableData>
-          ))}
+          </>
+        )}
       </div>
 
       <div className="pagination">

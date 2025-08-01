@@ -127,6 +127,9 @@ export const TableView: React.FC<TableViewProps> = ({
     pageNumbers.push(i);
   }
   useEffect(() => {
+    setCurrentPage(1);
+  }, [tableJSON]);
+  useEffect(() => {
     let row =
       tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
       null;

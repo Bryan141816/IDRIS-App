@@ -34,7 +34,7 @@ def get_recent_table(db: Session = Depends(get_db)):
         .limit(5)
         .all()
     )
-
+    pages = {"page": 1, "row": []}
     table_datas = []
     for report in reports:
         row_data = [
@@ -67,9 +67,11 @@ def get_recent_table(db: Session = Depends(get_db)):
                 width="150px",
             ),
         ]
-        table_datas.append({"data": row_data})
+        pages["row"].append({"data": row_data})
+    if pages["row"]:
+        table_datas.append(pages)
 
-    return TableResponse(table_head=table_head, table_datas=table_datas)
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=5)
 
 
 @router.get("/response_dashboard/report_summary")

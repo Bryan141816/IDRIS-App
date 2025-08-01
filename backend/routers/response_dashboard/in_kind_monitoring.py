@@ -1,5 +1,5 @@
 from crud import delete
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
@@ -19,7 +19,12 @@ router = APIRouter(
 @router.get(
     "/response_dashboard/in_kind_monitoring/record_list", response_model=TableResponse
 )
-def get_modality_table(db: Session = Depends(get_db)):
+def get_modality_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
+
+    if page % 2 == 0:
+        page -= 1
+
+    offset = (page - 1) * 10
     # Table header remains the same
     table_head = [
         {"text": "Date", "width": "150px"},
@@ -30,11 +35,22 @@ def get_modality_table(db: Session = Depends(get_db)):
 
     # Query all reports (limit if needed)
     reports = (
-        db.query(InKindMonitoring).order_by(InKindMonitoring.date_time.desc()).all()
+        db.query(InKindMonitoring)
+        .order_by(InKindMonitoring.date_time.desc())
+        .limit(10)
+        .offset(offset)
+        .all()
     )
 
     table_datas = []
+    pageCount = page
+    pages = {"page": pageCount, "row": []}
     for report in reports:
+
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)
+            pageCount += 1
+            pages = {"page": pageCount, "row": []}
         row_data = [
             Cell(
                 type="Hidden",  # Custom type handled in frontend
@@ -74,9 +90,13 @@ def get_modality_table(db: Session = Depends(get_db)):
                 button_width="120px",
             ),
         ]
-        table_datas.append({"data": row_data})
+        pages["row"].append({"data": row_data})
 
-    return TableResponse(table_head=table_head, table_datas=table_datas)
+    if pages["row"]:
+        table_datas.append(pages)
+
+    count = db.query(InKindMonitoring).count()
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
 @router.post(

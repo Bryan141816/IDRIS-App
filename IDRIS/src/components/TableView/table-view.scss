@@ -48,3 +48,21 @@
   text-overflow: ellipsis;
   vertical-align: middle;
 }
+
+.pagination {
+  margin-left: auto;
+  padding: 10px;
+  display: flex;
+  gap: 5px;
+
+  button {
+    padding: 5px;
+    border: 2px solid grey;
+    font-weight: 600;
+    border-radius: 5px;
+  }
+
+  .current-page {
+    border: 2px solid blue;
+  }
+}

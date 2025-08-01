@@ -1,5 +1,5 @@
 from crud import delete
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
@@ -16,8 +16,14 @@ router = APIRouter(
 
 
 @router.get("/response_dashboard/budget_record/get_list", response_model=TableResponse)
-def get_budget_table(db: Session = Depends(get_db)):
+def get_budget_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
     # Table header remains the same
+
+    if page % 2 == 0:
+        page -= 1
+
+    offset = (page - 1) * 10
+
     table_head = [
         {"text": "Date", "width": "150px"},
         {"text": "Record Type", "width": "250px"},
@@ -30,11 +36,20 @@ def get_budget_table(db: Session = Depends(get_db)):
     reports = (
         db.query(ResponseReportBudget)
         .order_by(ResponseReportBudget.date_time.desc())
+        .limit(20)
+        .offset(offset)
         .all()
     )
 
     table_datas = []
+
+    pageCount = page
+    pages = {"page": pageCount, "row": []}
     for report in reports:
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)
+            pageCount += 1
+            pages = {"page": pageCount, "row": []}
         row_data = [
             Cell(
                 type="Hidden",  # Custom type handled in frontend
@@ -81,9 +96,11 @@ def get_budget_table(db: Session = Depends(get_db)):
                 button_width="120px",
             ),
         ]
-        table_datas.append({"data": row_data})
-
-    return TableResponse(table_head=table_head, table_datas=table_datas)
+        pages["row"].append({"data": row_data})
+    if pages["row"]:
+        table_datas.append(pages)
+    count = db.query(ResponseReportBudget).count()
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
 @router.post(

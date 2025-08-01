@@ -770,6 +770,7 @@ const DemandAndResponseList = () => {
               openViewModal();
             }}
             setCallbackTableData={true}
+            pageRequest="/list_view?page="
           />
         ) : (
           <div>Loading data...</div>

@@ -428,6 +428,7 @@ const BudgetRecord = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
+          pageRequest="/get_list?page="
         />
       ) : (
         <div>Loading data...</div>

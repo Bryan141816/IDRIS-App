@@ -1,5 +1,5 @@
 from crud import delete
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
@@ -16,23 +16,41 @@ router = APIRouter(
 
 
 @router.get("/report_list", response_model=TableResponse)
-def get_table(db: Session = Depends(get_db)):
+def get_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
     # Table header remains the same
+
+    if page % 2 == 0:
+        page -= 1
+    offset = (page - 1) * 10
     table_head = [
         {"text": "Date", "width": "150px"},
         {"text": "Report Type", "width": "250px"},
         {"text": "Status", "width": "150px"},
         {"text": "Actions", "width": "150px"},
     ]
-
     # Query all reports (limit if needed)
-    reports = db.query(ResponseReport).order_by(ResponseReport.date_time.desc()).all()
-
+    reports = (
+        db.query(ResponseReport)
+        .order_by(ResponseReport.date_time.desc())
+        .limit(20)
+        .offset(offset)
+        .all()
+    )
     table_datas = []
+
+    pageCount = page
+    pages = {"page": pageCount, "row": []}
+
     for report in reports:
+
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)  # Save the full page
+            pageCount += 1
+            pages = {"page": pageCount, "row": []}  # New page
+
         row_data = [
             Cell(
-                type="Hidden",  # Custom type handled in frontend
+                type="Hidden",
                 text=str(report.id),
                 font_weight=0,
                 color="#000",
@@ -40,7 +58,7 @@ def get_table(db: Session = Depends(get_db)):
             ),
             Cell(
                 type="Text",
-                text=report.date_time.strftime("%B %d, %Y"),  # format date nicely
+                text=report.date_time.strftime("%B %d, %Y"),
                 font_weight=500,
                 color="#000",
                 width="150px",
@@ -56,9 +74,7 @@ def get_table(db: Session = Depends(get_db)):
                 type="Text",
                 text=report.status,
                 font_weight=700,
-                color=(
-                    "#22A900" if report.status.lower() == "completed" else "#000"
-                ),  # color green if completed
+                color="#22A900" if report.status.lower() == "completed" else "#000",
                 width="150px",
             ),
             Cell(
@@ -71,9 +87,14 @@ def get_table(db: Session = Depends(get_db)):
                 button_width="120px",
             ),
         ]
-        table_datas.append({"data": row_data})
+        pages["row"].append({"data": row_data})
 
-    return TableResponse(table_head=table_head, table_datas=table_datas)
+        # ✅ Append last page if it has rows
+    if pages["row"]:
+        table_datas.append(pages)
+
+    count = db.query(ResponseReport).count()
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
 @router.post(

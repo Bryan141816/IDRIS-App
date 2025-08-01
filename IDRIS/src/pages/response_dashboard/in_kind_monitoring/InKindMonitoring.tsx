@@ -525,6 +525,7 @@ const InKindMonitoring = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
+          pageRequest="/record_list?page="
         />
       ) : (
         <div>Loading data...</div>

@@ -427,6 +427,7 @@ const ReportList = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
+          pageRequest="/report_list?page="
         />
       ) : (
         <div>Loading data...</div>

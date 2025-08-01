@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "./DefaultListViewStyle.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
-import { TableView } from "../../components/TableView/table_view";
+import { TableView, TableReponse } from "../../components/TableView/table_view";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faListUl } from "@fortawesome/free-solid-svg-icons/faListUl";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
@@ -30,7 +30,6 @@ ChartJS.register(
 import { useEffect, useState } from "react";
 import { fetchData } from "../../API_Handler/response_dashboard";
 
-import { TableResponse } from "../donations_management/list_of_rafi_donors/TableComponent";
 import {
   MapContainer,
   TileLayer,
@@ -231,7 +230,7 @@ type InKindMonitoring = {
 
 const ResponseDashboard = () => {
   const { userRoles } = useUserRoleContext();
-  const [recentReport, setRecentReport] = useState<TableResponse | null>(null);
+  const [recentReport, setRecentReport] = useState<TableReponse | null>(null);
   const [reportSummary, setReportSummary] = useState<ReportSummary | null>(
     null,
   );
@@ -262,7 +261,7 @@ const ResponseDashboard = () => {
       setReportSummary,
     );
     ("/response_dashboard/spending_breakdown");
-    fetchData<TableResponse>("/report_list/recent", setRecentReport);
+    fetchData<TableReponse>("/report_list/recent", setRecentReport);
     fetchData<PieChartData>(
       "/response_dashboard/modality_chart",
       setModalityChart,

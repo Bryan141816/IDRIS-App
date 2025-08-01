@@ -339,6 +339,7 @@ const ModalityDistribution = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
+          pageRequest="/record_list?page="
         />
       ) : (
         <div>Loading data...</div>

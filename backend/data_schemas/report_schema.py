@@ -20,6 +20,7 @@ class Cell(BaseModel):
 class TableHead(BaseModel):
     text: str
     width: str
+    action: Optional[str] = None
 
 
 class TableDataRow(BaseModel):

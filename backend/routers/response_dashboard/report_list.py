@@ -16,26 +16,28 @@ router = APIRouter(
 
 
 @router.get("/report_list", response_model=TableResponse)
-def get_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
+def get_table(
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
+):
     # Table header remains the same
-
+    print("ha?")
     if page % 2 == 0:
         page -= 1
     offset = (page - 1) * 10
     table_head = [
-        {"text": "Date", "width": "150px"},
+        {"text": "Date", "width": "150px", "action": "Sort"},
         {"text": "Report Type", "width": "250px"},
         {"text": "Status", "width": "150px"},
         {"text": "Actions", "width": "150px"},
     ]
     # Query all reports (limit if needed)
-    reports = (
-        db.query(ResponseReport)
-        .order_by(ResponseReport.date_time.desc())
-        .limit(20)
-        .offset(offset)
-        .all()
+    order = (
+        ResponseReport.date_time.desc()
+        if Date == "desc"
+        else ResponseReport.date_time.asc()
     )
+    reports = db.query(ResponseReport).order_by(order).limit(100).offset(offset).all()
+    print(len(reports))
     table_datas = []
 
     pageCount = page

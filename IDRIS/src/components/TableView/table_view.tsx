@@ -1,7 +1,10 @@
-import { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState, useRef } from "react";
 import "./table-view.scss";
 import { API } from "../../API_Handler/Axio_API_Handler";
 import PageLoader from "../Page_Furniture/Loader";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSortDesc, faSortAsc } from "@fortawesome/free-solid-svg-icons";
+import { height } from "@fortawesome/free-solid-svg-icons/faListUl";
 interface TableProps {
   children: ReactNode;
 }
@@ -29,6 +32,7 @@ interface TableCellProps {
 export interface TableHead {
   text: string;
   width: string;
+  action?: string;
 }
 export interface Column {
   page: number;
@@ -52,6 +56,7 @@ interface TableViewProps {
   onClickCallback: (row?: any) => void;
   setCallbackTableData: Boolean;
   pageRequest?: string;
+  additionalURL?: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const TableHead: React.FC<TableProps> = ({ children }) => (
@@ -104,6 +109,10 @@ export const TableView: React.FC<TableViewProps> = ({
   setCallbackTableData,
   pageRequest,
 }) => {
+  const [sortState, setSortState] = useState<Record<string, "desc" | "asc">>(
+    {},
+  );
+  const [additionalQueryString, setAdditionalQueryString] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const totalCount = tableJSON.count;
@@ -112,6 +121,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const [displayedRows, setDisplayRows] = useState<TableDataRow[] | null>(null);
 
   const [isloadingPage, setIsLoadingPage] = useState(false);
+  const prevSortState = useRef(sortState);
   // Pagination logic
   const maxVisiblePages = 4;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
@@ -126,9 +136,51 @@ export const TableView: React.FC<TableViewProps> = ({
   for (let i = startPage; i <= endPage; i++) {
     pageNumbers.push(i);
   }
+
+  const toggleSortState = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const buttonClicked = event.currentTarget.name;
+
+    setSortState((prev) => {
+      const newValue: "desc" | "asc" =
+        prev[buttonClicked] === "desc"
+          ? "asc"
+          : prev[buttonClicked] === "asc"
+            ? "desc"
+            : "desc";
+
+      const newState: Record<string, "desc" | "asc"> = {
+        ...prev,
+        [buttonClicked]: newValue, // ✅ newValue is strictly "desc" | "asc"
+      };
+
+      const sortQuery = Object.entries(newState)
+        .map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join("&");
+
+      setAdditionalQueryString(sortQuery);
+
+      return newState; // ✅ Correct type
+    });
+    tableJSON.table_datas = [];
+  };
+
   useEffect(() => {
-    setCurrentPage(1);
-  }, [tableJSON]);
+    let sortHeaderObj = {};
+    tableJSON.table_head.map((header) => {
+      if (header.action) {
+        sortHeaderObj = {
+          ...sortHeaderObj,
+          [header.text]: "desc",
+        };
+      }
+    });
+    setSortState(sortHeaderObj);
+  }, []);
+  // useEffect(() => {
+  //   setCurrentPage(1);
+  // }, [tableJSON]);
+  //
+
   useEffect(() => {
     let row =
       tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
@@ -139,7 +191,9 @@ export const TableView: React.FC<TableViewProps> = ({
         let pageCount = currentPage;
         if (currentPage % 2 == 0) pageCount--;
         if (pageRequest) {
-          const response = await API.get(pageRequest + currentPage);
+          const response = await API.get(
+            pageRequest + currentPage + additionalQueryString,
+          );
           tableJSON.table_datas.push(...response.data.table_datas);
           setDisplayRows(
             tableJSON.table_datas.find((item) => item.page === currentPage)
@@ -150,23 +204,25 @@ export const TableView: React.FC<TableViewProps> = ({
       };
       fetchPage();
     }
-    if (currentPage % 2 !== 0) {
-      setDisplayRows(row ?? null);
-    } else {
+    setDisplayRows(row ?? null);
+
+    if (currentPage % 1 === 0) {
       const next_row = tableJSON.table_datas.find(
-        (item) => item.page === currentPage + 1,
+        (item) => item.page === currentPage + 0,
       )?.row;
       if (!next_row) {
         const fetchPage = async () => {
           if (pageRequest) {
-            const response = await API.get(pageRequest + (currentPage + 1));
+            const response = await API.get(
+              pageRequest + (currentPage + 0) + additionalQueryString,
+            );
             tableJSON.table_datas.push(...response.data.table_datas);
           }
         };
         fetchPage();
       }
     }
-  }, [currentPage]);
+  }, [currentPage, additionalQueryString]);
   return (
     <div id="table-container">
       <div className="pagination">
@@ -198,15 +254,45 @@ export const TableView: React.FC<TableViewProps> = ({
       </div>
       <TableHead>
         {tableJSON.table_head.map((header) => (
-          <h3 key={header.text} style={{ width: header.width }}>
-            {header.text}
-          </h3>
+          <>
+            {header.action ? (
+              header.action === "Sort" && (
+                <button
+                  key={header.text}
+                  style={{ width: header.width }}
+                  className="table-head-button"
+                  onClick={toggleSortState}
+                  name={header.text}
+                >
+                  {header.text}{" "}
+                  <FontAwesomeIcon
+                    icon={
+                      sortState[header.text] === "desc" ? faSortDesc : faSortAsc
+                    }
+                    style={{
+                      height: "20px",
+                      transform:
+                        sortState[header.text] === "desc"
+                          ? "translateY(-2px)"
+                          : "translateY(8px)",
+                    }}
+                  />
+                </button>
+              )
+            ) : (
+              <h3 key={header.text} style={{ width: header.width }}>
+                {header.text}
+              </h3>
+            )}
+          </>
         ))}
       </TableHead>
 
       <div id="table-data-container">
         {isloadingPage ? (
-          <PageLoader />
+          <div style={{ height: "50vh" }}>
+            <PageLoader />
+          </div>
         ) : (
           <>
             {displayedRows &&

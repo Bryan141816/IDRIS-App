@@ -180,7 +180,8 @@ export const TableView: React.FC<TableViewProps> = ({
   //   setCurrentPage(1);
   // }, [tableJSON]);
   //
-
+  const getDefaultPage = (page: number) =>
+    Math.floor((page - 1) / 100) * 100 + 1;
   useEffect(() => {
     let row =
       tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
@@ -188,11 +189,10 @@ export const TableView: React.FC<TableViewProps> = ({
     if (!row) {
       const fetchPage = async () => {
         setIsLoadingPage(true);
-        let pageCount = currentPage;
-        if (currentPage % 2 == 0) pageCount--;
+        let pageCount = getDefaultPage(currentPage);
         if (pageRequest) {
           const response = await API.get(
-            pageRequest + currentPage + additionalQueryString,
+            pageRequest + pageCount + additionalQueryString,
           );
           tableJSON.table_datas.push(...response.data.table_datas);
           setDisplayRows(

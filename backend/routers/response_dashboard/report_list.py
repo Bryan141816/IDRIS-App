@@ -8,6 +8,7 @@ from database import get_db
 from crud import delete, create_response_report
 from models import ResponseReport  # no Role import datetime
 from routers.role_checker import RoleChecker
+import math
 
 router = APIRouter(
     tags=["report_list"],
@@ -15,14 +16,17 @@ router = APIRouter(
 )
 
 
+def getDefaultPage(page):
+    return math.floor((page - 1) / 100) * 100 + 1
+
+
 @router.get("/report_list", response_model=TableResponse)
 def get_table(
     db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
 ):
     # Table header remains the same
-    print("ha?")
-    if page % 2 == 0:
-        page -= 1
+    page = getDefaultPage(page)
+
     offset = (page - 1) * 10
     table_head = [
         {"text": "Date", "width": "150px", "action": "Sort"},

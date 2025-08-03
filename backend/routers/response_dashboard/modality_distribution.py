@@ -8,6 +8,7 @@ from database import get_db
 from crud import delete, create_modality_distribution_record
 from models import ModalityDistribution  # no Role import datetime
 from routers.role_checker import RoleChecker
+import math
 
 router = APIRouter(
     tags=["modality_distribution"],
@@ -15,32 +16,39 @@ router = APIRouter(
 )
 
 
+def getDefaultPage(page):
+    return math.floor((page - 1) / 100) * 100 + 1
+
+
 @router.get(
     "/response_dashboard/modality_distribution/record_list",
     response_model=TableResponse,
 )
-def get_modality_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
+def get_modality_table(
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
+):
 
-    if page % 2 == 0:
-        page = page - 1
+    page = getDefaultPage(page)
 
     offset = (page - 1) * 10
 
+    print(page)
     # Table header remains the same
     table_head = [
-        {"text": "Date", "width": "150px"},
+        {"text": "Date", "width": "150px", "action": "Sort"},
         {"text": "Modality Type", "width": "250px"},
         {"text": "Actions", "width": "150px"},
     ]
-
+    order = (
+        ModalityDistribution.date_time.desc()
+        if Date == "desc"
+        else ModalityDistribution.date_time.asc()
+    )
     # Query all reports (limit if needed)
     reports = (
-        db.query(ModalityDistribution)
-        .order_by(ModalityDistribution.date_time.desc())
-        .limit(20)
-        .offset(offset)
-        .all()
+        db.query(ModalityDistribution).order_by(order).limit(100).offset(offset).all()
     )
+    print(len(reports))
 
     table_datas = []
     pageCount = page

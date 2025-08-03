@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "./DemandAndResponseList.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -75,6 +75,8 @@ const DemandAndResponseList = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [needItemCounter, setNeedItemCounter] = useState(0);
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+  const refreshTable = useRef<() => void>(() => {});
+  const handleRefreshTable = () => refreshTable.current?.();
 
   type NeedItem = {
     id: number;
@@ -220,7 +222,7 @@ const DemandAndResponseList = () => {
     try {
       const response = await addRecord(addDemand);
       closeAddModal();
-      await fetchData();
+      handleRefreshTable();
       resetAddDemand();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -247,7 +249,7 @@ const DemandAndResponseList = () => {
         message: "Record Updated successfully",
         onClose: closeMessageBox,
       }));
-      await fetchData();
+      handleRefreshTable();
       resetAddDemand();
     } catch (error) {
       console.error("Faled to add record ", error);
@@ -266,8 +268,7 @@ const DemandAndResponseList = () => {
         message: "Record Deleted successfully",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -770,7 +771,8 @@ const DemandAndResponseList = () => {
               openViewModal();
             }}
             setCallbackTableData={true}
-            pageRequest="/list_view?page="
+            pageRequest="/response_dashboard/demand_and_response/list_view?page="
+            updateTable={(fn) => (refreshTable.current = fn)}
           />
         ) : (
           <div>Loading data...</div>

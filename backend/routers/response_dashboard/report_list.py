@@ -26,7 +26,6 @@ def get_table(
 ):
     # Table header remains the same
     page = getDefaultPage(page)
-
     offset = (page - 1) * 10
     table_head = [
         {"text": "Date", "width": "150px", "action": "Sort"},
@@ -41,7 +40,6 @@ def get_table(
         else ResponseReport.date_time.asc()
     )
     reports = db.query(ResponseReport).order_by(order).limit(100).offset(offset).all()
-    print(len(reports))
     table_datas = []
 
     pageCount = page

@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "./InKindMonitoring.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -54,6 +54,9 @@ const InKindMonitoring = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editReportType, setEditReportType] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const refreshTable = useRef<() => void>(() => {});
+
+  const handleRefreshTable = () => refreshTable.current?.();
 
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -145,7 +148,7 @@ const InKindMonitoring = () => {
         message: "Record added successfuly?",
         onClose: closeMessageBox,
       }));
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to add report: ", error);
     }
@@ -166,8 +169,7 @@ const InKindMonitoring = () => {
         message: "Relief packs dispatched?",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to Dispatch: ", error);
     }
@@ -188,8 +190,7 @@ const InKindMonitoring = () => {
         "/response_dashboard/in_kind_monitoring",
         setInKindSummary,
       );
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -209,7 +210,7 @@ const InKindMonitoring = () => {
         message: "Record ?",
         onClose: closeMessageBox,
       }));
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -225,7 +226,7 @@ const InKindMonitoring = () => {
       closeEditModal();
       isViewModalSelected.data[2].text = response.data.report.report_type;
       isViewModalSelected.data[3].text = response.data.report.status;
-      await fetchData();
+      handleRefreshTable();
       openViewModal();
     } else {
       console.error("Error updating report: " + response.error);
@@ -525,7 +526,8 @@ const InKindMonitoring = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
-          pageRequest="/record_list?page="
+          pageRequest="/response_dashboard/in_kind_monitoring/record_list?page="
+          updateTable={(fn) => (refreshTable.current = fn)}
         />
       ) : (
         <div>Loading data...</div>

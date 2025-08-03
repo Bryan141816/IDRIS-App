@@ -9,6 +9,7 @@ from crud import delete, create_in_kind_monitoring_record
 from models import InKindMonitoring  # no Role import datetime
 from datetime import datetime, timezone
 from routers.role_checker import RoleChecker
+import math
 
 router = APIRouter(
     tags=["in_kind_monitoring"],
@@ -16,31 +17,34 @@ router = APIRouter(
 )
 
 
+def getDefaultPage(page):
+    return math.floor((page - 1) / 100) * 100 + 1
+
+
 @router.get(
     "/response_dashboard/in_kind_monitoring/record_list", response_model=TableResponse
 )
-def get_modality_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
+def get_modality_table(
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
+):
 
-    if page % 2 == 0:
-        page -= 1
-
+    page = getDefaultPage(page)
     offset = (page - 1) * 10
     # Table header remains the same
     table_head = [
-        {"text": "Date", "width": "150px"},
+        {"text": "Date", "width": "150px", "action": "Sort"},
         {"text": "Quantity", "width": "150px"},
         {"text": "Type", "width": "150px"},
         {"text": "Actions", "width": "150px"},
     ]
 
-    # Query all reports (limit if needed)
-    reports = (
-        db.query(InKindMonitoring)
-        .order_by(InKindMonitoring.date_time.desc())
-        .limit(10)
-        .offset(offset)
-        .all()
+    order = (
+        InKindMonitoring.date_time.desc()
+        if Date == "desc"
+        else InKindMonitoring.date_time.asc()
     )
+    # Query all reports (limit if needed)
+    reports = db.query(InKindMonitoring).order_by(order).limit(100).offset(offset).all()
 
     table_datas = []
     pageCount = page

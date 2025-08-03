@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "../DefaultListViewStyle.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -39,6 +39,9 @@ const ModalityDistribution = () => {
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editModalityType, setEditModalityType] = useState("");
+  const refreshTable = useRef<() => void>(() => {});
+
+  const handleRefreshTable = () => refreshTable.current?.();
 
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -105,7 +108,7 @@ const ModalityDistribution = () => {
         message: "Record is added successfuly",
         onClose: closeMessageBox,
       }));
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to add report: ", error);
     }
@@ -122,7 +125,7 @@ const ModalityDistribution = () => {
         message: "Record is deleted successfuly",
         onClose: closeMessageBox,
       }));
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -143,8 +146,7 @@ const ModalityDistribution = () => {
         message: "Record is updated successfuly",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
       openViewModal();
     } else {
       console.error("Error updating report: " + response.error);
@@ -339,7 +341,8 @@ const ModalityDistribution = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
-          pageRequest="/record_list?page="
+          pageRequest="/response_dashboard/modality_distribution/record_list?page="
+          updateTable={(fn) => (refreshTable.current = fn)}
         />
       ) : (
         <div>Loading data...</div>

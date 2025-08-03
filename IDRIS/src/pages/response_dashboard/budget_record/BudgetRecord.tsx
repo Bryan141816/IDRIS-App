@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "../DefaultListViewStyle.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -43,6 +43,9 @@ const BudgetRecord = () => {
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
   const [editRecordType, setEditRecordType] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const refreshTable = useRef<() => void>(() => {});
+
+  const handleRefreshTable = () => refreshTable.current?.();
 
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -134,8 +137,7 @@ const BudgetRecord = () => {
         message: "Record is added successfuly",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to add report: ", error);
     }
@@ -152,8 +154,7 @@ const BudgetRecord = () => {
         message: "Record is deleted successfuly",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -171,7 +172,7 @@ const BudgetRecord = () => {
         response.data.record.budget_record_type;
       isViewModalSelected.data[3].text = response.data.record.amount;
       isViewModalSelected.data[3].text = response.data.record.total_amount;
-      await fetchData();
+      handleRefreshTable();
       openViewModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -428,7 +429,8 @@ const BudgetRecord = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
-          pageRequest="/get_list?page="
+          pageRequest="/response_dashboard/budget_record/get_list?page="
+          updateTable={(fn) => (refreshTable.current = fn)}
         />
       ) : (
         <div>Loading data...</div>

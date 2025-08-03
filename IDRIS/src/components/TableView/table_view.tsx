@@ -110,7 +110,6 @@ export const TableView: React.FC<TableViewProps> = ({
   updateTable,
 }) => {
   const reloadTable = () => {
-    console.log("hello");
     tableJSON.table_datas = [];
     getTableData();
   };
@@ -163,11 +162,11 @@ export const TableView: React.FC<TableViewProps> = ({
         ...prev,
         [buttonClicked]: newValue, // ✅ newValue is strictly "desc" | "asc"
       };
-
+      console.log(newState);
       const sortQuery = Object.entries(newState)
         .map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
         .join("&");
-
+      console.log(sortQuery);
       setAdditionalQueryString(sortQuery);
 
       return newState; // ✅ Correct type
@@ -179,9 +178,10 @@ export const TableView: React.FC<TableViewProps> = ({
     let sortHeaderObj = {};
     tableJSON.table_head.map((header) => {
       if (header.action) {
+        const key = header.text.replace(/\s+/g, "_");
         sortHeaderObj = {
           ...sortHeaderObj,
-          [header.text]: "desc",
+          [key]: "desc",
         };
       }
     });
@@ -274,17 +274,19 @@ export const TableView: React.FC<TableViewProps> = ({
                   style={{ width: header.width }}
                   className="table-head-button"
                   onClick={toggleSortState}
-                  name={header.text}
+                  name={header.text.replace(/\s+/g, "_")}
                 >
                   {header.text}{" "}
                   <FontAwesomeIcon
                     icon={
-                      sortState[header.text] === "desc" ? faSortDesc : faSortAsc
+                      sortState[header.text.replace(/\s+/g, "_")] === "desc"
+                        ? faSortDesc
+                        : faSortAsc
                     }
                     style={{
                       height: "20px",
                       transform:
-                        sortState[header.text] === "desc"
+                        sortState[header.text.replace(/\s+/g, "_")] === "desc"
                           ? "translateY(-2px)"
                           : "translateY(8px)",
                     }}

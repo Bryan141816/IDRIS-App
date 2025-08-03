@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
+import math
 
 router = APIRouter(
     tags=["demand_and_response"],
@@ -49,16 +50,23 @@ def get_markers(db: Session = Depends(get_db)):
     return markers
 
 
+def getDefaultPage(page):
+    return math.floor((page - 1) / 100) * 100 + 1
+
+
 @router.get(
     "/response_dashboard/demand_and_response/list_view", response_model=TableResponse
 )
-def get_table(db: Session = Depends(get_db), page: int = Query(1, get=1)):
+def get_table(
+    db: Session = Depends(get_db),
+    page: int = Query(1, get=1),
+    Last_Updated: str = "desc",
+):
     # Table header remains the same
-    if page % 2 == 0:
-        page = page - 1
+    page = getDefaultPage(page)
     offset = (page - 1) * 10
     table_head = [
-        {"text": "Last Updated", "width": "200px"},
+        {"text": "Last Updated", "width": "200px", "action": "Sort"},
         {"text": "Title", "width": "250px"},
         {"text": "Address", "width": "250px"},
         {"text": "Lat", "width": "150px"},
@@ -70,12 +78,13 @@ def get_table(db: Session = Depends(get_db), page: int = Query(1, get=1)):
     ]
 
     # Query all reports (limit if needed)
+    order = (
+        DemandAndResponse.last_updated.desc()
+        if Last_Updated == "desc"
+        else DemandAndResponse.last_updated.asc()
+    )
     reports = (
-        db.query(DemandAndResponse)
-        .order_by(DemandAndResponse.last_updated.desc())
-        .limit(20)
-        .offset(offset)
-        .all()
+        db.query(DemandAndResponse).order_by(order).limit(100).offset(offset).all()
     )
 
     table_datas = []

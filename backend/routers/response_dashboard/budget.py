@@ -8,6 +8,7 @@ from database import get_db
 from crud import delete, create_response_dashboard_budget_create
 from models import ResponseReportBudget  # no Role import datetime
 from routers.role_checker import RoleChecker
+import math
 
 router = APIRouter(
     tags=["budget_record"],
@@ -15,30 +16,36 @@ router = APIRouter(
 )
 
 
+def getDefaultPage(page):
+    return math.floor((page - 1) / 100) * 100 + 1
+
+
 @router.get("/response_dashboard/budget_record/get_list", response_model=TableResponse)
-def get_budget_table(db: Session = Depends(get_db), page: int = Query(1, ge=1)):
+def get_budget_table(
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
+):
     # Table header remains the same
 
-    if page % 2 == 0:
-        page -= 1
+    page = getDefaultPage(page)
 
     offset = (page - 1) * 10
 
     table_head = [
-        {"text": "Date", "width": "150px"},
+        {"text": "Date", "width": "150px", "action": "Sort"},
         {"text": "Record Type", "width": "250px"},
         {"text": "Amount", "width": "150px"},
         {"text": "Total Amount", "width": "150px"},
         {"text": "Actions", "width": "150px"},
     ]
 
+    order = (
+        ResponseReportBudget.date_time.desc()
+        if Date == "desc"
+        else ResponseReportBudget.date_time.asc()
+    )
     # Query all reports (limit if needed)
     reports = (
-        db.query(ResponseReportBudget)
-        .order_by(ResponseReportBudget.date_time.desc())
-        .limit(20)
-        .offset(offset)
-        .all()
+        db.query(ResponseReportBudget).order_by(order).limit(100).offset(offset).all()
     )
 
     table_datas = []

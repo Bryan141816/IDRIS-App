@@ -202,12 +202,29 @@ export const TableView: React.FC<TableViewProps> = ({
           const response = await API.get(
             pageRequest + pageCount + additionalQueryString,
           );
+          const prevTableCount = tableJSON.count;
           tableJSON.table_datas.push(...response.data.table_datas);
           tableJSON.count = response.data.count;
           setDisplayRows(
             tableJSON.table_datas.find((item) => item.page === currentPage)
               ?.row ?? null,
           );
+          const newTableCount = response.data.count;
+
+          function isInSameRange(num1: number, num2: number, range = 10) {
+            return (
+              Math.floor((num1 - 1) / range) === Math.floor((num2 - 1) / range)
+            );
+          }
+          if (
+            newTableCount < prevTableCount &&
+            !isInSameRange(newTableCount, currentPage * 10)
+          ) {
+            if (currentPage > 1) {
+              setCurrentPage(currentPage - 1);
+            }
+          }
+
           setIsLoadingPage(false);
         }
       };

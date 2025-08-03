@@ -187,10 +187,7 @@ export const TableView: React.FC<TableViewProps> = ({
     });
     setSortState(sortHeaderObj);
   }, []);
-  // useEffect(() => {
-  //   setCurrentPage(1);
-  // }, [tableJSON]);
-  //
+
   const getDefaultPage = (page: number) =>
     Math.floor((page - 1) / 100) * 100 + 1;
   const getTableData = () => {
@@ -206,6 +203,7 @@ export const TableView: React.FC<TableViewProps> = ({
             pageRequest + pageCount + additionalQueryString,
           );
           tableJSON.table_datas.push(...response.data.table_datas);
+          tableJSON.count = response.data.count;
           setDisplayRows(
             tableJSON.table_datas.find((item) => item.page === currentPage)
               ?.row ?? null,
@@ -225,6 +223,7 @@ export const TableView: React.FC<TableViewProps> = ({
               pageRequest + (currentPage + 0) + additionalQueryString,
             );
             tableJSON.table_datas.push(...response.data.table_datas);
+            tableJSON.count = response.data.count;
           }
         };
         fetchPage();

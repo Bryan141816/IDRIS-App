@@ -133,7 +133,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
   const [isloadingPage, setIsLoadingPage] = useState(false);
   // Pagination logic
-  const maxVisiblePages = 4;
+  const maxVisiblePages = 5;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
   let endPage = startPage + maxVisiblePages - 1;
 
@@ -160,7 +160,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
       const newState: Record<string, "desc" | "asc"> = {
         ...prev,
-        [buttonClicked]: newValue, // ✅ newValue is strictly "desc" | "asc"
+        [buttonClicked]: newValue,
       };
       console.log(newState);
       const sortQuery = Object.entries(newState)
@@ -169,7 +169,7 @@ export const TableView: React.FC<TableViewProps> = ({
       console.log(sortQuery);
       setAdditionalQueryString(sortQuery);
 
-      return newState; // ✅ Correct type
+      return newState;
     });
     tableJSON.table_datas = [];
   };
@@ -190,95 +190,125 @@ export const TableView: React.FC<TableViewProps> = ({
 
   const getDefaultPage = (page: number) =>
     Math.floor((page - 1) / 100) * 100 + 1;
-  const getTableData = () => {
-    let row =
-      tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
-      null;
-    if (!row) {
-      const fetchPage = async () => {
-        setIsLoadingPage(true);
-        let pageCount = getDefaultPage(currentPage);
-        if (pageRequest) {
-          const response = await API.get(
-            pageRequest + pageCount + additionalQueryString,
-          );
-          const prevTableCount = tableJSON.count;
-          tableJSON.table_datas.push(...response.data.table_datas);
-          tableJSON.count = response.data.count;
-          setDisplayRows(
-            tableJSON.table_datas.find((item) => item.page === currentPage)
-              ?.row ?? null,
-          );
-          const newTableCount = response.data.count;
 
-          function isInSameRange(num1: number, num2: number, range = 10) {
-            return (
-              Math.floor((num1 - 1) / range) === Math.floor((num2 - 1) / range)
-            );
-          }
-          if (
-            newTableCount < prevTableCount &&
-            !isInSameRange(newTableCount, currentPage * 10)
-          ) {
-            if (currentPage > 1) {
-              setCurrentPage(currentPage - 1);
-            }
-          }
+  const fetchPage = async (pageToFetch: number) => {
+    if (!pageRequest) return;
 
-          setIsLoadingPage(false);
-        }
-      };
-      fetchPage();
-    } else if (currentPage % 10 === 0) {
-      const next_row = tableJSON.table_datas.find(
-        (item) => item.page === currentPage + 0,
-      )?.row;
-      if (!next_row) {
-        const fetchPage = async () => {
-          if (pageRequest) {
-            const response = await API.get(
-              pageRequest + (currentPage + 0) + additionalQueryString,
-            );
-            tableJSON.table_datas.push(...response.data.table_datas);
-            tableJSON.count = response.data.count;
-          }
-        };
-        fetchPage();
+    setIsLoadingPage(true);
+    const response = await API.get(
+      pageRequest + pageToFetch + additionalQueryString,
+    );
+
+    const prevTableCount = tableJSON.count;
+
+    tableJSON.table_datas.push(...response.data.table_datas);
+    tableJSON.count = response.data.count;
+
+    const newTableCount = response.data.count;
+
+    function isInSameRange(num1: number, num2: number, range = 10) {
+      return Math.floor((num1 - 1) / range) === Math.floor((num2 - 1) / range);
+    }
+
+    if (
+      newTableCount < prevTableCount &&
+      !isInSameRange(newTableCount, currentPage * 10)
+    ) {
+      if (currentPage > 1) {
+        setCurrentPage(currentPage - 1);
       }
     }
-    setDisplayRows(row ?? null);
+
+    setIsLoadingPage(false);
   };
+
+  const getTableData = () => {
+    const row =
+      tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
+      null;
+
+    if (!row) {
+      const pageCount = getDefaultPage(currentPage);
+      fetchPage(pageCount).then(() => {
+        const newRow =
+          tableJSON.table_datas.find((item) => item.page === currentPage)
+            ?.row ?? null;
+        setDisplayRows(newRow ?? null);
+      });
+    } else {
+      setDisplayRows(row);
+
+      if (currentPage % 10 === 0) {
+        const nextRow = tableJSON.table_datas.find(
+          (item) => item.page === currentPage + 1,
+        )?.row;
+
+        if (!nextRow) {
+          fetchPage(currentPage + 1);
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     getTableData();
   }, [currentPage, additionalQueryString]);
   return (
     <div id="table-container">
-      <div className="pagination">
-        {totalCount > 10 && (
-          <>
-            {startPage > 1 && (
-              <button onClick={() => setCurrentPage(currentPage - 1)}>
-                {"<"}
-              </button>
-            )}
+      <div
+        style={{
+          display: "flex",
+          width: "100%",
+          justifyContent: "space-between",
+          alignContent: "center",
+          paddingLeft: "10px",
+          margin: "5px",
+        }}
+      >
+        <span style={{ fontWeight: "700" }}>
+          Showing{" "}
+          {totalCount > 10 && (
+            <>
+              {(currentPage - 1) * 10 + 1}-
+              <>
+                {currentPage * 10 > totalCount ? (
+                  <>{totalCount}</>
+                ) : (
+                  <>{currentPage * 10}</>
+                )}
+              </>{" "}
+              of{" "}
+            </>
+          )}
+          {totalCount} records
+        </span>
+        <div className="pagination">
+          {totalCount > 10 && (
+            <>
+              {startPage > 1 && (
+                <button onClick={() => setCurrentPage(currentPage - 1)}>
+                  {"<"}
+                </button>
+              )}
 
-            {pageNumbers.map((num) => (
-              <button
-                key={num}
-                onClick={() => setCurrentPage(num)}
-                className={num === currentPage ? "current-page" : ""}
-              >
-                {num}
-              </button>
-            ))}
+              {pageNumbers.map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={num === currentPage ? "current-page" : ""}
+                >
+                  {num}
+                </button>
+              ))}
 
-            {endPage < totalPages && (
-              <button onClick={() => setCurrentPage(currentPage + 1)}>
-                {">"}
-              </button>
-            )}
-          </>
-        )}
+              {endPage < totalPages && (
+                <button onClick={() => setCurrentPage(currentPage + 1)}>
+                  {">"}
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
       <TableHead>
         {tableJSON.table_head.map((header) => (
@@ -346,34 +376,6 @@ export const TableView: React.FC<TableViewProps> = ({
                   ))}
                 </TableData>
               ))}
-          </>
-        )}
-      </div>
-
-      <div className="pagination">
-        {totalCount > 10 && (
-          <>
-            {startPage > 1 && (
-              <button onClick={() => setCurrentPage(currentPage - 1)}>
-                {"<"}
-              </button>
-            )}
-
-            {pageNumbers.map((num) => (
-              <button
-                key={num}
-                onClick={() => setCurrentPage(num)}
-                className={num === currentPage ? "current-page" : ""}
-              >
-                {num}
-              </button>
-            ))}
-
-            {endPage < totalPages && (
-              <button onClick={() => setCurrentPage(currentPage + 1)}>
-                {">"}
-              </button>
-            )}
           </>
         )}
       </div>

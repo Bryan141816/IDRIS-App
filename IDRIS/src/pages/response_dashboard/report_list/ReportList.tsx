@@ -4,7 +4,7 @@ import {
 } from "../../../components/TableView/table_view";
 import "./ReportList.scss";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
@@ -266,6 +266,8 @@ const ReportList = () => {
   const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
 
+  const refreshTable = useRef<() => void>(() => {});
+
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
       ...prev,
@@ -304,7 +306,7 @@ const ReportList = () => {
   useEffect(() => {
     fetchData();
   }, []);
-
+  const handleRefreshTable = () => refreshTable.current?.();
   const handleAddReportSubmit = async (reportType: string) => {
     try {
       await addResponseReport(reportType);
@@ -316,8 +318,7 @@ const ReportList = () => {
         message: "Report is successfuly added?",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to add report: ", error);
     }
@@ -334,8 +335,7 @@ const ReportList = () => {
         message: "Report is successfuly deleted?",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
     } catch (error) {
       console.error("Failed to delete report: ", error);
     }
@@ -361,8 +361,7 @@ const ReportList = () => {
         message: "Report is successfuly updated?",
         onClose: closeMessageBox,
       }));
-
-      await fetchData();
+      handleRefreshTable();
       openViewModal();
     } else {
       console.error("Error updating report: " + response.error);
@@ -428,6 +427,7 @@ const ReportList = () => {
           }}
           setCallbackTableData={true}
           pageRequest="/report_list?page="
+          updateTable={(fn) => (refreshTable.current = fn)}
         />
       ) : (
         <div>Loading data...</div>

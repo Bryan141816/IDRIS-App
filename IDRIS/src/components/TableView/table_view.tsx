@@ -1,10 +1,9 @@
-import React, { ReactNode, useEffect, useState, useRef } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import "./table-view.scss";
 import { API } from "../../API_Handler/Axio_API_Handler";
 import PageLoader from "../Page_Furniture/Loader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSortDesc, faSortAsc } from "@fortawesome/free-solid-svg-icons";
-import { height } from "@fortawesome/free-solid-svg-icons/faListUl";
 interface TableProps {
   children: ReactNode;
 }
@@ -56,7 +55,7 @@ interface TableViewProps {
   onClickCallback: (row?: any) => void;
   setCallbackTableData: Boolean;
   pageRequest?: string;
-  additionalURL?: React.Dispatch<React.SetStateAction<string>>;
+  updateTable?: (fn: () => void) => void;
 }
 
 const TableHead: React.FC<TableProps> = ({ children }) => (
@@ -108,7 +107,20 @@ export const TableView: React.FC<TableViewProps> = ({
   onClickCallback,
   setCallbackTableData,
   pageRequest,
+  updateTable,
 }) => {
+  const reloadTable = () => {
+    console.log("hello");
+    tableJSON.table_datas = [];
+    getTableData();
+  };
+
+  useEffect(() => {
+    if (updateTable) {
+      updateTable(reloadTable);
+    }
+  }, [updateTable]);
+
   const [sortState, setSortState] = useState<Record<string, "desc" | "asc">>(
     {},
   );
@@ -121,7 +133,6 @@ export const TableView: React.FC<TableViewProps> = ({
   const [displayedRows, setDisplayRows] = useState<TableDataRow[] | null>(null);
 
   const [isloadingPage, setIsLoadingPage] = useState(false);
-  const prevSortState = useRef(sortState);
   // Pagination logic
   const maxVisiblePages = 4;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
@@ -182,7 +193,7 @@ export const TableView: React.FC<TableViewProps> = ({
   //
   const getDefaultPage = (page: number) =>
     Math.floor((page - 1) / 100) * 100 + 1;
-  useEffect(() => {
+  const getTableData = () => {
     let row =
       tableJSON.table_datas.find((item) => item.page === currentPage)?.row ??
       null;
@@ -203,10 +214,7 @@ export const TableView: React.FC<TableViewProps> = ({
         }
       };
       fetchPage();
-    }
-    setDisplayRows(row ?? null);
-
-    if (currentPage % 1 === 0) {
+    } else if (currentPage % 10 === 0) {
       const next_row = tableJSON.table_datas.find(
         (item) => item.page === currentPage + 0,
       )?.row;
@@ -222,6 +230,10 @@ export const TableView: React.FC<TableViewProps> = ({
         fetchPage();
       }
     }
+    setDisplayRows(row ?? null);
+  };
+  useEffect(() => {
+    getTableData();
   }, [currentPage, additionalQueryString]);
   return (
     <div id="table-container">

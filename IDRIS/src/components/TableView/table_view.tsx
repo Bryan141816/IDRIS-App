@@ -109,17 +109,6 @@ export const TableView: React.FC<TableViewProps> = ({
   pageRequest,
   updateTable,
 }) => {
-  const reloadTable = () => {
-    tableJSON.table_datas = [];
-    getTableData();
-  };
-
-  useEffect(() => {
-    if (updateTable) {
-      updateTable(reloadTable);
-    }
-  }, [updateTable]);
-
   const [sortState, setSortState] = useState<Record<string, "desc" | "asc">>(
     {},
   );
@@ -141,6 +130,18 @@ export const TableView: React.FC<TableViewProps> = ({
     endPage = totalPages;
     startPage = Math.max(1, endPage - maxVisiblePages + 1);
   }
+
+  const reloadTable = () => {
+    tableJSON.table_datas = [];
+    setSortState({});
+    getTableData();
+  };
+
+  useEffect(() => {
+    if (updateTable) {
+      updateTable(reloadTable);
+    }
+  }, [updateTable]);
 
   const pageNumbers: number[] = [];
   for (let i = startPage; i <= endPage; i++) {
@@ -262,7 +263,8 @@ export const TableView: React.FC<TableViewProps> = ({
           justifyContent: "space-between",
           alignContent: "center",
           paddingLeft: "10px",
-          margin: "5px",
+          marginTop: "5px",
+          marginBottom: "5px",
         }}
       >
         <span style={{ fontWeight: "700" }}>

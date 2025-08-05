@@ -1,6 +1,74 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Modal } from "../../../components/Page_Furniture/Modals";
 import "../css/LGUmanagement.css";
+import { Link } from "react-router-dom";
+import "../../response_dashboard/DefaultListViewStyle.scss";
+import { TableView } from "../../../components/TableView/table_view";
+import { API } from "../../../API_Handler/Axio_API_Handler";
+import { TableReponse } from "../../../components/TableView/table_view";
+//API Handler
+export async function getRecord(record_type: string): Promise<any> {
+  const response = await API.get(
+    `/lgu_profiling/manage_lgu/get_${record_type}`,
+  );
+  return response.data;
+}
+
+export async function addResponseReport(reportType: string): Promise<any> {
+  const response = await API.post(
+    "/response_dashboard/report_list/add_report",
+    {
+      report_type: reportType,
+      status: "Filed",
+    },
+  );
+  return response.data;
+}
+
+export async function deleteResponseReport(reportId: String): Promise<any> {
+  try {
+    const response = await API.delete(
+      `/response_dashboard/report_list/delete_report/${reportId}`,
+    );
+    return response;
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error: ", error.response.data.detail);
+    } else {
+      console.error("Request error: ", error.message);
+    }
+  }
+}
+
+export async function updateResponseReport(
+  reportId: String,
+  report_type: String,
+  report_status: String,
+) {
+  try {
+    const response = await API.put(
+      `/response_dashboard/report_list/update_report/${reportId}`,
+      {
+        report_type: report_type,
+        status: report_status,
+      },
+    );
+    return { sucess: true, data: response.data };
+  } catch (error: any) {
+    if (error.respose) {
+      console.error("Error: ", error.response.data.detail);
+      return {
+        sucess: false,
+        error: error.response?.data?.detail || error.message,
+      };
+    } else {
+      console.error("Request error: ", error.message);
+      return { sucess: false, error: "An unexpected error occured." };
+    }
+  }
+}
+
+//
 
 const MapOfCebu = () => {
   const [activeTab, setActiveTab] = useState("lgu");
@@ -290,13 +358,57 @@ const MapOfCebu = () => {
       </div>
     ));
   };
+  const [responseData, setResponseData] = useState<TableReponse | null>(null);
+  const refreshTable = useRef<() => void>(() => {});
+  async function fetchData(name: string) {
+    try {
+      const response = await getRecord(name);
+      setResponseData(response);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const [currentTabName, setCurrentTabName] = useState("LGU");
+  const handleRefreshTable = () => refreshTable.current?.();
 
+  useEffect(() => {
+    fetchData(activeTab);
+    handleRefreshTable();
+    switch (activeTab) {
+      case "lgu":
+        setCurrentTabName("LGU");
+        break;
+      case "barangay":
+        setCurrentTabName("Barangay");
+        break;
+      case "rafi":
+        setCurrentTabName("RAFI Infrastructure");
+        break;
+      case "hazard":
+        setCurrentTabName("Hazard Data");
+        break;
+      case "evacuation":
+        setCurrentTabName("Evacuation Center");
+        break;
+    }
+  }, [activeTab]);
   return (
     <div className="app-container">
+      <div className="horizontal-container">
+        <div className="navigator-container">
+          <Link to="/response_dashboard">Response Dashboard</Link>
+          <h3>/Report List</h3>
+        </div>
+        <div className="table-actions">
+          <input type="text" placeholder="Search report"></input>
+          <button>Search</button>
+          <button>+ Add {currentTabName}</button>
+        </div>
+      </div>
       <div className="tabs">
         <button onClick={() => setActiveTab("lgu")}>LGU</button>
-        <button onClick={() => setActiveTab("baranggay")}>Baranggay</button>
-        <button onClick={() => setActiveTab("raffi")}>
+        <button onClick={() => setActiveTab("barangay")}>Baranggay</button>
+        <button onClick={() => setActiveTab("rafi")}>
           RAFI Infrastructure
         </button>
         <button onClick={() => setActiveTab("hazard")}>Hazard Mapping</button>
@@ -306,181 +418,18 @@ const MapOfCebu = () => {
       </div>
 
       <div>
-        {/* Add button */}
-        <button
-          className="add-button"
-          onClick={() => handleAdd(activeTab)}
-          style={{ marginBottom: "1rem" }}
-        >
-          Add {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-        </button>
-
-        {activeTab === "lgu" && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Lat</th>
-                <th>Lng</th>
-                <th>Population</th>
-                <th>Evac Center</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lguData.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td>{item.lat}</td>
-                  <td>{item.lng}</td>
-                  <td>{item.population}</td>
-                  <td>{item.evacuationCenter}</td>
-                  <td>
-                    <button onClick={() => handleEdit("lgu", item)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {activeTab === "baranggay" && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Latitude</th>
-                <th>Longitude</th>
-                <th>Population</th>
-                <th>Resources</th>
-                <th>Evacuation Center</th>
-                <th>Nearest Evacuation Center</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classificationData.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td>{item.latitude}</td>
-                  <td>{item.longitude}</td>
-                  <td>{item.population}</td>
-                  <td>{item.resources}</td>
-                  <td>{item.evacuationCenter}</td>
-                  <td>{item.nearestEvacuationCenter}</td>
-                  <td>
-                    <button onClick={() => handleEdit("baranggay", item)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {activeTab === "hazard" && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Lat</th>
-                <th>Lng</th>
-                <th>LGU ID</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hazardData.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.lat}</td>
-                  <td>{item.lng}</td>
-                  <td>{item.lguId}</td>
-                  <td>
-                    <button onClick={() => handleEdit("hazard", item)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {activeTab === "evacuation" && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Lat</th>
-                <th>Lng</th>
-                <th>Capacity</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {evacuationData.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td>{item.lat}</td>
-                  <td>{item.lng}</td>
-                  <td>{item.capacity}</td>
-                  <td>
-                    <button onClick={() => handleEdit("evacuation", item)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {activeTab === "raffi" && (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Lat</th>
-                <th>Lng</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {raffiData.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
-                  <td>{item.lat}</td>
-                  <td>{item.lng}</td>
-                  <td>{item.description}</td>
-                  <td>
-                    <button onClick={() => handleEdit("raffi", item)}>
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {responseData ? (
+          <TableView
+            tableJSON={responseData}
+            onClickCallback={(row: any) => {}}
+            setCallbackTableData={true}
+            pageRequest={`/lgu_profiling/manage_lgu/get_${activeTab}?page=`}
+            updateTable={(fn) => (refreshTable.current = fn)}
+          />
+        ) : (
+          <div>Loading data...</div>
         )}
       </div>
-
-      {/* Modal for add/edit */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h3>
-          {editItem
-            ? `Edit ${editSection?.toUpperCase()}`
-            : `Add New ${editSection?.toUpperCase()}`}
-        </h3>
-        <form onSubmit={handleModalSubmit}>
-          {renderFormFields()}
-          <button type="submit" style={{ marginTop: "1rem" }}>
-            Save
-          </button>
-        </form>
-      </Modal>
     </div>
   );
 };

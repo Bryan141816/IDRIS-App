@@ -51,6 +51,21 @@ class Token(BaseModel):
     access_token: str
 
 
+class EvacuationCenterCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+
+
+class EvacuationCenterOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+
+
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

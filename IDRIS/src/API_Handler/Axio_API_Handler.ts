@@ -2,7 +2,7 @@
 import axios from "axios";
 import { getAccessToken, setAccessToken, clearAccessToken } from "./token_store";
 
-// Helper: Decode JWT payload
+// Decode JWT payload
 function parseJwt(token: string) {
   try {
     const base64Url = token.split(".")[1];
@@ -19,36 +19,44 @@ function parseJwt(token: string) {
   }
 }
 
-// Helper: Check if token expired (with buffer to prevent edge cases)
+// Check if token is expired (with 30s buffer)
 function isTokenExpired(token: string) {
   const payload = parseJwt(token);
   if (!payload?.exp) return true;
 
   const now = Math.floor(Date.now() / 1000);
-  return payload.exp - 30 < now; // 30s buffer
+  return payload.exp - 30 < now;
 }
 
+// Create Axios instance
 export const API = axios.create({
   baseURL: "http://localhost:8000",
   withCredentials: true,
 });
 
-// Attach token & refresh if needed
+// Map to hold ongoing requests (by URL key)
+const abortControllerMap = new Map<string, AbortController>();
 
+// Request interceptor: handle token and cancel logic
 API.interceptors.request.use(async (config) => {
-  // Check if the request is for /login or /register
+  const urlKey = `${config.method}:${config.url}`;
+
+  // Cancel previous request if still ongoing
+  if (abortControllerMap.has(urlKey)) {
+    abortControllerMap.get(urlKey)?.abort();
+  }
+
+  const controller = new AbortController();
+  config.signal = controller.signal;
+  abortControllerMap.set(urlKey, controller);
+
   const skipRefresh =
     config.url?.includes("/login") || config.url?.includes("/register");
 
-  // If the request is login/register → skip token logic
-  if (skipRefresh) {
-    return config;
-  }
-
   let token = getAccessToken() ?? "";
 
-  // If token expired → try refreshing
-  if (token === "" || isTokenExpired(token)) {
+  // Refresh if expired
+  if (!skipRefresh && (token === "" || isTokenExpired(token))) {
     try {
       const res = await axios.post("http://localhost:8000/refresh", null, {
         withCredentials: true,
@@ -61,16 +69,24 @@ API.interceptors.request.use(async (config) => {
     }
   }
 
-  if (token) {
+  if (!skipRefresh && token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;
 });
 
-
+// Response interceptor: cleanup controller
 API.interceptors.response.use(
-  (res) => res,
-  (err) => Promise.reject(err)
+  (res) => {
+    const urlKey = `${res.config.method}:${res.config.url}`;
+    abortControllerMap.delete(urlKey);
+    return res;
+  },
+  (err) => {
+    const urlKey = `${err.config?.method}:${err.config?.url}`;
+    abortControllerMap.delete(urlKey);
+    return Promise.reject(err);
+  }
 );
 

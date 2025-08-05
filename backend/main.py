@@ -1,9 +1,12 @@
-from fastapi import FastAPI # , Depends, HTTPException
+from fastapi import FastAPI  # , Depends, HTTPException
+
 # from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+
 # from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
 # from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-from database import Base, engine #,  get_db
+from database import Base, engine  # ,  get_db
+
 # from models import ResponseReport  # no Role import
 # from datetime import datetime
 # from sqlalchemy import func
@@ -21,9 +24,9 @@ from routers.donations_management import (
     funding_proposals_route,
     donors_route,
     transparency_report_route,
-    donations_route
+    donations_route,
 )
-
+from routers.lgu_profiling import manage_lgu
 from fastapi.staticfiles import StaticFiles
 
 Base.metadata.create_all(bind=engine)
@@ -32,7 +35,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173","http://localhost:3000","http://localhost:4173"],  # <-- Frontend origin
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:4173",
+    ],  # <-- Frontend origin
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,6 +48,7 @@ app.add_middleware(
 app.include_router(authentication.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
+app.include_router(manage_lgu.router)
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
 app.include_router(demand_and_response.router)
@@ -48,12 +56,16 @@ app.include_router(modality_distribution.router)
 app.include_router(budget.router)
 app.include_router(in_kind_monitoring.router)
 app.include_router(
-    funding_proposals_route.router, prefix="/funding_proposals", tags=["Funding Proposals"]
+    funding_proposals_route.router,
+    prefix="/funding_proposals",
+    tags=["Funding Proposals"],
 )
 
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 app.include_router(
-    transparency_report_route.router, prefix="/transparency_report", tags=["Transparency Report"]
+    transparency_report_route.router,
+    prefix="/transparency_report",
+    tags=["Transparency Report"],
 )
 
 app.mount(
@@ -67,6 +79,7 @@ app.mount(
     StaticFiles(directory="media/fundingproposals"),
     name="fundingproposals",
 )
+
 
 @app.on_event("startup")
 async def on_startup():

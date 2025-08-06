@@ -25,7 +25,10 @@
   text-align: left; /* explicitly align text left */
   background-color: white;
 }
-
+.active-tab {
+  background-color: #5a7a8f !important;
+  color: white !important;
+}
 /* Headings */
 h1 {
   font-size: 2rem;

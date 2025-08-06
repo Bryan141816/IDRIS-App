@@ -6,6 +6,16 @@ import "../../response_dashboard/DefaultListViewStyle.scss";
 import { TableView } from "../../../components/TableView/table_view";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import { TableReponse } from "../../../components/TableView/table_view";
+import LocationPickerModal from "../../../components/Page_Furniture/LocationPickerModal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
+import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
+//Mapview
+type Props = {
+  lat: number;
+  lng: number;
+};
+import { faMapMarker } from "@fortawesome/free-solid-svg-icons";
 //API Handler
 export async function getRecord(record_type: string): Promise<any> {
   const response = await API.get(
@@ -14,15 +24,20 @@ export async function getRecord(record_type: string): Promise<any> {
   return response.data;
 }
 
-export async function addResponseReport(reportType: string): Promise<any> {
-  const response = await API.post(
-    "/response_dashboard/report_list/add_report",
-    {
-      report_type: reportType,
-      status: "Filed",
-    },
-  );
-  return response.data;
+export async function addRecord(
+  record_type: string,
+  payload: any,
+): Promise<any | false> {
+  try {
+    const response = await API.post(
+      `/lgu_profiling/manage_lgu/add_${record_type}`,
+      payload,
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to add record:", error);
+    return false;
+  }
 }
 
 export async function deleteResponseReport(reportId: String): Promise<any> {
@@ -67,367 +82,429 @@ export async function updateResponseReport(
     }
   }
 }
+type BaseModalProps = {
+  isModalOpen: boolean;
+  closeModal: () => void;
+  setMessageBox: React.Dispatch<React.SetStateAction<MessageBoxState>>;
+};
 
+type addEvacuationModalProp = BaseModalProps & {
+  handleAddEvacuation: (payload: any) => void;
+  defaultValue?: any;
+};
+const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
+  isModalOpen,
+  closeModal,
+  setMessageBox,
+  handleAddEvacuation,
+  defaultValue,
+}) => {
+  type evacuationProp = {
+    name: string;
+    lat: number;
+    lng: number;
+    capacity: number;
+  };
+  const [addEvacuationForm, setAddEvacuationForm] = useState<evacuationProp>({
+    name: "",
+    lat: 0,
+    lng: 0,
+    capacity: 0,
+  });
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+
+  const openLocationPicker = () => setLocationPickerIsOpen(true);
+  const closeLocationPicker = () => setLocationPickerIsOpen(false);
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
+    setAddEvacuationForm((prev) => ({
+      ...prev,
+      lat: mapData.lat,
+      lng: mapData.lng,
+    }));
+  };
+  const handleAddModalChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setAddEvacuationForm((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+  return (
+    <>
+      {locationPickerIsOpen && (
+        <LocationPickerModal
+          isOpenProp={locationPickerIsOpen}
+          onCloseProp={closeLocationPicker}
+          onSubmit={handleLocationPickerSubmit}
+          lat={addEvacuationForm.lat}
+          lng={addEvacuationForm.lng}
+        />
+      )}
+      <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
+        <div className="modal-container">
+          <div className="horizontal-container">
+            <span className="details-title">Add Evacuation</span>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Name:</span>
+            <input
+              type="text"
+              name="name"
+              value={addEvacuationForm.name}
+              onChange={handleAddModalChange}
+            />
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Location:</span>
+            <div
+              style={{
+                display: "flex",
+                width: "100%",
+                flexDirection: "row",
+                gap: "5px",
+              }}
+            >
+              <input
+                type="text"
+                readOnly
+                placeholder="Select a location"
+                value={
+                  addEvacuationForm.lat
+                    ? `${addEvacuationForm.lat} , ${addEvacuationForm.lng}`
+                    : ""
+                }
+              />
+              <button
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #ddd",
+                  outline: "none",
+                  color: "#3b82f6",
+                  width: "35px",
+                  borderRadius: "5px",
+                }}
+                onClick={openLocationPicker}
+              >
+                {" "}
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
+              </button>
+            </div>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Capacity:</span>
+            <input
+              type="text"
+              name="capacity"
+              value={addEvacuationForm.capacity}
+              onChange={handleAddModalChange}
+            />
+          </div>
+          <div className="action-button">
+            <button
+              style={{ backgroundColor: "#749AB6" }}
+              onClick={() => {
+                setMessageBox((prev) => ({
+                  ...prev, // preserves onClose and anything else
+                  isOpen: true, // your new values
+                  type: "confirm",
+                  message: "Are you sure you want to add this record?",
+                  onSubmit: () => {
+                    handleAddEvacuation(addEvacuationForm);
+                  },
+                }));
+              }}
+            >
+              Add
+            </button>
+            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+};
 //
 
 const MapOfCebu = () => {
   const [activeTab, setActiveTab] = useState("lgu");
-
-  // Example initial data
-  const [lguData, setLguData] = useState([
-    {
-      id: 1,
-      name: "Cebu City",
-      lat: 10.313924,
-      lng: 123.887082,
-      population: "964,169",
-      evacuationCenter: "Cebu City Sports Center",
-      description: "Main city",
-      resources: "Water, Power",
-      image: "https://example.com/image.jpg",
-    },
-  ]);
-
-  const [classificationData, setClassificationData] = useState([
-    {
-      id: 1,
-      name: "Barangay 1",
-      latitude: 10.31,
-      longitude: 123.88,
-      population: 5000,
-      resources: "Water",
-      evacuationCenter: "Evac Center 1",
-      nearestEvacuationCenter: "Evac Center 2",
-    },
-  ]);
-
-  const [hazardData, setHazardData] = useState([
-    { id: 1, lat: 10.313, lng: 123.885, lguId: 1 },
-  ]);
-
-  const [evacuationData, setEvacuationData] = useState([
-    {
-      id: 1,
-      name: "Cebu City Sports Center",
-      lat: 10.31,
-      lng: 123.88,
-      capacity: "1000",
-    },
-  ]);
-
-  const [raffiData, setRaffiData] = useState([
-    {
-      id: 1,
-      name: "RAFI Infra A",
-      lat: 10.35,
-      lng: 123.91,
-      description: "Warehouse and Transport Hub",
-    },
-  ]);
-
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editSection, setEditSection] = useState<string | null>(null);
-  const [editItem, setEditItem] = useState<any>(null);
-
-  // Open modal for adding new item
-  const handleAdd = (section: string) => {
-    setEditSection(section);
-    setEditItem(null); // null means add new
-    setIsModalOpen(true);
-  };
-
-  // Open modal for editing existing item
-  const handleEdit = (section: string, item: any) => {
-    setEditSection(section);
-    setEditItem(item);
-    setIsModalOpen(true);
-  };
-
-  // Save new or updated item from modal form
-  const handleModalSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = Object.fromEntries(new FormData(e.currentTarget));
-
-    const id = editItem?.id ?? Date.now(); // Use existing id or generate new
-
-    // Helper to update or add item to data arrays
-    const updateData = (
-      data: any[],
-      setter: React.Dispatch<React.SetStateAction<any[]>>,
-    ) => {
-      if (editItem) {
-        // Editing: update item by id
-        setter(data.map((d) => (d.id === id ? { ...d, ...formData, id } : d)));
-      } else {
-        // Adding: append new item
-        setter([...data, { ...formData, id }]);
-      }
-    };
-
-    // Convert numbers if applicable (simple conversion for lat,lng, population, capacity)
-    const parsedData = Object.entries(formData).reduce((acc, [k, v]) => {
-      if (["lat", "lng", "latitude", "longitude"].includes(k))
-        acc[k] = parseFloat(v as string);
-      else if (["population", "capacity", "lguId", "id"].includes(k))
-        acc[k] = Number(v);
-      else acc[k] = v;
-      return acc;
-    }, {} as any);
-
-    switch (editSection) {
-      case "lgu":
-        updateData(lguData, setLguData);
-        break;
-      case "classification":
-        updateData(classificationData, setClassificationData);
-        break;
-      case "hazard":
-        updateData(hazardData, setHazardData);
-        break;
-      case "evacuation":
-        updateData(evacuationData, setEvacuationData);
-        break;
-      case "raffi":
-        updateData(raffiData, setRaffiData);
-        break;
-      default:
-        break;
-    }
-
-    setIsModalOpen(false);
-    setEditItem(null);
-    setEditSection(null);
-  };
-
-  // Helper to render modal form fields based on section
-  const renderFormFields = () => {
-    if (!editSection) return null;
-
-    let fields: {
-      name: string;
-      label: string;
-      type?: string;
-      required?: boolean;
-      multiline?: boolean;
-    }[] = [];
-
-    switch (editSection) {
-      case "lgu":
-        fields = [
-          { name: "name", label: "LGU Name", required: true },
-          { name: "lat", label: "Latitude", type: "number", required: true },
-          { name: "lng", label: "Longitude", type: "number", required: true },
-          { name: "description", label: "Description", multiline: true },
-          { name: "population", label: "Population" },
-          { name: "resources", label: "Resources", multiline: true },
-          { name: "evacuationCenter", label: "Evacuation Center" },
-          { name: "image", label: "Image URL" },
-        ];
-        return (
-          <div className="lgu-modal-form">
-            {fields.map(({ name, label, type, required, multiline }) => (
-              <div key={name} style={{ marginBottom: "0.5rem" }}>
-                <label style={{ display: "block", fontWeight: "bold" }}>
-                  {label}
-                </label>
-                {multiline ? (
-                  <textarea
-                    name={name}
-                    defaultValue={editItem ? editItem[name] : ""}
-                    required={required}
-                    style={{ width: "100%" }}
-                  />
-                ) : (
-                  <input
-                    name={name}
-                    type={type || "text"}
-                    defaultValue={editItem ? editItem[name] : ""}
-                    required={required}
-                    style={{ width: "100%" }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        );
-
-      case "baranggay":
-        fields = [
-          { name: "name", label: "Barangay Name", required: true },
-          {
-            name: "latitude",
-            label: "Latitude",
-            type: "number",
-            required: true,
-          },
-          {
-            name: "longitude",
-            label: "Longitude",
-            type: "number",
-            required: true,
-          },
-          { name: "population", label: "Population", type: "number" },
-          { name: "resources", label: "Available Resources", multiline: true },
-          { name: "evacuationCenter", label: "Evacuation Center" },
-          {
-            name: "nearestEvacuationCenter",
-            label: "Nearest Evacuation Center",
-          },
-        ];
-
-        return (
-          <div className="lgu-modal-form">
-            {fields.map(({ name, label, type, required, multiline }) => (
-              <div key={name} style={{ marginBottom: "0.5rem" }}>
-                <label style={{ display: "block", fontWeight: "bold" }}>
-                  {label}
-                </label>
-                {multiline ? (
-                  <textarea
-                    name={name}
-                    defaultValue={editItem ? editItem[name] : ""}
-                    required={required}
-                    style={{ width: "100%" }}
-                  />
-                ) : (
-                  <input
-                    name={name}
-                    type={type || "text"}
-                    defaultValue={editItem ? editItem[name] : ""}
-                    required={required}
-                    style={{ width: "100%" }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-        );
-
-      case "hazard":
-        fields = [
-          { name: "lat", label: "Latitude", required: true },
-          { name: "lng", label: "Longitude", required: true },
-          { name: "lguId", label: "LGU ID", type: "number" },
-        ];
-        break;
-
-      case "evacuation":
-        fields = [
-          { name: "name", label: "Center Name" },
-          { name: "lguId", label: "LGU ID", type: "number" },
-          { name: "lat", label: "Latitude", type: "number" },
-          { name: "lng", label: "Longitude", type: "number" },
-          { name: "capacity", label: "Capacity" },
-        ];
-        break;
-
-      case "raffi":
-        fields = [
-          { name: "name", label: "Infra Name" },
-          { name: "description", label: "Description", multiline: true },
-          { name: "lat", label: "Latitude", type: "number" },
-          { name: "lng", label: "Longitude", type: "number" },
-        ];
-        break;
-
-      default:
-        return null;
-    }
-
-    // Default rendering for other sections (single column)
-    return fields.map(({ name, label, type, required, multiline }) => (
-      <div key={name} style={{ marginBottom: "0.5rem" }}>
-        <label style={{ display: "block", fontWeight: "bold" }}>{label}</label>
-        {multiline ? (
-          <textarea
-            name={name}
-            defaultValue={editItem ? editItem[name] : ""}
-            required={required}
-            style={{ width: "100%" }}
-          />
-        ) : (
-          <input
-            name={name}
-            type={type || "text"}
-            defaultValue={editItem ? editItem[name] : ""}
-            required={required}
-            style={{ width: "100%" }}
-          />
-        )}
-      </div>
-    ));
-  };
-  const [responseData, setResponseData] = useState<TableReponse | null>(null);
+  const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
+  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(
+    null,
+  );
+  const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
+  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(
+    null,
+  );
+  const [evacuationResponse, setEvacuationResponse] =
+    useState<TableReponse | null>(null);
   const refreshTable = useRef<() => void>(() => {});
+  const [currentTabName, setCurrentTabName] = useState("LGU");
+  const handleRefreshTable = () => refreshTable.current?.();
+  type MessageBoxState = {
+    isOpen: boolean;
+    type: "message" | "confirm";
+    message: string;
+    onSubmit?: () => void;
+    onClose: () => void;
+  };
   async function fetchData(name: string) {
     try {
       const response = await getRecord(name);
-      setResponseData(response);
+      switch (name) {
+        case "lgu":
+          setLguResponse(response);
+          break;
+        case "barangay":
+          setBarangayResponse(response);
+          break;
+        case "rafi":
+          setRafiResponse(response);
+          break;
+        case "hazard":
+          setHazardResponse(response);
+          break;
+        case "evacuation":
+          setEvacuationResponse(response);
+          break;
+      }
     } catch (error) {
       console.error(error);
     }
   }
-  const [currentTabName, setCurrentTabName] = useState("LGU");
-  const handleRefreshTable = () => refreshTable.current?.();
+
+  const [addModalState, setAddModalState] = useState<{
+    lguModal: boolean;
+    barangay: boolean;
+    rafi: boolean;
+    hazard: boolean;
+    evacuation: boolean;
+  }>({
+    lguModal: false,
+    barangay: false,
+    rafi: false,
+    hazard: false,
+    evacuation: false,
+  });
+
+  const openAddModal = () => {
+    setAddModalState((prev) => ({
+      ...prev,
+      [activeTab]: true,
+    }));
+  };
+  const closeAddModal = () => {
+    setAddModalState((prev) => ({
+      ...prev,
+      [activeTab]: false,
+    }));
+  };
 
   useEffect(() => {
     fetchData(activeTab);
-    handleRefreshTable();
-    switch (activeTab) {
-      case "lgu":
-        setCurrentTabName("LGU");
-        break;
-      case "barangay":
-        setCurrentTabName("Barangay");
-        break;
-      case "rafi":
-        setCurrentTabName("RAFI Infrastructure");
-        break;
-      case "hazard":
-        setCurrentTabName("Hazard Data");
-        break;
-      case "evacuation":
-        setCurrentTabName("Evacuation Center");
-        break;
-    }
   }, [activeTab]);
+  const handleAddRecord = async (payload: any) => {
+    const response = await addRecord(activeTab, payload);
+    if (response) {
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record added successfully",
+      }));
+      closeAddModal();
+      handleRefreshTable();
+    } else {
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Record failed",
+      }));
+    }
+  };
+  const closeMessageBox = () => {
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: false,
+    }));
+  };
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: closeMessageBox,
+  });
+
   return (
     <div className="app-container">
-      <div className="horizontal-container">
-        <div className="navigator-container">
-          <Link to="/response_dashboard">Response Dashboard</Link>
-          <h3>/Report List</h3>
-        </div>
-        <div className="table-actions">
-          <input type="text" placeholder="Search report"></input>
-          <button>Search</button>
-          <button>+ Add {currentTabName}</button>
-        </div>
-      </div>
+      <MessageBox
+        isOpen={messageBox.isOpen}
+        onClose={messageBox.onClose}
+        type={messageBox.type}
+        message={messageBox.message}
+        onSubmit={messageBox.onSubmit}
+      ></MessageBox>
+      <AddEvacuationModal
+        isModalOpen={addModalState.evacuation}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddEvacuation={handleAddRecord}
+      ></AddEvacuationModal>
+
       <div className="tabs">
-        <button onClick={() => setActiveTab("lgu")}>LGU</button>
-        <button onClick={() => setActiveTab("barangay")}>Baranggay</button>
-        <button onClick={() => setActiveTab("rafi")}>
+        <button
+          onClick={() => setActiveTab("lgu")}
+          className={activeTab === "lgu" ? "active-tab" : ""}
+        >
+          LGU
+        </button>
+        <button
+          onClick={() => setActiveTab("barangay")}
+          className={activeTab === "barangay" ? "active-tab" : ""}
+        >
+          Baranggay
+        </button>
+        <button
+          onClick={() => setActiveTab("rafi")}
+          className={activeTab === "rafi" ? "active-tab" : ""}
+        >
           RAFI Infrastructure
         </button>
-        <button onClick={() => setActiveTab("hazard")}>Hazard Mapping</button>
-        <button onClick={() => setActiveTab("evacuation")}>
+        <button
+          onClick={() => setActiveTab("hazard")}
+          className={activeTab === "hazard" ? "active-tab" : ""}
+        >
+          Hazard Mapping
+        </button>
+        <button
+          onClick={() => setActiveTab("evacuation")}
+          className={activeTab === "evacuation" ? "active-tab" : ""}
+        >
           Evacuation Center
         </button>
       </div>
 
       <div>
-        {responseData ? (
-          <TableView
-            tableJSON={responseData}
-            onClickCallback={(row: any) => {}}
-            setCallbackTableData={true}
-            pageRequest={`/lgu_profiling/manage_lgu/get_${activeTab}?page=`}
-            updateTable={(fn) => (refreshTable.current = fn)}
-          />
-        ) : (
-          <div>Loading data...</div>
+        {activeTab === "lgu" && (
+          <>
+            <div className="horizontal-container">
+              <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button>+ Add LGU</button>
+              </div>
+            </div>
+            {lguResponse ? (
+              <TableView
+                tableJSON={lguResponse}
+                onClickCallback={(row: any) => {}}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
+        )}
+        {activeTab === "barangay" && (
+          <>
+            <div className="horizontal-container">
+              <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button>+ Add Barangay</button>
+              </div>
+            </div>
+            {barangayResponse ? (
+              <TableView
+                tableJSON={barangayResponse}
+                onClickCallback={(row: any) => {}}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
+        )}
+        {activeTab === "rafi" && (
+          <>
+            <div className="horizontal-container">
+              <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button>+ Add Rafi Infrastructure</button>
+              </div>
+            </div>
+            {rafiResponse ? (
+              <TableView
+                tableJSON={rafiResponse}
+                onClickCallback={(row: any) => {}}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
+        )}
+        {activeTab === "hazard" && (
+          <>
+            <div className="horizontal-container">
+              <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button>+ Add Hazard</button>
+              </div>
+            </div>
+            {hazardResponse ? (
+              <TableView
+                tableJSON={hazardResponse}
+                onClickCallback={(row: any) => {}}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
+        )}
+        {activeTab === "evacuation" && (
+          <>
+            <div className="horizontal-container">
+              <div className="table-actions">
+                <input type="text" placeholder="Search report"></input>
+                <button>Search</button>
+                <button onClick={openAddModal}>+ Add Evacuation Center</button>
+              </div>
+            </div>
+            {evacuationResponse ? (
+              <TableView
+                tableJSON={evacuationResponse}
+                onClickCallback={(row: any) => {}}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
         )}
       </div>
     </div>

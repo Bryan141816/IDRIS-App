@@ -201,7 +201,7 @@ const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
           <div className="horizontal-container">
             <span className="item-details-identifier">Capacity:</span>
             <input
-              type="text"
+              type="number"
               name="capacity"
               value={addEvacuationForm.capacity}
               onChange={handleAddModalChange}

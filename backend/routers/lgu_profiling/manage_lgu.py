@@ -1,12 +1,18 @@
+from os import name
 from crud import delete, update
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
-from schemas import EvacuationCenterOut, EvacuationCenterCreate
+from schemas import (
+    EvacuationCenterOut,
+    EvacuationCenterCreate,
+    RafiInfrastructureCreate,
+    RafiInfrastructureOut,
+)
 from database import get_db
 from crud import delete, create_evacuation_center
-from models import EvacuationCenter  # no Role import datetime
+from models import EvacuationCenter, RAFIInfrastructure
 from routers.role_checker import RoleChecker
 import math
 
@@ -40,7 +46,7 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="des
 
 @router.get("/lgu_profiling/manage_lgu/get_barangay", response_model=TableResponse)
 def get_barangay(
-    db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desci"
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"
 ):
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
@@ -59,7 +65,9 @@ def get_barangay(
 
 
 @router.get("/lgu_profiling/manage_lgu/get_rafi", response_model=TableResponse)
-def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desci"):
+def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
+    page = getDefaultPage(page)
+    offset = (page - 1) * 10
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
         {"text": "Lat", "width": "150px"},
@@ -67,14 +75,83 @@ def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="de
         {"text": "Description", "width": "150px"},
         {"text": "Action", "width": "150px"},
     ]
+    order = (
+        RAFIInfrastructure.name.desc()
+        if Name == "desc"
+        else RAFIInfrastructure.name.asc()
+    )
+    records = (
+        db.query(RAFIInfrastructure).order_by(order).limit(100).offset(offset).all()
+    )
+
     table_datas = []
 
-    count = 0
+    pageCount = page
+    pages = {"page": pageCount, "row": []}
+
+    for record in records:
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)
+            pageCount += 1
+            pages = {"page": pageCount, "row": []}
+
+        row_data = [
+            Cell(
+                type="Hidden",
+                text=str(record.id),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
+            Cell(
+                type="Text",
+                text=record.name,
+                font_weight=500,
+                color="#000",
+                width="250px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.lat),
+                font_weight=500,
+                color="#000",
+                width="250px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.lng),
+                font_weight=500,
+                color="#000",
+                width="250px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.description),
+                font_weight=500,
+                color="#000",
+                width="250px",
+            ),
+            Cell(
+                type="Button",
+                text="View",
+                font_weight=500,
+                color="#fff",
+                background_color="#749AB6",
+                container_width="150px",
+                button_width="120px",
+            ),
+        ]
+        pages["row"].append({"data": row_data})
+
+    if pages["row"]:
+        table_datas.append(pages)
+
+    count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
 @router.get("/lgu_profiling/manage_lgu/get_hazard", response_model=TableResponse)
-def get_hazard(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desci"):
+def get_hazard(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
     table_head = [
         {"text": "Last Updated", "width": "150px", "action": "Sort"},
         {"text": "Lat", "width": "150px"},
@@ -91,7 +168,7 @@ def get_hazard(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="
 
 @router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
 def get_evacuation(
-    db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desci"
+    db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"
 ):
     page = getDefaultPage(page)
     offset = (page - 1) * 10
@@ -110,7 +187,6 @@ def get_evacuation(
 
     pageCount = page
     pages = {"page": pageCount, "row": []}
-    print(len(records))
     for record in records:
         if len(pages["row"]) == 10:
             table_datas.append(pages)
@@ -188,7 +264,7 @@ def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)
 @router.delete(
     "/lgu_profiling/manage_lgu/delete_evacuation/{record_id}", response_model=dict
 )
-def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
+def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, EvacuationCenter, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Record not found.")
@@ -196,7 +272,7 @@ def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/lgu_profiling/manage_lgu/update_evacuation/{record_id}")
-def update_budget_record(
+def update_evacuation(
     record_id: int, payload: EvacuationCenterCreate, db: Session = Depends(get_db)
 ):
     record = db.query(EvacuationCenter).get(record_id)
@@ -211,6 +287,48 @@ def update_budget_record(
         record.lng = payload.lng
     if payload.capacity is not None:
         record.capacity = payload.capacity
+
+    db.commit()
+    db.refresh(record)
+
+    return {"detail": "Record updated succesfully", "record": record}
+
+
+@router.post("/lgu_profiling/manage_lgu/add_rafi", response_model=RafiInfrastructureOut)
+def add_rafi(record: RafiInfrastructureCreate, db: Session = Depends(get_db)):
+    db_record = RAFIInfrastructure(
+        name=record.name, lat=record.lat, lng=record.lng, description=record.description
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+
+
+@router.delete("/lgu_profiling/manage_lgu/delete_rafi/{record_id}", response_model=dict)
+def delete_rafi(record_id: int, db: Session = Depends(get_db)):
+    deleted_report = delete(db, RAFIInfrastructure, record_id)
+    if not deleted_report:
+        raise HTTPException(status_code=400, detail="Record not found.")
+    return {"message": f"Record with ID {record_id} deleted successfully."}
+
+
+@router.put("/lgu_profiling/manage_lgu/update_rafi/{record_id}")
+def update_rafi(
+    record_id: int, payload: RafiInfrastructureCreate, db: Session = Depends(get_db)
+):
+    record = db.query(RAFIInfrastructure).get(record_id)
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if payload.name is not None:
+        record.name = payload.name
+    if payload.lat is not None:
+        record.lat = payload.lat
+    if payload.lng is not None:
+        record.lng = payload.lng
+    if payload.description is not None:
+        record.description = payload.description
 
     db.commit()
     db.refresh(record)

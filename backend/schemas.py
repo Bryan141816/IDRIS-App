@@ -51,6 +51,21 @@ class Token(BaseModel):
     access_token: str
 
 
+class RafiInfrastructureCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    description: str
+
+
+class RafiInfrastructureOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    description: str
+
+
 class EvacuationCenterCreate(BaseModel):
     name: str
     lat: float

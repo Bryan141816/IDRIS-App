@@ -39,6 +39,15 @@ class User(Base):
 
 
 # LGU Profiling
+class RAFIInfrastructure(Base):
+    __tablename__ = "rafi_infrastructure"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    description = Column(String(255), nullable=False)
+
+
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     id = Column(Integer, primary_key=True, index=True)

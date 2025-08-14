@@ -141,6 +141,12 @@ const FundingDonation = () =>
     (module) => ({ Component: module.default }),
   );
 
+const DonorProfile = () =>
+  import(
+    "./pages/donations_management/donor/donor_profile"
+  ).then(
+    (module) => ({ Component: module.default }),
+  );
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -337,6 +343,10 @@ export const router = createBrowserRouter([
         handle: { allowedRoles: ["finance admin"] },
       },
       {
+        path: "donor_profile",
+        lazy: DonorProfile,
+      },
+      {
         path: "response_dashboard",
         children: [
           {
@@ -441,6 +451,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/funding_proposals/update": UpdateFunding,
 
   "/transparency_report": TransparencyReport,
+  "/donor_profile": DonorProfile,
 
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/report_list": ReportList,

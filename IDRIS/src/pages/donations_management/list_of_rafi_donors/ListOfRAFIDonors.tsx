@@ -22,6 +22,7 @@ interface DonorData {
   donorId: number;
   name: string;
   organization_name: string;
+  total_donation: number;
   date_joined?: Date | string;
 }
 
@@ -171,7 +172,7 @@ const ListOfRAFIDonors = () => {
         },
         {
           type: "Text",
-          text: "Php" + (Math.random() * 100000).toFixed(2),
+          text: "Php" + donor.total_donation, // (Math.random() * 100000).toFixed(2),
           font_weight: 400,
         },
         {
@@ -262,6 +263,7 @@ const ListOfRAFIDonors = () => {
   const setSelectedNewDonorProfile = (donor: SearchedDonors) => {
     setNewUserId(donor.id);
     setNewDonorName(donor.username);
+    setNewDonorSearchedItems(null)
   };
 
   const setOrganizationDonorType = (is_organization: boolean) => {
@@ -378,7 +380,9 @@ const ListOfRAFIDonors = () => {
   const setSelectedGiftDonor = (donor: SearchedDonors) => {
     setGiftDonorName(donor.username);
     setGiftDonorEmail(donor.email || "No email provided");
+    setGiftDonorSearchedNames(null);
   };
+
   return (
     <div id="donors">
       <h3 className="public-feed-title">LIST OF RAFI DONORS</h3>
@@ -573,7 +577,8 @@ const ListOfRAFIDonors = () => {
               placeholder="Search Donor"
               value={giftDonorSearchName}
               onChange={setGiftDonorSearchName}
-            />
+              onSearch={() => handleGiftDonorSearch()}
+            />  
             {giftDonorSearchedNames != null && (
               <ul className="searched-list">
                 {giftDonorSearchedNames === null ? (

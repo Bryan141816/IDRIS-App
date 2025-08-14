@@ -1403,7 +1403,32 @@ select {
   }
 }
 
+.modal-title{
+  color: #749ab6;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
 #new-transparency-report-form {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  #report-file-dimension-control{
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+
+    .file-upload{
+      height: 190px;
+      border-radius: 20px;
+      justify-content: center;
+    }
+  }
 
   // Text Entry Fields
   .text-entry {
@@ -1469,9 +1494,8 @@ select {
 // Modal Buttons
 .modal-button-container {
   display: flex;
-  gap: 15px;
-  margin-top: 25px;
   justify-content: center;
+  gap: 15px;
 
   @media (max-width: 480px) {
     flex-direction: column;

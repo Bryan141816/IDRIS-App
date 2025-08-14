@@ -1,17 +1,18 @@
 from sqlalchemy.orm import Session, joinedload, aliased
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import nulls_last
-from sqlalchemy import or_, asc, desc
+from sqlalchemy import or_, asc, desc, func
 from typing import Optional, List, Dict, Any
 from math import ceil
 import datetime
 from fastapi import HTTPException, status
-from models import Donors, User
-from data_schemas.donors_schema import ListOfDonorsResponse
+from models import Donors, User, DonationRecords
+from data_schemas.donors_schema import ListOfDonorsResponse, IndividualDonorProfile, DonorItem
 
 # CREATE Operations
 class DonorCRUD:
-    def create_donor(self, db: Session, 
+    @staticmethod
+    def create_donor(db: Session, 
                      user_id: int, 
                      donor_type: Optional[str] = "Individual",
                      organization_name: Optional[str] = None, 
@@ -53,7 +54,8 @@ class DonorCRUD:
             )
 
     # READ Operations
-    def get_donor_by_id(self, db: Session, donor_id: int) -> Optional[Donors]:
+    @staticmethod
+    def get_donor_by_id(db: Session, donor_id: int) -> Optional[Donors]:
         """
         Retrieve a donor by their ID.
         
@@ -66,8 +68,8 @@ class DonorCRUD:
         """
         return db.query(Donors).filter(Donors.donorId == donor_id).first()
 
-
-    def get_donor_by_user_id(self, db: Session, user_id: int) -> Optional[Donors]:
+    @staticmethod
+    def get_donor_by_user_id(db: Session, user_id: int) -> Optional[Donors]:
         """
         Retrieve a donor by their associated user ID.
         
@@ -83,8 +85,8 @@ class DonorCRUD:
             Donors.donor_type == "Individual"
         ).first()
 
-
-    def get_verified_donors(self, db: Session, skip: int = 0, limit: int = 100) -> List[Donors]:
+    @staticmethod
+    def get_verified_donors(db: Session, skip: int = 0, limit: int = 100) -> List[Donors]:
         """
         Retrieve all verified donors with pagination.
         
@@ -100,8 +102,8 @@ class DonorCRUD:
             Donors.is_verified == True
         ).offset(skip).limit(limit).all()
 
-
-    def get_donors_by_name(self, db: Session, name: str) -> List[Donors]:
+    @staticmethod
+    def get_donors_by_name(db: Session, name: str) -> List[Donors]:
         """
         Search donors by name (case-insensitive partial match).
         
@@ -116,9 +118,8 @@ class DonorCRUD:
             Donors.name.ilike(f"%{name}%")
         ).all()
 
-
+    @staticmethod
     def get_all_donors(
-        self, 
         db: Session, 
         search: str = None, 
         order: str = "desc", 
@@ -162,9 +163,8 @@ class DonorCRUD:
         
         return query.offset(skip).limit(limit).all()
 
-
+    @staticmethod
     def count_donors( # mark used
-        self, 
         db: Session, 
         search: Optional[str] = None, 
         donor_type: Optional[str] = None
@@ -199,7 +199,8 @@ class DonorCRUD:
         return query.count()
 
     # UPDATE Operations
-    def update_donor(self, db: Session, donor_id: int, update_data: Dict[str, Any]) -> Optional[Donors]:
+    @staticmethod
+    def update_donor(db: Session, donor_id: int, update_data: Dict[str, Any]) -> Optional[Donors]:
         """
         Update a donor's information.
         
@@ -233,8 +234,8 @@ class DonorCRUD:
                 detail=f"Failed to update donor: {str(e)}"
             )
 
-
-    def verify_donor(self, db: Session, donor_id: int) -> Optional[Donors]:
+    @staticmethod
+    def verify_donor(db: Session, donor_id: int) -> Optional[Donors]:
         """
         Mark a donor as verified.
         
@@ -247,8 +248,8 @@ class DonorCRUD:
         """
         return DonorCRUD.update_donor(db, donor_id, {"is_verified": True})
 
-
-    def unverify_donor(self, db: Session, donor_id: int) -> Optional[Donors]:
+    @staticmethod
+    def unverify_donor(db: Session, donor_id: int) -> Optional[Donors]:
         """
         Mark a donor as unverified.
         
@@ -262,7 +263,8 @@ class DonorCRUD:
         return DonorCRUD.update_donor(db, donor_id, {"is_verified": False})
 
     # DELETE Operations
-    def delete_donor(self, db: Session, donor_id: int) -> bool:
+    @staticmethod
+    def delete_donor(db: Session, donor_id: int) -> bool:
         """
         Delete a donor by ID.
         
@@ -291,9 +293,9 @@ class DonorCRUD:
                 detail=f"Cannot delete donor due to existing references: {str(e)}"
             )
 
-
     # UTILITY Functions
-    def donor_exists(self, db: Session, donor_id: int) -> bool:
+    @staticmethod
+    def donor_exists(db: Session, donor_id: int) -> bool:
         """
         Check if a donor exists.
         
@@ -307,7 +309,7 @@ class DonorCRUD:
         return db.query(Donors).filter(Donors.donorId == donor_id).first() is not None
 
     @staticmethod
-    def get_donor_stats(self, db: Session) -> Dict[str, int]:
+    def get_donor_stats(db: Session) -> Dict[str, int]:
         """
         Get donor statistics.
         
@@ -393,11 +395,21 @@ class DonorCRUD:
                 else:
                     display_name = donor.organization_name or "Unknown Organization"
 
-                records.append({
-                    "name": display_name,
-                    "date_joined": donor.date_joined.isoformat()
-                })
+                # Calculate total donation (cash + in-kind)
+                total_donation = db.query(
+                    func.coalesce(func.sum(DonationRecords.amount), 0) +
+                    func.coalesce(func.sum(DonationRecords.estimated_value), 0)
+                ).filter(
+                    DonationRecords.donor_id == donor.donorId,
+                    DonationRecords.status == 'COMPLETED'
+                ).scalar()
 
+                records.append(DonorItem(
+                    name=display_name,
+                    organization_name=donor.organization_name,
+                    total_donation=float(total_donation or 0),
+                    date_joined=donor.date_joined
+                ))
             return ListOfDonorsResponse(
                 max_page=max_page,
                 donors = records
@@ -406,4 +418,22 @@ class DonorCRUD:
         except Exception as e:
             print(f"Error fetching donors: {e}")
             raise    
+
+    @staticmethod
+    def get_donor_profile_by_user_id(db: Session, user_id: int) -> IndividualDonorProfile | None:
+        donor = db.query(Donors).filter(Donors.user_id == user_id).first()
+
+        if donor is None:
+            return None
+
+        # Manual conversion to Pydantic schema
+        return IndividualDonorProfile(
+            donorId=donor.donorId,
+            donor_name = donor.donor_name,
+            donor_type=donor.donor_type,
+            is_verified=donor.is_verified,
+            date_joined=donor.date_joined,
+            last_updated=donor.last_updated
+        )
+
 donor_crud = DonorCRUD()

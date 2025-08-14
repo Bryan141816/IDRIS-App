@@ -50,6 +50,14 @@ const CreateFunding: React.FC = () => {
     }
   };
 
+  const handleCancelButton = () => {
+    if (document.referrer) {
+      window.location.href = document.referrer; 
+    } else {
+      window.history.back(); // Fallback if no referrer
+    }
+  }
+
   return (
     <>
       <h1 className="public-feed-title">Create Funding Proposal</h1>
@@ -109,6 +117,13 @@ const CreateFunding: React.FC = () => {
               type="submit"
               value="Submit"
             />
+            <button 
+              type="button"
+              className="yellow-btn"
+              onClick={() => { handleCancelButton() }} >
+              Cancel 
+            </button>
+
           </div>
 
           <div id="image-side">

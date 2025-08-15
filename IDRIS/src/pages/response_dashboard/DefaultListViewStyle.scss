@@ -832,7 +832,7 @@
 .horizontal-container {
   display: flex;
   gap: 15px;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 
@@ -844,28 +844,25 @@
 
 // Item Details Identifier
 .item-details-identifier {
-  font-weight: 600;
-  color: #749ab6;
+
   font-size: 1rem;
-  padding: 4px 8px;
-  background: rgba(116, 154, 182, 0.1);
-  border-radius: 6px;
-  border-left: 3px solid #749ab6;
 
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
 }
 
+// .modal-forms {
+//   padding: 0 10px;
+// }
+
 // Modal Container
 .modal-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   height: 100%;
-  padding: 20px;
+  padding: 30px;
   background: #ffffff;
-  border-radius: 12px;
   @include mixins.card-shadow;
 
   @media (max-width: 768px) {
@@ -874,15 +871,25 @@
   }
 }
 
+.details-title {
+  font-weight: bold;
+}
+
+.horizontal-separator {
+  height: 1px;
+  width: 100%;
+  background-color: #C5C5C5;
+  padding: 0;
+  margin: 10px 0;
+}
+
 // Action Button Container
 .action-button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  padding-top: 15px;
-  border-top: 1px solid #c5d7e5;
-  margin-top: auto;
+
 
   @media (max-width: 768px) {
     justify-content: center;

@@ -225,7 +225,8 @@ const AddReportList = ({
         <div className="horizontal-container">
           <span className="details-title">Create Report</span>
         </div>
-        <div className="horizontal-container">
+        <div className="horizontal-separator"></div>
+        <div className="horizontal-container modal-forms">
           <span className="item-details-identifier">Report Type:</span>
           <select value={reportType} onChange={handleReportTypeChange}>
             <option value="EOD Report">EOD Report</option>
@@ -236,6 +237,7 @@ const AddReportList = ({
             <option value="In-Kind Monitoring">In-Kind Monitoring</option>
           </select>
         </div>
+        <div className="horizontal-separator"></div>
         <div className="action-button">
           <button
             style={{ backgroundColor: "#749AB6" }}

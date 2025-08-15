@@ -852,9 +852,9 @@
   }
 }
 
-// .modal-forms {
-//   padding: 0 10px;
-// }
+.modal-forms {
+  padding: 10px 0;
+}
 
 // Modal Container
 .modal-container {
@@ -899,11 +899,12 @@
 
   button {
     @include mixins.button-base;
-    width: 100px;
-    height: 38px;
+    min-width: 100px;
+    width: fit-content;
+    padding: 5px 10px;
     font-size: 0.9rem;
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: 22px;
     transition: all 0.3s ease;
 
     // Primary button (submit/save)
@@ -1091,6 +1092,9 @@ input,
 option,
 select {
   color: black !important;
+  border-radius: 7px;
+  padding-right: 10px;
+
 }
 
 .title-modal-text {

@@ -194,7 +194,7 @@ const EditReportModal = ({
                 onSubmit: () => handleEditReport(editReportType, editStatus),
               }));
             }}
-            style={{ backgroundColor: "#749AB6" }}
+            style={{ backgroundColor: "rgba(0, 102, 255, 0.5)" }}
           >
             Submit
           </button>
@@ -240,7 +240,19 @@ const AddReportList = ({
         <div className="horizontal-separator"></div>
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6" }}
+            style={{
+              backgroundColor: "rgba(248, 75, 77, 0.40)",
+              color: " #4E0B01",
+            }}
+            onClick={closeModal}
+          >
+            Cancel
+          </button>
+          <button
+            style={{
+              backgroundColor: "rgba(0, 102, 255, 0.40)",
+              color: "#040661",
+            }}
             onClick={() => {
               setMessageBox((prev) => ({
                 ...prev, // preserves onClose and anything else
@@ -251,10 +263,7 @@ const AddReportList = ({
               }));
             }}
           >
-            Add
-          </button>
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
-            Cancel
+            Add Report
           </button>
         </div>
       </div>

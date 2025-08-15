@@ -23,6 +23,7 @@
   overflow: auto;
   max-height: 90%;
   border-radius: 20px;
+  background-color: white;
 }
 
 
@@ -42,7 +43,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba($color: #ff0000, $alpha: 0.5);
+  background-color: rgba($color: #ff0000, $alpha: 0.40);
   border-radius: 100%;
   padding: 5px;
 }

@@ -41,3 +41,15 @@ export async function logoutUser(): Promise<void> {
   clearAccessToken()
 }
 
+export async function fetchCurrentUserId(): Promise<any> {
+  try{
+    const response = await API.get('/users/me/id', {});
+    return response.data
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+      return null;
+    }
+    throw error; // rethrow other errors
+  }
+
+}

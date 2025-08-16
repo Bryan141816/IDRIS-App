@@ -6,6 +6,8 @@ from typing import List, Optional
 class Number(BaseModel):
     count: int
 
+class ID(BaseModel):
+    id: int
 
 class LoginSchema(BaseModel):
     email: str

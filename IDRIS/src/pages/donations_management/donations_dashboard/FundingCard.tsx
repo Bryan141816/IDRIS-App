@@ -9,7 +9,7 @@ type FundingProps = {
   message?: string;
   donated?: number;
   target?: number;
-  anchorLink?: number;
+  anchorLink?: number | string;
   className?: string;
 };
 
@@ -40,7 +40,7 @@ export const FundingCard: React.FC<FundingProps> = ({
       </div>
       {userRoles.includes("donor") && (
         <Link
-          to={`/donate/${anchorLink}`}
+          to={`${anchorLink}`}
           className={styles["funding-donate-btn"]}
         >
           Donate

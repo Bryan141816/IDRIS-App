@@ -143,7 +143,7 @@ const FundingDonation = () =>
 
 const DonorProfile = () =>
   import(
-    "./pages/donations_management/donor/donor_profile"
+    "./pages/donations_management/donor/Donor_Profile"
   ).then(
     (module) => ({ Component: module.default }),
   );

@@ -50,8 +50,24 @@ def get_table(
         if len(pages["row"]) == 10:
             table_datas.append(pages)  # Save the full page
             pageCount += 1
-            pages = {"page": pageCount, "row": []}  # New page
+            pages = {"page": pageCount, "row": []}  # New pages
 
+        status_color = None
+        status_text_color = None
+        if report.status.lower() == "completed":
+            status_color = "#30CB83"
+            status_text_color = "#30CB83"
+        elif report.status.lower() == "started":
+            status_color = "#F1C40F"
+            status_text_color = "#F1C40F"
+        elif report.status.lower() == "filed":
+            status_color = "#34495E"
+            status_text_color = "#34495E"
+        elif report.status.lower() == "cancelled":
+            status_color = "#E74C3C"
+            status_text_color = "#E74C3C"
+        else:
+            status_color = "#000"
         row_data = [
             Cell(
                 type="Hidden",
@@ -75,10 +91,11 @@ def get_table(
                 width="250px",
             ),
             Cell(
-                type="Text",
+                type="Status",
                 text=report.status,
                 font_weight=700,
-                color="#22A900" if report.status.lower() == "completed" else "#000",
+                background_color=status_color,
+                color=status_text_color,
                 width="150px",
             ),
             Cell(

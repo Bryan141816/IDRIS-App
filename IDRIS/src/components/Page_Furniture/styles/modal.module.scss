@@ -28,7 +28,7 @@
 
 
 .closeBtn {
-  color: #4E0B01;
+  color: white;
 
   position: absolute;
   top: 1vw;
@@ -43,7 +43,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba($color: #ff0000, $alpha: 0.40);
+  background-color: #ff0000;
   border-radius: 100%;
   padding: 5px;
 }

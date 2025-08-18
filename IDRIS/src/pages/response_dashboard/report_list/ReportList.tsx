@@ -241,8 +241,8 @@ const AddReportList = ({
         <div className="action-button">
           <button
             style={{
-              backgroundColor: "rgba(248, 75, 77, 0.40)",
-              color: " #4E0B01",
+              backgroundColor: "rgba(248, 75, 77)",
+              color: "white",
             }}
             onClick={closeModal}
           >
@@ -250,8 +250,8 @@ const AddReportList = ({
           </button>
           <button
             style={{
-              backgroundColor: "rgba(0, 102, 255, 0.40)",
-              color: "#040661",
+              backgroundColor: "rgba(0, 102, 255)",
+              color: "white",
             }}
             onClick={() => {
               setMessageBox((prev) => ({

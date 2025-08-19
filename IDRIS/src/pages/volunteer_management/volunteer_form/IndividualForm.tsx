@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Breadcrumb,
   Input,
+  Upload,
   Form,
   Select,
   DatePicker,
@@ -10,9 +11,13 @@ import {
   Checkbox,
 } from "antd";
 import type { CheckboxOptionType } from "antd";
+import { InboxOutlined, PlusOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
+import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import "./css/IndividualForm.css";
+import { createIndividualVolunteer } from "../../../API_Handler/individual_volunter_handler.ts";
 
 // Define types for form values
 interface IndividualFormValues {
@@ -50,12 +55,59 @@ const IndividualForm: React.FC = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm<IndividualFormValues>();
   const { Option } = Select;
+  const [understood, setUnderstood] = useState<boolean>(false);
+  const [birthDate, setBirthDate] = useState<dayjs.Dayjs | null>(null);
+  const [age, setAge] = useState<number | undefined>(undefined);
 
-  const onFinish = (values: IndividualFormValues): void => {
-    // Handle form submission logic here
-    console.log(values); // Optional: for debugging
-    navigate("/volunteer_management/otherindividual_form");
-  };
+
+  const onFinish = async (values: IndividualFormValues): Promise<void> => {
+  try {
+    const formData = new FormData();
+    formData.append("first_name", values.firstName);
+    formData.append("middle_name", values.middleName || "");
+    formData.append("last_name", values.lastName);
+    formData.append("email", values.email);
+    formData.append("phone_number", values.phone);
+    formData.append("address", values.address);
+    formData.append("birthday", values.birthDate.format("YYYY-MM-DD"));
+    formData.append("gender", values.gender);
+    formData.append("age", String(values.age));
+    formData.append("availability", values.availability.join(", ")); // join array into string
+    formData.append("medical_conditions", values.medicalCondition);
+    formData.append("other_medical_conditions", values.medicalDescription || "");
+
+    // If you have a logged-in user_id, append it here
+    // formData.append("user_id", userIdFromAuth);
+
+    await createIndividualVolunteer(formData);
+
+    // Redirect after success
+    navigate("/volunteer_management/volunteer_dashboard");
+  } catch (error) {
+    console.error("Error creating volunteer:", error);
+  }
+};
+const calculateAge = (birthDate: dayjs.Dayjs): number => {
+  const today = dayjs();
+  let age = today.year() - birthDate.year();
+
+  if (
+    today.month() < birthDate.month() ||
+    (today.month() === birthDate.month() && today.date() < birthDate.date())
+  ) {
+    age--;
+  }
+
+  return age;
+};
+
+  useEffect(() => {
+    if (birthDate) {
+      const computedAge = calculateAge(birthDate);
+      setAge(computedAge);
+      form.setFieldsValue({ age: computedAge }); // update Age field in form
+    }
+  }, [birthDate, form]);
 
   return (
     <div className="application-form">
@@ -163,14 +215,14 @@ const IndividualForm: React.FC = () => {
               {/* Birth Date, Gender and Age */}
               <div className="form-row">
                 <Form.Item
-                  name="birthDate"
-                  label="Birth Date"
-                  className="form-item-third"
-                  rules={[
-                    { required: true, message: "Please select birth date" },
-                  ]}
+                    name="birthDate"
+                    label="Birth Date"
+                    rules={[{ required: true, message: "Please select birth date" }]}
                 >
-                  <DatePicker style={{ width: "100%" }} />
+                    <DatePicker
+                    style={{ width: "100%" }}
+                    onChange={(date) => setBirthDate(date)}
+                    />
                 </Form.Item>
 
                 <Form.Item
@@ -186,12 +238,12 @@ const IndividualForm: React.FC = () => {
                 </Form.Item>
 
                 <Form.Item
-                  name="age"
-                  label="Age"
-                  className="form-item-third"
-                  rules={[{ required: true, message: "Please enter age" }]}
+                    name="age"
+                    label="Age"
+                    className="form-item-third"
+                    rules={[{ required: true, message: "Please enter age" }]}
                 >
-                  <Input type="number" placeholder="Enter your age" />
+                    <Input type="number" readOnly value={age ?? ""} />
                 </Form.Item>
               </div>
 
@@ -234,7 +286,55 @@ const IndividualForm: React.FC = () => {
                 />
               </Form.Item>
             </div>
+            <h3 className="section-title upload-title">Upload Files</h3>
+                          <Form.Item name="supportingFiles" className="upload-item">
+                            <Upload.Dragger
+                              name="files"
+                              multiple={false}
+                              listType="picture"
+                              maxCount={6}
+                              beforeUpload={() => false} // prevent auto upload
+                            >
+                              <p className="ant-upload-drag-icon">
+                                <InboxOutlined />
+                              </p>
+                              <p className="upload-text">Drop files here</p>
+                              <p className="upload-hint">or</p>
+                              <Button className="browse-button">Browse</Button>
+                            </Upload.Dragger>
+                          </Form.Item>
 
+                          <div className="note-section">
+                            <h4 className="note-title">Note:</h4>
+                            <p className="note-text">
+                              Please preview all your documents before clicking the{" "}
+                              <strong>Upload</strong> button. Once you submit your
+                              documents, you cannot delete them.
+                            </p>
+                            <Form.Item
+                              name="understood"
+                              valuePropName="checked"
+                              rules={[
+                                {
+                                  validator: (_, value) =>
+                                    value
+                                      ? Promise.resolve()
+                                      : Promise.reject(
+                                          new Error("Please confirm you understand"),
+                                        ),
+                                },
+                              ]}
+                            >
+                              <Checkbox
+                                onChange={(e: CheckboxChangeEvent) =>
+                                  setUnderstood(e.target.checked)
+                                }
+                                className="understand-checkbox"
+                              >
+                                I understand
+                              </Checkbox>
+                            </Form.Item>
+                          </div>
             {/* Form Buttons */}
             <Form.Item className="form-buttons">
               <Space>
@@ -242,8 +342,9 @@ const IndividualForm: React.FC = () => {
                   type="primary"
                   htmlType="submit"
                   className="submit-button"
+                  disabled={!understood}
                 >
-                  Next
+                  Upload
                 </Button>
               </Space>
             </Form.Item>

@@ -146,7 +146,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </Link>
           </div>
         </div>
-        
+
 
         <div className="nav-items" id="volunteer">
           <div
@@ -205,6 +205,18 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 }}
               >
                 Volunteer Profiles
+              </Link>
+            )}
+            {userRoles.includes("volunteer") && (
+              <Link
+                to="/volunteer_management/volunteer_assignment"
+                prefetch-link="/volunteer_management/volunteer_assignment"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Volunteer Assignment
               </Link>
             )}
           </div>

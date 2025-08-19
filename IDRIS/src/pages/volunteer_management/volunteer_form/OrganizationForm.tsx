@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox } from 'antd';
+import { Button, Breadcrumb, Input, Form, Select, DatePicker, Space, Checkbox, Upload } from 'antd';
 import type { CheckboxOptionType } from 'antd';
+import { InboxOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import './css/OrganizationForm.css';
 
@@ -39,6 +40,7 @@ const OrganizationForm: React.FC = () => {
     console.log(values); // Optional: for debugging
     navigate("/volunteer_management/volunteer_dashboard");
   };
+
 
   return (
     <div className="application-form">
@@ -202,6 +204,72 @@ const OrganizationForm: React.FC = () => {
                 <Checkbox.Group options={daysOfWeekOptions} />
               </Form.Item>
             </div>
+
+            <h3 className="section-title">Profile Picture</h3>
+                          {/* Updated profile picture upload section */}
+                          <Form.Item
+                            name="profilePicture"
+                            className="profile-upload-item"
+                          >
+                            <div className="profile-upload-container">
+                              <Upload
+                                name="profilePicture"
+                                listType="picture-card"
+                                className="profile-uploader"
+                                showUploadList={false}
+
+                                maxCount={1}
+                              >
+
+                              </Upload>
+                            </div>
+                            <div className="profile-upload-hint">
+                              Upload a profile picture (JPG/PNG, max 2MB)
+                            </div>
+                          </Form.Item>
+
+                          <h3 className="section-title upload-title">Upload Files</h3>
+                          <Form.Item
+                            name="profilePicture"
+                            className="upload-item"
+                          >
+                            <div className="upload-preview">
+                              <Upload.Dragger
+                                name="files"
+                                multiple={false}
+                                listType="picture"
+                                maxCount={6}
+                                beforeUpload={(): boolean => false}
+                              >
+                                <p className="ant-upload-drag-icon">
+                                  <InboxOutlined />
+                                </p>
+                                <p className="upload-text">Drop files here</p>
+                                <p className="upload-hint">or</p>
+                                <Button className="browse-button">Browse</Button>
+                              </Upload.Dragger>
+                            </div>
+                          </Form.Item>
+
+                          <Form.Item
+                            name="additionalDocuments"
+                            className="upload-item"
+                          >
+                          </Form.Item>
+
+                          <div className="note-section">
+                            <h4 className="note-title">Note:</h4>
+                            <p className="note-text">
+                              Please preview all your documents before clicking the <strong>Upload</strong> button.
+                              Once you submit your documents, you cannot delete them.
+                            </p>
+                            <Form.Item
+                              name="understood"
+                              valuePropName="checked"
+                            >
+                              <Checkbox className="understand-checkbox">I understand</Checkbox>
+                            </Form.Item>
+                          </div>
 
             <Form.Item className="form-buttons">
               <Space>

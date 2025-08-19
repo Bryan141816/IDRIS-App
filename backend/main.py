@@ -28,6 +28,9 @@ from routers.donations_management import (
 )
 from routers.lgu_profiling import manage_lgu
 from fastapi.staticfiles import StaticFiles
+from routers.volunteer_management import individual_volunteer_routes
+
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -67,6 +70,8 @@ app.include_router(
     prefix="/transparency_report",
     tags=["Transparency Report"],
 )
+
+app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
 
 app.mount(
     "/media/transparency_reports",

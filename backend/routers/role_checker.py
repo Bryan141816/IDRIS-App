@@ -6,7 +6,7 @@ from routers.auth.authentication import get_current_user_from_access_token
 
 
 def RoleChecker(required_roles: List[str]):
-    print("hello")
+    
 
     def checker(
         current_user: User = Depends(get_current_user_from_access_token),

@@ -95,10 +95,11 @@ const IndividualForm = () =>
     (module) => ({ Component: module.default }),
   );
 
-const OtherIndividualForm = () =>
-  import(
-    "./pages/volunteer_management/volunteer_form/otherIndividualForm"
-  ).then((module) => ({ Component: module.default }));
+  const VolunteerAssignment = () =>
+  import("./pages/volunteer_management/volunteer_assignment/volunteer_assignment").then(
+    (module) => ({ Component: module.default }),
+  );
+
 
 const ManageVolunteer = () =>
   import("./pages/volunteer_management/manage_volunteers/ManageVolunteer").then(
@@ -274,8 +275,8 @@ export const router = createBrowserRouter([
             lazy: IndividualForm,
           },
           {
-            path: "otherindividual_form",
-            lazy: OtherIndividualForm,
+            path: "volunteer_assignment",
+            lazy: VolunteerAssignment,
           },
           {
             path: "manage_applicant",
@@ -428,7 +429,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/volunteer_management/organization_form": OrganizationForm,
   "/volunteer_management/otherorganization_form": OtherOrganizationForm,
   "/volunteer_management/individual_form": IndividualForm,
-  "/volunteer_management/otherindividual_form": OtherIndividualForm,
+  "/volunteer_management/volunteer_assignment": VolunteerAssignment,
   "/volunteer_management/manage_applicant": ManageApplicant,
   "/volunteer_management/view_credentials": ViewCredentials,
   "/volunteer_management/volunteer_profiles": VolunteerProfiles,

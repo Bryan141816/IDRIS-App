@@ -24,21 +24,22 @@ const Login = () => {
       await loginUser(email, password);
       const userData = await fetchCurrentUser();
 
-      if (
-        userData &&
-        userData["user_type"] &&
-        userData["roles"] &&
-        userData["roles"].length > 0
-      ) {
+      if ( userData ) {
         setUserType(userData["user_type"]);
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
         setUsername(userData["username"]);
         setUserReady(true);
+      if (userData["roles"].includes("volunteer")) {
+        navigate("/volunteer_management/volunteer_dashboard");
+      } else if (userData["roles"].includes("operations admin")) {
         navigate("/donations_management/donations_dashboard");
       } else {
-        throw new Error("Invalid user data received.");
+        throw new Error("No valid role assigned to this user.");
       }
+    } else {
+      throw new Error("Invalid user data received.");
+    }
     } catch (error) {
       console.error("Login failed: ", error);
       setErrorMessage("Incorrect email or password. Please try again.");

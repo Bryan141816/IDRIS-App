@@ -1,36 +1,47 @@
+from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-from pydantic import BaseModel, EmailStr
 
-# Shared attributes (base)
+# ----------- SHARED SCHEMA -----------
 class IndividualVolunteerBase(BaseModel):
+    user_id: int
     first_name: str
     middle_name: Optional[str] = None
     last_name: str
-    email: EmailStr
+    email: str
     phone_number: Optional[str] = None
     address: Optional[str] = None
     birthday: Optional[date] = None
     gender: Optional[str] = None
+    age: Optional[int] = None
     availability: Optional[str] = None
     medical_conditions: Optional[str] = None
-    described_medical_conditions: Optional[str] = None
+    other_medical_conditions: Optional[str] = None
+    certification: Optional[str] = None  # file path or filename
 
-
-# Schema for creation (client POST request)
+# ----------- CREATE SCHEMA -----------
 class IndividualVolunteerCreate(IndividualVolunteerBase):
-    user_id: int
+    pass  # same as base for now, but you can add create-specific fields later
 
+# ----------- UPDATE SCHEMA -----------
+class IndividualVolunteerUpdate(BaseModel):
+    first_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
+    address: Optional[str] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    availability: Optional[str] = None
+    medical_conditions: Optional[str] = None
+    other_medical_conditions: Optional[str] = None
+    certification: Optional[str] = None
 
-# Schema for update (client PATCH or PUT)
-class IndividualVolunteerUpdate(IndividualVolunteerBase):
-    pass  # You can make fields optional here if needed
-
-
-# Schema for response (return to client)
-class IndividualVolunteerOut(IndividualVolunteerBase):
+# ----------- READ SCHEMA -----------
+class IndividualVolunteerRead(IndividualVolunteerBase):
     volunteer_id: int
-    user_id: int
 
     class Config:
         orm_mode = True

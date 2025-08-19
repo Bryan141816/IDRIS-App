@@ -262,3 +262,23 @@ class DonationRecords(Base):
     # Fixed relationships
     donor = relationship("Donors", back_populates="donations")
     proposal = relationship("FundingProposals", back_populates="donations")
+
+class IndividualVolunteer(Base):
+    __tablename__ = "individual_volunteer"
+
+    volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    first_name = Column(String(50), nullable=False)
+    middle_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=False)
+    email = Column(String(100), nullable=False)
+    phone_number = Column(String(20), nullable=True)
+    address = Column(String(255), nullable=True)
+    birthday = Column(Date, nullable=True)
+    gender = Column(String(10), nullable=True)
+    age = Column(Integer, nullable=True)
+    availability = Column(String(50), nullable=True)
+    medical_conditions = Column(String(255), nullable=True)
+    other_medical_conditions = Column(String(255), nullable=True)
+    certification = Column(String(255), nullable=True)

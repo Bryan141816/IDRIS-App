@@ -20,7 +20,9 @@ router_admin_or_donor = APIRouter(
 
 @router_admin.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
+    print("Reached backend")
     try:
+        print(donation)
         return CRUD.create_one_time_pending_donation(db, donation)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -46,7 +46,10 @@ def create_individual_donor_endpoint(
     db: Session = Depends(get_db)
 ):
     try:
-        print("Calling create_donor()...")
+        
+        if donor_type.lower() == "individual":
+            organization_name = None
+        
         new_donor = donor_crud.create_donor(
             db=db,
             user_id=user_id,
@@ -255,6 +258,14 @@ def delete_donor_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot delete donor: {str(e)}"
         )
+
+@router.get("/me/donor_id")
+def fetch_donor_id(
+    current_user: User = Depends(get_current_user_from_access_token),
+    db: Session = Depends(get_db),
+):
+    donor_id = donor_crud.get_donor_id_by_user_id(db, current_user.id)
+    return donor_id
 
 # router = APIRouter()
 router.include_router(router_admin)

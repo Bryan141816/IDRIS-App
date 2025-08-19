@@ -9,7 +9,7 @@ class DonationCRUD:
     def create_one_time_pending_donation(db: Session, donation_data: DonationCreate) -> DonationRecords:
         donation = DonationRecords(
             donor_id=donation_data.donor_id,
-            donation_type=donation_data.donation_type,
+            donation_type=donation_data.donation_type, # one-time / recurring
             amount=donation_data.amount,
             description=donation_data.description,
             proposal_id=donation_data.proposal_id,
@@ -18,6 +18,7 @@ class DonationCRUD:
             status=DonationStatus.PENDING.value,
             is_active_recurring=False  # One-time only
         )
+        print(donation)
         db.add(donation)
         db.commit()
         db.refresh(donation)

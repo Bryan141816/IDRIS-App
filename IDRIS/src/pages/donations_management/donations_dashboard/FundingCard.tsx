@@ -1,5 +1,5 @@
 import styles from "./fundingcard.module.scss";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 
 const backendUrl = "http://127.0.0.1:8000";
@@ -10,6 +10,7 @@ type FundingProps = {
   donated?: number;
   target?: number;
   anchorLink?: number | string;
+  fundingId: number; // Funding ID for Donate
   className?: string;
 };
 
@@ -19,11 +20,18 @@ export const FundingCard: React.FC<FundingProps> = ({
   donated,
   target,
   anchorLink,
+  fundingId,
   className = "",
 }) => {
+  const navigate = useNavigate();
+
   const { userRoles } = useUserRoleContext();
 
   const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
+  console.log(fundingId);
+  const handleDonateButton = (fundingId: number) => {
+    navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
+  }
 
   return (
     <div className={`${styles.fundingCard} ${className}`}>
@@ -39,12 +47,15 @@ export const FundingCard: React.FC<FundingProps> = ({
         <p>{filled}% Raised</p>
       </div>
       {userRoles.includes("donor") && (
-        <Link
-          to={`${anchorLink}`}
-          className={styles["funding-donate-btn"]}
-        >
-          Donate
-        </Link>
+        // <Link
+        //   to={`${anchorLink}`}
+        //   className={styles["funding-donate-btn"]}
+        // >
+        //   Donate
+        // </Link>
+        <button className={styles["funding-donate-btn"]} 
+          onClick={ () => { handleDonateButton(fundingId)}}
+        > Donate </button>
       )}
     </div>
   );

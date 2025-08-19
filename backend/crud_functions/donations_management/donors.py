@@ -436,4 +436,11 @@ class DonorCRUD:
             last_updated=donor.last_updated
         )
 
+    @staticmethod
+    def get_donor_id_by_user_id(db: Session, user_id: int) -> int:
+        donor = db.query(Donors).filter(Donors.user_id == user_id).first()
+        if not donor:
+            raise HTTPException(status_code=404, detail="Donor not found for this user")
+        return donor.donorId    
+    
 donor_crud = DonorCRUD()

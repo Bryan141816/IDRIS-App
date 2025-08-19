@@ -28,7 +28,7 @@ interface TransparencyReportInterface {
 }
 
 interface FundingProposalInterface {
-  iproposalId: number;
+  proposalId: number;
   title: string;
   description: string;
   total_donated: number;
@@ -202,6 +202,7 @@ const DonationsDashboard = () => {
           fundingProposalsLimit,
           fundingProposalsPage,
         );
+        console.log(proposals);
         setFundingProposals(proposals.records);
         setFundingProposalMaxPage(proposals.max_page);
       } catch (error) {
@@ -357,7 +358,8 @@ const DonationsDashboard = () => {
               message={funding.description}
               donated={funding.total_donated}
               target={funding.budgetRequired}
-              anchorLink={'/donations_management/funding_donation'}
+              anchorLink={''}
+              fundingId={funding.proposalId}
               className="funding-item"
             />
           ))}

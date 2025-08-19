@@ -181,13 +181,13 @@ class Donors(Base):
         elif self.user:
             return self.user.username
         return "Unknown Donor"
-
+    
 
 class TransparencyReports(Base):
-    __tablename__ = "transparency_report"
-
-    transparency_id = Column(Integer, primary_key=True, index=True)
-    file = Column(String, nullable=False)
+    __tablename__ = 'transparency_report'
+    
+    transparency_id = Column(Integer, primary_key=True, index=True, autoincrement = True)
+    file = Column(String, nullable = False)
     file_name = Column(String(50), nullable=False)
     date_issued = Column(DateTime(timezone=True), nullable=False)
 

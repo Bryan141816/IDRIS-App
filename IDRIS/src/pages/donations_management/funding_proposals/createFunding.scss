@@ -30,6 +30,7 @@
       padding: 12px;
       width: 100%;
       height: 500px;
+      border-radius: 20px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -146,5 +147,19 @@
 
   &:hover {
     background-color: color.scale($green, $lightness: 10%);
+  }
+}
+
+.yellow-btn {
+  background-color: $saffron-yellow;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+
+  &:hover {
+    background-color: color.scale($saffron-yellow, $lightness: 10%);
   }
 }

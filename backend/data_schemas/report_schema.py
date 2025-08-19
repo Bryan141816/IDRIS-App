@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Any, Dict, Union
 
 # --- Cell ---
 class Cell(BaseModel):
-    type: Literal["Text", "Button", "Image", "Hidden"]
+    type: Literal["Text", "Button", "Image", "Hidden", "Status"]
     text: str
     value: Optional[Union[str, int, float, Dict[str, Any], List[Any]]] = None
     font_weight: int

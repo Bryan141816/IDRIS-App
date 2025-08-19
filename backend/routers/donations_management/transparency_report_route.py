@@ -26,6 +26,7 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
 )
 
+router = APIRouter()
 
 UPLOAD_DIR = Path("media/transparency_reports")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -106,9 +107,7 @@ def update_transparency_report_handler(
     )
     
 
-router = APIRouter(
-    # dependencies=[Depends(RoleChecker(["operations admin", "superuser", "donor"]))],
-)
+
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

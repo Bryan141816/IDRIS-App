@@ -23,3 +23,7 @@ export async function searchDonorUsers(search = ''): Promise<any> {
   return response.data;
 }
 
+export async function getIndividualDonorProfile(): Promise<any>{
+  const response = await API.get('/donors/user_profile', {});
+  return response.data;
+}

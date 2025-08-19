@@ -357,7 +357,7 @@ const DonationsDashboard = () => {
               message={funding.description}
               donated={funding.total_donated}
               target={funding.budgetRequired}
-              anchorLink={funding.iproposalId}
+              anchorLink={'/donations_management/funding_donation'}
               className="funding-item"
             />
           ))}

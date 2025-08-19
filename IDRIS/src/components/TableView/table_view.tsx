@@ -12,7 +12,7 @@ interface TableRowProps {
   iSborder: boolean;
 }
 export interface Cell {
-  type: "Text" | "Button" | "Image" | "Hidden" | "Date";
+  type: "Text" | "Button" | "Image" | "Hidden" | "Date" | "Status";
   text: string;
   width?: string;
   value?: string | number | object | any[];
@@ -97,6 +97,26 @@ const TableCell: React.FC<TableCellProps> = ({ cell, onClickCallback }) => {
           {cell.text}
         </button>
       </div>
+    );
+  }
+  if (cell.type === "Status") {
+    return (
+      <span
+        style={{
+          width: cell.width,
+          maxWidth: cell.width,
+          backgroundColor: cell.background_color + "20",
+          color: cell.color,
+          fontWeight: cell.font_weight,
+          padding: "5px",
+          textAlign: "center",
+          borderRadius: "10px",
+        }}
+        title={cell.text}
+        className="table-cell"
+      >
+        {cell.text}
+      </span>
     );
   }
   return null;

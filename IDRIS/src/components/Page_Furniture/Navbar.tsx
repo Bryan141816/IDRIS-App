@@ -245,6 +245,18 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
           >
             {/* Sub items here */}
+            { userRoles.includes("donor") &&
+              <Link
+                to="/donor_profile"
+                prefetch-link="/donor_profile"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Donor Profile
+              </Link>
+            }
             <Link
               to="/donations_management/donations_dashboard"
               prefetch-link="/donations_management/donations_dashboard"

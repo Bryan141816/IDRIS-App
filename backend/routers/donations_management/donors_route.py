@@ -4,19 +4,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from typing import Optional, List
 from database import get_db  # Adjust import path
-from models import Donors
+from models import Donors, User
 from schemas import Number
 from routers.role_checker import RoleChecker
+
+from routers.auth.authentication import get_current_user_from_access_token
 
 from data_schemas.donors_schema import (
     DonorResponse, 
     DonorListResponse, 
     DonorStatsResponse,
     ListOfDonorsResponse,
-    DonorAllAttributes
+    DonorAllAttributes,
+    IndividualDonorProfile
 )
 
 from crud_functions.donations_management.donors import donor_crud
+
+router = APIRouter()
 
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
@@ -31,7 +36,7 @@ router_admin_or_donor = APIRouter(
 )
 
 
-@router_admin.post("/create/", response_model=DonorResponse)  # mark used
+@router_admin_or_donor.post("/create/", response_model=DonorResponse)  # mark used
 def create_individual_donor_endpoint(
     user_id: int = Form(...),
     donor_type: Optional[str] = Form("Individual"),
@@ -92,12 +97,25 @@ def get_donor_by_user_endpoint(
         )
     return donor
 
+@router_admin_or_donor.get("/user_profile", response_model=IndividualDonorProfile)
+def get_donor_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_access_token),
+):
+    donor_profile = donor_crud.get_donor_profile_by_user_id(db, current_user.id)
+    print(donor_profile)
+    if not donor_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Donor profile not found for this user"
+        )
+    return donor_profile
 
 # ============================================================================
 # READ ENDPOINTS - MULTIPLE RECORDS & FILTERING
 # ============================================================================
 
-@router_admin_or_donor.get("/get_all_as_lists", response_model=ListOfDonorsResponse) # mark used
+@router.get("/get_all_as_lists", response_model=ListOfDonorsResponse) # mark used
 def get_donor_display_info_endpoint(
     search: Optional[str] = Query(None),    
     page: int = Query(1, ge=1),
@@ -107,7 +125,7 @@ def get_donor_display_info_endpoint(
     """Get all donors with pagination."""
     return donor_crud.get_donor_display_info(db, search=search, page=page, limit=limit)
 
-@router_admin.get("/count", response_model=Number) # mark used
+@router_admin_or_donor.get("/count", response_model=Number) # mark used
 def count_donors(
     search: Optional[str] = Query(None, description="email/username"),
     donor_type: Optional[str] = Query(None, description="Filter by Organization or Individual"),
@@ -238,7 +256,7 @@ def delete_donor_endpoint(
             detail=f"Cannot delete donor: {str(e)}"
         )
 
-router = APIRouter()
+# router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

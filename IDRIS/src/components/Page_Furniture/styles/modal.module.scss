@@ -17,21 +17,22 @@
 .modalContent {
   width: 90%;
   height: auto; // ✅ this is critical
-  background-color: white;
   padding: 0; // optional: remove padding for full-size children
-  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: auto;
   max-height: 90%;
+  border-radius: 20px;
+  background-color: white;
 }
 
 
 .closeBtn {
-  color: #000;
+  color: white;
+
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 1vw;
+  right: 1vw;
   font-size: 1.5rem;
   background: none;
   border: none;
@@ -42,4 +43,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #ff0000;
+  border-radius: 100%;
+  padding: 5px;
 }

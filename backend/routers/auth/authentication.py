@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
 from jose import JWTError
-from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse
+from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse, ID
 from models import User
 from crud import create_user, authenticate_user, get_user_by_email
 from auth import (
@@ -124,6 +124,9 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 def read_users_me(current_user: User = Depends(get_current_user_from_access_token)):
     return current_user
 
+@router.get("/users/me/id", response_model=ID)
+def read_user_id(current_user: User = Depends(get_current_user_from_access_token)):
+    return {"id": current_user.id}
 
 @router.post("/logout")
 def logout(response: Response):

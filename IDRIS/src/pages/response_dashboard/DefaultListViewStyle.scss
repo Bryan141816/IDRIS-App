@@ -295,319 +295,6 @@
   }
 }
 
-// Chart Containers
-.chart-container {
-  display: flex;
-  background-color: #ffffff;
-  border: 1px solid #c5d7e5;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  @include mixins.card-shadow;
-  @include mixins.hover-lift;
-  min-height: 350px;
-  padding: 20px;
-  flex-direction: column;
-
-  // Chart header
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #c5d7e5;
-
-    h3 {
-      color: #749ab6;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0;
-
-      @media (max-width: 768px) {
-        font-size: 1.1rem;
-      }
-    }
-
-    .chart-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-
-      select,
-      button {
-        padding: 5px 10px;
-        border: 1px solid #c5d7e5;
-        border-radius: 5px;
-        background: #ffffff;
-        color: #749ab6;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-
-        &:hover {
-          border-color: #749ab6;
-          background: #f8f9fa;
-        }
-
-        &:focus {
-          outline: none;
-          box-shadow: 0 0 0 2px rgba(116, 154, 182, 0.2);
-        }
-      }
-    }
-  }
-
-  // Chart content area
-  .chart-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    min-height: 280px;
-
-    // Chart canvas/svg styling
-    canvas,
-    svg {
-      max-width: 100%;
-      max-height: 100%;
-      border-radius: 8px;
-    }
-
-    // Loading state for charts
-    &.loading {
-      @include mixins.flex-center;
-
-      &::before {
-        content: '';
-        width: 30px;
-        height: 30px;
-        border: 3px solid #c5d7e5;
-        border-top: 3px solid #749ab6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-    }
-  }
-
-  // Chart legend
-  .chart-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #c5d7e5;
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-      color: #749ab6;
-
-      .legend-color {
-        width: 12px;
-        height: 12px;
-        border-radius: 2px;
-        flex-shrink: 0;
-      }
-    }
-  }
-
-  @media (max-width: 768px) {
-    min-height: 300px;
-    padding: 15px;
-
-    .chart-header {
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-start;
-
-      .chart-controls {
-        width: 100%;
-        justify-content: flex-start;
-      }
-    }
-
-    .chart-content {
-      min-height: 220px;
-    }
-  }
-}
-
-// Small Chart Containers (for grid layouts)
-.chart-container-small {
-  @extend .chart-container;
-  min-height: 250px;
-  padding: 15px;
-
-  .chart-header {
-    margin-bottom: 15px;
-
-    h3 {
-      font-size: 1.1rem;
-    }
-  }
-
-  .chart-content {
-    min-height: 180px;
-  }
-
-  @media (max-width: 768px) {
-    min-height: 220px;
-
-    .chart-content {
-      min-height: 150px;
-    }
-  }
-}
-
-// Large Chart Containers (for featured charts)
-.chart-container-large {
-  @extend .chart-container;
-  min-height: 450px;
-  grid-column: span 2;
-
-  .chart-content {
-    min-height: 380px;
-  }
-
-  @media (max-width: 1024px) {
-    grid-column: span 1;
-    min-height: 350px;
-
-    .chart-content {
-      min-height: 280px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    min-height: 300px;
-
-    .chart-content {
-      min-height: 220px;
-    }
-  }
-}
-
-// Chart Grid Layout
-.charts-grid {
-  display: grid;
-  gap: 20px;
-  width: 100%;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-
-  &.grid-2-col {
-    grid-template-columns: repeat(2, 1fr);
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  &.grid-3-col {
-    grid-template-columns: repeat(3, 1fr);
-
-    @media (max-width: 1024px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 768px) {
-    gap: 15px;
-    grid-template-columns: 1fr !important;
-  }
-}
-
-// Loading and Empty States
-.loading-state {
-  @include mixins.flex-center;
-  color: #749ab6;
-  font-style: italic;
-  min-height: 200px;
-  background: #ffffff;
-  border-radius: 12px;
-  @include mixins.card-shadow;
-
-  &::before {
-    content: '';
-    width: 20px;
-    height: 20px;
-    border: 2px solid #c5d7e5;
-    border-top: 2px solid #749ab6;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 10px;
-  }
-}
-
-.empty-state {
-  @include mixins.flex-center;
-  flex-direction: column;
-  color: #749ab6;
-  opacity: 0.7;
-  min-height: 200px;
-  gap: 1rem;
-  background: #ffffff;
-  border-radius: 12px;
-  @include mixins.card-shadow;
-
-  svg {
-    color: #c5d7e5;
-    opacity: 0.5;
-    font-size: 3rem;
-  }
-}
-
-// Animations
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-// Animation classes
-.fade-in-up {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.pulse {
-  animation: pulse 2s infinite;
-}
 
 // Print Styles
 @media print {
@@ -633,41 +320,6 @@
   }
 }
 
-// High Contrast Mode
-@media (prefers-contrast: high) {
-
-  .sub-item-content-big-data,
-  .sub-item-content-big-data-inverted {
-    border: 2px solid #000000;
-  }
-
-  .manage-button {
-    border: 2px solid transparent;
-
-    &:focus {
-      border-color: #000000;
-    }
-  }
-}
-
-// Reduced Motion
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  .sub-item-content-big-data,
-  .sub-item-content-big-data-inverted,
-  .recent-report,
-  .bordered-sub-item {
-    &:hover {
-      transform: none !important;
-    }
-  }
-}
-
 // Focus Management
 .sr-only {
   position: absolute;
@@ -681,58 +333,6 @@
   border: 0;
 }
 
-// Additional Utility Classes
-.text-center {
-  text-align: center;
-}
-
-.text-left {
-  text-align: left;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.mb-0 {
-  margin-bottom: 0;
-}
-
-.mb-1 {
-  margin-bottom: 0.5rem;
-}
-
-.mb-2 {
-  margin-bottom: 1rem;
-}
-
-.mb-3 {
-  margin-bottom: 1.5rem;
-}
-
-.mt-0 {
-  margin-top: 0;
-}
-
-.mt-1 {
-  margin-top: 0.5rem;
-}
-
-.mt-2 {
-  margin-top: 1rem;
-}
-
-.mt-3 {
-  margin-top: 1.5rem;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.h-full {
-  height: 100%;
-}
 
 // Report Container
 .report-container {
@@ -832,7 +432,7 @@
 .horizontal-container {
   display: flex;
   gap: 15px;
-  justify-content: center;
+  // justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 
@@ -844,28 +444,25 @@
 
 // Item Details Identifier
 .item-details-identifier {
-  font-weight: 600;
-  color: #749ab6;
+
   font-size: 1rem;
-  padding: 4px 8px;
-  background: rgba(116, 154, 182, 0.1);
-  border-radius: 6px;
-  border-left: 3px solid #749ab6;
 
   @media (max-width: 768px) {
     font-size: 0.9rem;
   }
 }
 
+.modal-forms {
+  padding: 10px 0;
+}
+
 // Modal Container
 .modal-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   height: 100%;
-  padding: 20px;
+  padding: 30px;
   background: #ffffff;
-  border-radius: 12px;
   @include mixins.card-shadow;
 
   @media (max-width: 768px) {
@@ -874,15 +471,25 @@
   }
 }
 
+.details-title {
+  font-weight: bold;
+}
+
+.horizontal-separator {
+  height: 1px;
+  width: 100%;
+  background-color: #C5C5C5;
+  padding: 0;
+  margin: 10px 0;
+}
+
 // Action Button Container
 .action-button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  padding-top: 15px;
-  border-top: 1px solid #c5d7e5;
-  margin-top: auto;
+
 
   @media (max-width: 768px) {
     justify-content: center;
@@ -892,8 +499,9 @@
 
   button {
     @include mixins.button-base;
-    width: 100px;
-    height: 38px;
+    min-width: 100px;
+    width: fit-content;
+    padding: 5px 10px;
     font-size: 0.9rem;
     font-weight: 500;
     border-radius: 8px;
@@ -1084,6 +692,9 @@ input,
 option,
 select {
   color: black !important;
+  border-radius: 7px;
+  padding-right: 10px;
+
 }
 
 .title-modal-text {

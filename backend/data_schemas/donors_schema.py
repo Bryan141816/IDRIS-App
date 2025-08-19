@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
 
 # Base Donor Schema
@@ -29,6 +29,7 @@ class DonorListResponse(BaseModel):
 class DonorItem(BaseModel):
     name: str
     organization_name: Optional[str] = None
+    total_donation: float
     date_joined: datetime
 
 class ListOfDonorsResponse(BaseModel):
@@ -40,6 +41,18 @@ class DonorStatsResponse(BaseModel):
     individual_donors: int
     verified_donors: int
     unverified_donors: int
+
+class IndividualDonorProfile(BaseModel):
+    donorId: int = Field(..., alias="donorId")
+    donor_name: str
+    donor_type: str
+    is_verified: bool
+    date_joined: datetime
+    last_updated: datetime
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
 
 class DonorAllAttributes(DonorBase):
     donorId: int

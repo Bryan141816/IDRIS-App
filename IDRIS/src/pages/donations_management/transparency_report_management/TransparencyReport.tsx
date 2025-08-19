@@ -176,6 +176,13 @@ const TransparencyReport = () => {
     }
   };
 
+  const handleCancelButton = () => {
+    setCreateFileName("");
+    setCreateSelectedFile(null);
+    setCreateDateReport("");
+    setActiveModal("");
+  }
+
   return (
     <div id="transparency_report">
       <div className={""}>
@@ -231,12 +238,15 @@ const TransparencyReport = () => {
           id="new-transparency-report-form"
           onSubmit={handleCreateSubmit}
         >
-          <UploadFile
-            accept="application/pdf"
-            showName={true}
-            action="create"
-            onFileSelect={(file, action) => handleFileSelect(file, action)}
-          />
+          <div id="report-file-dimension-control">
+            <UploadFile
+              accept="application/pdf"
+              showName={true}
+              action="create"
+              onFileSelect={(file, action) => handleFileSelect(file, action)}
+              className="file-upload"
+            />
+          </div>
           <div className="text-entry">
             <input
               type="text"
@@ -268,6 +278,12 @@ const TransparencyReport = () => {
           <div className="modal-button-container">
             <button type="submit" className="green-modal-button">
               Save
+            </button>
+
+            <button type="button" className="yellow-modal-button"
+              onClick={() => handleCancelButton()}
+              >
+              Cancel
             </button>
           </div>
         </form>

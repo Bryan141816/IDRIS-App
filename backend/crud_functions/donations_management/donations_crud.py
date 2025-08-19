@@ -111,7 +111,7 @@ class DonationCRUD:
         ]
         
         if month is not None:
-            query = query.filter(extract('month', DonationRecords.donation_date) == month)
+            filters.append(extract('month', DonationRecords.donation_date) == month)
 
         total = db.query(
             func.coalesce(func.sum(DonationRecords.amount), 0) +

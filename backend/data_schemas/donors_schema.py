@@ -33,7 +33,7 @@ class DonorUpdate(BaseModel):
 
 # === Response Schemas ===
 class DonorResponse(BaseModel):
-    donorId: int = Field(..., alias="id")
+    donorId: int = Field(..., alias="donor_id")
     user_id: Optional[int] = None
     organization_name: Optional[str] = None
     donor_type: DonorType
@@ -78,7 +78,7 @@ class DonorStatsResponse(BaseModel):
 
 
 class IndividualDonorProfile(BaseModel):
-    donorId: int = Field(..., alias="id")
+    donorId: int = Field(..., alias="donor_id")
     donor_name: str  # comes from Donor.donor_name @property
     donor_type: DonorType
     is_verified: bool
@@ -91,7 +91,7 @@ class IndividualDonorProfile(BaseModel):
 
 
 class DonorAllAttributes(BaseModel):
-    donorId: int = Field(..., alias="id")
+    donorId: int = Field(..., alias="donor_id")
     user_id: Optional[int] = None
     donor_type: DonorType
     organization_name: Optional[str] = None

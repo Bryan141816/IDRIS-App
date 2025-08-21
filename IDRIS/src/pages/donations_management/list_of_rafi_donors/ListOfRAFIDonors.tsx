@@ -20,7 +20,7 @@ import {
 
 interface DonorData {
   donorId: number;
-  name: string;
+  donor_name: string;
   organization_name: string;
   total_donation: number;
   date_joined?: Date | string;
@@ -35,7 +35,7 @@ interface DonorsApiResponse {
 
 interface SearchedDonors {
   id: number;
-  username: string;
+  donor_name: string;
   email?: string;
 }
 
@@ -95,6 +95,7 @@ const ListOfRAFIDonors = () => {
           page,
           donorPerPage
         );
+        console.log(response.donor_name);
         setMaxPage(response.max_page);
 
         if (Array.isArray(response)) {
@@ -124,15 +125,15 @@ const ListOfRAFIDonors = () => {
     if (sorting === "Ascending") {
       // Sort by name ascending
       sortedDonors.sort((a, b) => {
-        const nameA = a.organization_name || a.name;
-        const nameB = b.organization_name || b.name;
+        const nameA = a.organization_name || a.donor_name;
+        const nameB = b.organization_name || b.donor_name;
         return nameA.localeCompare(nameB);
       });
     } else if (sorting === "Descending") {
       // Sort by name descending
       sortedDonors.sort((a, b) => {
-        const nameA = a.organization_name || a.name;
-        const nameB = b.organization_name || b.name;
+        const nameA = a.organization_name || a.donor_name;
+        const nameB = b.organization_name || b.donor_name;
         return nameB.localeCompare(nameA);
       });
     }
@@ -166,7 +167,7 @@ const ListOfRAFIDonors = () => {
           type: "Text",
           text:
             donor.organization_name === null
-              ? donor.name
+              ? donor.donor_name
               : donor.organization_name,
           font_weight: 500,
         },
@@ -211,12 +212,12 @@ const ListOfRAFIDonors = () => {
       ) {
         const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
           (donor) =>
-            donor.username.toLowerCase().includes(addDonorSearch.toLowerCase()),
+            donor.donor_name.toLowerCase().includes(addDonorSearch.toLowerCase()),
         );
         setNewDonorSearchedItems(
           filtered.map((donor) => ({
             id: donor.id,
-            username: donor.username,
+            donor_name: donor.donor_name,
             email: donor.email || undefined,
           })),
         );
@@ -262,7 +263,7 @@ const ListOfRAFIDonors = () => {
   // Assign Profile of selected new Donor
   const setSelectedNewDonorProfile = (donor: SearchedDonors) => {
     setNewUserId(donor.id);
-    setNewDonorName(donor.username);
+    setNewDonorName(donor.donor_name);
     setNewDonorSearchedItems(null)
   };
 
@@ -333,12 +334,12 @@ const ListOfRAFIDonors = () => {
       ) {
         const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
           (donor) =>
-            donor.username.toLowerCase().includes(giftDonorSearchName.toLowerCase()),
+            donor.donor_name.toLowerCase().includes(giftDonorSearchName.toLowerCase()),
         );
         setGiftDonorSearchedNames(
           filtered.map((donor) => ({
             id: donor.id,
-            username: donor.username,
+            donor_name: donor.donor_name,
             email: donor.email || undefined,
           })),
         );
@@ -378,7 +379,7 @@ const ListOfRAFIDonors = () => {
 
   // Assign Profile of Selected Donor
   const setSelectedGiftDonor = (donor: SearchedDonors) => {
-    setGiftDonorName(donor.username);
+    setGiftDonorName(donor.donor_name);
     setGiftDonorEmail(donor.email || "No email provided");
     setGiftDonorSearchedNames(null);
   };
@@ -519,7 +520,7 @@ const ListOfRAFIDonors = () => {
                       key={index}
                       onClick={() => setSelectedNewDonorProfile(donor)}
                     >
-                      {donor.username}
+                      {donor.donor_name}
                     </li>
                   ))
                 )}
@@ -591,7 +592,7 @@ const ListOfRAFIDonors = () => {
                       key={index}
                       onClick={() => setSelectedGiftDonor(donor)}
                     >
-                      {donor.username}
+                      {donor.donor_name}
                     </li>
                   ))
                 )}

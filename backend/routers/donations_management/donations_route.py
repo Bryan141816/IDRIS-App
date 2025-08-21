@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from data_schemas.donation_schema import DonationCreate, DonationResponse, RecurringDonationCreate, InKindDonationCreate
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
+from crud_functions.utils import uid_from_string
 from datetime import datetime, timezone
 from routers.role_checker import RoleChecker
 

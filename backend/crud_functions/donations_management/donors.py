@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any, Set
 from math import ceil
 from fastapi import HTTPException, status
 
-from models import Donor, User, Donation, DonationStatus
+from models import Donor, User, Donation, DonationStatus, Donation_Cash, Donation_InKind
 from data_schemas.donors_schema import DonorItem, ListOfDonorsResponse, IndividualDonorProfile
 from crud_functions.utils import uid_from_string, _norm_type, is_unique_violation_on
 import datetime, random
@@ -17,7 +17,8 @@ class DonorCRUD:
     @staticmethod
     def create_donor(
         db: Session,
-        user_id: Optional[int] = None,
+        donor_id: int,
+        user_id: int,
         donor_type: Optional[str] = "individual",
         organization_name: Optional[str] = None,
         date_joined: Optional[datetime.datetime] = None,
@@ -37,7 +38,7 @@ class DonorCRUD:
         for attempt in range(1, max_attempts + 1):
             try:
                 db_donor = Donor(
-                    
+                    donor_id=donor_id,
                     user_id=user_id,
                     organization_name=organization_name,
                     date_joined=date_joined,
@@ -263,18 +264,18 @@ class DonorCRUD:
         order: str = "desc",
         page: int = 1,
         limit: Optional[int] = 100,
-    ):
+    ) -> "ListOfDonorsResponse":
         UserAlias = aliased(User)
 
-        query = (
+        base_q = (
             db.query(Donor)
-            .outerjoin(UserAlias, Donor.user_id == UserAlias.donor_id)
+            .outerjoin(UserAlias, Donor.user_id == UserAlias.user_id)
             .options(joinedload(Donor.user))
         )
 
         if search:
             term = f"%{search.strip()}%"
-            query = query.filter(
+            base_q = base_q.filter(
                 or_(
                     Donor.organization_name.ilike(term),
                     UserAlias.username.ilike(term),
@@ -282,16 +283,16 @@ class DonorCRUD:
                 )
             )
 
-        total_count = query.count()
+        total_count = base_q.count()
 
         if order == "asc":
-            query = query.order_by(
+            base_q = base_q.order_by(
                 nulls_last(asc(Donor.organization_name)),
                 nulls_last(asc(UserAlias.username)),
                 asc(Donor.date_joined),
             )
         else:
-            query = query.order_by(
+            base_q = base_q.order_by(
                 nulls_last(desc(Donor.organization_name)),
                 nulls_last(desc(UserAlias.username)),
                 desc(Donor.date_joined),
@@ -299,42 +300,54 @@ class DonorCRUD:
 
         if limit:
             offset = (page - 1) * limit
-            query = query.offset(offset).limit(limit)
+            rows = base_q.offset(offset).limit(limit).all()
             max_page = max(ceil(total_count / limit), 1)
         else:
+            rows = base_q.all()
             max_page = 1
 
-        rows = query.all()  # <-- not "Donor = ..."
+        donor_ids = [d.donor_id for d in rows]
+
+        # Aggregate totals for CASH + IN-KIND (COMPLETED) per donor in the current page
+        totals_map = {}
+        if donor_ids:
+            totals_rows = (
+                db.query(
+                    Donation.donor_id.label("donor_id"),
+                    (
+                        func.coalesce(func.sum(Donation_Cash.amount), 0)
+                        + func.coalesce(func.sum(Donation_InKind.estimated_value), 0)
+                    ).label("total_donation"),
+                )
+                # FROM Donation -> join both children (outer joins; one or the other may be null)
+                .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+                .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+                .filter(
+                    Donation.donor_id.in_(donor_ids),
+                    Donation.status == DonationStatus.COMPLETED,
+                    Donation.donation_type.in_(["cash", "inkind"]),
+                )
+                .group_by(Donation.donor_id)
+                .all()
+            )
+            totals_map = {r.donor_id: float(r.total_donation or 0) for r in totals_rows}
 
         records = []
         for d in rows:
-            display_name = (
-                d.user.username
-                if (d.donor_type == "individual" and d.user)
-                else (d.organization_name or "Unknown Organization")
-            )
-
-            total_donation = (
-                db.query(
-                    func.coalesce(func.sum(Donation.amount), 0)
-                    + func.coalesce(func.sum(Donation.estimated_value), 0)
-                )
-                .filter(
-                    Donation.donor_id == d.donor_id,              # use model PK
-                    Donation.status == DonationStatus.COMPLETED,
-                )
-                .scalar()
-            )
+            # display_name = (
+            #     d.user.username
+            #     if (d.donor_type == "individual" and d.user)
+            #     else (d.organization_name or "Unknown Organization")
+            # )
 
             records.append(
                 DonorItem(
-                    name=display_name,
+                    name=d.donor_name,
                     organization_name=d.organization_name,
-                    total_donation=float(total_donation or 0),
+                    total_donation=totals_map.get(d.donor_id, 0.0),
                     date_joined=d.date_joined,
                 )
             )
-
         return ListOfDonorsResponse(max_page=max_page, donors=records)
 
     @staticmethod
@@ -353,9 +366,9 @@ class DonorCRUD:
 
     @staticmethod
     def get_donor_id_by_user_id(db: Session, user_id: int) -> int:
-        donor = db.query(Donor).filter(Donor.user_id == user_id).first()
-        if not donor:
+        donor_id = db.query(Donor.donor_id).filter(Donor.user_id == user_id).scalar()
+        if not donor_id:
             raise HTTPException(status_code=404, detail="Donor not found for this user")
-        return donor.donor_id
+        return donor_id
 
 donor_crud = DonorCRUD()

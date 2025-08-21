@@ -129,7 +129,7 @@ def read_users_me(current_user: User = Depends(get_current_user_from_access_toke
 
 @router.get("/users/me/id", response_model=ID)
 def read_user_id(current_user: User = Depends(get_current_user_from_access_token)):
-    return {"id": current_user.id}
+    return {"id": current_user.user_id}
 
 @router.post("/logout")
 def logout(response: Response):

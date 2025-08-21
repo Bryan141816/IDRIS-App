@@ -15,7 +15,7 @@ from sqlalchemy import (
     Float,
     Identity, 
 )
-from sqlalchemy import event
+from sqlalchemy import event, func, case, literal, select
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
@@ -216,7 +216,7 @@ class Donor(Base):
     user = relationship("User", back_populates="donor_profile")
     donations = relationship("Donation", back_populates="donor")
 
-    @property
+    @hybrid_property
     def donor_name(self):
         if self.donor_type == "organization" and self.organization_name:
             return self.organization_name
@@ -224,7 +224,22 @@ class Donor(Base):
             return self.user.username
         return "Unknown Donor"
     
-
+    @donor_name.expression      # Queryable with donor_name
+    def donor_name(cls):
+        username_sq = (
+            select(User.username)
+            .where(User.user_id == cls.user_id)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+        return func.coalesce(
+            case(
+                (cls.donor_type == "organization", cls.organization_name),
+                else_=username_sq,
+            ),
+            literal("Unknown Donor"),
+        )
+        
 class TransparencyReport(Base):
     __tablename__ = 'transparency_report'
     __random_pk_field__ = "transparency_report_id"
@@ -305,7 +320,8 @@ class Donation(Base):
         uselist=False,
         cascade="all, delete-orphan"
     ) 
-     
+    
+    
 class Donation_Cash(Base):
     __tablename__ = "donation_cash"
     __random_pk_field__ = "cash_id"

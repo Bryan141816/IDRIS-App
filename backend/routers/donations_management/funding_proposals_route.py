@@ -6,7 +6,7 @@ from database import get_db
 from routers.role_checker import RoleChecker
 from datetime import date
 from math import ceil
-from models import FundingProposals
+from models import FundingProposal
 from schemas import Number  
 from crud_functions.donations_management.funding_proposals import FundingProposalCRUD  as CRUD
 
@@ -101,7 +101,7 @@ def update_proposal_endpoint(
         proposal_id=proposal_id,
         title=title,
         description=description,
-        budgetRequired=budgetRequired,
+        budget_required=budgetRequired,
         status=status,
         image=image
     )
@@ -120,7 +120,7 @@ def delete_proposal_endpoint(proposal_id: int, db: Session = Depends(get_db)):
 
 @router_admin_or_donor.get("/proposals/get_limit", response_model=Number)
 def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
-    total_records = db.query(FundingProposals).count()
+    total_records = db.query(FundingProposal).count()
     pages = ceil(total_records / limit) if limit > 0 else 1
     return {"count": pages}
 

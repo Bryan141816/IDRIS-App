@@ -27,3 +27,8 @@ export async function getIndividualDonorProfile(): Promise<any>{
   const response = await API.get('/donors/user_profile', {});
   return response.data;
 }
+
+export async function getDonorIdByLoggedUser(): Promise<any>{
+  const response = await API.get('/donors/me/donor_id', {});
+  return response.data;
+}

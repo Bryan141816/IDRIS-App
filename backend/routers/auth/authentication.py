@@ -4,6 +4,8 @@ from jose import JWTError
 from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse, ID
 from models import User
 from crud import create_user, authenticate_user, get_user_by_email
+from crud_functions.utils import uid_from_string
+
 from auth import (
     create_access_token,
     create_refresh_token,
@@ -53,16 +55,17 @@ def get_current_user_from_access_token(
 
 @router.post("/register", response_model=TokenWithUserResponse)
 def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
-    db_user = create_user(
+    new_user = create_user(
         db,
+        user_id = uid_from_string(user.username),
         email=user.email,
         username=user.username,
         password=user.password,
         user_type=user.user_type,
         roles=user.roles,
     )
-    access_token = create_access_token(data={"sub": db_user.email})
-    refresh_token = create_refresh_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": new_user.email})
 
     # Set refresh token in cookie
     response.set_cookie(
@@ -74,7 +77,7 @@ def register(user: UserCreate, response: Response, db: Session = Depends(get_db)
         secure=False,  # Set to True in production with HTTPS
     )
 
-    return {"access_token": access_token, "token_type": "bearer", "user": db_user}
+    return {"access_token": access_token, "token_type": "bearer", "user": new_user}
 
 
 @router.post("/login", response_model=TokenWithUserResponse)

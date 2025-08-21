@@ -16,7 +16,7 @@ import {
 } from "../../../API_Handler/donations_transparency_report";
 
 interface ReportTypeShema {
-  transparency_id: number;
+  id: number;
   file_name: string;
   file: string;
   date_uploaded: string;
@@ -89,6 +89,7 @@ const TransparencyReport = () => {
         );
 
         setReports(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error("Failed to fetch reports:", error);
       } finally {
@@ -102,26 +103,46 @@ const TransparencyReport = () => {
   if (loading) return <p>Loading...</p>;
 
   const getReportById = async function (id: number) {
+    if (typeof id !== 'number' || Number.isNaN(id)) {
+      console.error('Invalid id passed to getReportById:', id);
+      return null;
+    }
     try {
       const report = await getTransparencyReportById(id);
-      setUpdateSelectedId(report.data.transparency_id);
+      console.log("response report", report);
+      setUpdateSelectedId(report.data.id);
+      console.log("selected ID after fetch:", updateSelectedId);
       setUpdateFileName(report.data.file_name);
-      setUpdateFilePreview(report.data.file_name);
+  
+      // If you want to preview the actual file path, use the file URL (not the name):
+      setUpdateFilePreview(report.data.file); //
+  
       const formattedDate = report.data.date_issued.split("T")[0];
       setUpdateDateReport(formattedDate);
-      handleFileSelect(report.data.file, "update");
-      // You can set it to state here
+    
       return report;
     } catch (error) {
-      // Optional: show error message to user
+      console.error("Failed to fetch report by id:", error);
       return null;
     }
   };
 
-  const ShowUpdateModal = (id: number) => {
-    getReportById(id);
+  const ShowUpdateModal = async (rawId: unknown) => {
+    const id = Number(rawId);
+    if (!Number.isFinite(id)) {
+      console.error("Invalid id:", rawId);
+      return;
+    }
+  
+    // // Set ID up front so it's available even if user submits quickly
+    // setUpdateSelectedId(id);
+  
+    // Load rest of fields
+    await getReportById(id);
+  
     setActiveModal("update-transparency-report");
   };
+  
 
   // SENDING THE FORM
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -153,27 +174,26 @@ const TransparencyReport = () => {
       return;
     }
 
+    const id = Number(updateSelectedId);
+    if (!Number.isFinite(id)) {
+      console.error("Update ID is invalid:", id);
+      alert("Update failed: Invalid report ID.");
+      return;
+    }
+
     const formData = new FormData();
+
     formData.append("file", updateSelectedFile);
     formData.append("file_name", updatefileName);
     formData.append("date_issued", updateDateReport);
 
     try {
-      if (updateSelectedId !== null) {
-        const response = await updateTransparencyReport(
-          updateSelectedId,
-          formData,
-        );
-      } else {
-        console.error("Update ID is null. Cannot update transparency report.");
-        alert("Update failed: Invalid report ID.");
-      }
-
+      await updateTransparencyReport(updateSelectedId, formData);
       alert("Report uploaded successfully!");
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Upload failed.");
-    }
+    }  
   };
 
   const handleCancelButton = () => {
@@ -223,9 +243,7 @@ const TransparencyReport = () => {
         <h1>Transparency Report</h1>
         <TransparencyReportTable
           reports={reports}
-          updateFunction={async (id: number) => {
-            ShowUpdateModal(id);
-          }}
+          updateFunction={(id) => ShowUpdateModal(id)}
         />
       </div>
       <Modal

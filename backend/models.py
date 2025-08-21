@@ -8,26 +8,28 @@ from sqlalchemy import (
     String,
     DateTime,
     ForeignKey,
-    CheckConstraint,
     func,
     Enum as SqlEnum,
     Numeric,
     Date,
-    Text,
     Float,
+    Identity,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy import event
+from sqlalchemy.orm import relationship, Session
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base
-import enum
-
+import enum, random
 
 class User(Base):
     __tablename__ = "users"
+    __random_pk_field__ = "user_id"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, index=True, server_default=Identity())
+    user_id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
@@ -35,13 +37,36 @@ class User(Base):
     roles = Column(JSON, default=[])
 
     # Fixed relationship - should reference the correct foreign key
-    donor_profile = relationship("Donors", back_populates="user")
+    donor_profile = relationship("Donor", back_populates="user")
+    user_profile = relationship("UserProfile", back_populates="user")
 
+class UserProfile(Base):
+    __tablename__ = "user_profile"
+    __random_pk_field__ = "user_profile_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    user_profile_id = Column(Integer, primary_key=True)
+
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    profile_image = Column(String(255), nullable=True)  # URL or path
+    phone_number = Column(String(20), nullable=True)
+    bday = Column(Date, nullable=True)
+    gender = Column(String(10), nullable=True)  # e.g., "Male", "Female", "Other"
+    address = Column(String(255), nullable=True)
+    bio = Column(String(500), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True) # Foreign key to User
+
+    # Relationship
+    user = relationship("User", back_populates="user_profile")
 
 # LGU Profiling
 class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
-    id = Column(Integer, primary_key=True, index=True)
+    __random_pk_field__ = "infastructure_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    infastructure_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -50,7 +75,10 @@ class RAFIInfrastructure(Base):
 
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
-    id = Column(Integer, primary_key=True, index=True)
+    __random_pk_field__ = "evacuation_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    evacuation_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -59,8 +87,10 @@ class EvacuationCenter(Base):
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"
+    __random_pk_field__ = "response_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    id = Column(Integer, primary_key=True, index=True)
+    response_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -70,9 +100,11 @@ class ResponseReport(Base):
 
 class DemandAndResponse(Base):
     __tablename__ = "demand_and_response"
+    __random_pk_field__ = "demand_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    id = Column(Integer, primary_key=True, index=True)
-    title_lable = Column(String(255), nullable=False)
+    demand_id = Column(Integer, primary_key=True)
+    title_label = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -89,8 +121,11 @@ class DemandAndResponse(Base):
 
 class ModalityDistribution(Base):
     __tablename__ = "modality_distribution"
+    __random_pk_field__ = "modality_id"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, index=True, server_default=Identity())
+
+    modality_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -99,8 +134,11 @@ class ModalityDistribution(Base):
 
 class InKindMonitoring(Base):
     __tablename__ = "inkind_monitoring"
+    __random_pk_field__ = "in_kind_monitoring_id"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, index=True, server_default=Identity())
+
+    in_kind_monitoring_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -110,8 +148,10 @@ class InKindMonitoring(Base):
 
 class ResponseReportBudget(Base):
     __tablename__ = "response_report_budget"
+    __random_pk_field__ = "response_budget_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    id = Column(Integer, primary_key=True, index=True)
+    response_budget_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -123,14 +163,15 @@ class ResponseReportBudget(Base):
 # ------------------ DONATIONS MANAGEMENT MODELS
 
 
-class FundingProposals(Base):
+class FundingProposal(Base):
     __tablename__ = "funding_proposals"
+    __random_pk_field__ = "funding_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    proposalId = Column(Integer, primary_key=True, index=True)
+    funding_id = Column(Integer, primary_key=True)
     title = Column(String(255), nullable=False)
     description = Column(String, nullable=False)
-    progress = Column(Integer, default=0, nullable=False)  # UNUSED
-    budgetRequired = Column(Integer, nullable=False)
+    budget_required = Column(Integer, nullable=False)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -143,24 +184,24 @@ class FundingProposals(Base):
     status = Column(String(50), nullable=False)
     image = Column(String, nullable=True)
 
-    # Added missing relationship
-    donations = relationship("DonationRecords", back_populates="proposal")
+    donations = relationship("Donation", back_populates="proposal")
 
 
-class Donors(Base):
+class Donor(Base):
     __tablename__ = "donors"
+    __random_pk_field__ = "donor_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    donorId = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    donor_id = Column(Integer, primary_key=True)
+
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
 
     donor_type = Column(String(20), nullable=False)
     organization_name = Column(
         String(255), nullable=True
     )  # Nullable for individual donors
-    is_verified = Column(Boolean, nullable=False, default=False)
 
-    # Updated relationships
-    donations = relationship("DonationRecords", back_populates="donor")
+    is_verified = Column(Boolean, nullable=False, default=False)
 
     date_joined = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -173,6 +214,7 @@ class Donors(Base):
     )
 
     user = relationship("User", back_populates="donor_profile")
+    donations = relationship("Donation", back_populates="donor")
 
     @property
     def donor_name(self):
@@ -183,10 +225,15 @@ class Donors(Base):
         return "Unknown Donor"
 
 
-class TransparencyReports(Base):
+class TransparencyReport(Base):
     __tablename__ = 'transparency_report'
 
     transparency_id = Column(Integer, primary_key=True, index=True, autoincrement = True)
+    __random_pk_field__ = "transparency_report_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    transparency_report_id = Column(Integer, primary_key=True)
+
     file = Column(String, nullable = False)
     file_name = Column(String(50), nullable=False)
     date_issued = Column(DateTime(timezone=True), nullable=False)
@@ -202,10 +249,11 @@ class TransparencyReports(Base):
     )
 
 
-class DonationType(enum.Enum):
+class DonationFrequency(enum.Enum):
     ONE_TIME = "ONE_TIME"
-    RECURRING = "RECURRING"
-
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    YEARLY = "YEARLY"
 
 class DonationStatus(enum.Enum):
     PENDING = "PENDING"
@@ -214,60 +262,104 @@ class DonationStatus(enum.Enum):
     CANCELLED = "CANCELLED"
 
 
-class DonationRecords(Base):
+class Donation(Base):
     __tablename__ = "donation_records"
+    __random_pk_field__ = "donation_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    # Primary key should come first
-    donationRecordId = Column(Integer, primary_key=True, index=True)
-
-    # Core attributes - FIXED
-    donor_id = Column(Integer, ForeignKey("donors.donorId"), nullable=False)
-    donation_type = Column(SqlEnum(DonationType), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=True)  # Nullable for in-kind donations
-    description = Column(String(255), nullable=True)
+    # Core attributes
+    donation_id = Column(Integer, primary_key=True)
+    donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
+    frequency = Column(SqlEnum(DonationFrequency, name="donation_frequency"), nullable=False, server_default=DonationFrequency.ONE_TIME.value)
     status = Column(
-        SqlEnum(DonationStatus), nullable=False, default=DonationStatus.PENDING
+        SqlEnum(DonationStatus, name="donation_status"), nullable=False, server_default=DonationStatus.PENDING.value
     )
-
     # Additional fields
     proposal_id = Column(
-        Integer, ForeignKey("funding_proposals.proposalId"), nullable=True
+        Integer, ForeignKey("funding_proposals.funding_id"), nullable=True
     )
     donation_date = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    donation_kind = Column(
+    donation_type = Column(
         String(20), nullable=False, default="cash"
-    )  # "cash" or "inkind"
+    )  # "cash" or "inkind" etc.
 
+    # # Recurring donation fields
+    next_donation_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, nullable=True, default=True)
+
+    # Fixed relationships
+    donor = relationship("Donor", back_populates="donations")
+    proposal = relationship("FundingProposal", back_populates="donations")
+
+
+    cash = relationship(
+        "Donation_Cash",
+        back_populates="donation",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    inkind = relationship(
+        "Donation_InKind",
+        back_populates="donation",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+
+class Donation_Cash(Base):
+    __tablename__ = "donation_cash"
+    __random_pk_field__ = "cash_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    cash_id = Column(Integer, primary_key=True)
+    amount = Column(Numeric(10, 2), nullable=True)
+    payment_method = Column(String(50), nullable=True)
+
+    donation_id = Column(
+        Integer,
+        ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+
+    donation = relationship("Donation", back_populates = "cash")
+
+class Donation_InKind(Base):
+    __tablename__ = "donation_inkind"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    inkind_id = Column(Integer, primary_key=True)
+    description = Column(String(255), nullable=True)
     # In-kind donation fields
     item_description = Column(
         String, nullable=True
     )  # Description of donated items/services
+
     estimated_value = Column(
         Numeric(10, 2), nullable=True
     )  # Estimated monetary value of in-kind donation
+
+    donation_id = Column(
+        Integer,
+        ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True
+    )
+
     quantity = Column(String(50), nullable=True)  # Quantity/units of donated items
+    donation = relationship("Donation", back_populates = "inkind")
 
-    # Recurring donation fields
-    recurring_frequency = Column(
-        String(20), nullable=True
-    )  # "monthly", "quarterly", "yearly"
-    next_donation_date = Column(DateTime(timezone=True), nullable=True)
-    recurring_end_date = Column(DateTime(timezone=True), nullable=True)
-    is_active_recurring = Column(Boolean, nullable=True, default=True)
 
-    payment_method = Column(String(50), nullable=True)
-
-    # Fixed relationships
-    donor = relationship("Donors", back_populates="donations")
-    proposal = relationship("FundingProposals", back_populates="donations")
-
+# ------------------ VOLUNTEER MANAGEMENT MODELS
 class IndividualVolunteer(Base):
     __tablename__ = "individual_volunteer"
+    __random_pk_field__ = "volunteer_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
-    volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    volunteer_id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
     first_name = Column(String(50), nullable=False)
     middle_name = Column(String(50), nullable=True)

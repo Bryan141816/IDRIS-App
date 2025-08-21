@@ -8,10 +8,10 @@ import { useNavigate } from "react-router-dom";
 import { getFundingProposals } from "../../../API_Handler/donations_funding_proposals_handler";
 
 interface Proposal {
-  proposalId: number;
+  id: number;
   title: string;
   description: string;
-  budgetRequired: number;
+  budget_required: number;
   image?: string;
   total_donated?: number; // optional unless you're tracking donations
 }
@@ -50,8 +50,8 @@ const FundingProposals = () => {
   const filteredProposals = proposals
     .filter((p) => p.title.toLowerCase().includes(searched.toLowerCase()))
     .sort((a, b) => {
-      if (filtered === "Ascending") return a.budgetRequired - b.budgetRequired;
-      if (filtered === "Descending") return b.budgetRequired - a.budgetRequired;
+      if (filtered === "Ascending") return a.budget_required - b.budget_required;
+      if (filtered === "Descending") return b.budget_required - a.budget_required;
       return 0;
     });
 
@@ -116,12 +116,12 @@ const FundingProposals = () => {
       <div id="funding-body">
         {filteredProposals.map((item) => (
           <FundingCard
-            key={item.proposalId}
-            proposalId={item.proposalId}
+            key={item.id}
+            proposalId={item.id}
             title={item.title}
             description={item.description}
             donated={item.total_donated ?? 0}
-            target={item.budgetRequired}
+            target={item.budget_required}
             image={item.image ? `${item.image}` : undefined}
           />
         ))}

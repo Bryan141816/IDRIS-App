@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
@@ -10,7 +10,7 @@ from schemas import Number
 from data_schemas.transparency_report_schema import ( TransparencyReportBase, TransparencyReportCreate, TransparencyReportFilter, 
                                                     TransparencyReportOut, TransparencyReportUpdate, TransparencyReportMiniPaginated )
 from crud_functions.donations_management.transparency_report import TransparencyReport_CRUD as CRUD 
-from models import TransparencyReports
+from models import TransparencyReport
 
 from routers.role_checker import RoleChecker
 
@@ -79,16 +79,20 @@ def get_all_transparency_report_mini_data_endpoint(
 
 @router_admin.get("/get_by_id", response_model= TransparencyReportUpdate)
 def get_transparency_report_by_id(
-    transparency_id: int,
-    db: Session = Depends(get_db)
+    transparency_id: int = Query(...),
+    db: Session = Depends(get_db),
+    user = Depends(get_db), 
 ):
-    try:
-        report = CRUD.get_transparency_by_id(db, transparency_id)
-        if not report:
-            raise HTTPException(status_code=404, detail="Transparency report not found")
-        return report
-    except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail="Database error occurred")
+    if not user:  # or your permission rule
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="permission error"
+        )
+
+    report = CRUD.get_transparency_by_id(db, transparency_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Transparency report not found")
+    return report
     
 @router_admin.put("/update/{transparency_id}", response_model=TransparencyReportBase)
 def update_transparency_report_handler(
@@ -98,9 +102,10 @@ def update_transparency_report_handler(
     date_issued: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    print("transparency id:" , transparency_id)
     return CRUD.update_transparency_report(
         db=db,
-        transparency_id=transparency_id,
+        id=transparency_id,
         file=file,
         file_name=file_name,
         date_issued=date_issued

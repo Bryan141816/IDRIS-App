@@ -1,65 +1,125 @@
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import DonorDonationForm from './donation_info';
+import PaymentForm from './payment_method';
+import './fundingDonation.scss';
+import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
+import { createOneTimeDonation } from '../../../API_Handler/donations_donation_handler';
 
-function DonateForm() {
-  const [amount, setAmount] = useState("");
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
-  const [status, setStatus] = useState("");
+const DonationPage: React.FC = () => {
+  const location = useLocation();
+  const fundingId = location.state?.funding_id;
 
-  const handleDonate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("Processing...");
+  const [donorId, setDonorId] = useState<number | null>(null);
 
-    const response = await fetch("http://localhost:8000/donate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, amount, message }),
-    });
+  const [donationKind, setDonationKind] = useState('In-Kind');
+  const [donationFrequency, setDonationFrequency] = useState('One-time');
+  const [paymentMethod, setPaymentMethod] = useState('visa');
+  
+  const [donationFormData, setDonationFormData] = useState({
+    amount: '',
+    description: ''
+  });
 
-    if (response.ok) {
-      setStatus("Donation Successful! 🎉");
-      setAmount("");
-      setName("");
-      setMessage("");
-    } else {
-      setStatus("Something went wrong ❌");
+  const [paymentFormData, setPaymentFormData] = useState({
+    cardHolderName: '',
+    cardNumber: '',
+    expiryDate: '',
+    cvv: ''
+  });
+
+  useEffect(( ) => {
+    const fetchUserid = async() => {
+      try{
+        const response = await getDonorIdByLoggedUser();
+        setDonorId(response);
+        console.log("Donor id: ", response);
+      } catch(error){
+        console.error(error);
+      }
     }
+
+    fetchUserid();
+  }, []);
+
+  const handleDonationInputChange = (field: string, value: string) => {
+    setDonationFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePaymentInputChange = (field: string, value: string) => {
+    setPaymentFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCancel = () => {
+    // Handle cancel logic
+  };
+
+  const handleNext = async () => {
+    // Handle next logic
+    try{      
+        // build FormData to send donation
+        const normalizeDonationType = (type: string | null) => {
+          if (type === "One-time") return "ONE_TIME";
+          if (type === "Recurring") return "RECURRING";
+          return "ONE_TIME";
+        };
+
+        const normalizeDonationKind = (type: string | null) => {
+          if ( type == "In-Kind" ) return "inkind";
+
+          return type?.toLowerCase();
+        }
+
+        console.log(normalizeDonationType(donationFrequency));
+        console.log("donorId:", donorId, typeof donorId);
+        console.log("fundingId:", fundingId, typeof fundingId);
+        const formData = {
+          donor_id: donorId,
+          donation_type: normalizeDonationType(donationFrequency),
+          amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
+          description: donationFormData.description,
+          proposal_id: fundingId,
+          donation_kind: normalizeDonationKind(donationKind),
+          payment_method: paymentMethod
+        }
+
+        const donationResponse = await createOneTimeDonation(formData);
+        console.log("create donation response: ", donationResponse.data);
+    } catch (err) {
+      console.error(err);
+      // setError("Failed to fetch profile.");
+    }
+
   };
 
   return (
-    <div className="p-4 max-w-sm mx-auto border rounded-lg">
-      <h2 className="text-xl font-bold mb-2">Donate</h2>
-      <form onSubmit={handleDonate} className="space-y-2">
-        <input
-          type="text"
-          placeholder="Your Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-        <input
-          type="number"
-          placeholder="Donation Amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-        <textarea
-          placeholder="Message (optional)"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white w-full py-2 rounded"
-        >
-          Donate
-        </button>
-      </form>
-      {status && <p className="mt-2 text-center">{status}</p>}
+    <div className="donation-page">
+      <div className="donation-page__container">
+        <div className="donation-page__grid">
+          
+          {/* Left Side - Donor Info & Donation Details */}
+          <DonorDonationForm
+            donationKind={donationKind}
+            setDonationKind={setDonationKind}
+            donationFrequency={donationFrequency}
+            setDonationFrequency={setDonationFrequency}
+            formData={donationFormData}
+            handleInputChange={handleDonationInputChange}
+          />
+
+          {/* Right Side - Payment Method */}
+          <PaymentForm
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            formData={paymentFormData}
+            handleInputChange={handlePaymentInputChange}
+            onCancel={handleCancel}
+            onNext={handleNext}
+          />
+        </div>
+      </div>
     </div>
   );
-}
+};
 
-export default DonateForm;
+export default DonationPage;

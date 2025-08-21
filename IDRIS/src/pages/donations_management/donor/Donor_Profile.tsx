@@ -4,8 +4,8 @@ import { getIndividualDonorProfile } from '../../../API_Handler/donations_donors
 import { useUserRoleContext } from "../../../UserRoleContext";
 import NoImage from "../../images/no-image.jpg";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import { RefreshCircle } from '../../../components/Page_Furniture/Icons';
-
+// import { RefreshCircle } from '../../../components/Page_Furniture/Icons';
+import DonorStatusButton from '../../../components/Page_Furniture/TwoModeButton';
 import { createNewDonor } from '../../../API_Handler/donations_donors_handler';
 
 import { fetchCurrentUserId } from '../../../API_Handler/auth';
@@ -96,6 +96,7 @@ const UserProfile = () => {
     const fetchUserid = async() => {
       try{
         const response = await fetchCurrentUserId();
+        console.log(response.id);
         setUserId(response.id);
       } catch(error){
         console.error(error);
@@ -200,7 +201,7 @@ const UserProfile = () => {
 
     const formData = new FormData();
     formData.append("user_id", userId?.toString() ?? "");
-    formData.append("donor_type", isIndividual ? "individual" : "organization");
+    formData.append("donor_type", isIndividual ? "Individual" : "Organization");
     formData.append("organization_name", organizationName || "");
 
     try {
@@ -225,16 +226,14 @@ const UserProfile = () => {
           <img src={userProfilePicture || NoImage} alt="user-profile" className="profile-picture" />
           <p>{profile?.donor_name}</p>
 
-          <button type='button' id="donor-status-button" onClick={() => {setIsIndividual(!isIndividual)}}>{
-              (isIndividual ? "Individual" : "Organization")
-            }
-            <RefreshCircle
-              width={24}
-              height={24}
-              className={(isIndividual ? "rotation-icon" : "rotation-icon-reverse")}
-            />
-          </button>
-            
+          <DonorStatusButton 
+            isFirstMode={(isIndividual ? true : false)} 
+            onToggle={() => {setIsIndividual(!isIndividual)}}
+            firstLabel='Individual'
+            secondLabel='Organization'
+            id = "donor-status-button"
+          />
+          
           { !isIndividual ?
             <>
               <label htmlFor="organization-name">Organization Name: </label>
@@ -257,7 +256,7 @@ const UserProfile = () => {
   const donorProfile = profile ?? {
     donorId: 0,
     donor_name: donorData.donor_name,
-    donor_type: "individual",
+    donor_type: "Individual",
     is_verified: donorData.certified,
     date_joined: new Date(),
     last_updated: new Date(),

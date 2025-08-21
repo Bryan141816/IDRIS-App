@@ -4,83 +4,64 @@ from sqlalchemy import func, case, literal, or_
 from typing import List, Optional
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
-from models import FundingProposals, DonationRecords, DonationStatus
-from data_schemas.funding_proposal_schema import ( FundingProposalCreate, FundingProposalUpdate, 
-                                                  FundingProposalResponsePaginated, FundingPieChart,
-                                                  FundingProposalGet,
+
+from models import FundingProposal, Donation, DonationStatus
+from data_schemas.funding_proposal_schema import (
+    FundingProposalCreate,
+    FundingProposalResponsePaginated,
+    FundingPieChart,
+    FundingProposalGet,
 )
+
 from math import ceil
 from datetime import datetime, date, time
-
-import shutil
 from PIL import Image
 import io
 
 UPLOAD_DIR = Path("media/fundingproposals")
 
+
 def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
-    # Read file bytes
     contents = upload_file.file.read()
-
-    # Open image with Pillow
     image = Image.open(io.BytesIO(contents))
-
-    # Convert to RGB if needed (e.g., PNG with alpha)
     if image.mode in ("RGBA", "P"):
         image = image.convert("RGB")
-
-    # Resize while keeping aspect ratio
     image.thumbnail(max_size)
-
-    # Save to BytesIO as WebP
-    output = io.BytesIO()
-    image.save(output, format="WEBP", quality=quality, optimize=True)
-    output.seek(0)
-
-    return output.read()
+    out = io.BytesIO()
+    image.save(out, format="WEBP", quality=quality, optimize=True)
+    out.seek(0)
+    return out.read()
 
 
-
-# FUNDING PROPOSALS CRUD FUNCTIONS
 class FundingProposalCRUD:
     @staticmethod
     def create_funding_proposal(
         db: Session,
         proposal_data: FundingProposalCreate,
         image: Optional[UploadFile] = None
-    ) -> FundingProposals:
-        file_path = None
+    ) -> FundingProposal:
+        file_path: Optional[Path] = None
 
         if image and image.filename:
             try:
                 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-                # Generate unique filename with same extension
-                ext = Path(image.filename).suffix
-                unique_filename = f"{uuid4().hex}{ext}"
-                file_path = UPLOAD_DIR / unique_filename
-
-               
-                processed_bytes = process_image_to_webp(image)
-
-                with file_path.with_suffix(".webp").open("wb") as buffer:
-                    buffer.write(processed_bytes)
-                file_path = file_path.with_suffix(".webp")  # Ensure correct path
-
-
+                ext = Path(image.filename).suffix or ".webp"
+                unique_name = f"{uuid4().hex}{ext}"
+                target_path = (UPLOAD_DIR / unique_name).with_suffix(".webp")
+                processed = process_image_to_webp(image)
+                with target_path.open("wb") as buf:
+                    buf.write(processed)
+                file_path = target_path
             except Exception as e:
                 print(f"Error saving file: {e}")
                 raise HTTPException(status_code=500, detail="Error saving file")
 
-        # Normalize path if available
-        full_path_str = str(file_path).replace("\\", "/") if file_path else None
-
-        db_proposal = FundingProposals(
+        db_proposal = FundingProposal(
             title=proposal_data.title,
             description=proposal_data.description,
-            budgetRequired=proposal_data.budgetRequired,
-            status=proposal_data.status,
-            image=full_path_str
+            budget_required=proposal_data.budgetRequired,
+            status=proposal_data.status,  # string column per model
+            image=str(file_path).replace("\\", "/") if file_path else None,
         )
 
         try:
@@ -92,8 +73,8 @@ class FundingProposalCRUD:
             db.rollback()
             print(f"Database error: {e}")
             raise HTTPException(status_code=500, detail="Database error")
-        
-    # Get all proposals
+
+    @staticmethod
     def get_all_proposals(
         db: Session,
         search: Optional[str] = None,
@@ -103,135 +84,118 @@ class FundingProposalCRUD:
         page: int = 1
     ) -> FundingProposalResponsePaginated:
         try:
-            query = db.query(FundingProposals)
+            query = db.query(FundingProposal)
 
             if search:
-                query = query.filter(FundingProposals.title.ilike(f"%{search}%"))
+                term = f"%{search.strip()}%"
+                query = query.filter(FundingProposal.title.ilike(term))
 
-            # Get total count BEFORE pagination
             total_count = query.count()
 
-            # Apply sorting
-            if sort and hasattr(FundingProposals, sort):
-                order_by_column = getattr(FundingProposals, sort)
-                if order == "desc":
-                    order_by_column = order_by_column.desc()
-                else:
-                    order_by_column = order_by_column.asc()
-                query = query.order_by(order_by_column)
+            # safe sort map
+            sortable = {
+                "id": FundingProposal.id,
+                "title": FundingProposal.title,
+                "status": FundingProposal.status,
+                "budget_required": FundingProposal.budget_required,
+                "created_at": FundingProposal.created_at,
+                "updated_at": FundingProposal.updated_at,
+            }
+            col = sortable.get(sort, FundingProposal.created_at)
+            query = query.order_by(col.desc() if order == "desc" else col.asc())
 
-            # Apply pagination
             if limit:
                 offset = (page - 1) * limit
                 query = query.offset(offset).limit(limit)
                 max_page = max(ceil(total_count / limit), 1)
             else:
-                max_page = 1  # or 0 if you prefer no pagination fallback
+                max_page = 1
 
-            proposals = query.all()
+            proposals: List[FundingProposal] = query.all()
+            proposal_ids = [p.id for p in proposals]
 
-            # Build list of FundingProposalGet with total_donated
-            proposal_ids = [p.proposalId for p in proposals]
-
-            # Aggregate total_donated from Donation table
-            donations_subquery = (
-                db.query(
-                    DonationRecords.proposal_id.label("proposal_id"),
-                    func.coalesce(
-                        func.sum(
-                            case(
-                                (DonationRecords.donation_kind == "cash", DonationRecords.amount),
-                                (DonationRecords.donation_kind == "inkind", DonationRecords.estimated_value),
-                                else_=literal(0)
-                            )
-                        ),
-                        0
-                    ).label("total_donated")
+            # aggregate COMPLETED totals for these proposals
+            donation_map: dict[int, float] = {}
+            if proposal_ids:
+                rows = (
+                    db.query(
+                        Donation.proposal_id.label("proposal_id"),
+                        func.coalesce(
+                            func.sum(
+                                case(
+                                    (Donation.kind == "cash", Donation.amount),
+                                    (Donation.kind == "inkind", Donation.estimated_value),
+                                    else_=literal(0),
+                                )
+                            ),
+                            0,
+                        ).label("total_donated"),
+                    )
+                    .filter(
+                        Donation.proposal_id.in_(proposal_ids),
+                        Donation.status == DonationStatus.COMPLETED,
+                    )
+                    .group_by(Donation.proposal_id)
+                    .all()
                 )
-                .filter(
-                    DonationRecords.proposal_id.in_(proposal_ids),
-                    DonationRecords.status == DonationStatus.COMPLETED
+                donation_map = {r.proposal_id: float(r.total_donated or 0) for r in rows}
+
+            records = [
+                FundingProposalGet(
+                    id=p.id,
+                    title=p.title,
+                    description=p.description,
+                    budget_required=p.budget_required,
+                    created_at=p.created_at,
+                    updated_at=p.updated_at,
+                    image=p.image,
+                    total_donated=donation_map.get(p.id, 0.0),
                 )
-                .group_by(DonationRecords.proposal_id)
-                .all()
-            )
-            print(donations_subquery)
+                for p in proposals
+            ]
 
-            # Build map from proposal_id to total_donated
-            donation_map = {d.proposal_id: d.total_donated for d in donations_subquery}
+            return FundingProposalResponsePaginated(max_page=max_page, records=records)
 
-            # Prepare records for Pydantic model
-            records = []
-            for proposal in proposals:
-                record = FundingProposalGet(
-                    proposalId=proposal.proposalId,
-                    title=proposal.title,
-                    description=proposal.description,
-                    budgetRequired=proposal.budgetRequired,
-                    created_at=proposal.created_at,
-                    updated_at=proposal.updated_at,
-                    image=proposal.image,
-                    total_donated=donation_map.get(proposal.proposalId, 0.0)
-                )
-                records.append(record)
-
-            return FundingProposalResponsePaginated(
-                max_page=max_page,
-                records=records
-            )
-            
         except Exception as e:
             print(f"Error fetching proposals in CRUD: {e}")
-            raise    
-        
+            raise
+
     @staticmethod
-    # Get a single proposal by ID
-    def get_proposal_by_id(db: Session, proposal_id: int) -> Optional[FundingProposals]:
-        return db.query(FundingProposals).filter(FundingProposals.proposalId == proposal_id).first()
-    
+    def get_proposal_by_id(db: Session, proposal_id: int) -> Optional[FundingProposal]:
+        return db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
+
     @staticmethod
     def update_proposal(
         db: Session,
         proposal_id: int,
         title: str,
         description: str,
-        budgetRequired: int,
+        budget_required: int,
         status: str,
-        image: Optional[UploadFile]
-    ) -> FundingProposals:
-        proposal = db.query(FundingProposals).filter(FundingProposals.proposalId == proposal_id).first()
-
+        image: Optional[UploadFile],
+    ) -> FundingProposal:
+        proposal = db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
         if not proposal:
             raise HTTPException(status_code=404, detail="Proposal not found")
 
-        filename = proposal.image  # Preserve existing image by default
-
+        filename = proposal.image
         if image and image.filename and image.filename.strip():
             try:
                 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-                # Generate unique name using UUID and preserve file extension
-                ext = Path(image.filename).suffix  # e.g., ".png", ".jpg"
-                unique_name = f"{uuid4().hex}{ext}"
-                file_location = UPLOAD_DIR / unique_name
-
-                
-                processed_bytes = process_image_to_webp(image)
-
-                file_location = file_location.with_suffix(".webp")  # Force .webp
-                with open(file_location, "wb") as buffer:
-                    buffer.write(processed_bytes)
-
-                filename = str(file_location).replace("\\", "/")
-
+                ext = Path(image.filename).suffix or ".webp"
+                unique = f"{uuid4().hex}{ext}"
+                file_path = (UPLOAD_DIR / unique).with_suffix(".webp")
+                processed = process_image_to_webp(image)
+                with file_path.open("wb") as buf:
+                    buf.write(processed)
+                filename = str(file_path).replace("\\", "/")
             except Exception as e:
                 print(f"Error saving image: {e}")
                 raise HTTPException(status_code=500, detail="Error saving image")
 
-        # Update proposal fields
         proposal.title = title
         proposal.description = description
-        proposal.budgetRequired = budgetRequired
+        proposal.budget_required = budget_required
         proposal.status = status
         proposal.image = filename
 
@@ -242,39 +206,44 @@ class FundingProposalCRUD:
         except Exception as e:
             db.rollback()
             print(f"Database error: {e}")
-            raise HTTPException(status_code=500, detail=f"Error updating proposal: {str(e)}")    # Delete a proposal
-    
+            raise HTTPException(status_code=500, detail=f"Error updating proposal: {str(e)}")
+
     @staticmethod
     def delete_proposal(db: Session, proposal_id: int) -> bool:
-        db_proposal = db.query(FundingProposals).filter(FundingProposals.proposalId == proposal_id).first()
-        if not db_proposal:
+        p = db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
+        if not p:
             return False
-
-        db.delete(db_proposal)
+        db.delete(p)
         db.commit()
         return True
 
     @staticmethod
     def total_holding(db: Session, date_since: date, date_to: date) -> List[FundingPieChart]:
-        # Convert to datetime ranges
-        date_from_dt = datetime.combine(date_since, time.min)  # 00:00:00
-        date_to_dt = datetime.combine(date_to, time.max)
-        results = (
+        """
+        Sum of COMPLETED donations (cash + in-kind) per proposal title within [date_since, date_to].
+        """
+        start_dt = datetime.combine(date_since, time.min)
+        end_dt = datetime.combine(date_to, time.max)
+
+        rows = (
             db.query(
-                FundingProposals.title.label("title"),
-                func.coalesce(func.sum(
-                    func.coalesce(DonationRecords.amount, 0) +
-                    func.coalesce(DonationRecords.estimated_value, 0)
-                ), 0).label("total_donated")
+                FundingProposal.title.label("title"),
+                func.coalesce(
+                    func.sum(
+                        func.coalesce(Donation.amount, 0)
+                        + func.coalesce(Donation.estimated_value, 0)
+                    ),
+                    0,
+                ).label("total_donated"),
             )
-            .join(DonationRecords, FundingProposals.proposalId == DonationRecords.proposal_id)
+            .join(Donation, FundingProposal.id == Donation.proposal_id)
             .filter(
-                or_(
-                    DonationRecords.amount != None,
-                    DonationRecords.estimated_value != None
-                ),)
-            .filter(DonationRecords.donation_date.between(date_from_dt, date_to_dt))
-            .group_by(FundingProposals.title)
+                Donation.status == DonationStatus.COMPLETED,
+                Donation.donation_date.between(start_dt, end_dt),
+                or_(Donation.amount.isnot(None), Donation.estimated_value.isnot(None)),
+            )
+            .group_by(FundingProposal.title)
             .all()
         )
-        return [{"title": row.title, "total_donated": float(row.total_donated)} for row in results]
+
+        return [{"title": r.title, "total_donated": float(r.total_donated)} for r in rows]

@@ -181,11 +181,11 @@ class Donors(Base):
         elif self.user:
             return self.user.username
         return "Unknown Donor"
-    
+
 
 class TransparencyReports(Base):
     __tablename__ = 'transparency_report'
-    
+
     transparency_id = Column(Integer, primary_key=True, index=True, autoincrement = True)
     file = Column(String, nullable = False)
     file_name = Column(String(50), nullable=False)
@@ -282,3 +282,31 @@ class IndividualVolunteer(Base):
     medical_conditions = Column(String(255), nullable=True)
     other_medical_conditions = Column(String(255), nullable=True)
     certification = Column(String(255), nullable=True)
+    skills = Column(String(255), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    volunteer_type = Column(String(50), nullable=False, default="individual")
+
+class OrganizationVolunteer(Base):
+    __tablename__ = "organization_volunteer"
+
+    volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    organization_name = Column(String(255), nullable=False)
+    organization_type = Column(String(50), nullable=False)
+    organization_email = Column(String(100), nullable=False)
+    organization_phone_number = Column(String(20), nullable=True)
+    organization_address = Column(String(255), nullable=True)
+    contact_person_name = Column(String(100), nullable=False)
+    contact_person_position = Column(String(100), nullable=False)
+    contact_person_phone_number = Column(String(20), nullable=True)
+    contact_person_email = Column(String(100), nullable=False)
+    availability = Column(String(50), nullable=True)
+    organization_picture = Column(String(255), nullable=True)  # URL or path to the picture
+    organization_certificate = Column(String(255), nullable=True)  # URL or path to the certificate
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    volunteer_type = Column(String(50), nullable=False, default="organization")

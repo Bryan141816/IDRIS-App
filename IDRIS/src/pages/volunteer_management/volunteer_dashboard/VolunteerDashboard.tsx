@@ -1,17 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./css/VolunteerDashboard.css";
 import Modal from "./Modal";
 import VolunteerModal from "./VolunteerModal";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
+import { getAllVolunteers } from "../../../API_Handler/individual_volunter_handler";
+import { message } from "antd";
 
-// Type definitions
-interface Volunteer {
-  id: number;
-  name: string;
-  programs: number;
-  status: string;
+// Align with your FastAPI response_model=IndividualVolunteerRead
+interface IndividualVolunteerRead {
+  volunteer_id: number;
+  user_id: number;
+  first_name: string;
+  middle_name?: string | null;
+  last_name: string;
+  email: string;
+  phone_number?: string | null;
+  address?: string | null;
+  birthday?: string | null; // "YYYY-MM-DD"
+  gender?: string | null;
+  age?: number | null;
+  availability?: string | null;      // backend stores as text (e.g., "Mon, Tue")
+  medical_conditions?: string | null;
+  other_medical_conditions?: string | null;
+  certification?: string | null;
+  skills?: string[] | null;          // thanks to your validator
+  created_at: string;                // ISO datetime
 }
 
 interface Partner {
@@ -49,32 +64,67 @@ export default function IDRISDashboard() {
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [today] = useState<Date>(new Date());
   const [isProgramModalOpen, setIsProgramModalOpen] = useState<boolean>(false);
-  const [isVolunteerModalOpen, setIsVolunteerModalOpen] =
-    useState<boolean>(false);
+  const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
+  const [volunteers, setVolunteers] = useState<IndividualVolunteerRead[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedVolunteer, setSelectedVolunteer] = useState<IndividualVolunteerRead | null>(null);
 
-  // Functions for Program Modal
-  const openProgramModal = (): void => {
-    setIsProgramModalOpen(true);
-  };
+  useEffect(() => {
+    const fetchVolunteers = async () => {
+      try {
+        setLoading(true);
+        const data = await getAllVolunteers();
+        // Guard in case handler returns wrapped data
+        const list: unknown =
+          data && (
+            Array.isArray(data)
+              ? data
+              : (typeof data === "object" && data !== null && ("results" in data || "items" in data))
+                ? (data as any).results || (data as any).items
+                : []
+          ) || [];
+        if (!Array.isArray(list)) {
+          console.warn("getAllVolunteers() did not return an array. Raw:", data);
+          setVolunteers([]);
+        } else {
+          setVolunteers(list as IndividualVolunteerRead[]);
+          if (list.length > 0) setSelectedVolunteer((list as IndividualVolunteerRead[])[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching volunteers:", error);
+        message.error("Failed to load volunteers data");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const closeProgramModal = (): void => {
-    setIsProgramModalOpen(false);
-  };
+    fetchVolunteers();
+  }, []);
 
-  // Functions for Volunteer Modal
-  const openVolunteerModal = (): void => {
-    setIsVolunteerModalOpen(true);
-  };
+  // ✅ Totals
+  const totalApplicantsNumber = volunteers.length;
+  // If you have a real applicants endpoint, replace this with that count.
+  const totalVolunteersNumber = 1000;
 
-  const closeVolunteerModal = (): void => {
-    setIsVolunteerModalOpen(false);
-  };
+  // Prettified display strings
+  const totalApplicants = useMemo(
+    () => totalApplicantsNumber.toLocaleString(),
+    [totalApplicantsNumber]
+  );
+  const totalVolunteers = useMemo(
+    () => totalVolunteersNumber.toLocaleString(),
+    [totalVolunteersNumber]
+  );
 
-  // Mock data
-  const totalApplicants: string = "100,000";
-  const totalVolunteers: string = "100,000";
+  // Program modal controls
+  const openProgramModal = (): void => setIsProgramModalOpen(true);
+  const closeProgramModal = (): void => setIsProgramModalOpen(false);
 
-  const activeVolunteers: Volunteer[] = [
+  // Volunteer modal controls
+  const openVolunteerModal = (): void => setIsVolunteerModalOpen(true);
+  const closeVolunteerModal = (): void => setIsVolunteerModalOpen(false);
+
+  const activeVolunteers = [
     { id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
     { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
     { id: 3, name: "Volunteer Name", programs: 10, status: "joined" },
@@ -122,17 +172,15 @@ export default function IDRISDashboard() {
   ];
 
   useEffect(() => {
-    // Retrieve saved date from localStorage if available
     const savedDate = localStorage.getItem("viewDate");
     if (savedDate) {
       setViewDate(new Date(savedDate));
     } else {
-      setViewDate(new Date()); // Default to today's date if nothing is saved
+      setViewDate(new Date());
     }
   }, []);
 
   useEffect(() => {
-    // Save the current viewDate to localStorage
     localStorage.setItem("viewDate", viewDate.toISOString());
   }, [viewDate]);
 
@@ -142,15 +190,12 @@ export default function IDRISDashboard() {
   const getFirstDayOfMonth = (year: number, month: number): number =>
     new Date(year, month, 1).getDay();
 
-  const prevMonth = (): void => {
+  const prevMonth = (): void =>
     setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
-  };
 
-  const nextMonth = (): void => {
+  const nextMonth = (): void =>
     setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
-  };
 
-  // Format date for display
   const formatDate = (date: Date): FormattedDate => {
     const days: string[] = [
       "Sunday",
@@ -184,7 +229,6 @@ export default function IDRISDashboard() {
     };
   };
 
-  // Generate calendar days
   const generateCalendarDays = (): (number | null)[] => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
@@ -192,76 +236,39 @@ export default function IDRISDashboard() {
     const firstDay = getFirstDayOfMonth(year, month);
     const days: (number | null)[] = [];
 
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-
-    for (let i = 1; i <= totalDays; i++) {
-      days.push(i);
-    }
-
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= totalDays; i++) days.push(i);
     return days;
   };
 
-  const isToday = (day: number): boolean => {
-    return (
-      day === today.getDate() &&
-      viewDate.getMonth() === today.getMonth() &&
-      viewDate.getFullYear() === today.getFullYear()
-    );
-  };
+  const isToday = (day: number): boolean =>
+    day === today.getDate() &&
+    viewDate.getMonth() === today.getMonth() &&
+    viewDate.getFullYear() === today.getFullYear();
 
-  const isSelected = (day: number): boolean => {
-    return (
-      day === currentDate.getDate() &&
-      viewDate.getMonth() === currentDate.getMonth() &&
-      viewDate.getFullYear() === currentDate.getFullYear()
-    );
-  };
+  const isSelected = (day: number): boolean =>
+    day === currentDate.getDate() &&
+    viewDate.getMonth() === currentDate.getMonth() &&
+    viewDate.getFullYear() === currentDate.getFullYear();
 
   const selectDate = (day: number | undefined): void => {
     if (day) {
-      setCurrentDate(
-        new Date(viewDate.getFullYear(), viewDate.getMonth(), day),
-      );
+      setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
     }
   };
 
-  // Get formatted date
   const formattedDate = formatDate(currentDate);
   const days = generateCalendarDays();
   const weekdays: string[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  // Mock deployment schedules
   const deploymentSchedules: DeploymentSchedule[] = [
-    {
-      date: "2025-01-05",
-      title: "Field Deployment",
-      location: "Central District",
-    },
-    {
-      date: "2025-01-12",
-      title: "Emergency Response",
-      location: "Eastern Region",
-    },
-    {
-      date: "2025-01-20",
-      title: "Volunteer Training",
-      location: "Headquarters",
-    },
-    {
-      date: "2025-02-10",
-      title: "Community Outreach",
-      location: "Southern Region",
-    },
-    {
-      date: "2025-03-15",
-      title: "Disaster Preparedness",
-      location: "Western District",
-    },
+    { date: "2025-01-05", title: "Field Deployment", location: "Central District" },
+    { date: "2025-01-12", title: "Emergency Response", location: "Eastern Region" },
+    { date: "2025-01-20", title: "Volunteer Training", location: "Headquarters" },
+    { date: "2025-02-10", title: "Community Outreach", location: "Southern Region" },
+    { date: "2025-03-15", title: "Disaster Preparedness", location: "Western District" },
   ];
 
-  // Filter schedules for current month
   const currentMonthSchedules = deploymentSchedules.filter((schedule) => {
     const scheduleDate = new Date(schedule.date);
     return (
@@ -270,20 +277,17 @@ export default function IDRISDashboard() {
     );
   });
 
-  // Check if a day has a schedule
   const hasSchedule = (day: number): boolean => {
     if (!day) return false;
-    const dateStr = `${viewDate.getFullYear()}-${String(
-      viewDate.getMonth() + 1,
-    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
     return deploymentSchedules.some((schedule) => schedule.date === dateStr);
   };
 
   return (
     <div className="dashboard-container">
-      {/* Main container */}
       <div className="main-container">
-        {/* Main content */}
         <div className="content">
           <div className="content-grid">
             {/* Left column */}
@@ -294,22 +298,15 @@ export default function IDRISDashboard() {
                   <div className="card-title-white">Total Applicants</div>
                   <div className="card-number">{totalApplicants}</div>
                 </div>
-                {userType === "admin" &&
-                userRoles.includes("operations admin") ? (
+                {userType === "admin" && userRoles.includes("operations admin") ? (
                   <button
                     className="manage-btn"
-                    onClick={() =>
-                      navigate("/volunteer_management/manage_applicant")
-                    }
+                    onClick={() => navigate("/volunteer_management/manage_applicant")}
                   >
                     Manage Applicants
                   </button>
                 ) : (
-                  <button
-                    className="manage-btn"
-                    style={{ fontSize: "90%" }}
-                    onClick={openVolunteerModal}
-                  >
+                  <button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal}>
                     Become a Volunteer
                   </button>
                 )}
@@ -321,13 +318,10 @@ export default function IDRISDashboard() {
                   <div className="card-title-white">Total Volunteers</div>
                   <div className="card-number">{totalVolunteers}</div>
                 </div>
-                {userType === "admin" &&
-                userRoles.includes("operations admin") ? (
+                {userType === "admin" && userRoles.includes("operations admin") ? (
                   <button
                     className="manage-btn"
-                    onClick={() =>
-                      navigate("/volunteer_management/manage_volunteers")
-                    }
+                    onClick={() => navigate("/volunteer_management/manage_volunteers")}
                   >
                     Manage Volunteers
                   </button>
@@ -335,9 +329,7 @@ export default function IDRISDashboard() {
                   <button
                     className="manage-btn"
                     style={{ display: "none" }}
-                    onClick={() =>
-                      navigate("/volunteer_management/become_volunteer")
-                    }
+                    onClick={() => navigate("/volunteer_management/become_volunteer")}
                   >
                     Become a Volunteer
                   </button>
@@ -350,13 +342,13 @@ export default function IDRISDashboard() {
                 <div className="card">
                   <h2 className="blue-title">Active Volunteers</h2>
                   <div className="volunteer-list">
-                    {activeVolunteers.map((volunteer) => (
-                      <div key={volunteer.id} className="volunteer-item">
+                    {activeVolunteers.map((v) => (
+                      <div key={v.id} className="volunteer-item">
                         <div className="volunteer-avatar"></div>
                         <div className="volunteer-info">
-                          <div className="volunteer-name">{volunteer.name}</div>
+                          <div className="volunteer-name">{v.name}</div>
                           <div className="volunteer-meta">
-                            {volunteer.programs} Programs {volunteer.status}
+                            {v.programs} Programs {v.status}
                           </div>
                         </div>
                       </div>
@@ -393,22 +385,16 @@ export default function IDRISDashboard() {
                       {currentMonthSchedules.length > 0 ? (
                         currentMonthSchedules.map((schedule, index) => (
                           <div key={index} className="deployment-item">
-                            <div className="deployment-item-title">
-                              {schedule.title}
-                            </div>
+                            <div className="deployment-item-title">{schedule.title}</div>
                             <div className="deployment-item-date">
-                              {schedule.date.split("-")[2]},{" "}
-                              {formatDate(viewDate).month}
+                              {schedule.date.split("-")[2]}, {formatDate(viewDate).month}
                             </div>
-                            <div className="deployment-item-location">
-                              {schedule.location}
-                            </div>
+                            <div className="deployment-item-location">{schedule.location}</div>
                           </div>
                         ))
                       ) : (
                         <p>
-                          No scheduled deployments for{" "}
-                          {formatDate(viewDate).month} {viewDate.getFullYear()}
+                          No scheduled deployments for {formatDate(viewDate).month} {viewDate.getFullYear()}
                         </p>
                       )}
                     </div>
@@ -421,9 +407,7 @@ export default function IDRISDashboard() {
                         &lt;
                       </button>
                       <div>
-                        <div className="day-name">
-                          {formatDate(currentDate).dayName}
-                        </div>
+                        <div className="day-name">{formatDate(currentDate).dayName}</div>
                         <div className="date-display">
                           <span className="month-day">
                             {formattedDate.month} {formattedDate.day}
@@ -449,18 +433,12 @@ export default function IDRISDashboard() {
                             {day && (
                               <div
                                 onClick={() => selectDate(day)}
-                                className={`calendar-day ${
-                                  isToday(day) ? "today" : ""
-                                } ${
-                                  isSelected(day) && !isToday(day)
-                                    ? "selected"
-                                    : ""
+                                className={`calendar-day ${isToday(day) ? "today" : ""} ${
+                                  isSelected(day) && !isToday(day) ? "selected" : ""
                                 } ${hasSchedule(day) ? "has-schedule" : ""}`}
                               >
                                 {day}
-                                {hasSchedule(day) && (
-                                  <span className="schedule-indicator"></span>
-                                )}
+                                {hasSchedule(day) && <span className="schedule-indicator"></span>}
                               </div>
                             )}
                           </div>
@@ -476,19 +454,14 @@ export default function IDRISDashboard() {
                 <div className="news-header">
                   <h2 className="news-title">News & Announcements</h2>
                   {userType === "admin" ? (
-                    <button
-                      onClick={openProgramModal}
-                      className="add-program-btn"
-                    >
+                    <button onClick={openProgramModal} className="add-program-btn">
                       + Add Program
                     </button>
                   ) : (
                     <button
                       className="manage-btn"
                       style={{ display: "none" }}
-                      onClick={() =>
-                        navigate("/volunteer_management/become_volunteer")
-                      }
+                      onClick={() => navigate("/volunteer_management/become_volunteer")}
                     >
                       Become a Volunteer
                     </button>
@@ -502,9 +475,7 @@ export default function IDRISDashboard() {
                       <p className="news-item-desc">{item.description}</p>
                       <div className="news-item-meta">
                         <span className="news-item-date">{item.date}</span>
-                        {item.ongoing && (
-                          <span className="ongoing-badge">Ongoing</span>
-                        )}
+                        {item.ongoing && <span className="ongoing-badge">Ongoing</span>}
                       </div>
                     </div>
                   ))}
@@ -515,10 +486,7 @@ export default function IDRISDashboard() {
         </div>
       </div>
       <Modal isOpen={isProgramModalOpen} onClose={closeProgramModal} />
-      <VolunteerModal
-        isOpen={isVolunteerModalOpen}
-        onClose={closeVolunteerModal}
-      />
+      <VolunteerModal isOpen={isVolunteerModalOpen} onClose={closeVolunteerModal} />
     </div>
   );
 }

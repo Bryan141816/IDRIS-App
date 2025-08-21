@@ -1,18 +1,21 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query, Request
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from pathlib import Path
+
 from routers.GetUserId import GetUserId
 from database import get_db
 from data_schemas.individual_volunteer_schema import (
     IndividualVolunteerCreate,
     IndividualVolunteerUpdate,
-    IndividualVolunteerRead
+    IndividualVolunteerRead,
 )
-from crud_functions.volunteer_management.individual_volunteer_crud import IndividualVolunteerCRUD as CRUD
+from crud_functions.volunteer_management.individual_volunteer_crud import (
+    IndividualVolunteerCRUD as CRUD,
+)
 from routers.role_checker import RoleChecker
-from models import IndividualVolunteer
+from models import IndividualVolunteer  # optional import; safe to keep
 
 # Role-based routers
 router_admin = APIRouter(
@@ -24,7 +27,9 @@ router_volunteer = APIRouter(
 )
 
 router_admin_or_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor"]))],
+    dependencies=[
+        Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor"]))
+    ],
 )
 
 # NEW: Router for authenticated users (any role can create their own profile)
@@ -36,7 +41,7 @@ UPLOAD_DIR = Path("media/certifications")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------- CREATE (User creates their own profile) ----------------
-@router_authenticated.post("/create", response_model=IndividualVolunteerUpdate)
+@router_authenticated.post("/create", response_model=IndividualVolunteerRead)  # fixed response model
 def create_individual_volunteer_endpoint(
     user_id: int = Depends(GetUserId()),
     first_name: str = Form(...),
@@ -51,12 +56,10 @@ def create_individual_volunteer_endpoint(
     availability: Optional[str] = Form(None),
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
+    skills: Optional[List[str]] = Form(None),  # NEW: accept multiple skills fields
     certification_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
-    # Use the provided user_id (we'll improve this later with proper JWT handling)
-  # This should be replaced with actual user ID retrieval logic
-    print(user_id)
     volunteer_data = IndividualVolunteerCreate(
         user_id=user_id,
         first_name=first_name,
@@ -65,13 +68,14 @@ def create_individual_volunteer_endpoint(
         email=email,
         phone_number=phone_number,
         address=address,
-        birthday=birthday,
+        birthday=birthday,  # Pydantic will parse 'YYYY-MM-DD'
         gender=gender,
         age=age,
         availability=availability,
         medical_conditions=medical_conditions,
         other_medical_conditions=other_medical_conditions,
-        certification=None  # Will be set by CRUD if file uploaded
+        certification=None,  # set by CRUD if file uploaded
+        skills=skills,       # NEW
     )
     return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
 
@@ -91,6 +95,7 @@ def create_individual_volunteer_for_user_endpoint(
     availability: Optional[str] = Form(None),
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
+    skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
@@ -108,14 +113,15 @@ def create_individual_volunteer_for_user_endpoint(
         availability=availability,
         medical_conditions=medical_conditions,
         other_medical_conditions=other_medical_conditions,
-        certification=None  # Will be set by CRUD if file uploaded
+        certification=None,
+        skills=skills,  # NEW
     )
     return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
 
 # ---------------- READ ALL ----------------
 @router_admin_or_volunteer.get("/get_all", response_model=List[IndividualVolunteerRead])
 def get_all_volunteers_endpoint(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return CRUD.get_all_volunteers(db)
 
@@ -123,7 +129,7 @@ def get_all_volunteers_endpoint(
 @router_admin_or_volunteer.get("/get_by_id", response_model=IndividualVolunteerRead)
 def get_volunteer_by_id_endpoint(
     volunteer_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     try:
         volunteer = CRUD.get_volunteer_by_id(db, volunteer_id)
@@ -136,7 +142,7 @@ def get_volunteer_by_id_endpoint(
 # ---------------- READ CURRENT USER'S PROFILE ----------------
 @router_authenticated.get("/my_profile", response_model=IndividualVolunteerRead)
 def get_my_volunteer_profile_endpoint(
-    user_id: int = Query(...),  # Temporarily require user_id as query param
+    user_id: int = Query(...),  # Temporarily require user_id as query param (or use Depends(GetUserId()))
     db: Session = Depends(get_db),
 ):
     try:
@@ -163,10 +169,11 @@ def update_my_volunteer_profile_endpoint(
     availability: Optional[str] = Form(None),
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
+    skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
 ):
-    # First, find the user's volunteer profile
+    # Find the user's volunteer profile
     volunteer = CRUD.get_volunteer_by_user_id(db, user_id)
     if not volunteer:
         raise HTTPException(status_code=404, detail="Volunteer profile not found")
@@ -183,9 +190,10 @@ def update_my_volunteer_profile_endpoint(
         age=age,
         availability=availability,
         medical_conditions=medical_conditions,
-        other_medical_conditions=other_medical_conditions
+        other_medical_conditions=other_medical_conditions,
+        skills=skills,  # NEW
     )
-    return CRUD.update_volunteer(db, volunteer.id, update_data, certification_file)
+    return CRUD.update_volunteer(db, volunteer.volunteer_id, update_data, certification_file)  # fixed id attribute
 
 # ---------------- UPDATE (Admin updates any profile) ----------------
 @router_admin.put("/update/{volunteer_id}", response_model=IndividualVolunteerRead)
@@ -203,8 +211,9 @@ def update_volunteer_endpoint(
     availability: Optional[str] = Form(None),
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
+    skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     update_data = IndividualVolunteerUpdate(
         first_name=first_name,
@@ -218,7 +227,8 @@ def update_volunteer_endpoint(
         age=age,
         availability=availability,
         medical_conditions=medical_conditions,
-        other_medical_conditions=other_medical_conditions
+        other_medical_conditions=other_medical_conditions,
+        skills=skills,  # NEW
     )
     return CRUD.update_volunteer(db, volunteer_id, update_data, certification_file)
 
@@ -226,7 +236,7 @@ def update_volunteer_endpoint(
 @router_admin.delete("/delete/{volunteer_id}")
 def delete_volunteer_endpoint(
     volunteer_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     success = CRUD.delete_volunteer(db, volunteer_id)
     if not success:
@@ -238,4 +248,4 @@ router = APIRouter()
 router.include_router(router_admin, prefix="/volunteer", tags=["Volunteer - Admin"])
 router.include_router(router_volunteer, prefix="/volunteer", tags=["Volunteer - Volunteer"])
 router.include_router(router_admin_or_volunteer, prefix="/volunteer", tags=["Volunteer - Mixed Access"])
-router.include_router(router_authenticated, prefix="/volunteer", tags=["Volunteer - User Self-Service"])  # NEW
+router.include_router(router_authenticated, prefix="/volunteer", tags=["Volunteer - User Self-Service"])

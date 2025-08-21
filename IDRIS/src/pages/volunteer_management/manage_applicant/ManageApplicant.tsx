@@ -114,7 +114,7 @@ const ManageApplicant: React.FC = () => {
       title: 'Are you sure you want to decline this applicant?',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Yes, delete it!',
+      confirmButtonText: 'Yes, decline it!',
       cancelButtonText: 'No, cancel!',
       reverseButtons: true,
       width: '380px',

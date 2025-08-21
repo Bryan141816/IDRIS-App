@@ -29,6 +29,7 @@ from routers.donations_management import (
 from routers.lgu_profiling import manage_lgu
 from fastapi.staticfiles import StaticFiles
 from routers.volunteer_management import individual_volunteer_routes
+from routers.volunteer_management.organization_volunteer_routes import router as org_volunteer_router
 
 
 
@@ -72,6 +73,7 @@ app.include_router(
 )
 
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
+app.include_router(org_volunteer_router)
 
 app.mount(
     "/media/transparency_reports",

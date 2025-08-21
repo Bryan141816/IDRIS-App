@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional
-from datetime import date
+from typing import Optional, List
+from datetime import date, datetime
+from pydantic import BaseModel, validator
 
 # ----------- SHARED SCHEMA -----------
 class IndividualVolunteerBase(BaseModel):
@@ -18,10 +18,18 @@ class IndividualVolunteerBase(BaseModel):
     medical_conditions: Optional[str] = None
     other_medical_conditions: Optional[str] = None
     certification: Optional[str] = None  # file path or filename
+    skills: Optional[List[str]] = None   # API is a list
+
+    # Accept list from clients, but also convert DB CSV string -> list on read
+    @validator("skills", pre=True)
+    def parse_skills(cls, v):
+        if v is None or isinstance(v, list):
+            return v
+        return [s.strip() for s in str(v).split(",") if s.strip()]
 
 # ----------- CREATE SCHEMA -----------
 class IndividualVolunteerCreate(IndividualVolunteerBase):
-    pass  # same as base for now, but you can add create-specific fields later
+    pass
 
 # ----------- UPDATE SCHEMA -----------
 class IndividualVolunteerUpdate(BaseModel):
@@ -38,10 +46,12 @@ class IndividualVolunteerUpdate(BaseModel):
     medical_conditions: Optional[str] = None
     other_medical_conditions: Optional[str] = None
     certification: Optional[str] = None
+    skills: Optional[List[str]] = None
 
 # ----------- READ SCHEMA -----------
 class IndividualVolunteerRead(IndividualVolunteerBase):
     volunteer_id: int
+    created_at: datetime
 
     class Config:
         orm_mode = True

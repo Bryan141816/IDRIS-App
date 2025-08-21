@@ -225,6 +225,29 @@
     border: none;
     min-width: 100px;
 }
+.gift-content {
+  width: auto !important;
+  height: auto !important;
+  background-color: #fff !important;
+}
+
+.center-upload .upload-preview :where(.ant-upload) .ant-btn {
+  background: #0ea5e9;
+  border: 1px solid #0284c7;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+
+.center-upload .ant-form-item-control-input-content {
+  display: flex;            /* centers both the button and the thumbnail */
+  justify-content: center;
+}
+
+.custom-upload {
+  --upload-size: 260px;         /* default tile size */
+  --upload-icon-scale: 0.35;    /* icon scales with tile */
+}
 
   /* Responsive Design */
   @media (max-width: 768px) {

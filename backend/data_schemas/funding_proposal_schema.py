@@ -1,47 +1,90 @@
 from datetime import datetime
-from pydantic import BaseModel
-from typing import  Optional, List
+from typing import Optional, List
+from pydantic import BaseModel, Field
 
-# Base schema shared by other versions
+# ======================
+# Base / Create / Update
+# ======================
+
 class FundingProposalBase(BaseModel):
     title: str
     description: str
-    budgetRequired: int
-    status: Optional[str] = "Active"
-
-# Used when creating a new proposal (no ID or timestamps)
-class FundingProposalCreate(FundingProposalBase):
-    image: Optional[str] = None 
-    
-# Used when updating a proposal (all fields optional)
-class FundingProposalUpdate(FundingProposalBase):
-    status: Optional[str] = None
-    image: Optional[str] = None 
-
-class FundingProposalGet(FundingProposalBase):
-    proposalId: int
-    total_donated: float
-    created_at: datetime
-    updated_at: datetime
-    image: Optional[str] = None 
-    class Config:
-        from_attributes = True 
-
-# Used when returning data from the API
-class FundingProposalResponse(FundingProposalBase):
-    proposalId: int
-    created_at: datetime
-    updated_at: datetime
+    budgetRequired: int = Field(..., alias="budget_required")
+    status: Optional[str] = "Active"  # model is String(50), so plain str is fine
+    image: Optional[str] = None
 
     class Config:
         from_attributes = True
-        
+        populate_by_name = True
+
+
+class FundingProposalCreate(BaseModel):
+    title: str
+    description: str
+    budgetRequired: int = Field(..., alias="budget_required")
+    status: Optional[str] = "Active"
+    image: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+class FundingProposalUpdate(BaseModel):
+    # All optional for PATCH/PUT semantics
+    title: Optional[str] = None
+    description: Optional[str] = None
+    budgetRequired: Optional[int] = Field(None, alias="budget_required")
+    status: Optional[str] = None
+    image: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+# ======================
+# Read / Response models
+# ======================
+
+class FundingProposalGet(BaseModel):
+    proposalId: int = Field(..., alias="id")
+    title: str
+    description: str
+    budgetRequired: int = Field(..., alias="budget_required")
+    total_donated: float  # computed in query/serializer, not a DB column
+    created_at: datetime
+    updated_at: datetime
+    image: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+class FundingProposalResponse(BaseModel):
+    proposalId: int = Field(..., alias="id")
+    title: str
+    description: str
+    budgetRequired: int = Field(..., alias="budget_required")
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    image: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
 class FundingProposalResponsePaginated(BaseModel):
     max_page: int
     records: List[FundingProposalGet]
-    
+
     class Config:
         from_attributes = True
+        populate_by_name = True
+
 
 class FundingPieChart(BaseModel):
     title: str

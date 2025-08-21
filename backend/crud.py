@@ -6,7 +6,6 @@ from models import (
     EvacuationCenter,
     ResponseReport,
     User,
-    FundingProposals,
     ModalityDistribution,
     ResponseReportBudget,
     InKindMonitoring,
@@ -75,10 +74,12 @@ def create_user(
     user_type: str,
     password: str,
     roles: list[str] = [],
+    user_id: int | None = None
 ):
     hashed = hash_password(password)
     user_data = {
         "email": email,
+        "user_id": user_id,
         "username": username,
         "user_type": user_type,
         "hashed_password": hashed,

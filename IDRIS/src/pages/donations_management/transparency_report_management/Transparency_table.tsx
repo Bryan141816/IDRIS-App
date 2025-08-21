@@ -5,7 +5,7 @@ import { useUserContext } from "../../../UserContext";
 const backendUrl = 'http://127.0.0.1:8000';
 
 export interface TransparencyReport {
-  transparency_id: number;
+  id: number;
   file_name: string;
   file: string; // Full URL or path to PDF
   date_uploaded: string; // ISO date string
@@ -30,8 +30,8 @@ export const TransparencyReportTable: React.FC<Props> = ({ reports, updateFuncti
         </tr>
       </thead>
       <tbody>
-        {reports.map((report, index) => (
-          <tr key={index}>
+        {reports.map((report) => (
+          <tr key={report.id}>
             <td>
               <a
                 href={`${backendUrl}/${report.file}`}
@@ -63,10 +63,10 @@ export const TransparencyReportTable: React.FC<Props> = ({ reports, updateFuncti
             { userType == "admin" && <td>
               <button
                 className={styles.yellowButton}
-                onClick={() => updateFunction?.(report.transparency_id)}>
+                onClick={() => updateFunction?.(report.id)}
+              >
                 Update
               </button>
-              
             </td> }
           </tr>
         ))}

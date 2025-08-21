@@ -1,165 +1,258 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy import extract, func
-from models import DonationRecords, DonationStatus
-from data_schemas.donation_schema import DonationCreate, RecurringDonationCreate, InKindDonationCreate
+
+from models import (
+    Donation,
+    DonationStatus,
+    DonationFrequency,
+)
+
+from data_schemas.donation_schema import (
+    DonationCreate,
+    RecurringDonationCreate,
+    InKindDonationCreate,
+)
+
+
+# --- helpers -----------------------------------------------------------------
+
+def _to_enum(enum_cls, value, default=None):
+    """
+    Safely coerce strings/Enums/None into the target Enum type.
+    - Accepts actual Enum instances, their .name/.value strings, or None.
+    """
+    if value is None:
+        return default
+    if isinstance(value, enum_cls):
+        return value
+    # try by name
+    try:
+        return enum_cls[value]  # e.g. "ONE_TIME" -> DonationFrequency.ONE_TIME
+    except Exception:
+        pass
+    # try by value (e.g. passing "ONE_TIME" when value==name)
+    try:
+        return enum_cls(value)
+    except Exception:
+        pass
+    if default is not None:
+        return default
+    raise ValueError(f"Invalid enum value '{value}' for {enum_cls.__name__}")
+
+
+# --- CRUD --------------------------------------------------------------------
 
 class DonationCRUD:
+    # --- CREATE ---
+
     @staticmethod
-    def create_one_time_pending_donation(db: Session, donation_data: DonationCreate) -> DonationRecords:
-        donation = DonationRecords(
-            donor_id=donation_data.donor_id,
-            donation_type=donation_data.donation_type, # one-time / recurring
-            amount=donation_data.amount,
-            description=donation_data.description,
-            proposal_id=donation_data.proposal_id,
-            donation_kind=donation_data.donation_kind,
-            payment_method=donation_data.payment_method,
-            status=DonationStatus.PENDING.value,
-            is_active_recurring=False  # One-time only
+    def create_one_time_pending_donation(db: Session, donation_data: DonationCreate) -> Donation:
+        """
+        Maps:
+          - donation_type -> frequency (force ONE_TIME if not provided)
+          - donation_kind -> kind ("cash" | "inkind")
+        """
+        frequency = _to_enum(
+            DonationFrequency,
+            getattr(donation_data, "donation_type", None),
+            default=DonationFrequency.ONE_TIME,
         )
-        print(donation)
+
+        kind = getattr(donation_data, "donation_kind", "cash") or "cash"
+
+        donation = Donation(
+            donor_id=donation_data.donor_id,
+            proposal_id=donation_data.proposal_id,
+            frequency=frequency,
+            amount=(donation_data.amount if kind == "cash" else None),
+            description=donation_data.description,
+            status=DonationStatus.PENDING,   # Enum (not string)
+            kind=kind,
+            # one-time has no schedule
+            next_donation_date=None,
+            end_date=None,
+            is_active=False,
+            payment_method=donation_data.payment_method,
+        )
         db.add(donation)
         db.commit()
         db.refresh(donation)
         return donation
 
     @staticmethod
-    def create_recurring_donation(db: Session, donation_data: RecurringDonationCreate) -> DonationRecords:
-        new_donation = DonationRecords(
+    def create_recurring_donation(db: Session, donation_data: RecurringDonationCreate) -> Donation:
+        """
+        Maps:
+          - donation_type/recurring_frequency -> frequency
+          - recurring_end_date -> end_date
+        Forces 'kind' = "cash".
+        """
+        # Prefer explicit recurring_frequency; fall back to donation_type; else MONTHLY
+        freq_source = (
+            getattr(donation_data, "recurring_frequency", None)
+            or getattr(donation_data, "donation_type", None)
+            or DonationFrequency.MONTHLY
+        )
+        frequency = _to_enum(DonationFrequency, freq_source, default=DonationFrequency.MONTHLY)
+
+        donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id = donation_data.proposal_id,
-            donation_type=donation_data.donation_type,
+            proposal_id=donation_data.proposal_id,
+            frequency=frequency,
             amount=donation_data.amount,
             description=donation_data.description,
             status=DonationStatus.PENDING,
-            donation_kind="cash",  # force "cash"
-            recurring_frequency=donation_data.recurring_frequency,
+            kind="cash",
             next_donation_date=donation_data.next_donation_date,
-            recurring_end_date=donation_data.recurring_end_date,
-            is_active_recurring=True,
-            payment_method=donation_data.payment_method
+            end_date=getattr(donation_data, "recurring_end_date", None),
+            is_active=True,
+            payment_method=donation_data.payment_method,
         )
-        db.add(new_donation)
+        db.add(donation)
         db.commit()
-        db.refresh(new_donation)
-        return new_donation
+        db.refresh(donation)
+        return donation
 
     @staticmethod
-    def create_inkind_donation(db: Session, donation_data: InKindDonationCreate) -> DonationRecords:
-        new_donation = DonationRecords(
+    def create_inkind_donation(db: Session, donation_data: InKindDonationCreate) -> Donation:
+        """
+        Maps:
+          - donation_type -> frequency (default ONE_TIME)
+        Forces 'kind' = "inkind".
+        """
+        frequency = _to_enum(
+            DonationFrequency,
+            getattr(donation_data, "donation_type", None),
+            default=DonationFrequency.ONE_TIME,
+        )
+
+        donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id = donation_data.proposal_id,
-            donation_type=donation_data.donation_type,
-            amount=None,  # In-kind has no direct amount
+            proposal_id=donation_data.proposal_id,
+            frequency=frequency,
+            amount=None,  # in-kind has no direct cash amount
             description=donation_data.description,
             status=DonationStatus.PENDING,
-            donation_kind="inkind",  # force inkind type
+            kind="inkind",
             item_description=donation_data.item_description,
             estimated_value=donation_data.estimated_value,
             quantity=donation_data.quantity,
-            is_active_recurring=False  # Not applicable to in-kind
+            # in-kind not recurring by default; adjust if you support recurring in-kind
+            next_donation_date=None,
+            end_date=None,
+            is_active=False,
+            payment_method=None,
         )
-        db.add(new_donation)
+        db.add(donation)
         db.commit()
-        db.refresh(new_donation)
-        return new_donation
+        db.refresh(donation)
+        return donation
+
+    # --- STATUS UPDATES ---
 
     @staticmethod
-    def cancel_donation_status(db: Session, donation_id: int) -> DonationRecords:
+    def cancel_donation_status(db: Session, donation_id: int) -> Donation:
         try:
-            donation = db.query(DonationRecords).filter(DonationRecords.donationRecordId == donation_id).one()
-            donation.status = DonationStatus.CANCELLED.value
+            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation.status = DonationStatus.CANCELLED
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
-            raise ValueError(f"Donation record does not exist")
-    
-    @staticmethod
-    def completed_donation_status(db: Session, donation_id: int) -> DonationRecords:
-        try:
-            donation = db.query(DonationRecords).filter(DonationRecords.donationRecordId == donation_id).one()
-            donation.status = DonationStatus.COMPLETED.value
-            db.commit()
-            db.refresh(donation)
-            return donation
-        except NoResultFound:
-            raise ValueError(f"Donation record does not exist")
+            raise ValueError("Donation record does not exist")
 
     @staticmethod
-    def failed_donation_status(db: Session, donation_id: int) -> DonationRecords:
+    def completed_donation_status(db: Session, donation_id: int) -> Donation:
         try:
-            donation = db.query(DonationRecords).filter(DonationRecords.donationRecordId == donation_id).one()
-            donation.status = DonationStatus.FAILED.value
+            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation.status = DonationStatus.COMPLETED
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
-            raise ValueError(f"Donation record does not exist")
-        
+            raise ValueError("Donation record does not exist")
+
+    @staticmethod
+    def failed_donation_status(db: Session, donation_id: int) -> Donation:
+        try:
+            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation.status = DonationStatus.FAILED
+            db.commit()
+            db.refresh(donation)
+            return donation
+        except NoResultFound:
+            raise ValueError("Donation record does not exist")
+
+    # --- AGGREGATIONS / REPORTS ---
+
     @staticmethod
     def get_total_donations(db: Session, year: int, month: int | None = None):
-        """Returns total donation amount filtered by year and optionally by month."""
-        query = db.query(func.coalesce(func.sum(DonationRecords.amount), 0)).filter(
-            extract('year', DonationRecords.donation_date) == year,
-            DonationRecords.status == 'COMPLETED'
-        )            
-
+        """
+        Returns total value (cash + estimated in-kind) filtered by year/month for COMPLETED donations.
+        """
         filters = [
-            extract('year', DonationRecords.donation_date) == year,
-            DonationRecords.status == 'COMPLETED'
+            extract("year", Donation.donation_date) == year,
+            Donation.status == DonationStatus.COMPLETED,
         ]
-        
         if month is not None:
-            filters.append(extract('month', DonationRecords.donation_date) == month)
+            filters.append(extract("month", Donation.donation_date) == month)
 
         total = db.query(
-            func.coalesce(func.sum(DonationRecords.amount), 0) +
-            func.coalesce(func.sum(DonationRecords.estimated_value), 0)
+            func.coalesce(func.sum(Donation.amount), 0) +
+            func.coalesce(func.sum(Donation.estimated_value), 0)
         ).filter(*filters).scalar()
-        
+
         return total
 
     @staticmethod
     def get_donor_retention_by_year(db: Session, year: int):
         """
-        Calculate donor retention: % of donors from (year - 1) who donated again in `year`.
+        Donor retention: % of donors from (year - 1) who donated again in `year`.
+        Counts COMPLETED donations only.
         """
         prev_year = year - 1
 
-        # Donors who gave in previous year
-        prev_year_donors = db.query(DonationRecords.donor_id).filter(
-            func.extract('year', DonationRecords.donation_date) == prev_year,
-            DonationRecords.status == 'COMPLETED'
-        ).distinct().subquery()
+        prev_year_donors_subq = (
+            db.query(Donation.donor_id)
+            .filter(
+                extract("year", Donation.donation_date) == prev_year,
+                Donation.status == DonationStatus.COMPLETED,
+            )
+            .distinct()
+            .subquery()
+        )
 
-        # Donors from previous year who also gave in current year
-        retained_donors = db.query(DonationRecords.donor_id).filter(
-            func.extract('year', DonationRecords.donation_date) == year,
-            DonationRecords.status == 'COMPLETED',
-            DonationRecords.donor_id.in_(db.query(prev_year_donors.c.donor_id))
-        ).distinct().count()
+        retained_donors = (
+            db.query(Donation.donor_id)
+            .filter(
+                extract("year", Donation.donation_date) == year,
+                Donation.status == DonationStatus.COMPLETED,
+                Donation.donor_id.in_(db.query(prev_year_donors_subq.c.donor_id)),
+            )
+            .distinct()
+            .count()
+        )
 
-        total_prev_donors = db.query(prev_year_donors).count()
+        total_prev_donors = db.query(prev_year_donors_subq).count()
 
         return {
             "total_donors_last_year": total_prev_donors,
             "retained_donors": retained_donors,
-            "retention_rate": round((retained_donors / total_prev_donors) * 100, 2) if total_prev_donors else 0.0
+            "retention_rate": round((retained_donors / total_prev_donors) * 100, 2) if total_prev_donors else 0.0,
         }
 
     @staticmethod
     def get_donations_with_details(db: Session, limit: int = 10):
         """
-        Get recent donations with donation_date, donor name, and funding proposal title.
+        Recent COMPLETED donations with donor name & proposal title.
         """
         results = (
-            db.query(DonationRecords)
-            .join(DonationRecords.donor)
-            .join(DonationRecords.proposal, isouter=True)
-            .filter(DonationRecords.status == DonationStatus.COMPLETED)
-            .order_by(DonationRecords.donation_date.desc())
+            db.query(Donation)
+            .join(Donation.donor)
+            .join(Donation.proposal, isouter=True)
+            .filter(Donation.status == DonationStatus.COMPLETED)
+            .order_by(Donation.donation_date.desc())
             .limit(limit)
             .all()
         )
@@ -167,11 +260,13 @@ class DonationCRUD:
         return [
             {
                 "donation_date": r.donation_date,
-                "donor_name": r.donor.donor_name,
-                "funding_title": r.proposal.title if r.proposal else None,
-                "donation_kind": r.donation_kind,
-                "amount": r.amount if r.donation_kind == "cash" else r.estimated_value,
-                "item_description": r.item_description if r.donation_kind == "inkind" else None,
+                "donor_name": (r.donor.donor_name if getattr(r, "donor", None) else None),
+                "funding_title": (r.proposal.title if getattr(r, "proposal", None) else None),
+                "kind": r.kind,
+                "amount": (r.amount if r.kind == "cash" else r.estimated_value),
+                "item_description": (r.item_description if r.kind == "inkind" else None),
+                "frequency": r.frequency.name if hasattr(r.frequency, "name") else r.frequency,
+                "status": r.status.name if hasattr(r.status, "name") else r.status,
             }
             for r in results
         ]

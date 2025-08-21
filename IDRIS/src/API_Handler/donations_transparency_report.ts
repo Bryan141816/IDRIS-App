@@ -91,12 +91,13 @@ export async function getTransparencyReportsMini(
 }
 
 export async function getTransparencyReportById(id: number): Promise<any> {
+  console.log(API.getUri({ url: '/transparency_report/get_by_id', params: { transparency_id: id } }));
   return await API.get('/transparency_report/get_by_id', {
     params: { transparency_id: id },
   });
 }
 
-export async function updateTransparencyReport(id: number, formData: FormData): Promise<any> {
+export async function updateTransparencyReport(id: number | null, formData: FormData): Promise<any> {
   return await API.put(`/transparency_report/update/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

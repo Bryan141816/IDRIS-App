@@ -1,12 +1,18 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from enum import Enum
+from decimal import Decimal
 
 
-class DonationType(str, Enum):
+# ==== Enums aligned with the SQLAlchemy model ====
+
+class DonationFrequency(str, Enum):
     ONE_TIME = "ONE_TIME"
-    RECURRING = "RECURRING"
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    YEARLY = "YEARLY"
+
 
 class DonationStatus(str, Enum):
     PENDING = "PENDING"
@@ -14,50 +20,126 @@ class DonationStatus(str, Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
+
+# Optional helper enum for clarity (DB uses string column for kind)
+class DonationKind(str, Enum):
+    CASH = "cash"
+    INKIND = "inkind"
+
+
+# ==== Create Schemas ====
+# You can use separate create schemas (cash one-time, cash recurring, in-kind),
+# mirroring your prior structure but matching the new model.
+
 class DonationCreate(BaseModel):
+    """
+    One-time CASH donation (simple create).
+    Matches DonationRecord with frequency=ONE_TIME and kind='cash'.
+    """
     donor_id: int
-    donation_type: DonationType
-    amount: Optional[float] = None
-    description: Optional[str] = None
     proposal_id: Optional[int] = None
-    donation_kind: str = "cash" 
-    
-    # Payment method
-    payment_method: Optional[str] = None
+    frequency: DonationFrequency = DonationFrequency.ONE_TIME
+    kind: DonationKind = DonationKind.CASH
+
+    amount: Decimal = Field(..., description="Required for cash donations")
+    description: Optional[str] = None
+
+    payment_method: Optional[str] = None  # e.g., gcash, bank, etc.
+
+    @field_validator("frequency")
+    def frequency_must_be_one_time(cls, v):
+        if v != DonationFrequency.ONE_TIME:
+            raise ValueError("Use RecurringDonationCreate for recurring donations.")
+        return v
+
+    @field_validator("amount")
+    def amount_required_positive(cls, v):
+        if v is None or v <= 0:
+            raise ValueError("amount must be a positive number for cash donations.")
+        return v
+
 
 class RecurringDonationCreate(BaseModel):
+    """
+    CASH recurring donation.
+    """
     donor_id: int
-    proposal_id: int
-    donation_type: DonationType = DonationType.RECURRING
-    amount: float  # Required for cash donations
+    proposal_id: Optional[int] = None
+    frequency: DonationFrequency = DonationFrequency.MONTHLY  # MONTHLY/QUARTERLY/YEARLY
+    kind: DonationKind = DonationKind.CASH
+
+    amount: Decimal = Field(..., description="Required for recurring cash donations")
     description: Optional[str] = None
-    recurring_frequency: str  # "monthly", "quarterly", "yearly"
+
     next_donation_date: Optional[datetime] = None
-    recurring_end_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_active: Optional[bool] = True
+
     payment_method: Optional[str] = None
 
-    @field_validator("donation_type")
-    def must_be_recurring(cls, v):
-        if v != DonationType.RECURRING:
-            raise ValueError("donation_type must be RECURRING for this schema.")
+    @field_validator("frequency")
+    def frequency_cannot_be_one_time(cls, v):
+        if v == DonationFrequency.ONE_TIME:
+            raise ValueError("Recurring donations must use MONTHLY/QUARTERLY/YEARLY.")
         return v
-    
+
+    @field_validator("amount")
+    def amount_required_positive(cls, v):
+        if v is None or v <= 0:
+            raise ValueError("amount must be a positive number for recurring cash donations.")
+        return v
+
+
 class InKindDonationCreate(BaseModel):
+    """
+    IN-KIND donation (one-time by default).
+    """
     donor_id: int
-    proposal_id: int
-    donation_type: DonationType
+    proposal_id: Optional[int] = None
+    frequency: DonationFrequency = DonationFrequency.ONE_TIME
+    kind: DonationKind = DonationKind.INKIND
+
     description: Optional[str] = None
     item_description: str
-    estimated_value: Optional[float] = None
+    estimated_value: Optional[Decimal] = None
+    quantity: Optional[str] = None  # e.g., "10 boxes", "5 pcs"
+
+    # Note: amount is not used for in-kind; estimated_value is optional.
+
+
+# ==== Response / Read Schemas ====
+
+class DonationRecordBase(BaseModel):
+    id: int = Field(alias="donationRecordId")
+    donor_id: int
+    proposal_id: Optional[int] = None
+
+    frequency: DonationFrequency
+    kind: DonationKind
+
+    amount: Optional[Decimal] = None
+    description: Optional[str] = None
+    status: DonationStatus
+
+    donation_date: datetime
+
+    # In-kind fields
+    item_description: Optional[str] = None
+    estimated_value: Optional[Decimal] = None
     quantity: Optional[str] = None
 
-class DonationResponse(BaseModel):
-    donationRecordId: int
-    donor_id: int
-    donation_type: DonationType
-    amount: Optional[float]
-    status: DonationStatus
-    donation_date: datetime
+    # Recurring fields
+    next_donation_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+    payment_method: Optional[str] = None
 
     class Config:
         from_attributes = True
+        populate_by_name = True
+
+
+# Backward-compatible minimal response if you want to keep the old name
+class DonationResponse(DonationRecordBase):
+    pass

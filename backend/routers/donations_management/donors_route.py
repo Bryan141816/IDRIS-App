@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from typing import Optional, List
 from database import get_db  # Adjust import path
-from models import Donors, User
+from models import Donor, User
 from schemas import Number
 from routers.role_checker import RoleChecker
 

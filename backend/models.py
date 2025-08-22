@@ -13,7 +13,7 @@ from sqlalchemy import (
     Numeric,
     Date,
     Float,
-    Identity, 
+    Identity,
 )
 from sqlalchemy import event
 from sqlalchemy.orm import relationship, Session
@@ -23,11 +23,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.hybrid import hybrid_property
 from database import Base
 import enum, random
-          
+
+
 class User(Base):
     __tablename__ = "users"
     __random_pk_field__ = "user_id"
-    
+
     id = Column(Integer, index=True, server_default=Identity())
     user_id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True)
@@ -39,14 +40,18 @@ class User(Base):
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")
     user_profile = relationship("UserProfile", back_populates="user")
-    
+    procurement_request = relationship(
+        "Procurement_Request", back_populates="requester"
+    )
+
+
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     user_profile_id = Column(Integer, primary_key=True)
-    
+
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     profile_image = Column(String(255), nullable=True)  # URL or path
@@ -55,17 +60,20 @@ class UserProfile(Base):
     gender = Column(String(10), nullable=True)  # e.g., "Male", "Female", "Other"
     address = Column(String(255), nullable=True)
     bio = Column(String(500), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True) # Foreign key to User
+    user_id = Column(
+        Integer, ForeignKey("users.user_id"), nullable=False, unique=True
+    )  # Foreign key to User
 
     # Relationship
-    user = relationship("User", back_populates="user_profile")  
-      
+    user = relationship("User", back_populates="user_profile")
+
+
 # LGU Profiling
 class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
     __random_pk_field__ = "infastructure_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     infastructure_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
@@ -77,7 +85,7 @@ class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     __random_pk_field__ = "evacuation_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     evacuation_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
@@ -89,7 +97,7 @@ class ResponseReport(Base):
     __tablename__ = "response_reports"
     __random_pk_field__ = "response_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     response_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -102,7 +110,7 @@ class DemandAndResponse(Base):
     __tablename__ = "demand_and_response"
     __random_pk_field__ = "demand_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     demand_id = Column(Integer, primary_key=True)
     title_label = Column(String(255), nullable=False)
     address = Column(String(255), nullable=False)
@@ -124,7 +132,7 @@ class ModalityDistribution(Base):
     __random_pk_field__ = "modality_id"
 
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     modality_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -137,7 +145,7 @@ class InKindMonitoring(Base):
     __random_pk_field__ = "in_kind_monitoring_id"
 
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     in_kind_monitoring_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -150,7 +158,7 @@ class ResponseReportBudget(Base):
     __tablename__ = "response_report_budget"
     __random_pk_field__ = "response_budget_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     response_budget_id = Column(Integer, primary_key=True)
     date_time = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -167,7 +175,7 @@ class FundingProposal(Base):
     __tablename__ = "funding_proposals"
     __random_pk_field__ = "funding_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     funding_id = Column(Integer, primary_key=True)
     title = Column(String(255), nullable=False)
     description = Column(String, nullable=False)
@@ -191,16 +199,16 @@ class Donor(Base):
     __tablename__ = "donors"
     __random_pk_field__ = "donor_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     donor_id = Column(Integer, primary_key=True)
-    
+
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
 
     donor_type = Column(String(20), nullable=False)
     organization_name = Column(
         String(255), nullable=True
     )  # Nullable for individual donors
-    
+
     is_verified = Column(Boolean, nullable=False, default=False)
 
     date_joined = Column(
@@ -223,16 +231,16 @@ class Donor(Base):
         elif self.user:
             return self.user.username
         return "Unknown Donor"
-    
+
 
 class TransparencyReport(Base):
-    __tablename__ = 'transparency_report'
+    __tablename__ = "transparency_report"
     __random_pk_field__ = "transparency_report_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     transparency_report_id = Column(Integer, primary_key=True)
-    
-    file = Column(String, nullable = False)
+
+    file = Column(String, nullable=False)
     file_name = Column(String(50), nullable=False)
     date_issued = Column(DateTime(timezone=True), nullable=False)
 
@@ -253,6 +261,7 @@ class DonationFrequency(enum.Enum):
     QUARTERLY = "QUARTERLY"
     YEARLY = "YEARLY"
 
+
 class DonationStatus(enum.Enum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
@@ -264,13 +273,19 @@ class Donation(Base):
     __tablename__ = "donation_records"
     __random_pk_field__ = "donation_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
-    # Core attributes 
+
+    # Core attributes
     donation_id = Column(Integer, primary_key=True)
     donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
-    frequency = Column(SqlEnum(DonationFrequency, name="donation_frequency"), nullable=False, server_default=DonationFrequency.ONE_TIME.value)  
+    frequency = Column(
+        SqlEnum(DonationFrequency, name="donation_frequency"),
+        nullable=False,
+        server_default=DonationFrequency.ONE_TIME.value,
+    )
     status = Column(
-        SqlEnum(DonationStatus, name="donation_status"), nullable=False, server_default=DonationStatus.PENDING.value
+        SqlEnum(DonationStatus, name="donation_status"),
+        nullable=False,
+        server_default=DonationStatus.PENDING.value,
     )
     # Additional fields
     proposal_id = Column(
@@ -291,71 +306,75 @@ class Donation(Base):
     # Fixed relationships
     donor = relationship("Donor", back_populates="donations")
     proposal = relationship("FundingProposal", back_populates="donations")
-    
-    
+
     cash = relationship(
         "Donation_Cash",
         back_populates="donation",
         uselist=False,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
     inkind = relationship(
         "Donation_InKind",
         back_populates="donation",
         uselist=False,
-        cascade="all, delete-orphan"
-    ) 
-     
+        cascade="all, delete-orphan",
+    )
+
+
 class Donation_Cash(Base):
     __tablename__ = "donation_cash"
     __random_pk_field__ = "cash_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     cash_id = Column(Integer, primary_key=True)
-    amount = Column(Numeric(10, 2), nullable=True) 
+    amount = Column(Numeric(10, 2), nullable=True)
     payment_method = Column(String(50), nullable=True)
 
     donation_id = Column(
         Integer,
         ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
         nullable=False,
-        unique=True
+        unique=True,
     )
 
-    donation = relationship("Donation", back_populates = "cash")
-    
+    donation = relationship("Donation", back_populates="cash")
+
+
 class Donation_InKind(Base):
     __tablename__ = "donation_inkind"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     inkind_id = Column(Integer, primary_key=True)
     description = Column(String(255), nullable=True)
     # In-kind donation fields
     item_description = Column(
         String, nullable=True
     )  # Description of donated items/services
-    
+
     estimated_value = Column(
         Numeric(10, 2), nullable=True
     )  # Estimated monetary value of in-kind donation
-    
+
     donation_id = Column(
         Integer,
         ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
         nullable=False,
-        unique=True
+        unique=True,
     )
-    
+
     quantity = Column(String(50), nullable=True)  # Quantity/units of donated items
-    donation = relationship("Donation", back_populates = "inkind")
+    donation = relationship("Donation", back_populates="inkind")
 
 
 # ------------------ VOLUNTEER MANAGEMENT MODELS
+
+
+# Please ko update ani mo base na sa profile para di mag balik2
 class IndividualVolunteer(Base):
     __tablename__ = "individual_volunteer"
     __random_pk_field__ = "volunteer_id"
     id = Column(Integer, index=True, server_default=Identity())
-    
+
     volunteer_id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
@@ -372,3 +391,36 @@ class IndividualVolunteer(Base):
     medical_conditions = Column(String(255), nullable=True)
     other_medical_conditions = Column(String(255), nullable=True)
     certification = Column(String(255), nullable=True)
+
+
+# Procurement Request
+
+
+class ProcurementRequest(Base):
+    __tablename__ = "procurement_request"
+    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    requester_id = Column(Integer, ForeignKey("users.user_id"))
+
+    requester = relationship("Users", back_populates="procurement_request")
+    title = Column(String(255), nullable=False)
+    department = Column(String(255), nullable=False)
+    priority = Column(String(50), nullable=False)
+    status = Column(String(50), nullable=False)
+    description = Column(String(255), nullable=False)
+    date = Column(Date, nullable=False)
+    comment = Column(String(255), nullable=True)
+
+    request_item = relationship("ProcurementRequestItem", back_populates="request")
+
+
+class ProcurementRequestItem(Base):
+    __tablename__ = "procurement_request_item"
+    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+
+    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
+    item_name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    price_p_each = Column(Float, nullable=False)
+    request = relationship(
+        "ProcurementRequest", back_populates="procurement_request_item"
+    )

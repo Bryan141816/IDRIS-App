@@ -92,6 +92,28 @@ class EvacuationCenter(Base):
     lng = Column(Float, nullable=False)
     capacity = Column(Integer, nullable=False)
 
+class LGURecords(Base):
+    __tablename__ = "lgu_records"
+    id = Column(Integer, index=True, primary_key=True, server_default=Identity())
+    name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    classification = Column(String(255), nullable=False)
+    population = Column(Integer, nullable=False)
+    contact_info = Column(String(255), nullable=False)
+    risk_level = Column(String(50), nullable=False)
+
+class BaranggayRecords(Base):
+    __tablename__ = "baranggay_records"
+    id = Column(Integer, index=True, primary_key=True, server_default=Identity())
+    name = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    LGU = Column(String(255), nullable=False)
+    population = Column(Integer, nullable=False)
+    contact_info = Column(String(255), nullable=False)
+    risk_level = Column(String(50), nullable=False)
+
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"

@@ -53,6 +53,43 @@ class Token(BaseModel):
     access_token: str
 
 
+class LGURecordsCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+class LGURecordsOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+
+class BaranggayRecordsCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    LGU: str
+    population: int
+    contact_info: str
+    risk_level: str
+
+class BaranggayRecordsOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    LGU: str
+    population: int
+    contact_info: str
+    risk_level: str
+
 class RafiInfrastructureCreate(BaseModel):
     name: str
     lat: float

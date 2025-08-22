@@ -16,6 +16,7 @@ import {
   ViewRafiModalModal,
   EditRafiModal,
 } from "./Modals/RAFIInfrastructure";
+import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 //API Handler
 export async function getRecord(record_type: string): Promise<any> {
@@ -133,39 +134,39 @@ const MapOfCebu = () => {
   }
 
   const [addModalState, setAddModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
     evacuation: false,
   });
   const [viewModalState, setViewModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
     evacuation: false,
   });
   const [editModalState, setEditModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
@@ -173,6 +174,7 @@ const MapOfCebu = () => {
   });
 
   const openAddModal = () => {
+
     setAddModalState((prev) => ({
       ...prev,
       [activeTab]: true,
@@ -255,6 +257,22 @@ const MapOfCebu = () => {
       message: "Record has been updated",
     }));
     switch (activeTab) {
+      case "lgu":
+        setSelectedViewData((prev: any) => {
+          const newData = [...prev.data];
+          newData[1].text = payload.name;
+          newData[2].text = payload.lat;
+          newData[3].text = payload.lng;
+          newData[4].text = payload.classification;
+          newData[5].text = payload.population;
+          newData[6].text = payload.contact_info;
+          newData[7].text = payload.risk_level;
+          return {
+            ...prev,
+            data: newData,
+          };
+        });
+        break;
       case "evacuation":
         setSelectedViewData((prev: any) => {
           const newData = [...prev.data];
@@ -284,6 +302,7 @@ const MapOfCebu = () => {
     }
     closeEditModal();
     openViewModal();
+    handleRefreshTable();
   };
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -320,6 +339,32 @@ const MapOfCebu = () => {
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
       ></AddRafiModal>
+      <AddLGUModal
+       isModalOpen={addModalState.lgu}
+       closeModal={closeAddModal}
+       setMessageBox={setMessageBox}
+       handleAddRecord={handleAddRecord}
+      ></AddLGUModal>
+      {selectedViewData &&(
+        <ViewLGUModal
+          isModalOpen={viewModalState.lgu}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        ></ViewLGUModal>
+      )}
+      {selectedViewData && (
+        <EditLGUModal
+          isModalOpen={editModalState.lgu}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        ></EditLGUModal>
+      )}
+
       {selectedViewData && (
         <ViewEvecuationModal
           isModalOpen={viewModalState.evacuation}
@@ -339,6 +384,7 @@ const MapOfCebu = () => {
           handleEditRecord={handleEditRecord}
         ></EditEvacuationModal>
       )}
+
       {selectedViewData && (
         <ViewRafiModalModal
           isModalOpen={viewModalState.rafi}
@@ -399,13 +445,16 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report"></input>
                 <button>Search</button>
-                <button>+ Add LGU</button>
+                <button onClick={openAddModal}>+ Add LGU</button>
               </div>
             </div>
             {lguResponse ? (
               <TableView
                 tableJSON={lguResponse}
-                onClickCallback={(row: any) => {}}
+                onClickCallback={(row: any) => {
+                  setSelectedViewData(row);
+                  openViewModal();
+                }}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}

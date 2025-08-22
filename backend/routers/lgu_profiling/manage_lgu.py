@@ -9,10 +9,12 @@ from schemas import (
     EvacuationCenterCreate,
     RafiInfrastructureCreate,
     RafiInfrastructureOut,
+    LGURecordsCreate,
+    LGURecordsOut
 )
 from database import get_db
 from crud import delete, create_evacuation_center
-from models import EvacuationCenter, RAFIInfrastructure
+from models import EvacuationCenter, RAFIInfrastructure, LGURecords
 from routers.role_checker import RoleChecker
 import math
 
@@ -28,6 +30,9 @@ def getDefaultPage(page):
 
 @router.get("/lgu_profiling/manage_lgu/get_lgu", response_model=TableResponse)
 def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
+    
+    page = getDefaultPage(page)
+    offset = (page - 1 )*10
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
         {"text": "Lat", "width": "150px"},
@@ -38,9 +43,90 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="des
         {"text": "Risk Level", "width": "150px"},
         {"text": "Action", "width": "150px"},
     ]
+    order = (
+        LGURecords.name.desc() if Name =="desc" else LGURecords.name.asc()
+    )
+    records = db.query(LGURecords).order_by(order).limit(100).offset(offset).all()
     table_datas = []
+    pageCount = page
+    pages = {"page": pageCount, "row":[]}
+    for record in records:
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)
+            pageCount += 1
+            pages = {"page": pageCount, "row":[]}
+        row_data = [
+            Cell(
+                type="Hidden",
+                text=str(record.id),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
+            Cell(
+                type="Text",
+                text=record.name,
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.lat),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.lng),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.classification),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.population),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.contact_info),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=str(record.risk_level),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Button",
+                text="View",
+                font_weight=500,
+                color="#fff",
+                background_color="#749AB6",
+                container_width="150px",
+                button_width="120px",
+            ),     
+        ]
+        pages["row"].append({"data": row_data})
+    if pages["row"]:
+        table_datas.append(pages)
 
-    count = 0
+    count = db.query(LGURecords).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
@@ -247,7 +333,58 @@ def get_evacuation(
     count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
+@router.post(
+    "/lgu_profiling/manage_lgu/add_lgu", response_model=LGURecordsOut
+)
+def add_lgu(record: LGURecordsCreate, db: Session = Depends(get_db)):
+    db_record = LGURecords(
+        name = record.name, 
+        lat = record.lat, 
+        lng = record.lng, 
+        classification = record.classification, 
+        population = record.population,
+        contact_info = record.contact_info, 
+        risk_level= record.risk_level
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+@router.delete(
+    "/lgu_profiling/manage_lgu/delete_lgu/{record_id}", response_model=dict
+)
+def delete_lgu(record_id: int, db: Session = Depends(get_db)):
+    deleted_report = delete(db, LGURecords, record_id)
+    if not deleted_report:
+        raise HTTPException(status_code=400, detail="Record not found.")
+    return {"message": f"Record with ID {record_id} deleted successfully."}
+@router.put("/lgu_profiling/manage_lgu/update_lgu/{record_id}")
+def update_lgu(
+    record_id: int, payload: LGURecordsCreate, db: Session = Depends(get_db)
+):
+    record = db.query(LGURecords).get(record_id)
 
+    if not record:
+        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if payload.name is not None:
+        record.name = payload.name
+    if payload.lat is not None:
+        record.lat = payload.lat
+    if payload.lng is not None:
+        record.lng = payload.lng
+    if payload.classification is not None:
+        record.classification = payload.classification
+    if payload.population is not None:
+        record.population = payload.population
+    if payload.contact_info is not None:
+        record.contact_info = payload.contact_info
+    if payload.risk_level is not None:
+        record.risk_level = payload.risk_level
+
+    db.commit()
+    db.refresh(record)
+
+    return {"detail": "Record updated succesfully", "record": record}
 @router.post(
     "/lgu_profiling/manage_lgu/add_evacuation", response_model=EvacuationCenterOut
 )

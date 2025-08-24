@@ -16,6 +16,7 @@ import {
   ViewRafiModalModal,
   EditRafiModal,
 } from "./Modals/RAFIInfrastructure";
+import { AddBarangayModal } from "./Modals/BarangayModal";
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 //API Handler
@@ -174,7 +175,6 @@ const MapOfCebu = () => {
   });
 
   const openAddModal = () => {
-
     setAddModalState((prev) => ({
       ...prev,
       [activeTab]: true,
@@ -340,12 +340,18 @@ const MapOfCebu = () => {
         handleAddRecord={handleAddRecord}
       ></AddRafiModal>
       <AddLGUModal
-       isModalOpen={addModalState.lgu}
-       closeModal={closeAddModal}
-       setMessageBox={setMessageBox}
-       handleAddRecord={handleAddRecord}
+        isModalOpen={addModalState.lgu}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddRecord={handleAddRecord}
       ></AddLGUModal>
-      {selectedViewData &&(
+      <AddBarangayModal
+        isModalOpen={addModalState.barangay}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddRecord={handleAddRecord}
+      ></AddBarangayModal>
+      {selectedViewData && (
         <ViewLGUModal
           isModalOpen={viewModalState.lgu}
           closeModal={closeViewModal}
@@ -470,7 +476,7 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report"></input>
                 <button>Search</button>
-                <button>+ Add Barangay</button>
+                <button onClick={openAddModal}>+ Add Barangay</button>
               </div>
             </div>
             {barangayResponse ? (

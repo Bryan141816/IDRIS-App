@@ -40,9 +40,7 @@ class User(Base):
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")
     user_profile = relationship("UserProfile", back_populates="user")
-    procurement_request = relationship(
-        "Procurement_Request", back_populates="requester"
-    )
+    procurement_request = relationship("ProcurementRequest", back_populates="requester")
 
 
 class UserProfile(Base):
@@ -92,6 +90,7 @@ class EvacuationCenter(Base):
     lng = Column(Float, nullable=False)
     capacity = Column(Integer, nullable=False)
 
+
 class LGURecords(Base):
     __tablename__ = "lgu_records"
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
@@ -103,16 +102,26 @@ class LGURecords(Base):
     contact_info = Column(String(255), nullable=False)
     risk_level = Column(String(50), nullable=False)
 
+    # relationship to Barangay
+    baranggays = relationship("BaranggayRecords", back_populates="lgu")
+
+
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
-    LGU = Column(String(255), nullable=False)
+
+    # foreign key to LGU
+    lgu_id = Column(Integer, ForeignKey("lgu_records.id"), nullable=False)
+
     population = Column(Integer, nullable=False)
     contact_info = Column(String(255), nullable=False)
     risk_level = Column(String(50), nullable=False)
+
+    # relationship back to LGU
+    lgu = relationship("LGURecords", back_populates="baranggays")
 
 
 class ResponseReport(Base):
@@ -423,7 +432,8 @@ class ProcurementRequest(Base):
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
     requester_id = Column(Integer, ForeignKey("users.user_id"))
 
-    requester = relationship("Users", back_populates="procurement_request")
+    requester = relationship("User", back_populates="procurement_request")
+
     title = Column(String(255), nullable=False)
     department = Column(String(255), nullable=False)
     priority = Column(String(50), nullable=False)
@@ -432,7 +442,8 @@ class ProcurementRequest(Base):
     date = Column(Date, nullable=False)
     comment = Column(String(255), nullable=True)
 
-    request_item = relationship("ProcurementRequestItem", back_populates="request")
+    # ✅ should be plural (list of items)
+    request_items = relationship("ProcurementRequestItem", back_populates="request")
 
 
 class ProcurementRequestItem(Base):
@@ -443,6 +454,6 @@ class ProcurementRequestItem(Base):
     item_name = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
     price_p_each = Column(Float, nullable=False)
-    request = relationship(
-        "ProcurementRequest", back_populates="procurement_request_item"
-    )
+
+    # ✅ belongs to ONE request
+    request = relationship("ProcurementRequest", back_populates="request_items")

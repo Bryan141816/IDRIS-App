@@ -10,11 +10,12 @@ import {
   faPen,
 } from "@fortawesome/free-solid-svg-icons";
 import { MapWithPin } from "../ModalProps";
+import { API } from "../../../../API_Handler/Axio_API_Handler";
 
 type FuzzySeachElementProps = {
   value: string;
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  setLGUID: (
+    id: string
   ) => void;
   name: string;
   searchURL: string;
@@ -22,10 +23,60 @@ type FuzzySeachElementProps = {
 
 const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   value,
-  onChange,
+  setLGUID,
   name,
   searchURL,
 }) => {
+  type LGURecord = {
+  id: number | string;
+  name: string;
+  lat?: number;
+  lng?: number;
+  contact_info?: string;
+  // ...more fields if you have them
+};
+  const [inputVal, setInputVal] = useState("")
+  const [results, setResults] = useState<LGURecord[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  async function searchLGU(
+  q: string
+): Promise<any | false> {
+  try {
+    const response = await API.get(
+      `${searchURL}?q=${q}`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to add record:", error);
+    return false;
+  }
+}
+function normalizeToArray<T>(data: T | T[] | null | undefined | false): T[] {
+  if (!data) return [];
+  return Array.isArray(data) ? data : [data];
+}
+useEffect(()=>{
+  if(value.length <=1){
+    setIsSearching(false)
+  }
+},[value])
+const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const q = e.target.value;
+  setInputVal(q);
+  // optional: ignore very short queries
+  if (!q.trim()) {
+    setResults([]);
+    return;
+  }
+
+  if(q.length > 0){
+    setIsSearching(true);
+  }
+
+
+  const data = await searchLGU(q);     // <-- your async call
+  setResults(normalizeToArray<LGURecord>(data));
+};
   return (
     <div
       style={{
@@ -37,24 +88,44 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
       }}
     >
       <input
-        value={value}
-        name={name}
+        value={inputVal}
         onChange={(e) => {
-          onChange(e);
+          handleSearch(e)
         }}
       />
-      <div
-        style={{
-          display: "flex",
-          border: "1px solid black",
-          width: "100%",
-          height: "200px",
-          position: "absolute",
-          top: "100%",
-          borderRadius: "5px",
-          backgroundColor: "white",
-        }}
-      ></div>
+      {
+        isSearching &&
+        (
+
+        <div
+          style={{
+            display: "flex",
+            border: "1px solid black",
+            justifyContent: "start",
+            alignItems: "start",
+            width: "100%",
+            height: "fit-content",
+            maxHeight: "200px",
+            position: "absolute",
+            top: "100%",
+            borderRadius: "5px",
+            backgroundColor: "white",
+          }}
+        >
+          {results.length >0 ? (
+            results.map((val, i)=>(
+              <button style={{padding: "5px"}}
+              onClick={()=>{
+                setLGUID(String(val.id))
+              }}
+              >{val.name}</button>
+            ))
+          ):(
+            <div>No results found...</div>
+          )}
+        </div>
+        )
+      }
     </div>
   );
 };
@@ -118,6 +189,15 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
       [name]: value,
     }));
   };
+  const handleSearchChange = (
+    id: string
+  )=>{
+
+      setAddEvacuationForm((prevData) => ({
+      ...prevData,
+      lgu: id.toString,
+    }));
+  }
   return (
     <>
       {locationPickerIsOpen && (
@@ -187,8 +267,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
             <FuzzySeachElement
               value={addEvacuationForm.LGU}
               name="LGU"
-              onChange={handleAddModalChange}
-              searchURL="/search_lgu"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_lgu"
             ></FuzzySeachElement>
           </div>
           <div className="horizontal-container">

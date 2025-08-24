@@ -3,6 +3,7 @@ from crud import delete, update
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import select, func
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     EvacuationCenterOut,
@@ -20,7 +21,7 @@ import math
 
 router = APIRouter(
     tags=["manage_lgu"],
-    dependencies=[Depends(RoleChecker(["operations admin"]))],
+    #dependencies=[Depends(RoleChecker(["operations admin"]))],
 )
 
 
@@ -385,6 +386,18 @@ def update_lgu(
     db.refresh(record)
 
     return {"detail": "Record updated succesfully", "record": record}
+
+@router.get("/lgu_profiling/manage_lgu/search_lgu")
+def search_lgu(q: str, db: Session = Depends(get_db)):
+    sim = func.similarity(LGURecords.name, q).label("rank")
+    stmt= (
+        select(LGURecords)
+        .where(sim > 0.2)
+        .order_by(sim.desc())
+    )
+    results = db.execute(stmt).scalars().all()
+    return results
+
 @router.post(
     "/lgu_profiling/manage_lgu/add_evacuation", response_model=EvacuationCenterOut
 )

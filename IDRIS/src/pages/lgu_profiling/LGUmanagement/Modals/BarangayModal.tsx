@@ -1,5 +1,5 @@
 import { BaseModalProps } from "../ModalProps";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,10 +13,8 @@ import { MapWithPin } from "../ModalProps";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
 type FuzzySeachElementProps = {
-  value: string;
-  setLGUID: (
-    id: string
-  ) => void;
+  value: string | null;
+  setLGUID: (id: string, name: string) => void;
   name: string;
   searchURL: string;
 };
@@ -28,57 +26,95 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   searchURL,
 }) => {
   type LGURecord = {
-  id: number | string;
-  name: string;
-  lat?: number;
-  lng?: number;
-  contact_info?: string;
-  // ...more fields if you have them
-};
-  const [inputVal, setInputVal] = useState("")
+    id: number | string;
+    name: string;
+    lat?: number;
+    lng?: number;
+    contact_info?: string;
+    // ...more fields if you have them
+  };
+  const [inputVal, setInputVal] = useState("");
   const [results, setResults] = useState<LGURecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      console.log(wrapperRef.current);
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
+        setIsSearching(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" || event.key === "Escape") {
+        setIsSearching(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   async function searchLGU(
-  q: string
-): Promise<any | false> {
-  try {
-    const response = await API.get(
-      `${searchURL}?q=${q}`,
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Failed to add record:", error);
-    return false;
+    q: string,
+    sim_threshold: number = 0.2,
+  ): Promise<any | false> {
+    try {
+      const response = await API.get(
+        `${searchURL}?q=${q}&sim_threshold=${sim_threshold}`,
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to add record:", error);
+      return false;
+    }
   }
-}
-function normalizeToArray<T>(data: T | T[] | null | undefined | false): T[] {
-  if (!data) return [];
-  return Array.isArray(data) ? data : [data];
-}
-useEffect(()=>{
-  if(value.length <=1){
-    setIsSearching(false)
+  function normalizeToArray<T>(data: T | T[] | null | undefined | false): T[] {
+    if (!data) return [];
+    return Array.isArray(data) ? data : [data];
   }
-},[value])
-const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const q = e.target.value;
-  setInputVal(q);
-  // optional: ignore very short queries
-  if (!q.trim()) {
-    setResults([]);
-    return;
-  }
+  useEffect(() => {
+    if (inputVal.length <= 0) {
+      setIsSearching(false);
+    }
+    setLGUID(inputVal, name);
+  }, [inputVal]);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value;
+    setInputVal(q);
 
-  if(q.length > 0){
-    setIsSearching(true);
-  }
+    // Clear any existing timeout if the user keeps typing
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
 
+    // Debounce: wait 500ms (you can adjust) before running search
+    debounceRef.current = setTimeout(async () => {
+      if (!q.trim()) {
+        setResults([]);
+        setIsSearching(false);
+        return;
+      }
 
-  const data = await searchLGU(q);     // <-- your async call
-  setResults(normalizeToArray<LGURecord>(data));
-};
+      setIsSearching(true);
+
+      const data = await searchLGU(q); // your async call
+      setResults(normalizeToArray<LGURecord>(data));
+    }, 500);
+  };
   return (
     <div
+      ref={wrapperRef}
       style={{
         display: "flex",
         width: "100%",
@@ -90,13 +126,15 @@ const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
       <input
         value={inputVal}
         onChange={(e) => {
-          handleSearch(e)
+          handleSearch(e);
+        }}
+        onFocus={() => {
+          if (inputVal.length > 0) {
+            setIsSearching(true);
+          }
         }}
       />
-      {
-        isSearching &&
-        (
-
+      {isSearching && (
         <div
           style={{
             display: "flex",
@@ -112,20 +150,29 @@ const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
             backgroundColor: "white",
           }}
         >
-          {results.length >0 ? (
-            results.map((val, i)=>(
-              <button style={{padding: "5px"}}
-              onClick={()=>{
-                setLGUID(String(val.id))
-              }}
-              >{val.name}</button>
+          {results.length > 0 ? (
+            results.map((val, i) => (
+              <button
+                style={{
+                  padding: "5px",
+                  width: "100%",
+                  zIndex: "10000",
+                  textAlign: "start",
+                }}
+                onClick={() => {
+                  setLGUID(String(val.name), name);
+                  setInputVal(String(val.name));
+                  setIsSearching(false);
+                }}
+              >
+                {val.name}
+              </button>
             ))
-          ):(
+          ) : (
             <div>No results found...</div>
           )}
         </div>
-        )
-      }
+      )}
     </div>
   );
 };
@@ -152,7 +199,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     name: string;
     lat: number;
     lng: number;
-    LGU: string;
+    LGU: string | null;
+    evacuation: string | null;
     population: number;
     contact_info: string;
     risk_level: string;
@@ -161,7 +209,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     name: "",
     lat: 0,
     lng: 0,
-    LGU: "",
+    LGU: null,
+    evacuation: null,
     population: 0,
     contact_info: "",
     risk_level: "",
@@ -189,15 +238,13 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
       [name]: value,
     }));
   };
-  const handleSearchChange = (
-    id: string
-  )=>{
-
-      setAddEvacuationForm((prevData) => ({
+  const handleSearchChange = (id: string, name: string) => {
+    console.log(id);
+    setAddEvacuationForm((prevData) => ({
       ...prevData,
-      lgu: id.toString,
+      [name]: id.toString(),
     }));
-  }
+  };
   return (
     <>
       {locationPickerIsOpen && (
@@ -269,6 +316,15 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
               name="LGU"
               setLGUID={handleSearchChange}
               searchURL="/lgu_profiling/manage_lgu/search_lgu"
+            ></FuzzySeachElement>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Evacuation Center:</span>
+            <FuzzySeachElement
+              value={addEvacuationForm.evacuation}
+              name="evacuation"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_evacuation"
             ></FuzzySeachElement>
           </div>
           <div className="horizontal-container">

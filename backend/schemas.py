@@ -3,11 +3,18 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 
+class ErrorResponse(BaseModel):
+    success: bool
+    error: str
+
+
 class Number(BaseModel):
     count: int
 
+
 class ID(BaseModel):
     id: int
+
 
 class LoginSchema(BaseModel):
     email: str
@@ -61,6 +68,8 @@ class LGURecordsCreate(BaseModel):
     population: int
     contact_info: str
     risk_level: str
+
+
 class LGURecordsOut(BaseModel):
     id: int
     name: str
@@ -71,24 +80,29 @@ class LGURecordsOut(BaseModel):
     contact_info: str
     risk_level: str
 
+
 class BaranggayRecordsCreate(BaseModel):
     name: str
     lat: float
     lng: float
     LGU: str
+    evacuation: str
     population: int
     contact_info: str
     risk_level: str
+
 
 class BaranggayRecordsOut(BaseModel):
     id: int
     name: str
     lat: float
     lng: float
-    LGU: str
+    lgu_id: int
+    evacucation_center_id: int
     population: int
     contact_info: str
     risk_level: str
+
 
 class RafiInfrastructureCreate(BaseModel):
     name: str

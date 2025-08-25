@@ -30,19 +30,35 @@ export async function getRecord(record_type: string): Promise<any> {
 export async function addRecord(
   record_type: string,
   payload: any,
-): Promise<any | false> {
+): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.post(
       `/lgu_profiling/manage_lgu/add_${record_type}`,
       payload,
     );
+
+    // If backend returns an ErrorResponse (success = false), catch it here
+    if (response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.error || "Unknown error from server",
+      };
+    }
+
+    // Otherwise, return the created record
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to add record:", error);
-    return false;
+
+    const message =
+      error.response?.data?.error || // new error format
+      error.response?.data?.detail || // if FastAPI still raises HTTPException
+      error.message ||
+      "Unknown error occurred";
+
+    return { success: false, error: message };
   }
 }
-
 export async function deleteRecord(
   record_type: string,
   reportId: String,
@@ -230,7 +246,8 @@ const MapOfCebu = () => {
   }, [activeTab]);
   const handleAddRecord = async (payload: any) => {
     const response = await addRecord(activeTab, payload);
-    if (response) {
+    console.log(response);
+    if (!response.error) {
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
         isOpen: true, // your new values
@@ -244,7 +261,7 @@ const MapOfCebu = () => {
         ...prev, // preserves onClose and anything else
         isOpen: true, // your new values
         type: "message",
-        message: "Record failed",
+        message: response.error,
       }));
     }
   };

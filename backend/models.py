@@ -90,6 +90,8 @@ class EvacuationCenter(Base):
     lng = Column(Float, nullable=False)
     capacity = Column(Integer, nullable=False)
 
+    barangay = relationship("BaranggayRecords", back_populates="evacucation_center")
+
 
 class LGURecords(Base):
     __tablename__ = "lgu_records"
@@ -115,6 +117,9 @@ class BaranggayRecords(Base):
 
     # foreign key to LGU
     lgu_id = Column(Integer, ForeignKey("lgu_records.id"), nullable=False)
+    evacucation_center_id = Column(
+        Integer, ForeignKey("evacuation_center.evacuation_id"), nullable=False
+    )
 
     population = Column(Integer, nullable=False)
     contact_info = Column(String(255), nullable=False)
@@ -122,6 +127,7 @@ class BaranggayRecords(Base):
 
     # relationship back to LGU
     lgu = relationship("LGURecords", back_populates="baranggays")
+    evacucation_center = relationship("EvacuationCenter", back_populates="barangay")
 
 
 class ResponseReport(Base):

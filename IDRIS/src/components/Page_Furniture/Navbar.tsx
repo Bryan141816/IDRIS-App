@@ -182,7 +182,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               Volunteer Dashboard
             </Link>
-            {userRoles.includes("operations admin") ||
+            {/* {userRoles.includes("operations admin") ||
               (userRoles.includes("volunteer") && (
                 <Link
                   to="/volunteer_management/track_volunteer_application"
@@ -194,8 +194,8 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 >
                   Track Volunteer Application
                 </Link>
-              ))}
-            {userRoles.includes("operations admin") && (
+              ))} */}
+            {/* {userRoles.includes("operations admin") && (
               <Link
                 to="/volunteer_management/volunteer_profiles"
                 prefetch-link="/volunteer_management/volunteer_profiles"
@@ -206,8 +206,8 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               >
                 Volunteer Profiles
               </Link>
-            )}
-            {userRoles.includes("volunteer") && (
+            )} */}
+            {/* {userRoles.includes("volunteer") && (
               <Link
                 to="/volunteer_management/volunteer_assignment"
                 prefetch-link="/volunteer_management/volunteer_assignment"
@@ -218,7 +218,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               >
                 Volunteer Assignment
               </Link>
-            )}
+            )} */}
           </div>
         </div>
 

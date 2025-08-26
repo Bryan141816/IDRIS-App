@@ -1,7 +1,8 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, validator
+from models import VolunteerStatus
+from typing import Literal
 # ----------- SHARED SCHEMA -----------
 class OrganizationVolunteerBase(BaseModel):
     user_id: int
@@ -17,31 +18,46 @@ class OrganizationVolunteerBase(BaseModel):
     contact_person_phone_number: Optional[str] = None
     contact_person_email: str
 
-    availability: Optional[str] = None  # keep as string (e.g., "Mon, Tue") to match DB
-    organization_picture: Optional[str] = None  # URL or file path
+    availability: Optional[str] = None
+    organization_picture: Optional[str] = None   # file path or URL
+    organization_certificate: Optional[str] = None  # file path or URL
 
-    # DB column is "organiztion_certificate" (typo). Expose clean alias "organization_certificate".
-    organiztion_certificate: Optional[str] = Field(
-        default=None, alias="organization_certificate"
+    # Defaults to "organization" to mirror your SQLAlchemy default
+    volunteer_type: Optional[str] = "organization"
+    status: Optional[VolunteerStatus] = VolunteerStatus.submitted
+
+    # --- light normalization (strip surrounding spaces) ---
+    @validator(
+        "organization_name",
+        "organization_type",
+        "organization_phone_number",
+        "organization_address",
+        "contact_person_name",
+        "contact_person_position",
+        "contact_person_phone_number",
+        "availability",
+        "organization_picture",
+        "organization_certificate",
+        "volunteer_type",
+        pre=True,
+        always=True,
     )
-
-    class Config:
-        orm_mode = True
-        # allow clients to send either "organization_certificate" (alias) or "organiztion_certificate"
-        allow_population_by_field_name = True
-
+    def _strip_strings(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            return v if v != "" else v  # keep empty if caller intentionally sends ""
+        return v
 
 # ----------- CREATE SCHEMA -----------
 class OrganizationVolunteerCreate(OrganizationVolunteerBase):
-    # same as base; server fills created_at
+    # All required fields are inherited from Base (mirrors DB: nullable=False)
     pass
 
-
-# ----------- UPDATE SCHEMA -----------
+# ----------- UPDATE/PATCH SCHEMA -----------
 class OrganizationVolunteerUpdate(BaseModel):
+    # Everything optional for partial updates
     organization_name: Optional[str] = None
     organization_type: Optional[str] = None
-
     organization_email: Optional[str] = None
     organization_phone_number: Optional[str] = None
     organization_address: Optional[str] = None
@@ -53,16 +69,30 @@ class OrganizationVolunteerUpdate(BaseModel):
 
     availability: Optional[str] = None
     organization_picture: Optional[str] = None
+    organization_certificate: Optional[str] = None
+    volunteer_type: Optional[str] = "organization"
+    status: Optional[VolunteerStatus] = None
 
-    # accept alias from clients; maps to model's "organiztion_certificate"
-    organiztion_certificate: Optional[str] = Field(
-        default=None, alias="organization_certificate"
+    @validator(
+        "organization_name",
+        "organization_type",
+        "organization_phone_number",
+        "organization_address",
+        "contact_person_name",
+        "contact_person_position",
+        "contact_person_phone_number",
+        "availability",
+        "organization_picture",
+        "organization_certificate",
+        "volunteer_type",
+        pre=True,
+        always=True,
     )
-
-    class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-
+    def _strip_strings(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            return v if v != "" else v
+        return v
 
 # ----------- READ SCHEMA -----------
 class OrganizationVolunteerRead(OrganizationVolunteerBase):
@@ -71,4 +101,6 @@ class OrganizationVolunteerRead(OrganizationVolunteerBase):
 
     class Config:
         orm_mode = True
-        allow_population_by_field_name = True
+
+class IndividualVolunteerStatusUpdate(BaseModel):
+    status: Literal['pending','accepted','rejected','submitted']

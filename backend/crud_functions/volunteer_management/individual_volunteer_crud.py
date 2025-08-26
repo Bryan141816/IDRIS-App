@@ -10,6 +10,7 @@ from data_schemas.individual_volunteer_schema import (
 )
 import shutil
 import os
+from models import VolunteerStatus
 
 # Directory for storing uploaded certification files
 UPLOAD_DIR = Path("media/certifications")
@@ -71,7 +72,8 @@ class IndividualVolunteerCRUD:
             medical_conditions=volunteer_data.medical_conditions,
             other_medical_conditions=volunteer_data.other_medical_conditions,
             certification=full_path_str,
-            skills=skills_str,  # <- store as CSV
+            skills=skills_str,
+            status=volunteer_data.status or VolunteerStatus.submitted,
         )
 
         try:
@@ -184,3 +186,8 @@ class IndividualVolunteerCRUD:
     def get_volunteer_by_user_id(db: Session, user_id: int) -> Optional[IndividualVolunteer]:
         """Get volunteer profile by user_id"""
         return db.query(IndividualVolunteer).filter(IndividualVolunteer.user_id == user_id).first()
+
+    @staticmethod
+    def get_status_by_user_id(db: Session, user_id: int) -> Optional[VolunteerStatus]:  # NEW
+        rec = db.query(IndividualVolunteer).filter(IndividualVolunteer.user_id == user_id).first()
+        return rec.status if rec else None

@@ -102,11 +102,6 @@ const ManageVolunteer = () =>
     (module) => ({ Component: module.default }),
   );
 
-const ViewCredentials = () =>
-  import("./pages/volunteer_management/manage_applicant/view_credentials").then(
-    (module) => ({ Component: module.default }),
-  );
-
 // Donations Management
 const DonationsDashboard = () =>
   import(
@@ -281,10 +276,6 @@ export const router = createBrowserRouter([
             lazy: ManageApplicant,
           },
           {
-            path: "view_credentials",
-            lazy: ViewCredentials,
-          },
-          {
             path: "volunteer_profiles",
             lazy: VolunteerProfiles,
           },
@@ -432,7 +423,6 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/volunteer_management/individual_form": IndividualForm,
   "/volunteer_management/volunteer_assignment": VolunteerAssignment,
   "/volunteer_management/manage_applicant": ManageApplicant,
-  "/volunteer_management/view_credentials": ViewCredentials,
   "/volunteer_management/volunteer_profiles": VolunteerProfiles,
   "/volunteer_management/manage_volunteers": ManageVolunteer,
 

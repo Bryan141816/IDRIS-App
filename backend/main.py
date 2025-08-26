@@ -1,17 +1,7 @@
-from fastapi import FastAPI  # , Depends, HTTPException
-
-# from sqlalchemy.orm import Session
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# from data_schemas.report_schema import TableResponse, Cell, TableHead, TableDataRow
-# from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
-from database import Base, engine  # ,  get_db
-
-# from models import ResponseReport  # no Role import
-# from datetime import datetime
-# from sqlalchemy import func
+from database import Base, engine
 from routers.auth import authentication, users
-
 from routers.response_dashboard import (
     in_kind_monitoring,
     response_dashboard,
@@ -29,9 +19,7 @@ from routers.donations_management import (
 from routers.lgu_profiling import manage_lgu
 from fastapi.staticfiles import StaticFiles
 from routers.volunteer_management import individual_volunteer_routes
-from routers.volunteer_management.organization_volunteer_routes import router as org_volunteer_router
-
-
+from routers.volunteer_management import organization_volunteer_routes  # Import the org volunteer routes
 
 Base.metadata.create_all(bind=engine)
 
@@ -64,7 +52,6 @@ app.include_router(
     prefix="/funding_proposals",
     tags=["Funding Proposals"],
 )
-
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 app.include_router(
     transparency_report_route.router,
@@ -72,8 +59,10 @@ app.include_router(
     tags=["Transparency Report"],
 )
 
+# Add the organization volunteer routes here
+app.include_router(organization_volunteer_routes.router, tags=["Organization Volunteer Management"])
+
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
-app.include_router(org_volunteer_router)
 
 app.mount(
     "/media/transparency_reports",
@@ -86,7 +75,6 @@ app.mount(
     StaticFiles(directory="media/fundingproposals"),
     name="fundingproposals",
 )
-
 
 @app.on_event("startup")
 async def on_startup():

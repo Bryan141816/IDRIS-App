@@ -10,6 +10,7 @@ from data_schemas.individual_volunteer_schema import (
     IndividualVolunteerCreate,
     IndividualVolunteerUpdate,
     IndividualVolunteerRead,
+    IndividualVolunteerStatusUpdate,
 )
 from crud_functions.volunteer_management.individual_volunteer_crud import (
     IndividualVolunteerCRUD as CRUD,
@@ -19,7 +20,7 @@ from models import IndividualVolunteer  # optional import; safe to keep
 
 # Role-based routers
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "admin"]))],
 )
 
 router_volunteer = APIRouter(
@@ -58,8 +59,10 @@ def create_individual_volunteer_endpoint(
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW: accept multiple skills fields
     certification_file: Optional[UploadFile] = File(None),
+    status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
+    print(user_id)
     volunteer_data = IndividualVolunteerCreate(
         user_id=user_id,
         first_name=first_name,
@@ -76,6 +79,7 @@ def create_individual_volunteer_endpoint(
         other_medical_conditions=other_medical_conditions,
         certification=None,  # set by CRUD if file uploaded
         skills=skills,       # NEW
+        status=status
     )
     return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
 
@@ -97,6 +101,7 @@ def create_individual_volunteer_for_user_endpoint(
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
+    status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
     volunteer_data = IndividualVolunteerCreate(
@@ -115,6 +120,7 @@ def create_individual_volunteer_for_user_endpoint(
         other_medical_conditions=other_medical_conditions,
         certification=None,
         skills=skills,  # NEW
+        status=status
     )
     return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
 
@@ -171,10 +177,13 @@ def update_my_volunteer_profile_endpoint(
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
+    status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
     # Find the user's volunteer profile
     volunteer = CRUD.get_volunteer_by_user_id(db, user_id)
+    if status:
+        volunteer.status = status
     if not volunteer:
         raise HTTPException(status_code=404, detail="Volunteer profile not found")
 
@@ -192,6 +201,7 @@ def update_my_volunteer_profile_endpoint(
         medical_conditions=medical_conditions,
         other_medical_conditions=other_medical_conditions,
         skills=skills,  # NEW
+        status=status
     )
     return CRUD.update_volunteer(db, volunteer.volunteer_id, update_data, certification_file)  # fixed id attribute
 
@@ -213,6 +223,7 @@ def update_volunteer_endpoint(
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
     certification_file: Optional[UploadFile] = File(None),
+    status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
     update_data = IndividualVolunteerUpdate(
@@ -229,6 +240,7 @@ def update_volunteer_endpoint(
         medical_conditions=medical_conditions,
         other_medical_conditions=other_medical_conditions,
         skills=skills,  # NEW
+        status=status
     )
     return CRUD.update_volunteer(db, volunteer_id, update_data, certification_file)
 
@@ -242,6 +254,23 @@ def delete_volunteer_endpoint(
     if not success:
         raise HTTPException(status_code=404, detail="Volunteer not found")
     return {"message": "Volunteer deleted successfully"}
+
+
+@router_admin.patch("/{volunteer_id}/status", response_model=IndividualVolunteerRead)
+def update_volunteer_status(
+    volunteer_id: int,
+    payload: IndividualVolunteerStatusUpdate,
+    db: Session = Depends(get_db),
+):
+    iv = db.get(IndividualVolunteer, volunteer_id)
+    if not iv:
+        raise HTTPException(status_code=404, detail="Volunteer not found")
+
+    iv.status = payload.status
+    db.commit()
+    db.refresh(iv)
+    return iv
+
 
 # Final router to include in main.py
 router = APIRouter()

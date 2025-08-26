@@ -39,6 +39,8 @@ class User(Base):
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")
     user_profile = relationship("UserProfile", back_populates="user")
+    volunteers = relationship("IndividualVolunteer",back_populates="user")
+    OrganizationVolunteer = relationship("OrganizationVolunteer",back_populates="user")
 
 class UserProfile(Base):
     __tablename__ = "user_profile"
@@ -227,8 +229,6 @@ class Donor(Base):
 
 class TransparencyReport(Base):
     __tablename__ = 'transparency_report'
-
-    transparency_id = Column(Integer, primary_key=True, index=True, autoincrement = True)
     __random_pk_field__ = "transparency_report_id"
     id = Column(Integer, index=True, server_default=Identity())
 
@@ -353,13 +353,22 @@ class Donation_InKind(Base):
 
 
 # ------------------ VOLUNTEER MANAGEMENT MODELS
+class VolunteerStatus(enum.Enum):
+    submitted = "submitted"
+    verifying = "verifying"
+    approved = "approved"
+    rejected = "rejected"
+
 class IndividualVolunteer(Base):
     __tablename__ = "individual_volunteer"
     __random_pk_field__ = "volunteer_id"
     id = Column(Integer, index=True, server_default=Identity())
 
     volunteer_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user = relationship("User", back_populates="volunteers")
+
 
     first_name = Column(String(50), nullable=False)
     middle_name = Column(String(50), nullable=True)
@@ -370,7 +379,7 @@ class IndividualVolunteer(Base):
     birthday = Column(Date, nullable=True)
     gender = Column(String(10), nullable=True)
     age = Column(Integer, nullable=True)
-    availability = Column(String(50), nullable=True)
+    availability = Column(String(255), nullable=True)
     medical_conditions = Column(String(255), nullable=True)
     other_medical_conditions = Column(String(255), nullable=True)
     certification = Column(String(255), nullable=True)
@@ -379,12 +388,16 @@ class IndividualVolunteer(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     volunteer_type = Column(String(50), nullable=False, default="individual")
+    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
 
 class OrganizationVolunteer(Base):
     __tablename__ = "organization_volunteer"
+    __random_pk_field__ = "volunteer_id"
+    id = Column(Integer, index=True, server_default=Identity())
 
     volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user = relationship("User", back_populates="OrganizationVolunteer")
 
     organization_name = Column(String(255), nullable=False)
     organization_type = Column(String(50), nullable=False)
@@ -395,10 +408,11 @@ class OrganizationVolunteer(Base):
     contact_person_position = Column(String(100), nullable=False)
     contact_person_phone_number = Column(String(20), nullable=True)
     contact_person_email = Column(String(100), nullable=False)
-    availability = Column(String(50), nullable=True)
+    availability = Column(String(255), nullable=True)
     organization_picture = Column(String(255), nullable=True)  # URL or path to the picture
     organization_certificate = Column(String(255), nullable=True)  # URL or path to the certificate
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     volunteer_type = Column(String(50), nullable=False, default="organization")
+    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)

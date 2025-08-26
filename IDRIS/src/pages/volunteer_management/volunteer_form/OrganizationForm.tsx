@@ -22,6 +22,7 @@ import './css/OrganizationForm.css';
 
 // ✅ import the API handler
 import { createOrganizationVolunteer } from '../../../API_Handler/organization_volunteer_handler';
+import Swal from 'sweetalert2';
 
 // ---------- Types ----------
 interface OrganizationFormValues {
@@ -140,19 +141,38 @@ const OrganizationForm: React.FC = () => {
                 formData.append('organization_certificate_file', selectedFile);
             }
 
-            // If you also allow passing plain paths/URLs, you could append:
-            // formData.append('organization_picture', 'https://...'); // optional
-            // formData.append('organization_certificate', 'https://...'); // optional
-
+            // Call the API handler
             await createOrganizationVolunteer(formData);
 
+            // Success message and redirect
             message.success('Organization submitted successfully.');
+            showAlert();
             navigate('/volunteer_management/volunteer_dashboard');
         } catch (err: any) {
             console.error(err);
             message.error(err?.response?.data?.detail || 'Submission failed.');
         }
     };
+
+    const showAlert = (): void => {
+            Swal.fire({
+                title: 'You have successfully uploaded your application.',
+                icon: 'success',
+                confirmButtonColor: '#749AB6',
+                width: '380px',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                customClass: {
+                    popup: 'custom-height-modal',
+                    title: 'custom-swal-title',
+                    htmlContainer: 'custom-swal-text',
+                    confirmButton: 'custom-swal-button',
+                    icon: 'custom-swal-icon',
+                },
+            });
+        };
+
 
     const uploadButton = (
         <div>
@@ -315,7 +335,7 @@ const OrganizationForm: React.FC = () => {
                             className="center-upload"
                             valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                            // rules={[{ required: true, message: 'Please upload your organizational picture' }]}
+                        // rules={[{ required: true, message: 'Please upload your organizational picture' }]}
                         >
                             <Upload
                                 className="custom-upload upload-lg"
@@ -346,7 +366,7 @@ const OrganizationForm: React.FC = () => {
                             className="center-upload"
                             valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                            // rules={[{ required: true, message: 'Please upload your certificates/documents' }]}
+                        // rules={[{ required: true, message: 'Please upload your certificates/documents' }]}
                         >
                             <div className="upload-preview">
                                 <UploadFile

@@ -5,488 +5,471 @@ import VolunteerModal from "./VolunteerModal";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import { getAllVolunteers } from "../../../API_Handler/individual_volunter_handler";
+import { getAllVolunteers, getVolunteerById } from "../../../API_Handler/individual_volunter_handler";
+import { getAllOrganizationVolunteers, getOrganizationVolunteerById } from "../../../API_Handler/organization_volunteer_handler";
 import { message } from "antd";
+
 
 // Align with your FastAPI response_model=IndividualVolunteerRead
 interface IndividualVolunteerRead {
-  volunteer_id: number;
-  user_id: number;
-  first_name: string;
-  middle_name?: string | null;
-  last_name: string;
-  email: string;
-  phone_number?: string | null;
-  address?: string | null;
-  birthday?: string | null; // "YYYY-MM-DD"
-  gender?: string | null;
-  age?: number | null;
-  availability?: string | null;      // backend stores as text (e.g., "Mon, Tue")
-  medical_conditions?: string | null;
-  other_medical_conditions?: string | null;
-  certification?: string | null;
-  skills?: string[] | null;          // thanks to your validator
-  created_at: string;                // ISO datetime
+    volunteer_id: number;
+    user_id: number;
+    first_name: string;
+    middle_name?: string | null;
+    last_name: string;
+    email: string;
+    phone_number?: string | null;
+    address?: string | null;
+    birthday?: string | null; // "YYYY-MM-DD"
+    gender?: string | null;
+    age?: number | null;
+    availability?: string | null;      // backend stores as text (e.g., "Mon, Tue")
+    medical_conditions?: string | null;
+    other_medical_conditions?: string | null;
+    certification?: string | null;
+    skills?: string[] | null;          // thanks to your validator
+    created_at: string;                // ISO datetime
+    status: string;
 }
 
 interface Partner {
-  id: number;
-  name: string;
+    id: number;
+    name: string;
 }
 
 interface NewsAnnouncement {
-  id: number;
-  title: string;
-  description: string;
-  date: string;
-  ongoing: boolean;
+    id: number;
+    title: string;
+    description: string;
+    date: string;
+    ongoing: boolean;
 }
 
 interface DeploymentSchedule {
-  date: string;
-  title: string;
-  location: string;
+    date: string;
+    title: string;
+    location: string;
 }
 
 interface FormattedDate {
-  dayName: string;
-  day: number;
-  month: string;
-  year: number;
+    dayName: string;
+    day: number;
+    month: string;
+    year: number;
 }
 
 export default function IDRISDashboard() {
-  const { userRoles } = useUserRoleContext();
-  const { userType } = useUserContext();
-  const navigate = useNavigate();
+    const { userRoles } = useUserRoleContext();
+    const { userType } = useUserContext();
+    const navigate = useNavigate();
 
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [viewDate, setViewDate] = useState<Date>(new Date());
-  const [today] = useState<Date>(new Date());
-  const [isProgramModalOpen, setIsProgramModalOpen] = useState<boolean>(false);
-  const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
-  const [volunteers, setVolunteers] = useState<IndividualVolunteerRead[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [selectedVolunteer, setSelectedVolunteer] = useState<IndividualVolunteerRead | null>(null);
+    const [currentDate, setCurrentDate] = useState<Date>(new Date());
+    const [viewDate, setViewDate] = useState<Date>(new Date());
+    const [today] = useState<Date>(new Date());
+    const [isProgramModalOpen, setIsProgramModalOpen] = useState<boolean>(false);
+    const [isVolunteerModalOpen, setIsVolunteerModalOpen] = useState<boolean>(false);
+    const [volunteers, setVolunteers] = useState<IndividualVolunteerRead[]>([]);
+    const [organizationVolunteers, setOrganizationVolunteers] = useState<any[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [selectedVolunteer, setSelectedVolunteer] = useState<IndividualVolunteerRead | null>(null);
+    const [volunteerStatus, setVolunteerStatus] = useState<string>("");
 
-  useEffect(() => {
-    const fetchVolunteers = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllVolunteers();
-        // Guard in case handler returns wrapped data
-        const list: unknown =
-          data && (
-            Array.isArray(data)
-              ? data
-              : (typeof data === "object" && data !== null && ("results" in data || "items" in data))
-                ? (data as any).results || (data as any).items
-                : []
-          ) || [];
-        if (!Array.isArray(list)) {
-          console.warn("getAllVolunteers() did not return an array. Raw:", data);
-          setVolunteers([]);
-        } else {
-          setVolunteers(list as IndividualVolunteerRead[]);
-          if (list.length > 0) setSelectedVolunteer((list as IndividualVolunteerRead[])[0]);
+    useEffect(() => {
+        if (selectedVolunteer) {
+            setVolunteerStatus(selectedVolunteer.status);
         }
-      } catch (error) {
-        console.error("Error fetching volunteers:", error);
-        message.error("Failed to load volunteers data");
-      } finally {
-        setLoading(false);
-      }
-    };
+    }, [selectedVolunteer]);
 
-    fetchVolunteers();
-  }, []);
+    useEffect(() => {
+        const fetchVolunteers = async () => {
+            try {
+                setLoading(true);
+                const data = await getAllVolunteers();
+                const orgData = await getAllOrganizationVolunteers();
 
-  // ✅ Totals
-  const totalApplicantsNumber = volunteers.length;
-  // If you have a real applicants endpoint, replace this with that count.
-  const totalVolunteersNumber = 1000;
+                // Process the individual volunteers
+                const list: unknown = data && Array.isArray(data) ? data : [];
+                if (Array.isArray(list)) {
+                    setVolunteers(list);
+                    if (list.length > 0) setSelectedVolunteer(list[0]);
+                }
 
-  // Prettified display strings
-  const totalApplicants = useMemo(
-    () => totalApplicantsNumber.toLocaleString(),
-    [totalApplicantsNumber]
-  );
-  const totalVolunteers = useMemo(
-    () => totalVolunteersNumber.toLocaleString(),
-    [totalVolunteersNumber]
-  );
+                // Process the organization volunteers
+                const orgList: unknown = orgData && Array.isArray(orgData) ? orgData : [];
+                if (Array.isArray(orgList)) {
+                    setOrganizationVolunteers(orgList);
+                }
 
-  // Program modal controls
-  const openProgramModal = (): void => setIsProgramModalOpen(true);
-  const closeProgramModal = (): void => setIsProgramModalOpen(false);
+            } catch (error) {
+                console.error("Error fetching volunteers:", error);
+                message.error("Failed to load volunteers data");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  // Volunteer modal controls
-  const openVolunteerModal = (): void => setIsVolunteerModalOpen(true);
-  const closeVolunteerModal = (): void => setIsVolunteerModalOpen(false);
+        fetchVolunteers();
+    }, []);
 
-  const activeVolunteers = [
-    { id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
-    { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
-    { id: 3, name: "Volunteer Name", programs: 10, status: "joined" },
-  ];
 
-  const accreditedPartners: Partner[] = [
-    { id: 1, name: "Sample Organization" },
-    { id: 2, name: "Sample Organization" },
-    { id: 3, name: "Sample Organization" },
-  ];
+    // ✅ Totals
+    const totalApplicantsNumber = volunteers.length + organizationVolunteers.length;
+    console.log("Total Applicants:", totalApplicantsNumber);
+    // Prettified display strings
+    const totalApplicants = totalApplicantsNumber.toLocaleString();
 
-  const newsAnnouncements: NewsAnnouncement[] = [
-    {
-      id: 1,
-      title: "Example Program",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-      date: "March 1 - 2, 2025",
-      ongoing: true,
-    },
-    {
-      id: 2,
-      title: "Example Program",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-      date: "March 5 - 10, 2025",
-      ongoing: false,
-    },
-    {
-      id: 3,
-      title: "Example Program",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-      date: "March 15 - 20, 2025",
-      ongoing: false,
-    },
-    {
-      id: 4,
-      title: "Another Example Program",
-      description:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-      date: "April 1 - 5, 2025",
-      ongoing: false,
-    },
-  ];
+    // If you have a real applicants endpoint, replace this with that count.
+    const totalVolunteers = 1000;
 
-  useEffect(() => {
-    const savedDate = localStorage.getItem("viewDate");
-    if (savedDate) {
-      setViewDate(new Date(savedDate));
-    } else {
-      setViewDate(new Date());
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem("viewDate", viewDate.toISOString());
-  }, [viewDate]);
 
-  const daysInMonth = (year: number, month: number): number =>
-    new Date(year, month + 1, 0).getDate();
+    // Program modal controls
+    const openProgramModal = (): void => setIsProgramModalOpen(true);
+    const closeProgramModal = (): void => setIsProgramModalOpen(false);
 
-  const getFirstDayOfMonth = (year: number, month: number): number =>
-    new Date(year, month, 1).getDay();
+    // Volunteer modal controls
+    const openVolunteerModal = (): void => setIsVolunteerModalOpen(true);
+    const closeVolunteerModal = (): void => setIsVolunteerModalOpen(false);
 
-  const prevMonth = (): void =>
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
-
-  const nextMonth = (): void =>
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
-
-  const formatDate = (date: Date): FormattedDate => {
-    const days: string[] = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    const months: string[] = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+    const activeVolunteers = [
+        { id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
+        { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
+        { id: 3, name: "Volunteer Name", programs: 10, status: "joined" },
     ];
 
-    return {
-      dayName: days[date.getDay()],
-      day: date.getDate(),
-      month: months[date.getMonth()],
-      year: date.getFullYear(),
+    const accreditedPartners: Partner[] = [
+        { id: 1, name: "Sample Organization" },
+        { id: 2, name: "Sample Organization" },
+        { id: 3, name: "Sample Organization" },
+    ];
+
+    const newsAnnouncements: NewsAnnouncement[] = [
+        {
+            id: 1,
+            title: "Example Program",
+            description:
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
+            date: "March 1 - 2, 2025",
+            ongoing: true,
+        },
+        {
+            id: 2,
+            title: "Example Program",
+            description:
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
+            date: "March 5 - 10, 2025",
+            ongoing: false,
+        },
+        {
+            id: 3,
+            title: "Example Program",
+            description:
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
+            date: "March 15 - 20, 2025",
+            ongoing: false,
+        },
+        {
+            id: 4,
+            title: "Another Example Program",
+            description:
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
+            date: "April 1 - 5, 2025",
+            ongoing: false,
+        },
+    ];
+
+
+    useEffect(() => {
+        const savedDate = localStorage.getItem("viewDate");
+        if (savedDate) {
+            setViewDate(new Date(savedDate));
+        } else {
+            setViewDate(new Date());
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem("viewDate", viewDate.toISOString());
+    }, [viewDate]);
+
+    const daysInMonth = (year: number, month: number): number =>
+        new Date(year, month + 1, 0).getDate();
+
+    const getFirstDayOfMonth = (year: number, month: number): number =>
+        new Date(year, month, 1).getDay();
+
+    const prevMonth = (): void =>
+        setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+
+    const nextMonth = (): void =>
+        setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+
+    const formatDate = (date: Date): FormattedDate => {
+        const days: string[] = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ];
+        const months: string[] = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ];
+
+        return {
+            dayName: days[date.getDay()],
+            day: date.getDate(),
+            month: months[date.getMonth()],
+            year: date.getFullYear(),
+        };
     };
-  };
 
-  const generateCalendarDays = (): (number | null)[] => {
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const totalDays = daysInMonth(year, month);
-    const firstDay = getFirstDayOfMonth(year, month);
-    const days: (number | null)[] = [];
+    const generateCalendarDays = (): (number | null)[] => {
+        const year = viewDate.getFullYear();
+        const month = viewDate.getMonth();
+        const totalDays = daysInMonth(year, month);
+        const firstDay = getFirstDayOfMonth(year, month);
+        const days: (number | null)[] = [];
 
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let i = 1; i <= totalDays; i++) days.push(i);
-    return days;
-  };
+        for (let i = 0; i < firstDay; i++) days.push(null);
+        for (let i = 1; i <= totalDays; i++) days.push(i);
+        return days;
+    };
 
-  const isToday = (day: number): boolean =>
-    day === today.getDate() &&
-    viewDate.getMonth() === today.getMonth() &&
-    viewDate.getFullYear() === today.getFullYear();
+    const isToday = (day: number): boolean =>
+        day === today.getDate() &&
+        viewDate.getMonth() === today.getMonth() &&
+        viewDate.getFullYear() === today.getFullYear();
 
-  const isSelected = (day: number): boolean =>
-    day === currentDate.getDate() &&
-    viewDate.getMonth() === currentDate.getMonth() &&
-    viewDate.getFullYear() === currentDate.getFullYear();
+    const isSelected = (day: number): boolean =>
+        day === currentDate.getDate() &&
+        viewDate.getMonth() === currentDate.getMonth() &&
+        viewDate.getFullYear() === currentDate.getFullYear();
 
-  const selectDate = (day: number | undefined): void => {
-    if (day) {
-      setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
-    }
-  };
+    const selectDate = (day: number | undefined): void => {
+        if (day) {
+            setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
+        }
+    };
 
-  const formattedDate = formatDate(currentDate);
-  const days = generateCalendarDays();
-  const weekdays: string[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const formattedDate = formatDate(currentDate);
+    const days = generateCalendarDays();
+    const weekdays: string[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-  const deploymentSchedules: DeploymentSchedule[] = [
-    { date: "2025-01-05", title: "Field Deployment", location: "Central District" },
-    { date: "2025-01-12", title: "Emergency Response", location: "Eastern Region" },
-    { date: "2025-01-20", title: "Volunteer Training", location: "Headquarters" },
-    { date: "2025-02-10", title: "Community Outreach", location: "Southern Region" },
-    { date: "2025-03-15", title: "Disaster Preparedness", location: "Western District" },
-  ];
+    const deploymentSchedules: DeploymentSchedule[] = [
+        { date: "2025-01-05", title: "Field Deployment", location: "Central District" },
+        { date: "2025-01-12", title: "Emergency Response", location: "Eastern Region" },
+        { date: "2025-01-20", title: "Volunteer Training", location: "Headquarters" },
+        { date: "2025-02-10", title: "Community Outreach", location: "Southern Region" },
+        { date: "2025-03-15", title: "Disaster Preparedness", location: "Western District" },
+    ];
 
-  const currentMonthSchedules = deploymentSchedules.filter((schedule) => {
-    const scheduleDate = new Date(schedule.date);
+    const currentMonthSchedules = deploymentSchedules.filter((schedule) => {
+        const scheduleDate = new Date(schedule.date);
+        return (
+            scheduleDate.getMonth() === viewDate.getMonth() &&
+            scheduleDate.getFullYear() === viewDate.getFullYear()
+        );
+    });
+
+    const hasSchedule = (day: number): boolean => {
+        if (!day) return false;
+        const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-${String(
+            day
+        ).padStart(2, "0")}`;
+        return deploymentSchedules.some((schedule) => schedule.date === dateStr);
+    };
+
     return (
-      scheduleDate.getMonth() === viewDate.getMonth() &&
-      scheduleDate.getFullYear() === viewDate.getFullYear()
-    );
-  });
-
-  const hasSchedule = (day: number): boolean => {
-    if (!day) return false;
-    const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-${String(
-      day
-    ).padStart(2, "0")}`;
-    return deploymentSchedules.some((schedule) => schedule.date === dateStr);
-  };
-
-  return (
-    <div className="dashboard-container">
-      <div className="main-container">
-        <div className="content">
-          <div className="content-grid">
-            {/* Left column */}
-            <div className="left-column">
-              {/* Total Applicants */}
-              <div className="card total-card applicants">
-                <div className="card-content">
-                  <div className="card-title-white">Total Applicants</div>
-                  <div className="card-number">{totalApplicants}</div>
-                </div>
-                {userType === "admin" && userRoles.includes("operations admin") ? (
-                  <button
-                    className="manage-btn"
-                    onClick={() => navigate("/volunteer_management/manage_applicant")}
-                  >
-                    Manage Applicants
-                  </button>
-                ) : (
-                  <button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal}>
-                    Become a Volunteer
-                  </button>
-                )}
-              </div>
-
-              {/* Total Volunteers */}
-              <div className="card total-card volunteers">
-                <div className="card-content">
-                  <div className="card-title-white">Total Volunteers</div>
-                  <div className="card-number">{totalVolunteers}</div>
-                </div>
-                {userType === "admin" && userRoles.includes("operations admin") ? (
-                  <button
-                    className="manage-btn"
-                    onClick={() => navigate("/volunteer_management/manage_volunteers")}
-                  >
-                    Manage Volunteers
-                  </button>
-                ) : (
-                  <button
-                    className="manage-btn"
-                    style={{ display: "none" }}
-                    onClick={() => navigate("/volunteer_management/become_volunteer")}
-                  >
-                    Become a Volunteer
-                  </button>
-                )}
-              </div>
-
-              {/* Cards grid */}
-              <div className="cards-grid">
-                {/* Active Volunteers */}
-                <div className="card">
-                  <h2 className="blue-title">Active Volunteers</h2>
-                  <div className="volunteer-list">
-                    {activeVolunteers.map((v) => (
-                      <div key={v.id} className="volunteer-item">
-                        <div className="volunteer-avatar"></div>
-                        <div className="volunteer-info">
-                          <div className="volunteer-name">{v.name}</div>
-                          <div className="volunteer-meta">
-                            {v.programs} Programs {v.status}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Accredited Partners */}
-                <div className="card">
-                  <h2 className="blue-title">Accredited Partners</h2>
-                  <div className="partner-list">
-                    {accreditedPartners.map((partner) => (
-                      <div key={partner.id} className="partner-item">
-                        <div className="partner-logo"></div>
-                        <div className="partner-info">
-                          <div className="partner-name">{partner.name}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div className="right-column">
-              {/* Deployment Schedules & Calendar */}
-              <div className="card deployment-calendar">
-                <div className="deployment-calendar-grid">
-                  {/* Deployment Schedules */}
-                  <div className="deployment-section">
-                    <h2 className="deployment-title">Deployment Schedules</h2>
-                    <div className="deployment-list">
-                      {currentMonthSchedules.length > 0 ? (
-                        currentMonthSchedules.map((schedule, index) => (
-                          <div key={index} className="deployment-item">
-                            <div className="deployment-item-title">{schedule.title}</div>
-                            <div className="deployment-item-date">
-                              {schedule.date.split("-")[2]}, {formatDate(viewDate).month}
+        <div className="dashboard-container">
+            <div className="main-container">
+                <div className="content">
+                    <div className="content-grid">
+                        {/* Left column */}
+                        <div className="left-column">
+                            {/* Total Applicants */}
+                            <div className="card total-card applicants">
+                                <div className="card-content">
+                                    <div className="card-title-white">Total Applicants</div>
+                                    <div className="card-number">{totalApplicants}</div>
+                                </div>
+                                {userType === "admin" && userRoles.includes("operations admin") ? (<button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")} > Manage Applicants </button>)
+                                    : volunteerStatus !== "submitted" ? (<button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal} > Become a Volunteer </button>)
+                                        : volunteerStatus === "submitted" ? (<button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")} > Track Volunteer Application </button>) : null}
                             </div>
-                            <div className="deployment-item-location">{schedule.location}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <p>
-                          No scheduled deployments for {formatDate(viewDate).month} {viewDate.getFullYear()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Calendar */}
-                  <div className="calendar-section">
-                    <div className="calendar-header">
-                      <button onClick={prevMonth} className="calendar-nav-btn">
-                        &lt;
-                      </button>
-                      <div>
-                        <div className="day-name">{formatDate(currentDate).dayName}</div>
-                        <div className="date-display">
-                          <span className="month-day">
-                            {formattedDate.month} {formattedDate.day}
-                          </span>
-                          <span className="year">{formattedDate.year}</span>
+                            {/* Total Volunteers */}
+                            <div className="card total-card volunteers">
+                                <div className="card-content">
+                                    <div className="card-title-white">Total Volunteers</div>
+                                    <div className="card-number">{totalVolunteers}</div>
+                                </div>
+                                {userType === "admin" && userRoles.includes("operations admin") ? (<button className="manage-btn" style={{ fontSize: "98%" }} onClick={() => navigate("/volunteer_management/volunteer_assignment")} > Manage Volunteers </button>) : (<button className="manage-btn" style={{ display: "none" }} onClick={() => navigate("/volunteer_management/become_volunteer")} > Become a Volunteer </button>)}
+                            </div>
+
+                            {/* Cards grid */}
+                            <div className="cards-grid">
+                                {/* Active Volunteers */}
+                                <div className="card">
+                                    <h2 className="blue-title">Active Volunteers</h2>
+                                    <div className="volunteer-list">
+                                        {activeVolunteers.map((v) => (
+                                            <div key={v.id} className="volunteer-item">
+                                                <div className="volunteer-avatar"></div>
+                                                <div className="volunteer-info">
+                                                    <div className="volunteer-name">{v.name}</div>
+                                                    <div className="volunteer-meta">
+                                                        {v.programs} Programs {v.status}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Accredited Partners */}
+                                <div className="card">
+                                    <h2 className="blue-title">Accredited Partners</h2>
+                                    <div className="partner-list">
+                                        {accreditedPartners.map((partner) => (
+                                            <div key={partner.id} className="partner-item">
+                                                <div className="partner-logo"></div>
+                                                <div className="partner-info">
+                                                    <div className="partner-name">{partner.name}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                      </div>
-                      <button onClick={nextMonth} className="calendar-nav-btn">
-                        &gt;
-                      </button>
-                    </div>
-                    <div className="calendar">
-                      <div className="weekdays">
-                        {weekdays.map((day) => (
-                          <div key={day} className="weekday">
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="days">
-                        {days.map((day, idx) => (
-                          <div key={idx} className="calendar-day-container">
-                            {day && (
-                              <div
-                                onClick={() => selectDate(day)}
-                                className={`calendar-day ${isToday(day) ? "today" : ""} ${
-                                  isSelected(day) && !isToday(day) ? "selected" : ""
-                                } ${hasSchedule(day) ? "has-schedule" : ""}`}
-                              >
-                                {day}
-                                {hasSchedule(day) && <span className="schedule-indicator"></span>}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* News & Announcements */}
-              <div className="card news-card">
-                <div className="news-header">
-                  <h2 className="news-title">News & Announcements</h2>
-                  {userType === "admin" ? (
-                    <button onClick={openProgramModal} className="add-program-btn">
-                      + Add Program
-                    </button>
-                  ) : (
-                    <button
-                      className="manage-btn"
-                      style={{ display: "none" }}
-                      onClick={() => navigate("/volunteer_management/become_volunteer")}
-                    >
-                      Become a Volunteer
-                    </button>
-                  )}
-                </div>
-                <div className="news-list">
-                  {newsAnnouncements.map((item) => (
-                    <div key={item.id} className="news-item">
-                      <div className="edit-icon">✏️</div>
-                      <h3 className="news-item-title">{item.title}</h3>
-                      <p className="news-item-desc">{item.description}</p>
-                      <div className="news-item-meta">
-                        <span className="news-item-date">{item.date}</span>
-                        {item.ongoing && <span className="ongoing-badge">Ongoing</span>}
-                      </div>
+                        {/* Right column */}
+                        <div className="right-column">
+                            {/* Deployment Schedules & Calendar */}
+                            <div className="card deployment-calendar">
+                                <div className="deployment-calendar-grid">
+                                    {/* Deployment Schedules */}
+                                    <div className="deployment-section">
+                                        <h2 className="deployment-title">Deployment Schedules</h2>
+                                        <div className="deployment-list">
+                                            {currentMonthSchedules.length > 0 ? (
+                                                currentMonthSchedules.map((schedule, index) => (
+                                                    <div key={index} className="deployment-item">
+                                                        <div className="deployment-item-title">{schedule.title}</div>
+                                                        <div className="deployment-item-date">
+                                                            {schedule.date.split("-")[2]}, {formatDate(viewDate).month}
+                                                        </div>
+                                                        <div className="deployment-item-location">{schedule.location}</div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p>
+                                                    No scheduled deployments for {formatDate(viewDate).month} {viewDate.getFullYear()}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Calendar */}
+                                    <div className="calendar-section">
+                                        <div className="calendar-header">
+                                            <button onClick={prevMonth} className="calendar-nav-btn">
+                                                &lt;
+                                            </button>
+                                            <div>
+                                                <div className="day-name">{formatDate(currentDate).dayName}</div>
+                                                <div className="date-display">
+                                                    <span className="month-day">
+                                                        {formattedDate.month} {formattedDate.day}
+                                                    </span>
+                                                    <span className="year">{formattedDate.year}</span>
+                                                </div>
+                                            </div>
+                                            <button onClick={nextMonth} className="calendar-nav-btn">
+                                                &gt;
+                                            </button>
+                                        </div>
+                                        <div className="calendar">
+                                            <div className="weekdays">
+                                                {weekdays.map((day) => (
+                                                    <div key={day} className="weekday">
+                                                        {day}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="days">
+                                                {days.map((day, idx) => (
+                                                    <div key={idx} className="calendar-day-container">
+                                                        {day && (
+                                                            <div
+                                                                onClick={() => selectDate(day)}
+                                                                className={`calendar-day ${isToday(day) ? "today" : ""} ${isSelected(day) && !isToday(day) ? "selected" : ""
+                                                                    } ${hasSchedule(day) ? "has-schedule" : ""}`}
+                                                            >
+                                                                {day}
+                                                                {hasSchedule(day) && <span className="schedule-indicator"></span>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* News & Announcements */}
+                            <div className="card news-card">
+                                <div className="news-header">
+                                    <h2 className="news-title">News & Announcements</h2>
+                                    {userType === "admin" ? (
+                                        <button onClick={openProgramModal} className="add-program-btn">
+                                            + Add Program
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="manage-btn"
+                                            style={{ display: "none" }}
+                                            onClick={() => navigate("/volunteer_management/become_volunteer")}
+                                        >
+                                            Become a Volunteer
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="news-list">
+                                    {newsAnnouncements.map((item) => (
+                                        <div key={item.id} className="news-item">
+                                            <div className="edit-icon">✏️</div>
+                                            <h3 className="news-item-title">{item.title}</h3>
+                                            <p className="news-item-desc">{item.description}</p>
+                                            <div className="news-item-meta">
+                                                <span className="news-item-date">{item.date}</span>
+                                                {item.ongoing && <span className="ongoing-badge">Ongoing</span>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                  ))}
                 </div>
-              </div>
             </div>
-          </div>
+            <Modal isOpen={isProgramModalOpen} onClose={closeProgramModal} />
+            <VolunteerModal isOpen={isVolunteerModalOpen} onClose={closeVolunteerModal} />
         </div>
-      </div>
-      <Modal isOpen={isProgramModalOpen} onClose={closeProgramModal} />
-      <VolunteerModal isOpen={isVolunteerModalOpen} onClose={closeVolunteerModal} />
-    </div>
-  );
+    );
 }

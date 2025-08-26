@@ -33,7 +33,7 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
     contact_info?: string;
     // ...more fields if you have them
   };
-  const [inputVal, setInputVal] = useState("");
+  const [inputVal, setInputVal] = useState(value);
   const [results, setResults] = useState<LGURecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -199,8 +199,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     name: string;
     lat: number;
     lng: number;
-    LGU: string | null;
-    evacuation: string | null;
+    LGU: string;
+    evacuation: string;
     population: number;
     contact_info: string;
     risk_level: string;
@@ -209,8 +209,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     name: "",
     lat: 0,
     lng: 0,
-    LGU: null,
-    evacuation: null,
+    LGU: "",
+    evacuation: "",
     population: 0,
     contact_info: "",
     risk_level: "",
@@ -389,7 +389,7 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
   );
 };
 
-export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
+export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   isModalOpen,
   closeModal,
   setMessageBox,
@@ -482,27 +482,33 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
           ></MapWithPin>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Classification:</span>
+          <span className="item-details-identifier">LGU:</span>
           <span style={{ width: "100%", textAlign: "center" }}>
             {selectedData.data[4].text}
           </span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Population:</span>
+          <span className="item-details-identifier">Evacuation Center:</span>
           <span style={{ width: "100%", textAlign: "center" }}>
             {selectedData.data[5].text}
           </span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Contact Info:</span>
+          <span className="item-details-identifier">Population:</span>
           <span style={{ width: "100%", textAlign: "center" }}>
             {selectedData.data[6].text}
           </span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Risk Level:</span>
+          <span className="item-details-identifier">Contact Info:</span>
           <span style={{ width: "100%", textAlign: "center" }}>
             {selectedData.data[7].text}
+          </span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Risk Level:</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {selectedData.data[8].text}
           </span>
         </div>
         <div className="action-button">
@@ -514,7 +520,7 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
     </Modal>
   );
 };
-export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
+export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
   isModalOpen,
   closeModal,
   setMessageBox,
@@ -525,19 +531,22 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
     name: string;
     lat: number;
     lng: number;
-    classification: string;
+    LGU: string | null;
+    evacuation: string | null;
     population: number;
     contact_info: string;
     risk_level: string;
   };
+  console.log(selectedData);
   const [addEvacuationForm, setAddEvacuationForm] = useState<evacuationProp>({
     name: selectedData.data[1].text,
     lat: parseFloat(selectedData.data[2].text),
     lng: parseFloat(selectedData.data[3].text),
-    classification: selectedData.data[4].text,
-    population: parseInt(selectedData.data[5].text),
-    contact_info: selectedData.data[6].text,
-    risk_level: selectedData.data[7].text,
+    LGU: selectedData.data[4].text,
+    evacuation: selectedData.data[5].text,
+    population: parseInt(selectedData.data[6].text),
+    contact_info: selectedData.data[7].text,
+    risk_level: selectedData.data[8].text,
   });
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
@@ -562,6 +571,13 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
       [name]: value,
     }));
   };
+  const handleSearchChange = (id: string, name: string) => {
+    console.log(id);
+    setAddEvacuationForm((prevData) => ({
+      ...prevData,
+      [name]: id.toString(),
+    }));
+  };
   return (
     <>
       {locationPickerIsOpen && (
@@ -575,9 +591,6 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
       )}
       <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
         <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Update Evacuation</span>
-          </div>
           <div className="horizontal-container">
             <span className="details-title">Add Evacuation</span>
           </div>
@@ -630,22 +643,22 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
             </div>
           </div>
           <div className="horizontal-container">
-            <span className="item-details-identifier">Classification</span>
-            <select
-              id="classification"
-              name="classification"
-              required
-              value={addEvacuationForm.classification}
-              onChange={handleAddModalChange}
-            >
-              <option value="" selected disabled>
-                Select LGU Level
-              </option>
-              <option value="province">Province</option>
-              <option value="city">City</option>
-              <option value="municipality">Municipality</option>
-              <option value="barangay">Barangay</option>
-            </select>
+            <span className="item-details-identifier">LGU:</span>
+            <FuzzySeachElement
+              value={addEvacuationForm.LGU}
+              name="LGU"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_lgu"
+            ></FuzzySeachElement>
+          </div>
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Evacuation Center:</span>
+            <FuzzySeachElement
+              value={addEvacuationForm.evacuation}
+              name="evacuation"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_evacuation"
+            ></FuzzySeachElement>
           </div>
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
@@ -690,7 +703,7 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
                   ...prev, // preserves onClose and anything else
                   isOpen: true, // your new values
                   type: "confirm",
-                  message: "Are you sure you want to update this record?",
+                  message: "Are you sure you want to add this record?",
                   onSubmit: () => {
                     handleEditRecord(
                       selectedData.data[0].text,

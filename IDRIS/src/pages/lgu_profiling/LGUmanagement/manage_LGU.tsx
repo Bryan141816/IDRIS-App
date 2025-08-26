@@ -16,7 +16,11 @@ import {
   ViewRafiModalModal,
   EditRafiModal,
 } from "./Modals/RAFIInfrastructure";
-import { AddBarangayModal } from "./Modals/BarangayModal";
+import {
+  AddBarangayModal,
+  ViewBarangayModal,
+  EditBarangayModal,
+} from "./Modals/BarangayModal";
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 //API Handler
@@ -79,28 +83,38 @@ export async function deleteRecord(
 
 export async function updateRecord(
   record_type: string,
-  reportId: String,
+  reportId: string,
   payload: any,
-) {
+): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.put(
       `/lgu_profiling/manage_lgu/update_${record_type}/${reportId}`,
       payload,
     );
-    return { sucess: true, data: response.data };
-  } catch (error: any) {
-    if (error.respose) {
-      console.error("Error: ", error.response.data.detail);
+
+    // If backend returns an ErrorResponse (success = false), catch it here
+    if (response.data.success === false) {
       return {
-        sucess: false,
-        error: error.response?.data?.detail || error.message,
+        success: false,
+        error: response.data.error || "Unknown error from server",
       };
-    } else {
-      console.error("Request error: ", error.message);
-      return { sucess: false, error: "An unexpected error occured." };
     }
+
+    // Otherwise, return the updated record
+    return response.data;
+  } catch (error: any) {
+    console.error("Failed to update record:", error);
+
+    const message =
+      error.response?.data?.error || // new error format
+      error.response?.data?.detail || // if FastAPI still raises HTTPException
+      error.message ||
+      "Unknown error occurred";
+
+    return { success: false, error: message };
   }
 }
+
 //
 
 const MapOfCebu = () => {
@@ -246,7 +260,6 @@ const MapOfCebu = () => {
   }, [activeTab]);
   const handleAddRecord = async (payload: any) => {
     const response = await addRecord(activeTab, payload);
-    console.log(response);
     if (!response.error) {
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -267,6 +280,15 @@ const MapOfCebu = () => {
   };
   const handleEditRecord = async (id: string, payload: any) => {
     const response = await updateRecord(activeTab, id, payload);
+    if (response.error) {
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: response.error,
+      }));
+      return;
+    }
     setMessageBox((prev) => ({
       ...prev, // preserves onClose and anything else
       isOpen: true, // your new values
@@ -274,6 +296,24 @@ const MapOfCebu = () => {
       message: "Record has been updated",
     }));
     switch (activeTab) {
+      case "barangay":
+        setSelectedViewData((prev: any) => {
+          const newData = [...prev.data];
+          newData[1].text = payload.name;
+          newData[2].text = payload.lat;
+          newData[3].text = payload.lng;
+          newData[4].text = payload.LGU;
+          newData[5].text = payload.evacuation;
+          newData[6].text = payload.population;
+          newData[7].text = payload.contact_info;
+          newData[8].text = payload.risk_level;
+          return {
+            ...prev,
+            data: newData,
+          };
+        });
+        break;
+
       case "lgu":
         setSelectedViewData((prev: any) => {
           const newData = [...prev.data];
@@ -368,6 +408,25 @@ const MapOfCebu = () => {
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
       ></AddBarangayModal>
+      {selectedViewData && (
+        <ViewBarangayModal
+          isModalOpen={viewModalState.barangay}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        ></ViewBarangayModal>
+      )}
+      {selectedViewData && (
+        <EditBarangayModal
+          isModalOpen={editModalState.barangay}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        ></EditBarangayModal>
+      )}
       {selectedViewData && (
         <ViewLGUModal
           isModalOpen={viewModalState.lgu}
@@ -499,7 +558,10 @@ const MapOfCebu = () => {
             {barangayResponse ? (
               <TableView
                 tableJSON={barangayResponse}
-                onClickCallback={(row: any) => {}}
+                onClickCallback={(row: any) => {
+                  setSelectedViewData(row);
+                  openViewModal();
+                }}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}

@@ -81,226 +81,233 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       </div>
 
       <div id="nav-links">
-        { userRoles.includes("") && <div className="nav-items" id="lgu-profiling">
-          <div
-            className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
-            onClick={() => {
-              toggleNav("lgu");
-            }}
-          >
-            <LGU width={14} height={14} className="sidebar-icons" />
-            {userType == "admin" && (
-              <a href="" className="non-redirect">
-                LGU PROFILING
-              </a>
-            )}
-            {userType == "user" && (
-              <a href="#" className="non-redirect">
-                LOCAL GOVERNMENT UNIT
-              </a>
-            )}
-          </div>
-          <div
-            className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-            <Link
-              to="/lgu_profiling/map_of_cebu"
-              prefetch-link="/lgu_profiling/map_of_cebu"
-              className="nav-sub-item"
+        {userRoles.includes(" ") && (
+          <div className="nav-items" id="lgu-profiling">
+            <div
+              className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
               onClick={() => {
-                onClose();
+                toggleNav("lgu");
               }}
             >
-              Map of Cebu
-            </Link>
-          </div>
-          { userType == "lgu" && <div
-            className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-            <Link
-              to="/lgu_profiling/evacuationandshelter"
-              prefetch-link="/lgu_profiling/evacuationandshelter"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
+              <LGU width={14} height={14} className="sidebar-icons" />
+              {userType == "admin" && (
+                <a href="" className="non-redirect">
+                  LGU PROFILING
+                </a>
+              )}
+              {userType == "user" && (
+                <a href="#" className="non-redirect">
+                  LOCAL GOVERNMENT UNIT
+                </a>
+              )}
+            </div>
+            <div
+              className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
             >
-              Evacuation and Shelter Management
-            </Link>
-          </div>}
-          { userType == "lgu" && <div
-            className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-            <Link
-              to="/lgu_profiling/LGUmanagement"
-              prefetch-link="/lgu_profiling/LGUmanagement"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
-            >
-              Pin Location Management
-            </Link>
-          </div>}
-        </div>}
-
-
-        { (
-            userRoles.includes("generic") || 
-            userRoles.includes("volunteer") || 
-            userRoles.includes("donor") || 
-            userRoles.includes("operations admin") || 
-            userRoles.includes("operations admin") || 
-            userRoles.includes("finance admin")
-          ) && <div className="nav-items" id="volunteer">
-          <div
-            className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
-            onClick={() => {
-              toggleNav("volunteer");
-            }}
-          >
-            <Volunteer width={14} height={14} className="sidebar-icons" />
-            {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
-            {userType != "" && !userRoles.includes("operations admin") && (
-              <a href="#" className="non-redirect">
-                VOLUNTEER
-              </a>
-            )}
-            {userType != "" && userRoles.includes("operations admin") && (
-              <a href="#" className="non-redirect">
-                VOLUNTEER MANAGEMENT
-              </a>
-            )}
-          </div>
-          <div
-            className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-            <Link
-              to="/volunteer_management/volunteer_dashboard"
-              prefetch-link="/volunteer_management/volunteer_dashboard"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
-            >
-              Volunteer Dashboard
-            </Link>
-            {userRoles.includes("operations admin") ||
-              (userRoles.includes("volunteer") && (
+              {/* Sub items here */}
+              <Link
+                to="/lgu_profiling/map_of_cebu"
+                prefetch-link="/lgu_profiling/map_of_cebu"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Map of Cebu
+              </Link>
+            </div>
+            {userType == "lgu" && (
+              <div
+                className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
+              >
+                {/* Sub items here */}
                 <Link
-                  to="/volunteer_management/track_volunteer_application"
-                  prefetch-link="/volunteer_management/track_volunteer_application"
+                  to="/lgu_profiling/evacuationandshelter"
+                  prefetch-link="/lgu_profiling/evacuationandshelter"
                   className="nav-sub-item"
                   onClick={() => {
                     onClose();
                   }}
                 >
-                  Track Volunteer Application
+                  Evacuation and Shelter Management
                 </Link>
-              ))}
-            {userRoles.includes("operations admin") && (
-              <Link
-                to="/volunteer_management/volunteer_profiles"
-                prefetch-link="/volunteer_management/volunteer_profiles"
-                className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
-              >
-                Volunteer Profiles
-              </Link>
+              </div>
             )}
-            {userRoles.includes("volunteer") && (
-              <Link
-                to="/volunteer_management/volunteer_assignment"
-                prefetch-link="/volunteer_management/volunteer_assignment"
-                className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+            {userType == "lgu" && (
+              <div
+                className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
               >
-                Volunteer Assignment
-              </Link>
+                {/* Sub items here */}
+                <Link
+                  to="/lgu_profiling/LGUmanagement"
+                  prefetch-link="/lgu_profiling/LGUmanagement"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Pin Location Management
+                </Link>
+              </div>
             )}
           </div>
-        </div>}
+        )}
 
-        { ( userRoles.includes("generic") ||
-            userRoles.includes("volunteer") || 
-            userRoles.includes("donor") || 
-            userRoles.includes("operations admin") || 
-            userRoles.includes("finance admin")
-          ) && <div className="nav-items" id="donations">
-          <div
-            className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
-            onClick={() => {
-              toggleNav("donations");
-            }}
-          >
-            <Donations width={14} height={14} className="sidebar-icons" />
-            { userType == "admin" && (
-              <a href="#" className="non-redirect">
-                DONATIONS MANAGEMENT
-              </a>
-            )}
-            { userType != "admin" && (
-              <a href="#" className="non-redirect">
-                DONATIONS
-              </a>
-            )}
-          </div>
-          <div
-            className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-            { userRoles.includes("donor") || userRoles.includes("generic") &&
+        {(userRoles.includes("generic") ||
+          userRoles.includes("volunteer") ||
+          userRoles.includes("donor") ||
+          userRoles.includes("operations admin") ||
+          userRoles.includes("operations admin") ||
+          userRoles.includes("finance admin")) && (
+          <div className="nav-items" id="volunteer">
+            <div
+              className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
+              onClick={() => {
+                toggleNav("volunteer");
+              }}
+            >
+              <Volunteer width={14} height={14} className="sidebar-icons" />
+              {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
+              {userType != "" && !userRoles.includes("operations admin") && (
+                <a href="#" className="non-redirect">
+                  VOLUNTEER
+                </a>
+              )}
+              {userType != "" && userRoles.includes("operations admin") && (
+                <a href="#" className="non-redirect">
+                  VOLUNTEER MANAGEMENT
+                </a>
+              )}
+            </div>
+            <div
+              className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}
+            >
+              {/* Sub items here */}
               <Link
-                to="/donor_profile"
-                prefetch-link="/donor_profile"
+                to="/volunteer_management/volunteer_dashboard"
+                prefetch-link="/volunteer_management/volunteer_dashboard"
                 className="nav-sub-item"
                 onClick={() => {
                   onClose();
                 }}
               >
-                Donor Profile
+                Volunteer Dashboard
               </Link>
-            }
-            <Link
-              to="/donations_management/donations_dashboard"
-              prefetch-link="/donations_management/donations_dashboard"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
-            >
-              Donations Dashboard
-            </Link>
-            <Link
-              to="/donations_management/list_of_rafi_donors"
-              prefetch-link="/donations_management/list_of_rafi_donors"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
-            >
-              List of RAFI Donors
-            </Link>
-            <Link
-              to="/donations_management/funding_proposals"
-              prefetch-link="/donations_management/funding_proposals"
-              className="nav-sub-item"
-              onClick={() => {
-                onClose();
-              }}
-            >
-              Funding Proposals
-            </Link>
+              {userRoles.includes("operations admin") ||
+                (userRoles.includes("volunteer") && (
+                  <Link
+                    to="/volunteer_management/track_volunteer_application"
+                    prefetch-link="/volunteer_management/track_volunteer_application"
+                    className="nav-sub-item"
+                    onClick={() => {
+                      onClose();
+                    }}
+                  >
+                    Track Volunteer Application
+                  </Link>
+                ))}
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/volunteer_management/volunteer_profiles"
+                  prefetch-link="/volunteer_management/volunteer_profiles"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Volunteer Profiles
+                </Link>
+              )}
+              {userRoles.includes("volunteer") && (
+                <Link
+                  to="/volunteer_management/volunteer_assignment"
+                  prefetch-link="/volunteer_management/volunteer_assignment"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Volunteer Assignment
+                </Link>
+              )}
+            </div>
           </div>
-        </div>}
+        )}
+
+        {(userRoles.includes("generic") ||
+          userRoles.includes("volunteer") ||
+          userRoles.includes("donor") ||
+          userRoles.includes("operations admin") ||
+          userRoles.includes("finance admin")) && (
+          <div className="nav-items" id="donations">
+            <div
+              className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
+              onClick={() => {
+                toggleNav("donations");
+              }}
+            >
+              <Donations width={14} height={14} className="sidebar-icons" />
+              {userType == "admin" && (
+                <a href="#" className="non-redirect">
+                  DONATIONS MANAGEMENT
+                </a>
+              )}
+              {userType != "admin" && (
+                <a href="#" className="non-redirect">
+                  DONATIONS
+                </a>
+              )}
+            </div>
+            <div
+              className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
+            >
+              {/* Sub items here */}
+              {userRoles.includes("donor") ||
+                (userRoles.includes("generic") && (
+                  <Link
+                    to="/donor_profile"
+                    prefetch-link="/donor_profile"
+                    className="nav-sub-item"
+                    onClick={() => {
+                      onClose();
+                    }}
+                  >
+                    Donor Profile
+                  </Link>
+                ))}
+              <Link
+                to="/donations_management/donations_dashboard"
+                prefetch-link="/donations_management/donations_dashboard"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Donations Dashboard
+              </Link>
+              <Link
+                to="/donations_management/list_of_rafi_donors"
+                prefetch-link="/donations_management/list_of_rafi_donors"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                List of RAFI Donors
+              </Link>
+              <Link
+                to="/donations_management/funding_proposals"
+                prefetch-link="/donations_management/funding_proposals"
+                className="nav-sub-item"
+                onClick={() => {
+                  onClose();
+                }}
+              >
+                Funding Proposals
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="nav-items" id="response">
           <div

@@ -579,6 +579,60 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
     )
 
 
+@router.delete(
+    "/lgu_profiling/manage_lgu/delete_barangay/{record_id}", response_model=dict
+)
+def delete_barangay(record_id: int, db: Session = Depends(get_db)):
+    deleted_report = delete(db, BaranggayRecords, record_id)
+    if not deleted_report:
+        raise HTTPException(status_code=400, detail="Record not found.")
+    return {"message": f"Record with ID {record_id} deleted successfully."}
+
+
+@router.put("/lgu_profiling/manage_lgu/update_barangay/{record_id}")
+def update_barangay(
+    record_id: int, payload: BaranggayRecordsCreate, db: Session = Depends(get_db)
+):
+    lgu = find_lgu(q=payload.LGU, sim_threshold=0.96, db=db)
+    if len(lgu) <= 0:
+        return {
+            "success": False,
+            "error": f"{payload.LGU} doesn't exist in LGU records",
+        }
+
+    evacuation = find_evacuation(q=payload.evacuation, sim_threshold=0.96, db=db)
+    if len(evacuation) <= 0:
+        return {
+            "success": False,
+            "error": f"{payload.evacuation} doesn't exist in Evacuation Center records",
+        }
+    record = db.query(BaranggayRecords).get(record_id)
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if payload.name is not None:
+        record.name = payload.name
+    if payload.lat is not None:
+        record.lat = payload.lat
+    if payload.lng is not None:
+        record.lng = payload.lng
+    if len(lgu) > 0:
+        record.lgu_id = lgu[0].id
+    if len(evacuation) > 0:
+        record.evacucation_center_id = evacuation[0].id
+    if payload.population is not None:
+        record.population = payload.population
+    if payload.contact_info is not None:
+        record.contact_info = payload.contact_info
+    if payload.risk_level is not None:
+        record.risk_level = payload.risk_level
+
+    db.commit()
+    db.refresh(record)
+
+    return {"detail": "Record updated succesfully", "record": record}
+
+
 @router.post(
     "/lgu_profiling/manage_lgu/add_evacuation", response_model=EvacuationCenterOut
 )

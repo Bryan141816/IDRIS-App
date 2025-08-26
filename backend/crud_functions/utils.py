@@ -1,9 +1,12 @@
 from typing import Optional, Set
 from sqlalchemy.exc import IntegrityError
-import hashlib
+from fastapi import UploadFile
+from PIL import Image
 
+import io, hashlib, secrets, string
 # SQLSTATE codes for Postgres
 PG_UNIQUE_VIOLATION = "23505"  # unique_violation
+
 
 def is_unique_violation_on(
     err: IntegrityError,
@@ -51,6 +54,44 @@ def _norm_type(donor_type: Optional[str]) -> Optional[str]:
         return "organization"
     return v
 
+def _to_enum(enum_cls, value, default=None):
+    """
+    Safely coerce strings/Enums/None into the target Enum type.
+    - Accepts actual Enum instances, their .name/.value strings, or None.
+    """
+    if value is None:
+        return default
+    if isinstance(value, enum_cls):
+        return value
+    # try by name
+    try:
+        return enum_cls[value]  # e.g. "ONE_TIME" -> DonationFrequency.ONE_TIME
+    except Exception:
+        pass
+    # try by value (e.g. passing "ONE_TIME" when value==name)
+    try:
+        return enum_cls(value)
+    except Exception:
+        pass
+    if default is not None:
+        return default
+    raise ValueError(f"Invalid enum value '{value}' for {enum_cls.__name__}")
+
+def rand_alnum(n=20):
+    alphabet = string.ascii_letters + string.digits  # A-Z a-z 0-9
+    return ''.join(secrets.choice(alphabet) for _ in range(n))
+
 def uid_from_string(s: str) -> int:
     digest = hashlib.sha256(s.encode()).hexdigest()
     return int(digest, 16) % 90_000_000 + 10_000_000
+
+def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
+    contents = upload_file.file.read()
+    image = Image.open(io.BytesIO(contents))
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+    image.thumbnail(max_size)
+    out = io.BytesIO()
+    image.save(out, format="WEBP", quality=quality, optimize=True)
+    out.seek(0)
+    return out.read()

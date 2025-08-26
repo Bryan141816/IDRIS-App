@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, Literal
 from datetime import datetime
 from enum import Enum
@@ -140,6 +140,15 @@ class DonationRecordBase(BaseModel):
         populate_by_name = True
 
 
-# Backward-compatible minimal response if you want to keep the old name
-class DonationResponse(DonationRecordBase):
-    pass
+class DonationResponse(BaseModel):
+    donation_id: int
+    donor_id: int
+    proposal_id: Optional[int] = None
+    frequency: DonationFrequency
+    status: DonationStatus
+    
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+

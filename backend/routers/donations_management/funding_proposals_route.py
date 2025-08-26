@@ -9,7 +9,7 @@ from math import ceil
 from models import FundingProposal
 from schemas import Number  
 from crud_functions.donations_management.funding_proposals import FundingProposalCRUD  as CRUD
-
+from crud_functions.utils import uid_from_string
 from data_schemas.funding_proposal_schema import ( 
     FundingProposalCreate, FundingProposalUpdate, FundingProposalGet, 
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
@@ -24,7 +24,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor", "operations admin"]))],
 )
 
 
@@ -56,10 +56,10 @@ def read_all_proposals(
         print(f"Router error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching proposals")
 
-@router_admin.get("/proposals/get_proposal/{proposal_id}", response_model=FundingProposalGet)
-def read_one_proposal(proposal_id: int, db: Session = Depends(get_db)):
+@router_admin.get("/proposals/get_proposal/{funding_id}", response_model=FundingProposalGet)
+def read_one_proposal(funding_id: int, db: Session = Depends(get_db)):
     try:
-        proposal = CRUD.get_proposal_by_id(db=db, proposal_id=proposal_id)
+        proposal = CRUD.get_proposal_by_id(db=db, funding_id=funding_id)
         if not proposal:
             raise HTTPException(status_code=404, detail="Proposal not found")
         return proposal
@@ -79,6 +79,7 @@ def create_proposal_endpoint(
     db: Session = Depends(get_db)
 ):
     proposal_data = FundingProposalCreate(
+        funding_id = uid_from_string(f"{title}{description}"),
         title=title,
         description=description,
         budgetRequired=budgetRequired,
@@ -86,9 +87,9 @@ def create_proposal_endpoint(
     )
     return CRUD.create_funding_proposal(db=db, proposal_data=proposal_data, image=image)
 
-@router_admin.put("/proposals/update_proposal/{proposal_id}", response_model=FundingProposalResponse)
+@router_admin.put("/proposals/update_proposal/{funding_id}", response_model=FundingProposalResponse)
 def update_proposal_endpoint(
-    proposal_id: int,
+    funding_id: int,
     title: str = Form(...),
     description: str = Form(...),
     budgetRequired: int = Form(...),
@@ -98,7 +99,7 @@ def update_proposal_endpoint(
 ):
     return CRUD.update_proposal(
         db=db,
-        proposal_id=proposal_id,
+        funding_id=funding_id,
         title=title,
         description=description,
         budget_required=budgetRequired,
@@ -106,10 +107,10 @@ def update_proposal_endpoint(
         image=image
     )
     
-@router_admin.delete("/proposals/delete_proposal/{proposal_id}")
-def delete_proposal_endpoint(proposal_id: int, db: Session = Depends(get_db)):
+@router_admin.delete("/proposals/delete_proposal/{funding_id}")
+def delete_proposal_endpoint(funding_id: int, db: Session = Depends(get_db)):
     try:
-        if not CRUD.delete_proposal(db, proposal_id):
+        if not CRUD.delete_proposal(db, funding_id):
             raise HTTPException(status_code=404, detail="Proposal not found")
         return {"detail": "Proposal deleted successfully"}
     except HTTPException:

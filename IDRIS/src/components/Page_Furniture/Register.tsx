@@ -266,32 +266,11 @@ const Register = () => {
         <h3 id="login-user-role">Select User Role</h3>
         <hr />
         <div id="select-userRole">
-          <button id="staff" onClick={() => RegisterAs("staff")}>
-            Staff
+          <button id="lgu" onClick={() => RegisterAs("lgu")}>
+            LGU Officer
           </button>
-          <button id="donor" onClick={() => RegisterAs("donor")}>
-            Donor
-          </button>
-          <button id="volunteer" onClick={() => RegisterAs("volunteer")}>
-            Volunteer
-          </button>
-          <button id="ngo-rep" onClick={() => RegisterAs("ngo representative")}>
-            NGO Representative
-          </button>
-          <button id="lgu-rep" onClick={() => RegisterAs("lgu representative")}>
-            LGU Representative
-          </button>
-          <button
-            id="barangay-rep"
-            onClick={() => RegisterAs("barangay representative")}
-          >
-            Barangay Representative
-          </button>
-          <button
-            id="field-rep"
-            onClick={() => RegisterAs("field representative")}
-          >
-            Field Representative
+          <button id="generic" onClick={() => RegisterAs("generic")}>
+            Generic User
           </button>
         </div>
       </Modal>
@@ -317,9 +296,6 @@ const Register = () => {
           </button>
           <button id="finance-admin" onClick={() => RegisterAs("finance admin")}>
             Finance Admin
-          </button>
-          <button id="lgu-ofc-admin" onClick={() => RegisterAs("lgu officer admin")}>
-            LGU Officer Admin
           </button>
         </div>
       </Modal>

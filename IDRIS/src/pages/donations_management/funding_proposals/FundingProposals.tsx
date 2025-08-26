@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { getFundingProposals } from "../../../API_Handler/donations_funding_proposals_handler";
 
 interface Proposal {
-  id: number;
+  funding_id: number;
   title: string;
   description: string;
   budget_required: number;
@@ -114,10 +114,10 @@ const FundingProposals = () => {
       </div>
 
       <div id="funding-body">
-        {filteredProposals.map((item) => (
+        {filteredProposals.map((item, index ) => (
           <FundingCard
-            key={item.id}
-            proposalId={item.id}
+            key={item.funding_id}
+            proposalId={item.funding_id}
             title={item.title}
             description={item.description}
             donated={item.total_donated ?? 0}

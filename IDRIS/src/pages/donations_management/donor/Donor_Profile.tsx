@@ -47,20 +47,20 @@ interface Location {
 
 // Sample Donor data
 const donorData: DonorData = {
-  donor_name: "Donor name",
+  donor_name: "No Data Found",
   role: "Role Assigned (Donor ID)",
   certified: true,
-  address: "Cebu City, Philippines",
+  address: "No Data Found",
   personalInfo: {
-    age: 21,
-    dateOfBirth: "JULY 19, 2003",
-    phoneNumber: "09123456789", 
-    address: "Address, address",
-    gender: "Male"
+    age: 0,
+    dateOfBirth: "No Data Found",
+    phoneNumber: "No Data Found", 
+    address: "No Data Found",
+    gender: "No Data Found"
   },
   location: {
-    lat: 10.3157,
-    lng: 123.8854
+    lat: 0,
+    lng: 0
   }
 };
 
@@ -79,9 +79,9 @@ const UserProfile = () => {
     const fetchProfile = async () => {
       try {
         const response = await getIndividualDonorProfile();
-        console.log(response);
+        console.log("Donor Id: ",response.donor_id);
         setProfile(response);
-        setDonorId(response.donorId);
+        setDonorId(response.donor_id);
       } catch (err) {
         console.error(err);
         // setError("Failed to fetch profile.");
@@ -96,7 +96,7 @@ const UserProfile = () => {
     const fetchUserid = async() => {
       try{
         const response = await fetchCurrentUserId();
-        console.log(response.id);
+        console.log("Current User ID: ", response.id);
         setUserId(response.id);
       } catch(error){
         console.error(error);
@@ -284,7 +284,7 @@ const UserProfile = () => {
                 ({donorProfile.is_verified ? "Verified" : "Unverified"})
               </span>
             </p>
-            <p className="role-assigned">{userRoles[0].toUpperCase()} ({donorProfile.donorId})</p>
+            <p className="role-assigned">{userRoles[0].toUpperCase()} ({donorId})</p>
           </div>
 
           <button id="register-button" onClick={() => { setFormStatus(!isFormOpen) }}> Register as Donor</button>

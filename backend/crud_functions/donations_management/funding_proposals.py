@@ -1,11 +1,12 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, literal, or_
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
-from models import FundingProposal, Donation, DonationStatus
+from models import FundingProposal, Donation, DonationStatus, Donation_Cash, Donation_InKind
+from crud_functions.utils import uid_from_string, process_image_to_webp
 from data_schemas.funding_proposal_schema import (
     FundingProposalCreate,
     FundingProposalResponsePaginated,
@@ -15,23 +16,7 @@ from data_schemas.funding_proposal_schema import (
 
 from math import ceil
 from datetime import datetime, date, time
-from PIL import Image
-import io
-
 UPLOAD_DIR = Path("media/fundingproposals")
-
-
-def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
-    contents = upload_file.file.read()
-    image = Image.open(io.BytesIO(contents))
-    if image.mode in ("RGBA", "P"):
-        image = image.convert("RGB")
-    image.thumbnail(max_size)
-    out = io.BytesIO()
-    image.save(out, format="WEBP", quality=quality, optimize=True)
-    out.seek(0)
-    return out.read()
-
 
 class FundingProposalCRUD:
     @staticmethod
@@ -57,6 +42,7 @@ class FundingProposalCRUD:
                 raise HTTPException(status_code=500, detail="Error saving file")
 
         db_proposal = FundingProposal(
+            funding_id=proposal_data.funding_id,
             title=proposal_data.title,
             description=proposal_data.description,
             budget_required=proposal_data.budgetRequired,
@@ -82,7 +68,7 @@ class FundingProposalCRUD:
         order: str = "desc",
         limit: Optional[int] = None,
         page: int = 1
-    ) -> FundingProposalResponsePaginated:
+    ) -> "FundingProposalResponsePaginated":
         try:
             query = db.query(FundingProposal)
 
@@ -92,9 +78,9 @@ class FundingProposalCRUD:
 
             total_count = query.count()
 
-            # safe sort map
+            # Safe sort map (note: "id" -> funding_id)
             sortable = {
-                "id": FundingProposal.id,
+                "id": FundingProposal.funding_id,
                 "title": FundingProposal.title,
                 "status": FundingProposal.status,
                 "budget_required": FundingProposal.budget_required,
@@ -112,50 +98,64 @@ class FundingProposalCRUD:
                 max_page = 1
 
             proposals: List[FundingProposal] = query.all()
-            proposal_ids = [p.id for p in proposals]
+            proposal_ids = [p.funding_id for p in proposals]
 
-            # aggregate COMPLETED totals for these proposals
-            donation_map: dict[int, float] = {}
+            # Aggregate COMPLETED totals (cash + in-kind) for these proposals
+            donation_map: Dict[int, float] = {}
             if proposal_ids:
-                rows = (
+                # CASH totals
+                cash_rows = (
                     db.query(
                         Donation.proposal_id.label("proposal_id"),
-                        func.coalesce(
-                            func.sum(
-                                case(
-                                    (Donation.kind == "cash", Donation.amount),
-                                    (Donation.kind == "inkind", Donation.estimated_value),
-                                    else_=literal(0),
-                                )
-                            ),
-                            0,
-                        ).label("total_donated"),
+                        func.coalesce(func.sum(Donation_Cash.amount), 0).label("cash_total"),
                     )
+                    .join(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
                     .filter(
                         Donation.proposal_id.in_(proposal_ids),
                         Donation.status == DonationStatus.COMPLETED,
+                        Donation.donation_type == "cash",
                     )
                     .group_by(Donation.proposal_id)
                     .all()
                 )
-                donation_map = {r.proposal_id: float(r.total_donated or 0) for r in rows}
+                # IN-KIND totals
+                inkind_rows = (
+                    db.query(
+                        Donation.proposal_id.label("proposal_id"),
+                        func.coalesce(func.sum(Donation_InKind.estimated_value), 0).label("inkind_total"),
+                    )
+                    .join(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+                    .filter(
+                        Donation.proposal_id.in_(proposal_ids),
+                        Donation.status == DonationStatus.COMPLETED,
+                        Donation.donation_type == "inkind",
+                    )
+                    .group_by(Donation.proposal_id)
+                    .all()
+                )
+
+                # Combine into a single map (Decimal -> float)
+                for r in cash_rows:
+                    donation_map[r.proposal_id] = float(r.cash_total or 0)
+                for r in inkind_rows:
+                    donation_map[r.proposal_id] = donation_map.get(r.proposal_id, 0.0) + float(r.inkind_total or 0)
 
             records = [
                 FundingProposalGet(
-                    id=p.id,
+                    funding_id_=p.funding_id, 
                     title=p.title,
                     description=p.description,
                     budget_required=p.budget_required,
+                    status=p.status,
                     created_at=p.created_at,
                     updated_at=p.updated_at,
                     image=p.image,
-                    total_donated=donation_map.get(p.id, 0.0),
+                    total_donated=donation_map.get(p.funding_id, 0.0),
                 )
                 for p in proposals
             ]
 
             return FundingProposalResponsePaginated(max_page=max_page, records=records)
-
         except Exception as e:
             print(f"Error fetching proposals in CRUD: {e}")
             raise
@@ -209,8 +209,8 @@ class FundingProposalCRUD:
             raise HTTPException(status_code=500, detail=f"Error updating proposal: {str(e)}")
 
     @staticmethod
-    def delete_proposal(db: Session, proposal_id: int) -> bool:
-        p = db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
+    def delete_proposal(db: Session, funding_id: int) -> bool:
+        p = db.query(FundingProposal).filter(FundingProposal.funding_id == funding_id).first()
         if not p:
             return False
         db.delete(p)
@@ -218,7 +218,7 @@ class FundingProposalCRUD:
         return True
 
     @staticmethod
-    def total_holding(db: Session, date_since: date, date_to: date) -> List[FundingPieChart]:
+    def total_holding(db: Session, date_since: date, date_to: date) -> List["FundingPieChart"]:
         """
         Sum of COMPLETED donations (cash + in-kind) per proposal title within [date_since, date_to].
         """
@@ -230,20 +230,27 @@ class FundingProposalCRUD:
                 FundingProposal.title.label("title"),
                 func.coalesce(
                     func.sum(
-                        func.coalesce(Donation.amount, 0)
-                        + func.coalesce(Donation.estimated_value, 0)
+                        func.coalesce(Donation_Cash.amount, 0)
+                        + func.coalesce(Donation_InKind.estimated_value, 0)
                     ),
                     0,
                 ).label("total_donated"),
             )
-            .join(Donation, FundingProposal.id == Donation.proposal_id)
+            # JOIN donations to proposals via the new PK
+            .join(Donation, Donation.proposal_id == FundingProposal.funding_id)
+            # Add both child tables (uselist=False; only one will match per row)
+            .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+            .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
             .filter(
                 Donation.status == DonationStatus.COMPLETED,
                 Donation.donation_date.between(start_dt, end_dt),
-                or_(Donation.amount.isnot(None), Donation.estimated_value.isnot(None)),
+                # guard in case you add other donation types later
+                Donation.donation_type.in_(["cash", "inkind"]),
             )
             .group_by(FundingProposal.title)
             .all()
         )
 
-        return [{"title": r.title, "total_donated": float(r.total_donated)} for r in rows]
+        return [{"title": r.title, "total_donated": float(r.total_donated or 0)} for r in rows]
+    
+    

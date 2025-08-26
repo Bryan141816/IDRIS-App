@@ -20,6 +20,7 @@ from data_schemas.donors_schema import (
 )
 
 from crud_functions.donations_management.donors import donor_crud
+from crud_functions.utils import uid_from_string
 
 router = APIRouter()
 
@@ -46,12 +47,21 @@ def create_individual_donor_endpoint(
     db: Session = Depends(get_db)
 ):
     try:
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
         
+        existing = db.query(Donor).filter(Donor.user_id == user_id).first()
+        
+        if existing:
+            return existing  # or raise HTTPException(409, ...)
+ 
         if donor_type.lower() == "individual":
             organization_name = None
-        
+
         new_donor = donor_crud.create_donor(
             db=db,
+            donor_id = uid_from_string(f"{user.username}{date_joined}"),
             user_id=user_id,
             donor_type = donor_type,
             organization_name=organization_name,
@@ -105,7 +115,7 @@ def get_donor_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_access_token),
 ):
-    donor_profile = donor_crud.get_donor_profile_by_user_id(db, current_user.id)
+    donor_profile = donor_crud.get_donor_profile_by_user_id(db, current_user.user_id)
     print(donor_profile)
     if not donor_profile:
         raise HTTPException(
@@ -264,7 +274,7 @@ def fetch_donor_id(
     current_user: User = Depends(get_current_user_from_access_token),
     db: Session = Depends(get_db),
 ):
-    donor_id = donor_crud.get_donor_id_by_user_id(db, current_user.id)
+    donor_id = donor_crud.get_donor_id_by_user_id(db, current_user.user_id)
     return donor_id
 
 # router = APIRouter()

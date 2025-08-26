@@ -19,6 +19,7 @@ class FundingProposalBase(BaseModel):
 
 
 class FundingProposalCreate(BaseModel):
+    funding_id: int
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")
@@ -48,7 +49,7 @@ class FundingProposalUpdate(BaseModel):
 # ======================
 
 class FundingProposalGet(BaseModel):
-    proposalId: int = Field(..., alias="id")
+    funding_id_: int = Field(..., alias="funding_id")
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")
@@ -63,7 +64,7 @@ class FundingProposalGet(BaseModel):
 
 
 class FundingProposalResponse(BaseModel):
-    proposalId: int = Field(..., alias="id")
+    funding_id: int = Field(..., alias="id")
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")

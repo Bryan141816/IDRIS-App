@@ -16,6 +16,8 @@ import {
   ViewRafiModalModal,
   EditRafiModal,
 } from "./Modals/RAFIInfrastructure";
+import { AddBarangayModal } from "./Modals/BarangayModal";
+import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 //API Handler
 export async function getRecord(record_type: string): Promise<any> {
@@ -28,19 +30,35 @@ export async function getRecord(record_type: string): Promise<any> {
 export async function addRecord(
   record_type: string,
   payload: any,
-): Promise<any | false> {
+): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.post(
       `/lgu_profiling/manage_lgu/add_${record_type}`,
       payload,
     );
+
+    // If backend returns an ErrorResponse (success = false), catch it here
+    if (response.data.success === false) {
+      return {
+        success: false,
+        error: response.data.error || "Unknown error from server",
+      };
+    }
+
+    // Otherwise, return the created record
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to add record:", error);
-    return false;
+
+    const message =
+      error.response?.data?.error || // new error format
+      error.response?.data?.detail || // if FastAPI still raises HTTPException
+      error.message ||
+      "Unknown error occurred";
+
+    return { success: false, error: message };
   }
 }
-
 export async function deleteRecord(
   record_type: string,
   reportId: String,
@@ -133,39 +151,39 @@ const MapOfCebu = () => {
   }
 
   const [addModalState, setAddModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
     evacuation: false,
   });
   const [viewModalState, setViewModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
     evacuation: false,
   });
   const [editModalState, setEditModalState] = useState<{
-    lguModal: boolean;
+    lgu: boolean;
     barangay: boolean;
     rafi: boolean;
     hazard: boolean;
     evacuation: boolean;
   }>({
-    lguModal: false,
+    lgu: false,
     barangay: false,
     rafi: false,
     hazard: false,
@@ -228,7 +246,8 @@ const MapOfCebu = () => {
   }, [activeTab]);
   const handleAddRecord = async (payload: any) => {
     const response = await addRecord(activeTab, payload);
-    if (response) {
+    console.log(response);
+    if (!response.error) {
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
         isOpen: true, // your new values
@@ -242,7 +261,7 @@ const MapOfCebu = () => {
         ...prev, // preserves onClose and anything else
         isOpen: true, // your new values
         type: "message",
-        message: "Record failed",
+        message: response.error,
       }));
     }
   };
@@ -255,6 +274,22 @@ const MapOfCebu = () => {
       message: "Record has been updated",
     }));
     switch (activeTab) {
+      case "lgu":
+        setSelectedViewData((prev: any) => {
+          const newData = [...prev.data];
+          newData[1].text = payload.name;
+          newData[2].text = payload.lat;
+          newData[3].text = payload.lng;
+          newData[4].text = payload.classification;
+          newData[5].text = payload.population;
+          newData[6].text = payload.contact_info;
+          newData[7].text = payload.risk_level;
+          return {
+            ...prev,
+            data: newData,
+          };
+        });
+        break;
       case "evacuation":
         setSelectedViewData((prev: any) => {
           const newData = [...prev.data];
@@ -284,6 +319,7 @@ const MapOfCebu = () => {
     }
     closeEditModal();
     openViewModal();
+    handleRefreshTable();
   };
   const closeMessageBox = () => {
     setMessageBox((prev) => ({
@@ -320,6 +356,38 @@ const MapOfCebu = () => {
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
       ></AddRafiModal>
+      <AddLGUModal
+        isModalOpen={addModalState.lgu}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddRecord={handleAddRecord}
+      ></AddLGUModal>
+      <AddBarangayModal
+        isModalOpen={addModalState.barangay}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddRecord={handleAddRecord}
+      ></AddBarangayModal>
+      {selectedViewData && (
+        <ViewLGUModal
+          isModalOpen={viewModalState.lgu}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        ></ViewLGUModal>
+      )}
+      {selectedViewData && (
+        <EditLGUModal
+          isModalOpen={editModalState.lgu}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        ></EditLGUModal>
+      )}
+
       {selectedViewData && (
         <ViewEvecuationModal
           isModalOpen={viewModalState.evacuation}
@@ -339,6 +407,7 @@ const MapOfCebu = () => {
           handleEditRecord={handleEditRecord}
         ></EditEvacuationModal>
       )}
+
       {selectedViewData && (
         <ViewRafiModalModal
           isModalOpen={viewModalState.rafi}
@@ -399,13 +468,16 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report"></input>
                 <button>Search</button>
-                <button>+ Add LGU</button>
+                <button onClick={openAddModal}>+ Add LGU</button>
               </div>
             </div>
             {lguResponse ? (
               <TableView
                 tableJSON={lguResponse}
-                onClickCallback={(row: any) => {}}
+                onClickCallback={(row: any) => {
+                  setSelectedViewData(row);
+                  openViewModal();
+                }}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}
@@ -421,7 +493,7 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report"></input>
                 <button>Search</button>
-                <button>+ Add Barangay</button>
+                <button onClick={openAddModal}>+ Add Barangay</button>
               </div>
             </div>
             {barangayResponse ? (

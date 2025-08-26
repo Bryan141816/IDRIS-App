@@ -1,6 +1,213 @@
 import React, { useState } from "react";
 import "./ProcurementManagement.scss";
 
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending approval":
+      return "pending";
+    case "approved":
+      return "approved";
+    case "rejected":
+      return "rejected";
+    case "in progress":
+      return "in-progress";
+    default:
+      return "pending";
+  }
+};
+
+const getPriorityColor = (priority: string) => {
+  switch (priority.toLowerCase()) {
+    case "high":
+      return "high";
+    case "medium":
+      return "medium";
+    case "low":
+      return "low";
+    default:
+      return "medium";
+  }
+};
+const ProcurementDashboard = () => {
+  const procurementRequests: RequestData[] = [
+    {
+      id: 1,
+      requestId: "PR-2024-001",
+      title: "Emergency Medical Supplies",
+      requester: "Maria Santos - Medical Team Lead",
+      department: "Medical Response",
+      requestDate: "2024-05-20",
+      priority: "High",
+      status: "Pending Approval",
+      estimatedCost: 250000,
+      description:
+        "First aid kits, bandages, antiseptics for emergency response",
+      items: [
+        { name: "First Aid Kits", quantity: 50, unitCost: 2500 },
+        { name: "Medical Bandages", quantity: 200, unitCost: 150 },
+        { name: "Antiseptic Solution", quantity: 100, unitCost: 300 },
+      ],
+    },
+    {
+      id: 2,
+      requestId: "PR-2024-002",
+      title: "Communication Equipment",
+      requester: "Juan Dela Cruz - Operations Manager",
+      department: "Operations",
+      requestDate: "2024-05-22",
+      priority: "Medium",
+      status: "Approved",
+      estimatedCost: 180000,
+      description: "Two-way radios and communication devices for field teams",
+      items: [
+        { name: "Two-way Radios", quantity: 20, unitCost: 8000 },
+        { name: "Radio Batteries", quantity: 40, unitCost: 500 },
+      ],
+    },
+    {
+      id: 3,
+      requestId: "PR-2024-003",
+      title: "Transportation Vehicles",
+      requester: "Pedro Garcia - Logistics Coordinator",
+      department: "Logistics",
+      requestDate: "2024-05-18",
+      priority: "High",
+      status: "Rejected",
+      estimatedCost: 1500000,
+      description: "Emergency response vehicles for disaster relief operations",
+      rejectionReason: "Budget constraints - please submit revised proposal",
+      items: [
+        { name: "Emergency Response Van", quantity: 2, unitCost: 750000 },
+      ],
+    },
+    {
+      id: 4,
+      requestId: "PR-2024-004",
+      title: "Office Supplies",
+      requester: "Ana Reyes - Administrative Officer",
+      department: "Administration",
+      requestDate: "2024-05-25",
+      priority: "Low",
+      status: "In Progress",
+      estimatedCost: 25000,
+      description: "General office supplies for administrative operations",
+      items: [
+        { name: "Office Paper", quantity: 50, unitCost: 200 },
+        { name: "Printer Ink", quantity: 10, unitCost: 1500 },
+        { name: "Folders", quantity: 100, unitCost: 50 },
+      ],
+    },
+  ];
+
+  return (
+    <div className="requests-content">
+      <div className="section-header">
+        <h2>Procurement Requests</h2>
+        <button
+          className="primary-btn"
+          // onClick={() => openModal("submit-request")}
+        >
+          + Submit Request
+        </button>
+      </div>
+
+      <div className="requests-grid">
+        {procurementRequests.map((request) => (
+          <div key={request.id} className="request-card">
+            <div className="request-header">
+              <div className="request-id">{request.requestId}</div>
+              <div className="request-badges">
+                <span
+                  className={`priority-badge ${getPriorityColor(request.priority)}`}
+                >
+                  {request.priority}
+                </span>
+                <span
+                  className={`status-badge ${getStatusColor(request.status)}`}
+                >
+                  {request.status}
+                </span>
+              </div>
+            </div>
+            <div className="request-content">
+              <h3>{request.title}</h3>
+              <p className="request-description">{request.description}</p>
+              <div className="request-details">
+                <div className="detail-row">
+                  <span>Requester:</span>
+                  <span>{request.requester}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Department:</span>
+                  <span>{request.department}</span>
+                </div>
+                <div className="detail-row">
+                  <span>Date:</span>
+                  <span>
+                    {new Date(request.requestDate).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span>Estimated Cost:</span>
+                  <span className="cost">
+                    {formatCurrency(request.estimatedCost)}
+                  </span>
+                </div>
+              </div>
+              {request.rejectionReason && (
+                <div className="rejection-reason">
+                  <strong>Rejection Reason:</strong> {request.rejectionReason}
+                </div>
+              )}
+              <div className="request-actions">
+                <button
+                  className="action-btn"
+                  // onClick={() => openModal("view-request", request)}
+                >
+                  View Details
+                </button>
+                {request.status === "Pending Approval" && (
+                  <>
+                    <button
+                      className="approve-btn"
+                      // onClick={() => openModal("approve-request", request)}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="reject-btn"
+                      // onClick={() => openModal("reject-request", request)}
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                {request.status !== "Approved" &&
+                  request.status !== "Rejected" && (
+                    <button
+                      className="action-btn"
+                      // onClick={() => openModal("update-status", request)}
+                    >
+                      Update Status
+                    </button>
+                  )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 type RequestItem = {
   name: string;
   quantity: number;
@@ -150,42 +357,6 @@ const ProcurementManagement = () => {
       percentage: 30,
     },
   ];
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending approval":
-        return "pending";
-      case "approved":
-        return "approved";
-      case "rejected":
-        return "rejected";
-      case "in progress":
-        return "in-progress";
-      default:
-        return "pending";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-        return "high";
-      case "medium":
-        return "medium";
-      case "low":
-        return "low";
-      default:
-        return "medium";
-    }
-  };
 
   const openModal = (type: string, item: RequestData | null = null) => {
     setModalType(type);

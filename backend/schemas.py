@@ -3,11 +3,18 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 
+class ErrorResponse(BaseModel):
+    success: bool
+    error: str
+
+
 class Number(BaseModel):
     count: int
 
+
 class ID(BaseModel):
     id: int
+
 
 class LoginSchema(BaseModel):
     email: str
@@ -53,6 +60,50 @@ class UserSimple(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+
+
+class LGURecordsCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+
+
+class LGURecordsOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+
+
+class BaranggayRecordsCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    LGU: str
+    evacuation: str
+    population: int
+    contact_info: str
+    risk_level: str
+
+
+class BaranggayRecordsOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    lgu_id: int
+    evacucation_center_id: int
+    population: int
+    contact_info: str
+    risk_level: str
 
 
 class RafiInfrastructureCreate(BaseModel):

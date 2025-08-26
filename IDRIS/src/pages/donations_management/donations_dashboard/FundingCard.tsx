@@ -10,7 +10,7 @@ type FundingProps = {
   donated?: number;
   target?: number;
   anchorLink?: number | string;
-  fundingId: number; // Funding ID for Donate
+  funding_id: number; // Funding ID for Donate
   className?: string;
 };
 
@@ -20,15 +20,13 @@ export const FundingCard: React.FC<FundingProps> = ({
   donated,
   target,
   anchorLink,
-  fundingId,
+  funding_id,
   className = "",
 }) => {
   const navigate = useNavigate();
 
   const { userRoles } = useUserRoleContext();
-
   const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
-  console.log(fundingId);
   const handleDonateButton = (fundingId: number) => {
     navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
   }
@@ -54,7 +52,7 @@ export const FundingCard: React.FC<FundingProps> = ({
         //   Donate
         // </Link>
         <button className={styles["funding-donate-btn"]} 
-          onClick={ () => { handleDonateButton(fundingId)}}
+          onClick={ () => { handleDonateButton(funding_id)}}
         > Donate </button>
       )}
     </div>

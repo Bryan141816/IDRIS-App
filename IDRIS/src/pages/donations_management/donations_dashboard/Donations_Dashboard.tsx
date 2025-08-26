@@ -28,22 +28,23 @@ interface TransparencyReportInterface {
 }
 
 interface FundingProposalInterface {
-  proposalId: number;
+  funding_id: number;
   title: string;
   description: string;
   total_donated: number;
-  budgetRequired: number;
+  budget_required: number;
   status: string;
   image: string;
 }
 
 interface DonationRecord {
-  donation_date: Date;
-  donor_name: string;
-  funding_title: string;
-  amount: number;
-  donation_kind: string;
-  item_description: string;
+  donor_name?: string;
+  amount?: number | string;
+  funding_title?: string;
+  donation_date?: Date;
+  donation_type?: string;  
+  item_description?: string;
+  className?: string;
 }
 
 const DonationsDashboard = () => {
@@ -178,7 +179,7 @@ const DonationsDashboard = () => {
     const fetchCount = async () => {
       try {
         const response = await getDonationRecord(donationsRecordsLimit);
-        setDonationRecords(response.data);
+        setDonationRecords(response);
       } catch (error) {
         console.error("Failed to fetch donor count:", error);
         setDonationRecords([]);
@@ -202,8 +203,8 @@ const DonationsDashboard = () => {
           fundingProposalsLimit,
           fundingProposalsPage,
         );
-        console.log(proposals);
         setFundingProposals(proposals.records);
+        console.log(proposals.records)
         setFundingProposalMaxPage(proposals.max_page);
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
@@ -273,7 +274,7 @@ const DonationsDashboard = () => {
             <div className="head-container">
               <p className="title">Transparency Reports</p>
 
-              {userRoles.includes("finance admin") &&
+              {( userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
                 <Link to="/transparency_report">
                   <MenuDots />
                 </Link>
@@ -328,12 +329,12 @@ const DonationsDashboard = () => {
           {donationRecords && donationRecords.map((donation, index) => (
             <DonationRecord
               key={index}
-              donor={donation.donor_name}
+              donor_name={donation.donor_name}
               amount={donation.amount}
-              site={donation.funding_title}
-              date={new Date(donation.donation_date)}
-              kind={donation.donation_kind}
-              description={donation.item_description}
+              funding_title={donation.funding_title}
+              donation_date={donation.donation_date ? new Date(donation.donation_date) : undefined}
+              donation_type={donation.donation_type}
+              item_description={donation.item_description}
               className="donation-record"
             />
           ))}
@@ -341,7 +342,7 @@ const DonationsDashboard = () => {
 
         <h3 id="funding-proposals-title" className="public-feed-title">
           Recent Programs:
-          {userRoles.includes("finance admin") &&
+          {( userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
             <Link to="/donations_management/funding_proposals">
               <div className="icon-container">
                 <MenuDots className="menu-icon" />
@@ -357,9 +358,9 @@ const DonationsDashboard = () => {
               image={funding.image}
               message={funding.description}
               donated={funding.total_donated}
-              target={funding.budgetRequired}
+              target={funding.budget_required}
               anchorLink={''}
-              fundingId={funding.proposalId}
+              funding_id={funding.funding_id}
               className="funding-item"
             />
           ))}

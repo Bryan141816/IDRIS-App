@@ -79,7 +79,6 @@ const UserProfile = () => {
     const fetchProfile = async () => {
       try {
         const response = await getIndividualDonorProfile();
-        console.log("Donor Id: ",response.donor_id);
         setProfile(response);
         setDonorId(response.donor_id);
       } catch (err) {

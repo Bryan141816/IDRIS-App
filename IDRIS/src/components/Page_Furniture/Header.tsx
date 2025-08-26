@@ -17,7 +17,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   const [isUserSettingsVisible, showUserSettings] = useState<boolean>(false);
   const { setUserType, setEmail, setUsername, setUserReady, userType } =
     useUserContext();
-  const { setUserRoles, userRoles } = useUserRoleContext();
+  const { setUserRoles, userRoles, highestRole } = useUserRoleContext();
   const logOutUser = async () => {
     showUserSettings(false);
     setUserType("");
@@ -44,7 +44,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
         <button onClick={onIconClick}>
           <MenuDots width={24} height={22} className="header-icon" />
         </button>
-        <p id="user_role">{`${userRoles[0].toUpperCase()} (${userType.toUpperCase()})`}</p>
+        <p id="user_role">{`${highestRole?.toUpperCase()} (${userType.toUpperCase()})`}</p>
       </div>
 
       <div id="right-items">

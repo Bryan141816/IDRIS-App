@@ -34,8 +34,8 @@ interface DonorsApiResponse {
 }
 
 interface SearchedDonors {
-  id: number;
-  donor_name: string;
+  user_id: number;
+  username: string;
   email?: string;
 }
 
@@ -48,6 +48,7 @@ const ListOfRAFIDonors = () => {
   // User view Options
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
+  const adminRoleAccess = userRoles.includes("finance admin") || userRoles.includes("operations admin")
   const donorSearchRef = useRef<HTMLDivElement>(null); // For Donor Search at Add New Donor Modal
   const donorGiftRef = useRef<HTMLDivElement>(null); // Gift Donor Modal
 
@@ -205,6 +206,7 @@ const ListOfRAFIDonors = () => {
       const response = await searchDonorUsers(addDonorSearch); // Assuming this is allowed
       if (Array.isArray(response)) {
         setNewDonorSearchedItems(response);
+        console.log(response)
       } else if (
         response &&
         typeof response === "object" &&
@@ -212,12 +214,12 @@ const ListOfRAFIDonors = () => {
       ) {
         const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
           (donor) =>
-            donor.donor_name.toLowerCase().includes(addDonorSearch.toLowerCase()),
+            donor.username.toLowerCase().includes(addDonorSearch.toLowerCase()),
         );
         setNewDonorSearchedItems(
           filtered.map((donor) => ({
-            id: donor.id,
-            donor_name: donor.donor_name,
+            user_id: donor.user_id,
+            username: donor.username,
             email: donor.email || undefined,
           })),
         );
@@ -228,6 +230,7 @@ const ListOfRAFIDonors = () => {
       console.error("Error fetching donors:", error);
       setNewDonorSearchedItems([]);
     }
+    console.log(newDonorSearchedItems);
   };
 
   useEffect(() => {
@@ -262,8 +265,8 @@ const ListOfRAFIDonors = () => {
 
   // Assign Profile of selected new Donor
   const setSelectedNewDonorProfile = (donor: SearchedDonors) => {
-    setNewUserId(donor.id);
-    setNewDonorName(donor.donor_name);
+    setNewUserId(donor.user_id);
+    setNewDonorName(donor.username);
     setNewDonorSearchedItems(null)
   };
 
@@ -334,12 +337,12 @@ const ListOfRAFIDonors = () => {
       ) {
         const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
           (donor) =>
-            donor.donor_name.toLowerCase().includes(giftDonorSearchName.toLowerCase()),
+            donor.username.toLowerCase().includes(giftDonorSearchName.toLowerCase()),
         );
         setGiftDonorSearchedNames(
           filtered.map((donor) => ({
-            id: donor.id,
-            donor_name: donor.donor_name,
+            user_id: donor.user_id,
+            username: donor.username,
             email: donor.email || undefined,
           })),
         );
@@ -379,7 +382,7 @@ const ListOfRAFIDonors = () => {
 
   // Assign Profile of Selected Donor
   const setSelectedGiftDonor = (donor: SearchedDonors) => {
-    setGiftDonorName(donor.donor_name);
+    setGiftDonorName(donor.username);
     setGiftDonorEmail(donor.email || "No email provided");
     setGiftDonorSearchedNames(null);
   };
@@ -401,7 +404,7 @@ const ListOfRAFIDonors = () => {
           onChange={setSelectedSorting}
         />
 
-        {userRoles.includes("finance admin") && (
+        { adminRoleAccess && (
           <>
             <button
               type="button"
@@ -520,7 +523,7 @@ const ListOfRAFIDonors = () => {
                       key={index}
                       onClick={() => setSelectedNewDonorProfile(donor)}
                     >
-                      {donor.donor_name}
+                      {donor.username}
                     </li>
                   ))
                 )}
@@ -592,7 +595,7 @@ const ListOfRAFIDonors = () => {
                       key={index}
                       onClick={() => setSelectedGiftDonor(donor)}
                     >
-                      {donor.donor_name}
+                      {donor.username}
                     </li>
                   ))
                 )}

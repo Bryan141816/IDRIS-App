@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 
@@ -44,9 +44,11 @@ class UserUpdate(BaseModel):
 
 
 class UserSimple(BaseModel):
-    id: int
+    user_id: int
     username: str
     email: str
+    
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):

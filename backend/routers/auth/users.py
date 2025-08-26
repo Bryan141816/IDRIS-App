@@ -27,7 +27,7 @@ def get_user_by_type(
             User.roles.cast(JSONB).contains(["donor"]),
             or_(*[User.username.ilike(f"%{s}%") for s in search])
         )
-    ).all()    
+    ).all()
     if not users:
         raise HTTPException(status_code=404, detail="No users found with given names")
     return users

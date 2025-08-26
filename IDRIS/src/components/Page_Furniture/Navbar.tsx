@@ -81,7 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       </div>
 
       <div id="nav-links">
-        <div className="nav-items" id="lgu-profiling">
+        { userRoles.includes("") && <div className="nav-items" id="lgu-profiling">
           <div
             className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
             onClick={() => {
@@ -115,7 +115,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               Map of Cebu
             </Link>
           </div>
-          <div
+          { userType == "lgu" && <div
             className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
           >
             {/* Sub items here */}
@@ -129,8 +129,8 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               Evacuation and Shelter Management
             </Link>
-          </div>
-          <div
+          </div>}
+          { userType == "lgu" && <div
             className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
           >
             {/* Sub items here */}
@@ -142,13 +142,20 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 onClose();
               }}
             >
-              Management
+              Pin Location Management
             </Link>
-          </div>
-        </div>
+          </div>}
+        </div>}
 
 
-        <div className="nav-items" id="volunteer">
+        { (
+            userRoles.includes("generic") || 
+            userRoles.includes("volunteer") || 
+            userRoles.includes("donor") || 
+            userRoles.includes("operations admin") || 
+            userRoles.includes("operations admin") || 
+            userRoles.includes("finance admin")
+          ) && <div className="nav-items" id="volunteer">
           <div
             className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
             onClick={() => {
@@ -220,9 +227,14 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               </Link>
             )}
           </div>
-        </div>
+        </div>}
 
-        <div className="nav-items" id="donations">
+        { ( userRoles.includes("generic") ||
+            userRoles.includes("volunteer") || 
+            userRoles.includes("donor") || 
+            userRoles.includes("operations admin") || 
+            userRoles.includes("finance admin")
+          ) && <div className="nav-items" id="donations">
           <div
             className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
             onClick={() => {
@@ -230,12 +242,12 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             }}
           >
             <Donations width={14} height={14} className="sidebar-icons" />
-            {userRoles.includes("finance admin") && userType == "admin" && (
+            { userType == "admin" && (
               <a href="#" className="non-redirect">
                 DONATIONS MANAGEMENT
               </a>
             )}
-            {!userRoles.includes("finance admin") && (
+            { userType != "admin" && (
               <a href="#" className="non-redirect">
                 DONATIONS
               </a>
@@ -245,7 +257,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
           >
             {/* Sub items here */}
-            { userRoles.includes("donor") &&
+            { userRoles.includes("donor") || userRoles.includes("generic") &&
               <Link
                 to="/donor_profile"
                 prefetch-link="/donor_profile"
@@ -288,7 +300,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               Funding Proposals
             </Link>
           </div>
-        </div>
+        </div>}
 
         <div className="nav-items" id="response">
           <div

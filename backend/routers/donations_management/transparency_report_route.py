@@ -14,16 +14,10 @@ from models import TransparencyReport
 
 from routers.role_checker import RoleChecker
 
-router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
-)
-
-router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor", "volunteer", "contributor"]))],
-)
-
-router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
+from routers.donations_management.donations_accessibility_roles import (
+    router_donor,
+    router_admin,
+    router_admin_or_donor,
 )
 
 router = APIRouter()

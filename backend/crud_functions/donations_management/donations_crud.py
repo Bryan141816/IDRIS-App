@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy import extract, func
 
@@ -210,11 +210,11 @@ class DonationCRUD:
             raise ValueError("Donation record does not exist")
 
     # --- AGGREGATIONS / REPORTS ---
-
     @staticmethod
     def get_total_donations(db: Session, year: int, month: int | None = None):
         """
-        Returns total value (cash + estimated in-kind) filtered by year/month for COMPLETED donations.
+        Total value (cash + estimated in-kind) for COMPLETED donations in a given year (and optional month).
+        Returns a Decimal (or 0 if none).
         """
         filters = [
             extract("year", Donation.donation_date) == year,
@@ -223,12 +223,22 @@ class DonationCRUD:
         if month is not None:
             filters.append(extract("month", Donation.donation_date) == month)
 
-        total = db.query(
-            func.coalesce(func.sum(Donation.amount), 0) +
-            func.coalesce(func.sum(Donation.estimated_value), 0)
-        ).filter(*filters).scalar()
+        # Outer join to avoid dropping rows that don't have a cash/inkind record
+        cash_sum_expr = func.coalesce(func.sum(Donation_Cash.amount), 0)
+        inkind_sum_expr = func.coalesce(func.sum(Donation_InKind.estimated_value), 0)
 
-        return total
+        total_expr = (cash_sum_expr + inkind_sum_expr).label("total")
+
+        total = (
+            db.query(total_expr)
+            .select_from(Donation)
+            .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+            .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+            .filter(*filters)
+            .scalar()
+        )
+
+        return total or 0
 
     @staticmethod
     def get_donor_retention_by_year(db: Session, year: int):
@@ -270,28 +280,53 @@ class DonationCRUD:
     @staticmethod
     def get_donations_with_details(db: Session, limit: int = 10):
         """
-        Recent COMPLETED donations with donor name & proposal title.
+        Recent COMPLETED donations with donor name & proposal title,
+        including cash / in-kind detail pulled from related tables.
         """
         results = (
             db.query(Donation)
-            .join(Donation.donor)
-            .join(Donation.proposal, isouter=True)
+            .options(
+                joinedload(Donation.donor),
+                joinedload(Donation.proposal),
+                joinedload(Donation.cash),
+                joinedload(Donation.inkind),
+            )
             .filter(Donation.status == DonationStatus.COMPLETED)
             .order_by(Donation.donation_date.desc())
             .limit(limit)
             .all()
         )
 
-        return [
-            {
-                "donation_date": r.donation_date,
-                "donor_name": (r.donor.donor_name if getattr(r, "donor", None) else None),
-                "funding_title": (r.proposal.title if getattr(r, "proposal", None) else None),
-                "kind": r.kind,
-                "amount": (r.amount if r.kind == "cash" else r.estimated_value),
-                "item_description": (r.item_description if r.kind == "inkind" else None),
-                "frequency": r.frequency.name if hasattr(r.frequency, "name") else r.frequency,
-                "status": r.status.name if hasattr(r.status, "name") else r.status,
-            }
-            for r in results
-        ]
+        out = []
+        for d in results:
+            # Determine type; prefer explicit column but fall back to relationship presence
+            donation_type = d.donation_type or ("cash" if d.cash else "inkind" if d.inkind else None)
+
+            # Cash details
+            cash_amount = d.cash.amount if d.cash else None
+            payment_method = d.cash.payment_method if d.cash else None
+
+            # In-kind details
+            estimated_value = d.inkind.estimated_value if d.inkind else None
+            item_description = (d.inkind.item_description or d.inkind.description) if d.inkind else None
+            quantity = d.inkind.quantity if d.inkind else None
+
+            out.append({
+                "donation_id": d.donation_id,
+                "donation_date": d.donation_date,
+                "donor_name": getattr(d.donor, "donor_name", None),
+                "funding_title": getattr(d.proposal, "title", None),
+
+                # Unified type + values
+                "donation_type": donation_type,
+                "amount": cash_amount if donation_type == "cash" else estimated_value,
+                "payment_method": payment_method if donation_type == "cash" else None,
+                "estimated_value": estimated_value if donation_type == "inkind" else None,
+                "item_description": item_description if donation_type == "inkind" else None,
+                "quantity": quantity if donation_type == "inkind" else None,
+
+                # Enums: return name if present, else raw value/string
+                "frequency": d.frequency.name if hasattr(d.frequency, "name") else d.frequency,
+                "status": d.status.name if hasattr(d.status, "name") else d.status,
+            })
+        return out  

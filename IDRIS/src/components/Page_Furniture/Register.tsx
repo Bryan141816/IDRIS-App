@@ -266,9 +266,6 @@ const Register = () => {
         <h3 id="login-user-role">Select User Role</h3>
         <hr />
         <div id="select-userRole">
-          <button id="lgu" onClick={() => RegisterAs("lgu")}>
-            LGU Officer
-          </button>
           <button id="generic" onClick={() => RegisterAs("generic")}>
             Generic User
           </button>
@@ -296,6 +293,9 @@ const Register = () => {
           </button>
           <button id="finance-admin" onClick={() => RegisterAs("finance admin")}>
             Finance Admin
+          </button>
+          <button id="lgu" onClick={() => RegisterAs("lgu")}>
+            LGU Officer
           </button>
         </div>
       </Modal>

@@ -15,18 +15,11 @@ from data_schemas.funding_proposal_schema import (
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
     )
 
-router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
+from routers.donations_management.donations_accessibility_roles import (
+    router_donor,
+    router_admin,
+    router_admin_or_donor,
 )
-
-router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor", "volunteer", "contributor"]))],
-)
-
-router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor", "operations admin"]))],
-)
-
 
 UPLOAD_DIR = Path("media/fundingproposals")
 

@@ -7,6 +7,6 @@ def GetUserId():
     def checker(
         current_user: User = Depends(get_current_user_from_access_token),
     ):
-        return current_user.id  # Only return the user ID
+        return current_user.user_id  # Only return the user ID
 
     return checker

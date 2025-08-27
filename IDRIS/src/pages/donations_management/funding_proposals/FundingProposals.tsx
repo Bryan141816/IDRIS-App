@@ -83,7 +83,7 @@ const FundingProposals = () => {
           value={filtered}
           onChange={setFiltered}
         />
-        {userRoles.includes("finance admin") &&
+        { (userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
           <button
             className="green-button"
             onClick={() =>

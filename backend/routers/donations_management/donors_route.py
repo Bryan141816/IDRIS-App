@@ -24,16 +24,10 @@ from crud_functions.utils import uid_from_string
 
 router = APIRouter()
 
-router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser"]))],
-)
-
-router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor", "volunteer", "contributor"]))],
-)
-
-router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "superuser", "donor", "volunteer", "contributor"]))],
+from routers.donations_management.donations_accessibility_roles import (
+    router_donor,
+    router_admin,
+    router_admin_or_donor,
 )
 
 
@@ -54,7 +48,14 @@ def create_individual_donor_endpoint(
         existing = db.query(Donor).filter(Donor.user_id == user_id).first()
         
         if existing:
-            return existing  # or raise HTTPException(409, ...)
+            if not user.roles:
+                user.roles = []
+            if "donor" not in user.roles:
+                user.roles.append("donor")
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+            return existing
  
         if donor_type.lower() == "individual":
             organization_name = None
@@ -68,7 +69,18 @@ def create_individual_donor_endpoint(
             date_joined=date_joined,
             is_verified=is_verified
         )
+        
+        db.refresh(user)  # ensure working with the latest row
+        if not user.roles:
+            user.roles = []
+        if "donor" not in user.roles:
+            user.roles = [*user.roles, "donor"]  # assign new list to ensure SQLAlchemy change tracking
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
         return new_donor
+    
     except Exception as e:
         import traceback
         traceback.print_exc()

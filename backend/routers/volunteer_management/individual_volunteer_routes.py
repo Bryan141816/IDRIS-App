@@ -24,18 +24,18 @@ router_admin = APIRouter(
 )
 
 router_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "superuser","generic"]))],
 )
 
 router_admin_or_volunteer = APIRouter(
     dependencies=[
-        Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor"]))
+        Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor","generic"]))
     ],
 )
 
 # NEW: Router for authenticated users (any role can create their own profile)
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "operations admin", "superuser","generic"]))],
 )
 
 UPLOAD_DIR = Path("media/certifications")

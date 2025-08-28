@@ -34,6 +34,11 @@ const Register = () =>
   import("./components/Page_Furniture/Register").then((module) => ({
     Component: module.default,
   }));
+
+const Activate = () =>
+  import("./components/Page_Furniture/ActivateAccount").then((module) => ({
+    Component: module.default,
+  }));
 // LGU Profiling
 const MapOfCebu = () =>
   import("./pages/lgu_profiling/map_of_cebu/MapOfCebu").then((module) => ({
@@ -85,17 +90,15 @@ const OrganizationForm = () =>
     (module) => ({ Component: module.default }),
   );
 
-
 const IndividualForm = () =>
   import("./pages/volunteer_management/volunteer_form/IndividualForm").then(
     (module) => ({ Component: module.default }),
   );
 
-  const VolunteerAssignment = () =>
-  import("./pages/volunteer_management/volunteer_assignment/volunteer_assignment").then(
-    (module) => ({ Component: module.default }),
-  );
-
+const VolunteerAssignment = () =>
+  import(
+    "./pages/volunteer_management/volunteer_assignment/volunteer_assignment"
+  ).then((module) => ({ Component: module.default }));
 
 const ManageVolunteer = () =>
   import("./pages/volunteer_management/manage_volunteers/ManageVolunteer").then(
@@ -134,11 +137,9 @@ const FundingDonation = () =>
   );
 
 const DonorProfile = () =>
-  import(
-    "./pages/donations_management/donor/Donor_Profile"
-  ).then(
-    (module) => ({ Component: module.default }),
-  );
+  import("./pages/donations_management/donor/Donor_Profile").then((module) => ({
+    Component: module.default,
+  }));
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -218,6 +219,10 @@ export const router = createBrowserRouter([
       {
         path: "register",
         lazy: Register,
+      },
+      {
+        path: "activate",
+        lazy: Activate,
       },
       {
         path: "user_not_allowed",

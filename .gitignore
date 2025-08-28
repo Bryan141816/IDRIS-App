@@ -35,3 +35,8 @@ __pycache__/
 # UPLOADED FILES
 backend/media/**/*.*
 !backend/media/**/.gitkeep
+
+
+# Environment files
+.env
+*.env

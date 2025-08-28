@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from typing import Optional
 
 # =============================
@@ -52,6 +52,12 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def create_activation_token(user_id: int):
+    expire = datetime.utcnow() + timedelta(hours=24)
+    to_encode = {"sub": str(user_id), "exp": expire}
+    return jwt.encode(to_encode, secret_key, algorithm=algorithm)
+
+
 # =============================
 # TOKEN DECODING (optional)
 # =============================
@@ -59,4 +65,5 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
 
 def decode_token(token: str) -> dict:
     """Decode a token to get the payload"""
+
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])

@@ -9,12 +9,14 @@ from crud_functions.utils import uid_from_string
 from auth import (
     create_access_token,
     create_refresh_token,
+    create_activation_token,
     decode_token,
     SECRET_KEY,
     ALGORITHM,
 )
 from database import get_db
 from fastapi import Header
+from email_handler import send_activation_email
 
 router = APIRouter(tags=["users"])
 
@@ -54,10 +56,10 @@ def get_current_user_from_access_token(
 
 
 @router.post("/register", response_model=TokenWithUserResponse)
-def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
+async def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
     new_user = create_user(
         db,
-        user_id = uid_from_string(user.username),
+        user_id=uid_from_string(user.username),
         email=user.email,
         username=user.username,
         password=user.password,
@@ -76,7 +78,8 @@ def register(user: UserCreate, response: Response, db: Session = Depends(get_db)
         samesite="Lax",
         secure=False,  # Set to True in production with HTTPS
     )
-
+    token = create_activation_token(uid_from_string(user.username))
+    await send_activation_email(user.email, token)
     return {"access_token": access_token, "token_type": "bearer", "user": new_user}
 
 
@@ -127,9 +130,11 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 def read_users_me(current_user: User = Depends(get_current_user_from_access_token)):
     return current_user
 
+
 @router.get("/users/me/id", response_model=ID)
 def read_user_id(current_user: User = Depends(get_current_user_from_access_token)):
     return {"id": current_user.user_id}
+
 
 @router.post("/logout")
 def logout(response: Response):

@@ -52,7 +52,9 @@ function PageLayout() {
   const location = useLocation();
   const navigation = useNavigation();
   const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/register";
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/activate";
   const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,

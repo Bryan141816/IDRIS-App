@@ -2,6 +2,7 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, time, timedelta
 from typing import Optional
+from jose import jwt, JWTError, ExpiredSignatureError
 
 # =============================
 # CONFIGURATION
@@ -55,7 +56,7 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
 def create_activation_token(user_id: int):
     expire = datetime.utcnow() + timedelta(hours=24)
     to_encode = {"sub": str(user_id), "exp": expire}
-    return jwt.encode(to_encode, secret_key, algorithm=algorithm)
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 # =============================
@@ -67,3 +68,23 @@ def decode_token(token: str) -> dict:
     """Decode a token to get the payload"""
 
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+
+def decode_activation_token(token: str) -> int | None:
+    """
+    Decodes the JWT activation token and returns the user_id.
+    Returns None if token is invalid or expired.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        sub = payload.get("sub")
+        if sub is None:
+            # sub claim missing
+            return None
+        return int(sub)
+    except ExpiredSignatureError:
+        print("Token has expired")
+        return None
+    except JWTError:
+        print("Token is invalid")
+        return None

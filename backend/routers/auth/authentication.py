@@ -1,26 +1,40 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Response,
+    Request,
+    UploadFile,
+    File,
+    Form,
+)
 from sqlalchemy.orm import Session
 from jose import JWTError
 from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse, ID
-from models import User
+from models import User, UserProfile
 from crud import create_user, authenticate_user, get_user_by_email
-from crud_functions.utils import uid_from_string
-
+from crud_functions.utils import uid_from_string, process_image_to_webp
+import json
 from auth import (
     create_access_token,
     create_refresh_token,
     create_activation_token,
     decode_token,
-    SECRET_KEY,
-    ALGORITHM,
+    decode_activation_token,
 )
 from database import get_db
 from fastapi import Header
 from email_handler import send_activation_email
+from pathlib import Path
+from uuid import uuid4
 
 router = APIRouter(tags=["users"])
 
 REFRESH_TOKEN_COOKIE = "refresh_token"
+
+UPLOAD_DIR = Path("media/profile_picture")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def get_token_from_cookie(request: Request):
@@ -124,6 +138,84 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 
     new_access_token = create_access_token(data={"sub": email})
     return {"access_token": new_access_token, "token_type": "bearer"}
+
+
+@router.post("/activate_account")
+def activate_account(
+    profile_file: UploadFile | None = File(None),
+    profile_info: str = Form(...),
+    token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        profile_data = json.loads(profile_info)
+        uid = decode_activation_token(token)
+        if uid is None:
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+        # -------------------------
+        # Handle image
+        # -------------------------
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)  # ensure folder exists
+        default_image_path = UPLOAD_DIR / "defaultProfile.webp"
+
+        if profile_file and profile_file.filename:
+            ext = ".webp"
+            unique_name = f"{uuid4().hex}{ext}"
+            target_path = UPLOAD_DIR / unique_name
+            processed = process_image_to_webp(
+                profile_file
+            )  # your image processing function
+            with target_path.open("wb") as f:
+                f.write(processed)
+            image_path = str(target_path).replace("\\", "/")
+        else:
+            # If no file uploaded, use default profile image
+            image_path = str(default_image_path).replace("\\", "/")
+            if not default_image_path.exists():
+                # Optional: copy a bundled default file into UPLOAD_DIR
+                from shutil import copyfile
+
+                bundled_default = Path(
+                    "media/defaultProfile.webp"
+                )  # adjust path to your media folder
+                copyfile(bundled_default, default_image_path)
+
+        # -------------------------
+        # Save user profile
+        # -------------------------
+        profile_db = UserProfile(
+            user_id=uid,
+            first_name=profile_data.get("fname"),
+            last_name=profile_data.get("lname"),
+            profile_image=image_path,
+            phone_number=profile_data.get("contactInfo"),
+            bday=profile_data.get("birthday"),
+            gender=profile_data.get("gender"),
+            address=profile_data.get("address"),
+            bio=profile_data.get("bio"),
+        )
+        db.add(profile_db)
+
+        # -------------------------
+        # Update "is_activated" column
+        # -------------------------
+
+        user = db.query(User).filter(User.user_id == uid).first()
+        if user:
+            user.is_activated = True
+            db.commit()
+
+        db.refresh(profile_db)
+        return {"status": "success", "profile": profile_db.user_profile_id}
+
+    except Exception as e:
+        db.rollback()
+        import traceback
+
+        print("ERROR:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/users/me", response_model=UserSchema)

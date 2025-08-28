@@ -74,7 +74,7 @@ def create_user(
     user_type: str,
     password: str,
     roles: list[str] = [],
-    user_id: int | None = None
+    user_id: int | None = None,
 ):
     hashed = hash_password(password)
     user_data = {

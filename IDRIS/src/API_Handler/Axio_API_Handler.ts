@@ -38,8 +38,10 @@ export const API = axios.create({
 
 API.interceptors.request.use(async (config) => {
   // Check if the request is for /login or /register
+  console.log(config.url)
+
   const skipRefresh =
-    config.url?.includes("/login") || config.url?.includes("/register");
+    config.url?.includes("/login") || config.url?.includes("/register") || config.url?.includes("/activate");
 
   // If the request is login/register → skip token logic
   if (skipRefresh) {

@@ -56,6 +56,7 @@ class IndividualVolunteerCRUD:
 
         full_path_str = str(file_path).replace("\\", "/") if file_path else None
         skills_str = _skills_to_csv(getattr(volunteer_data, "skills", None))
+        other_medical_conditions = volunteer_data.other_medical_conditions or "N/A"
 
         db_volunteer = IndividualVolunteer(
             user_id=volunteer_data.user_id,
@@ -70,7 +71,7 @@ class IndividualVolunteerCRUD:
             age=volunteer_data.age,
             availability=volunteer_data.availability,
             medical_conditions=volunteer_data.medical_conditions,
-            other_medical_conditions=volunteer_data.other_medical_conditions,
+            other_medical_conditions=other_medical_conditions,
             certification=full_path_str,
             skills=skills_str,
             status=volunteer_data.status or VolunteerStatus.submitted,

@@ -116,20 +116,16 @@ const OrganizationForm: React.FC = () => {
     const onFinish = async (values: OrganizationFormValues): Promise<void> => {
         try {
             const formData = new FormData();
-
             // Map UI fields -> backend keys
             formData.append('organization_name', values.orgName);
             formData.append('organization_type', values.orgType);
             formData.append('organization_email', values.orgEmail);
             formData.append('organization_phone_number', values.orgPhone);
             formData.append('organization_address', values.orgAddress);
-
             formData.append('contact_person_name', values.repName);
             formData.append('contact_person_position', values.repPosition);
             formData.append('contact_person_phone_number', values.repPhone);
             formData.append('contact_person_email', values.repEmail);
-
-            // Availability as a string (DB is String(50))
             formData.append('availability', values.availability.join(', '));
 
             // Files
@@ -150,19 +146,12 @@ const OrganizationForm: React.FC = () => {
             navigate('/volunteer_management/volunteer_dashboard');
         } catch (err: any) {
             console.error(err);
-            message.error(err?.response?.data?.detail || 'Submission failed.');
-        }
-    };
-
-    const showAlert = (): void => {
             Swal.fire({
-                title: 'You have successfully uploaded your application.',
-                icon: 'success',
+                title: 'You have already submitted your application!',
+                icon: 'info',
                 confirmButtonColor: '#749AB6',
                 width: '380px',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
+                showConfirmButton: true,
                 customClass: {
                     popup: 'custom-height-modal',
                     title: 'custom-swal-title',
@@ -171,7 +160,28 @@ const OrganizationForm: React.FC = () => {
                     icon: 'custom-swal-icon',
                 },
             });
-        };
+            message.error(err?.response?.data?.detail || 'Submission failed.');
+        }
+    };
+
+    const showAlert = (): void => {
+        Swal.fire({
+            title: 'You have successfully uploaded your application.',
+            icon: 'success',
+            confirmButtonColor: '#749AB6',
+            width: '380px',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'custom-height-modal',
+                title: 'custom-swal-title',
+                htmlContainer: 'custom-swal-text',
+                confirmButton: 'custom-swal-button',
+                icon: 'custom-swal-icon',
+            },
+        });
+    };
 
 
     const uploadButton = (
@@ -180,6 +190,23 @@ const OrganizationForm: React.FC = () => {
             <div style={{ marginTop: 8 }}>Upload</div>
         </div>
     );
+
+    const validateName = (rule: any, value: string) => {
+        const regex = /^[A-Za-z\s]+$/;  // Only allows letters and spaces
+        if (value && !regex.test(value)) {
+            return Promise.reject('Name can only contain letters and spaces.');
+        }
+        return Promise.resolve();
+    };
+
+    const validatePhoneNumber = (rule: any, value: string) => {
+        const regex = /^[\d\s\+\-]+$/;  // Only allows digits, spaces, plus, and dash
+        if (value && !regex.test(value)) {
+            return Promise.reject('Phone number can only contain digits, spaces, plus (+), and dash (-).');
+        }
+        return Promise.resolve();
+    };
+
 
     return (
         <div className="application-form">
@@ -256,7 +283,7 @@ const OrganizationForm: React.FC = () => {
                                     name="orgPhone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter phone number' }]}
+                                    rules={[{ required: true, message: 'Please enter phone number' }, { validator: validatePhoneNumber }]}
                                 >
                                     <Input placeholder="Enter organization phone" />
                                 </Form.Item>
@@ -281,7 +308,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repName"
                                     label="Full Name"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter full name' }]}
+                                    rules={[{ required: true, message: 'Please enter full name' }, { validator: validateName }]}
                                 >
                                     <Input placeholder="Enter representative's name" />
                                 </Form.Item>
@@ -301,7 +328,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repPhone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter phone number' }]}
+                                    rules={[{ required: true, message: 'Please enter phone number' }, { validator: validatePhoneNumber }]}
                                 >
                                     <Input placeholder="Enter representative's phone" />
                                 </Form.Item>

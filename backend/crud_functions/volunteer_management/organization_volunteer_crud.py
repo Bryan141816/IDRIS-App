@@ -40,7 +40,7 @@ class OrganizationVolunteerCRUD:
         organization_data: OrganizationVolunteerCreate,
         certificate_file: Optional[UploadFile] = None,
     ) -> OrganizationVolunteer:
-        
+
         file_path = None
 
         if certificate_file and certificate_file.filename:

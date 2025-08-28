@@ -249,6 +249,11 @@
   --upload-icon-scale: 0.35;    /* icon scales with tile */
 }
 
+  .custom-height-modal {
+    height: 350px; /* You can change this to any value that fits your needs */
+    max-height: 90vh; /* Optional: This ensures the modal doesn't exceed the viewport height */
+}
+
   /* Responsive Design */
   @media (max-width: 768px) {
     .form-row {

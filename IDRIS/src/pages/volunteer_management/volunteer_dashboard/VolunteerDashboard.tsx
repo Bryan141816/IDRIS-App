@@ -307,8 +307,8 @@ export default function IDRISDashboard() {
                                     <div className="card-number">{totalApplicants}</div>
                                 </div>
                                 {userType === "admin" && userRoles.includes("operations admin") ? (<button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")} > Manage Applicants </button>)
-                                    : volunteerStatus !== "submitted" ? (<button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal} > Become a Volunteer </button>)
-                                        : volunteerStatus === "submitted" ? (<button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")} > Track Volunteer Application </button>) : null}
+                                    : volunteerStatus === "submitted" ? (<button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal} > Become a Volunteer </button>)
+                                        : volunteerStatus !== "submitted" ? (<button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")} > Track Volunteer Application </button>) : null}
                             </div>
 
                             {/* Total Volunteers */}

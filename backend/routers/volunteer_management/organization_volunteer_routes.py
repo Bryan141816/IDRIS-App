@@ -23,15 +23,15 @@ router_admin = APIRouter(
 )
 
 router_organization_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "generic"]))],
 )
 
 router_admin_or_organization_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "organization volunteer", "volunteer"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "organization volunteer", "volunteer", "generic"]))],
 )
 
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "operations admin", "volunteer"]))],
+    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "operations admin", "volunteer", "generic"]))],
 )
 
 UPLOAD_DIR = Path("media/organization_files")

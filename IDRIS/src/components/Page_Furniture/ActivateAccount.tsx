@@ -1,33 +1,62 @@
-import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-
-export default function Activate() {
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-
-  const handleActivate = async () => {
-    const token = searchParams.get("token");
-    if (!token) {
-      setStatus("error");
-      return;
-    }
-
-    setStatus("loading");
-    try {
-      await axios.get(`http://localhost:8000/auth/activate/${token}`);
-      setStatus("success");
-    } catch {
-      setStatus("error");
-    }
-  };
-
+import styles from "./styles/ActivateAccount.module.scss";
+import DefaultProfile from "../../media/defaultProfile.webp";
+const Activate = () => {
   return (
-    <div>
-      <div style={{ display: "flex" }}></div>
+    <div className={styles.activateFormContainer}>
+      <div className={styles.profileForm}>
+        <h2>Verify Email and Set Profile</h2>
+        <form>
+          <div className={styles.profileImage}>
+            <input type="file" />
+            <span className={styles.selectProfile}>Select Profile</span>
+            <img src={DefaultProfile} alt="" />
+          </div>
+          <div className={styles.columnContainer}>
+            <div className={styles.inputContainers}>
+              <label>First Name:</label>
+              <input type="text" />
+            </div>
+            <div className={styles.inputContainers}>
+              <label>Last Name:</label>
+              <input type="text" />
+            </div>
+          </div>
+          <div className={styles.columnContainer}>
+            <div className={styles.inputContainers}>
+              <label>Address:</label>
+              <input type="text" />
+            </div>
+          </div>
+          <div className={styles.columnContainer}>
+            <div className={styles.inputContainers}>
+              <label>Birthdate:</label>
+              <input type="date" />
+            </div>
+            <div className={styles.inputContainers}>
+              <label>Gender:</label>
+              <select>
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+          </div>
+          <div className={styles.columnContainer}>
+            <div className={styles.inputContainers}>
+              <label>Contact No.:</label>
+              <input type="text" />
+            </div>
+          </div>
+          <div className={styles.columnContainer}>
+            <div className={styles.inputContainers}>
+              <label>Bio:</label>
+              <textarea></textarea>
+            </div>
+          </div>
+          <button>Submit</button>
+        </form>
+      </div>
     </div>
   );
-}
+};
+export default Activate;

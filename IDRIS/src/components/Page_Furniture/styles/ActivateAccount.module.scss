@@ -1,0 +1,145 @@
+  .activateFormContainer {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    padding: 60px;
+    justify-content: center;
+  }
+
+  .profileForm {
+    display: flex;
+    width: 50%;
+    height: fit-content;
+    max-height: 100%;
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    flex-direction: column;
+    overflow: auto;
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #749AB6;
+      text-align: center;
+      width: 100%;
+    }
+
+
+
+    form {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      align-items: center;
+      padding: 20px;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .profileImage {
+      display: flex;
+      height: 200px;
+      width: 200px;
+      flex-shrink: 0;
+      border-radius: 100%;
+      overflow: hidden;
+      border: 1px solid #000;
+      position: relative;
+
+      span {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.4rem;
+        font-weight: 600;
+        z-index: 800;
+        color: white;
+        opacity: 0;
+        background-color: rgba($color: #000000, $alpha: 0.3);
+        transition: opacity 0.2s ease;
+      }
+
+      img {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    }
+
+    input[type="file"]::file-selector-button {
+      position: absolute;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      top: 0;
+      left: 0;
+    }
+
+
+    .profileImage input[type="file"]:hover~.selectProfile {
+      opacity: 1;
+
+    }
+
+
+    input[type="file"] {
+      opacity: 0;
+      z-index: 999;
+
+    }
+
+    .columnContainer {
+      display: flex;
+      width: 100%;
+      gap: 30px;
+    }
+
+    .inputContainers {
+      display: flex;
+      width: 100%;
+      flex-direction: column;
+      gap: 5px;
+
+      label {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      input {
+        width: 100% !important;
+      }
+
+      textarea {
+        resize: none;
+        min-height: 120px;
+      }
+    }
+
+    button {
+      width: 100%;
+      padding: 0.9rem 1.5rem;
+      background: linear-gradient(135deg, #749AB6 0%, rgb(149.4386792453, 178.2971698113, 199.5613207547) 100%);
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      outline: none;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(70, 130, 180, 0.3);
+      margin-top: 10px;
+      margin-bottom: 10px;
+
+    }
+
+
+  }

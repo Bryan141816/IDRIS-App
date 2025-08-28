@@ -465,7 +465,7 @@ class IndividualVolunteer(Base):
     age = Column(Integer, nullable=True)
     availability = Column(String(255), nullable=True)
     medical_conditions = Column(String(255), nullable=True)
-    other_medical_conditions = Column(String(255), nullable=True)
+    other_medical_conditions = Column(String(255), nullable=True ,default="N/A")
     certification = Column(String(255), nullable=True)
     skills = Column(String(255), nullable=True)
     created_at = Column(

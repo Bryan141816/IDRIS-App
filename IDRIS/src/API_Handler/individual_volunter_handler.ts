@@ -1,6 +1,6 @@
 // volunteer_api_handler.ts
 import { API } from './Axio_API_Handler';
-
+import axios from "axios";
 // Create a new volunteer
 export async function createIndividualVolunteer(formData: FormData): Promise<any> {
     formData.append('status', 'submitted');
@@ -53,3 +53,14 @@ export async function updateVolunteerStatus(
   const res = await API.patch(`/volunteer/${id}/status`, { status });
   return res.data;
 }
+
+
+export const getVolunteerByUserId = async (user_id: number) => {
+    try {
+        const response = await axios.get(`/api/volunteers/${user_id}`);
+        return response.data; // Assuming it returns the volunteer data if found
+    } catch (error) {
+        console.error("Error fetching volunteer by user ID:", error);
+        return null;
+    }
+};

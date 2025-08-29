@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 from jose import jwt
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 from typing import Optional
 from jose import jwt, JWTError, ExpiredSignatureError
 
@@ -53,9 +53,9 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_activation_token(user_id: int):
+def create_token(user_id: int, token_type: str = "activation"):
     expire = datetime.utcnow() + timedelta(hours=24)
-    to_encode = {"sub": str(user_id), "exp": expire}
+    to_encode = {"sub": str(user_id), "exp": expire, "type": token_type}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -70,20 +70,34 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
-def decode_activation_token(token: str) -> int | None:
-    """
-    Decodes the JWT activation token and returns the user_id.
-    Returns None if token is invalid or expired.
-    """
+def verify_token(token: str, expected_type: str) -> int | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        # Type check
+        if payload.get("type") != expected_type:
+            print("Invalid token type")
+            return None
+
+        # Expiration check
+        exp = payload.get("exp")
+        if exp is None:
+            print("Token missing expiration")
+            return None
+        if datetime.now(timezone.utc).timestamp() > exp:
+            print("Token has expired (manual check)")
+            return None
+
+        # Subject (user_id) check
         sub = payload.get("sub")
         if sub is None:
-            # sub claim missing
+            print("Token missing subject")
             return None
+
         return int(sub)
+
     except ExpiredSignatureError:
-        print("Token has expired")
+        print("Token has expired (auto check)")
         return None
     except JWTError:
         print("Token is invalid")

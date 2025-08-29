@@ -63,7 +63,6 @@ def delete(db: Session, model, id):
 
 
 def get_user_by_email(db: Session, email: str):
-    print("by email")
     return db.query(User).filter(User.email == email).first()
 
 

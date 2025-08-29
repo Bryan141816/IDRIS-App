@@ -24,22 +24,22 @@ const Login = () => {
       await loginUser(email, password);
       const userData = await fetchCurrentUser();
 
-      if ( userData ) {
+      if (userData) {
         setUserType(userData["user_type"]);
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
         setUsername(userData["username"]);
         setUserReady(true);
-      if (userData["roles"].includes("volunteer")) {
-        navigate("/volunteer_management/volunteer_dashboard");
-      } else if (userData["roles"].includes("operations admin")) {
-        navigate("/donations_management/donations_dashboard");
+        if (userData["roles"].includes("volunteer")) {
+          navigate("/volunteer_management/volunteer_dashboard");
+        } else if (userData["roles"].includes("operations admin")) {
+          navigate("/donations_management/donations_dashboard");
+        } else {
+          throw new Error("No valid role assigned to this user.");
+        }
       } else {
-        throw new Error("No valid role assigned to this user.");
+        throw new Error("Invalid user data received.");
       }
-    } else {
-      throw new Error("Invalid user data received.");
-    }
     } catch (error) {
       console.error("Login failed: ", error);
       setErrorMessage("Incorrect email or password. Please try again.");
@@ -86,7 +86,10 @@ const Login = () => {
             />
           </div>
           <span id="log-in-error-message">{erroMessage}</span>
-          <Link to="/register">Signup</Link>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <Link to="/register">Signup</Link>
+            <Link to="/forgot_password">Forgot Password</Link>
+          </div>
           <button type="submit">Login</button>
         </form>
       </div>

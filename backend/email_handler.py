@@ -25,3 +25,15 @@ async def send_activation_email(email: str, token: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+async def send_reset_email(email: str, token: str):
+    reset_link = f"http://localhost:5173/reset_password?token={token}"
+    message = MessageSchema(
+        subject="Reset Password",
+        recipients=[email],
+        body=f"Click here to reset your password: {reset_link}",
+        subtype="plain",
+    )
+    fm = FastMail(conf)
+    await fm.send_message(message)

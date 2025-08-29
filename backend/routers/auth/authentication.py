@@ -11,7 +11,15 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from jose import JWTError
-from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse, ID
+from schemas import (
+    UserCreate,
+    UserSchema,
+    LoginSchema,
+    TokenWithUserResponse,
+    ID,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
 from models import User, UserProfile
 from crud import create_user, authenticate_user, get_user_by_email
 from crud_functions.utils import uid_from_string, process_image_to_webp
@@ -19,13 +27,14 @@ import json
 from auth import (
     create_access_token,
     create_refresh_token,
-    create_activation_token,
+    create_token,
     decode_token,
-    decode_activation_token,
+    verify_token,
+    hash_password,
 )
 from database import get_db
 from fastapi import Header
-from email_handler import send_activation_email
+from email_handler import send_activation_email, send_reset_email
 from pathlib import Path
 from uuid import uuid4
 
@@ -92,7 +101,7 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
         samesite="Lax",
         secure=False,  # Set to True in production with HTTPS
     )
-    token = create_activation_token(uid_from_string(user.username))
+    token = create_token(uid_from_string(user.username), "activation")
     await send_activation_email(user.email, token)
     return {"access_token": access_token, "token_type": "bearer", "user": new_user}
 
@@ -149,7 +158,7 @@ def activate_account(
 ):
     try:
         profile_data = json.loads(profile_info)
-        uid = decode_activation_token(token)
+        uid = verify_token(token, "activation")
         if uid is None:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
 
@@ -208,6 +217,40 @@ def activate_account(
 
         db.refresh(profile_db)
         return {"status": "success", "profile": profile_db.user_profile_id}
+
+    except Exception as e:
+        db.rollback()
+        import traceback
+
+        print("ERROR:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/forgot_password")
+async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, req.email)
+    if not user:
+        return {"message": "If this email exists, you’ll receive reset instructions."}
+    print(user.user_id)
+    token = create_token(user.user_id, "reset")
+    await send_reset_email(req.email, token)
+    return {"message": "Password reset email sent"}
+
+
+@router.post("/reset_password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        uid = verify_token(payload.token, "reset")
+        if uid is None:
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+        hashed = hash_password(payload.password)
+        user = db.query(User).filter(User.user_id == uid).first()
+        if user:
+            user.hashed_password = hashed
+            db.commit()
+        return {"message": "Password has been updated"}
 
     except Exception as e:
         db.rollback()

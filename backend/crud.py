@@ -71,11 +71,13 @@ def create_user(
     email: str,
     username: str,
     user_type: str,
-    password: str,
+    password: str | None,
     roles: list[str] = [],
     user_id: int | None = None,
 ):
-    hashed = hash_password(password)
+    hashed = None
+    if password:
+        hashed = hash_password(password)
     user_data = {
         "email": email,
         "user_id": user_id,

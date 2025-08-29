@@ -31,19 +31,62 @@ from auth import (
     decode_token,
     verify_token,
     hash_password,
+    SECRET_KEY,
 )
 from database import get_db
 from fastapi import Header
 from email_handler import send_activation_email, send_reset_email
 from pathlib import Path
 from uuid import uuid4
+from decouple import config
+from authlib.integrations.starlette_client import OAuth
+from fastapi.responses import RedirectResponse
+import jwt
 
 router = APIRouter(tags=["users"])
+
+
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
+
 
 REFRESH_TOKEN_COOKIE = "refresh_token"
 
 UPLOAD_DIR = Path("media/profile_picture")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
+
+
+@router.get("/auth/login")
+async def oauth_login(request: Request):
+    redirect_uri = request.url_for("auth_callback")
+    # Add extra info inside `state`
+    return await oauth.google.authorize_redirect(
+        request, redirect_uri, state="login"  # or "register"
+    )
+
+
+@router.get("/auth/callback")
+async def auth_callback(request: Request):
+    token = await oauth.google.authorize_access_token(request)
+    user_info = token.get("userinfo")
+    state = request.query_params.get("state")
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Failed to get user info")
+
+    jwt_token = jwt.encode({"sub": user_info["email"]}, SECRET_KEY, algorithm="HS256")
+
+    print(state)
+    # redirect_url = f"http://localhost:5173/auth/callback?token={jwt_token}"
+    # return RedirectResponse(url=redirect_url)
 
 
 def get_token_from_cookie(request: Request):

@@ -34,7 +34,7 @@ class User(Base):
     user_id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    hashed_password = Column(String, nullable=True)
     user_type = Column(String)
     roles = Column(JSON, default=[])
     is_activated = Column(Boolean, default=False)
@@ -465,7 +465,7 @@ class IndividualVolunteer(Base):
     age = Column(Integer, nullable=True)
     availability = Column(String(255), nullable=True)
     medical_conditions = Column(String(255), nullable=True)
-    other_medical_conditions = Column(String(255), nullable=True ,default="N/A")
+    other_medical_conditions = Column(String(255), nullable=True, default="N/A")
     certification = Column(String(255), nullable=True)
     skills = Column(String(255), nullable=True)
     created_at = Column(

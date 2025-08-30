@@ -5,7 +5,7 @@ from typing import List, Optional, Dict
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
-from models import FundingProposal, Donation, DonationStatus, Donation_Cash, Donation_InKind
+from models import FundingProposal, Donation, DonationStatus, Donation_Cash, Donation_InKind, DonationType
 from crud_functions.utils import uid_from_string, process_image_to_webp
 from data_schemas.funding_proposal_schema import (
     FundingProposalCreate,
@@ -16,6 +16,7 @@ from data_schemas.funding_proposal_schema import (
 
 from math import ceil
 from datetime import datetime, date, time
+
 UPLOAD_DIR = Path("media/fundingproposals")
 
 class FundingProposalCRUD:
@@ -113,7 +114,7 @@ class FundingProposalCRUD:
                     .filter(
                         Donation.proposal_id.in_(proposal_ids),
                         Donation.status == DonationStatus.COMPLETED,
-                        Donation.donation_type == "cash",
+                        Donation.donation_type == DonationType.CASH,
                     )
                     .group_by(Donation.proposal_id)
                     .all()
@@ -128,7 +129,7 @@ class FundingProposalCRUD:
                     .filter(
                         Donation.proposal_id.in_(proposal_ids),
                         Donation.status == DonationStatus.COMPLETED,
-                        Donation.donation_type == "inkind",
+                        Donation.donation_type == DonationType.INKIND,
                     )
                     .group_by(Donation.proposal_id)
                     .all()
@@ -243,9 +244,6 @@ class FundingProposalCRUD:
             .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
             .filter(
                 Donation.status == DonationStatus.COMPLETED,
-                Donation.donation_date.between(start_dt, end_dt),
-                # guard in case you add other donation types later
-                Donation.donation_type.in_(["cash", "inkind"]),
             )
             .group_by(FundingProposal.title)
             .all()

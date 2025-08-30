@@ -66,6 +66,10 @@ const FundingCard: React.FC<FundingProp> = ({
     });
   };
 
+  const handleDonateButton = (fundingId: number) => {
+    navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
+  }
+
   return (
     <div className={styles.fundingCard}>
       {/* FUNDING HEADER */}
@@ -111,10 +115,8 @@ const FundingCard: React.FC<FundingProp> = ({
           <p className={styles.percentage}>{percentage}%</p>
         </div>
 
-        {userType == "user" && (
-          <Link to={"/donations_management/funding_donation"} className={styles.anchorButton}>
-          <button className={styles.donateButton}>Donate</button>
-          </Link>
+        { (userType == "user" && proposalId != null ) && (
+          <button className={styles.donateButton} onClick={ () => handleDonateButton(proposalId) }>Donate</button>
         )}
       </div>
     </div>

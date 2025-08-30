@@ -15,10 +15,20 @@ from data_schemas.funding_proposal_schema import (
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
     )
 
-from routers.donations_management.donations_accessibility_roles import (
-    router_donor,
-    router_admin,
-    router_admin_or_donor,
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+)
+
+router_user = APIRouter(
+    dependencies=[Depends(RoleChecker(["generic"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
 UPLOAD_DIR = Path("media/fundingproposals")
@@ -124,7 +134,9 @@ def get_total_holding(
     date_to: date = Query(default=date.today(), description="End date (default: today)"),
     db: Session = Depends(get_db)
 ):
-    return CRUD.total_holding(db, date_since, date_to)
+    response = CRUD.total_holding(db, date_since, date_to)
+    print(response)
+    return response
 
 
 router = APIRouter()

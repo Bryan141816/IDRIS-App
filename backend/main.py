@@ -64,11 +64,11 @@ app.include_router(organization_volunteer_routes.router, tags=["Organization Vol
 
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
 
-app.mount(
-    "/media/transparency_reports",
-    StaticFiles(directory="media/transparency_reports"),
-    name="transparencyreports",
-)
+# app.mount(
+#     "/media/transparency_reports",
+#     StaticFiles(directory="media/transparency_reports"),
+#     name="transparencyreports",
+# )
 
 app.mount(
     "/media/fundingproposals",

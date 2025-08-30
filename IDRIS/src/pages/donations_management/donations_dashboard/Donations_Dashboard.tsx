@@ -1,26 +1,31 @@
 import "./dashboard.scss";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import dayjs, { Dayjs } from "dayjs";
 import { Link } from "react-router-dom";
 import { MenuDots } from "../../../components/Page_Furniture/Icons";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import DownloadableFile from "../../../components/Page_Furniture/Downloadable_File";
 import DashboardPieChart from "./Donation_dashboard_piechart";
-import pdf_logo from "../files/pdf-logo.png";
 import { DonationRecord } from "./DonationRecord";
 import { FundingCard } from "./FundingCard";
+import { Modal } from "../../../components/Page_Furniture/Modals";
+import TransparencyReportForm from "./TransparencyReportForm";
+import DonationReport from './donation_report';
+
+import {
+  getFundingProposalTotalCashDonations,
+  getFundingProposalTotalInKindDonations
+} from "../../../API_Handler/donations_transparency_report";
+
 import {
   getCountofDonors,
   getFundingProposals,
 } from "../../../API_Handler/donations_dashboard_handler";
-import {
-  getTransparencyReportsMini,
-} from "../../../API_Handler/donations_transparency_report";
+
 import {
   getTotalDonations,
   getRetentionRate,
   getDonationRecord
 } from "../../../API_Handler/donations_donation_handler";
-import { StringGradients } from "antd/es/progress/progress";
 
 interface TransparencyReportInterface {
   file_name: string;
@@ -42,7 +47,7 @@ interface DonationRecord {
   amount?: number | string;
   funding_title?: string;
   donation_date?: Date;
-  donation_type?: string;  
+  donation_type?: string;
   item_description?: string;
   className?: string;
 }
@@ -50,6 +55,8 @@ interface DonationRecord {
 const DonationsDashboard = () => {
   const { userRoles } = useUserRoleContext();
   const [loading, setLoading] = useState(true);
+
+  type DirectType = "prev" | "next";
 
   // TOTAL DONATIONS VARIABLES
   const currentDate = new Date();
@@ -129,47 +136,6 @@ const DonationsDashboard = () => {
     fetchRetention();
   }, []);
 
-  // =======================================> TRANSPARENCY REPORT
-  const [transparencyReports, setTransparencyReports] = useState<TransparencyReportInterface[]>([]);
-  const [selectedTransparencyDate, setSelectedTransparencyDate] = useState("");
-  const [transparencyReportPage, setTransparencyReportPage] = useState<number>(1);
-
-  const transparencyReportLimit = 3;
-  const [transparencyReportMaxPage, setTransparencyReportMaxPage] = useState<number>(1);
-
-  // GET TRANSPARENCY REPORTS
-  useEffect(() => {
-    async function fetchReports() {
-      try {
-        const response = await getTransparencyReportsMini(
-          "",
-          selectedTransparencyDate,
-          transparencyReportPage,
-          transparencyReportLimit,
-        );
-        setTransparencyReportMaxPage(response.max_page);
-        setTransparencyReports(response.reports);
-      } catch (error) {
-        console.error("Failed to fetch reports:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchReports();
-  }, [transparencyReportPage, selectedTransparencyDate]);
-
-  type DirectType = "prev" | "next";
-  const handleTransparencyReportPage = (direct: DirectType) => {
-    setTransparencyReportPage((prevPage) => {
-      if (direct === "prev") {
-        return Math.max(prevPage - 1, 1); // Prevent going below page 1
-      } else {
-        return Math.min(prevPage + 1, transparencyReportMaxPage); // Prevent going above max page
-      }
-    });
-  };
-
   // =======================================> DONATIONS RECORDS
   const donationsRecordsLimit = 5;
   const [donationRecords, setDonationRecords] = useState<DonationRecord[]>();
@@ -208,6 +174,8 @@ const DonationsDashboard = () => {
         setFundingProposalMaxPage(proposals.max_page);
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -222,171 +190,205 @@ const DonationsDashboard = () => {
     });
   };
 
+  // =======================================> Funding Proposals Selected Dates
+  const [month, setMonth] = useState<number | null>();
+  const [year, setYear] = useState<number | null>();
+  const [donationType, setDonationType] = useState<string | null>();
+  // =======================================> Modal Controls
+  const [activeModal, setActiveModal] = useState("");
+  const closeModal = () => {
+    setActiveModal("");
+  }
+
+  const handleFormSubmit = async (month: number, year: number | null, donationType: string) => {
+    setMonth(month);
+    setYear(year);
+    setDonationType(donationType);
+
+    if (year === null) {
+      console.error("Year is required!");
+      return;
+    }
+
+    // Get the total donations for the given month and year
+    try {
+      const data = await (donationType == "cash" ? getFundingProposalTotalCashDonations(month, year) : getFundingProposalTotalInKindDonations(month, year));
+      console.log("Total Donations Data:", data);
+      setActiveModal("donation-report-file");
+      // Handle the returned data (e.g., update state, display in UI)
+    } catch (error) {
+
+      if (error instanceof Error && (error as any).response && (error as any).response.status === 404) {
+        setActiveModal("no-donations");
+        console.log("No donors Found");
+      }
+
+      console.error("Error fetching total donations:", error);
+      // Optionally handle errors (e.g., display a message to the user)
+    }
+  };
+  
   if (loading) return <p>Loading...</p>;
   return (
     <>
-      <div id="dashboard">
-        <h3 className="public-feed-title">Donations Statistics</h3>
-        <div id="donation-statistic">
-          <div id="grid-container">
-            <div className="donation-stat-card large">
-              <div className="horizontal-container">
-                <p className="title">
-                  Overall Donations as of{" "}
-                  {donations_month != null && new Date(donations_year, donations_month - 1).toLocaleString("default", {
-                    month: "long",
-                  })}{" "}
-                  {donations_year}
+      {(activeModal != "donation-report-file") &&
+        <div id="dashboard">
+          <h3 className="public-feed-title">Donations Statistics</h3>
+          <div id="donation-statistic">
+            <div id="grid-container">
+              <div className="donation-stat-card large">
+                <div className="horizontal-container">
+                  <p className="title">
+                    Overall Donations as of{" "}
+                    {donations_month != null && new Date(donations_year, donations_month - 1).toLocaleString("default", {
+                      month: "long",
+                    })}{" "}
+                    {donations_year}
 
-                </p>
-                <div className="total_donations_settings">
-                  <button
-                    className={`prev-page ${activeDonationButton === "monthly" ? "active" : "inactive"}`}
-                    onClick={() => handleTotalDonationsFilter("monthly")}
-                  >Monthly</button>
+                  </p>
+                  <div className="total_donations_settings">
+                    <button
+                      className={`prev-page ${activeDonationButton === "monthly" ? "active" : "inactive"}`}
+                      onClick={() => handleTotalDonationsFilter("monthly")}
+                    >Monthly</button>
 
-                  <button
-                    className={`prev-page ${activeDonationButton === "yearly" ? "active" : "inactive"}`}
-                    onClick={() => handleTotalDonationsFilter("yearly")}
-                  >Yearly</button>
+                    <button
+                      className={`prev-page ${activeDonationButton === "yearly" ? "active" : "inactive"}`}
+                      onClick={() => handleTotalDonationsFilter("yearly")}
+                    >Yearly</button>
+                  </div>
                 </div>
+
+                <p className="stat-data">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                    minimumFractionDigits: 0,
+                  }).format(total_donations)}
+                </p>
               </div>
 
-              <p className="stat-data">
-                {new Intl.NumberFormat("en-PH", {
-                  style: "currency",
-                  currency: "PHP",
-                  minimumFractionDigits: 0,
-                }).format(total_donations)}
-              </p>
+              <div className="donation-stat-card">
+                <p className="title">Total Donors</p>
+                <p className="stat-data">{donors_count}</p>
+              </div>
+              <div className="donation-stat-card">
+                <p className="title">Donor Retention</p>
+                <p className="stat-data">{donation_retention}%</p>
+              </div>
             </div>
-
-            <div className="donation-stat-card">
-              <p className="title">Total Donors</p>
-              <p className="stat-data">{donors_count}</p>
-            </div>
-            <div className="donation-stat-card">
-              <p className="title">Donor Retention</p>
-              <p className="stat-data">{donation_retention}%</p>
-            </div>
-          </div>
-          <div id="transparency-report">
+            {/* <div id="transparency-report">
             <div className="head-container">
               <p className="title">Transparency Reports</p>
 
-              {( userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
-                <Link to="/transparency_report">
-                  <MenuDots />
-                </Link>
-              }
+            </div>  
+          </div> */}
+          </div>
 
-            </div>
-            <input
-              type="date"
-              id="t-report-date"
-              className="entry no-icon"
-              placeholder=" "
-              value={selectedTransparencyDate}
-              onChange={(e) => setSelectedTransparencyDate(e.target.value)}
-            />
-            {transparencyReports.map((report, index) => (
-              <DownloadableFile
+          <h3 className="public-feed-title funding-proposal-titles">Donations Per Site
+            {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
+              <div className="icon-container closer-texts" onClick={() => setActiveModal("transparency-report-modal")}>
+                <MenuDots className="menu-icon" />
+                Request Report
+              </div>
+            }
+
+          </h3>
+
+          <DashboardPieChart />
+
+          <h3 className="public-feed-title">Donation Record</h3>
+          <div id="donation-record-container">
+            {donationRecords && donationRecords.map((donation, index) => (
+              <DonationRecord
                 key={index}
-                icon={pdf_logo}
-                filename={report.file_name}
-                fileUrl={report.file}
-                className="transparency-report-file"
+                donor_name={donation.donor_name}
+                amount={donation.amount}
+                funding_title={donation.funding_title}
+                donation_date={donation.donation_date ? new Date(donation.donation_date) : undefined}
+                donation_type={donation.donation_type}
+                item_description={donation.item_description}
+                className="donation-record"
               />
             ))}
-
-            <div id="transparency-report-page-control" className="page-contorol">
-              <button
-                className="prev-page"
-                onClick={() => handleTransparencyReportPage("prev")}
-              >
-                Previous
-              </button>
-              <p>
-                Page: {transparencyReportPage}/{""}
-                {transparencyReportMaxPage}{""}
-              </p>
-              <button
-                className="next-page"
-                onClick={() => handleTransparencyReportPage("next")}
-              >
-                Next
-              </button>
-            </div>
           </div>
-        </div>
 
-        <h3 className="public-feed-title">Donations Per Site</h3>
+          <h3 id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
+            Recent Programs:
+            {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
+              <Link to="/donations_management/funding_proposals">
+                <div className="icon-container">
+                  <MenuDots className="menu-icon" />
+                  Manage
+                </div>
+              </Link>
+            }
+          </h3>
+          <div id="funding-proposals">
+            {fundingProposals.map((funding, index) => (
+              <FundingCard
+                key={index}
+                image={funding.image}
+                message={funding.description}
+                donated={funding.total_donated}
+                target={funding.budget_required}
+                anchorLink={''}
+                funding_id={funding.funding_id}
+                className="funding-item"
+              />
+            ))}
+          </div>
+          <div id="funding-proposal-page-control" className="page-contorol">
+            <button
+              className="prev-page"
+              onClick={() => handleFundingProposalPage("prev")}
+            >
+              Previous
+            </button>
+            <p>
+              Page: {fundingProposalsPage}/{""}
+              {fundingProposalMaxPage}{""}
+            </p>
+            <button
+              className="next-page"
+              onClick={() => handleFundingProposalPage("next")}
+            >
+              Next
+            </button>
+          </div>
 
-        <DashboardPieChart />
+          <TransparencyReportForm
+            isOpen={activeModal === "transparency-report-modal"}
+            onClose={() => setActiveModal("")}
+            onSubmit={handleFormSubmit}
+          />
 
-        <h3 className="public-feed-title">Donation Record</h3>
-        <div id="donation-record-container">
-          {donationRecords && donationRecords.map((donation, index) => (
-            <DonationRecord
-              key={index}
-              donor_name={donation.donor_name}
-              amount={donation.amount}
-              funding_title={donation.funding_title}
-              donation_date={donation.donation_date ? new Date(donation.donation_date) : undefined}
-              donation_type={donation.donation_type}
-              item_description={donation.item_description}
-              className="donation-record"
-            />
-          ))}
-        </div>
-
-        <h3 id="funding-proposals-title" className="public-feed-title">
-          Recent Programs:
-          {( userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
-            <Link to="/donations_management/funding_proposals">
-              <div className="icon-container">
-                <MenuDots className="menu-icon" />
-                Manage
+          <Modal isOpen={activeModal === "no-donations"} onClose={closeModal}>
+            <h3 className="modal-title">No Donors Found</h3>
+            <div id="modal-common-container">
+              <p>
+                There are no donations found for {
+                  new Date(year ?? 0, (month ?? 1) - 1).toLocaleString('default', { month: 'long' })
+                } {year}
+              </p>
+              <div className="modal-button-container">
+                <button
+                  type="button"
+                  className="green-modal-button"
+                  onClick={closeModal}
+                >
+                  Okay
+                </button>
               </div>
-            </Link>
-          }
-        </h3>
-        <div id="funding-proposals">
-          {fundingProposals.map((funding, index) => (
-            <FundingCard
-              key={index}
-              image={funding.image}
-              message={funding.description}
-              donated={funding.total_donated}
-              target={funding.budget_required}
-              anchorLink={''}
-              funding_id={funding.funding_id}
-              className="funding-item"
-            />
-          ))}
+            </div>
+          </Modal>
         </div>
-        <div id="funding-proposal-page-control" className="page-contorol">
-          <button
-            className="prev-page"
-            onClick={() => handleFundingProposalPage("prev")}
-          >
-            Previous
-          </button>
-          <p>
-            Page: {fundingProposalsPage}/{""}
-            {fundingProposalMaxPage}{""}
-          </p>
-          <button
-            className="next-page"
-            onClick={() => handleFundingProposalPage("next")}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      }
+      {(activeModal == "donation-report-file") &&
+        <DonationReport />
+      }
     </>
   );
 };
-
 export default DonationsDashboard;
 

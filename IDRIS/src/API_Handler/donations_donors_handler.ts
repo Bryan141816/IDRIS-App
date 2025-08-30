@@ -8,12 +8,12 @@ export async function getDonorsList(search = '', page = 1, limit = 1): Promise<a
 }
 
 export async function createNewDonor(formData: FormData): Promise<any> {
-  const response = await API.post('/donors/create/', formData, {
+  const response = await API.post('/donors/create_donor/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response.data;
+  return response;
 }
 
 export async function searchDonorUsers(search = ''): Promise<any> {

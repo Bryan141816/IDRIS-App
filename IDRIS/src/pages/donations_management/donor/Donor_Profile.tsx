@@ -66,7 +66,6 @@ const donorData: DonorData = {
 
 const UserProfile = () => {
   const { userRoles } = useUserRoleContext();
-
   const [profile, setProfile] = useState<DonorProfile | null>(null);
   const [donorId, setDonorId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null >(null);
@@ -75,19 +74,19 @@ const UserProfile = () => {
   const [userProfilePicture] = useState<string | undefined>(undefined);
   const [userBackgroundPicture] = useState<string | undefined>(undefined);
 
+  const fetchProfile = async () => {
+    try {
+      const response = await getIndividualDonorProfile();
+      setProfile(response);
+      setDonorId(response.donor_id);
+    } catch (err) {
+      console.error(err);
+      // setError("Failed to fetch profile.");
+    }
+
+  };
+  
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await getIndividualDonorProfile();
-        setProfile(response);
-        setDonorId(response.donor_id);
-      } catch (err) {
-        console.error(err);
-        // setError("Failed to fetch profile.");
-      }
-
-    };
-
     fetchProfile();
   }, []);
 
@@ -189,10 +188,11 @@ const UserProfile = () => {
   // DONOR REGISTRATION MODAL
   // Form Values
   const [ organizationName, setOrganizationName] = useState<string | null>(null);
-  const [isFormOpen, setFormStatus] = useState<boolean>(false);
+  const [ activeModal, setActiveModal] = useState("");
   const [isIndividual, setIsIndividual] = useState<boolean>(true);
+
   const closeModal = () => {
-    setFormStatus(false);
+    setActiveModal("");
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,20 +206,23 @@ const UserProfile = () => {
     try {
       const res = await createNewDonor(formData);
 
-      if (!res.ok) {
+      if (res.status !== 200) {
+        // Log the error response for debugging
+        console.error("Failed to register donor, status:", res.status);
         throw new Error("Failed to register donor");
       }
 
-      const data = await res.json();
-      console.log("✅ Donor registered:", data);
+      setActiveModal("registration-successful");
+      fetchProfile();
     } catch (err) {
-      console.error("❌ Error:", err);
+      console.log(err);
+      setActiveModal("registration-error");
     }
   }
 
   const renderRegisterDonorModal = (): React.ReactNode => {
     return (
-      <Modal isOpen={isFormOpen} onClose={closeModal}>
+      <Modal isOpen={activeModal == "registration-form"} onClose={closeModal}>
         <h3 className="modal-title">Register as Donor</h3>
         <form action="" id="donor-registration-form" onSubmit={handleSubmit}>
           <img src={userProfilePicture || NoImage} alt="user-profile" className="profile-picture" />
@@ -246,8 +249,7 @@ const UserProfile = () => {
       </Modal>
     )
   }
-
-
+  
   // if (error) return <p>{error}</p>;
   // if (!profile) return <p>Loading...</p>;
 
@@ -286,7 +288,7 @@ const UserProfile = () => {
             <p className="role-assigned">{userRoles[0].toUpperCase()} ({donorId})</p>
           </div>
 
-          <button id="register-button" onClick={() => { setFormStatus(!isFormOpen) }}> Register as Donor</button>
+          <button id="register-button" onClick={() => { setActiveModal("registration-form") }}> Register as Donor</button>
         </div>
         <hr />
 
@@ -350,6 +352,19 @@ const UserProfile = () => {
       </div>
 
       {renderRegisterDonorModal()}
+
+      <Modal isOpen={activeModal === "registration-successful"} onClose={closeModal}>
+        <h3 className="modal-title">Registration Successful</h3>
+        <div className="modal-button-container">
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === "registration-error"} onClose={closeModal}>
+        <h3 className="modal-title">Registration Failed</h3>
+        <div className="modal-button-container">
+        </div>
+      </Modal>
+
     </div>
 
   );

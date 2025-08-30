@@ -1,98 +1,42 @@
-from pydantic import BaseModel, Field
-from datetime import datetime
-from typing import Optional, List
+from pydantic import BaseModel, model_validator
+from typing import Optional
+from datetime import date
 
-
-# =========================
-# Base (common read/write)
-# =========================
-class TransparencyReportBase(BaseModel):
-    file: str
-    file_name: str
-    date_issued: datetime
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
-# =========================
-# Create
-# =========================
-class TransparencyReportCreate(BaseModel):
-    file: str
-    file_name: str
-    date_issued: datetime
+class CashTransparencyResponseSchema(BaseModel):
+    id: int
+    donation_date: date
+    amount: float
+    donor_name: str
+    status: str
+    donation_type: str
 
     class Config:
         from_attributes = True
-        populate_by_name = True
 
+    @model_validator(mode="before")
+    def set_attributes(cls, values):
+        # Check if the values contain a SQLAlchemy model or just a dict
+        if isinstance(values, dict):
+            return values  # If it's a dict, it’s probably from Pydantic's normal parsing
+        
+        donation = values  # This will be the SQLAlchemy model (Donation)
 
-# =========================
-# Update (partial/patch)
-# =========================
-class TransparencyReportUpdate(BaseModel):
-    transparency_id: int = Field(..., alias="id")  # maps to model id
-    file: Optional[str] = None
-    file_name: Optional[str] = None
-    date_issued: Optional[datetime] = None
+        # Manually assign values from the SQLAlchemy object
+        return {
+            "id": donation.donation_id,
+            "donation_date": donation.donation_date.date() if donation.donation_date else None,
+            "amount": (
+                donation.cash.amount if donation.donation_type == "cash" and donation.cash else
+                donation.inkind.estimated_value if donation.donation_type == "inkind" and donation.inkind else 0.0
+            ),
+            "donor_name": (
+                donation.donor.donor_name if donation.donor else "Anonymous"
+            ),
+            "status": donation.status,
+            "donation_type": donation.donation_type,
+        }
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
-# =========================
-# Read / Response
-# =========================
-class TransparencyReportOut(BaseModel):
-    transparency_id: int = Field(..., alias="id")
-    file: str
-    file_name: str
-    date_issued: datetime
-    date_uploaded: datetime
-    date_updated: datetime
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
-# Slim item for lists, if you want lighter payloads
-class TransparencyReportMini(BaseModel):
-    transparency_id: int = Field(..., alias="id")
-    file_name: str
-    date_issued: datetime
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
-# =========================
-# Filters & Pagination
-# =========================
-class TransparencyReportFilter(BaseModel):
-    file_name: Optional[str] = None
-    date: Optional[datetime] = None  # interpreted as date_issued in queries
-    limit: int = 5
-    page: int = 1
-
-
-class TransparencyReportResponsePaginated(BaseModel):
-    max_page: int
-    records: List[TransparencyReportOut]
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
-class TransparencyReportMiniPaginated(BaseModel):
-    max_page: int
-    reports: List[TransparencyReportMini]
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+# Assuming TransparencyCashSchema is defined somewhere as:
+class TransparencyCashSchema(BaseModel):
+    amount: float
+    payment_method: str  # Example field

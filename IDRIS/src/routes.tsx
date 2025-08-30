@@ -123,9 +123,10 @@ const UpdateFunding = () =>
   import("./pages/donations_management/funding_proposals/UpdateFunding").then(
     (module) => ({ Component: module.default }),
   );
-const TransparencyReport = () =>
+
+const DonationsReport = () =>
   import(
-    "./pages/donations_management/transparency_report_management/TransparencyReport"
+    "./pages/donations_management/donations_dashboard/donation_report"
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
@@ -306,12 +307,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 lazy: CreateFunding,
-                handle: { allowedRoles: ["finance admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin"] },
               },
               {
                 path: "update",
                 lazy: UpdateFunding,
-                handle: { allowedRoles: ["finance admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin"] },
               },
             ],
           },
@@ -322,9 +323,9 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "transparency_report",
-        lazy: TransparencyReport,
-        handle: { allowedRoles: ["finance admin"] },
+        path: "donation_report",
+        lazy: DonationsReport,
+        handle: { allowedRoles: ["finance admin", "operations admin"] },
       },
       {
         path: "donor_profile",
@@ -432,7 +433,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/funding_proposals/create": CreateFunding,
   "/donations_management/funding_proposals/update": UpdateFunding,
 
-  "/transparency_report": TransparencyReport,
+  "/donation_report": DonationsReport,
   "/donor_profile": DonorProfile,
 
   "/response_dashboard": ResponseDashboard,

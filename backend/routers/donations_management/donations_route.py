@@ -7,17 +7,25 @@ from crud_functions.utils import uid_from_string
 from datetime import datetime, timezone
 from routers.role_checker import RoleChecker
 
-from routers.donations_management.donations_accessibility_roles import (
-    router_donor,
-    router_admin,
-    router_admin_or_donor,
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
 )
 
-@router_admin.post("/one-time/create", response_model=DonationResponse)
+router_user = APIRouter(
+    dependencies=[Depends(RoleChecker(["generic"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+)
+
+@router_donor.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print("Reached backend")
     try:
-        print(donation)
         return CRUD.create_one_time_pending_donation(db, donation)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

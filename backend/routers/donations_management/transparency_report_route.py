@@ -1,112 +1,48 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
-from math import ceil
 from database import get_db
-from datetime import datetime
-from typing import List, Optional
-from schemas import Number
-from data_schemas.transparency_report_schema import ( TransparencyReportBase, TransparencyReportCreate, TransparencyReportFilter, 
-                                                    TransparencyReportOut, TransparencyReportUpdate, TransparencyReportMiniPaginated )
-from crud_functions.donations_management.transparency_report import TransparencyReport_CRUD as CRUD 
-from models import TransparencyReport
-
+from crud_functions.donations_management.transparency_report import TransparencyReportCRUD as CRUD 
 from routers.role_checker import RoleChecker
 
-from routers.donations_management.donations_accessibility_roles import (
-    router_donor,
-    router_admin,
-    router_admin_or_donor,
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+)
+
+router_user = APIRouter(
+    dependencies=[Depends(RoleChecker(["generic"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
 router = APIRouter()
-
-UPLOAD_DIR = Path("media/transparency_reports")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-@router_admin.post("/create")
-def create_transparency_report_endpoint(
-    file_name: str = Form(...),
-    file: UploadFile = File(...),
-    date_issued: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    return CRUD.create_transparency_report(
-        db=db,
-        file=file,
-        file_name=file_name,
-        date_issued=date_issued
-    )
         
-@router_admin_or_donor.get("/get_transparency_reports", response_model=List[TransparencyReportOut])
-def get_all_transparency_report_endpoint(
-    file_name: Optional[str] = Query(None),
-    date: Optional[datetime] = Query(None),
-    limit: int = Query(5),
-    page: int = Query(1),
-    db: Session = Depends(get_db)
-):
-    filters = TransparencyReportFilter(
-        file_name=file_name,
-        date=date,
-        limit=limit,
-        page=page
-    )
-    return CRUD.get_transparency_report(db, filters)
+@router_admin.get("/get_report/by_month/cash")
+def get_monthly_report_endpoint(month: int, year: int, db: Session = Depends(get_db)):
+    try:
+        donations = CRUD.get_cash_monthly_donations(db, month, year)
+        
+        if not donations:
+            print("No donations Found")
+            raise HTTPException(status_code=404, detail="No donations found for the given month and year.")
+        
+        return donations  
 
-@router_admin_or_donor.get("/get_transparency_reports/mini", response_model=TransparencyReportMiniPaginated)
-def get_all_transparency_report_mini_data_endpoint(
-    file_name: Optional[str] = Query(None),
-    date: Optional[datetime] = Query(None),
-    limit: int = Query(5),
-    page: int = Query(1),
-    db: Session = Depends(get_db)
-):
-    filters = TransparencyReportFilter(
-        file_name=file_name,
-        date=date,
-        limit=limit,
-        page=page
-    )
-    return CRUD.get_transparency_report_mini_data(db, filters)
-
-@router_admin.get("/get_by_id", response_model= TransparencyReportUpdate)
-def get_transparency_report_by_id(
-    transparency_id: int = Query(...),
-    db: Session = Depends(get_db),
-    user = Depends(get_db), 
-):
-    if not user:  # or your permission rule
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="permission error"
-        )
-
-    report = CRUD.get_transparency_by_id(db, transparency_id)
-    if not report:
-        raise HTTPException(status_code=404, detail="Transparency report not found")
-    return report
+    except HTTPException as e:
+        print(f"HTTPException raised: {e.detail}")
+        raise e 
     
-@router_admin.put("/update/{transparency_id}", response_model=TransparencyReportBase)
-def update_transparency_report_handler(
-    transparency_id: int,
-    file: UploadFile = File(...),
-    file_name: str = Form(...),
-    date_issued: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    print("transparency id:" , transparency_id)
-    return CRUD.update_transparency_report(
-        db=db,
-        id=transparency_id,
-        file=file,
-        file_name=file_name,
-        date_issued=date_issued
-    )
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        
     
-
-
 router.include_router(router_admin)
-router.include_router(router_donor)
-router.include_router(router_admin_or_donor)
+# router.include_router(router_donor)
+# router.include_router(router_admin_or_donor)

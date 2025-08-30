@@ -290,8 +290,6 @@ class Donor(Base):
             return self.user.username
         return "Unknown Donor"
 
-
-
     @donor_name.expression      # Queryable with donor_name
     def donor_name(cls):
         username_sq = (
@@ -308,30 +306,6 @@ class Donor(Base):
             literal("Unknown Donor"),
         )
 
-class TransparencyReport(Base):
-    __tablename__ = "transparency_report"
-    __random_pk_field__ = "transparency_report_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-
-    transparency_report_id = Column(Integer, primary_key=True)
-
-    file = Column(String, nullable = False)
-
-    file = Column(String, nullable=False)
-    file_name = Column(String(50), nullable=False)
-    date_issued = Column(DateTime(timezone=True), nullable=False)
-
-    date_uploaded = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    date_updated = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
 
 class DonationFrequency(enum.Enum):
     ONE_TIME = "ONE_TIME"
@@ -346,6 +320,9 @@ class DonationStatus(enum.Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
+class DonationType(str, enum.Enum):
+    CASH = "CASH"
+    INKIND = "INKIND"
 
 class Donation(Base):
     __tablename__ = "donation_records"
@@ -357,7 +334,6 @@ class Donation(Base):
     # Core attributes
     donation_id = Column(Integer, primary_key=True)
     donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
-    frequency = Column(SqlEnum(DonationFrequency, name="donation_frequency"), nullable=False, server_default=DonationFrequency.ONE_TIME.value)
     frequency = Column(
         SqlEnum(DonationFrequency, name="donation_frequency"),
         nullable=False,
@@ -376,7 +352,7 @@ class Donation(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     donation_type = Column(
-        String(20), nullable=False, default="cash"
+        SqlEnum(DonationType, name="donation_type"), nullable=False, server_default=DonationType.CASH.value
     )  # "cash" or "inkind" etc.
 
     # # Recurring donation fields

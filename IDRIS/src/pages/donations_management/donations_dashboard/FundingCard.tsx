@@ -27,6 +27,7 @@ export const FundingCard: React.FC<FundingProps> = ({
 
   const { userRoles } = useUserRoleContext();
   const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
+
   const handleDonateButton = (fundingId: number) => {
     navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
   }
@@ -44,7 +45,7 @@ export const FundingCard: React.FC<FundingProps> = ({
         </div>
         <p>{filled}% Raised</p>
       </div>
-      {userRoles.includes("donor") && (
+      { (userRoles.includes("donor")) && (
         // <Link
         //   to={`${anchorLink}`}
         //   className={styles["funding-donate-btn"]}

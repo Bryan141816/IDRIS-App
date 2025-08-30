@@ -53,16 +53,17 @@ function PageLayout() {
   const navigation = useNavigation();
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/register";
-  const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
+  const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu", "/donation_report"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,
   );
+  const shouldHideLayout =
+  isAuthPage || hideHeaderFooterRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
 
   const [isNavbarVisible, setIsNavbarVisible] = useState(false);
   const toggleNavbar = () => setIsNavbarVisible((prev) => !prev);
   const closeSidebar = () => setIsNavbarVisible(false);
   const shouldHideUI = !userRoles || userRoles.length === 0;
-
   let content;
   if ((!isUserReady && !isAuthPage) || navigation.state === "loading") {
     content = <PageLoader />;
@@ -78,13 +79,13 @@ function PageLayout() {
 
   return (
     <>
-      {!shouldHideUI && (
+      { !shouldHideUI && (
         <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
       )}
       <div id="right-body-section">
-        {!shouldHideUI && <Header onIconClick={toggleNavbar} />}
+        {(!shouldHideUI && !shouldHideLayout) && <Header onIconClick={toggleNavbar} />}
         <main>{content}</main>
-        {!shouldHideUI && !shouldHideHeaderFooter && <Footer />}
+        {(!shouldHideUI && !shouldHideLayout) && !shouldHideHeaderFooter && <Footer />}
       </div>
     </>
   );

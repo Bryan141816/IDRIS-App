@@ -55,12 +55,24 @@ REFRESH_TOKEN_COOKIE = "refresh_token"
 UPLOAD_DIR = Path("media/profile_picture")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+MICROSOFT_CLIENT_ID = config("MICROSOFT_CLIENT_ID")
+MICROSOFT_CLIENT_SECRET = config("MICROSOFT_CLIENT_SECRET")
+MICROSOFT_TENANT = config("MICROSOFT_TENANT_ID", default="common")
 oauth = OAuth()
 oauth.register(
     name="google",
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
+
+
+oauth.register(
+    name="microsoft",
+    client_id=MICROSOFT_CLIENT_ID,
+    client_secret=MICROSOFT_CLIENT_SECRET,
+    server_metadata_url=f"https://login.microsoftonline.com/{MICROSOFT_TENANT}/v2.0/.well-known/openid-configuration",
     client_kwargs={"scope": "openid email profile"},
 )
 
@@ -82,6 +94,22 @@ async def oauth_register(request: Request):
     )
 
 
+@router.get("/auth/microsoft/login")
+async def microsoft_login(request: Request):
+    redirect_uri = request.url_for("microsoft_callback")
+    return await oauth.microsoft.authorize_redirect(
+        request, redirect_uri, state="login"
+    )
+
+
+@router.get("/auth/microsoft/register")
+async def microsoft_register(request: Request):
+    redirect_uri = request.url_for("microsoft_callback")
+    return await oauth.microsoft.authorize_redirect(
+        request, redirect_uri, state="register"
+    )
+
+
 async def add_user(email: str, username: str, sub: str, db: Session = next(get_db())):
     new_user = create_user(
         db,
@@ -95,6 +123,32 @@ async def add_user(email: str, username: str, sub: str, db: Session = next(get_d
     token = create_token(uid_from_string(username), "activation")
     await send_activation_email(email, token)
     return True
+
+
+@router.get("/auth/microsoft/callback")
+async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
+    token = await oauth.microsoft.authorize_access_token(request)
+    user_info = token.get("id_token_claims")  # Microsoft returns user info here
+    state = request.query_params.get("state")
+
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Failed to get Microsoft user info")
+
+    payload = {
+        "sub": user_info["sub"],  # unique Microsoft ID
+        "email": user_info.get("email") or user_info.get("preferred_username"),
+        "name": user_info.get("name"),
+    }
+
+    jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+    if state == "register":
+        await add_user(payload["email"], payload["name"], str(payload["sub"]), db)
+        redirect_url = f"http://localhost:5173/login"
+        return RedirectResponse(url=redirect_url)
+    else:
+        redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
+        return RedirectResponse(url=redirect_url)
 
 
 @router.get("/auth/callback")

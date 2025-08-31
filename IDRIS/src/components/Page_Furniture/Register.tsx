@@ -111,6 +111,9 @@ const Register = () => {
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/register";
   };
+  const handleMicrosoftLogin = () => {
+    window.location.href = "http://localhost:8000/auth/microsoft/register";
+  };
   return (
     <section id="login-section">
       <LoginHeader />
@@ -239,6 +242,7 @@ const Register = () => {
           <button type="submit">Signup</button>
         </form>
         <button onClick={handleGoogleLogin}>Register via Google</button>
+        <button onClick={handleMicrosoftLogin}>Register via Microsoft</button>
       </div>
       {/* <Modal */}
       {/*   isOpen={activeModal == "user-type" ? true : false} */}

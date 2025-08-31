@@ -14,9 +14,9 @@ $gray-800: #1f2937;
 
 // Main Container
 .donationReport {
-  position: absolute;
-  width:max-content;
-  max-width: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   background-color: white;
   padding: 2rem;
 }
@@ -210,7 +210,9 @@ $gray-800: #1f2937;
 
 // Print Button
 .printSection {
-  margin-top: 2rem;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
   text-align: center;
   // display: none;
 }
@@ -246,14 +248,30 @@ $gray-800: #1f2937;
 
 // Print Media Queries
 @media print {
+  @page {
+    size: letter portrait;         
+    margin: none;               
+  }
+
   .donationReport {
-    position: absolute;
-    min-height: 100vh;
-    width:max-content;
-    max-width: 100%;
-    width: 8.5in;
-    height: 11in;
+    position: static;             // was absolute (caused overflow issues)
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;            // fill the page height
+    width: 100%;                  // no max-content
+    height: auto;                 // don't lock to 11in
     margin: 0;
+    padding: 0;  
+  }
+
+  .reportHeader {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    padding: 8mm 0 4mm 0;         // compact header
+  }
+
+  .reportMain {
+    flex: 1 1 auto; 
   }
 
   .companyLogo {
@@ -288,6 +306,10 @@ $gray-800: #1f2937;
 
   .reportInfo {
     background-color: $gray-100;
+  }
+
+  .reportMain{
+    height: fit-content;
   }
 
   .tableCell {
@@ -357,17 +379,50 @@ $gray-800: #1f2937;
   }
 
   .printFooter {
-    margin-top: 2rem;
-    padding-top: 1rem;
+    margin-top: auto;
     border-top: 1px solid $gray-300;
     text-align: center;
     font-size: 0.75rem;
     color: #6b7280;
-    // display: none;
-    p {
-      margin: 0.25rem 0;
-    }
   }
+
+  .donationsTable {
+    width: 100%;
+    table-layout: auto;           // let browser decide widths
+    page-break-inside: auto;
+    border-collapse: collapse;
+  }
+  
+  .donationsTable tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  // Remove the 6×20% widths that sum to 120%
+  .donationsTable th:nth-child(n),
+  .donationsTable td:nth-child(n) {
+    width: auto !important;
+  }
+
+  // Keep typography compact for print
+  .tableCell {
+    padding: 5px;
+    font-size: 0.875rem;
+  }
+
+  .summarySection {
+    break-inside: avoid;        // avoid splitting the summary box
+    page-break-inside: avoid;
+    background-color: $gray-100;
+    font-size: 0.875rem;
+  }
+
+  .printSection {
+    display: none;              // hide the print button
+  }
+
+  // Optional: tame images/branding
+  .companyLogo { width: 3rem; height: 3rem; }
 }
 
 // Responsive Design

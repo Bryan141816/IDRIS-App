@@ -1,20 +1,12 @@
 import "./dashboard.scss";
 import { useState, useEffect, useRef } from "react";
 import dayjs, { Dayjs } from "dayjs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MenuDots } from "../../../components/Page_Furniture/Icons";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import DashboardPieChart from "./Donation_dashboard_piechart";
 import { DonationRecord } from "./DonationRecord";
 import { FundingCard } from "./FundingCard";
-import { Modal } from "../../../components/Page_Furniture/Modals";
-import TransparencyReportForm from "./TransparencyReportForm";
-import DonationReport from './donation_report';
-
-import {
-  getFundingProposalTotalCashDonations,
-  getFundingProposalTotalInKindDonations
-} from "../../../API_Handler/donations_transparency_report";
 
 import {
   getCountofDonors,
@@ -26,11 +18,6 @@ import {
   getRetentionRate,
   getDonationRecord
 } from "../../../API_Handler/donations_donation_handler";
-
-interface TransparencyReportInterface {
-  file_name: string;
-  file: string;
-}
 
 interface FundingProposalInterface {
   funding_id: number;
@@ -53,8 +40,10 @@ interface DonationRecord {
 }
 
 const DonationsDashboard = () => {
+  const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
   const [loading, setLoading] = useState(true);
+
 
   type DirectType = "prev" | "next";
 
@@ -190,43 +179,11 @@ const DonationsDashboard = () => {
     });
   };
 
-  // =======================================> Funding Proposals Selected Dates
-  const [month, setMonth] = useState<number | null>();
-  const [year, setYear] = useState<number | null>();
-  const [donationType, setDonationType] = useState<string | null>();
   // =======================================> Modal Controls
   const [activeModal, setActiveModal] = useState("");
   const closeModal = () => {
     setActiveModal("");
   }
-
-  const handleFormSubmit = async (month: number, year: number | null, donationType: string) => {
-    setMonth(month);
-    setYear(year);
-    setDonationType(donationType);
-
-    if (year === null) {
-      console.error("Year is required!");
-      return;
-    }
-
-    // Get the total donations for the given month and year
-    try {
-      const data = await (donationType == "cash" ? getFundingProposalTotalCashDonations(month, year) : getFundingProposalTotalInKindDonations(month, year));
-      console.log("Total Donations Data:", data);
-      setActiveModal("donation-report-file");
-      // Handle the returned data (e.g., update state, display in UI)
-    } catch (error) {
-
-      if (error instanceof Error && (error as any).response && (error as any).response.status === 404) {
-        setActiveModal("no-donations");
-        console.log("No donors Found");
-      }
-
-      console.error("Error fetching total donations:", error);
-      // Optionally handle errors (e.g., display a message to the user)
-    }
-  };
   
   if (loading) return <p>Loading...</p>;
   return (
@@ -287,7 +244,7 @@ const DonationsDashboard = () => {
 
           <h3 className="public-feed-title funding-proposal-titles">Donations Per Site
             {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
-              <div className="icon-container closer-texts" onClick={() => setActiveModal("transparency-report-modal")}>
+              <div className="icon-container closer-texts" onClick={() => navigate("/donation_report")}>
                 <MenuDots className="menu-icon" />
                 Request Report
               </div>
@@ -356,36 +313,7 @@ const DonationsDashboard = () => {
               Next
             </button>
           </div>
-
-          <TransparencyReportForm
-            isOpen={activeModal === "transparency-report-modal"}
-            onClose={() => setActiveModal("")}
-            onSubmit={handleFormSubmit}
-          />
-
-          <Modal isOpen={activeModal === "no-donations"} onClose={closeModal}>
-            <h3 className="modal-title">No Donors Found</h3>
-            <div id="modal-common-container">
-              <p>
-                There are no donations found for {
-                  new Date(year ?? 0, (month ?? 1) - 1).toLocaleString('default', { month: 'long' })
-                } {year}
-              </p>
-              <div className="modal-button-container">
-                <button
-                  type="button"
-                  className="green-modal-button"
-                  onClick={closeModal}
-                >
-                  Okay
-                </button>
-              </div>
-            </div>
-          </Modal>
         </div>
-      }
-      {(activeModal == "donation-report-file") &&
-        <DonationReport />
       }
     </>
   );

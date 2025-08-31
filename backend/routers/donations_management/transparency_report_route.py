@@ -42,7 +42,26 @@ def get_monthly_report_endpoint(month: int, year: int, db: Session = Depends(get
         print(f"An error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
         
+        
+@router_admin.get("/get_report/by_month/inkind")
+def get_monthly_report_endpoint(month: int, year: int, db: Session = Depends(get_db)):
+    try:
+        donations = CRUD.get_inkind_monthly_donations(db, month, year)
+        
+        if not donations:
+            print("No donations Found")
+            raise HTTPException(status_code=404, detail="No donations found for the given month and year.")
+        
+        return donations  
+
+    except HTTPException as e:
+        print(f"HTTPException raised: {e.detail}")
+        raise e 
     
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
 router.include_router(router_admin)
 # router.include_router(router_donor)
 # router.include_router(router_admin_or_donor)

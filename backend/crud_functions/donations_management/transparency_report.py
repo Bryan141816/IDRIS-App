@@ -19,7 +19,7 @@ class TransparencyReportCRUD:
         ).filter(
             extract('month', Donation.donation_date) == month,
             extract('year', Donation.donation_date) == year,
-            Donation.donation_type == DonationType.CASH
+            Donation.donation_type == DonationType.INKIND
         ).join(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id, isouter=True) \
         .join(Donor, Donor.donor_id == Donation.donor_id) \
         .all()

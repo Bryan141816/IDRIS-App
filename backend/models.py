@@ -40,6 +40,8 @@ class User(Base):
     roles = Column(ARRAY(String), default=[])
     is_activated = Column(Boolean, default=False)
 
+    sub = Column(String, nullable=True)  # for oauth
+
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")
     user_profile = relationship("UserProfile", back_populates="user")

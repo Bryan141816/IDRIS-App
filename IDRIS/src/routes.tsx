@@ -47,6 +47,10 @@ const ResetPassword = () =>
   import("./components/Page_Furniture/ResetPassword").then((module) => ({
     Component: module.default,
   }));
+const OauthCallback = () =>
+  import("./components/Page_Furniture/OauthCallback").then((module) => ({
+    Component: module.default,
+  }));
 
 //UserManagement
 const UserManagement = () =>
@@ -253,6 +257,10 @@ export const router = createBrowserRouter([
       {
         path: "manage_users",
         lazy: UserManagement,
+      },
+      {
+        path: "oauth_callback",
+        lazy: OauthCallback,
       },
       {
         path: "lgu_profiling",

@@ -74,6 +74,29 @@ async def oauth_login(request: Request):
     )
 
 
+@router.get("/auth/register")
+async def oauth_register(request: Request):
+    redirect_uri = request.url_for("auth_callback")
+    return await oauth.google.authorize_redirect(
+        request, redirect_uri, state="register"
+    )
+
+
+async def add_user(email: str, username: str, sub: str, db: Session = next(get_db())):
+    new_user = create_user(
+        db,
+        user_id=uid_from_string(username),
+        email=email,
+        username=username,
+        user_type="user",
+        roles=["generic"],
+        sub=sub,
+    )
+    token = create_token(uid_from_string(username), "activation")
+    await send_activation_email(email, token)
+    return True
+
+
 @router.get("/auth/callback")
 async def auth_callback(request: Request):
     token = await oauth.google.authorize_access_token(request)
@@ -82,11 +105,44 @@ async def auth_callback(request: Request):
     if not user_info:
         raise HTTPException(status_code=400, detail="Failed to get user info")
 
-    jwt_token = jwt.encode({"sub": user_info["email"]}, SECRET_KEY, algorithm="HS256")
+    payload = {
+        "sub": user_info["sub"],  # unique provider ID
+        "email": user_info["email"],  # actual email
+    }
+    jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    if state == "register":
+        await add_user(user_info["email"], user_info["name"], str(user_info["sub"]))
+        redirect_url = f"http://localhost:5173/login"
+        return RedirectResponse(url=redirect_url)
+    else:
+        redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
+        return RedirectResponse(url=redirect_url)
 
-    print(state)
-    # redirect_url = f"http://localhost:5173/auth/callback?token={jwt_token}"
-    # return RedirectResponse(url=redirect_url)
+
+@router.post("/auth/callback/login")
+async def auth_callback_login(
+    token: str, response: Response, db: Session = Depends(get_db)
+):
+    decoded_payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user = get_user_by_email(db, decoded_payload["email"])
+    if not user:
+        raise HTTPException(status_code=401, detail="Not registered yet")
+    if not user.sub == decoded_payload["sub"]:
+        raise HTTPException(status_code=401, detail="Not registered yet")
+
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE,
+        value=refresh_token,
+        httponly=True,
+        max_age=60 * 60 * 24 * 7,
+        samesite="Lax",
+        secure=False,
+    )
+
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 
 def get_token_from_cookie(request: Request):
@@ -115,7 +171,6 @@ def get_current_user_from_access_token(
         raise HTTPException(status_code=401, detail="Invalid access token")
 
     user = get_user_by_email(db, email)
-    print(user.user_type)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 

@@ -36,7 +36,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: Optional[str]
 
 
 # required on creation

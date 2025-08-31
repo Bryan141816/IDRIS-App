@@ -71,9 +71,10 @@ def create_user(
     email: str,
     username: str,
     user_type: str,
-    password: str | None,
+    password: str | None = None,
     roles: list[str] = [],
     user_id: int | None = None,
+    sub: str | None = None,
 ):
     hashed = None
     if password:
@@ -86,6 +87,7 @@ def create_user(
         "user_type": user_type,
         "hashed_password": hashed,
         "roles": roles or [],
+        "sub": sub,
     }
     user = User(**user_data)
     db.add(user)

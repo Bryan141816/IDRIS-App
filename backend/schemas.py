@@ -33,17 +33,19 @@ class ResetPasswordRequest(BaseModel):
 class UserBase(BaseModel):
     username: str
     email: str
-    user_type: str
 
 
 class UserCreate(UserBase):
     password: str
-    roles: List[str]  # required on creation
+
+
+# required on creation
 
 
 class UserSchema(UserBase):
     id: int
     roles: List[str]
+    user_type: Optional[str]
 
     class Config:
         from_attributes = True

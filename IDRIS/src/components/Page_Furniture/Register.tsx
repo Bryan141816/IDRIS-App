@@ -69,7 +69,8 @@ const Register = () => {
 
   const navigate = useNavigate(); // make sure this is declared at the top
 
-  const RegisterAs = async (newUserRole: string) => {
+  const RegisterAs = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const validation = validatePassword(password);
     const isValid = Object.values(validation).every(Boolean);
 
@@ -89,9 +90,7 @@ const Register = () => {
         body: JSON.stringify({
           email: email,
           username: username,
-          user_type: usertype,
           password: password,
-          roles: [newUserRole],
         }),
       });
 
@@ -124,7 +123,7 @@ const Register = () => {
       </div>
       <div id="login-form">
         <h1>Signup</h1>
-        <form>
+        <form onSubmit={RegisterAs}>
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -235,70 +234,77 @@ const Register = () => {
             </div>
           )}
           <Link to="/login">Login</Link>
-          <button type="button" onClick={() => setActiveModal("user-type")}>
-            Signup
-          </button>
+          <button type="submit">Signup</button>
         </form>
       </div>
-      <Modal
-        isOpen={activeModal == "user-type" ? true : false}
-        onClose={() => setActiveModal("")}
-      >
-        <h3 id="login-modal-title">Register As</h3>
-        <hr />
-        <div id="select-userType">
-          <button
-            id="admin"
-            onClick={() => fnSetUserType("admin", "admin-role")}
-          >
-            Admin
-          </button>
-          <button id="user" onClick={() => fnSetUserType("user", "user-role")}>
-            User
-          </button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={activeModal == "user-role" ? true : false}
-        onClose={() => setActiveModal("")}
-      >
-        <h3 id="login-user-role">Select User Role</h3>
-        <hr />
-        <div id="select-userRole">
-          <button id="generic" onClick={() => RegisterAs("generic")}>
-            Generic User
-          </button>
-        </div>
-      </Modal>
-
-      <Modal
-        isOpen={activeModal == "admin-role" ? true : false}
-        onClose={() => setActiveModal("")}
-      >
-        <h3 id="admin-user-role">Select User Role</h3>
-        <hr />
-        <div id="select-adminRole">
-          <button
-            id="staff"
-            onClick={() => RegisterAs("disaster response admin")}
-          >
-            Disaster Response Admin
-          </button>
-          <button id="logistics-admin" onClick={() => RegisterAs("logistics admin")}>
-            Logistics Admin
-          </button>
-          <button id="operations-admin" onClick={() => RegisterAs("operations admin")}>
-            Operations Admin
-          </button>
-          <button id="finance-admin" onClick={() => RegisterAs("finance admin")}>
-            Finance Admin
-          </button>
-          <button id="lgu" onClick={() => RegisterAs("lgu")}>
-            LGU Officer
-          </button>
-        </div>
-      </Modal>
+      {/* <Modal */}
+      {/*   isOpen={activeModal == "user-type" ? true : false} */}
+      {/*   onClose={() => setActiveModal("")} */}
+      {/* > */}
+      {/*   <h3 id="login-modal-title">Register As</h3> */}
+      {/*   <hr /> */}
+      {/*   <div id="select-userType"> */}
+      {/*     <button */}
+      {/*       id="admin" */}
+      {/*       onClick={() => fnSetUserType("admin", "admin-role")} */}
+      {/*     > */}
+      {/*       Admin */}
+      {/*     </button> */}
+      {/*     <button id="user" onClick={() => fnSetUserType("user", "user-role")}> */}
+      {/*       User */}
+      {/*     </button> */}
+      {/*   </div> */}
+      {/* </Modal> */}
+      {/**/}
+      {/* <Modal */}
+      {/*   isOpen={activeModal == "user-role" ? true : false} */}
+      {/*   onClose={() => setActiveModal("")} */}
+      {/* > */}
+      {/*   <h3 id="login-user-role">Select User Role</h3> */}
+      {/*   <hr /> */}
+      {/*   <div id="select-userRole"> */}
+      {/*     <button id="generic" onClick={() => RegisterAs("generic")}> */}
+      {/*       Generic User */}
+      {/*     </button> */}
+      {/*   </div> */}
+      {/* </Modal> */}
+      {/**/}
+      {/* <Modal */}
+      {/*   isOpen={activeModal == "admin-role" ? true : false} */}
+      {/*   onClose={() => setActiveModal("")} */}
+      {/* > */}
+      {/*   <h3 id="admin-user-role">Select User Role</h3> */}
+      {/*   <hr /> */}
+      {/*   <div id="select-adminRole"> */}
+      {/*     <button */}
+      {/*       id="staff" */}
+      {/*       onClick={() => RegisterAs("disaster response admin")} */}
+      {/*     > */}
+      {/*       Disaster Response Admin */}
+      {/*     </button> */}
+      {/*     <button */}
+      {/*       id="logistics-admin" */}
+      {/*       onClick={() => RegisterAs("logistics admin")} */}
+      {/*     > */}
+      {/*       Logistics Admin */}
+      {/*     </button> */}
+      {/*     <button */}
+      {/*       id="operations-admin" */}
+      {/*       onClick={() => RegisterAs("operations admin")} */}
+      {/*     > */}
+      {/*       Operations Admin */}
+      {/*     </button> */}
+      {/*     <button */}
+      {/*       id="finance-admin" */}
+      {/*       onClick={() => RegisterAs("finance admin")} */}
+      {/*     > */}
+      {/*       Finance Admin */}
+      {/*     </button> */}
+      {/*     <button id="lgu" onClick={() => RegisterAs("lgu")}> */}
+      {/*       LGU Officer */}
+      {/*     </button> */}
+      {/*   </div> */}
+      {/* </Modal> */}
     </section>
   );
 };

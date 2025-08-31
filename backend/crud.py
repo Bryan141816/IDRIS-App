@@ -77,6 +77,7 @@ def create_user(
 ):
     hashed = None
     if password:
+
         hashed = hash_password(password)
     user_data = {
         "email": email,

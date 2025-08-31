@@ -271,6 +271,16 @@ def update_volunteer_status(
     db.refresh(iv)
     return iv
 
+# ---------------- READ BY USER ID (for authenticated users) ----------------
+@router_authenticated.get("/get_by_user_id", response_model=IndividualVolunteerRead)
+def get_by_user_id(
+    user_id: int = Depends(GetUserId()),
+    db: Session = Depends(get_db),
+):
+    v = CRUD.get_volunteer_by_user_id(db, user_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="Volunteer not found")
+    return v
 
 # Final router to include in main.py
 router = APIRouter()

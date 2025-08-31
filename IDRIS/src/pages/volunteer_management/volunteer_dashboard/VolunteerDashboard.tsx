@@ -5,10 +5,9 @@ import VolunteerModal from "./VolunteerModal";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import { getAllVolunteers, getVolunteerById } from "../../../API_Handler/individual_volunter_handler";
-import { getAllOrganizationVolunteers, getOrganizationVolunteerById } from "../../../API_Handler/organization_volunteer_handler";
+import { getAllVolunteers } from "../../../API_Handler/individual_volunter_handler";
+import { getAllOrganizationVolunteers } from "../../../API_Handler/organization_volunteer_handler";
 import { message } from "antd";
-
 
 // Align with your FastAPI response_model=IndividualVolunteerRead
 interface IndividualVolunteerRead {
@@ -20,43 +19,22 @@ interface IndividualVolunteerRead {
     email: string;
     phone_number?: string | null;
     address?: string | null;
-    birthday?: string | null; // "YYYY-MM-DD"
+    birthday?: string | null;
     gender?: string | null;
     age?: number | null;
-    availability?: string | null;      // backend stores as text (e.g., "Mon, Tue")
+    availability?: string | null;
     medical_conditions?: string | null;
     other_medical_conditions?: string | null;
     certification?: string | null;
-    skills?: string[] | null;          // thanks to your validator
-    created_at: string;                // ISO datetime
-    status: string;
+    skills?: string[] | null;
+    created_at: string;
+    status: string; // we'll normalize this
 }
 
-interface Partner {
-    id: number;
-    name: string;
-}
-
-interface NewsAnnouncement {
-    id: number;
-    title: string;
-    description: string;
-    date: string;
-    ongoing: boolean;
-}
-
-interface DeploymentSchedule {
-    date: string;
-    title: string;
-    location: string;
-}
-
-interface FormattedDate {
-    dayName: string;
-    day: number;
-    month: string;
-    year: number;
-}
+interface Partner { id: number; name: string; }
+interface NewsAnnouncement { id: number; title: string; description: string; date: string; ongoing: boolean; }
+interface DeploymentSchedule { date: string; title: string; location: string; }
+interface FormattedDate { dayName: string; day: number; month: string; year: number; }
 
 export default function IDRISDashboard() {
     const { userRoles } = useUserRoleContext();
@@ -74,32 +52,40 @@ export default function IDRISDashboard() {
     const [selectedVolunteer, setSelectedVolunteer] = useState<IndividualVolunteerRead | null>(null);
     const [volunteerStatus, setVolunteerStatus] = useState<string>("");
 
+    // --- helpers for status ---
+    const normalizeStatus = (row: any): string =>
+        String(row?.status ?? row?.application_status ?? row?.volunteer_status ?? "")
+            .trim()
+            .toLowerCase();
+
+    const statusOf = (row: any): string =>
+        String(row?.status ?? "").trim().toLowerCase();
+
     useEffect(() => {
-        if (selectedVolunteer) {
-            setVolunteerStatus(selectedVolunteer.status);
-        }
+        if (selectedVolunteer) setVolunteerStatus(statusOf(selectedVolunteer));
     }, [selectedVolunteer]);
 
     useEffect(() => {
         const fetchVolunteers = async () => {
             try {
                 setLoading(true);
+
                 const data = await getAllVolunteers();
                 const orgData = await getAllOrganizationVolunteers();
 
-                // Process the individual volunteers
-                const list: unknown = data && Array.isArray(data) ? data : [];
-                if (Array.isArray(list)) {
-                    setVolunteers(list);
-                    if (list.length > 0) setSelectedVolunteer(list[0]);
-                }
+                // Normalize & save
+                const list = Array.isArray(data)
+                    ? data.map((v) => ({ ...v, status: normalizeStatus(v) }))
+                    : [];
 
-                // Process the organization volunteers
-                const orgList: unknown = orgData && Array.isArray(orgData) ? orgData : [];
-                if (Array.isArray(orgList)) {
-                    setOrganizationVolunteers(orgList);
-                }
+                const orgList = Array.isArray(orgData)
+                    ? orgData.map((o) => ({ ...o, status: normalizeStatus(o) }))
+                    : [];
 
+                setVolunteers(list);
+                setOrganizationVolunteers(orgList);
+
+                if (list.length > 0) setSelectedVolunteer(list[0]);
             } catch (error) {
                 console.error("Error fetching volunteers:", error);
                 message.error("Failed to load volunteers data");
@@ -111,17 +97,22 @@ export default function IDRISDashboard() {
         fetchVolunteers();
     }, []);
 
-
     // ✅ Totals
-    const totalApplicantsNumber = volunteers.length + organizationVolunteers.length;
-    console.log("Total Applicants:", totalApplicantsNumber);
-    // Prettified display strings
+    const totalVolunteersNumber = useMemo(() => {
+        const ind = volunteers.filter((v) => statusOf(v) === "approved").length;
+        const org = organizationVolunteers.filter((v) => statusOf(v) === "approved").length;
+        return ind + org;
+    }, [volunteers, organizationVolunteers]);
+
+    // Total applicants EXCLUDING approved
+    const totalApplicantsNumber = useMemo(() => {
+        const ind = volunteers.filter((v) => statusOf(v) !== "approved").length;
+        const org = organizationVolunteers.filter((v) => statusOf(v) !== "approved").length;
+        return ind + org;
+    }, [volunteers, organizationVolunteers]);
+
     const totalApplicants = totalApplicantsNumber.toLocaleString();
-
-    // If you have a real applicants endpoint, replace this with that count.
-    const totalVolunteers = 1000;
-
-
+    const totalVolunteers = totalVolunteersNumber.toLocaleString();
 
     // Program modal controls
     const openProgramModal = (): void => setIsProgramModalOpen(true);
@@ -144,130 +135,61 @@ export default function IDRISDashboard() {
     ];
 
     const newsAnnouncements: NewsAnnouncement[] = [
-        {
-            id: 1,
-            title: "Example Program",
-            description:
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-            date: "March 1 - 2, 2025",
-            ongoing: true,
-        },
-        {
-            id: 2,
-            title: "Example Program",
-            description:
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-            date: "March 5 - 10, 2025",
-            ongoing: false,
-        },
-        {
-            id: 3,
-            title: "Example Program",
-            description:
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-            date: "March 15 - 20, 2025",
-            ongoing: false,
-        },
-        {
-            id: 4,
-            title: "Another Example Program",
-            description:
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......",
-            date: "April 1 - 5, 2025",
-            ongoing: false,
-        },
+        { id: 1, title: "Example Program", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......", date: "March 1 - 2, 2025", ongoing: true },
+        { id: 2, title: "Example Program", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......", date: "March 5 - 10, 2025", ongoing: false },
+        { id: 3, title: "Example Program", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......", date: "March 15 - 20, 2025", ongoing: false },
+        { id: 4, title: "Another Example Program", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum orci ......", date: "April 1 - 5, 2025", ongoing: false },
     ];
-
 
     useEffect(() => {
         const savedDate = localStorage.getItem("viewDate");
-        if (savedDate) {
-            setViewDate(new Date(savedDate));
-        } else {
-            setViewDate(new Date());
-        }
+        if (savedDate) setViewDate(new Date(savedDate));
+        else setViewDate(new Date());
     }, []);
 
     useEffect(() => {
         localStorage.setItem("viewDate", viewDate.toISOString());
     }, [viewDate]);
 
-    const daysInMonth = (year: number, month: number): number =>
-        new Date(year, month + 1, 0).getDate();
-
-    const getFirstDayOfMonth = (year: number, month: number): number =>
-        new Date(year, month, 1).getDay();
-
-    const prevMonth = (): void =>
-        setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
-
-    const nextMonth = (): void =>
-        setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
+    const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+    const prevMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+    const nextMonth = () => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
 
     const formatDate = (date: Date): FormattedDate => {
-        const days: string[] = [
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-        ];
-        const months: string[] = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-        ];
-
-        return {
-            dayName: days[date.getDay()],
-            day: date.getDate(),
-            month: months[date.getMonth()],
-            year: date.getFullYear(),
-        };
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        return { dayName: days[date.getDay()], day: date.getDate(), month: months[date.getMonth()], year: date.getFullYear() };
     };
 
     const generateCalendarDays = (): (number | null)[] => {
-        const year = viewDate.getFullYear();
-        const month = viewDate.getMonth();
-        const totalDays = daysInMonth(year, month);
-        const firstDay = getFirstDayOfMonth(year, month);
+        const y = viewDate.getFullYear();
+        const m = viewDate.getMonth();
+        const total = daysInMonth(y, m);
+        const first = getFirstDayOfMonth(y, m);
         const days: (number | null)[] = [];
-
-        for (let i = 0; i < firstDay; i++) days.push(null);
-        for (let i = 1; i <= totalDays; i++) days.push(i);
+        for (let i = 0; i < first; i++) days.push(null);
+        for (let i = 1; i <= total; i++) days.push(i);
         return days;
     };
 
-    const isToday = (day: number): boolean =>
-        day === today.getDate() &&
+    const isToday = (d: number) =>
+        d === today.getDate() &&
         viewDate.getMonth() === today.getMonth() &&
         viewDate.getFullYear() === today.getFullYear();
 
-    const isSelected = (day: number): boolean =>
-        day === currentDate.getDate() &&
+    const isSelected = (d: number) =>
+        d === currentDate.getDate() &&
         viewDate.getMonth() === currentDate.getMonth() &&
         viewDate.getFullYear() === currentDate.getFullYear();
 
-    const selectDate = (day: number | undefined): void => {
-        if (day) {
-            setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), day));
-        }
+    const selectDate = (d: number | undefined) => {
+        if (d) setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), d));
     };
 
     const formattedDate = formatDate(currentDate);
     const days = generateCalendarDays();
-    const weekdays: string[] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     const deploymentSchedules: DeploymentSchedule[] = [
         { date: "2025-01-05", title: "Field Deployment", location: "Central District" },
@@ -277,21 +199,14 @@ export default function IDRISDashboard() {
         { date: "2025-03-15", title: "Disaster Preparedness", location: "Western District" },
     ];
 
-    const currentMonthSchedules = deploymentSchedules.filter((schedule) => {
-        const scheduleDate = new Date(schedule.date);
-        return (
-            scheduleDate.getMonth() === viewDate.getMonth() &&
-            scheduleDate.getFullYear() === viewDate.getFullYear()
-        );
+    const currentMonthSchedules = deploymentSchedules.filter((s) => {
+        const d = new Date(s.date);
+        return d.getMonth() === viewDate.getMonth() && d.getFullYear() === viewDate.getFullYear();
     });
 
-    const hasSchedule = (day: number): boolean => {
-        if (!day) return false;
-        const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}-${String(
-            day
-        ).padStart(2, "0")}`;
-        return deploymentSchedules.some((schedule) => schedule.date === dateStr);
-    };
+    if (loading) {
+        return <div className="dashboard-container"><div className="main-container"><div className="content">Loading…</div></div></div>;
+    }
 
     return (
         <div className="dashboard-container">
@@ -300,24 +215,42 @@ export default function IDRISDashboard() {
                     <div className="content-grid">
                         {/* Left column */}
                         <div className="left-column">
-                            {/* Total Applicants */}
+                            {/* Total Applicants (exclude approved) */}
                             <div className="card total-card applicants">
                                 <div className="card-content">
                                     <div className="card-title-white">Total Applicants</div>
                                     <div className="card-number">{totalApplicants}</div>
                                 </div>
-                                {userType === "admin" && userRoles.includes("operations admin") ? (<button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")} > Manage Applicants </button>)
-                                    : volunteerStatus === "submitted" ? (<button className="manage-btn" style={{ fontSize: "90%" }} onClick={openVolunteerModal} > Become a Volunteer </button>)
-                                        : volunteerStatus !== "submitted" ? (<button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")} > Track Volunteer Application </button>) : null}
+                                {userType === "admin" && userRoles.includes("operations admin") ? (
+                                    <button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")}>
+                                        Manage Applicants
+                                    </button>
+                                ) : volunteerStatus === "submitted" ? (
+                                    <button className="manage-btn" style={{ fontSize: "90%" }} onClick={() => setIsVolunteerModalOpen(true)}>
+                                        Become a Volunteer
+                                    </button>
+                                ) : volunteerStatus !== "submitted" ? (
+                                    <button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")}>
+                                        Track Volunteer Application
+                                    </button>
+                                ) : null }
                             </div>
 
-                            {/* Total Volunteers */}
+                            {/* Total Volunteers (approved only) */}
                             <div className="card total-card volunteers">
                                 <div className="card-content">
                                     <div className="card-title-white">Total Volunteers</div>
                                     <div className="card-number">{totalVolunteers}</div>
                                 </div>
-                                {userType === "admin" && userRoles.includes("operations admin") ? (<button className="manage-btn" style={{ fontSize: "98%" }} onClick={() => navigate("/volunteer_management/volunteer_assignment")} > Manage Volunteers </button>) : (<button className="manage-btn" style={{ display: "none" }} onClick={() => navigate("/volunteer_management/become_volunteer")} > Become a Volunteer </button>)}
+                                {userType === "admin" && userRoles.includes("operations admin") ? (
+                                    <button className="manage-btn" style={{ fontSize: "98%" }} onClick={() => navigate("/volunteer_management/volunteer_assignment")}>
+                                        Manage Volunteers
+                                    </button>
+                                ) : (
+                                    <button className="manage-btn" style={{ display: "none" }} onClick={() => navigate("/volunteer_management/become_volunteer")}>
+                                        Become a Volunteer
+                                    </button>
+                                )}
                             </div>
 
                             {/* Cards grid */}
@@ -326,14 +259,14 @@ export default function IDRISDashboard() {
                                 <div className="card">
                                     <h2 className="blue-title">Active Volunteers</h2>
                                     <div className="volunteer-list">
-                                        {activeVolunteers.map((v) => (
+                                        {[{ id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
+                                        { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
+                                        { id: 3, name: "Volunteer Name", programs: 10, status: "joined" }].map((v) => (
                                             <div key={v.id} className="volunteer-item">
                                                 <div className="volunteer-avatar"></div>
                                                 <div className="volunteer-info">
                                                     <div className="volunteer-name">{v.name}</div>
-                                                    <div className="volunteer-meta">
-                                                        {v.programs} Programs {v.status}
-                                                    </div>
+                                                    <div className="volunteer-meta">{v.programs} Programs {v.status}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -344,11 +277,11 @@ export default function IDRISDashboard() {
                                 <div className="card">
                                     <h2 className="blue-title">Accredited Partners</h2>
                                     <div className="partner-list">
-                                        {accreditedPartners.map((partner) => (
-                                            <div key={partner.id} className="partner-item">
+                                        {[{ id: 1, name: "Sample Organization" }, { id: 2, name: "Sample Organization" }, { id: 3, name: "Sample Organization" }].map((p) => (
+                                            <div key={p.id} className="partner-item">
                                                 <div className="partner-logo"></div>
                                                 <div className="partner-info">
-                                                    <div className="partner-name">{partner.name}</div>
+                                                    <div className="partner-name">{p.name}</div>
                                                 </div>
                                             </div>
                                         ))}
@@ -367,19 +300,17 @@ export default function IDRISDashboard() {
                                         <h2 className="deployment-title">Deployment Schedules</h2>
                                         <div className="deployment-list">
                                             {currentMonthSchedules.length > 0 ? (
-                                                currentMonthSchedules.map((schedule, index) => (
-                                                    <div key={index} className="deployment-item">
-                                                        <div className="deployment-item-title">{schedule.title}</div>
+                                                currentMonthSchedules.map((s, i) => (
+                                                    <div key={i} className="deployment-item">
+                                                        <div className="deployment-item-title">{s.title}</div>
                                                         <div className="deployment-item-date">
-                                                            {schedule.date.split("-")[2]}, {formatDate(viewDate).month}
+                                                            {s.date.split("-")[2]}, {formatDate(viewDate).month}
                                                         </div>
-                                                        <div className="deployment-item-location">{schedule.location}</div>
+                                                        <div className="deployment-item-location">{s.location}</div>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <p>
-                                                    No scheduled deployments for {formatDate(viewDate).month} {viewDate.getFullYear()}
-                                                </p>
+                                                <p>No scheduled deployments for {formatDate(viewDate).month} {viewDate.getFullYear()}</p>
                                             )}
                                         </div>
                                     </div>
@@ -387,41 +318,28 @@ export default function IDRISDashboard() {
                                     {/* Calendar */}
                                     <div className="calendar-section">
                                         <div className="calendar-header">
-                                            <button onClick={prevMonth} className="calendar-nav-btn">
-                                                &lt;
-                                            </button>
+                                            <button onClick={prevMonth} className="calendar-nav-btn">&lt;</button>
                                             <div>
                                                 <div className="day-name">{formatDate(currentDate).dayName}</div>
                                                 <div className="date-display">
-                                                    <span className="month-day">
-                                                        {formattedDate.month} {formattedDate.day}
-                                                    </span>
+                                                    <span className="month-day">{formattedDate.month} {formattedDate.day}</span>
                                                     <span className="year">{formattedDate.year}</span>
                                                 </div>
                                             </div>
-                                            <button onClick={nextMonth} className="calendar-nav-btn">
-                                                &gt;
-                                            </button>
+                                            <button onClick={nextMonth} className="calendar-nav-btn">&gt;</button>
                                         </div>
                                         <div className="calendar">
-                                            <div className="weekdays">
-                                                {weekdays.map((day) => (
-                                                    <div key={day} className="weekday">
-                                                        {day}
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            <div className="weekdays">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="weekday">{d}</div>)}</div>
                                             <div className="days">
-                                                {days.map((day, idx) => (
+                                                {days.map((d, idx) => (
                                                     <div key={idx} className="calendar-day-container">
-                                                        {day && (
+                                                        {d && (
                                                             <div
-                                                                onClick={() => selectDate(day)}
-                                                                className={`calendar-day ${isToday(day) ? "today" : ""} ${isSelected(day) && !isToday(day) ? "selected" : ""
-                                                                    } ${hasSchedule(day) ? "has-schedule" : ""}`}
+                                                                onClick={() => setCurrentDate(new Date(viewDate.getFullYear(), viewDate.getMonth(), d))}
+                                                                className={`calendar-day ${isToday(d) ? "today" : ""} ${isSelected(d) && !isToday(d) ? "selected" : ""}`}
                                                             >
-                                                                {day}
-                                                                {hasSchedule(day) && <span className="schedule-indicator"></span>}
+                                                                {d}
+                                                                {/* add schedule dot if you like */}
                                                             </div>
                                                         )}
                                                     </div>
@@ -437,15 +355,9 @@ export default function IDRISDashboard() {
                                 <div className="news-header">
                                     <h2 className="news-title">News & Announcements</h2>
                                     {userType === "admin" ? (
-                                        <button onClick={openProgramModal} className="add-program-btn">
-                                            + Add Program
-                                        </button>
+                                        <button onClick={openProgramModal} className="add-program-btn">+ Add Program</button>
                                     ) : (
-                                        <button
-                                            className="manage-btn"
-                                            style={{ display: "none" }}
-                                            onClick={() => navigate("/volunteer_management/become_volunteer")}
-                                        >
+                                        <button className="manage-btn" style={{ display: "none" }} onClick={() => setIsVolunteerModalOpen(true)}>
                                             Become a Volunteer
                                         </button>
                                     )}

@@ -11,6 +11,8 @@ from routers.role_checker import RoleChecker, GetUserRoles
 import math
 from sqlalchemy import or_
 from typing import List
+from pydantic import BaseModel
+from routers.GetUserId import GetUserId
 
 router = APIRouter(
     tags=["user_management"],
@@ -23,26 +25,43 @@ def getDefaultPage(page):
 
 @router.get("/user_list", response_model=TableResponse)
 def get_table(
+    user_id: int = Depends(GetUserId()),
     db: Session = Depends(get_db),
     user_role: List[str] = Depends(GetUserRoles),
     page: int = Query(1, ge=1),
     UserName: str = "desc",
 ):
     # Table header remains the same
+    moderator_dict = {
+        "operations": "lgu officer",
+        "logistics": "disaster response admin officer",
+    }
 
     query = db.query(User)
 
     if "super admin" not in user_role:
-        role = user_role[0].split()[0]
-        query = db.query(User).filter(
-            or_(User.roles.contains([role]), User.roles.contains(["generic"]))
-        )
+        role = user_role[0].split()[0]  # first word of the role
+
+        # Get moderator(s) from dictionary safely
+        moderator = moderator_dict.get(role)  # returns None if key doesn't exist
+
+        # Build filter list
+        filters = []
+        filters.append(User.roles.any(f"{role} admin"))
+
+        if moderator:
+            filters.append(User.roles.any(moderator))
+
+        filters.append(User.roles.any("generic"))  # always include generic
+
+        # Apply query only with existing filters
+        query = db.query(User).filter(or_(*filters))
 
     page = getDefaultPage(page)
     offset = (page - 1) * 10
     table_head = [
         {"text": "Email", "width": "250px"},
-        {"text": "UserName", "width": "150px", "action": "sort"},
+        {"text": "UserName", "width": "150px", "action": "Sort"},
         {"text": "UserType", "width": "150px"},
         {"text": "Roles", "width": "150px"},
         {"text": "Is Activated", "width": "150px"},
@@ -63,22 +82,29 @@ def get_table(
             pageCount += 1
             pages = {"page": pageCount, "row": []}  # New pages
 
-        status_color = None
-        status_text_color = None
-        if report.status.lower() == "completed":
-            status_color = "#30CB83"
-            status_text_color = "#30CB83"
-        elif report.status.lower() == "started":
-            status_color = "#F1C40F"
-            status_text_color = "#F1C40F"
-        elif report.status.lower() == "filed":
-            status_color = "#34495E"
-            status_text_color = "#34495E"
-        elif report.status.lower() == "cancelled":
-            status_color = "#E74C3C"
-            status_text_color = "#E74C3C"
-        else:
-            status_color = "#000"
+        last_row = (
+            Cell(
+                type="Button",
+                text="View",
+                font_weight=500,
+                color="#fff",
+                background_color="#749AB6",
+                container_width="150px",
+                button_width="120px",
+            ),
+        )
+
+        if user_id == report.user_id:
+            last_row = (
+                Cell(
+                    type="Text",
+                    text="Currrent Account",
+                    font_weight=700,
+                    color="#080",
+                    width="150px",
+                ),
+            )
+
         row_data = [
             Cell(
                 type="Hidden",
@@ -119,27 +145,17 @@ def get_table(
                 type="Text",
                 text=", ".join(report.roles),
                 font_weight=500,
-                background_color=status_color,
-                color=status_text_color,
+                color="#00",
                 width="150px",
             ),
             Cell(
                 type="Text",
                 text="True" if report.is_activated else "False",
                 font_weight=500,
-                background_color=status_color,
-                color=status_text_color,
+                color="#000",
                 width="150px",
             ),
-            Cell(
-                type="Button",
-                text="View",
-                font_weight=500,
-                color="#fff",
-                background_color="#749AB6",
-                container_width="150px",
-                button_width="120px",
-            ),
+            last_row[0],
         ]
         pages["row"].append({"data": row_data})
 
@@ -158,30 +174,39 @@ def get_table(
 #     return create_response_report(db, report)
 #
 #
-# @router.delete(
-#     "/response_dashboard/report_list/delete_report/{report_id}", response_model=dict
-# )
-# def delete_response_report(report_id: int, db: Session = Depends(get_db)):
-#     deleted_report = delete(db, ResponseReport, report_id)
-#     if not deleted_report:
-#         raise HTTPException(status_code=400, detail="Response report not found.")
-#     return {"message": f"Response report with ID {report_id} deleted successfully."}
+@router.delete("/delete_user/{user_id}", response_model=dict)
+def delete_response_report(user_id: int, db: Session = Depends(get_db)):
+    query = db.query(User).filter(User.user_id == user_id).first()
+    if not query:
+        raise HTTPException(status_code=400, detail="Response report not found.")
+    db.delete(query)
+    db.commit()
+    if not query:
+        raise HTTPException(status_code=400, detail="Response report not found.")
+    return {"message": f"User {user_id} deleted successfully."}
+
+
 #
-#
-# @router.put("/response_dashboard/report_list/update_report/{report_id}")
-# def update_report(
-#     report_id: int, update: ResponseReportCreate, db: Session = Depends(get_db)
-# ):
-#     report = db.query(ResponseReport).get(report_id)
-#
-#     if not report:
-#         raise HTTPException(status_code=404, detail="Response record doesn't exist")
-#     if update.report_type is not None:
-#         report.report_type = update.report_type
-#     if update.status is not None:
-#         report.status = update.status
-#
-#     db.commit()
-#     db.refresh(report)
-#
-#     return {"detail": "Report updated succesfully", "report": report}
+class UpdateUserRole(BaseModel):
+    roles: str
+
+
+@router.put("/update_user/{user_id}")
+def update_report(user_id: int, payload: UpdateUserRole, db: Session = Depends(get_db)):
+    report = db.query(User).get(user_id)
+    user_type = "admin"
+    if (
+        payload.roles == "lgu officer"
+        or payload.roles == "disaster response admin officer"
+    ):
+        user_type = "moderator"
+    if not report:
+        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+    if payload.roles:
+        report.user_type = user_type
+        report.roles = [payload.roles]
+
+    db.commit()
+    db.refresh(report)
+
+    return {"detail": "Report updated succesfully", "user": report}

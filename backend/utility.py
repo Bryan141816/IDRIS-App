@@ -41,9 +41,7 @@ def check_user_exists(email: Optional[str] = None, username: Optional[str] = Non
 
 def insert_super_admin(email: str, username: str, hashed_password: str) -> bool:
     try:
-        roles_json = json.dumps(
-            ["super admin"]
-        )  # store as JSON if roles column is JSON type
+        # store as JSON if roles column is JSON type
         uid = uid_from_string(username)
         with engine.begin() as conn:
             conn.execute(
@@ -59,7 +57,7 @@ def insert_super_admin(email: str, username: str, hashed_password: str) -> bool:
                     "username": username,
                     "user_type": "admin",
                     "hashed_password": hashed_password,
-                    "roles": roles_json,
+                    "roles": ["super admin"],
                 },
             )
         return True

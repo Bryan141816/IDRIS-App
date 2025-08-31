@@ -35,8 +35,10 @@ interface OrganizationFormValues {
     repPosition: string;
     repPhone: string;
     repEmail: string;
-    availability: string[];                // UI array -> backend string
-    organizationPicture?: AntdUploadFile[]; // AntD Upload file list
+    availability: string[];
+    organizationPicture?: AntdUploadFile[];
+    supportingFiles?: any[];
+    certification?: string[];
 }
 
 // Base64 helper for image preview
@@ -133,8 +135,12 @@ const OrganizationForm: React.FC = () => {
             if (pictureFile) {
                 formData.append('organization_picture_file', pictureFile);
             }
-            if (selectedFile) {
-                formData.append('organization_certificate_file', selectedFile);
+            if (values.supportingFiles && values.supportingFiles.length > 0) {
+                values.supportingFiles.forEach((f: any) => {
+                    if (f?.originFileObj) {
+                        formData.append("organization_certificate", f.originFileObj); // <-- same key, multiple entries
+                    }
+                });
             }
 
             // Call the API handler
@@ -387,24 +393,25 @@ const OrganizationForm: React.FC = () => {
                         </Modal>
 
                         {/* Certificate (PDF via custom component) */}
-                        <Form.Item
-                            name="organizationCertificates"
-                            label="Upload Files (certificates, documents, etc.)"
-                            className="center-upload"
-                            valuePropName="fileList"
+                        <h3 className="section-title upload-title">Upload Files</h3>
+                        <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                        // rules={[{ required: true, message: 'Please upload your certificates/documents' }]}
-                        >
-                            <div className="upload-preview">
-                                <UploadFile
-                                    accept="application/pdf"
-                                    showName={true}
-                                    onFileSelect={handleFileSelect}
-                                    className="gift-content"
-                                />
-                                {/* hidden input only if you need form-controlled file, otherwise not necessary */}
-                                <input type="file" style={{ display: 'none' }} ref={fileInputRef} />
-                            </div>
+                            rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
+                            <Upload.Dragger
+                                name="files"
+                                multiple={false}
+                                listType="picture"
+                                maxCount={6}
+                                beforeUpload={() => false}
+
+                            >
+                                <p className="ant-upload-drag-icon">
+                                    <InboxOutlined />
+                                </p>
+                                <p className="upload-text">Drop files here</p>
+                                <p className="upload-hint">or</p>
+                                <Button className="browse-button">Browse</Button>
+                            </Upload.Dragger>
                         </Form.Item>
 
                         <div className="note-section">

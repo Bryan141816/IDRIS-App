@@ -102,6 +102,18 @@ class IndividualVolunteerCRUD:
             .filter(IndividualVolunteer.volunteer_id == volunteer_id)
             .first()
         )
+        
+    @staticmethod
+    def get_volunteer_by_user_id(db: Session, user_id: int) -> Optional[IndividualVolunteer]:
+        # If you only allow one record per user, a simple .first() is fine.
+        # If multiple can exist, pick the newest by updated_at/created_at.
+        return (
+            db.query(IndividualVolunteer)
+            .filter(IndividualVolunteer.user_id == user_id)
+            .order_by(IndividualVolunteer.updated_at.desc().nullslast(),
+                      IndividualVolunteer.created_at.desc().nullslast())
+            .first()
+        )
 
     @staticmethod
     def update_volunteer(

@@ -1,56 +1,56 @@
 version: '3.9'
 
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: vite_frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    volumes:
-      - ./IDRIS:/app  # Match your actual directory structure
-      - /app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:8000
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        container_name: vite_frontend
+        ports:
+            - "5173:5173"
+        depends_on:
+            - backend
+        volumes:
+            - ./IDRIS:/app # Match your actual directory structure
+            - /app/node_modules
+        environment:
+            - VITE_API_URL=http://localhost:8000
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-    container_name: fastapi_backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy  # Wait for healthy DB
-    environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/mydatabase
-      PYTHONPATH: /app
-      DOCKER_ENV: "true"  # Flag to indicate running in Docker
-    volumes:
-      - ./backend:/app
-    restart: unless-stopped
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile.backend
+        container_name: fastapi_backend
+        ports:
+            - "8000:8000"
+        depends_on:
+            db:
+                condition: service_healthy # Wait for healthy DB
+        environment:
+            DATABASE_URL: postgresql://postgres:password@db:5432/mydatabase
+            PYTHONPATH: /app
+            DOCKER_ENV: "true" # Flag to indicate running in Docker
+        volumes:
+            - ./backend:/app
+        restart: unless-stopped
 
-  db:
-    image: postgres:15
-    container_name: postgres_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydatabase
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+    db:
+        image: postgres:15
+        container_name: postgres_db
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: mydatabase
+        ports:
+            - "5432:5432"
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
 
 volumes:
-  pgdata:
+    pgdata:

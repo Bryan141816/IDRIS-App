@@ -185,6 +185,13 @@ class OrganizationVolunteerCRUD:
         return db.query(OrganizationVolunteer).filter(OrganizationVolunteer.user_id == user_id).first()
 
     @staticmethod
+    def get_organization_volunteer_by_user_id(db: Session, user_id: int):
+        return (
+            db.query(OrganizationVolunteer)
+            .filter(OrganizationVolunteer.user_id == user_id)
+            .first()
+        )
+    @staticmethod
     def get_status_by_user_id(db: Session, user_id: int) -> Optional[VolunteerStatus]:  # NEW
         rec = db.query(OrganizationVolunteer).filter(OrganizationVolunteer.user_id == user_id).first()
         return rec.status if rec else None

@@ -146,6 +146,17 @@ def get_my_organization_volunteer_profile_endpoint(
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Database error occurred")
 
+# ---------------- READ BY USER ID (for authenticated users) ----------------
+@router_authenticated.get("/get_by_user_id", response_model=OrganizationVolunteerRead)
+def get_org_by_user_id(
+    user_id: int = Depends(GetUserId()),
+    db: Session = Depends(get_db),
+):
+    v = CRUD.get_organization_volunteer_by_user_id(db, user_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="Organization volunteer not found")
+    return v
+
 # ---------------- UPDATE (User updates their own profile) ----------------
 @router_authenticated.put("/update_my_profile", response_model=OrganizationVolunteerRead)
 def update_my_organization_volunteer_profile_endpoint(

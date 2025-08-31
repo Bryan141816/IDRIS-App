@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Users, MapPin, Calendar, Search, Plus, Edit3, Trash2, CheckCircle } from 'lucide-react';
 import { getAllVolunteers } from '../../../API_Handler/individual_volunter_handler';
 import { getAllOrganizationVolunteers } from '../../../API_Handler/organization_volunteer_handler';
+import { Breadcrumb } from 'antd';
+import { Link } from "react-router-dom";
 
 type VolunteerStatus = 'pending' | 'submitted' | 'verifying' | 'approved' | 'rejected' | 'assigned';
 
@@ -176,10 +178,23 @@ const VolunteerAssignmentPage: React.FC = () => {
     return (
         <div className="h-[300vh] bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Volunteer Assignment Management</h1>
-                    <p className="text-gray-600">Assign volunteers to specific areas and manage volunteer schedules</p>
+
+                {/* Breadcrumb Navigation */}
+                <div className="breadcrumb-section" style={{ marginBottom: '16px' }}>
+                    <h2 className="page-title">Individual Application</h2>
+                    <Breadcrumb>
+                        <Breadcrumb.Item href="#">
+                            <span>Home</span>
+                        </Breadcrumb.Item>
+                        <Breadcrumb.Item>
+                            <Link to="/volunteer_management/volunteer_dashboard">
+                                Volunteer Dashboard
+                            </Link>
+                        </Breadcrumb.Item>
+                        <Breadcrumb.Item>
+                            <span>Individual Application</span>
+                        </Breadcrumb.Item>
+                    </Breadcrumb>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

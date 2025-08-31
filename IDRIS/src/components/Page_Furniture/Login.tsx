@@ -30,7 +30,9 @@ const Login = () => {
         setEmail(userData["email"]);
         setUsername(userData["username"]);
         setUserReady(true);
-        if (userData["roles"].includes("volunteer")) {
+        if (userData["roles"].includes("super admin")) {
+          navigate("/volunteer_management/volunteer_dashboard");
+        } else if (userData["roles"].includes("volunteer")) {
           navigate("/volunteer_management/volunteer_dashboard");
         } else if (userData["roles"].includes("operations admin")) {
           navigate("/donations_management/donations_dashboard");

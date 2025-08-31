@@ -115,6 +115,7 @@ def get_current_user_from_access_token(
         raise HTTPException(status_code=401, detail="Invalid access token")
 
     user = get_user_by_email(db, email)
+    print(user.user_type)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -129,8 +130,8 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
         email=user.email,
         username=user.username,
         password=user.password,
-        user_type=user.user_type,
-        roles=user.roles,
+        user_type="user",
+        roles=["generic"],
     )
     access_token = create_access_token(data={"sub": new_user.email})
     refresh_token = create_refresh_token(data={"sub": new_user.email})

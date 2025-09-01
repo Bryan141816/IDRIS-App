@@ -15,6 +15,8 @@ from sqlalchemy import (
     Float,
     Identity,
     Identity,
+    CheckConstraint,
+    Index
 )
 from sqlalchemy import event, func, case, literal, select
 from sqlalchemy.orm import relationship, Session
@@ -474,6 +476,14 @@ class IndividualVolunteer(Base):
     volunteer_type = Column(String(50), nullable=False, default="individual")
     status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
 
+    certificates = relationship(
+        "VolunteerCertificate",
+        back_populates="individual_volunteer",
+        primaryjoin="VolunteerCertificate.individual_volunteer_id==IndividualVolunteer.volunteer_id",
+        passive_deletes=True,
+    )
+
+
 
 class OrganizationVolunteer(Base):
     __tablename__ = "organization_volunteer"
@@ -506,6 +516,60 @@ class OrganizationVolunteer(Base):
     volunteer_type = Column(String(50), nullable=False, default="organization")
     status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
 
+    certificates = relationship(
+        "VolunteerCertificate",
+        back_populates="organization_volunteer",
+        primaryjoin="VolunteerCertificate.organization_volunteer_id==OrganizationVolunteer.volunteer_id",
+        passive_deletes=True,
+    )
+
+class VolunteerCertificate(Base):
+    __tablename__ = "volunteer_certificate"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Exactly one of these must be set:
+    individual_volunteer_id = Column(
+        Integer,
+        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    organization_volunteer_id = Column(
+        Integer,
+        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(512), nullable=False)  # normalized POSIX path
+    mime_type = Column(String(100), nullable=True)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Enforce XOR ownership at the DB level
+    __table_args__ = (
+        CheckConstraint(
+            # works in Postgres; SQLite accepts CASE variant too
+            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_cert_exactly_one_owner",
+        ),
+        Index("ix_vol_cert_owner_i", "individual_volunteer_id"),
+        Index("ix_vol_cert_owner_o", "organization_volunteer_id"),
+    )
+
+    # ORM relationships back to owners
+    individual_volunteer = relationship(
+        "IndividualVolunteer",
+        back_populates="certificates",
+        foreign_keys=[individual_volunteer_id],
+    )
+    organization_volunteer = relationship(
+        "OrganizationVolunteer",
+        back_populates="certificates",
+        foreign_keys=[organization_volunteer_id],
+    )
 
 # Procurement Request
 

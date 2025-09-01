@@ -10,11 +10,28 @@ from data_schemas.organization_volunteers import (
 )
 import shutil
 import os
-from models import VolunteerStatus
+from models import (
+    IndividualVolunteer, OrganizationVolunteer, VolunteerCertificate, VolunteerStatus
+)
 
 # Directory for storing uploaded organization-related files (e.g., certificates)
 UPLOAD_DIR = Path("media/organization_files")
 
+def _save_one_file(file: UploadFile) -> dict:
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    ext = Path(file.filename or "").suffix
+    unique_filename = f"{uuid4().hex}{ext}"
+    fp = UPLOAD_DIR / unique_filename
+    try:
+        with open(fp, "wb") as buf:
+            shutil.copyfileobj(file.file, buf)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {e}")
+    return {
+        "file_name": file.filename or unique_filename,
+        "file_path": str(fp).replace("\\", "/"),
+        "mime_type": file.content_type or None,
+    }
 
 def _skills_to_csv(value: Optional[Union[List[str], str]]) -> Optional[str]:
     """
@@ -100,6 +117,32 @@ class OrganizationVolunteerCRUD:
             .filter(OrganizationVolunteer.volunteer_id == volunteer_id)
             .first()
         )
+
+    @staticmethod
+    def add_certificates_for_organization(
+        db: Session, org_volunteer_id: int, files: List[UploadFile]
+    ) -> List[VolunteerCertificate]:
+        ov = db.get(OrganizationVolunteer, org_volunteer_id)
+        if not ov:
+            raise HTTPException(status_code=404, detail="Organization volunteer not found")
+        created = []
+        try:
+            for f in files or []:
+                if not (f and f.filename and f.filename.strip()):
+                    continue
+                meta = _save_one_file(f)
+                cert = VolunteerCertificate(
+                    organization_volunteer_id=org_volunteer_id,
+                    file_name=meta["file_name"], file_path=meta["file_path"], mime_type=meta["mime_type"]
+                )
+                db.add(cert)
+                created.append(cert)
+            db.commit()
+            for c in created: db.refresh(c)
+            return created
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error adding certificates: {e}")
 
     @staticmethod
     def update_organization_volunteer(

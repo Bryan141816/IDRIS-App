@@ -24,6 +24,7 @@ from routers.volunteer_management import individual_volunteer_routes
 from routers.volunteer_management import (
     organization_volunteer_routes,
 )  # Import the org volunteer routes
+from routers.manage_users import ManageUsers
 from decouple import config
 
 Base.metadata.create_all(bind=engine)
@@ -46,6 +47,7 @@ app.add_middleware(
     secret_key=SECRET_KEY,
 )
 app.include_router(authentication.router)
+app.include_router(ManageUsers.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(manage_lgu.router)

@@ -108,7 +108,12 @@ const Register = () => {
       alert("Failed to register. Check your network or server.");
     }
   };
-
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/auth/register";
+  };
+  const handleMicrosoftLogin = () => {
+    window.location.href = "http://localhost:8000/auth/microsoft/register";
+  };
   return (
     <section id="login-section">
       <LoginHeader />
@@ -236,6 +241,8 @@ const Register = () => {
           <Link to="/login">Login</Link>
           <button type="submit">Signup</button>
         </form>
+        <button onClick={handleGoogleLogin}>Register via Google</button>
+        <button onClick={handleMicrosoftLogin}>Register via Microsoft</button>
       </div>
       {/* <Modal */}
       {/*   isOpen={activeModal == "user-type" ? true : false} */}

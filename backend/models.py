@@ -16,7 +16,8 @@ from sqlalchemy import (
     Identity,
     Identity,
     CheckConstraint,
-    Index
+    Index,
+    ARRAY,
 )
 from sqlalchemy import event, func, case, literal, select
 from sqlalchemy.orm import relationship, Session
@@ -38,8 +39,10 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String, nullable=True)
     user_type = Column(String)
-    roles = Column(JSON, default=[])
+    roles = Column(ARRAY(String), default=[])
     is_activated = Column(Boolean, default=False)
+
+    sub = Column(String, nullable=True)  # for oauth
 
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")

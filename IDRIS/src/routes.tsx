@@ -47,6 +47,16 @@ const ResetPassword = () =>
   import("./components/Page_Furniture/ResetPassword").then((module) => ({
     Component: module.default,
   }));
+const OauthCallback = () =>
+  import("./components/Page_Furniture/OauthCallback").then((module) => ({
+    Component: module.default,
+  }));
+
+//UserManagement
+const UserManagement = () =>
+  import("./pages/manage_users/ManageUsers").then((module) => ({
+    Component: module.default,
+  }));
 // LGU Profiling
 const MapOfCebu = () =>
   import("./pages/lgu_profiling/map_of_cebu/MapOfCebu").then((module) => ({
@@ -243,6 +253,14 @@ export const router = createBrowserRouter([
       {
         path: "user_not_allowed",
         lazy: UserNotAllowed,
+      },
+      {
+        path: "manage_users",
+        lazy: UserManagement,
+      },
+      {
+        path: "oauth_callback",
+        lazy: OauthCallback,
       },
       {
         path: "lgu_profiling",

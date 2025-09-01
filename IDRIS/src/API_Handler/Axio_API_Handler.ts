@@ -41,7 +41,7 @@ API.interceptors.request.use(async (config) => {
   console.log(config.url)
 
   const skipRefresh =
-    config.url?.includes("/login") || config.url?.includes("/register") || config.url?.includes("/activate") || config.url?.includes("/forgot_password");
+    config.url?.includes("/login") || config.url?.includes("/register") || config.url?.includes("/activate") || config.url?.includes("/forgot_password") || config.url?.includes("/auth/callback/login");
 
   // If the request is login/register → skip token logic
   if (skipRefresh) {

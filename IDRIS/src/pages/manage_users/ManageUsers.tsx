@@ -7,9 +7,50 @@ import {
   faTrash,
   faPen,
 } from "@fortawesome/free-solid-svg-icons";
-
+import { useUserRoleContext } from "../../UserRoleContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MessageBox } from "../../components/Page_Furniture/MessageBox";
+
+import { API } from "../../API_Handler/Axio_API_Handler";
+import "../response_dashboard/DefaultListViewStyle.scss";
+
+async function getUserList(): Promise<any> {
+  const response = await API.get("/user_list");
+  return response.data;
+}
+
+async function deleteUser(user_id: String): Promise<any> {
+  try {
+    const response = await API.delete(`/delete_user/${user_id}`);
+    return response;
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error: ", error.response.data.detail);
+    } else {
+      console.error("Request error: ", error.message);
+    }
+  }
+}
+
+async function updateUser(user_id: String, role: String) {
+  try {
+    const response = await API.put(`/update_user/${user_id}`, {
+      roles: role,
+    });
+    return { sucess: true, data: response.data };
+  } catch (error: any) {
+    if (error.respose) {
+      console.error("Error: ", error.response.data.detail);
+      return {
+        sucess: false,
+        error: error.response?.data?.detail || error.message,
+      };
+    } else {
+      console.error("Request error: ", error.message);
+      return { sucess: false, error: "An unexpected error occured." };
+    }
+  }
+}
 
 type MessageBoxState = {
   isOpen: boolean;
@@ -26,9 +67,8 @@ type BaseModalProps = {
 };
 
 type EditReportModalProps = BaseModalProps & {
-  handleEditReport: (editReportType: string, editStatus: string) => void;
-  defaultReportType: string;
-  defaultStatus: string;
+  handleEditReport: (role: string) => void;
+  defaultRole: string;
 };
 type ViewReportModalProps = BaseModalProps & {
   handleDeleteReport: (report_id: string) => void;
@@ -52,6 +92,13 @@ const ViewReportModal = ({
   }, [isModalOpen]);
   const toggleMoreOptionVisible = () =>
     setMoreOptionVisible(!isMoreOptionVisible);
+  function toTitleCase(str: String) {
+    return str
+      .toLowerCase() // make everything lowercase first
+      .split(" ") // split into words
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" "); // join back into a sentence
+  }
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal}>
@@ -62,7 +109,6 @@ const ViewReportModal = ({
             className="horizontal-container"
             style={{ width: "auto", gap: "5px" }}
           >
-            <button className="mark-as-button">Mark as Started</button>
             <div className="more-options-container">
               <button onClick={toggleMoreOptionVisible}>
                 <FontAwesomeIcon
@@ -105,17 +151,26 @@ const ViewReportModal = ({
           <span className="details-title">Details</span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Report Type:</span>
+          <span className="item-details-identifier">Email Address:</span>
           <span>{isViewModalSelected.data[2].text}</span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Status:</span>
+          <span className="item-details-identifier">User Name:</span>
           <span>{isViewModalSelected.data[3].text}</span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Date:</span>
-          <span>{isViewModalSelected.data[1].text}</span>
+          <span className="item-details-identifier">User Type:</span>
+          <span>{toTitleCase(isViewModalSelected.data[4].text)}</span>
         </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Role:</span>
+          <span>{toTitleCase(isViewModalSelected.data[5].text)}</span>
+        </div>
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Is Activated:</span>
+          <span>{toTitleCase(isViewModalSelected.data[6].text)}</span>
+        </div>
+
         <div className="action-button">
           <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
             Close
@@ -130,21 +185,17 @@ const EditReportModal = ({
   closeModal,
   setMessageBox,
   handleEditReport,
-  defaultReportType,
-  defaultStatus,
+  defaultRole,
 }: EditReportModalProps) => {
-  const [editReportType, setEditReportType] = useState(defaultReportType);
-  const [editStatus, setEditStatus] = useState(defaultStatus);
+  const [editRole, setEditRole] = useState(defaultRole);
+  const { userRoles } = useUserRoleContext();
+
   const handleEditReportTypeChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
-    setEditReportType(event.target.value);
+    setEditRole(event.target.value);
   };
-  const handleEditStatusChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setEditStatus(event.target.value);
-  };
+
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal}>
       <div className="modal-container">
@@ -152,25 +203,34 @@ const EditReportModal = ({
           <span className="details-title">Edit Report</span>
         </div>
         <div className="horizontal-container">
-          <span className="item-details-identifier">Report Type:</span>
-          <select value={editReportType} onChange={handleEditReportTypeChange}>
-            <option value="EOD Report">EOD Report</option>
-            <option value="Budget Report">Budget Report</option>
-            <option value="Distribution Report">Distribution Report</option>
-            <option value="Demand Assessment">Demand Assessment</option>
-            <option value="Modality Report">Modality Report</option>
-            <option value="In-Kind Monitoring">In-Kind Monitoring</option>
+          <span className="item-details-identifier">Role:</span>
+          <select value={editRole} onChange={handleEditReportTypeChange}>
+            {userRoles.includes("super admin") ||
+              (userRoles.includes("operations admin") && (
+                <option value="lgu officer">LGU Officer (Moderator)</option>
+              ))}
+            {userRoles.includes("super admin") ||
+              (userRoles.includes("logistics admin") && (
+                <option value="disaster response admin officer">
+                  Disaster Response Admin Officer (Moderator)
+                </option>
+              ))}
+            {userRoles.includes("super admin") ||
+              (userRoles.includes("operations admin") && (
+                <option value="operations admin">Operations Admin</option>
+              ))}
+            {userRoles.includes("super admin") ||
+              (userRoles.includes("logistics admin") && (
+                <option value="logistics admin">Logistics Admin</option>
+              ))}
+            {userRoles.includes("super admin") ||
+              (userRoles.includes("finance admin") && (
+                <option value="finance admin">Finance Admin</option>
+              ))}
+            <option value="generic">Generic User</option>
           </select>
         </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Status:</span>
-          <select value={editStatus} onChange={handleEditStatusChange}>
-            <option value="Filed">Filed</option>
-            <option value="Started">Started</option>
-            <option value="Cancelled">Cancelled</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
+
         <div className="action-button">
           <button
             onClick={() => {
@@ -179,7 +239,7 @@ const EditReportModal = ({
                 isOpen: true, // your new values
                 type: "confirm",
                 message: "Are you sure you want to edit this report?",
-                onSubmit: () => handleEditReport(editReportType, editStatus),
+                onSubmit: () => handleEditReport(editRole),
               }));
             }}
             style={{ backgroundColor: "rgba(0, 102, 255, 0.5)" }}
@@ -228,7 +288,7 @@ const UserList = () => {
 
   async function fetchData() {
     try {
-      const response = await getReportList();
+      const response = await getUserList();
       setResposeData(response);
     } catch (error) {
       console.error(error);
@@ -242,7 +302,7 @@ const UserList = () => {
 
   const handleDeleteReport = async (report_id: String) => {
     try {
-      await deleteResponseReport(report_id);
+      await deleteUser(report_id);
       closeViewModal();
       setMessageBox((prev) => ({
         ...prev, // preserves onClose and anything else
@@ -257,32 +317,25 @@ const UserList = () => {
     }
   };
 
-  // const handleEditReport = async (
-  //   editReportType: string,
-  //   editStatus: string,
-  // ) => {
-  //   const response = await updateResponseReport(
-  //     isViewModalSelected.data[0].text,
-  //     editReportType,
-  //     editStatus,
-  //   );
-  //   if (response.sucess) {
-  //     closeEditModal();
-  //     isViewModalSelected.data[2].text = response.data.report.report_type;
-  //     isViewModalSelected.data[3].text = response.data.report.status;
-  //     setMessageBox((prev) => ({
-  //       ...prev, // preserves onClose and anything else
-  //       isOpen: true, // your new values
-  //       type: "message",
-  //       message: "Report is successfuly updated?",
-  //       onClose: closeMessageBox,
-  //     }));
-  //     handleRefreshTable();
-  //     openViewModal();
-  //   } else {
-  //     console.error("Error updating report: " + response.error);
-  //   }
-  // };
+  const handleEditReport = async (role: string) => {
+    const response = await updateUser(isViewModalSelected.data[0].text, role);
+    if (response.sucess) {
+      closeEditModal();
+      isViewModalSelected.data[4].text = response.data.user?.user_type;
+      isViewModalSelected.data[5].text = response.data.user?.roles.join(", ");
+      setMessageBox((prev) => ({
+        ...prev, // preserves onClose and anything else
+        isOpen: true, // your new values
+        type: "message",
+        message: "Report is successfuly updated?",
+        onClose: closeMessageBox,
+      }));
+      handleRefreshTable();
+      openViewModal();
+    } else {
+      console.error("Error updating report: " + response.error);
+    }
+  };
 
   return (
     <div className="report-container">
@@ -304,6 +357,15 @@ const UserList = () => {
           openEditModal={openEditModal}
         ></ViewReportModal>
       )}
+      {isViewModalSelected && (
+        <EditReportModal
+          isModalOpen={isEditModeEnabled}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          handleEditReport={handleEditReport}
+          defaultRole={isViewModalSelected.data[5].text}
+        ></EditReportModal>
+      )}
 
       <div className="horizontal-container">
         <div className="navigator-container">
@@ -324,7 +386,7 @@ const UserList = () => {
             openViewModal();
           }}
           setCallbackTableData={true}
-          pageRequest="/report_list?page="
+          pageRequest="/user_list?page="
           updateTable={(fn) => (refreshTable.current = fn)}
         />
       ) : (

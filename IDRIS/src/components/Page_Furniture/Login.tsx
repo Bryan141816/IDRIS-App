@@ -50,6 +50,9 @@ const Login = () => {
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/login";
   };
+  const handleMicrosoftLogin = () => {
+    window.location.href = "http://localhost:8000/auth/microsoft/login";
+  };
   return (
     <section id="login-section">
       <LoginHeader />
@@ -97,6 +100,7 @@ const Login = () => {
           <button type="submit">Login</button>
         </form>
         <button onClick={handleGoogleLogin}>Login via Google</button>
+        <button onClick={handleMicrosoftLogin}>Login via Microsoft</button>
       </div>
     </section>
   );

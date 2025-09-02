@@ -72,8 +72,13 @@ oauth.register(
     name="microsoft",
     client_id=MICROSOFT_CLIENT_ID,
     client_secret=MICROSOFT_CLIENT_SECRET,
-    server_metadata_url=f"https://login.microsoftonline.com/{MICROSOFT_TENANT}/v2.0/.well-known/openid-configuration",
-    client_kwargs={"scope": "openid email profile"},
+    authorize_url="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    access_token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    client_kwargs={
+        "scope": "openid email profile offline_access",
+        "validate_iss": False,
+    },
+    jwks_uri="https://login.microsoftonline.com/common/discovery/v2.0/keys",
 )
 
 
@@ -127,10 +132,11 @@ async def add_user(email: str, username: str, sub: str, db: Session = next(get_d
 
 @router.get("/auth/microsoft/callback")
 async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
+    print(request)
     token = await oauth.microsoft.authorize_access_token(request)
-    user_info = token.get("id_token_claims")  # Microsoft returns user info here
+    user_info = token.get("userinfo")  # Microsoft returns user info here
     state = request.query_params.get("state")
-
+    print(user_info)
     if not user_info:
         raise HTTPException(status_code=400, detail="Failed to get Microsoft user info")
 

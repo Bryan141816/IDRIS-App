@@ -122,6 +122,9 @@ export default function IDRISDashboard() {
     const openVolunteerModal = (): void => setIsVolunteerModalOpen(true);
     const closeVolunteerModal = (): void => setIsVolunteerModalOpen(false);
 
+    const isOpsAdmin = userType === "admin" && userRoles.includes("operations admin");
+
+
     const activeVolunteers = [
         { id: 1, name: "Volunteer Name", programs: 20, status: "joined" },
         { id: 2, name: "Volunteer Name", programs: 15, status: "joined" },
@@ -221,19 +224,27 @@ export default function IDRISDashboard() {
                                     <div className="card-title-white">Total Applicants</div>
                                     <div className="card-number">{totalApplicants}</div>
                                 </div>
-                                {userType === "admin" && userRoles.includes("operations admin") ? (
+                                {isOpsAdmin ? (
                                     <button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")}>
                                         Manage Applicants
                                     </button>
                                 ) : volunteerStatus === "submitted" ? (
-                                    <button className="manage-btn" style={{ fontSize: "90%" }} onClick={() => setIsVolunteerModalOpen(true)}>
-                                        Become a Volunteer
-                                    </button>
-                                ) : volunteerStatus !== "submitted" ? (
-                                    <button className="manage-btn" style={{ fontSize: "88%" }} onClick={() => navigate("/volunteer_management/track_volunteer_application")}>
+                                    <button
+                                        className="manage-btn"
+                                        style={{ fontSize: "88%" }}
+                                        onClick={() => navigate("/volunteer_management/track_volunteer_application")}
+                                    >
                                         Track Volunteer Application
                                     </button>
-                                ) : null }
+                                ) : (
+                                    <button
+                                        className="manage-btn"
+                                        style={{ fontSize: "90%" }}
+                                        onClick={() => setIsVolunteerModalOpen(true)}
+                                    >
+                                        Become a Volunteer
+                                    </button>
+                                )}
                             </div>
 
                             {/* Total Volunteers (approved only) */}

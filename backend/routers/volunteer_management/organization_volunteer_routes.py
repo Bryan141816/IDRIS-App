@@ -10,6 +10,7 @@ from data_schemas.organization_volunteers import (
     OrganizationVolunteerCreate,
     OrganizationVolunteerUpdate,
     OrganizationVolunteerRead,
+    VolunteerCertificateRead,
 )
 from crud_functions.volunteer_management.organization_volunteer_crud import (
     OrganizationVolunteerCRUD as CRUD,
@@ -52,6 +53,7 @@ def create_organization_volunteer_endpoint(
     contact_person_email: str = Form(...),
     availability: Optional[str] = Form(None),
     organization_picture: Optional[UploadFile] = File(None),
+    certification_files: Optional[List[UploadFile]] = File(None),
     organization_certificate: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -72,7 +74,8 @@ def create_organization_volunteer_endpoint(
         organization_certificate=None,  # set by CRUD if file uploaded
         status=status
     )
-    return CRUD.create_organization_volunteer(db, organization_data, organization_certificate)
+    files = certification_files or ([organization_certificate] if organization_certificate else None)
+    return CRUD.create_organization_volunteer(db, organization_data, files, organization_picture)
 
 # ---------------- CREATE (Admin creates for any organization volunteer) ----------------
 @router_admin.post("/create_for_user", response_model=OrganizationVolunteerRead)
@@ -89,6 +92,7 @@ def create_organization_volunteer_for_user_endpoint(
     contact_person_email: str = Form(...),
     availability: Optional[str] = Form(None),
     organization_picture: Optional[UploadFile] = File(None),
+    certification_files: Optional[List[UploadFile]] = File(None),
     organization_certificate: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -109,7 +113,8 @@ def create_organization_volunteer_for_user_endpoint(
         organization_certificate=None,  # set by CRUD if file uploaded
         status=status
     )
-    return CRUD.create_organization_volunteer(db, organization_data, organization_certificate)
+    files = certification_files or ([organization_certificate] if organization_certificate else None)
+    return CRUD.create_organization_volunteer(db, organization_data, files, organization_picture)
 
 # ---------------- READ ALL ----------------
 @router_admin_or_organization_volunteer.get("/get_all", response_model=List[OrganizationVolunteerRead])
@@ -172,6 +177,7 @@ def update_my_organization_volunteer_profile_endpoint(
     contact_person_email: Optional[str] = Form(None),
     availability: Optional[str] = Form(None),
     organization_picture: Optional[UploadFile] = File(None),
+    certification_files: Optional[List[UploadFile]] = File(None),
     organization_certificate: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -196,7 +202,8 @@ def update_my_organization_volunteer_profile_endpoint(
         availability=availability,
         status=status
     )
-    return CRUD.update_organization_volunteer(db, volunteer.volunteer_id, update_data, organization_certificate)
+    files = certification_files or ([organization_certificate] if organization_certificate else None)
+    return CRUD.update_organization_volunteer(db, volunteer.volunteer_id, update_data, files, organization_picture)
 
 # ---------------- UPDATE (Admin updates any profile) ----------------
 @router_admin.put("/update/{volunteer_id}", response_model=OrganizationVolunteerRead)
@@ -213,6 +220,7 @@ def update_organization_volunteer_endpoint(
     contact_person_email: Optional[str] = Form(None),
     availability: Optional[str] = Form(None),
     organization_picture: Optional[UploadFile] = File(None),
+    certification_files: Optional[List[UploadFile]] = File(None),
     organization_certificate: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -230,7 +238,8 @@ def update_organization_volunteer_endpoint(
         availability=availability,
         status=status
     )
-    return CRUD.update_organization_volunteer(db, volunteer_id, update_data, organization_certificate)
+    files = certification_files or ([organization_certificate] if organization_certificate else None)
+    return CRUD.update_organization_volunteer(db, volunteer_id, update_data, files, organization_picture)
 
 # ---------------- DELETE ----------------
 @router_admin.delete("/delete/{volunteer_id}")

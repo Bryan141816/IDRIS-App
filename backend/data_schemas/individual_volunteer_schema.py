@@ -4,6 +4,18 @@ from pydantic import BaseModel, validator
 from models import VolunteerStatus
 from typing import Literal
 
+class VolunteerCertificateRead(BaseModel):
+    id: int
+    file_name: str
+    file_path: str
+    mime_type: Optional[str] = None
+    uploaded_at: datetime
+    individual_volunteer_id: Optional[int] = None
+    organization_volunteer_id: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
 # ----------- SHARED SCHEMA -----------
 class IndividualVolunteerBase(BaseModel):
     user_id: int
@@ -55,7 +67,7 @@ class IndividualVolunteerUpdate(BaseModel):
 class IndividualVolunteerRead(IndividualVolunteerBase):
     volunteer_id: int
     created_at: datetime
-
+    certificates: List[VolunteerCertificateRead] = []
     class Config:
         orm_mode = True
 

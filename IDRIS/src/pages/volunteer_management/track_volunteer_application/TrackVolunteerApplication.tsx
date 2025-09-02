@@ -120,14 +120,14 @@ const TrackVolunteerApplication: React.FC = () => {
                                 <div className={`step-circle ${currentStep >= 2 ? "active" : ""}`}><CheckIcon /></div>
                                 <div className="step-connector" />
                                 <div className="step-content">
-                                    <div className="step-icon"><VerifyingIcon/></div>
+                                    <div className="step-icon"><VerifyingIcon /></div>
                                     <div className="step-label">Verifying<br />Application Form</div>
                                     {status === "verifying" && (
-                                            <div className="step-substatus">
-                                                <SyncOutlined spin />
-                                                <span>Checking your documents…</span>
-                                            </div>
-                                        )}
+                                        <div className="step-substatus">
+                                            <SyncOutlined spin />
+                                            <span>Checking your documents…</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

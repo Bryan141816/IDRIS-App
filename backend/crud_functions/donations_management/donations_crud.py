@@ -1,7 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, case, and_
+from typing import Optional, Sequence, Union
+from datetime import datetime
 
 from crud_functions.utils import _to_enum, uid_from_string, rand_alnum
 
@@ -334,3 +336,109 @@ class DonationCRUD:
                 "status": d.status.name if hasattr(d.status, "name") else d.status,
             })
         return out  
+    
+    @staticmethod
+    def get_donor_aggregates(
+        db: Session,
+        donor_id: int,
+        *,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        status: Optional[Union[DonationStatus, str, Sequence[Union[DonationStatus, str]]]] = None,
+    ) -> dict:
+        """
+        Returns:
+        {
+            "total_cash": float,
+            "total_inkind": float,
+            "donation_count": int,
+            "active_recurring_count": int
+        }
+        """
+
+        # Normalize/coerce status -> list of DonationStatus (case-insensitive if strings are passed)
+        def _coerce_status_list(s):
+            if s is None:
+                return None
+            items = s if isinstance(s, (list, tuple, set)) else [s]
+            out = []
+            for it in items:
+                if isinstance(it, DonationStatus):
+                    out.append(it)
+                else:
+                    key = str(it).upper()
+                    try:
+                        out.append(DonationStatus[key])  # by name
+                    except KeyError:
+                        out.append(DonationStatus(str(it)))  # by value
+            return out
+
+        status_vals = _coerce_status_list(status)
+
+        q = (
+            db.query(
+                # Sum cash amounts when type is CASH
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Donation.cash != None, Donation_Cash.amount),  # noqa: E711
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_cash"),
+                # Sum estimated in-kind values when type is INKIND
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Donation.inkind != None, Donation_InKind.estimated_value),  # noqa: E711
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_inkind"),
+                # Count donations after filters
+                func.count(Donation.donation_id).label("donation_count"),
+                # Active recurring = freq != ONE_TIME AND is_active = true
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                and_(
+                                    Donation.frequency != DonationFrequency.ONE_TIME,
+                                    Donation.is_active.is_(True),
+                                ),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("active_recurring_count"),
+            )
+            .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+            .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+            .filter(Donation.donor_id == donor_id)
+        )
+
+        if date_from is not None:
+            q = q.filter(Donation.donation_date >= date_from)
+        if date_to is not None:
+            q = q.filter(Donation.donation_date <= date_to)
+        if status_vals:
+            q = q.filter(Donation.status.in_(status_vals))
+
+        total_cash, total_inkind, donation_count, active_recurring_count = q.one()
+
+        def _to_float(x):
+            try:
+                return float(x) if x is not None else 0.0
+            except Exception:
+                return 0.0
+
+        return {
+            "total_cash": _to_float(total_cash),
+            "total_inkind": _to_float(total_inkind),
+            "donation_count": int(donation_count or 0),
+            "active_recurring_count": int(active_recurring_count or 0),
+        }

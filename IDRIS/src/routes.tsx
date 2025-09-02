@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
+import DonorDashboard from "./pages/donations_management/donor/Donor_Dashboard";
 
 const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
@@ -140,6 +141,14 @@ const DonorProfile = () =>
   ).then(
     (module) => ({ Component: module.default }),
   );
+
+const Donor_Dashboard = () =>
+  import(
+    "./pages/donations_management/donor/Donor_Dashboard"
+  ).then(
+    (module) => ({ Component: module.default }),
+  );
+ 
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -332,6 +341,10 @@ export const router = createBrowserRouter([
         lazy: DonorProfile,
       },
       {
+        path: "donor_dashboard",
+        lazy: Donor_Dashboard,
+      },
+      {
         path: "response_dashboard",
         children: [
           {
@@ -435,6 +448,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
 
   "/donation_report": DonationsReport,
   "/donor_profile": DonorProfile,
+  "/donor_dashboard": Donor_Dashboard,
 
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/report_list": ReportList,

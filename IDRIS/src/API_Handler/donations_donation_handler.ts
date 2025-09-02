@@ -28,3 +28,22 @@ export async function getDonationRecord(limit: number = 1): Promise<any> {
 
     return response.data;
 }
+
+export interface DonorAggregates {
+  total_cash: number;
+  total_inkind: number;
+  donation_count: number;
+  active_recurring_count: number;
+}
+
+export async function getDonorAggregates_legacy(
+  from?: string | null,
+  to?: string | null
+): Promise<any> {
+  const params: Record<string, any> = {};
+  if (from) params.from = from;   // <-- correct query key
+  if (to)   params.to   = to;     // <-- correct query key
+
+  const { data } = await API.get("/donations/get/donor_aggregates", { params });
+  return data;
+}

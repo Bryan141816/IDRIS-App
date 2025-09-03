@@ -3,8 +3,12 @@ import MapView, { MarkerType } from "../../../components/MapView/MapView";
 import { Link } from "react-router-dom";
 import "../css/MapOfCebu.css";
 
+// --- New: types for hazard photo gallery ---
+type HazardPhoto = { src: string; label: string };
+type MarkerWithPhotos = MarkerType & { hazardPhotos?: HazardPhoto[] };
 
-const markers: MarkerType[] = [
+// --- Updated: allow optional photo gallery per marker ---
+const markers: MarkerWithPhotos[] = [
   {
     lat: 10.313924,
     lng: 123.887082,
@@ -19,6 +23,11 @@ const markers: MarkerType[] = [
       { lat: 10.313, lng: 123.885, type: "hazard" },
       { lat: 10.315, lng: 123.889, type: "hazard" },
     ],
+    // ⬇️ Add your real photos + labels here
+    hazardPhotos: [
+      { src: "../images/hazards/bagyo.jpg", label: "Flood-prone:Tulic, Argao, Cebu." },
+      { src: "../images/hazards/flood.jpg", label: "Flood-pronce:Lamacan,Argao, Cebu." },
+    ],
   },
   {
     lat: 10.346693,
@@ -31,6 +40,9 @@ const markers: MarkerType[] = [
     evacuationCenter: "Mandaue Coliseum",
     image: "../images/lgu/mandaue.jpg",
     hazardAreas: [{ lat: 10.345, lng: 123.899, type: "hazard" }],
+    hazardPhotos: [
+      { src: "../images/hazards/mandaue_flood_1.jpg", label: "Flood-prone: Subangdaku" },
+    ],
   },
   {
     lat: 10.34,
@@ -44,6 +56,10 @@ const markers: MarkerType[] = [
     evacuationCenter: "Barangay Apas Hall",
     image: "../images/baranggay/baranggay.jpg",
     hazardAreas: [],
+    // example only
+    hazardPhotos: [
+      { src: "../images/hazards/apas_flood_1.jpg", label: "Flood-prone: Sitio Kamputhaw" },
+    ],
   },
   {
     lat: 10.35,
@@ -60,13 +76,14 @@ const markers: MarkerType[] = [
 ];
 
 const MapOfCebu = () => {
-  const [selectedMarker, setSelectedMarker] = useState<MarkerType | null>(null);
+  // --- Updated: selectedMarker now supports photos ---
+  const [selectedMarker, setSelectedMarker] = useState<MarkerWithPhotos | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pathCoordinates, setPathCoordinates] = useState<[number, number][] | null>(null);
   const [evacuationCenter, setEvacuationCenter] = useState<MarkerType | null>(null); // separate evacuation marker
 
-  const handleMarkerClick = (marker: MarkerType) => {
+  const handleMarkerClick = (marker: MarkerWithPhotos) => {
     setSelectedMarker(marker);
     setSidebarOpen(true);
     setPathCoordinates(null);
@@ -94,7 +111,6 @@ const MapOfCebu = () => {
       resources: "Food packs, water, and beds",
       evacuationCenter: "Simulated Covered Court",
       image: "../images/icons/sample.png",
-
       hazardAreas: [],
     };
 
@@ -126,24 +142,26 @@ const MapOfCebu = () => {
           RAFI Infrastructure
         </button>
       </div>
-<div className="legend-box">
-  <h4>Legend</h4>
-  <div className="legend-item">
-    <span className="legend-color" style={{ backgroundColor: 'blue' }}></span> LGU
-  </div>
-  <div className="legend-item">
-    <span className="legend-color" style={{ backgroundColor: 'red' }}></span> Barangay
-  </div>
-  <div className="legend-item">
-    <span className="legend-color" style={{ backgroundColor: 'yellow' }}></span> RAFFI Infrastructure
-  </div>
-</div>
+
+      <div className="legend-box">
+        <h4>Legend</h4>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: 'blue' }}></span> LGU
+        </div>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: 'red' }}></span> Barangay
+        </div>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: 'yellow' }}></span> RAFFI Infrastructure
+        </div>
+      </div>
 
       <div className="map-container">
         <MapView
           center={[10.313924, 123.887082]}
-          markers={combinedMarkers()}
-          onMarkerClick={handleMarkerClick}
+          // TS note: MarkerWithPhotos[] is structurally compatible with MarkerType[]
+          markers={combinedMarkers() as MarkerType[]}
+          onMarkerClick={handleMarkerClick as unknown as (m: MarkerType) => void}
           pathCoordinates={pathCoordinates}
         />
       </div>
@@ -185,7 +203,27 @@ const MapOfCebu = () => {
                   <hr />
                   <div className="small-map">
                     <h3 style={{ marginTop: "-15px", marginBottom: "5px" }}>Hazard Area</h3>
-                    <MapView markers={selectedMarker.hazardAreas} fitBounds={true} />
+
+                    {/* Old mini-map kept as requested */}
+                    {/* <MapView markers={selectedMarker.hazardAreas} fitBounds={true} /> */}
+
+                    {/* NEW: Image container with captions (place/hazard name) */}
+                    <div className="hazard-photos">
+                      {selectedMarker.hazardPhotos && selectedMarker.hazardPhotos.length > 0 ? (
+                        <div className="hazard-photos-grid">
+                          {selectedMarker.hazardPhotos.map((hp, i) => (
+                            <figure className="hazard-photo-card" key={i}>
+                              <img src={hp.src} alt={hp.label} />
+                              <figcaption>{hp.label}</figcaption>
+                            </figure>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                          No hazard photos available.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </>
               )}

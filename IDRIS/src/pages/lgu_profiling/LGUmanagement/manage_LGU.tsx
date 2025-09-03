@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, act } from "react";
 import "../css/LGUmanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
 import { TableView } from "../../../components/TableView/table_view";
@@ -217,6 +217,7 @@ const MapOfCebu = () => {
     }));
   };
   const openViewModal = () => {
+    console.log(activeTab)
     setViewModalState((prev) => ({
       ...prev,
       [activeTab]: true,
@@ -374,7 +375,14 @@ const MapOfCebu = () => {
     onSubmit: undefined,
     onClose: closeMessageBox,
   });
-
+  useEffect(() => {
+    // close everything when switching tabs
+    setAddModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
+    setViewModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
+    setEditModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
+    setSelectedViewData(null);
+    fetchData(activeTab);
+  }, [activeTab]);
   return (
     <div className="app-container">
       <MessageBox
@@ -408,25 +416,7 @@ const MapOfCebu = () => {
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
       ></AddBarangayModal>
-      {selectedViewData && (
-        <ViewBarangayModal
-          isModalOpen={viewModalState.barangay}
-          closeModal={closeViewModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleDeleteRecord={handleDeleteRecord}
-          openEditModal={openEditModal}
-        ></ViewBarangayModal>
-      )}
-      {selectedViewData && (
-        <EditBarangayModal
-          isModalOpen={editModalState.barangay}
-          closeModal={closeEditModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleEditRecord={handleEditRecord}
-        ></EditBarangayModal>
-      )}
+     
       {selectedViewData && (
         <ViewLGUModal
           isModalOpen={viewModalState.lgu}

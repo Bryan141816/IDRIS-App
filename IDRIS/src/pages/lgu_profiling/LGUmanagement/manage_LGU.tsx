@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, act } from "react";
+import { useEffect, useState, useRef } from "react";
 import "../css/LGUmanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
 import { TableView } from "../../../components/TableView/table_view";
@@ -23,11 +23,9 @@ import {
 } from "./Modals/BarangayModal";
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
-//API Handler
+/* ========================= API HELPERS ========================= */
 export async function getRecord(record_type: string): Promise<any> {
-  const response = await API.get(
-    `/lgu_profiling/manage_lgu/get_${record_type}`,
-  );
+  const response = await API.get(`/lgu_profiling/manage_lgu/get_${record_type}`);
   return response.data;
 }
 
@@ -41,43 +39,40 @@ export async function addRecord(
       payload,
     );
 
-    // If backend returns an ErrorResponse (success = false), catch it here
-    if (response.data.success === false) {
+    if (response.data?.success === false) {
       return {
         success: false,
         error: response.data.error || "Unknown error from server",
       };
     }
-
-    // Otherwise, return the created record
     return response.data;
   } catch (error: any) {
     console.error("Failed to add record:", error);
-
     const message =
-      error.response?.data?.error || // new error format
-      error.response?.data?.detail || // if FastAPI still raises HTTPException
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
       error.message ||
       "Unknown error occurred";
-
     return { success: false, error: message };
   }
 }
+
 export async function deleteRecord(
   record_type: string,
-  reportId: String,
+  reportId: string,
 ): Promise<any> {
   try {
     const response = await API.delete(
       `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`,
     );
-    return response;
+  return response;
   } catch (error: any) {
     if (error.response) {
       console.error("Error: ", error.response.data.detail);
     } else {
       console.error("Request error: ", error.message);
     }
+    throw error;
   }
 }
 
@@ -92,54 +87,79 @@ export async function updateRecord(
       payload,
     );
 
-    // If backend returns an ErrorResponse (success = false), catch it here
-    if (response.data.success === false) {
+    if (response.data?.success === false) {
       return {
         success: false,
         error: response.data.error || "Unknown error from server",
       };
     }
-
-    // Otherwise, return the updated record
     return response.data;
   } catch (error: any) {
     console.error("Failed to update record:", error);
-
     const message =
-      error.response?.data?.error || // new error format
-      error.response?.data?.detail || // if FastAPI still raises HTTPException
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
       error.message ||
       "Unknown error occurred";
-
     return { success: false, error: message };
   }
 }
 
-//
+/* ========================= TYPES ========================= */
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
 
+type TableRowShape = {
+  id?: string | number;
+  data?: Array<{ text?: any; [k: string]: any }>;
+  [k: string]: any;
+};
+
+/* ========================= COMPONENT ========================= */
 const MapOfCebu = () => {
-  const [activeTab, setActiveTab] = useState("lgu");
+  const [activeTab, setActiveTab] = useState<
+    "lgu" | "barangay" | "rafi" | "hazard" | "evacuation"
+  >("lgu");
+
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
-  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(
-    null,
-  );
+  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(null);
   const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
-  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(
-    null,
-  );
-  const [evacuationResponse, setEvacuationResponse] =
-    useState<TableReponse | null>(null);
+  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
+  const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
+
   const refreshTable = useRef<() => void>(() => {});
   const handleRefreshTable = () => refreshTable.current?.();
-  const [selectedViewData, setSelectedViewData] = useState<any>(null);
-  type MessageBoxState = {
-    isOpen: boolean;
-    type: "message" | "confirm";
-    message: string;
-    onSubmit?: () => void;
-    onClose: () => void;
-  };
-  async function fetchData(name: string) {
+
+  const [selectedViewData, setSelectedViewData] = useState<TableRowShape | null>(null);
+
+  const [addModalState, setAddModalState] = useState({
+    lgu: false,
+    barangay: false,
+    rafi: false,
+    hazard: false,
+    evacuation: false,
+  });
+  const [viewModalState, setViewModalState] = useState({
+    lgu: false,
+    barangay: false,
+    rafi: false,
+    hazard: false,
+    evacuation: false,
+  });
+  const [editModalState, setEditModalState] = useState({
+    lgu: false,
+    barangay: false,
+    rafi: false,
+    hazard: false,
+    evacuation: false,
+  });
+
+  const fetchData = async (name: string) => {
     try {
       const response = await getRecord(name);
       switch (name) {
@@ -162,109 +182,73 @@ const MapOfCebu = () => {
     } catch (error) {
       console.error(error);
     }
-  }
+  };
 
-  const [addModalState, setAddModalState] = useState<{
-    lgu: boolean;
-    barangay: boolean;
-    rafi: boolean;
-    hazard: boolean;
-    evacuation: boolean;
-  }>({
-    lgu: false,
-    barangay: false,
-    rafi: false,
-    hazard: false,
-    evacuation: false,
-  });
-  const [viewModalState, setViewModalState] = useState<{
-    lgu: boolean;
-    barangay: boolean;
-    rafi: boolean;
-    hazard: boolean;
-    evacuation: boolean;
-  }>({
-    lgu: false,
-    barangay: false,
-    rafi: false,
-    hazard: false,
-    evacuation: false,
-  });
-  const [editModalState, setEditModalState] = useState<{
-    lgu: boolean;
-    barangay: boolean;
-    rafi: boolean;
-    hazard: boolean;
-    evacuation: boolean;
-  }>({
-    lgu: false,
-    barangay: false,
-    rafi: false,
-    hazard: false,
-    evacuation: false,
-  });
-
+  /* ---------- modal helpers ---------- */
   const openAddModal = () => {
-    setAddModalState((prev) => ({
-      ...prev,
-      [activeTab]: true,
-    }));
+    setAddModalState((prev) => ({ ...prev, [activeTab]: true }));
   };
   const closeAddModal = () => {
-    setAddModalState((prev) => ({
-      ...prev,
-      [activeTab]: false,
-    }));
+    setAddModalState((prev) => ({ ...prev, [activeTab]: false }));
   };
-  const openViewModal = () => {
-    console.log(activeTab)
-    setViewModalState((prev) => ({
-      ...prev,
-      [activeTab]: true,
-    }));
+
+  // One-click open: accept the row, set data, then open for current tab
+  const openViewModal = (row?: TableRowShape) => {
+    if (row) setSelectedViewData(row);
+    setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
   };
+
+  // Hide only (keep selection when switching to edit)
+  const hideViewModal = () => {
+    setViewModalState((prev) => ({ ...prev, [activeTab]: false }));
+  };
+
+  // Close and clear selection
   const closeViewModal = () => {
-    setViewModalState((prev) => ({
-      ...prev,
-      [activeTab]: false,
-    }));
+    hideViewModal();
+    setSelectedViewData(null);
   };
+
   const openEditModal = () => {
-    closeViewModal();
-    setEditModalState((prev) => ({
-      ...prev,
-      [activeTab]: true,
-    }));
+    // don’t clear selectedViewData; we need it in the edit modal
+    hideViewModal();
+    setEditModalState((prev) => ({ ...prev, [activeTab]: true }));
   };
+
   const closeEditModal = () => {
-    setEditModalState((prev) => ({
-      ...prev,
-      [activeTab]: false,
-    }));
-    openViewModal();
+    setEditModalState((prev) => ({ ...prev, [activeTab]: false }));
+    // After editing, reopen the view modal to show updated data
+    setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
   };
 
+  /* ---------- CRUD handlers ---------- */
   const handleDeleteRecord = async (id: string) => {
-    const response = await deleteRecord(activeTab, id);
-    setMessageBox((prev) => ({
-      ...prev, // preserves onClose and anything else
-      isOpen: true, // your new values
-      type: "message",
-      message: "Record deleted successfully",
-    }));
-    closeViewModal();
-    handleRefreshTable();
+    try {
+      await deleteRecord(activeTab, id);
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "Record deleted successfully",
+      }));
+      closeViewModal();
+      handleRefreshTable();
+    } catch {
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "Delete failed. Please try again.",
+      }));
+    }
   };
 
-  useEffect(() => {
-    fetchData(activeTab);
-  }, [activeTab]);
   const handleAddRecord = async (payload: any) => {
     const response = await addRecord(activeTab, payload);
-    if (!response.error) {
+    if (!(response as any)?.error) {
       setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
+        ...prev,
+        isOpen: true,
         type: "message",
         message: "Record added successfully",
       }));
@@ -272,101 +256,112 @@ const MapOfCebu = () => {
       handleRefreshTable();
     } else {
       setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
+        ...prev,
+        isOpen: true,
         type: "message",
-        message: response.error,
+        message: (response as any).error,
       }));
     }
   };
+
+  const safeUpdateByIndex = (
+    prev: TableRowShape | null,
+    mapping: Record<number, any>,
+  ): TableRowShape | null => {
+    if (!prev?.data || !Array.isArray(prev.data)) return prev;
+    const newData = prev.data.map((cell, idx) => {
+      if (Object.prototype.hasOwnProperty.call(mapping, idx)) {
+        return { ...cell, text: mapping[idx] };
+      }
+      return cell;
+    });
+    return { ...prev, data: newData };
+  };
+
   const handleEditRecord = async (id: string, payload: any) => {
     const response = await updateRecord(activeTab, id, payload);
-    if (response.error) {
+    if ((response as any)?.error) {
       setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
+        ...prev,
+        isOpen: true,
         type: "message",
-        message: response.error,
+        message: (response as any).error,
       }));
       return;
     }
+
     setMessageBox((prev) => ({
-      ...prev, // preserves onClose and anything else
-      isOpen: true, // your new values
+      ...prev,
+      isOpen: true,
       type: "message",
       message: "Record has been updated",
     }));
-    switch (activeTab) {
-      case "barangay":
-        setSelectedViewData((prev: any) => {
-          const newData = [...prev.data];
-          newData[1].text = payload.name;
-          newData[2].text = payload.lat;
-          newData[3].text = payload.lng;
-          newData[4].text = payload.LGU;
-          newData[5].text = payload.evacuation;
-          newData[6].text = payload.population;
-          newData[7].text = payload.contact_info;
-          newData[8].text = payload.risk_level;
-          return {
-            ...prev,
-            data: newData,
-          };
-        });
-        break;
 
-      case "lgu":
-        setSelectedViewData((prev: any) => {
-          const newData = [...prev.data];
-          newData[1].text = payload.name;
-          newData[2].text = payload.lat;
-          newData[3].text = payload.lng;
-          newData[4].text = payload.classification;
-          newData[5].text = payload.population;
-          newData[6].text = payload.contact_info;
-          newData[7].text = payload.risk_level;
-          return {
-            ...prev,
-            data: newData,
-          };
-        });
-        break;
-      case "evacuation":
-        setSelectedViewData((prev: any) => {
-          const newData = [...prev.data];
-          newData[1].text = payload.name;
-          newData[2].text = payload.lat;
-          newData[3].text = payload.lng;
-          newData[4].text = payload.capacity;
-          return {
-            ...prev,
-            data: newData,
-          };
-        });
-        break;
-      case "rafi":
-        setSelectedViewData((prev: any) => {
-          const newData = [...prev.data];
-          newData[1].text = payload.name;
-          newData[2].text = payload.lat;
-          newData[3].text = payload.lng;
-          newData[4].text = payload.description;
-          return {
-            ...prev,
-            data: newData,
-          };
-        });
-        break;
+    try {
+      switch (activeTab) {
+        case "barangay":
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              1: payload.name,
+              2: payload.lat,
+              3: payload.lng,
+              4: payload.LGU ?? payload.lgu,
+              5: payload.evacuation,
+              6: payload.population,
+              7: payload.contact_info,
+              8: payload.risk_level,
+            }),
+          );
+          break;
+        case "lgu":
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              1: payload.name,
+              2: payload.lat,
+              3: payload.lng,
+              4: payload.classification,
+              5: payload.population,
+              6: payload.contact_info,
+              7: payload.risk_level,
+            }),
+          );
+          break;
+        case "evacuation":
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              1: payload.name,
+              2: payload.lat,
+              3: payload.lng,
+              4: payload.capacity,
+            }),
+          );
+          break;
+        case "rafi":
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              1: payload.name,
+              2: payload.lat,
+              3: payload.lng,
+              4: payload.description,
+            }),
+          );
+          break;
+        default:
+          break;
+      }
+    } catch {
+      await fetchData(activeTab);
     }
+
     closeEditModal();
+    // show updated view
     openViewModal();
     handleRefreshTable();
   };
+
+  /* ---------- message box ---------- */
   const closeMessageBox = () => {
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: false,
-    }));
+    setMessageBox((prev) => ({ ...prev, isOpen: false }));
   };
   const [messageBox, setMessageBox] = useState<MessageBoxState>({
     isOpen: false,
@@ -375,14 +370,17 @@ const MapOfCebu = () => {
     onSubmit: undefined,
     onClose: closeMessageBox,
   });
+
+  /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
-    // close everything when switching tabs
-    setAddModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
-    setViewModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
-    setEditModalState({ lgu:false, barangay:false, rafi:false, hazard:false, evacuation:false });
+    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
     setSelectedViewData(null);
     fetchData(activeTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
   return (
     <div className="app-container">
       <MessageBox
@@ -391,33 +389,37 @@ const MapOfCebu = () => {
         type={messageBox.type}
         message={messageBox.message}
         onSubmit={messageBox.onSubmit}
-      ></MessageBox>
+      />
+
+      {/* ---------- ADD MODALS ---------- */}
       <AddEvacuationModal
         isModalOpen={addModalState.evacuation}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
         handleAddEvacuation={handleAddRecord}
-      ></AddEvacuationModal>
+      />
       <AddRafiModal
         isModalOpen={addModalState.rafi}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
-      ></AddRafiModal>
+      />
       <AddLGUModal
         isModalOpen={addModalState.lgu}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
-      ></AddLGUModal>
+      />
       <AddBarangayModal
         isModalOpen={addModalState.barangay}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
         handleAddRecord={handleAddRecord}
-      ></AddBarangayModal>
-     
-      {selectedViewData && (
+      />
+
+      {/* ========== GATED VIEW / EDIT MODALS (MOUNT ONLY FOR ACTIVE TAB) ========== */}
+      {/* LGU */}
+      {viewModalState.lgu && activeTab === "lgu" && selectedViewData && (
         <ViewLGUModal
           isModalOpen={viewModalState.lgu}
           closeModal={closeViewModal}
@@ -425,19 +427,41 @@ const MapOfCebu = () => {
           selectedData={selectedViewData}
           handleDeleteRecord={handleDeleteRecord}
           openEditModal={openEditModal}
-        ></ViewLGUModal>
+        />
       )}
-      {selectedViewData && (
+      {editModalState.lgu && activeTab === "lgu" && selectedViewData && (
         <EditLGUModal
           isModalOpen={editModalState.lgu}
           closeModal={closeEditModal}
           setMessageBox={setMessageBox}
           selectedData={selectedViewData}
           handleEditRecord={handleEditRecord}
-        ></EditLGUModal>
+        />
       )}
 
-      {selectedViewData && (
+      {/* BARANGAY */}
+      {viewModalState.barangay && activeTab === "barangay" && selectedViewData && (
+        <ViewBarangayModal
+          isModalOpen={viewModalState.barangay}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        />
+      )}
+      {editModalState.barangay && activeTab === "barangay" && selectedViewData && (
+        <EditBarangayModal
+          isModalOpen={editModalState.barangay}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        />
+      )}
+
+      {/* EVACUATION */}
+      {viewModalState.evacuation && activeTab === "evacuation" && selectedViewData && (
         <ViewEvecuationModal
           isModalOpen={viewModalState.evacuation}
           closeModal={closeViewModal}
@@ -445,19 +469,20 @@ const MapOfCebu = () => {
           selectedData={selectedViewData}
           handleDeleteRecord={handleDeleteRecord}
           openEditModal={openEditModal}
-        ></ViewEvecuationModal>
+        />
       )}
-      {selectedViewData && (
+      {editModalState.evacuation && activeTab === "evacuation" && selectedViewData && (
         <EditEvacuationModal
           isModalOpen={editModalState.evacuation}
           closeModal={closeEditModal}
           setMessageBox={setMessageBox}
           selectedData={selectedViewData}
           handleEditRecord={handleEditRecord}
-        ></EditEvacuationModal>
+        />
       )}
 
-      {selectedViewData && (
+      {/* RAFI */}
+      {viewModalState.rafi && activeTab === "rafi" && selectedViewData && (
         <ViewRafiModalModal
           isModalOpen={viewModalState.rafi}
           closeModal={closeViewModal}
@@ -465,18 +490,19 @@ const MapOfCebu = () => {
           selectedData={selectedViewData}
           handleDeleteRecord={handleDeleteRecord}
           openEditModal={openEditModal}
-        ></ViewRafiModalModal>
+        />
       )}
-      {selectedViewData && (
+      {editModalState.rafi && activeTab === "rafi" && selectedViewData && (
         <EditRafiModal
           isModalOpen={editModalState.rafi}
           closeModal={closeEditModal}
           setMessageBox={setMessageBox}
           selectedData={selectedViewData}
           handleEditRecord={handleEditRecord}
-        ></EditRafiModal>
+        />
       )}
 
+      {/* ---------- TABS ---------- */}
       <div className="tabs">
         <button
           onClick={() => setActiveTab("lgu")}
@@ -488,7 +514,7 @@ const MapOfCebu = () => {
           onClick={() => setActiveTab("barangay")}
           className={activeTab === "barangay" ? "active-tab" : ""}
         >
-          Baranggay
+          Barangay
         </button>
         <button
           onClick={() => setActiveTab("rafi")}
@@ -510,12 +536,13 @@ const MapOfCebu = () => {
         </button>
       </div>
 
+      {/* ---------- CONTENT ---------- */}
       <div>
         {activeTab === "lgu" && (
           <>
             <div className="horizontal-container">
               <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
+                <input type="text" placeholder="Search report" />
                 <button>Search</button>
                 <button onClick={openAddModal}>+ Add LGU</button>
               </div>
@@ -523,10 +550,7 @@ const MapOfCebu = () => {
             {lguResponse ? (
               <TableView
                 tableJSON={lguResponse}
-                onClickCallback={(row: any) => {
-                  setSelectedViewData(row);
-                  openViewModal();
-                }}
+                onClickCallback={(row: TableRowShape) => openViewModal(row)}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}
@@ -536,11 +560,12 @@ const MapOfCebu = () => {
             )}
           </>
         )}
+
         {activeTab === "barangay" && (
           <>
             <div className="horizontal-container">
               <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
+                <input type="text" placeholder="Search report" />
                 <button>Search</button>
                 <button onClick={openAddModal}>+ Add Barangay</button>
               </div>
@@ -548,10 +573,7 @@ const MapOfCebu = () => {
             {barangayResponse ? (
               <TableView
                 tableJSON={barangayResponse}
-                onClickCallback={(row: any) => {
-                  setSelectedViewData(row);
-                  openViewModal();
-                }}
+                onClickCallback={(row: TableRowShape) => openViewModal(row)}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}
@@ -561,24 +583,20 @@ const MapOfCebu = () => {
             )}
           </>
         )}
+
         {activeTab === "rafi" && (
           <>
             <div className="horizontal-container">
               <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
+                <input type="text" placeholder="Search report" />
                 <button>Search</button>
-                <button onClick={openAddModal}>
-                  + Add Rafi Infrastructure
-                </button>
+                <button onClick={openAddModal}>+ Add Rafi Infrastructure</button>
               </div>
             </div>
             {rafiResponse ? (
               <TableView
                 tableJSON={rafiResponse}
-                onClickCallback={(row: any) => {
-                  setSelectedViewData(row);
-                  openViewModal();
-                }}
+                onClickCallback={(row: TableRowShape) => openViewModal(row)}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}
@@ -588,19 +606,20 @@ const MapOfCebu = () => {
             )}
           </>
         )}
+
         {activeTab === "hazard" && (
           <>
             <div className="horizontal-container">
               <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
+                <input type="text" placeholder="Search report" />
                 <button>Search</button>
-                <button>+ Add Hazard</button>
+                <button /* onClick={openAddModal} */>+ Add Hazard</button>
               </div>
             </div>
             {hazardResponse ? (
               <TableView
                 tableJSON={hazardResponse}
-                onClickCallback={(row: any) => {}}
+                onClickCallback={() => {}}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}
@@ -610,11 +629,12 @@ const MapOfCebu = () => {
             )}
           </>
         )}
+
         {activeTab === "evacuation" && (
           <>
             <div className="horizontal-container">
               <div className="table-actions">
-                <input type="text" placeholder="Search report"></input>
+                <input type="text" placeholder="Search report" />
                 <button>Search</button>
                 <button onClick={openAddModal}>+ Add Evacuation Center</button>
               </div>
@@ -622,10 +642,7 @@ const MapOfCebu = () => {
             {evacuationResponse ? (
               <TableView
                 tableJSON={evacuationResponse}
-                onClickCallback={(row: any) => {
-                  setSelectedViewData(row);
-                  openViewModal();
-                }}
+                onClickCallback={(row: TableRowShape) => openViewModal(row)}
                 setCallbackTableData={true}
                 pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
                 updateTable={(fn) => (refreshTable.current = fn)}

@@ -10,6 +10,14 @@ import { FilePdfOutlined, FileImageOutlined, DownloadOutlined, FileOutlined } fr
 
 type VolunteerStatus = 'pending' | 'submitted' | 'verifying' | 'approved' | 'rejected';
 
+interface VolunteerCertificate {
+  id: number;
+  file_name: string;
+  file_path: string;
+  mime_type?: string;
+  uploaded_at?: string;
+}
+
 interface Volunteer {
   volunteer_id: number;
   user_id: number;
@@ -29,11 +37,13 @@ interface Volunteer {
   contact_person_position?: string;
   contact_person_phone_number?: string;
 
-  // Certificates (various shapes from BE)
-  organization_certificate?: string;
-  organization_certificates?: string[];
-  certification_paths?: string;
-  org_cert_files?: string[];
+  // Certificates (normalized + raw)
+  certificates?: VolunteerCertificate[];  // from BE (individuals)
+  ind_cert_files?: string[];              // normalized file paths (individuals)
+  org_cert_files?: string[];              // normalized file paths (organizations)
+  organization_certificate?: string;      // legacy (org)
+  certification_paths?: string;           // possible legacy csv
+  certification?: string;                 // legacy (individual single)
 
   // Common
   email?: string;
@@ -45,9 +55,8 @@ interface Volunteer {
   availability?: string;
   medical_conditions?: string;
   other_medical_conditions?: string;
-  certification?: string;
   created_at?: string;
-  status?: VolunteerStatus | string; // BE may send different casing
+  status?: VolunteerStatus | string;
 }
 
 const ManageApplicant: React.FC = () => {
@@ -158,6 +167,20 @@ const ManageApplicant: React.FC = () => {
     );
   }
 
+  // Normalize & get certificate files from a volunteer (individual/org)
+  function getCertFiles(v?: Volunteer): string[] {
+    if (!v) return [];
+    if (v.organization_name) {
+      // Organization
+      return v.org_cert_files ?? [];
+    }
+    // Individual
+    if (Array.isArray(v.ind_cert_files)) return v.ind_cert_files;
+    if (Array.isArray(v.certificates) && v.certificates.length) return v.certificates.map(c => c.file_path);
+    if (v.certification) return [v.certification]; // legacy single
+    return [];
+  }
+
   // -------- Data fetch --------
   useEffect(() => {
     const fetchVolunteers = async () => {
@@ -178,6 +201,16 @@ const ManageApplicant: React.FC = () => {
           return [];
         };
 
+        // Normalize individual volunteers to include ind_cert_files (from certificates[] or legacy certification)
+        const mappedIndData: Volunteer[] = (individualData || []).map((iv: any) => ({
+          ...iv,
+          ind_cert_files:
+            Array.isArray(iv.certificates) && iv.certificates.length > 0
+              ? iv.certificates.map((c: any) => c.file_path)
+              : (iv.certification ? [iv.certification] : []),
+        }));
+
+        // Normalize organization volunteers
         const mappedOrgData: Volunteer[] = (orgData || []).map((org: any) => ({
           ...org,
           organization_name: org.organization_name,
@@ -199,7 +232,7 @@ const ManageApplicant: React.FC = () => {
           org_cert_files: extractOrgCertFiles(org),
         }));
 
-        const allData: Volunteer[] = [...(individualData || []), ...mappedOrgData];
+        const allData: Volunteer[] = [...mappedIndData, ...mappedOrgData];
 
         setVolunteers(allData);
 
@@ -702,14 +735,8 @@ const ManageApplicant: React.FC = () => {
             {/* Certificates */}
             <div>
               <h4 style={{ marginBottom: 12 }}>Certificates:</h4>
-
               {(() => {
-                const certFiles = selectedVolunteer?.organization_name
-                  ? selectedVolunteer.org_cert_files || []
-                  : selectedVolunteer?.certification
-                  ? [selectedVolunteer.certification]
-                  : [];
-
+                const certFiles = getCertFiles(selectedVolunteer);
                 return certFiles.length === 0 ? <Empty description="No certificate uploaded" /> : certFiles.map((p, i) => renderFileRow(p, i));
               })()}
             </div>

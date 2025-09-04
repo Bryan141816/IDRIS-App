@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Users, MapPin, Calendar, Search, Plus, Edit3, Trash2, CheckCircle } from 'lucide-react';
+import { Users, MapPin, Calendar, Search, Plus, Trash2, CheckCircle } from 'lucide-react';
 import { getAllVolunteers } from '../../../API_Handler/individual_volunter_handler';
 import { getAllOrganizationVolunteers } from '../../../API_Handler/organization_volunteer_handler';
+import { createProgram } from '../../../API_Handler/assignment_handler';
 import { Breadcrumb } from 'antd';
 import { Link } from "react-router-dom";
 
@@ -27,6 +28,16 @@ interface VolunteerArea {
     location: string;
     date: string;
     assignedVolunteers: string[];
+}
+
+interface NewAreaForm {
+    name: string;
+    description: string;
+    location: string;
+    date: string; // YYYY-MM-DD
+    maxVolunteers: number | '';
+    requiredSkills: string[];
+    skillInput: string;
 }
 
 const VolunteerAssignmentPage: React.FC = () => {
@@ -73,6 +84,18 @@ const VolunteerAssignmentPage: React.FC = () => {
     const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
+    // NEW: Add Program/Event modal state
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [newArea, setNewArea] = useState<NewAreaForm>({
+        name: '',
+        description: '',
+        location: '',
+        date: new Date().toISOString().slice(0, 10), // today
+        maxVolunteers: '',
+        requiredSkills: [],
+        skillInput: ''
+    });
+
     const filteredVolunteers = volunteers.filter(v =>
         v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         v.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,7 +104,6 @@ const VolunteerAssignmentPage: React.FC = () => {
 
     // ✅ approved only
     const approvedVolunteers = filteredVolunteers.filter(v => v.status === 'approved');
-
 
     const handleAssignVolunteers = () => {
         if (!selectedArea || selectedVolunteers.length === 0) return;
@@ -147,7 +169,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                         (v.skills ? String(v.skills).split(',').map((s: string) => s.trim()) : []),
                     availability: Array.isArray(v.availability) ? v.availability :
                         (v.availability ? String(v.availability).split(',').map((s: string) => s.trim()) : []),
-                    status: (v.status ?? 'submitted') as VolunteerStatus,   // <-- use backend value
+                    status: (v.status ?? 'submitted') as VolunteerStatus,
                 }));
 
                 const mapOrg: Volunteer[] = org.map((o: any) => ({
@@ -165,7 +187,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                 setVolunteers([...mapIndiv, ...mapOrg]);
             } catch (err) {
                 console.error('Fetch volunteers failed:', err);
-                setVolunteers([]); // keep state predictable
+                setVolunteers([]);
             } finally {
                 setLoading(false);
             }
@@ -174,6 +196,63 @@ const VolunteerAssignmentPage: React.FC = () => {
         fetchVolunteers();
     }, []);
 
+    // ---- Add Program/Event helpers ----
+    const addSkillChip = () => {
+        const raw = newArea.skillInput.trim();
+        if (!raw) return;
+        const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...newArea.requiredSkills, ...parts]));
+        setNewArea(prev => ({ ...prev, requiredSkills: merged, skillInput: '' }));
+    };
+
+    const removeSkillChip = (skill: string) => {
+        setNewArea(prev => ({ ...prev, requiredSkills: prev.requiredSkills.filter(s => s !== skill) }));
+    };
+
+    const handleCreateArea = async () => {
+        if (!newArea.name.trim()) return alert('Name is required');
+        if (!newArea.location.trim()) return alert('Location is required');
+        if (!newArea.date) return alert('Date is required');
+        const mv = Number(newArea.maxVolunteers);
+        if (!Number.isFinite(mv) || mv <= 0) return alert('Max volunteers must be a positive number');
+
+        const payload = {
+            title: newArea.name.trim(),
+            description: newArea.description.trim(),
+            location: newArea.location.trim(),
+            task_date: newArea.date,
+            max_volunteers: mv,
+            required_skills: newArea.requiredSkills
+        };
+
+        try {
+            const created = await createProgram(payload);
+            // normalize the response into your local "areas" shape
+            setAreas(prev => [{
+                id: String(created.id),
+                name: created.title,
+                description: created.description,
+                requiredSkills: created.required_skills ?? [],
+                maxVolunteers: created.max_volunteers,
+                currentVolunteers: 0,
+                location: created.location,
+                date: created.task_date,
+                assignedVolunteers: []
+            }, ...prev]);
+            setShowAddModal(false);
+            setNewArea({
+                name: '',
+                description: '',
+                location: '',
+                date: new Date().toISOString().slice(0, 10),
+                maxVolunteers: '',
+                requiredSkills: [],
+                skillInput: ''
+            });
+        } catch (e: any) {
+            alert(e?.response?.data?.detail || 'Failed to create program');
+        }
+    };
 
     return (
         <div className="h-[300vh] bg-gray-50 p-6">
@@ -181,7 +260,7 @@ const VolunteerAssignmentPage: React.FC = () => {
 
                 {/* Breadcrumb Navigation */}
                 <div className="breadcrumb-section" style={{ marginBottom: '16px' }}>
-                    <h2 className="page-title">Individual Application</h2>
+                    <h2 className="page-title">Volunteer Assignment</h2>
                     <Breadcrumb>
                         <Breadcrumb.Item href="#">
                             <span>Home</span>
@@ -192,7 +271,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                             </Link>
                         </Breadcrumb.Item>
                         <Breadcrumb.Item>
-                            <span>Individual Application</span>
+                            <span>Volunteer Assignment</span>
                         </Breadcrumb.Item>
                     </Breadcrumb>
                 </div>
@@ -201,11 +280,20 @@ const VolunteerAssignmentPage: React.FC = () => {
                     {/* Volunteer Areas */}
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                            <div className="p-6 border-b border-gray-200">
+                            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
                                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                                     <MapPin className="w-5 h-5 text-blue-600" />
                                     Volunteer Areas
                                 </h2>
+
+                                {/* NEW: Add Program/Event button */}
+                                <button
+                                    onClick={() => setShowAddModal(true)}
+                                    className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Add Program / Event
+                                </button>
                             </div>
 
                             <div className="p-6 space-y-4">
@@ -247,8 +335,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                                             </div>
                                             <div className="w-full bg-gray-200 rounded-full h-2">
                                                 <div
-                                                    className={`h-2 rounded-full transition-all ${area.currentVolunteers >= area.maxVolunteers ? 'bg-red-500' : 'bg-blue-600'
-                                                        }`}
+                                                    className={`h-2 rounded-full transition-all ${area.currentVolunteers >= area.maxVolunteers ? 'bg-red-500' : 'bg-blue-600'}`}
                                                     style={{ width: `${Math.min((area.currentVolunteers / area.maxVolunteers) * 100, 100)}%` }}
                                                 />
                                             </div>
@@ -313,7 +400,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                 </div>
-
                             </div>
 
                             <div className="p-6">
@@ -322,10 +408,14 @@ const VolunteerAssignmentPage: React.FC = () => {
                                         <div key={volunteer.id} className="border border-gray-200 rounded-lg p-3">
                                             <div className="flex items-center justify-between mb-2">
                                                 <h3 className="font-medium text-gray-900">{volunteer.name}</h3>
-                                                <span className={`px-2 py-1 rounded-full text-xs ${volunteer.status === 'approved' ? 'bg-green-100 text-green-800' :
-                                                    volunteer.status === 'assigned' ? 'bg-blue-100 text-blue-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }`}>
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs ${volunteer.status === 'approved'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : volunteer.status === 'assigned'
+                                                                ? 'bg-blue-100 text-blue-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
                                                     {volunteer.status}
                                                 </span>
                                             </div>
@@ -402,6 +492,139 @@ const VolunteerAssignmentPage: React.FC = () => {
                                 >
                                     <CheckCircle className="w-4 h-4" />
                                     Assign {selectedVolunteers.length > 0 && `(${selectedVolunteers.length})`}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* NEW: Add Program/Event Modal */}
+                {showAddModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-white rounded-lg w-full max-w-xl p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Program / Event</h3>
+
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        value={newArea.name}
+                                        onChange={(e) => setNewArea(prev => ({ ...prev, name: e.target.value }))}
+                                        className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="e.g., Food & Beverage"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <textarea
+                                        value={newArea.description}
+                                        onChange={(e) => setNewArea(prev => ({ ...prev, description: e.target.value }))}
+                                        className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        rows={3}
+                                        placeholder="Short description of duties"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                        <input
+                                            type="text"
+                                            value={newArea.location}
+                                            onChange={(e) => setNewArea(prev => ({ ...prev, location: e.target.value }))}
+                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="e.g., Dining Hall"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                        <input
+                                            type="date"
+                                            value={newArea.date}
+                                            onChange={(e) => setNewArea(prev => ({ ...prev, date: e.target.value }))}
+                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Volunteers</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={newArea.maxVolunteers}
+                                            onChange={(e) =>
+                                                setNewArea(prev => ({ ...prev, maxVolunteers: e.target.value === '' ? '' : Number(e.target.value) }))
+                                            }
+                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="e.g., 6"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newArea.skillInput}
+                                            onChange={(e) => setNewArea(prev => ({ ...prev, skillInput: e.target.value }))}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ',') {
+                                                    e.preventDefault();
+                                                    addSkillChip();
+                                                }
+                                            }}
+                                            className="flex-1 border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Type a skill and press Enter"
+                                        />
+                                        <button
+                                            onClick={addSkillChip}
+                                            className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
+                                            type="button"
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
+
+                                    {newArea.requiredSkills.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {newArea.requiredSkills.map(skill => (
+                                                <span
+                                                    key={skill}
+                                                    className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs"
+                                                >
+                                                    {skill}
+                                                    <button
+                                                        className="text-blue-800/70 hover:text-blue-900"
+                                                        onClick={() => removeSkillChip(skill)}
+                                                        title="Remove"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 mt-6">
+                                <button
+                                    onClick={() => setShowAddModal(false)}
+                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateArea}
+                                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Create
                                 </button>
                             </div>
                         </div>

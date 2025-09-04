@@ -228,7 +228,7 @@ export default function IDRISDashboard() {
                                     <button className="manage-btn" onClick={() => navigate("/volunteer_management/manage_applicant")}>
                                         Manage Applicants
                                     </button>
-                                ) : volunteerStatus === "submitted" ? (
+                                ) : volunteerStatus !== "submitted" ? (
                                     <button
                                         className="manage-btn"
                                         style={{ fontSize: "88%" }}
@@ -366,7 +366,7 @@ export default function IDRISDashboard() {
                                 <div className="news-header">
                                     <h2 className="news-title">News & Announcements</h2>
                                     {userType === "admin" ? (
-                                        <button onClick={openProgramModal} className="add-program-btn">+ Add Program</button>
+                                        <button onClick={() => navigate("/volunteer_management/volunteer_assignment")} className="add-program-btn">+ Add Program</button>
                                     ) : (
                                         <button className="manage-btn" style={{ display: "none" }} onClick={() => setIsVolunteerModalOpen(true)}>
                                             Become a Volunteer

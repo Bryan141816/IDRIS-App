@@ -25,6 +25,8 @@ from routers.volunteer_management import (
     organization_volunteer_routes,
 )  # Import the org volunteer routes
 from routers.manage_users import ManageUsers
+from routers.volunteer_management import assignment_routes
+
 from decouple import config
 
 Base.metadata.create_all(bind=engine)
@@ -76,6 +78,8 @@ app.include_router(
 
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
 
+
+app.include_router(assignment_routes.router, tags=["Assignment Management"])
 app.mount(
     "/media/transparency_reports",
     StaticFiles(directory="media/transparency_reports"),

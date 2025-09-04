@@ -18,6 +18,8 @@ from sqlalchemy import (
     CheckConstraint,
     Index,
     ARRAY,
+    Text,
+    UniqueConstraint,
 )
 from sqlalchemy import event, func, case, literal, select
 from sqlalchemy.orm import relationship, Session
@@ -573,6 +575,84 @@ class VolunteerCertificate(Base):
         back_populates="certificates",
         foreign_keys=[organization_volunteer_id],
     )
+
+class Event(Base):
+    __tablename__ = "event"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(120), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    # Optional global date, but your UI sets date at task level—keep for future use
+    event_date = Column(Date, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    tasks = relationship("Task", back_populates="event", cascade="all, delete-orphan")
+
+
+class Task(Base):
+    __tablename__ = "task"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("event.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    title = Column(String(120), nullable=False)             # UI: name
+    description = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    task_date = Column(Date, nullable=False)                # UI: date (YYYY-MM-DD)
+    max_volunteers = Column(Integer, nullable=False)        # UI: max volunteers
+    required_skills = Column(String(500), nullable=True)    # CSV: "Food Service,Cleanup"
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    event = relationship("Event", back_populates="tasks")
+
+class AssignmentStatus(str, enum.Enum):
+    applied    = "applied"     # user self-applied
+    invited    = "invited"     # admin invited
+    accepted   = "accepted"    # confirmed assignment
+    declined   = "declined"
+    waitlisted = "waitlisted"
+    checked_in = "checked_in"
+    no_show    = "no_show"
+    completed  = "completed"
+    cancelled  = "cancelled"
+
+class Assignment(Base):
+    __tablename__ = "assignment"
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Assign EITHER an individual OR an organization (XOR)
+    individual_volunteer_id   = Column(Integer, ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"), nullable=True, index=True)
+    organization_volunteer_id = Column(Integer, ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"), nullable=True, index=True)
+
+    status = Column(SqlEnum(AssignmentStatus), nullable=False, server_default=AssignmentStatus.applied.value)
+    notes  = Column(Text)
+
+    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    task = relationship("Task", back_populates="assignments")
+    # string names avoid circular import
+    individual_volunteer   = relationship("IndividualVolunteer", foreign_keys=[individual_volunteer_id])
+    organization_volunteer = relationship("OrganizationVolunteer", foreign_keys=[organization_volunteer_id])
+
+    __table_args__ = (
+        # exactly one owner
+        CheckConstraint(
+            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_assignment_exactly_one_owner",
+        ),
+        # prevent duplicates on same task
+        UniqueConstraint("task_id", "individual_volunteer_id",   name="uq_task_individual"),
+        UniqueConstraint("task_id", "organization_volunteer_id", name="uq_task_organization"),
+        Index("ix_assignment_status", "status"),
+    )
+
 
 # Procurement Request
 

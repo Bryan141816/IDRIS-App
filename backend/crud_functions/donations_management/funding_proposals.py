@@ -5,7 +5,7 @@ from typing import List, Optional, Dict
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
-from models import FundingProposal, Donation, DonationStatus, Donation_Cash, Donation_InKind
+from models import FundingProposal, Donation, DonationStatus, Donation_Cash, Donation_InKind, DonationType
 from crud_functions.utils import uid_from_string, process_image_to_webp
 from data_schemas.funding_proposal_schema import (
     FundingProposalCreate,
@@ -16,6 +16,7 @@ from data_schemas.funding_proposal_schema import (
 
 from math import ceil
 from datetime import datetime, date, time
+
 UPLOAD_DIR = Path("media/fundingproposals")
 
 class FundingProposalCRUD:
@@ -98,47 +99,47 @@ class FundingProposalCRUD:
                 max_page = 1
 
             proposals: List[FundingProposal] = query.all()
-            proposal_ids = [p.funding_id for p in proposals]
+            funding_ids = [p.funding_id for p in proposals]
 
             # Aggregate COMPLETED totals (cash + in-kind) for these proposals
             donation_map: Dict[int, float] = {}
-            if proposal_ids:
+            if funding_ids:
                 # CASH totals
                 cash_rows = (
                     db.query(
-                        Donation.proposal_id.label("proposal_id"),
+                        Donation.funding_id.label("funding_id"),
                         func.coalesce(func.sum(Donation_Cash.amount), 0).label("cash_total"),
                     )
                     .join(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
                     .filter(
-                        Donation.proposal_id.in_(proposal_ids),
+                        Donation.funding_id.in_(funding_ids),
                         Donation.status == DonationStatus.COMPLETED,
-                        Donation.donation_type == "cash",
+                        Donation.donation_type == DonationType.CASH,
                     )
-                    .group_by(Donation.proposal_id)
+                    .group_by(Donation.funding_id)
                     .all()
                 )
                 # IN-KIND totals
                 inkind_rows = (
                     db.query(
-                        Donation.proposal_id.label("proposal_id"),
+                        Donation.funding_id.label("funding_id"),
                         func.coalesce(func.sum(Donation_InKind.estimated_value), 0).label("inkind_total"),
                     )
                     .join(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
                     .filter(
-                        Donation.proposal_id.in_(proposal_ids),
+                        Donation.funding_id.in_(funding_ids),
                         Donation.status == DonationStatus.COMPLETED,
-                        Donation.donation_type == "inkind",
+                        Donation.donation_type == DonationType.INKIND,
                     )
-                    .group_by(Donation.proposal_id)
+                    .group_by(Donation.funding_id)
                     .all()
                 )
 
                 # Combine into a single map (Decimal -> float)
                 for r in cash_rows:
-                    donation_map[r.proposal_id] = float(r.cash_total or 0)
+                    donation_map[r.funding_id] = float(r.cash_total or 0)
                 for r in inkind_rows:
-                    donation_map[r.proposal_id] = donation_map.get(r.proposal_id, 0.0) + float(r.inkind_total or 0)
+                    donation_map[r.funding_id] = donation_map.get(r.funding_id, 0.0) + float(r.inkind_total or 0)
 
             records = [
                 FundingProposalGet(
@@ -161,20 +162,20 @@ class FundingProposalCRUD:
             raise
 
     @staticmethod
-    def get_proposal_by_id(db: Session, proposal_id: int) -> Optional[FundingProposal]:
-        return db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
+    def get_proposal_by_id(db: Session, funding_id: int) -> Optional[FundingProposal]:
+        return db.query(FundingProposal).filter(FundingProposal.id == funding_id).first()
 
     @staticmethod
     def update_proposal(
         db: Session,
-        proposal_id: int,
+        funding_id: int,
         title: str,
         description: str,
         budget_required: int,
         status: str,
         image: Optional[UploadFile],
     ) -> FundingProposal:
-        proposal = db.query(FundingProposal).filter(FundingProposal.id == proposal_id).first()
+        proposal = db.query(FundingProposal).filter(FundingProposal.funding_id == funding_id).first()
         if not proposal:
             raise HTTPException(status_code=404, detail="Proposal not found")
 
@@ -237,15 +238,12 @@ class FundingProposalCRUD:
                 ).label("total_donated"),
             )
             # JOIN donations to proposals via the new PK
-            .join(Donation, Donation.proposal_id == FundingProposal.funding_id)
+            .join(Donation, Donation.funding_id == FundingProposal.funding_id)
             # Add both child tables (uselist=False; only one will match per row)
             .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
             .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
             .filter(
                 Donation.status == DonationStatus.COMPLETED,
-                Donation.donation_date.between(start_dt, end_dt),
-                # guard in case you add other donation types later
-                Donation.donation_type.in_(["cash", "inkind"]),
             )
             .group_by(FundingProposal.title)
             .all()

@@ -1,4 +1,4 @@
-import "./funding.scss";
+import "./FundingProposals.scss";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
 import { useUserRoleContext } from "../../../UserRoleContext";
@@ -13,7 +13,7 @@ interface Proposal {
   description: string;
   budget_required: number;
   image?: string;
-  total_donated?: number; // optional unless you're tracking donations
+  total_donated?: number;
 }
 
 const FundingProposals = () => {
@@ -28,22 +28,30 @@ const FundingProposals = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [fundingProposalMaxPage, setFundingProposalMaxPage] = useState<number>(1);
 
+  // NEW: loading / empty flags
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [noResults, setNoResults] = useState<boolean>(false);
+
   useEffect(() => {
     async function fetchProposals() {
+      setIsLoading(true);
       try {
-        const data = await getFundingProposals(
-          searched,
-          limit,
-          page
-        ); // or pass search param
-        console.log(data);
-        setFundingProposalMaxPage(data.max_page);
-        setProposals(data.records);
+        const data = await getFundingProposals(searched, limit, page);
+        const records: Proposal[] = data?.records ?? [];
+        const maxPage: number = data?.max_page ?? 1;
+
+        setProposals(records);
+        setFundingProposalMaxPage(Math.max(maxPage, 1));
+        setNoResults(records.length === 0);
       } catch (error) {
         console.error("Error fetching proposals:", error);
+        setProposals([]);
+        setFundingProposalMaxPage(1);
+        setNoResults(true);
+      } finally {
+        setIsLoading(false);
       }
     }
-
     fetchProposals();
   }, [searched, page]);
 
@@ -55,97 +63,105 @@ const FundingProposals = () => {
       return 0;
     });
 
-  // Funding Proposals Page Buttons - Previous & Next
   type DirectType = "prev" | "next";
   const handleFundingProposalPage = (direct: DirectType) => {
     setPage((prevPage) => {
-      if (direct === "prev") {
-        return Math.max(prevPage - 1, 1); // Prevent going below page 1
-      } else {
-        return Math.min(prevPage + 1, fundingProposalMaxPage); // Prevent going above max page
-      }
+      if (direct === "prev") return Math.max(prevPage - 1, 1);
+      return Math.min(prevPage + 1, fundingProposalMaxPage);
     });
   };
 
+  const nothingToShow = !isLoading && filteredProposals.length === 0;
 
   return (
     <div id="funding">
       <h3 className="public-feed-title">Funding Proposals</h3>
       <div id="settings-container">
         <SearchBar
-          placeholder="Search Donor"
+          placeholder="Search Proposal"
           value={searched}
           onChange={setSearched}
         />
 
-        <FilterBar
-          items={filterItems}
-          value={filtered}
-          onChange={setFiltered}
-        />
-        { (userRoles.includes("finance admin") || userRoles.includes("operations admin")) &&
+        <FilterBar items={filterItems} value={filtered} onChange={setFiltered} />
+
+        {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) && (
           <button
             className="green-button"
-            onClick={() =>
-              navigate("/donations_management/funding_proposals/create")
-            }
+            onClick={() => navigate("/donations_management/funding_proposals/create")}
           >
             Create New Proposal
           </button>
-        }
+        )}
       </div>
-      <div id="transparency-report-page-control" className="page-contorol">
-        <button
-          className="prev-page"
-          onClick={() => handleFundingProposalPage("prev")}
-        >
-          Previous
-        </button>
-        <p>
-          Page: {page}/{""}
-          {fundingProposalMaxPage}{""}
-        </p>
-        <button
-          className="next-page"
-          onClick={() => handleFundingProposalPage("next")}
-        >
-          Next
-        </button>
-      </div>
+
+      { !noResults &&
+        <div id="transparency-report-page-control" className="page-contorol">
+          <button
+            className="prev-page"
+            onClick={() => handleFundingProposalPage("prev")}
+            disabled={page <= 1 || fundingProposalMaxPage <= 1 || nothingToShow}
+          >
+            Previous
+          </button>
+          <p>
+            Page: {Math.min(page, fundingProposalMaxPage)}/{fundingProposalMaxPage}
+          </p>
+          <button
+            className="next-page"
+            onClick={() => handleFundingProposalPage("next")}
+            disabled={page >= fundingProposalMaxPage || fundingProposalMaxPage <= 1 || nothingToShow}
+          >
+            Next
+          </button>
+        </div>
+      }
 
       <div id="funding-body">
-        {filteredProposals.map((item, index ) => (
-          <FundingCard
-            key={item.funding_id}
-            proposalId={item.funding_id}
-            title={item.title}
-            description={item.description}
-            donated={item.total_donated ?? 0}
-            target={item.budget_required}
-            image={item.image ? `${item.image}` : undefined}
-          />
-        ))}
+        {isLoading ? (
+          <p id="loading">Loading…</p>
+        ) : nothingToShow ? (
+          <p id="no-proposals">
+            {searched.trim()
+              ? `No proposals match “${searched}”`
+              : "No proposals found"}
+          </p>
+        ) : (
+          filteredProposals.map((item) => (
+            <FundingCard
+              key={item.funding_id}
+              proposalId={item.funding_id}
+              title={item.title}
+              description={item.description}
+              donated={item.total_donated ?? 0}
+              target={item.budget_required}
+              image={item.image || undefined}
+            />
+          ))
+        )}
       </div>
 
-      <div id="transparency-report-page-control" className="page-contorol">
-        <button
-          className="prev-page"
-          onClick={() => handleFundingProposalPage("prev")}
-        >
-          Previous
-        </button>
-        <p>
-          Page: {page}/{""}
-          {fundingProposalMaxPage}{""}
-        </p>
-        <button
-          className="next-page"
-          onClick={() => handleFundingProposalPage("next")}
-        >
-          Next
-        </button>
-      </div>
-
+      { !noResults &&
+        <div id="transparency-report-page-control" className="page-contorol">
+          <button
+            className="prev-page"
+            onClick={() => handleFundingProposalPage("prev")}
+            disabled={page <= 1 || fundingProposalMaxPage <= 1 || nothingToShow}
+          >
+            Previous
+          </button>
+          <p>
+            Page: {Math.min(page, fundingProposalMaxPage)}/{fundingProposalMaxPage}
+          </p>
+          <button
+            className="next-page"
+            onClick={() => handleFundingProposalPage("next")}
+            disabled={page >= fundingProposalMaxPage || fundingProposalMaxPage <= 1 || nothingToShow}
+          >
+            Next
+          </button>
+        </div>
+      }
     </div>
   );
 };

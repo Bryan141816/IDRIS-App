@@ -23,6 +23,9 @@
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
     "chartjs-plugin-datalabels": "^2.2.0",
+    "html2pdf.js": "^0.11.2",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.511.0",
     "pdfjs-dist": "^4.10.38",
@@ -35,7 +38,8 @@
     "react-router-dom": "^7.5.0",
     "recharts": "^2.15.3",
     "sass": "^1.86.3",
-    "sweetalert2": "^11.19.1"
+    "sweetalert2": "^11.19.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

@@ -67,7 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       {/* Keep ALL nav-items inside this container */}
       <div id="nav-links">
         {/* LGU */}
-        {userRoles.includes(" ") && (
+        {userRoles.includes("") && (
           <div className="nav-items" id="lgu-profiling">
             <div
               className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <LGU width={14} height={14} className="sidebar-icons" />
               {userType === "admin" && (
-                <a href="#" className="non-redirect">
+                <a href="#" className="non-redirect"> 
                   LGU PROFILING
                 </a>
               )}
@@ -132,35 +132,80 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           userRoles.includes("volunteer") ||
           userRoles.includes("donor") ||
           userRoles.includes("operations admin") ||
-          userRoles.includes("finance admin")) && (
+          userRoles.includes("operations admin") ||
+          userRoles.includes("finance admin")
+        ) && (
           <div className="nav-items" id="volunteer">
             <div
               className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
-              onClick={() => toggleNav("volunteer")}
+              onClick={() => {
+                toggleNav("volunteer");
+              }}
             >
               <Volunteer width={14} height={14} className="sidebar-icons" />
-              {userType !== "" && !userRoles.includes("operations admin") && (
+              {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
+              {userType != "" && !userRoles.includes("operations admin") && (
                 <a href="#" className="non-redirect">
                   VOLUNTEER
                 </a>
               )}
-              {userType !== "" && userRoles.includes("operations admin") && (
+              {userType != "" && userRoles.includes("operations admin") && (
                 <a href="#" className="non-redirect">
                   VOLUNTEER MANAGEMENT
                 </a>
               )}
             </div>
-
             <div
               className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}
             >
+              {/* Sub items here */}
               <Link
                 to="/volunteer_management/volunteer_dashboard"
+                prefetch-link="/volunteer_management/volunteer_dashboard"
                 className="nav-sub-item"
-                onClick={onClose}
+                onClick={() => {
+                  onClose();
+                }}
               >
                 Volunteer Dashboard
               </Link>
+              {userRoles.includes("operations admin") ||
+                (userRoles.includes("volunteer") && (
+                  <Link
+                    to="/volunteer_management/track_volunteer_application"
+                    prefetch-link="/volunteer_management/track_volunteer_application"
+                    className="nav-sub-item"
+                    onClick={() => {
+                      onClose();
+                    }}
+                  >
+                    Track Volunteer Application
+                  </Link>
+                ))}
+              {userRoles.includes("operations admin") && (
+                <Link
+                  to="/volunteer_management/volunteer_profiles"
+                  prefetch-link="/volunteer_management/volunteer_profiles"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Volunteer Profiles
+                </Link>
+              )}
+              {userRoles.includes("volunteer") && (
+                <Link
+                  to="/volunteer_management/volunteer_assignment"
+                  prefetch-link="/volunteer_management/volunteer_assignment"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Volunteer Assignment
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -170,60 +215,90 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           userRoles.includes("donor") ||
           userRoles.includes("operations admin") ||
           userRoles.includes("finance admin")) && (
-          <div className="nav-items" id="donations">
-            <div
-              className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
-              onClick={() => toggleNav("donations")}
-            >
-              <Donations width={14} height={14} className="sidebar-icons" />
-              {userType === "admin" ? (
-                <a href="#" className="non-redirect">
-                  DONATIONS MANAGEMENT
-                </a>
-              ) : (
-                <a href="#" className="non-redirect">
-                  DONATIONS
-                </a>
-              )}
-            </div>
+            <div className="nav-items" id="donations">
+              <div
+                className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
+                onClick={() => {
+                  toggleNav("donations");
+                }}
+              >
+                <Donations width={14} height={14} className="sidebar-icons" />
+                {userType == "admin" && (
+                  <a href="#" className="non-redirect">
+                    DONATIONS MANAGEMENT
+                  </a>
+                )}
+                {userType != "admin" && (
+                  <a href="#" className="non-redirect">
+                    DONATIONS
+                  </a>
+                )}
+              </div>
+              <div
+                className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
+              >
+                {/* Sub items here */}
+                {(userRoles.includes("donor") ||
+                  (userRoles.includes("generic"))) && (
+                    <Link
+                      to="/donor_profile"
+                      prefetch-link="/donor_profile"
+                      className="nav-sub-item"
+                      onClick={() => {
+                        onClose();
+                      }}
+                    >
+                      Donor Profile
+                    </Link>
+                  )}
+                {(userRoles.includes("donor") ||
+                  (userRoles.includes("generic"))) && (
+                    <Link
+                      to="/donor_dashboard"
+                      prefetch-link="/donor_dashboard"
+                      className="nav-sub-item"
+                      onClick={() => {
+                        onClose();
+                      }}
+                    >
+                      Donor Dashboard
+                    </Link>
+                  )
+                }
 
-            <div
-              className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}
-            >
-              {(userRoles.includes("donor") ||
-                userRoles.includes("generic")) && (
                 <Link
-                  to="/donor_profile"
+                  to="/donations_management/donations_dashboard"
+                  prefetch-link="/donations_management/donations_dashboard"
                   className="nav-sub-item"
-                  onClick={onClose}
+                  onClick={() => {
+                    onClose();
+                  }}
                 >
-                  Donor Profile
+                  Donations Dashboard
                 </Link>
-              )}
-              <Link
-                to="/donations_management/donations_dashboard"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Donations Dashboard
-              </Link>
-              <Link
-                to="/donations_management/list_of_rafi_donors"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                List of RAFI Donors
-              </Link>
-              <Link
-                to="/donations_management/funding_proposals"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Funding Proposals
-              </Link>
+                <Link
+                  to="/donations_management/list_of_rafi_donors"
+                  prefetch-link="/donations_management/list_of_rafi_donors"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  List of RAFI Donors
+                </Link>
+                <Link
+                  to="/donations_management/funding_proposals"
+                  prefetch-link="/donations_management/funding_proposals"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Funding Proposals
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* RESPONSE */}
         <div className="nav-items" id="response">

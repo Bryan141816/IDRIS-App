@@ -1,7 +1,9 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
-from sqlalchemy import extract, func
+from sqlalchemy import extract, func, case, and_
+from typing import Optional, Sequence, Union
+from datetime import datetime
 
 from crud_functions.utils import _to_enum, uid_from_string, rand_alnum
 
@@ -9,12 +11,12 @@ from models import (
     Donation,
     DonationStatus,
     DonationFrequency,
+    DonationType,
     Donation_Cash,
     Donation_InKind
 )
 
 from data_schemas.donation_schema import (
-    DonationCreate,
     RecurringDonationCreate,
     InKindDonationCreate,
 )
@@ -25,56 +27,55 @@ class DonationCRUD:
     @staticmethod
     def create_one_time_pending_donation(db: Session, donation_data) -> Donation:
         # Create a ONE_TIME PENDING donation and its child record:
-        
+        print(donation_data.donation_type)
         # 1) Resolve frequency (default ONE_TIME)
         frequency = _to_enum(
             DonationFrequency,
-            getattr(donation_data, "frequency", None) or getattr(donation_data, "donation_type", None),
+            getattr(donation_data, "frequency", None),
             default=DonationFrequency.ONE_TIME,
         )
-
+        
         # 2) Resolve donation_type string (cash | inkind)
         raw_kind = (
-            getattr(donation_data, "donation_kind", None)
-            or getattr(donation_data, "donation_type", None)
+            getattr(donation_data, "donation_type", None)  # Use donation_type explicitly
             or "cash"
         )
-        donation_type = str(raw_kind).lower().strip()
-        if donation_type not in {"cash", "inkind"}:
-            donation_type = "cash"
+        
+        type = _to_enum(
+            DonationType,
+            getattr(donation_data, "donation_type", None),
+            default=DonationType.CASH,
+        )
 
         # Basic presence checks (optional; keep or remove as you like)
         if not getattr(donation_data, "donor_id", None):
             raise HTTPException(status_code=422, detail="donor_id is required")
-        # proposal_id can be None if donation not tied to a proposal
-        # else validate it exists if that’s a rule in your app.
 
         try:
             # 3) Create parent Donation (no amount/description/payment_method on parent)
+            print(type)
             donation = Donation(
                 donor_id=donation_data.donor_id,
-                proposal_id=getattr(donation_data, "proposal_id", None),
+                funding_id = getattr(donation_data, "funding_id", None),
                 frequency=frequency,
                 status=DonationStatus.PENDING,
-                donation_type=donation_type,
-                # one-time has no schedule
-                next_donation_date=None,
+                donation_type=type,  # Use the resolved donation_type
+                next_donation_date=None,  # one-time has no schedule
                 end_date=None,
                 is_active=False,
-                # donation_date server_default=now() on the model; omit here
             )
 
             custom_id = uid_from_string(f"{rand_alnum()}")
             donation.donation_id = custom_id
-            
+
             db.add(donation)
-            db.flush()  # get donation.donation_id for child rows
+            db.flush()  # Get donation.donation_id for child rows
 
             # 4) Create child row based on donation_type
-            if donation_type == "cash":
+            if type == DonationType.CASH:
                 cash = Donation_Cash(
                     donation_id=donation.donation_id,
-                    amount=getattr(donation_data, "amount", None),                # Decimal/float OK; DB column is Numeric
+                    amount=getattr(donation_data, "amount", None),  # Decimal/float OK; DB column is Numeric
                     payment_method=getattr(donation_data, "payment_method", None)
                 )
                 db.add(cash)
@@ -83,7 +84,7 @@ class DonationCRUD:
                 item_desc = getattr(donation_data, "item_description", None) or getattr(donation_data, "description", None)
                 est_val = getattr(donation_data, "estimated_value", None)
                 if est_val is None:
-                    # allow legacy `amount` for inkind estimated value
+                    # Allow legacy `amount` for inkind estimated value
                     est_val = getattr(donation_data, "amount", None)
 
                 inkind = Donation_InKind(
@@ -97,14 +98,15 @@ class DonationCRUD:
 
             # 5) Commit and refresh with children
             db.commit()
-            db.refresh(donation)  # relationships lazy-load; refresh parent state
+            db.refresh(donation)  # Relationships lazy-load; refresh parent state
 
             return donation
 
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Database error creating donation: {e}")
-    
+        
+            
     @staticmethod
     def create_recurring_donation(db: Session, donation_data: RecurringDonationCreate) -> Donation:
         """
@@ -123,7 +125,7 @@ class DonationCRUD:
 
         donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id=donation_data.proposal_id,
+            funding_id = getattr(donation_data, "funding_id", None),
             frequency=frequency,
             amount=donation_data.amount,
             description=donation_data.description,
@@ -154,7 +156,7 @@ class DonationCRUD:
 
         donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id=donation_data.proposal_id,
+            funding_id=donation_data.funding_id,
             frequency=frequency,
             amount=None,  # in-kind has no direct cash amount
             description=donation_data.description,
@@ -300,7 +302,11 @@ class DonationCRUD:
         out = []
         for d in results:
             # Determine type; prefer explicit column but fall back to relationship presence
-            donation_type = d.donation_type or ("cash" if d.cash else "inkind" if d.inkind else None)
+            donation_type = (
+                DonationType(d.donation_type.upper()) 
+                if d.donation_type 
+                else DonationType.CASH if getattr(d, "CASH", None) else DonationType.INKIND if getattr(d, "INKIND", None) else None
+            )
 
             # Cash details
             cash_amount = d.cash.amount if d.cash else None
@@ -319,14 +325,120 @@ class DonationCRUD:
 
                 # Unified type + values
                 "donation_type": donation_type,
-                "amount": cash_amount if donation_type == "cash" else estimated_value,
-                "payment_method": payment_method if donation_type == "cash" else None,
-                "estimated_value": estimated_value if donation_type == "inkind" else None,
-                "item_description": item_description if donation_type == "inkind" else None,
-                "quantity": quantity if donation_type == "inkind" else None,
+                "amount": cash_amount if donation_type == DonationType.CASH else estimated_value,
+                "payment_method": payment_method if donation_type == DonationType.CASH else None,
+                "estimated_value": estimated_value if donation_type == DonationType.INKIND else None,
+                "item_description": item_description if donation_type == DonationType.INKIND else None,
+                "quantity": quantity if donation_type == DonationType.INKIND else None,
 
                 # Enums: return name if present, else raw value/string
                 "frequency": d.frequency.name if hasattr(d.frequency, "name") else d.frequency,
                 "status": d.status.name if hasattr(d.status, "name") else d.status,
             })
         return out  
+    
+    @staticmethod
+    def get_donor_aggregates(
+        db: Session,
+        donor_id: int,
+        *,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        status: Optional[Union[DonationStatus, str, Sequence[Union[DonationStatus, str]]]] = None,
+    ) -> dict:
+        """
+        Returns:
+        {
+            "total_cash": float,
+            "total_inkind": float,
+            "donation_count": int,
+            "active_recurring_count": int
+        }
+        """
+
+        # Normalize/coerce status -> list of DonationStatus (case-insensitive if strings are passed)
+        def _coerce_status_list(s):
+            if s is None:
+                return None
+            items = s if isinstance(s, (list, tuple, set)) else [s]
+            out = []
+            for it in items:
+                if isinstance(it, DonationStatus):
+                    out.append(it)
+                else:
+                    key = str(it).upper()
+                    try:
+                        out.append(DonationStatus[key])  # by name
+                    except KeyError:
+                        out.append(DonationStatus(str(it)))  # by value
+            return out
+
+        status_vals = _coerce_status_list(status)
+
+        q = (
+            db.query(
+                # Sum cash amounts when type is CASH
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Donation.cash != None, Donation_Cash.amount),  # noqa: E711
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_cash"),
+                # Sum estimated in-kind values when type is INKIND
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Donation.inkind != None, Donation_InKind.estimated_value),  # noqa: E711
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_inkind"),
+                # Count donations after filters
+                func.count(Donation.donation_id).label("donation_count"),
+                # Active recurring = freq != ONE_TIME AND is_active = true
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                and_(
+                                    Donation.frequency != DonationFrequency.ONE_TIME,
+                                    Donation.is_active.is_(True),
+                                ),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("active_recurring_count"),
+            )
+            .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+            .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+            .filter(Donation.donor_id == donor_id)
+        )
+
+        if date_from is not None:
+            q = q.filter(Donation.donation_date >= date_from)
+        if date_to is not None:
+            q = q.filter(Donation.donation_date <= date_to)
+        if status_vals:
+            q = q.filter(Donation.status.in_(status_vals))
+
+        total_cash, total_inkind, donation_count, active_recurring_count = q.one()
+
+        def _to_float(x):
+            try:
+                return float(x) if x is not None else 0.0
+            except Exception:
+                return 0.0
+
+        return {
+            "total_cash": _to_float(total_cash),
+            "total_inkind": _to_float(total_inkind),
+            "donation_count": int(donation_count or 0),
+            "active_recurring_count": int(active_recurring_count or 0),
+        }

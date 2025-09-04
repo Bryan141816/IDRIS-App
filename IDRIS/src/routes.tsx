@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
+import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
 
 const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
@@ -126,7 +127,7 @@ const ManageVolunteer = () =>
 // Donations Management
 const DonationsDashboard = () =>
   import(
-    "./pages/donations_management/donations_dashboard/Donations_Dashboard"
+    "./pages/donations_management/donations_dashboard/DonationsDashboard"
   ).then((module) => ({ Component: module.default }));
 const ListOfRafiDonors = () =>
   import(
@@ -144,9 +145,10 @@ const UpdateFunding = () =>
   import("./pages/donations_management/funding_proposals/UpdateFunding").then(
     (module) => ({ Component: module.default }),
   );
-const TransparencyReport = () =>
+
+const DonationsReport = () =>
   import(
-    "./pages/donations_management/transparency_report_management/TransparencyReport"
+    "./pages/donations_management/donations_dashboard/DonationReport"
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
@@ -155,9 +157,19 @@ const FundingDonation = () =>
   );
 
 const DonorProfile = () =>
-  import("./pages/donations_management/donor/Donor_Profile").then((module) => ({
-    Component: module.default,
-  }));
+  import(
+    "./pages/donations_management/donor/DonorProfile"
+  ).then(
+    (module) => ({ Component: module.default }),
+  );
+
+const Donor_Dashboard = () =>
+  import(
+    "./pages/donations_management/donor/DonorDashboard"
+  ).then(
+    (module) => ({ Component: module.default }),
+  );
+ 
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -345,12 +357,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 lazy: CreateFunding,
-                handle: { allowedRoles: ["finance admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin"] },
               },
               {
                 path: "update",
                 lazy: UpdateFunding,
-                handle: { allowedRoles: ["finance admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin"] },
               },
             ],
           },
@@ -361,13 +373,17 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "transparency_report",
-        lazy: TransparencyReport,
-        handle: { allowedRoles: ["finance admin"] },
+        path: "donation_report",
+        lazy: DonationsReport,
+        handle: { allowedRoles: ["finance admin", "operations admin"] },
       },
       {
         path: "donor_profile",
         lazy: DonorProfile,
+      },
+      {
+        path: "donor_dashboard",
+        lazy: Donor_Dashboard,
       },
       {
         path: "response_dashboard",
@@ -471,8 +487,9 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/funding_proposals/create": CreateFunding,
   "/donations_management/funding_proposals/update": UpdateFunding,
 
-  "/transparency_report": TransparencyReport,
+  "/donation_report": DonationsReport,
   "/donor_profile": DonorProfile,
+  "/donor_dashboard": Donor_Dashboard,
 
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/report_list": ReportList,

@@ -338,12 +338,15 @@ class DonationStatus(enum.Enum):
     CANCELLED = "CANCELLED"
 
 
+class DonationType(str, enum.Enum):
+    CASH = "CASH"
+    INKIND = "INKIND"
+
+
 class Donation(Base):
     __tablename__ = "donation_records"
     __random_pk_field__ = "donation_id"
     id = Column(Integer, index=True, server_default=Identity())
-
-    # Core attributes
 
     # Core attributes
     donation_id = Column(Integer, primary_key=True)
@@ -364,14 +367,16 @@ class Donation(Base):
         server_default=DonationStatus.PENDING.value,
     )
     # Additional fields
-    proposal_id = Column(
+    funding_id = Column(
         Integer, ForeignKey("funding_proposals.funding_id"), nullable=True
     )
     donation_date = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     donation_type = Column(
-        String(20), nullable=False, default="cash"
+        SqlEnum(DonationType, name="donation_type"),
+        nullable=False,
+        server_default=DonationType.CASH.value,
     )  # "cash" or "inkind" etc.
 
     # # Recurring donation fields
@@ -489,7 +494,6 @@ class IndividualVolunteer(Base):
     )
 
 
-
 class OrganizationVolunteer(Base):
     __tablename__ = "organization_volunteer"
     __random_pk_field__ = "volunteer_id"
@@ -528,6 +532,7 @@ class OrganizationVolunteer(Base):
         passive_deletes=True,
     )
 
+
 class VolunteerCertificate(Base):
     __tablename__ = "volunteer_certificate"
 
@@ -550,7 +555,9 @@ class VolunteerCertificate(Base):
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)  # normalized POSIX path
     mime_type = Column(String(100), nullable=True)
-    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    uploaded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     # Enforce XOR ownership at the DB level
     __table_args__ = (
@@ -575,6 +582,7 @@ class VolunteerCertificate(Base):
         back_populates="certificates",
         foreign_keys=[organization_volunteer_id],
     )
+
 
 class Event(Base):
     __tablename__ = "event"
@@ -665,12 +673,14 @@ class ProcurementRequest(Base):
     requester = relationship("User", back_populates="procurement_request")
 
     title = Column(String(255), nullable=False)
-    department = Column(String(255), nullable=False)
+    lgu_name = Column(String(255), nullable=False)
     priority = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False)
     description = Column(String(255), nullable=False)
+    justification = Column(String(255), nullable=False)
     date = Column(Date, nullable=False)
     comment = Column(String(255), nullable=True)
+    reason_or_code = Column(String(255), nullable=True)
 
     # ✅ should be plural (list of items)
     request_items = relationship("ProcurementRequestItem", back_populates="request")

@@ -1,7 +1,6 @@
 import React from 'react';
 import { DollarSign, User } from 'lucide-react';
-import './donation_info.scss';
-import { fetchCurrentUserId } from '../../../API_Handler/auth';
+import './DonationInfo.scss';
 
 interface DonorDonationFormProps {
   donationKind: string;

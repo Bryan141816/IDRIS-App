@@ -83,7 +83,7 @@ def rand_alnum(n=20):
 
 def uid_from_string(s: str) -> int:
     digest = hashlib.sha256(s.encode()).hexdigest()
-    return int(digest, 16) % 90_000_000 + 10_000_000
+    return int(digest, 16) % 90000000 + 10000000
 
 def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
     contents = upload_file.file.read()

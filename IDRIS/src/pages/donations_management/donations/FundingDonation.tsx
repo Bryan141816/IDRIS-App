@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import DonorDonationForm from './donation_info';
-import PaymentForm from './payment_method';
-import './fundingDonation.scss';
+import DonorDonationForm from './DonationInfo';
+import PaymentForm from './PaymentMethod';
+import './FundingDonation.scss';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
 import { createOneTimeDonation } from '../../../API_Handler/donations_donation_handler';
 
@@ -34,6 +34,7 @@ const DonationPage: React.FC = () => {
         const response = await getDonorIdByLoggedUser();
         setDonorId(response);
         console.log("Donor id: ", response);
+        console.log("Proposal id: ", fundingId);
       } catch(error){
         console.error(error);
       }
@@ -58,31 +59,34 @@ const DonationPage: React.FC = () => {
     // Handle next logic
     try{      
         // build FormData to send donation
-        const normalizeDonationType = (type: string | null) => {
+        const normalizeDonationFrequency = (type: string | null) => {
           if (type === "One-time") return "ONE_TIME";
           if (type === "Recurring") return "RECURRING";
           return "ONE_TIME";
         };
 
-        const normalizeDonationKind = (type: string | null) => {
-          if ( type == "In-Kind" ) return "inkind";
-
-          return type?.toLowerCase();
+        const normalizeDonationType = (type: string | null) => {
+          if ( type == "In-Kind" ) return "INKIND";
+          if ( type == "Cash" ) return "CASH";
+          return type?.toUpperCase();
         }
 
-        console.log(normalizeDonationType(donationFrequency));
+        console.log(normalizeDonationFrequency(donationFrequency));
         console.log("donorId:", donorId, typeof donorId);
         console.log("fundingId:", fundingId, typeof fundingId);
+        console.log("Donation Type: ", normalizeDonationType(donationKind));
+
         const formData = {
           donor_id: donorId,
-          donation_type: normalizeDonationType(donationFrequency),
+          frequency: normalizeDonationFrequency(donationFrequency),
           amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
           description: donationFormData.description,
-          proposal_id: fundingId,
-          donation_kind: normalizeDonationKind(donationKind),
+          funding_id: fundingId,
+          donation_type: normalizeDonationType(donationKind),
           payment_method: paymentMethod
         }
-
+        console.log("Form Datas:");
+        console.log(formData);
         const donationResponse = await createOneTimeDonation(formData);
         console.log("create donation response: ", donationResponse.data);
     } catch (err) {

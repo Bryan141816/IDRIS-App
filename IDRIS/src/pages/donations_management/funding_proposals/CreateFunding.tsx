@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "./createFunding.scss";
+import "./CreateFunding.scss";
+import Swal from "sweetalert2";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
 
@@ -41,18 +42,30 @@ const CreateFunding: React.FC = () => {
         throw new Error("Failed to create proposal");
       }
 
-      alert("Proposal created successfully!");
+      await Swal.fire({
+        icon: "success",
+        title: "Proposal Created",
+        text: "Your funding proposal has been created successfully!",
+        confirmButtonColor: "#28a745",
+      });
+
       Navigate(-1);
       return;
     } catch (error) {
       console.error("Error:", error);
-      throw error;
+
+      await Swal.fire({
+        icon: "error",
+        title: "Creation Failed",
+        text: "There was an error creating your proposal. Please try again.",
+        confirmButtonColor: "#dc3545",
+      });
     }
   };
 
   const handleCancelButton = () => {
     if (document.referrer) {
-      window.location.href = document.referrer; 
+      window.location.href = document.referrer;
     } else {
       window.history.back(); // Fallback if no referrer
     }
@@ -117,11 +130,11 @@ const CreateFunding: React.FC = () => {
               type="submit"
               value="Submit"
             />
-            <button 
+            <button
               type="button"
               className="yellow-btn"
               onClick={() => { handleCancelButton() }} >
-              Cancel 
+              Cancel
             </button>
 
           </div>

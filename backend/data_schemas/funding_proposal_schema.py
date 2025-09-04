@@ -1,11 +1,12 @@
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
+from enum import Enum
 
-# ======================
-# Base / Create / Update
-# ======================
-
+class DonationType(str, Enum):
+    CASH = "cash"
+    INKIND = "inkind"
+    
 class FundingProposalBase(BaseModel):
     title: str
     description: str
@@ -16,6 +17,11 @@ class FundingProposalBase(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+
+
+class DonationType(str, Enum):
+    CASH = "cash"
+    INKIND = "inkind"
 
 
 class FundingProposalCreate(BaseModel):
@@ -32,16 +38,32 @@ class FundingProposalCreate(BaseModel):
 
 
 class FundingProposalUpdate(BaseModel):
-    # All optional for PATCH/PUT semantics
     title: Optional[str] = None
     description: Optional[str] = None
-    budgetRequired: Optional[int] = Field(None, alias="budget_required")
+    budget_required: Optional[int] = Field(None, alias="budget_required")
     status: Optional[str] = None
     image: Optional[str] = None
+    donation_type: Optional[DonationType] = None  # Optional field for updates
 
     class Config:
         from_attributes = True
         populate_by_name = True
+
+
+# class FundingProposalGet(BaseModel):
+#     funding_id_: int = Field(..., alias="funding_id")
+#     title: str
+#     description: str
+#     budget_required: int = Field(..., alias="budget_required")
+#     total_donated: float
+#     created_at: datetime
+#     updated_at: datetime
+#     image: Optional[str] = None
+#     donation_type: DonationType  # Ensure it's included in the response
+
+#     class Config:
+#         from_attributes = True
+#         populate_by_name = True
 
 
 # ======================

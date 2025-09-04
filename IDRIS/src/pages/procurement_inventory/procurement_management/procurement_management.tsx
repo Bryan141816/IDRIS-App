@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./ProcurementManagement.scss";
-
+import RequestTab from "./Tabs/Request";
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -474,107 +474,6 @@ const ProcurementManagement = () => {
       </div>
     </div>
   );
-
-  const renderRequests = () => (
-    <div className="requests-content">
-      <div className="section-header">
-        <h2>Procurement Requests</h2>
-        <button
-          className="primary-btn"
-          onClick={() => openModal("submit-request")}
-        >
-          + Submit Request
-        </button>
-      </div>
-
-      <div className="requests-grid">
-        {procurementRequests.map((request) => (
-          <div key={request.id} className="request-card">
-            <div className="request-header">
-              <div className="request-id">{request.requestId}</div>
-              <div className="request-badges">
-                <span
-                  className={`priority-badge ${getPriorityColor(request.priority)}`}
-                >
-                  {request.priority}
-                </span>
-                <span
-                  className={`status-badge ${getStatusColor(request.status)}`}
-                >
-                  {request.status}
-                </span>
-              </div>
-            </div>
-            <div className="request-content">
-              <h3>{request.title}</h3>
-              <p className="request-description">{request.description}</p>
-              <div className="request-details">
-                <div className="detail-row">
-                  <span>Requester:</span>
-                  <span>{request.requester}</span>
-                </div>
-                <div className="detail-row">
-                  <span>Department:</span>
-                  <span>{request.department}</span>
-                </div>
-                <div className="detail-row">
-                  <span>Date:</span>
-                  <span>
-                    {new Date(request.requestDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <span>Estimated Cost:</span>
-                  <span className="cost">
-                    {formatCurrency(request.estimatedCost)}
-                  </span>
-                </div>
-              </div>
-              {request.rejectionReason && (
-                <div className="rejection-reason">
-                  <strong>Rejection Reason:</strong> {request.rejectionReason}
-                </div>
-              )}
-              <div className="request-actions">
-                <button
-                  className="action-btn"
-                  onClick={() => openModal("view-request", request)}
-                >
-                  View Details
-                </button>
-                {request.status === "Pending Approval" && (
-                  <>
-                    <button
-                      className="approve-btn"
-                      onClick={() => openModal("approve-request", request)}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="reject-btn"
-                      onClick={() => openModal("reject-request", request)}
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-                {request.status !== "Approved" &&
-                  request.status !== "Rejected" && (
-                    <button
-                      className="action-btn"
-                      onClick={() => openModal("update-status", request)}
-                    >
-                      Update Status
-                    </button>
-                  )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   const renderApprovals = () => (
     <div className="approvals-content">
       <div className="section-header">
@@ -1052,7 +951,7 @@ const ProcurementManagement = () => {
 
       <div className="mains-content">
         {activeTab === "dashboard" && renderDashboard()}
-        {activeTab === "requests" && renderRequests()}
+        {activeTab === "requests" && <RequestTab></RequestTab>}
         {activeTab === "approvals" && renderApprovals()}
         {activeTab === "notifications" && renderNotifications()}
       </div>

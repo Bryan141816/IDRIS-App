@@ -1,14 +1,13 @@
-import './donor_profile.scss';
+import './DonorProfile.scss';
 import { useEffect, useState } from "react";
 import { getIndividualDonorProfile } from '../../../API_Handler/donations_donors_handler';
 import { useUserRoleContext } from "../../../UserRoleContext";
 import NoImage from "../../images/no-image.jpg";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-// import { RefreshCircle } from '../../../components/Page_Furniture/Icons';
 import DonorStatusButton from '../../../components/Page_Furniture/TwoModeButton';
 import { createNewDonor } from '../../../API_Handler/donations_donors_handler';
-
 import { fetchCurrentUserId } from '../../../API_Handler/auth';
+import Swal from "sweetalert2";
 
 interface DonorProfile {
   donorId: number;
@@ -45,7 +44,7 @@ interface Location {
   lng: number;
 }
 
-// Sample Donor data
+// Sample Donor data (fallback)
 const donorData: DonorData = {
   donor_name: "No Data Found",
   role: "Role Assigned (Donor ID)",
@@ -54,7 +53,7 @@ const donorData: DonorData = {
   personalInfo: {
     age: 0,
     dateOfBirth: "No Data Found",
-    phoneNumber: "No Data Found", 
+    phoneNumber: "No Data Found",
     address: "No Data Found",
     gender: "No Data Found"
   },
@@ -66,7 +65,6 @@ const donorData: DonorData = {
 
 const UserProfile = () => {
   const { userRoles } = useUserRoleContext();
-
   const [profile, setProfile] = useState<DonorProfile | null>(null);
   const [donorId, setDonorId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null >(null);
@@ -75,32 +73,30 @@ const UserProfile = () => {
   const [userProfilePicture] = useState<string | undefined>(undefined);
   const [userBackgroundPicture] = useState<string | undefined>(undefined);
 
+  const fetchProfile = async () => {
+    try {
+      const response = await getIndividualDonorProfile();
+      setProfile(response);
+      setDonorId((response as any)?.donor_id ?? (response as any)?.donorId ?? null);
+    } catch (err) {
+      console.error(err);
+      // setError("Failed to fetch profile.");
+    }
+  };
+  
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await getIndividualDonorProfile();
-        setProfile(response);
-        setDonorId(response.donor_id);
-      } catch (err) {
-        console.error(err);
-        // setError("Failed to fetch profile.");
-      }
-
-    };
-
     fetchProfile();
   }, []);
 
-  useEffect(( ) => {
-    const fetchUserid = async() => {
+  useEffect(() => {
+    const fetchUserid = async () => {
       try{
         const response = await fetchCurrentUserId();
-        console.log("Current User ID: ", response.id);
         setUserId(response.id);
       } catch(error){
         console.error(error);
       }
-    }
+    };
 
     fetchUserid();
   }, []);
@@ -187,13 +183,11 @@ const UserProfile = () => {
   };
 
   // DONOR REGISTRATION MODAL
-  // Form Values
-  const [ organizationName, setOrganizationName] = useState<string | null>(null);
-  const [isFormOpen, setFormStatus] = useState<boolean>(false);
+  const [organizationName, setOrganizationName] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState("");
   const [isIndividual, setIsIndividual] = useState<boolean>(true);
-  const closeModal = () => {
-    setFormStatus(false);
-  }
+
+  const closeModal = () => setActiveModal("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,52 +200,77 @@ const UserProfile = () => {
     try {
       const res = await createNewDonor(formData);
 
-      if (!res.ok) {
-        throw new Error("Failed to register donor");
+      // Consider any 2xx as success
+      const ok = res && typeof res.status === "number" && res.status >= 200 && res.status < 300;
+      if (!ok) {
+        throw new Error(`Failed to register donor (status: ${res?.status})`);
       }
 
-      const data = await res.json();
-      console.log("✅ Donor registered:", data);
+      // Close the registration form modal
+      setActiveModal("");
+      // Refresh profile
+      await fetchProfile();
+
+      // SweetAlert success
+      await Swal.fire({
+        icon: "success",
+        title: "Registration Successful",
+        text: "Your donor registration has been completed.",
+        confirmButtonColor: "#16a34a"
+      });
     } catch (err) {
-      console.error("❌ Error:", err);
+      console.error(err);
+
+      // Close any open form modal (optional)
+      setActiveModal("");
+
+      // SweetAlert error
+      await Swal.fire({
+        icon: "error",
+        title: "Registration Failed",
+        text: "We couldn’t complete your registration. Please try again.",
+        confirmButtonColor: "#ef4444"
+      });
     }
-  }
+  };
 
   const renderRegisterDonorModal = (): React.ReactNode => {
     return (
-      <Modal isOpen={isFormOpen} onClose={closeModal}>
+      <Modal isOpen={activeModal === "registration-form"} onClose={closeModal}>
         <h3 className="modal-title">Register as Donor</h3>
-        <form action="" id="donor-registration-form" onSubmit={handleSubmit}>
+        <form id="donor-registration-form" onSubmit={handleSubmit}>
           <img src={userProfilePicture || NoImage} alt="user-profile" className="profile-picture" />
           <p>{profile?.donor_name}</p>
 
           <DonorStatusButton 
-            isFirstMode={(isIndividual ? true : false)} 
-            onToggle={() => {setIsIndividual(!isIndividual)}}
+            isFirstMode={isIndividual}
+            onToggle={() => setIsIndividual(!isIndividual)}
             firstLabel='Individual'
             secondLabel='Organization'
-            id = "donor-status-button"
+            id="donor-status-button"
           />
           
-          { !isIndividual ?
+          {!isIndividual && (
             <>
               <label htmlFor="organization-name">Organization Name: </label>
-              <input type="text" name='organization-name' onChange={(e) => { setOrganizationName(e.target.value)} }/>
-            </>    : 
-            <></>
-          }
+              <input
+                type="text"
+                id="organization-name"
+                name="organization-name"
+                onChange={(e) => setOrganizationName(e.target.value)}
+              />
+            </>
+          )}
 
-          <button type='submit' className='green-modal-button'>Register</button>
+          <button type="submit" className="green-modal-button" disabled={!userId}>
+            Register
+          </button>
         </form>
       </Modal>
-    )
-  }
+    );
+  };
 
-
-  // if (error) return <p>{error}</p>;
-  // if (!profile) return <p>Loading...</p>;
-
-  // Fallback Donor Data
+  // Fallback Donor Data if profile not yet available
   const donorProfile = profile ?? {
     donorId: 0,
     donor_name: donorData.donor_name,
@@ -263,19 +282,21 @@ const UserProfile = () => {
 
   return (
     <div id="donor-profile">
-      <h3 className='public-feed-title'>Donor Profile</h3>
+      <h3 className="public-feed-title">Donor Profile</h3>
+
       {/* USER NAME AND IMAGES */}
       <div id="profile-main-container">
-        {userProfilePicture ?
-          (<img src={userProfilePicture} alt="profile" id="background-picture" />) :
-          (<img src={NoImage} alt="default" id="background-picture" />)
+        {userProfilePicture
+          ? <img src={userProfilePicture} alt="profile" id="background-picture" />
+          : <img src={NoImage} alt="default" id="background-picture" />
         }
 
         <div id="donor-main-info-container">
-          {userBackgroundPicture ?
-            (<img src={userBackgroundPicture} alt="profile" className="profile-picture" />) :
-            (<img src={NoImage} alt="default" className="profile-picture" />)
+          {userBackgroundPicture
+            ? <img src={userBackgroundPicture} alt="profile" className="profile-picture" />
+            : <img src={NoImage} alt="default" className="profile-picture" />
           }
+
           <div id="donor-name-container">
             <p className="donor-name">
               <strong>{donorProfile.donor_name}</strong>
@@ -283,15 +304,20 @@ const UserProfile = () => {
                 ({donorProfile.is_verified ? "Verified" : "Unverified"})
               </span>
             </p>
-            <p className="role-assigned">{userRoles[0].toUpperCase()} ({donorId})</p>
+            <p className="role-assigned">
+              {userRoles[0] ? userRoles[0].toUpperCase() : "USER"} ({donorId ?? "—"})
+            </p>
           </div>
 
-          <button id="register-button" onClick={() => { setFormStatus(!isFormOpen) }}> Register as Donor</button>
+          <button id="register-button" onClick={() => setActiveModal("registration-form")}>
+            Register as Donor
+          </button>
         </div>
+
         <hr />
 
         <div id="donor-sub-info-container">
-          {/* Donor Address */}
+          {/* Donor Address (placeholder map) */}
           <div className="map-container">
             <p>( Donor Address )</p>
             <div
@@ -345,15 +371,14 @@ const UserProfile = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
       {renderRegisterDonorModal()}
+
+      {/* Removed the success/error Modals in favor of SweetAlert2 */}
     </div>
-
   );
-
 };
 
 export default UserProfile;

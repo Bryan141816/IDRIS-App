@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any, Set
 from math import ceil
 from fastapi import HTTPException, status
 
-from models import Donor, User, Donation, DonationStatus, Donation_Cash, Donation_InKind
+from models import Donor, User, Donation, DonationStatus, Donation_Cash, Donation_InKind, DonationType
 from data_schemas.donors_schema import DonorItem, ListOfDonorsResponse, IndividualDonorProfile
 from crud_functions.utils import uid_from_string, _norm_type, is_unique_violation_on
 import datetime, random
@@ -325,7 +325,7 @@ class DonorCRUD:
                 .filter(
                     Donation.donor_id.in_(donor_ids),
                     Donation.status == DonationStatus.COMPLETED,
-                    Donation.donation_type.in_(["cash", "inkind"]),
+                    Donation.donation_type.in_([DonationType.CASH, DonationType.INKIND]),
                 )
                 .group_by(Donation.donor_id)
                 .all()

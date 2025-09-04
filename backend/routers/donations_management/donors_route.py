@@ -24,14 +24,24 @@ from crud_functions.utils import uid_from_string
 
 router = APIRouter()
 
-from routers.donations_management.donations_accessibility_roles import (
-    router_donor,
-    router_admin,
-    router_admin_or_donor,
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+)
+
+router_user = APIRouter(
+    dependencies=[Depends(RoleChecker(["generic"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
 
-@router_admin_or_donor.post("/create/", response_model=DonorResponse)  # mark used
+@router_admin_or_donor.post("/create_donor", response_model=DonorResponse)  # mark used
 def create_individual_donor_endpoint(
     user_id: int = Form(...),
     donor_type: Optional[str] = Form("Individual"),
@@ -128,7 +138,6 @@ def get_donor_profile(
     current_user: User = Depends(get_current_user_from_access_token),
 ):
     donor_profile = donor_crud.get_donor_profile_by_user_id(db, current_user.user_id)
-    print(donor_profile)
     if not donor_profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

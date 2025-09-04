@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./createFunding.scss";
+import Swal from "sweetalert2";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { updateFundingProposal } from "../../../API_Handler/donations_funding_proposals_handler";
 
@@ -56,7 +57,12 @@ const CreateFunding: React.FC = () => {
     e.preventDefault();
 
     if (!id || id === "null" || id === "undefined") {
-      alert("Invalid ID for update");
+      await Swal.fire({
+        icon: "error",
+        title: "Update Failed",
+        text: "Invalid ID for update.",
+        confirmButtonColor: "#dc3545",
+      });
       return;
     }
 
@@ -73,25 +79,47 @@ const CreateFunding: React.FC = () => {
 
     try {
       const result = await updateFundingProposal(id, formData);
-      alert("Proposal updated successfully!");
+
+      await Swal.fire({
+        icon: "success",
+        title: "Proposal Created",
+        text: "Your funding proposal has been created successfully!",
+        confirmButtonColor: "#28a745",
+      });
+
       Navigate(-1);
     } catch (error: any) {
       console.error("Error details:", error);
 
       // More detailed error handling
       if (error.response?.status === 500) {
-        alert("Server error occurred. Please try again.");
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: "Server error occurred. Please try again.",
+          confirmButtonColor: "#dc3545",
+        });
       } else if (error.response?.status === 404) {
-        alert("Proposal not found.");
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: "Proposal not found.",
+          confirmButtonColor: "#dc3545",
+        });
       } else {
-        alert("Failed to update proposal.");
+        await Swal.fire({
+          icon: "error",
+          title: "Update Failed",
+          text: "Failed to update proposal.",
+          confirmButtonColor: "#dc3545",
+        });
       }
     }
   };
-  
+
   const handleCancelButton = () => {
     if (document.referrer) {
-      window.location.href = document.referrer; 
+      window.location.href = document.referrer;
     } else {
       window.history.back(); // Fallback if no referrer
     }
@@ -156,11 +184,11 @@ const CreateFunding: React.FC = () => {
               type="submit"
               value="Submit"
             />
-            <button 
+            <button
               type="button"
               className="yellow-btn"
               onClick={() => { handleCancelButton() }} >
-              Cancel 
+              Cancel
             </button>
           </div>
 

@@ -22,9 +22,9 @@ class DonationStatus(str, Enum):
 
 
 # Optional helper enum for clarity (DB uses string column for kind)
-class DonationKind(str, Enum):
-    CASH = "cash"
-    INKIND = "inkind"
+class DonationType(str, Enum):
+    CASH = "CASH"
+    INKIND = "INKIND"
 
 
 # ==== Create Schemas ====
@@ -37,9 +37,9 @@ class DonationCreate(BaseModel):
     Matches DonationRecord with frequency=ONE_TIME and kind='cash'.
     """
     donor_id: int
-    proposal_id: Optional[int] = None
-    frequency: DonationFrequency = DonationFrequency.ONE_TIME
-    kind: DonationKind = DonationKind.CASH
+    funding_id: Optional[int] = None
+    frequency: Optional[DonationFrequency] = DonationFrequency.ONE_TIME
+    donation_type: Optional[DonationType] = DonationType.CASH
 
     amount: Decimal = Field(..., description="Required for cash donations")
     description: Optional[str] = None
@@ -64,9 +64,9 @@ class RecurringDonationCreate(BaseModel):
     CASH recurring donation.
     """
     donor_id: int
-    proposal_id: Optional[int] = None
+    funding_id: Optional[int] = None
     frequency: DonationFrequency = DonationFrequency.MONTHLY  # MONTHLY/QUARTERLY/YEARLY
-    kind: DonationKind = DonationKind.CASH
+    donation_type: Optional[DonationType] = DonationType.INKIND
 
     amount: Decimal = Field(..., description="Required for recurring cash donations")
     description: Optional[str] = None
@@ -95,16 +95,16 @@ class InKindDonationCreate(BaseModel):
     IN-KIND donation (one-time by default).
     """
     donor_id: int
-    proposal_id: Optional[int] = None
+    funding_id: Optional[int] = None
     frequency: DonationFrequency = DonationFrequency.ONE_TIME
-    kind: DonationKind = DonationKind.INKIND
+    donation_type: DonationType = DonationType.INKIND
 
     description: Optional[str] = None
     item_description: str
     estimated_value: Optional[Decimal] = None
     quantity: Optional[str] = None  # e.g., "10 boxes", "5 pcs"
 
-    # Note: amount is not used for in-kind; estimated_value is optional.
+#     Note: amount is not used for in-kind; estimated_value is optional.
 
 
 # ==== Response / Read Schemas ====
@@ -112,10 +112,10 @@ class InKindDonationCreate(BaseModel):
 class DonationRecordBase(BaseModel):
     id: int = Field(alias="donationRecordId")
     donor_id: int
-    proposal_id: Optional[int] = None
+    funding_id: Optional[int] = None
 
     frequency: DonationFrequency
-    kind: DonationKind
+    donation_type: Optional[DonationType] = DonationType.CASH
 
     amount: Optional[Decimal] = None
     description: Optional[str] = None
@@ -143,7 +143,7 @@ class DonationRecordBase(BaseModel):
 class DonationResponse(BaseModel):
     donation_id: int
     donor_id: int
-    proposal_id: Optional[int] = None
+    funding_id: Optional[int] = None
     frequency: DonationFrequency
     status: DonationStatus
     

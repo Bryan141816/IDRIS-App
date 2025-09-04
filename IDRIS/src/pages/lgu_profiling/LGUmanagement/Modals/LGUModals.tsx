@@ -23,13 +23,15 @@ type editEvacuationModalProp = BaseModalProps & {
   selectedData: any;
   handleEditRecord: (id: string, payload: any) => void;
 };
+
+/* ======================= ADD LGU ======================= */
 export const AddLGUModal: React.FC<addLGUModalProps> = ({
   isModalOpen,
   closeModal,
   setMessageBox,
   handleAddRecord,
 }) => {
-  type evacuationProp = {
+  type LGUForm = {
     name: string;
     lat: number;
     lng: number;
@@ -38,23 +40,20 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
     contact_info: string;
     risk_level: string;
   };
-  const [addEvacuationForm, setAddEvacuationForm] = useState<evacuationProp>({
+  const [addEvacuationForm, setAddEvacuationForm] = useState<LGUForm>({
     name: "",
     lat: 0,
     lng: 0,
     classification: "",
     population: 0,
     contact_info: "",
-    risk_level: ""
+    risk_level: "",
   });
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: {
-    lat: number;
-    lng: number;
-  }) => {
+  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
     setAddEvacuationForm((prev) => ({
       ...prev,
       lat: mapData.lat,
@@ -62,14 +61,15 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
     }));
   };
   const handleAddModalChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setAddEvacuationForm((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: name === "population" ? Number(value) : value,
     }));
   };
+
   return (
     <>
       {locationPickerIsOpen && (
@@ -84,8 +84,9 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
       <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
         <div className="modal-container">
           <div className="horizontal-container">
-            <span className="details-title">Add Evacuation</span>
+            <span className="details-title">Add LGU</span>
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
             <input
@@ -95,6 +96,7 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
               onChange={handleAddModalChange}
             />
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div
@@ -126,24 +128,30 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
                 }}
                 onClick={openLocationPicker}
               >
-                {" "}
-                <FontAwesomeIcon
-                  icon={faMapMarkerAlt}
-                  style={{ height: "20px" }}
-                />
+                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
               </button>
             </div>
           </div>
+
           <div className="horizontal-container">
-            <span className="item-details-identifier">Classification</span>
-            <select id="classification" name="classification" required value={addEvacuationForm.classification} onChange={handleAddModalChange}>
-                <option value="" selected disabled>Select LGU Level</option>
-                <option value="province">Province</option>
-                <option value="city">City</option>
-                <option value="municipality">Municipality</option>
-                <option value="barangay">Barangay</option>
+            <span className="item-details-identifier">Classification:</span>
+            <select
+              id="classification"
+              name="classification"
+              required
+              value={addEvacuationForm.classification}
+              onChange={handleAddModalChange}
+            >
+              <option value="" disabled>
+                Select Classification
+              </option>
+              <option value="province">Province</option>
+              <option value="city">City</option>
+              <option value="municipality">Municipality</option>
+              <option value="barangay">Barangay</option>
             </select>
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
             <input
@@ -153,32 +161,42 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
               onChange={handleAddModalChange}
             />
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
             <input
-              type="number"
+              type="text"
               name="contact_info"
               value={addEvacuationForm.contact_info}
               onChange={handleAddModalChange}
             />
           </div>
-        <div className="horizontal-container">
-            <span className="item-details-identifier">Risk Level:</span>
-            <select id="risk_level" name="risk_level" required value={addEvacuationForm.risk_level} onChange={handleAddModalChange}>
-                <option value="" selected disabled>Select LGU Level</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="High">Long</option>
 
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Risk Level:</span>
+            <select
+              id="risk_level"
+              name="risk_level"
+              required
+              value={addEvacuationForm.risk_level}
+              onChange={handleAddModalChange}
+            >
+              <option value="" disabled>
+                Select Risk Level
+              </option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
               onClick={() => {
                 setMessageBox((prev) => ({
-                  ...prev, // preserves onClose and anything else
-                  isOpen: true, // your new values
+                  ...prev,
+                  isOpen: true,
                   type: "confirm",
                   message: "Are you sure you want to add this record?",
                   onSubmit: () => {
@@ -199,6 +217,7 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
   );
 };
 
+/* ======================= VIEW LGU ======================= */
 export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
   isModalOpen,
   closeModal,
@@ -208,30 +227,27 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
   openEditModal,
 }) => {
   const [isMoreOptionVisible, setIsMoreOptionVisible] = useState(false);
-  const toggleMoreOptionVisible = () => {
-    setIsMoreOptionVisible(!isMoreOptionVisible);
-  };
+  const toggleMoreOptionVisible = () => setIsMoreOptionVisible((v) => !v);
   useEffect(() => {
-    if (!isModalOpen) {
-      setIsMoreOptionVisible(false);
-    }
+    if (!isModalOpen) setIsMoreOptionVisible(false);
   }, [isModalOpen]);
+
+  // SAFE accessor: prevents "Cannot read properties of undefined (reading 'text')"
+  const cell = (i: number) => selectedData?.data?.[i]?.text ?? "";
+  const lat = Number.parseFloat(String(cell(2))) || 0;
+  const lng = Number.parseFloat(String(cell(3))) || 0;
+
+  if (!isModalOpen) return null; // extra guard
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View Details</span>
-          <div
-            className="horizontal-container"
-            style={{ width: "auto", gap: "5px" }}
-          >
+          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
             <div className="more-options-container">
               <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon
-                  icon={faEllipsisVertical}
-                  style={{ height: "20px" }}
-                />
+                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
@@ -243,13 +259,11 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
                     style={{ color: "red" }}
                     onClick={() => {
                       setMessageBox((prev) => ({
-                        ...prev, // preserves onClose and anything else
-                        isOpen: true, // your new values
+                        ...prev,
+                        isOpen: true,
                         type: "confirm",
                         message: "Are you sure you want to delete this record?",
-                        onSubmit: () => {
-                          handleDeleteRecord(selectedData.data[0].text);
-                        },
+                        onSubmit: () => handleDeleteRecord(String(cell(0))),
                       }));
                     }}
                   >
@@ -260,23 +274,23 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
             </div>
           </div>
         </div>
+
         <div className="horizontal-container">
           <span className="details-title">Details</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Name:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[1].text}
-          </span>
+          <span style={{ width: "100%", textAlign: "center" }}>{cell(1)}</span>
         </div>
+
         <div className="horizontal-container">
-          <span className="item-details-identifier">
-            Location: (Latitude, Longitude)
-          </span>
+          <span className="item-details-identifier">Location: (Latitude, Longitude)</span>
           <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[2].text}, {selectedData.data[3].text}
+            {lat || ""}{lat ? ", " : ""}{lng || ""}
           </span>
         </div>
+
         <div
           style={{
             display: "flex",
@@ -286,35 +300,29 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
             overflow: "hidden",
           }}
         >
-          <MapWithPin
-            lat={parseFloat(selectedData.data[2].text)}
-            lng={parseFloat(selectedData.data[3].text)}
-          ></MapWithPin>
+          <MapWithPin lat={lat} lng={lng} />
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Classification:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[4].text}
-          </span>
+          <span style={{ width: "100%", textAlign: "center" }}>{cell(4)}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Population:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[5].text}
-          </span>
+          <span style={{ width: "100%", textAlign: "center" }}>{cell(5)}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Contact Info:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[6].text}
-          </span>
+          <span style={{ width: "100%", textAlign: "center" }}>{cell(6)}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Risk Level:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {selectedData.data[7].text}
-          </span>
+          <span style={{ width: "100%", textAlign: "center" }}>{cell(7)}</span>
         </div>
+
         <div className="action-button">
           <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
             Close
@@ -324,6 +332,8 @@ export const ViewLGUModal: React.FC<viewEvecuationModalProp> = ({
     </Modal>
   );
 };
+
+/* ======================= EDIT LGU ======================= */
 export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
   isModalOpen,
   closeModal,
@@ -331,7 +341,10 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
   handleEditRecord,
   selectedData,
 }) => {
-  type evacuationProp = {
+  // SAFE accessor
+  const cell = (i: number) => selectedData?.data?.[i]?.text ?? "";
+
+  type LGUForm = {
     name: string;
     lat: number;
     lng: number;
@@ -340,38 +353,41 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
     contact_info: string;
     risk_level: string;
   };
-  const [addEvacuationForm, setAddEvacuationForm] = useState<evacuationProp>({
-    name: selectedData.data[1].text,
-    lat: parseFloat(selectedData.data[2].text),
-    lng: parseFloat(selectedData.data[3].text),
-    classification: selectedData.data[4].text,
-    population: parseInt(selectedData.data[5].text),
-    contact_info: selectedData.data[6].text,
-    risk_level: selectedData.data[7].text
+
+  const [addEvacuationForm, setAddEvacuationForm] = useState<LGUForm>({
+    name: String(cell(1)),
+    lat: Number.parseFloat(String(cell(2))) || 0,
+    lng: Number.parseFloat(String(cell(3))) || 0,
+    classification: String(cell(4)),
+    population: Number.parseInt(String(cell(5))) || 0,
+    contact_info: String(cell(6)),
+    risk_level: String(cell(7)),
   });
+
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: {
-    lat: number;
-    lng: number;
-  }) => {
+  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
     setAddEvacuationForm((prev) => ({
       ...prev,
       lat: mapData.lat,
       lng: mapData.lng,
     }));
   };
+
   const handleAddModalChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
     setAddEvacuationForm((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: name === "population" ? Number(value) : value,
     }));
   };
+
+  if (!isModalOpen) return null; // extra guard
+
   return (
     <>
       {locationPickerIsOpen && (
@@ -386,11 +402,9 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
       <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
         <div className="modal-container">
           <div className="horizontal-container">
-            <span className="details-title">Update Evacuation</span>
+            <span className="details-title">Update LGU</span>
           </div>
-                    <div className="horizontal-container">
-            <span className="details-title">Add Evacuation</span>
-          </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
             <input
@@ -400,6 +414,7 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
               onChange={handleAddModalChange}
             />
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div
@@ -431,24 +446,30 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
                 }}
                 onClick={openLocationPicker}
               >
-                {" "}
-                <FontAwesomeIcon
-                  icon={faMapMarkerAlt}
-                  style={{ height: "20px" }}
-                />
+                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
               </button>
             </div>
           </div>
+
           <div className="horizontal-container">
-            <span className="item-details-identifier">Classification</span>
-            <select id="classification" name="classification" required value={addEvacuationForm.classification} onChange={handleAddModalChange}>
-                <option value="" selected disabled>Select LGU Level</option>
-                <option value="province">Province</option>
-                <option value="city">City</option>
-                <option value="municipality">Municipality</option>
-                <option value="barangay">Barangay</option>
+            <span className="item-details-identifier">Classification:</span>
+            <select
+              id="classification"
+              name="classification"
+              required
+              value={addEvacuationForm.classification}
+              onChange={handleAddModalChange}
+            >
+              <option value="" disabled>
+                Select Classification
+              </option>
+              <option value="province">Province</option>
+              <option value="city">City</option>
+              <option value="municipality">Municipality</option>
+              <option value="barangay">Barangay</option>
             </select>
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
             <input
@@ -458,39 +479,47 @@ export const EditLGUModal: React.FC<editEvacuationModalProp> = ({
               onChange={handleAddModalChange}
             />
           </div>
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
             <input
-              type="number"
+              type="text"
               name="contact_info"
               value={addEvacuationForm.contact_info}
               onChange={handleAddModalChange}
             />
           </div>
-        <div className="horizontal-container">
-            <span className="item-details-identifier">Risk Level:</span>
-            <select id="risk_level" name="risk_level" required value={addEvacuationForm.risk_level} onChange={handleAddModalChange}>
-                <option value="" selected disabled>Select LGU Level</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="High">Long</option>
 
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Risk Level:</span>
+            <select
+              id="risk_level"
+              name="risk_level"
+              required
+              value={addEvacuationForm.risk_level}
+              onChange={handleAddModalChange}
+            >
+              <option value="" disabled>
+                Select Risk Level
+              </option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
             </select>
           </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
               onClick={() => {
                 setMessageBox((prev) => ({
-                  ...prev, // preserves onClose and anything else
-                  isOpen: true, // your new values
+                  ...prev,
+                  isOpen: true,
                   type: "confirm",
                   message: "Are you sure you want to update this record?",
                   onSubmit: () => {
-                    handleEditRecord(
-                      selectedData.data[0].text,
-                      addEvacuationForm,
-                    );
+                    const id = String(cell(0)); // safe id
+                    handleEditRecord(id, addEvacuationForm);
                   },
                 }));
               }}

@@ -3,9 +3,6 @@
 
 // Main Container
 #donors {
-
-
-
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -14,6 +11,12 @@
   min-height: unset;
   height: auto;
 
+
+  #no-donor, #loading{
+    padding-top: 24px;
+    text-align: center;
+    font-size: 1.5rem;
+  }
 
   // Settings Container
   #settings-container {

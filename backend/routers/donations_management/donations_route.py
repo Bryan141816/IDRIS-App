@@ -7,17 +7,30 @@ from crud_functions.utils import uid_from_string
 from datetime import datetime, timezone
 from routers.role_checker import RoleChecker
 
-from routers.donations_management.donations_accessibility_roles import (
-    router_donor,
-    router_admin,
-    router_admin_or_donor,
+from typing import Optional, List
+from models import User
+from routers.auth.authentication import get_current_user_from_access_token
+
+
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
 )
 
-@router_admin.post("/one-time/create", response_model=DonationResponse)
+router_user = APIRouter(
+    dependencies=[Depends(RoleChecker(["generic"]))],
+)
+
+router_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["donor"]))],
+)
+
+router_admin_or_donor = APIRouter(
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+)
+
+@router_donor.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print("Reached backend")
     try:
-        print(donation)
         return CRUD.create_one_time_pending_donation(db, donation)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -84,6 +97,41 @@ def donor_retention(year: int = datetime.now(timezone.utc).year, db: Session = D
 def recent_donations(limit: int = 10, db: Session = Depends(get_db)):
     return CRUD.get_donations_with_details(db, limit=limit)
 
+# helper to parse ISO strings (supports trailing Z)
+def _parse_iso(dt: Optional[str]) -> Optional[datetime]:
+    if not dt:
+        return None
+    try:
+        if dt.endswith("Z"):
+            dt = dt.replace("Z", "+00:00")
+        return datetime.fromisoformat(dt)
+    except Exception:
+        raise HTTPException(status_code=400, detail=f"Invalid datetime: {dt}")
+
+@router_donor.get("/get/donor_aggregates")
+def recent_donations(
+    current_user: User = Depends(get_current_user_from_access_token),
+    db: Session = Depends(get_db),
+    from_: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = None,
+    status: Optional[str] = None,
+    dtype: Optional[str] = Query(None, alias="type"),
+):
+    # optional CSV -> list (e.g., ?status=PENDING,COMPLETED)
+    status_list: Optional[List[str]] = None
+    if status:
+        status_list = [s.strip().upper() for s in status.split(",") if s.strip()]
+
+    return CRUD.get_donor_aggregates(
+        db,
+        donor_id=current_user.user_id,
+        date_from=_parse_iso(from_), 
+        date_to=_parse_iso(to),    
+        status=status_list,    
+    )
+    
+    
+    
 router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)

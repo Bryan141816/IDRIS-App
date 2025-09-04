@@ -569,7 +569,7 @@ class ProcurementRequest(Base):
     requester = relationship("User", back_populates="procurement_request")
 
     title = Column(String(255), nullable=False)
-    department = Column(String(255), nullable=False)
+    lgu_name = Column(String(255), nullable=False)
     priority = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False)
     description = Column(String(255), nullable=False)

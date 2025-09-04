@@ -25,6 +25,7 @@ from routers.volunteer_management import (
     organization_volunteer_routes,
 )  # Import the org volunteer routes
 from routers.manage_users import ManageUsers
+from routers.procurement_management import procurement_management
 from decouple import config
 
 Base.metadata.create_all(bind=engine)
@@ -68,6 +69,7 @@ app.include_router(
     prefix="/transparency_report",
     tags=["Transparency Report"],
 )
+app.include_router(procurement_management.router)
 
 # Add the organization volunteer routes here
 app.include_router(

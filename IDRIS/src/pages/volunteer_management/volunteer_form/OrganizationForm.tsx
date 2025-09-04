@@ -35,8 +35,10 @@ interface OrganizationFormValues {
     repPosition: string;
     repPhone: string;
     repEmail: string;
-    availability: string[];                // UI array -> backend string
-    organizationPicture?: AntdUploadFile[]; // AntD Upload file list
+    availability: string[];
+    organizationPicture?: AntdUploadFile[];
+    supportingFiles?: any[];
+    certification?: string[];
 }
 
 // Base64 helper for image preview
@@ -116,20 +118,16 @@ const OrganizationForm: React.FC = () => {
     const onFinish = async (values: OrganizationFormValues): Promise<void> => {
         try {
             const formData = new FormData();
-
             // Map UI fields -> backend keys
             formData.append('organization_name', values.orgName);
             formData.append('organization_type', values.orgType);
             formData.append('organization_email', values.orgEmail);
             formData.append('organization_phone_number', values.orgPhone);
             formData.append('organization_address', values.orgAddress);
-
             formData.append('contact_person_name', values.repName);
             formData.append('contact_person_position', values.repPosition);
             formData.append('contact_person_phone_number', values.repPhone);
             formData.append('contact_person_email', values.repEmail);
-
-            // Availability as a string (DB is String(50))
             formData.append('availability', values.availability.join(', '));
 
             // Files
@@ -137,8 +135,12 @@ const OrganizationForm: React.FC = () => {
             if (pictureFile) {
                 formData.append('organization_picture_file', pictureFile);
             }
-            if (selectedFile) {
-                formData.append('organization_certificate_file', selectedFile);
+            if (values.supportingFiles && values.supportingFiles.length > 0) {
+                values.supportingFiles.forEach((f: any) => {
+                    if (f?.originFileObj) {
+                        formData.append("organization_certificate", f.originFileObj); // <-- same key, multiple entries
+                    }
+                });
             }
 
             // Call the API handler
@@ -150,19 +152,12 @@ const OrganizationForm: React.FC = () => {
             navigate('/volunteer_management/volunteer_dashboard');
         } catch (err: any) {
             console.error(err);
-            message.error(err?.response?.data?.detail || 'Submission failed.');
-        }
-    };
-
-    const showAlert = (): void => {
             Swal.fire({
-                title: 'You have successfully uploaded your application.',
-                icon: 'success',
+                title: 'You have already submitted your application!',
+                icon: 'info',
                 confirmButtonColor: '#749AB6',
                 width: '380px',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
+                showConfirmButton: true,
                 customClass: {
                     popup: 'custom-height-modal',
                     title: 'custom-swal-title',
@@ -171,7 +166,28 @@ const OrganizationForm: React.FC = () => {
                     icon: 'custom-swal-icon',
                 },
             });
-        };
+            message.error(err?.response?.data?.detail || 'Submission failed.');
+        }
+    };
+
+    const showAlert = (): void => {
+        Swal.fire({
+            title: 'You have successfully uploaded your application.',
+            icon: 'success',
+            confirmButtonColor: '#749AB6',
+            width: '380px',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'custom-height-modal',
+                title: 'custom-swal-title',
+                htmlContainer: 'custom-swal-text',
+                confirmButton: 'custom-swal-button',
+                icon: 'custom-swal-icon',
+            },
+        });
+    };
 
 
     const uploadButton = (
@@ -180,6 +196,23 @@ const OrganizationForm: React.FC = () => {
             <div style={{ marginTop: 8 }}>Upload</div>
         </div>
     );
+
+    const validateName = (rule: any, value: string) => {
+        const regex = /^[A-Za-z\s]+$/;  // Only allows letters and spaces
+        if (value && !regex.test(value)) {
+            return Promise.reject('Name can only contain letters and spaces.');
+        }
+        return Promise.resolve();
+    };
+
+    const validatePhoneNumber = (rule: any, value: string) => {
+        const regex = /^[\d\s\+\-]+$/;  // Only allows digits, spaces, plus, and dash
+        if (value && !regex.test(value)) {
+            return Promise.reject('Phone number can only contain digits, spaces, plus (+), and dash (-).');
+        }
+        return Promise.resolve();
+    };
+
 
     return (
         <div className="application-form">
@@ -256,7 +289,7 @@ const OrganizationForm: React.FC = () => {
                                     name="orgPhone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter phone number' }]}
+                                    rules={[{ required: true, message: 'Please enter phone number' }, { validator: validatePhoneNumber }]}
                                 >
                                     <Input placeholder="Enter organization phone" />
                                 </Form.Item>
@@ -281,7 +314,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repName"
                                     label="Full Name"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter full name' }]}
+                                    rules={[{ required: true, message: 'Please enter full name' }, { validator: validateName }]}
                                 >
                                     <Input placeholder="Enter representative's name" />
                                 </Form.Item>
@@ -301,7 +334,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repPhone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter phone number' }]}
+                                    rules={[{ required: true, message: 'Please enter phone number' }, { validator: validatePhoneNumber }]}
                                 >
                                     <Input placeholder="Enter representative's phone" />
                                 </Form.Item>
@@ -360,24 +393,25 @@ const OrganizationForm: React.FC = () => {
                         </Modal>
 
                         {/* Certificate (PDF via custom component) */}
-                        <Form.Item
-                            name="organizationCertificates"
-                            label="Upload Files (certificates, documents, etc.)"
-                            className="center-upload"
-                            valuePropName="fileList"
+                        <h3 className="section-title upload-title">Upload Files</h3>
+                        <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
-                        // rules={[{ required: true, message: 'Please upload your certificates/documents' }]}
-                        >
-                            <div className="upload-preview">
-                                <UploadFile
-                                    accept="application/pdf"
-                                    showName={true}
-                                    onFileSelect={handleFileSelect}
-                                    className="gift-content"
-                                />
-                                {/* hidden input only if you need form-controlled file, otherwise not necessary */}
-                                <input type="file" style={{ display: 'none' }} ref={fileInputRef} />
-                            </div>
+                            rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
+                            <Upload.Dragger
+                                name="files"
+                                multiple={false}
+                                listType="picture"
+                                maxCount={6}
+                                beforeUpload={() => false}
+
+                            >
+                                <p className="ant-upload-drag-icon">
+                                    <InboxOutlined />
+                                </p>
+                                <p className="upload-text">Drop files here</p>
+                                <p className="upload-hint">or</p>
+                                <Button className="browse-button">Browse</Button>
+                            </Upload.Dragger>
                         </Form.Item>
 
                         <div className="note-section">

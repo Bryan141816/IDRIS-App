@@ -12,6 +12,12 @@
   height: auto;
 
 
+  #no-donor, #loading{
+    padding-top: 24px;
+    text-align: center;
+    font-size: 1.5rem;
+  }
+
   // Settings Container
   #settings-container {
     display: grid;

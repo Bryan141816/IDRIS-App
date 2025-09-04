@@ -28,10 +28,9 @@ class FundingProposalCreate(BaseModel):
     funding_id: int
     title: str
     description: str
-    budget_required: int = Field(..., alias="budget_required")
+    budgetRequired: int = Field(..., alias="budget_required")
     status: Optional[str] = "Active"
     image: Optional[str] = None
-    donation_type: DonationType  # Add the enum field for validation
 
     class Config:
         from_attributes = True

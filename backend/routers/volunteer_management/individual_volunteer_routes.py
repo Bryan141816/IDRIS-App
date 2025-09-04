@@ -11,6 +11,7 @@ from data_schemas.individual_volunteer_schema import (
     IndividualVolunteerUpdate,
     IndividualVolunteerRead,
     IndividualVolunteerStatusUpdate,
+    VolunteerCertificateRead,
 )
 from crud_functions.volunteer_management.individual_volunteer_crud import (
     IndividualVolunteerCRUD as CRUD,
@@ -24,18 +25,18 @@ router_admin = APIRouter(
 )
 
 router_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "superuser","generic"]))],
 )
 
 router_admin_or_volunteer = APIRouter(
     dependencies=[
-        Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor"]))
+        Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor","generic"]))
     ],
 )
 
 # NEW: Router for authenticated users (any role can create their own profile)
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "operations admin", "superuser","generic"]))],
 )
 
 UPLOAD_DIR = Path("media/certifications")
@@ -58,6 +59,7 @@ def create_individual_volunteer_endpoint(
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW: accept multiple skills fields
+    certification_files: Optional[List[UploadFile]] = File(None),
     certification_file: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -81,7 +83,9 @@ def create_individual_volunteer_endpoint(
         skills=skills,       # NEW
         status=status
     )
-    return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
+
+    files = certification_files or ([certification_file] if certification_file else None)
+    return CRUD.create_individual_volunteer(db, volunteer_data,  files)
 
 # ---------------- CREATE (Admin creates for any user) ----------------
 @router_admin.post("/create_for_user", response_model=IndividualVolunteerRead)
@@ -100,6 +104,7 @@ def create_individual_volunteer_for_user_endpoint(
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
+    certification_files: Optional[List[UploadFile]] = File(None),
     certification_file: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -122,8 +127,8 @@ def create_individual_volunteer_for_user_endpoint(
         skills=skills,  # NEW
         status=status
     )
-    return CRUD.create_individual_volunteer(db, volunteer_data, certification_file)
-
+    files = certification_files or ([certification_file] if certification_file else None)
+    return CRUD.create_individual_volunteer(db, volunteer_data, files)
 # ---------------- READ ALL ----------------
 @router_admin_or_volunteer.get("/get_all", response_model=List[IndividualVolunteerRead])
 def get_all_volunteers_endpoint(
@@ -176,6 +181,7 @@ def update_my_volunteer_profile_endpoint(
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
+    certification_files: Optional[List[UploadFile]] = File(None),
     certification_file: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -203,7 +209,8 @@ def update_my_volunteer_profile_endpoint(
         skills=skills,  # NEW
         status=status
     )
-    return CRUD.update_volunteer(db, volunteer.volunteer_id, update_data, certification_file)  # fixed id attribute
+    files = certification_files or ([certification_file] if certification_file else None)
+    return CRUD.update_volunteer(db, volunteer.volunteer_id, update_data, files)
 
 # ---------------- UPDATE (Admin updates any profile) ----------------
 @router_admin.put("/update/{volunteer_id}", response_model=IndividualVolunteerRead)
@@ -222,6 +229,7 @@ def update_volunteer_endpoint(
     medical_conditions: Optional[str] = Form(None),
     other_medical_conditions: Optional[str] = Form(None),
     skills: Optional[List[str]] = Form(None),  # NEW
+    certification_files: Optional[List[UploadFile]] = File(None),
     certification_file: Optional[UploadFile] = File(None),
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
@@ -242,7 +250,8 @@ def update_volunteer_endpoint(
         skills=skills,  # NEW
         status=status
     )
-    return CRUD.update_volunteer(db, volunteer_id, update_data, certification_file)
+    files = certification_files or ([certification_file] if certification_file else None)
+    return CRUD.update_volunteer(db, volunteer_id, update_data, files)
 
 # ---------------- DELETE ----------------
 @router_admin.delete("/delete/{volunteer_id}")
@@ -271,6 +280,16 @@ def update_volunteer_status(
     db.refresh(iv)
     return iv
 
+# ---------------- READ BY USER ID (for authenticated users) ----------------
+@router_authenticated.get("/get_by_user_id", response_model=IndividualVolunteerRead)
+def get_by_user_id(
+    user_id: int = Depends(GetUserId()),
+    db: Session = Depends(get_db),
+):
+    v = CRUD.get_volunteer_by_user_id(db, user_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="Volunteer not found")
+    return v
 
 # Final router to include in main.py
 router = APIRouter()

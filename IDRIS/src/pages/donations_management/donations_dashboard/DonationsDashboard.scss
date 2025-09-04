@@ -18,10 +18,9 @@
   gap: 20px;
 
   #grid-container {
-    flex: 1;
+    // flex: 1;
     display: flex;
     flex-direction: row;
-    // grid-template-columns: 1fr 1fr;
     // background-color: #f2f5f9;
     border-radius: 10px;
     gap: 5px;
@@ -44,7 +43,6 @@
     flex-direction: column;
 
     &.large {
-
       .stat-data {
         font-size: 32px;
       }

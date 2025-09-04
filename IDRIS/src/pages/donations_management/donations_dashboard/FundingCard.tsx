@@ -1,8 +1,11 @@
-import styles from "./fundingcard.module.scss";
-import { Link, useNavigate } from "react-router-dom";
+import styles from "./FundingCard.module.scss";
+import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
-
+import Image from '../../images/no-image.jpg';
 const backendUrl = "http://127.0.0.1:8000";
+
+// Fallback placeholder image
+const fallbackImage = Image;
 
 type FundingProps = {
   image?: string;
@@ -24,18 +27,22 @@ export const FundingCard: React.FC<FundingProps> = ({
   className = "",
 }) => {
   const navigate = useNavigate();
-
   const { userRoles } = useUserRoleContext();
+
   const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
 
   const handleDonateButton = (fundingId: number) => {
-    navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
-  }
+    navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
+  };
+
+  // Safely build image URL or use fallback
+  const imageUrl =
+    image && image.trim() !== "" ? `${backendUrl}/${image}` : fallbackImage;
 
   return (
     <div className={`${styles.fundingCard} ${className}`}>
-      <img src={`${backendUrl}/${image}`} alt="funding-image" />
-      <p className={`${styles.fundingMessage}`}>{message}</p>
+      <img src={imageUrl} alt="funding-image" />
+      <p className={styles.fundingMessage}>{message || "No description available."}</p>
       <div className={styles["progress-container"]}>
         <div className={styles["full-bar"]}>
           <div
@@ -45,18 +52,14 @@ export const FundingCard: React.FC<FundingProps> = ({
         </div>
         <p>{filled}% Raised</p>
       </div>
-      { (userRoles.includes("donor")) && (
-        // <Link
-        //   to={`${anchorLink}`}
-        //   className={styles["funding-donate-btn"]}
-        // >
-        //   Donate
-        // </Link>
-        <button className={styles["funding-donate-btn"]} 
-          onClick={ () => { handleDonateButton(funding_id)}}
-        > Donate </button>
+      {userRoles.includes("donor") && (
+        <button
+          className={styles["funding-donate-btn"]}
+          onClick={() => handleDonateButton(funding_id)}
+        >
+          Donate
+        </button>
       )}
     </div>
   );
 };
-

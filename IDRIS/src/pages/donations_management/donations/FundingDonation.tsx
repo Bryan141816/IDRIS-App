@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import DonorDonationForm from './donation_info';
-import PaymentForm from './payment_method';
-import './fundingDonation.scss';
+import DonorDonationForm from './DonationInfo';
+import PaymentForm from './PaymentMethod';
+import './FundingDonation.scss';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
 import { createOneTimeDonation } from '../../../API_Handler/donations_donation_handler';
 
@@ -81,7 +81,7 @@ const DonationPage: React.FC = () => {
           frequency: normalizeDonationFrequency(donationFrequency),
           amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
           description: donationFormData.description,
-          proposal_id: fundingId,
+          funding_id: fundingId,
           donation_type: normalizeDonationType(donationKind),
           payment_method: paymentMethod
         }

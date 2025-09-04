@@ -56,7 +56,7 @@ class DonationCRUD:
             print(type)
             donation = Donation(
                 donor_id=donation_data.donor_id,
-                proposal_id=getattr(donation_data, "proposal_id", None),
+                funding_id = getattr(donation_data, "funding_id", None),
                 frequency=frequency,
                 status=DonationStatus.PENDING,
                 donation_type=type,  # Use the resolved donation_type
@@ -125,7 +125,7 @@ class DonationCRUD:
 
         donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id=donation_data.proposal_id,
+            funding_id = getattr(donation_data, "funding_id", None),
             frequency=frequency,
             amount=donation_data.amount,
             description=donation_data.description,
@@ -156,7 +156,7 @@ class DonationCRUD:
 
         donation = Donation(
             donor_id=donation_data.donor_id,
-            proposal_id=donation_data.proposal_id,
+            funding_id=donation_data.funding_id,
             frequency=frequency,
             amount=None,  # in-kind has no direct cash amount
             description=donation_data.description,

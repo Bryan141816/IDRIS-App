@@ -52,8 +52,14 @@ function PageLayout() {
   const location = useLocation();
   const navigation = useNavigation();
   const isAuthPage =
-    location.pathname === "/login" || location.pathname === "/register";
-  const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu", "/donation_report"];
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname === "/activate" ||
+    location.pathname === "/forgot_password" ||
+    location.pathname === "/reset_password" ||
+    location.pathname === "/oauth_callback" ||
+    location.pathname === "/donation_report" ;
+  const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,
   );

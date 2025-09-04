@@ -1,214 +1,172 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Breadcrumb } from 'antd';
-import {
-    FileTextOutlined,
-    AuditOutlined,
-    SyncOutlined,
-    IdcardOutlined,
-} from '@ant-design/icons';
-import './css/TrackVolunteerApplication.css';
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Breadcrumb, Alert, Spin } from "antd";
+import { FileTextOutlined, AuditOutlined, SyncOutlined, IdcardOutlined } from "@ant-design/icons";
+import "./css/TrackVolunteerApplication.css";
+import { fetchVolunteerStatus, VolunteerStatus } from "../../../API_Handler/volunteer_status_handler";
 
-// Define interfaces for type safety
-interface TestVariables {
-    submittedStep: boolean;
-    verifyingStep: boolean;
-    completedStep: boolean;
-}
+const SubmittedIcon: React.FC = () => <FileTextOutlined style={{ fontSize: 28 }} />;
+const VerifyingIcon: React.FC = () => <AuditOutlined style={{ fontSize: 28 }} />;
+const VerifiedIcon: React.FC = () => <IdcardOutlined style={{ fontSize: 28 }} />;
 
-interface StepConfig {
-    id: number;
-    label: string;
-    sublabel?: string;
-}
+const CheckIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none">
+        <path
+            d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth={3}
+            paintOrder="stroke fill"
+        />
+    </svg>
+);
 
 const TrackVolunteerApplication: React.FC = () => {
     const navigate = useNavigate();
 
-    // TEST VARIABLES - Set these to true to test different states
-    const isTestMode: boolean = false; // Set to true to auto-progress through steps
+    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<VolunteerStatus | null>(null);
+    const [volType, setVolType] = useState<"individual" | "organization" | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [notFound, setNotFound] = useState(false);
 
-    const testVariables: TestVariables = {
-        submittedStep: true,     // Controls step 1 (Submitted Credentials)
-        verifyingStep: false,    // Controls step 2 (Verifying Credentials)
-        completedStep: false     // Controls step 3 (Successfully Verified)
-    };
-
-    // Calculate current step based on test variables
-    const calculateStep = (): number => {
-        if (testVariables.completedStep) return 3;
-        if (testVariables.verifyingStep) return 2;
-        if (testVariables.submittedStep) return 1;
-        return 0;
-    };
-
-    const SubmittedIcon: React.FC = () => (
-        <FileTextOutlined style={{ fontSize: 28 }} />
-    );
-
-    const VerifyingIcon: React.FC<{ spinning?: boolean }> = ({ spinning }) => (
-        <span className="verifying-wrap">
-            <AuditOutlined style={{ fontSize: 28 }} />
-            {spinning && <SyncOutlined spin className="verifying-spinner" />}
-        </span>
-    );
-
-    const VerifiedIcon: React.FC = () => (
-        <IdcardOutlined style={{ fontSize: 28 }} />
-    );
-
-    // Check if all steps are completed to enable the View Profile button
-    const allStepsCompleted: boolean =
-        testVariables.submittedStep &&
-        testVariables.verifyingStep &&
-        testVariables.completedStep;
-
-    const [currentStep, setCurrentStep] = useState<number>(calculateStep());
-
-    // Auto-progress feature when isTestMode is true
     useEffect(() => {
-        let timer: NodeJS.Timeout | undefined;
+        (async () => {
+            setLoading(true);
+            try {
+                const res = await fetchVolunteerStatus();
+                if (!res) { setNotFound(true); return; }
+                setStatus(res.status);
+                setVolType(res.type);
+            } catch (e: any) {
+                if (e?.response?.status === 401) setError("You're not signed in. Please log in to track your application.");
+                else setError("Unable to load application status. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
-        if (isTestMode && currentStep < 3) {
-            timer = setTimeout(() => {
-                setCurrentStep((prevStep) => prevStep + 1);
-            }, 2000); // Progress every 2 seconds
-        }
-
-        return () => {
-            if (timer) clearTimeout(timer);
-        };
-    }, [currentStep, isTestMode]);
-
-    // Update step when test variables change
-    useEffect(() => {
-        setCurrentStep(calculateStep());
-    }, [testVariables.submittedStep, testVariables.verifyingStep, testVariables.completedStep]);
-
-    const advanceStep = (): void => {
-        if (currentStep < 3) {
-            setCurrentStep(currentStep + 1);
-        }
-    };
-
-    const handleViewProfile = (): void => {
-        navigate('/volunteer_management/volunteer_profiles');
-    };
-
-    const renderCheckIcon = (): React.ReactElement => (
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"
-                fill="currentColor"
-                stroke="currentColor"          // ← outline in same color
-                strokeWidth={3}           // ← 1–3 to thicken
-                paintOrder="stroke fill"       // ← draw stroke first, fill on top
-                strokeLinejoin="round"
-            />
-        </svg>
+    const statusToStep: Record<VolunteerStatus, number> = useMemo(
+        () => ({ submitted: 1, verifying: 2, approved: 3, rejected: 1 }),
+        []
     );
-
-    const renderDocumentIcon = (): React.ReactElement => (
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z"
-                fill="currentColor"
-            />
-            <path d="M14 8V2L20 8H14Z" fill="currentColor" />
-            <path d="M16 13H8V15H16V13Z" fill="currentColor" />
-            <path d="M16 17H8V19H16V17Z" fill="currentColor" />
-            <path d="M10 9H8V11H10V9Z" fill="currentColor" />
-            <path d="M16 9H12V11H16V9Z" fill="currentColor" />
-        </svg>
-    );
-
-    const renderSuccessIcon = (): React.ReactElement => (
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z"
-                fill="currentColor"
-            />
-        </svg>
-    );
+    const currentStep = status ? statusToStep[status] : 0;
+    const allStepsCompleted = status === "approved";
 
     return (
         <div className="application-form">
-            {/* Breadcrumb Navigation */}
             <h2 className="page-title">Track Volunteer Application</h2>
             <Breadcrumb>
                 <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
-                <Breadcrumb.Item>
-                    <Link to="/volunteer_management/volunteer_dashboard">
-                        Volunteer Dashboard
-                    </Link>
-                </Breadcrumb.Item>
-                <Breadcrumb.Item>
-                    Track Volunteer Application
-                </Breadcrumb.Item>
+                <Breadcrumb.Item><Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link></Breadcrumb.Item>
+                <Breadcrumb.Item>Track Volunteer Application</Breadcrumb.Item>
             </Breadcrumb>
 
-            {/* Main Content */}
             <div className="tracker-container">
-                <h1 className="tracker-title">Track your Application</h1>
-
-                <div className="tracker-steps">
-                    {/* Step 1: Submitted Credentials */}
-                    <div className="tracker-step">
-                        <div className={`step-circle ${currentStep >= 1 ? 'active' : ''}`}>
-                            {renderCheckIcon()}
-                        </div>
-                        <div className="step-connector"></div>
-                        <div className="step-content">
-                            <div className="step-icon">
-                                <SubmittedIcon />
-                            </div>
-                            <div className="step-label">
-                                Submitted<br />Application Form
-                            </div>
-                        </div>
+                {loading && (
+                    <div style={{ display: "grid", placeItems: "center", padding: 24 }}>
+                        <Spin tip="Loading status..." />
                     </div>
+                )}
 
-                    {/* Step 2: Verifying Credentials */}
-                    <div className="tracker-step">
-                        <div className={`step-circle ${currentStep >= 2 ? 'active' : ''}`}>
-                            {renderCheckIcon()}
-                        </div>
-                        <div className="step-connector"></div>
-                        <div className="step-content">
-                            <div className="step-icon">
-                                <VerifyingIcon spinning={currentStep === 2 && !allStepsCompleted} />
-                            </div>
-                            <div className="step-label">
-                                Verifying<br />Application Form
-                            </div>
-                        </div>
-                    </div>
+                {!loading && error && (
+                    <Alert type="error" showIcon message="Error" description={error} style={{ marginBottom: 16 }} />
+                )}
 
-                    {/* Step 3: Successfully Verified */}
-                    <div className="tracker-step">
-                        <div className={`step-circle ${currentStep >= 3 ? 'active' : ''}`}>
-                            {renderCheckIcon()}
-                        </div>
-                        <div className="step-content">
-                            <div className="step-icon">
-                                <VerifiedIcon />
-                            </div>
-                            <div className="step-label">
-                                Successfully<br />Verified
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {!loading && !error && notFound && (
+                    <Alert
+                        type="info"
+                        showIcon
+                        message="No application found"
+                        description="You haven’t submitted an application yet."
+                        style={{ marginBottom: 16 }}
+                    />
+                )}
 
-                <div className="tracker-actions">
-                    <button
-                        className={`view-profile-btn ${allStepsCompleted ? 'enabled' : 'disabled'}`}
-                        disabled={!allStepsCompleted}
-                        onClick={handleViewProfile}
-                    >
-                        View Profile
-                    </button>
-                </div>
+                {!loading && !error && !notFound && status && (
+                    <>
+                        {status === "rejected" && (
+                            <Alert
+                                type="error"
+                                showIcon
+                                message="Application Rejected"
+                                description="Sorry, your application has been rejected. You may review the requirements and submit a new application."
+                                style={{ marginBottom: 16 }}
+                            />
+                        )}
+
+                        <h1 className="tracker-title">
+                            {volType ? `Tracking your ${volType === "individual" ? "Individual" : "Organization"} application` : "Track your Application"}
+                        </h1>
+
+                        <div className="tracker-steps">
+                            {/* Step 1 */}
+                            <div className="tracker-step">
+                                <div className={`step-circle ${currentStep >= 1 ? "active" : ""}`}><CheckIcon /></div>
+                                <div className="step-connector" />
+                                <div className="step-content">
+                                    <div className="step-icon"><VerifyingIcon /></div>
+                                    <div className="step-label">
+                                        Submitted<br />Application Form
+
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Step 2 */}
+                            <div className="tracker-step">
+                                <div className={`step-circle ${currentStep >= 2 ? "active" : ""}`}><CheckIcon /></div>
+                                <div className="step-connector" />
+                                <div className="step-content">
+                                    <div className="step-icon"><VerifyingIcon /></div>
+                                    <div className="step-label">Verifying<br />Application Form</div>
+                                    {status === "verifying" && (
+                                        <div className="step-substatus">
+                                            <SyncOutlined spin />
+                                            <span>Checking your documents…</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Step 3 */}
+                            <div className="tracker-step">
+                                <div className={`step-circle ${currentStep >= 3 ? "active" : ""}`}><CheckIcon /></div>
+                                <div className="step-content">
+                                    <div className="step-icon"><VerifiedIcon /></div>
+                                    <div className="step-label">Successfully<br />Verified</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="tracker-actions">
+                            {status !== "rejected" ? (
+                                <button
+                                    className={`view-profile-btn ${allStepsCompleted ? "enabled" : "disabled"}`}
+                                    disabled={!allStepsCompleted}
+                                    onClick={() => navigate("/volunteer_management/volunteer_profiles")}
+                                >
+                                    View Profile
+                                </button>
+                            ) : (
+                                <button
+                                    className="view-profile-btn enabled"
+                                    onClick={() =>
+                                        navigate(
+                                            volType === "organization"
+                                                ? "/volunteer_management/organization_form"
+                                                : "/volunteer_management/individual_form"
+                                        )
+                                    }
+                                >
+                                    Submit New Application
+                                </button>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

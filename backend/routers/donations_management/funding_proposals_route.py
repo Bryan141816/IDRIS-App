@@ -100,6 +100,7 @@ def update_proposal_endpoint(
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
+    print(f"funding id: ", funding_id)
     return CRUD.update_proposal(
         db=db,
         funding_id=funding_id,

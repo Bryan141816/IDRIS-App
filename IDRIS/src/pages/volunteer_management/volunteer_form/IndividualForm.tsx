@@ -17,7 +17,7 @@ import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import "./css/IndividualForm.css";
-import { createIndividualVolunteer } from "../../../API_Handler/individual_volunter_handler.ts";
+import { createIndividualVolunteer, getVolunteerByUserId } from "../../../API_Handler/individual_volunter_handler.ts";
 import Swal from "sweetalert2";
 
 // ---------- Types ----------
@@ -35,6 +35,8 @@ interface IndividualFormValues {
     skills?: string[];               // NEW: array of selected skills
     medicalCondition: "none" | "asthma" | "heart_condition" | "diabetes" | "other";
     medicalDescription?: string;
+    supportingFiles?: any[];
+    certification?: string[];
 }
 
 // ---------- Options ----------
@@ -68,6 +70,8 @@ const IndividualForm: React.FC = () => {
     const [age, setAge] = useState<number | undefined>(undefined);
 
     const onFinish = async (values: IndividualFormValues): Promise<void> => {
+
+
         try {
             const formData = new FormData();
             formData.append("first_name", values.firstName);
@@ -79,29 +83,42 @@ const IndividualForm: React.FC = () => {
             formData.append("birthday", values.birthDate.format("YYYY-MM-DD"));
             formData.append("gender", values.gender);
             formData.append("age", String(values.age));
-
-            // Availability is TEXT on backend -> join
             formData.append("availability", values.availability.join(", "));
-
             formData.append("medical_conditions", values.medicalCondition);
-            formData.append("other_medical_conditions", values.medicalDescription || "");
+            formData.append("other_medical_conditions", values.medicalDescription || "N/A");
 
-            // NEW: Skills is List[str] on backend -> append each item
+            // Append skills
             if (values.skills && values.skills.length > 0) {
                 values.skills.forEach((s) => formData.append("skills", s));
             }
 
-            // If you want to include a file from Upload.Dragger, pick it from form.getFieldValue("supportingFiles")
-            // and append as "certification_file" to match your FastAPI route:
-            // const files = form.getFieldValue("supportingFiles");
-            // if (files?.[0]?.originFileObj) {
-            //   formData.append("certification_file", files[0].originFileObj);
-            // }
+            if (values.supportingFiles && values.supportingFiles.length > 0) {
+                values.supportingFiles.forEach((f: any) => {
+                    if (f?.originFileObj) {
+                        formData.append("certification_files", f.originFileObj); // <-- same key, multiple entries
+                    }
+                });
+            }
 
+            // Call createIndividualVolunteer API
             await createIndividualVolunteer(formData);
             await showAlert();
             navigate("/volunteer_management/volunteer_dashboard");
         } catch (error) {
+            Swal.fire({
+                title: 'You have already submitted your application!',
+                icon: 'info',
+                confirmButtonColor: '#749AB6',
+                width: '380px',
+                showConfirmButton: true,
+                customClass: {
+                    popup: 'custom-height-modal',
+                    title: 'custom-swal-title',
+                    htmlContainer: 'custom-swal-text',
+                    confirmButton: 'custom-swal-button',
+                    icon: 'custom-swal-icon',
+                },
+            });
             console.error("Error creating volunteer:", error);
         }
     };
@@ -146,6 +163,33 @@ const IndividualForm: React.FC = () => {
         }
     }, [birthDate, form]);
 
+    const medicalCondition = Form.useWatch("medicalCondition", form);
+
+    // Clear description when not "other"
+    useEffect(() => {
+        if (medicalCondition !== "other") {
+            form.setFieldsValue({ medicalDescription: undefined });
+        }
+    }, [medicalCondition, form]);
+
+    const validateName = (rule: any, value: string) => {
+        const regex = /^[A-Za-z\s]+$/;  // Only allows letters and spaces
+        if (value && !regex.test(value)) {
+            return Promise.reject('Name can only contain letters and spaces.');
+        }
+        return Promise.resolve();
+    };
+
+    const checkIfAlreadySubmitted = async (user_id: number): Promise<boolean> => {
+        try {
+            const response = await getVolunteerByUserId(user_id); // Your API function to check volunteer
+            return response ? true : false; // If response exists, user already submitted
+        } catch (error) {
+            console.error("Error checking submission:", error);
+            return false;
+        }
+    };
+
     return (
         <div className="application-form">
             {/* Breadcrumb Navigation */}
@@ -187,12 +231,16 @@ const IndividualForm: React.FC = () => {
                                     name="firstName"
                                     label="First Name"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please enter first name" }]}
+                                    rules={[{ required: true, message: "Please enter first name" }, { validator: validateName }]}
                                 >
                                     <Input placeholder="First" />
                                 </Form.Item>
 
-                                <Form.Item name="middleName" label="Middle Name" className="form-item-third">
+                                <Form.Item
+                                    name="middleName"
+                                    label="Middle Name"
+                                    className="form-item-third"
+                                    rules={[{ validator: validateName }]}>
                                     <Input placeholder="Middle Name" />
                                 </Form.Item>
 
@@ -200,7 +248,7 @@ const IndividualForm: React.FC = () => {
                                     name="lastName"
                                     label="Last Name"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please enter last name" }]}
+                                    rules={[{ required: true, message: "Please enter last name" }, { validator: validateName }]}
                                 >
                                     <Input placeholder="Last" />
                                 </Form.Item>
@@ -307,21 +355,38 @@ const IndividualForm: React.FC = () => {
                             </Form.Item>
 
                             {/* Optional description if they choose "Other" */}
-                            <Form.Item name="medicalDescription" label="If Other, please describe">
-                                <Input.TextArea rows={3} placeholder="Describe your condition" />
+                            <Form.Item
+                                name="medicalDescription"
+                                label="If Other, please describe"
+                                rules={[
+                                    {
+                                        required: medicalCondition === "other",
+                                        message: "Please describe your condition",
+                                    },
+                                ]}
+                            >
+                                <Input.TextArea
+                                    rows={3}
+                                    placeholder="Describe your condition"
+                                    readOnly={medicalCondition !== "other"} // disabled for 'none', 'asthma', 'heart_condition', 'diabetes'
+                                    allowClear
+                                />
                             </Form.Item>
                         </div>
 
                         {/* Uploads */}
                         <h3 className="section-title upload-title">Upload Files</h3>
-                        <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList" getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}>
+                        <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
+                        getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                        rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
                             <Upload.Dragger
                                 name="files"
                                 multiple={false}
                                 listType="picture"
                                 maxCount={6}
-                                beforeUpload={() => false} // prevent auto upload; we'll send in onFinish
-                            >
+                                beforeUpload={() => false}
+
+                                >
                                 <p className="ant-upload-drag-icon">
                                     <InboxOutlined />
                                 </p>

@@ -21,20 +21,31 @@ class LoginSchema(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    password: str
+    token: str
+
+
 class UserBase(BaseModel):
     username: str
     email: str
-    user_type: str
 
 
 class UserCreate(UserBase):
-    password: str
-    roles: List[str]  # required on creation
+    password: Optional[str]
+
+
+# required on creation
 
 
 class UserSchema(UserBase):
     id: int
     roles: List[str]
+    user_type: Optional[str]
 
     class Config:
         from_attributes = True
@@ -54,7 +65,7 @@ class UserSimple(BaseModel):
     user_id: int
     username: str
     email: str
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

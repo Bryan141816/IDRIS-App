@@ -1,6 +1,6 @@
 import React from 'react';
 import { CreditCard } from 'lucide-react';
-import './payment_method.scss';
+import './PaymentMethod.scss';
 
 interface PaymentFormProps {
   paymentMethod: string;

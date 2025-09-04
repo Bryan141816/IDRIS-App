@@ -1,12 +1,13 @@
 import { useState } from "react";
-import styles from "./donation_report.module.scss";
+import styles from "./DonationReport.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
 import TransparencyReportForm from "./TransparencyReportForm";
-import { Modal } from "../../../components/Page_Furniture/Modals";
 import {
   getFundingProposalTotalCashDonations,
   getFundingProposalTotalInKindDonations,
 } from "../../../API_Handler/donations_transparency_report";
+
+import Swal from "sweetalert2";
 
 // PDF libs
 import jsPDF from "jspdf";
@@ -44,16 +45,12 @@ export default function DonationReport({
   reportTitle?: string;
   currency?: string;
 }) {
-  // ------- Initial table rows (state drives re-render) -------
-  const fallback: Donation[] = [
-    { id: 75613975, amount: 100, donation_date: "2025-08-29", donation_type: "CASH",        donor_name: "DonorMe",    status: "COMPLETED" },
-    { id: 75613976, amount: 250, donation_date: "2025-08-28", donation_type: "CREDIT_CARD", donor_name: "John Smith", status: "COMPLETED" },
-  ];
-  const [rows, setRows] = useState<Donation[]>(donations.length ? donations : fallback);
+  // ------- Rows: no placeholders; show empty state instead -------
+  const [rows, setRows] = useState<Donation[]>(Array.isArray(donations) ? donations : []);
 
   // ------- Helpers -------
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
+    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount || 0);
 
   const formatDate = (isoLike: string) =>
     new Date(isoLike).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -81,34 +78,59 @@ export default function DonationReport({
   const [activeModal, setActiveModal] = useState("");
   const closeModal = () => setActiveModal("");
 
-  const monthLabel =
-    typeof month === "number" && month >= 1 && month <= 12
-      ? new Date(2000, month - 1).toLocaleString("default", { month: "long" })
-      : "—";
-  const yearLabel = year ?? "—";
-
-  // ------- Fetch + replace table rows -------
+  // ------- Fetch + replace table rows (SweetAlert on empty) -------
   const handleFormSubmit = async (m: number, y: number | null, type: string) => {
-    setMonth(m); setYear(y); setDonationType(type);
-    if (!y || !(m >= 1 && m <= 12)) return setActiveModal("no-donations");
+    setMonth(m);
+    setYear(y);
+    setDonationType(type);
+
+    const localMonthLabel =
+      typeof m === "number" && m >= 1 && m <= 12
+        ? new Date(2000, m - 1).toLocaleString("default", { month: "long" })
+        : "—";
+    const localYearLabel = y ?? "—";
+
+    const showNoDonationsAlert = () =>
+      Swal.fire({
+        icon: "info",
+        title: "No Data Found",
+        text: `There are no donations found for ${localMonthLabel} ${localYearLabel}`,
+        confirmButtonColor: "#3085d6",
+      });
+
+    if (!y || !(m >= 1 && m <= 12)) {
+      await showNoDonationsAlert();
+      // Clear rows to reflect empty state
+      setRows([]);
+      return;
+    }
 
     try {
-      const fn = type === "cash"
-        ? getFundingProposalTotalCashDonations
-        : getFundingProposalTotalInKindDonations;
+      const fn =
+        type === "cash"
+          ? getFundingProposalTotalCashDonations
+          : getFundingProposalTotalInKindDonations;
 
       const raw = await fn(m, y);
       const list = Array.isArray(raw)
         ? raw
         : (raw as any)?.results ?? (raw as any)?.donations ?? (raw as any)?.data ?? [];
-      if (!Array.isArray(list) || list.length === 0) return setActiveModal("no-donations");
+
+      if (!Array.isArray(list) || list.length === 0) {
+        await showNoDonationsAlert();
+        setRows([]); // ensure table is empty
+        return;
+      }
 
       setRows(list.map(normalizeRow));
-      setActiveModal("");
+      setActiveModal(""); // close transparency modal if open
     } catch (err: any) {
-      return err?.response?.status === 404
-        ? setActiveModal("no-donations")
-        : console.error("Error fetching totals", { m, y, type, err });
+      if (err?.response?.status === 404) {
+        await showNoDonationsAlert();
+        setRows([]);
+      } else {
+        console.error("Error fetching totals", { m, y, type, err });
+      }
     }
   };
 
@@ -189,7 +211,7 @@ export default function DonationReport({
           String(r.donation_type || "").replace("_", " "),
           r.status,
         ])
-      : [["—", "—", "—", "—", "—", "—"]];
+      : [["No Data Found", "", "", "", "", ""]];
 
     autoTable(doc, {
       head, body,
@@ -201,7 +223,6 @@ export default function DonationReport({
       didDrawPage: () => { drawHeader(); drawFooter(); },
     });
 
-    // Use doc.lastAutoTable (v3+)
     const lastTable: any = (doc as any).lastAutoTable;
     const finalY: number = (lastTable?.finalY ?? topMargin + 40) as number;
 
@@ -310,7 +331,7 @@ export default function DonationReport({
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td className={styles.tableCell} colSpan={6}>No donations to display.</td>
+                  <td className={`${styles.tableCell} ${styles.noData}`} colSpan={6}>No Data Found</td>
                 </tr>
               )}
             </tbody>
@@ -341,24 +362,12 @@ export default function DonationReport({
         <p>{companyInfo.name} - Confidential Document</p>
       </div>
 
-      {/* Modals */}
+      {/* Transparency request form */}
       <TransparencyReportForm
         isOpen={activeModal === "transparency-report-modal"}
         onClose={() => setActiveModal("")}
         onSubmit={handleFormSubmit}
       />
-
-      <Modal isOpen={activeModal === "no-donations"} onClose={closeModal}>
-        <h3 className="modal-title">No Donations Found</h3>
-        <div id="modal-common-container">
-          <p>There are no donations found for {monthLabel} {yearLabel}</p>
-          <div className="modal-button-container">
-            <button type="button" className="green-modal-button" onClick={closeModal}>
-              Okay
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

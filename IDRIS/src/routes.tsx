@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
-import DonorDashboard from "./pages/donations_management/donor/Donor_Dashboard";
+import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
 
 const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
@@ -33,6 +33,29 @@ const Login = () =>
   }));
 const Register = () =>
   import("./components/Page_Furniture/Register").then((module) => ({
+    Component: module.default,
+  }));
+
+const Activate = () =>
+  import("./components/Page_Furniture/ActivateAccount").then((module) => ({
+    Component: module.default,
+  }));
+const ForgotPassword = () =>
+  import("./components/Page_Furniture/ForgotPassword").then((module) => ({
+    Component: module.default,
+  }));
+const ResetPassword = () =>
+  import("./components/Page_Furniture/ResetPassword").then((module) => ({
+    Component: module.default,
+  }));
+const OauthCallback = () =>
+  import("./components/Page_Furniture/OauthCallback").then((module) => ({
+    Component: module.default,
+  }));
+
+//UserManagement
+const UserManagement = () =>
+  import("./pages/manage_users/ManageUsers").then((module) => ({
     Component: module.default,
   }));
 // LGU Profiling
@@ -86,17 +109,15 @@ const OrganizationForm = () =>
     (module) => ({ Component: module.default }),
   );
 
-
 const IndividualForm = () =>
   import("./pages/volunteer_management/volunteer_form/IndividualForm").then(
     (module) => ({ Component: module.default }),
   );
 
-  const VolunteerAssignment = () =>
-  import("./pages/volunteer_management/volunteer_assignment/volunteer_assignment").then(
-    (module) => ({ Component: module.default }),
-  );
-
+const VolunteerAssignment = () =>
+  import(
+    "./pages/volunteer_management/volunteer_assignment/volunteer_assignment"
+  ).then((module) => ({ Component: module.default }));
 
 const ManageVolunteer = () =>
   import("./pages/volunteer_management/manage_volunteers/ManageVolunteer").then(
@@ -106,7 +127,7 @@ const ManageVolunteer = () =>
 // Donations Management
 const DonationsDashboard = () =>
   import(
-    "./pages/donations_management/donations_dashboard/Donations_Dashboard"
+    "./pages/donations_management/donations_dashboard/DonationsDashboard"
   ).then((module) => ({ Component: module.default }));
 const ListOfRafiDonors = () =>
   import(
@@ -127,7 +148,7 @@ const UpdateFunding = () =>
 
 const DonationsReport = () =>
   import(
-    "./pages/donations_management/donations_dashboard/donation_report"
+    "./pages/donations_management/donations_dashboard/DonationReport"
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
@@ -137,14 +158,14 @@ const FundingDonation = () =>
 
 const DonorProfile = () =>
   import(
-    "./pages/donations_management/donor/Donor_Profile"
+    "./pages/donations_management/donor/DonorProfile"
   ).then(
     (module) => ({ Component: module.default }),
   );
 
 const Donor_Dashboard = () =>
   import(
-    "./pages/donations_management/donor/Donor_Dashboard"
+    "./pages/donations_management/donor/DonorDashboard"
   ).then(
     (module) => ({ Component: module.default }),
   );
@@ -230,8 +251,28 @@ export const router = createBrowserRouter([
         lazy: Register,
       },
       {
+        path: "activate",
+        lazy: Activate,
+      },
+      {
+        path: "forgot_password",
+        lazy: ForgotPassword,
+      },
+      {
+        path: "reset_password",
+        lazy: ResetPassword,
+      },
+      {
         path: "user_not_allowed",
         lazy: UserNotAllowed,
+      },
+      {
+        path: "manage_users",
+        lazy: UserManagement,
+      },
+      {
+        path: "oauth_callback",
+        lazy: OauthCallback,
       },
       {
         path: "lgu_profiling",

@@ -16,15 +16,14 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
 
-  // FOR NAVIGATION BAR ACTIVE PAGE
   const [activeNav, setActiveNav] = useState<string | null>(null);
-
-  const toggleNav = (navId: string) => {
+  const toggleNav = (navId: string) =>
     setActiveNav((prev) => (prev === navId ? null : navId));
-  };
 
-  // FOR MOBILE NAVIGATION BAR SHOW/HIDE STATUS
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  // Use HTMLElement because ref is applied to <nav>
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -34,207 +33,182 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
         onClose();
       }
     };
-
-    if (isVisible) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (isVisible) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isVisible, onClose]);
+
+  // Prevent redirects on .non-redirect anchors
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-
       const anchor = target.closest("a");
-
-      if (anchor) {
-        if (anchor.classList.contains("non-redirect")) {
-          event.preventDefault();
-          return;
-        }
+      if (anchor && anchor.classList.contains("non-redirect")) {
+        event.preventDefault();
       }
     };
-
     document.addEventListener("click", handleClick);
-    return () => {
-      document.removeEventListener("click", handleClick);
-    };
+    return () => document.removeEventListener("click", handleClick);
   }, []);
 
   return (
     <nav
-      ref={sidebarRef}
+      ref={sidebarRef as React.MutableRefObject<HTMLElement>}
       className={`navbar ${isVisible ? "show-navbar" : ""}`}
     >
       <div id="sidebar-logo-container">
         <img
           src={logo1}
           alt="sidebar-logo.png"
-          style={{
-            width: "3.5vw",
-            height: "3.5vw",
-          }}
+          style={{ width: "3.5vw", height: "3.5vw" }}
         />
         <p>IDRIS</p>
       </div>
 
+      {/* Keep ALL nav-items inside this container */}
       <div id="nav-links">
-        {userRoles.includes(" ") && (
+        {/* LGU */}
+        {userRoles.includes("") && (
           <div className="nav-items" id="lgu-profiling">
             <div
               className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
-              onClick={() => {
-                toggleNav("lgu");
-              }}
+              onClick={() => toggleNav("lgu")}
             >
               <LGU width={14} height={14} className="sidebar-icons" />
-              {userType == "admin" && (
-                <a href="" className="non-redirect">
+              {userType === "admin" && (
+                <a href="#" className="non-redirect"> 
                   LGU PROFILING
                 </a>
               )}
-              {userType == "user" && (
+              {userType === "user" && (
                 <a href="#" className="non-redirect">
                   LOCAL GOVERNMENT UNIT
                 </a>
               )}
             </div>
+
             <div
               className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
             >
-              {/* Sub items here */}
               <Link
                 to="/lgu_profiling/map_of_cebu"
-                prefetch-link="/lgu_profiling/map_of_cebu"
                 className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+                onClick={onClose}
               >
                 Map of Cebu
               </Link>
             </div>
-            {userType == "lgu" && (
-              <div
-                className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-              >
-                {/* Sub items here */}
-                <Link
-                  to="/lgu_profiling/evacuationandshelter"
-                  prefetch-link="/lgu_profiling/evacuationandshelter"
-                  className="nav-sub-item"
-                  onClick={() => {
-                    onClose();
-                  }}
+
+            {userType === "lgu" && (
+              <>
+                <div
+                  className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
                 >
-                  Evacuation and Shelter Management
-                </Link>
-              </div>
-            )}
-            {userType == "lgu" && (
-              <div
-                className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-              >
-                {/* Sub items here */}
-                <Link
-                  to="/lgu_profiling/LGUmanagement"
-                  prefetch-link="/lgu_profiling/LGUmanagement"
-                  className="nav-sub-item"
-                  onClick={() => {
-                    onClose();
-                  }}
+                  <Link
+                    to="/lgu_profiling/evacuationandshelter"
+                    className="nav-sub-item"
+                    onClick={onClose}
+                  >
+                    Evacuation and Shelter Management
+                  </Link>
+                </div>
+                <div
+                  className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
                 >
-                  Pin Location Management
-                </Link>
-              </div>
+                  <Link
+                    to="/lgu_profiling/LGUmanagement"
+                    className="nav-sub-item"
+                    onClick={onClose}
+                  >
+                    Pin Location Management
+                  </Link>
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {(
-          userRoles.includes("generic") ||
+        {/* VOLUNTEER (single, de-duplicated) */}
+        {(userRoles.includes("generic") ||
           userRoles.includes("volunteer") ||
           userRoles.includes("donor") ||
           userRoles.includes("operations admin") ||
           userRoles.includes("operations admin") ||
           userRoles.includes("finance admin")
         ) && (
-            <div className="nav-items" id="volunteer">
-              <div
-                className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
+          <div className="nav-items" id="volunteer">
+            <div
+              className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
+              onClick={() => {
+                toggleNav("volunteer");
+              }}
+            >
+              <Volunteer width={14} height={14} className="sidebar-icons" />
+              {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
+              {userType != "" && !userRoles.includes("operations admin") && (
+                <a href="#" className="non-redirect">
+                  VOLUNTEER
+                </a>
+              )}
+              {userType != "" && userRoles.includes("operations admin") && (
+                <a href="#" className="non-redirect">
+                  VOLUNTEER MANAGEMENT
+                </a>
+              )}
+            </div>
+            <div
+              className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}
+            >
+              {/* Sub items here */}
+              <Link
+                to="/volunteer_management/volunteer_dashboard"
+                prefetch-link="/volunteer_management/volunteer_dashboard"
+                className="nav-sub-item"
                 onClick={() => {
-                  toggleNav("volunteer");
+                  onClose();
                 }}
               >
-                <Volunteer width={14} height={14} className="sidebar-icons" />
-                {/* { userRole != "logistics admin" && <a href="#">VOLUNTEER</a> } */}
-                {userType != "" && !userRoles.includes("operations admin") && (
-                  <a href="#" className="non-redirect">
-                    VOLUNTEER
-                  </a>
-                )}
-                {userType != "" && userRoles.includes("operations admin") && (
-                  <a href="#" className="non-redirect">
-                    VOLUNTEER MANAGEMENT
-                  </a>
-                )}
-              </div>
-              <div
-                className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}
-              >
-                {/* Sub items here */}
+                Volunteer Dashboard
+              </Link>
+              {userRoles.includes("operations admin") ||
+                (userRoles.includes("volunteer") && (
+                  <Link
+                    to="/volunteer_management/track_volunteer_application"
+                    prefetch-link="/volunteer_management/track_volunteer_application"
+                    className="nav-sub-item"
+                    onClick={() => {
+                      onClose();
+                    }}
+                  >
+                    Track Volunteer Application
+                  </Link>
+                ))}
+              {userRoles.includes("operations admin") && (
                 <Link
-                  to="/volunteer_management/volunteer_dashboard"
-                  prefetch-link="/volunteer_management/volunteer_dashboard"
+                  to="/volunteer_management/volunteer_profiles"
+                  prefetch-link="/volunteer_management/volunteer_profiles"
                   className="nav-sub-item"
                   onClick={() => {
                     onClose();
                   }}
                 >
-                  Volunteer Dashboard
+                  Volunteer Profiles
                 </Link>
-                {userRoles.includes("operations admin") ||
-                  (userRoles.includes("volunteer") && (
-                    <Link
-                      to="/volunteer_management/track_volunteer_application"
-                      prefetch-link="/volunteer_management/track_volunteer_application"
-                      className="nav-sub-item"
-                      onClick={() => {
-                        onClose();
-                      }}
-                    >
-                      Track Volunteer Application
-                    </Link>
-                  ))}
-                {userRoles.includes("operations admin") && (
-                  <Link
-                    to="/volunteer_management/volunteer_profiles"
-                    prefetch-link="/volunteer_management/volunteer_profiles"
-                    className="nav-sub-item"
-                    onClick={() => {
-                      onClose();
-                    }}
-                  >
-                    Volunteer Profiles
-                  </Link>
-                )}
-                {userRoles.includes("volunteer") && (
-                  <Link
-                    to="/volunteer_management/volunteer_assignment"
-                    prefetch-link="/volunteer_management/volunteer_assignment"
-                    className="nav-sub-item"
-                    onClick={() => {
-                      onClose();
-                    }}
-                  >
-                    Volunteer Assignment
-                  </Link>
-                )}
-              </div>
+              )}
+              {userRoles.includes("volunteer") && (
+                <Link
+                  to="/volunteer_management/volunteer_assignment"
+                  prefetch-link="/volunteer_management/volunteer_assignment"
+                  className="nav-sub-item"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  Volunteer Assignment
+                </Link>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
         {(userRoles.includes("generic") ||
           userRoles.includes("volunteer") ||
@@ -326,155 +300,120 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </div>
           )}
 
+        {/* RESPONSE */}
         <div className="nav-items" id="response">
           <div
             className={`flex-control ${activeNav === "response" ? "active" : ""}`}
-            onClick={() => {
-              toggleNav("response");
-            }}
+            onClick={() => toggleNav("response")}
           >
             <Response width={14} height={14} className="sidebar-icons" />
-            <Link
-              to="/response_dashboard"
-              prefetch-link="/response_dashboard"
-              onClick={() => {
-                onClose();
-              }}
-            >
+            <Link to="/response_dashboard" onClick={onClose}>
               RESPONSE DASHBOARD
             </Link>
           </div>
           <div
             className={`nav-sub-items ${activeNav === "response" ? "active" : ""}`}
-          >
-            {/* Sub items here */}
-          </div>
+          />
         </div>
 
-        {userRoles.includes("logistics admin") && userType == "admin" && (
+        {/* REPORTS GENERATION */}
+        {userRoles.includes("logistics admin") && userType === "admin" && (
           <div className="nav-items" id="reports-generation">
             <div
               className={`flex-control ${activeNav === "reports" ? "active" : ""}`}
-              onClick={() => {
-                toggleNav("reports");
-              }}
+              onClick={() => toggleNav("reports")}
             >
               <Response width={14} height={14} className="sidebar-icons" />
-              <Link
-                to="/reports_generation"
-                prefetch-link="/reports_generation"
-                onClick={() => {
-                  onClose();
-                }}
-              >
+              <Link to="/reports_generation" onClick={onClose}>
                 REPORTS GENERATION
               </Link>
             </div>
             <div
               className={`nav-sub-items ${activeNav === "reports" ? "active" : ""}`}
-            >
-              {/* Sub items here */}
-            </div>
+            />
           </div>
         )}
 
+        {/* DAMAGE ASSESSMENT */}
         {userRoles.includes("disaster response admin") &&
-          userType == "admin" && (
+          userType === "admin" && (
             <div className="nav-items" id="damage-assessment">
               <div
                 className={`flex-control ${activeNav === "damage" ? "active" : ""}`}
-                onClick={() => {
-                  toggleNav("damage");
-                }}
+                onClick={() => toggleNav("damage")}
               >
                 <Response width={14} height={14} className="sidebar-icons" />
-                <Link
-                  to="/damage_assessment"
-                  prefetch-link="/damage_assessment"
-                  onClick={() => {
-                    onClose();
-                  }}
-                >
+                <Link to="/damage_assessment" onClick={onClose}>
                   DAMAGE ASSESSMENT
                 </Link>
               </div>
               <div
                 className={`nav-sub-items ${activeNav === "damage" ? "active" : ""}`}
-              >
-                {/* Sub items here */}
-              </div>
+              />
             </div>
           )}
 
-        {userRoles.includes("logistics admin") && userType == "admin" && (
+        {/* PROCUREMENT & INVENTORY */}
+        {userRoles.includes("logistics admin") && userType === "admin" && (
           <div className="nav-items" id="procurement-inventory">
             <div
               className={`flex-control ${activeNav === "procurement" ? "active" : ""}`}
-              onClick={() => {
-                toggleNav("procurement");
-              }}
+              onClick={() => toggleNav("procurement")}
             >
               <Response width={14} height={14} className="sidebar-icons" />
               <a href="#" className="non-redirect">
-                PROCUREMENT & INVENTORY
+                PROCUREMENT &amp; INVENTORY
               </a>
             </div>
+
             <div
               className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}
             >
               <Link
                 to="/procurement_inventory/procurement_inventory"
-                prefetch-link="/procurement_inventory/procurement_inventory"
                 className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+                onClick={onClose}
               >
                 Inventory and Warehousing
               </Link>
             </div>
+
             <div
               className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}
             >
               <Link
                 to="/procurement_inventory/procurement_management"
-                prefetch-link="/procurement_inventory/procurement_management"
                 className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+                onClick={onClose}
               >
                 Procurement Management
               </Link>
             </div>
+
             <div
               className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}
             >
               <Link
                 to="/procurement_inventory/distribution_planning"
-                prefetch-link="/procurement_inventory/distribution_planning"
                 className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+                onClick={onClose}
               >
-                Distribution Planning & Monitoring
+                Distribution Planning &amp; Monitoring
               </Link>
             </div>
           </div>
         )}
 
-        {userRoles.includes("finance admin") && userType == "admin" && (
+        {/* FINANCE & ADMIN */}
+        {userRoles.includes("finance admin") && userType === "admin" && (
           <div className="nav-items" id="finance-admin">
             <div
               className={`flex-control ${activeNav === "finance" ? "active" : ""}`}
-              onClick={() => {
-                toggleNav("finance");
-              }}
+              onClick={() => toggleNav("finance")}
             >
               <Response width={14} height={14} className="sidebar-icons" />
               <a href="#" className="non-redirect">
-                FINANCE & ADMIN
+                FINANCE &amp; ADMIN
               </a>
             </div>
             <div
@@ -482,15 +421,28 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             >
               <Link
                 to="/finance&admin/finance_management"
-                prefetch-link="/finance&admin/finance_management"
                 className="nav-sub-item"
-                onClick={() => {
-                  onClose();
-                }}
+                onClick={onClose}
               >
                 Finance Management
               </Link>
             </div>
+          </div>
+        )}
+        {userType === "admin" && (
+          <div className="nav-items" id="user_management">
+            <div
+              className={`flex-control ${activeNav === "user_management" ? "active" : ""}`}
+              onClick={() => toggleNav("user_management")}
+            >
+              <Volunteer width={14} height={14} className="sidebar-icons" />
+              <Link to="/manage_users" onClick={onClose}>
+                Manage Users
+              </Link>
+            </div>
+            <div
+              className={`nav-sub-items ${activeNav === "user_management" ? "active" : ""}`}
+            />
           </div>
         )}
       </div>

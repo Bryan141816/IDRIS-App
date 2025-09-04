@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import PieChart from "../../../components/Page_Furniture/PieChart";
-import { getFundingProposalTotalDonations } from '../../../API_Handler/donations_funding_proposals_handler';
+import { getFundingProposalTotalDonations } from "../../../API_Handler/donations_funding_proposals_handler";
 
 interface FundingChartInterface {
   title: string;
@@ -10,6 +10,7 @@ interface FundingChartInterface {
 const DashboardPieChart = () => {
   const [chartLabels, setChartLabels] = useState<string[]>([]);
   const [chartData, setChartData] = useState<number[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const chartColors = ["#4B91C7", "#7BC8A4", "#F9D57F", "#F27289", "#6B5B95", "#FFB347"];
 
@@ -30,21 +31,33 @@ const DashboardPieChart = () => {
         console.error("Failed to fetch data:", error);
         setChartLabels([]);
         setChartData([]);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  const hasData = chartLabels.length > 0 && chartData.some((val) => val > 0);
+
+  const fallbackLabels = ["No Donor"];
+  const fallbackData = [1]; // Just one slice
+  const fallbackColors = ["#d3d3d3"]; // Grey slice for fallback
+
   return (
     <div id="donations-pie-chart">
-      <PieChart
-        labels={chartLabels}
-        backgroundColor={chartColors}
-        data={chartData}
-        width={300}
-        height={300}
-        className="pie-chart"
-      />
+      {loading ? (
+        <p>Loading chart...</p>
+      ) : (
+        <PieChart
+          labels={hasData ? chartLabels : fallbackLabels}
+          backgroundColor={hasData ? chartColors : fallbackColors}
+          data={hasData ? chartData : fallbackData}
+          width={300}
+          height={300}
+          className="pie-chart"
+        />
+      )}
     </div>
   );
 };

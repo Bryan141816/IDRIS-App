@@ -63,7 +63,6 @@ def delete(db: Session, model, id):
 
 
 def get_user_by_email(db: Session, email: str):
-    print("by email")
     return db.query(User).filter(User.email == email).first()
 
 
@@ -72,11 +71,15 @@ def create_user(
     email: str,
     username: str,
     user_type: str,
-    password: str,
+    password: str | None = None,
     roles: list[str] = [],
-    user_id: int | None = None
+    user_id: int | None = None,
+    sub: str | None = None,
 ):
-    hashed = hash_password(password)
+    hashed = None
+    if password:
+
+        hashed = hash_password(password)
     user_data = {
         "email": email,
         "user_id": user_id,
@@ -84,6 +87,7 @@ def create_user(
         "user_type": user_type,
         "hashed_password": hashed,
         "roles": roles or [],
+        "sub": sub,
     }
     user = User(**user_data)
     db.add(user)

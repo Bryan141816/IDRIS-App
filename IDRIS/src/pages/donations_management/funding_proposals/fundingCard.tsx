@@ -1,8 +1,8 @@
-import styles from "./fundingCard.module.scss";
+import styles from "./FundingCard.module.scss";
 import defaultFundingImage from "../files/default_image.jpg";
 import { CircleDot } from "../../../components/Page_Furniture/Icons";
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 
@@ -11,7 +11,7 @@ const backendUrl = "http://127.0.0.1:8000";
 type FundingProp = {
   proposalId?: number;
   title?: string;
-  image?: string; // link to image
+  image?: string; // absolute URL, relative backend path, or local asset path
   description?: string;
   donated?: number;
   target?: number;
@@ -20,19 +20,12 @@ type FundingProp = {
 const FundingCard: React.FC<FundingProp> = ({
   proposalId,
   title = "Title",
-  image = defaultFundingImage,
+  image,
   description,
   donated = 0,
   target = 100,
 }) => {
-  const fundingData = {
-    // Used to send data to the "Update Button". Avoid requerying the database
-    proposalId,
-    title,
-    image,
-    description,
-    target,
-  };
+  const fundingData = { proposalId, title, image, description, target };
 
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
@@ -41,71 +34,76 @@ const FundingCard: React.FC<FundingProp> = ({
   const [activeStatus, setActive] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const toggleActive = () => {
-    setActive((prev) => !prev);
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-      setActive(false);
-    }
-  };
+  const toggleActive = () => setActive((prev) => !prev);
 
   useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActive(false);
+      }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Build a safe image URL; use default image when missing or on error
+  const buildImageUrl = (img?: string) => {
+    if (!img || img.trim() === "") return defaultFundingImage;
+    const lower = img.toLowerCase();
+    if (
+      lower.startsWith("http://") ||
+      lower.startsWith("https://") ||
+      lower.startsWith("data:") ||
+      lower.startsWith("blob:")
+    ) return img;
+    if (lower.startsWith("/") || lower.startsWith(".")) return img; // local/static path
+    return `${backendUrl}/${img.replace(/^\/+/, "")}`; // backend-relative path
+  };
+
+  const [imgSrc, setImgSrc] = useState<string>(() => buildImageUrl(image));
+  useEffect(() => { setImgSrc(buildImageUrl(image)); }, [image]);
 
   const percentage = Math.round(getPercentage(donated, target));
 
   const goToUpdatePage = () => {
-    navigate("/donations_management/funding_proposals/update", {
-      state: fundingData,
-    });
+    navigate("/donations_management/funding_proposals/update", { state: fundingData });
   };
 
   const handleDonateButton = (fundingId: number) => {
-    navigate("/donations_management/funding_donation", {state: {funding_id: fundingId} });
-  }
+    navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
+  };
 
   return (
     <div className={styles.fundingCard}>
-      {/* FUNDING HEADER */}
+      {/* HEADER */}
       <div className={styles.fundingHead}>
         <p className={styles.title}>{title}</p>
         <div className={styles.menuContainer} ref={menuRef}>
-          {/* TRIPLE CIRLE ICONS */}
-          { (userRoles.includes("finance admin") || userRoles.includes("operations admin")) && (
-            <div className={`${styles.iconsContainer}`} onClick={toggleActive}>
+          {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) && (
+            <div className={styles.iconsContainer} onClick={toggleActive}>
               <CircleDot width={14} height={14} />
               <CircleDot width={14} height={14} />
               <CircleDot width={14} height={14} />
             </div>
           )}
-          <div
-            className={`${styles.menuItems} ${activeStatus ? styles.active : ""}`.trim()}
-          >
+          <div className={`${styles.menuItems} ${activeStatus ? styles.active : ""}`.trim()}>
             <button onClick={goToUpdatePage}>Edit</button>
-            {/* <button>Delete</button> */}
           </div>
         </div>
       </div>
 
-      {/* FUNDING BODY */}
+      {/* BODY */}
       <div className={styles.fundingBody}>
-        <p className={styles.description}>{description}</p>
+        <p className={styles.description}>{description || "No description available."}</p>
         <img
-          src={`${backendUrl}/${image}`}
-          alt="funding_image"
+          src={imgSrc}
+          alt={title || "funding image"}
           className={styles.image}
+          onError={() => setImgSrc(defaultFundingImage)}
         />
       </div>
 
-      {/* <hr className={styles.hLine} /> */}
-
-      {/* FUNDING FOOTER */}
+      {/* FOOTER */}
       <div className={styles.fundingFooter}>
         <div className={styles.progressContainer}>
           <p className={styles.progress}>
@@ -115,8 +113,10 @@ const FundingCard: React.FC<FundingProp> = ({
           <p className={styles.percentage}>{percentage}%</p>
         </div>
 
-        { (userType == "user" && proposalId != null ) && (
-          <button className={styles.donateButton} onClick={ () => handleDonateButton(proposalId) }>Donate</button>
+        {userType === "user" && proposalId != null && (
+          <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
+            Donate
+          </button>
         )}
       </div>
     </div>
@@ -126,6 +126,6 @@ const FundingCard: React.FC<FundingProp> = ({
 export default FundingCard;
 
 function getPercentage(current: number, target: number) {
-  if (target === 0) return 0; // Avoid division by zero
+  if (!target) return 0;
   return (current / target) * 100;
 }

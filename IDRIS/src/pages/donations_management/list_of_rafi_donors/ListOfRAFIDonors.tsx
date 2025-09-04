@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
@@ -18,6 +18,9 @@ import {
   searchDonorUsers,
 } from "../../../API_Handler/donations_donors_handler";
 
+// ✅ SweetAlert2
+import Swal from "sweetalert2";
+
 interface DonorData {
   donorId: number;
   donor_name: string;
@@ -31,6 +34,7 @@ interface DonorsApiResponse {
   total: number;
   skip: number;
   limit: number;
+  max_page?: number;
 }
 
 interface SearchedDonors {
@@ -44,13 +48,53 @@ interface SearchedDonorsAPIResponse {
   search: string;
 }
 
+/** ---------- DUMMY DONORS (used if API returns empty or fails) ---------- */
+const dummyDonors: DonorData[] = [
+  {
+    donorId: 0,
+    donor_name: "Donor Name",
+    organization_name: "",
+    total_donation: 0,
+    date_joined: new Date().toISOString(),
+  },
+  {
+    donorId: 0,
+    donor_name: "",
+    organization_name: "Donor Name",
+    total_donation: 0,
+    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+  },
+  {
+    donorId: 0,
+    donor_name: "Donor Name",
+    organization_name: "",
+    total_donation: 0,
+    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+  },
+  {
+    donorId: 0,
+    donor_name: "",
+    organization_name: "Donor Name",
+    total_donation: 0,
+    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
+  },
+  {
+    donorId: 0,
+    donor_name: "Donor Name",
+    organization_name: "",
+    total_donation: 0,
+    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString(),
+  },
+];
+
 const ListOfRAFIDonors = () => {
   // User view Options
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
-  const adminRoleAccess = userRoles.includes("finance admin") || userRoles.includes("operations admin")
-  const donorSearchRef = useRef<HTMLDivElement>(null); // For Donor Search at Add New Donor Modal
-  const donorGiftRef = useRef<HTMLDivElement>(null); // Gift Donor Modal
+  const adminRoleAccess =
+    userRoles.includes("finance admin") || userRoles.includes("operations admin");
+  const donorSearchRef = useRef<HTMLDivElement>(null);
+  const donorGiftRef = useRef<HTMLDivElement>(null);
 
   // Preset Variables
   const dateToday = new Date().toISOString().split("T")[0];
@@ -59,7 +103,7 @@ const ListOfRAFIDonors = () => {
   // Donors Lists
   const [donors, setDonors] = useState<DonorData[]>([]);
 
-  // Filter Options - filter, sort list of rafi donors
+  // Filter Options
   const donorPerPage = 25;
   const [page, setPage] = useState<number>(1);
   const [maxPage, setMaxPage] = useState<number>(1);
@@ -67,80 +111,82 @@ const ListOfRAFIDonors = () => {
   const [sorting, setSelectedSorting] = useState<string>("");
   const [searched, searchState] = useState("");
 
-  // Funding Proposals Page Buttons - Previous & Next
   type DirectType = "prev" | "next";
   const handleTablePageControl = (direct: DirectType) => {
     setPage((prevPage) => {
-      if (direct === "prev") {
-        return Math.max(prevPage - 1, 1); // Prevent going below page 1
-      } else {
-        return Math.min(prevPage + 1, maxPage); // Prevent going above max page
-      }
+      if (direct === "prev") return Math.max(prevPage - 1, 1);
+      return Math.min(prevPage + 1, maxPage);
     });
   };
 
   // ------------- MODAL THINGS ----------------
-  // Set wich modal is currently shown
   const [activeModal, setActiveModal] = useState<string | null>(null);
-
-  // File upload control
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Get List of Donors
+  const [isLoading, setIsLoading] = useState(true);
+  const [noResults, setNoResults] = useState(false);
+
+  // Get List of Donors (with dummy fallback)
   useEffect(() => {
     async function fetchDonors() {
+      setIsLoading(true);
       try {
-        const response = await getDonorsList(
-          searched,
-          page,
-          donorPerPage
-        );
-        console.log(response.donor_name);
-        setMaxPage(response.max_page);
+        const response = await getDonorsList(searched, page, donorPerPage);
+
+        let records: DonorData[] = [];
+        let max_page = 1;
 
         if (Array.isArray(response)) {
-          setDonors(response);
-        } else if (
-          response &&
-          typeof response === "object" &&
-          "donors" in response
-        ) {
-          setDonors((response as DonorsApiResponse).donors || []);
-        } else {
-          setDonors([]);
+          records = response;
+        } else if (response && typeof response === "object") {
+          const obj = response as DonorsApiResponse;
+          records = Array.isArray(obj.donors) ? obj.donors : [];
+          max_page = typeof obj.max_page === "number" ? obj.max_page : 1;
         }
+
+        setDonors(records);
+        setMaxPage(Math.max(max_page, 1));
+        setNoResults(records.length === 0);
       } catch (error) {
         console.error("Error fetching donors:", error);
-        setDonors([]);
+        setDonors([]);          // nothing to show
+        setMaxPage(1);
+        setNoResults(true);     // show “no donors” message
+      } finally {
+        setIsLoading(false);
       }
     }
-
     fetchDonors();
   }, [searched, page]);
 
-  // Create filtered and sorted donors based on the filter selection
+  // Create filtered and sorted donors
   const filteredDonors = useMemo(() => {
     let sortedDonors = [...donors];
 
     if (sorting === "Ascending") {
-      // Sort by name ascending
       sortedDonors.sort((a, b) => {
-        const nameA = a.organization_name || a.donor_name;
-        const nameB = b.organization_name || b.donor_name;
+        const nameA = (a.organization_name || a.donor_name || "").toLowerCase();
+        const nameB = (b.organization_name || b.donor_name || "").toLowerCase();
         return nameA.localeCompare(nameB);
       });
     } else if (sorting === "Descending") {
-      // Sort by name descending
       sortedDonors.sort((a, b) => {
-        const nameA = a.organization_name || a.donor_name;
-        const nameB = b.organization_name || b.donor_name;
+        const nameA = (a.organization_name || a.donor_name || "").toLowerCase();
+        const nameB = (b.organization_name || b.donor_name || "").toLowerCase();
         return nameB.localeCompare(nameA);
       });
     }
 
     return sortedDonors;
   }, [donors, sorting]);
+
+  const currency = (n: number) =>
+    new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 0,
+    }).format(n || 0);
 
   const tableData: TableResponse = {
     table_head: [
@@ -152,29 +198,24 @@ const ListOfRAFIDonors = () => {
     ],
     table_datas: filteredDonors.map((donor, index) => ({
       data: [
-        {
-          type: "Text",
-          text: (index + 1).toString(),
-          font_weight: 600,
-        },
+        { type: "Text", text: (index + 1).toString(), font_weight: 600 },
         {
           type: "Image",
-          text:
-            index % 3 === 0 ? Profile1 : index % 3 === 1 ? Profile2 : Profile3,
+          text: index % 3 === 0 ? Profile1 : index % 3 === 1 ? Profile2 : Profile3,
           font_weight: 400,
           width: "40px",
         },
         {
           type: "Text",
           text:
-            donor.organization_name === null
-              ? donor.donor_name
-              : donor.organization_name,
+            (donor.organization_name && donor.organization_name.trim() !== ""
+              ? donor.organization_name
+              : donor.donor_name) || "Anonymous Donor",
           font_weight: 500,
         },
         {
           type: "Text",
-          text: "Php" + donor.total_donation, // (Math.random() * 100000).toFixed(2),
+          text: currency(donor.total_donation),
           font_weight: 400,
         },
         {
@@ -191,37 +232,24 @@ const ListOfRAFIDonors = () => {
   const toggleModal = (navId: string) => {
     setActiveModal((prev) => (prev === navId ? null : navId));
   };
+  const closeModal = () => setActiveModal(null);
 
-  const closeModal = () => {
-    setActiveModal(null);
-  };
-
-  // -==========>  Modal: Add New Donor things
-  const [newDonorProfile, setNewDonorProfile] = useState<string>(Profile1); // Donor profile image
-  const [addDonorSearch, setAddDonorSearch] = useState(""); // text of search bar
-  const [newDonorSearchedItems, setNewDonorSearchedItems] = useState<SearchedDonors[] | null>(null); // List items under search bar
+  // Add New Donor
+  const [newDonorProfile, setNewDonorProfile] = useState<string>(Profile1);
+  const [addDonorSearch, setAddDonorSearch] = useState("");
+  const [newDonorSearchedItems, setNewDonorSearchedItems] = useState<SearchedDonors[] | null>(null);
 
   const handleAddDonorSearch = async () => {
     try {
-      const response = await searchDonorUsers(addDonorSearch); // Assuming this is allowed
+      const response = await searchDonorUsers(addDonorSearch);
       if (Array.isArray(response)) {
         setNewDonorSearchedItems(response);
-        console.log(response)
-      } else if (
-        response &&
-        typeof response === "object" &&
-        "donors" in response
-      ) {
-        const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
-          (donor) =>
-            donor.username.toLowerCase().includes(addDonorSearch.toLowerCase()),
+      } else if (response && typeof response === "object" && "donors" in response) {
+        const filtered = (response as SearchedDonorsAPIResponse).donors.filter((d) =>
+          d.username.toLowerCase().includes(addDonorSearch.toLowerCase())
         );
         setNewDonorSearchedItems(
-          filtered.map((donor) => ({
-            user_id: donor.user_id,
-            username: donor.username,
-            email: donor.email || undefined,
-          })),
+          filtered.map((d) => ({ user_id: d.user_id, username: d.username, email: d.email }))
         );
       } else {
         setNewDonorSearchedItems([]);
@@ -230,44 +258,31 @@ const ListOfRAFIDonors = () => {
       console.error("Error fetching donors:", error);
       setNewDonorSearchedItems([]);
     }
-    console.log(newDonorSearchedItems);
   };
 
   useEffect(() => {
-    if (addDonorSearch.trim() !== "") {
-      handleAddDonorSearch();
-    } else {
-      setNewDonorSearchedItems(null); // or [] if you prefer
-    }
+    if (addDonorSearch.trim() !== "") handleAddDonorSearch();
+    else setNewDonorSearchedItems(null);
   }, [addDonorSearch]);
 
   useEffect(() => {
-    // set searched item to null when outside of search bar is clicked
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        donorSearchRef.current &&
-        !donorSearchRef.current.contains(event.target as Node)
-      ) {
+      if (donorSearchRef.current && !donorSearchRef.current.contains(event.target as Node)) {
         setNewDonorSearchedItems(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   });
 
-  // Selected New Donor Variable
   const [newUserId, setNewUserId] = useState<number | null>(null);
   const [newDonorName, setNewDonorName] = useState<string>("sample@gmail.com");
   const [isOrganization, setIsOrganization] = useState<boolean>(false);
 
-  // Assign Profile of selected new Donor
   const setSelectedNewDonorProfile = (donor: SearchedDonors) => {
     setNewUserId(donor.user_id);
     setNewDonorName(donor.username);
-    setNewDonorSearchedItems(null)
+    setNewDonorSearchedItems(null);
   };
 
   const setOrganizationDonorType = (is_organization: boolean) => {
@@ -275,37 +290,64 @@ const ListOfRAFIDonors = () => {
     setActiveModal("new-donor-form-create");
   };
 
+  // ✅ SweetAlert2 version (replaces window.alert)
   const handleNewDonorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newUserId === null) {
-      alert("Please select a user");
+      await Swal.fire({
+        icon: "warning",
+        title: "Select a user first",
+        text: "Please search and pick a user to add as donor.",
+        confirmButtonText: "OK",
+      });
       return;
     }
 
     const donor_type = isOrganization ? "Organization" : "Individual";
-    const dateJoinedInput = (
-      document.getElementById("date-joined") as HTMLInputElement
-    ).value;
+    const dateJoinedInput = (document.getElementById("date-joined") as HTMLInputElement).value;
     const formData = new FormData();
 
-    formData.append("user_id", newUserId.toString()); // You must set this
-
+    formData.append("user_id", newUserId.toString());
     if (isOrganization) {
-      const orgName = (
-        document.getElementById("organization-name") as HTMLInputElement
-      ).value;
+      const orgName = (document.getElementById("organization-name") as HTMLInputElement).value;
       formData.append("organization_name", orgName);
     }
-
     formData.append("donor_type", donor_type);
     formData.append("date_joined", dateJoinedInput);
+
     try {
-      const result = await createNewDonor(formData);
-      alert("Donor created successfully!");
+      // Optional loading popup
+      Swal.fire({
+        title: "Creating donor…",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      await createNewDonor(formData);
+
+      await Swal.fire({
+        icon: "success",
+        title: "Donor created",
+        text: "The donor has been added successfully.",
+        confirmButtonText: "Great!",
+      });
+
       setActiveModal("donor-saved");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error:", error);
-      alert("Failed to create donor.");
+      const message =
+        error?.response?.data?.detail ||
+        error?.message ||
+        "An unexpected error occurred while creating the donor.";
+
+      await Swal.fire({
+        icon: "error",
+        title: "Failed to create donor",
+        text: message,
+        confirmButtonText: "OK",
+      });
+    } finally {
+      Swal.close(); // close loading if still open
     }
   };
 
@@ -318,7 +360,7 @@ const ListOfRAFIDonors = () => {
     }
   };
 
-  // ==============> GIFT DONOR 
+  // Gift Donor
   const [giftDonorSearchName, setGiftDonorSearchName] = useState<string>("");
   const [giftDonorSearchedNames, setGiftDonorSearchedNames] = useState<SearchedDonors[] | null>(null);
   const [giftDonorName, setGiftDonorName] = useState("User Profile");
@@ -326,25 +368,15 @@ const ListOfRAFIDonors = () => {
 
   const handleGiftDonorSearch = async () => {
     try {
-      const response = await searchDonorUsers(giftDonorSearchName); // Assuming this is allowed
-      console.log(response);
+      const response = await searchDonorUsers(giftDonorSearchName);
       if (Array.isArray(response)) {
         setGiftDonorSearchedNames(response);
-      } else if (
-        response &&
-        typeof response === "object" &&
-        "donors" in response
-      ) {
-        const filtered = (response as SearchedDonorsAPIResponse).donors.filter(
-          (donor) =>
-            donor.username.toLowerCase().includes(giftDonorSearchName.toLowerCase()),
+      } else if (response && typeof response === "object" && "donors" in response) {
+        const filtered = (response as SearchedDonorsAPIResponse).donors.filter((d) =>
+          d.username.toLowerCase().includes(giftDonorSearchName.toLowerCase())
         );
         setGiftDonorSearchedNames(
-          filtered.map((donor) => ({
-            user_id: donor.user_id,
-            username: donor.username,
-            email: donor.email || undefined,
-          })),
+          filtered.map((d) => ({ user_id: d.user_id, username: d.username, email: d.email }))
         );
       } else {
         setGiftDonorSearchedNames([]);
@@ -356,31 +388,20 @@ const ListOfRAFIDonors = () => {
   };
 
   useEffect(() => {
-    if (giftDonorSearchName.trim() !== "") {
-      handleGiftDonorSearch();
-    } else {
-      setGiftDonorSearchedNames(null); // or [] if you prefer
-    }
+    if (giftDonorSearchName.trim() !== "") handleGiftDonorSearch();
+    else setGiftDonorSearchedNames(null);
   }, [giftDonorSearchName]);
 
   useEffect(() => {
-    // set searched item to null when outside of search bar is clicked
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        donorGiftRef.current &&
-        !donorGiftRef.current.contains(event.target as Node)
-      ) {
+      if (donorGiftRef.current && !donorGiftRef.current.contains(event.target as Node)) {
         setGiftDonorSearchedNames(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   });
 
-  // Assign Profile of Selected Donor
   const setSelectedGiftDonor = (donor: SearchedDonors) => {
     setGiftDonorName(donor.username);
     setGiftDonorEmail(donor.email || "No email provided");
@@ -398,19 +419,13 @@ const ListOfRAFIDonors = () => {
           value={searched}
           onChange={searchState}
         />
-        <FilterBar
-          items={sortingItems}
-          value={sorting}
-          onChange={setSelectedSorting}
-        />
+        <FilterBar items={sortingItems} value={sorting} onChange={setSelectedSorting} />
 
-        { adminRoleAccess && (
+        {adminRoleAccess && (
           <>
             <button
               type="button"
-              className={
-                "settings-button" + (userType === "admin" ? "" : " hidden")
-              }
+              className={"settings-button" + (userType === "admin" ? "" : " hidden")}
               onClick={() => toggleModal("new-donor-type-selection")}
             >
               Add Donor
@@ -418,9 +433,7 @@ const ListOfRAFIDonors = () => {
             </button>
             <button
               type="button"
-              className={
-                "settings-button" + (userType === "admin" ? "" : " hidden")
-              }
+              className={"settings-button" + (userType === "admin" ? "" : " hidden")}
               onClick={() => toggleModal("gift-donor")}
             >
               Gift Donor
@@ -430,46 +443,61 @@ const ListOfRAFIDonors = () => {
         )}
       </div>
 
-      <div id="table-page-control" className="page-contorol">
-        <button
-          className="prev-page"
-          onClick={() => handleTablePageControl("prev")}
-        >
-          Previous
-        </button>
-        <p>
-          Page: {page}/{""}
-          {maxPage}{""}
+      {/* <div id="page-body"> */}
+      {!noResults && (
+        <div id="table-page-control" className="page-contorol">
+          <button
+            className="prev-page"
+            onClick={() => handleTablePageControl("prev")}
+            disabled={page <= 1 || maxPage <= 1}
+          >
+            Previous
+          </button>
+          <p>Page: {Math.min(page, maxPage)}/{maxPage}</p>
+          <button
+            className="next-page"
+            onClick={() => handleTablePageControl("next")}
+            disabled={page >= maxPage || maxPage <= 1}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {isLoading ? (
+        <p id="loading">Loading…</p>
+      ) : filteredDonors.length > 0 ? (
+        <DonorTable tableData={tableData} />
+      ) : (
+        <p id="no-donor">
+          {searched.trim()
+            ? `No donors match “${searched}”`
+            : "No donors found"}
         </p>
-        <button
-          className="next-page"
-          onClick={() => handleTablePageControl("next")}
-        >
-          Next
-        </button>
-      </div>
+      )}
 
-      <DonorTable tableData={tableData} />
+      {!noResults && (
+        <div id="table-page-control" className="page-contorol">
+          <button
+            className="prev-page"
+            onClick={() => handleTablePageControl("prev")}
+            disabled={page <= 1 || maxPage <= 1}
+          >
+            Previous
+          </button>
+          <p>Page: {Math.min(page, maxPage)}/{maxPage}</p>
+          <button
+            className="next-page"
+            onClick={() => handleTablePageControl("next")}
+            disabled={page >= maxPage || maxPage <= 1}
+          >
+            Next
+          </button>
+        </div>
+      )}
+      {/* </div> */}
 
-      <div id="table-page-control" className="page-contorol">
-        <button
-          className="prev-page"
-          onClick={() => handleTablePageControl("prev")}
-        >
-          Previous
-        </button>
-        <p>
-          Page: {page}/{""}
-          {maxPage}{""}
-        </p>
-        <button
-          className="next-page"
-          onClick={() => handleTablePageControl("next")}
-        >
-          Next
-        </button>
-      </div>
-
+      {/* Modals... (unchanged except for SweetAlert usage in handlers) */}
       <Modal
         isOpen={activeModal === "new-donor-type-selection"}
         onClose={closeModal}
@@ -494,7 +522,6 @@ const ListOfRAFIDonors = () => {
           >
             Organization
           </button>
-
         </div>
       </Modal>
 
@@ -566,7 +593,6 @@ const ListOfRAFIDonors = () => {
             </button>
           </form>
         </div>
-
       </Modal>
 
       <Modal isOpen={activeModal === "gift-donor"} onClose={closeModal}>
@@ -582,7 +608,7 @@ const ListOfRAFIDonors = () => {
               value={giftDonorSearchName}
               onChange={setGiftDonorSearchName}
               onSearch={() => handleGiftDonorSearch()}
-            />  
+            />
             {giftDonorSearchedNames != null && (
               <ul className="searched-list">
                 {giftDonorSearchedNames === null ? (
@@ -630,51 +656,31 @@ const ListOfRAFIDonors = () => {
             <button
               type="button"
               className="green-modal-button"
-              onClick={() => setActiveModal("gift-sent")}
+              onClick={async () => {
+                // ✅ Optional SweetAlert confirm before sending
+                const res = await Swal.fire({
+                  icon: "question",
+                  title: "Send gift?",
+                  text: "This will send the selected file to the donor.",
+                  showCancelButton: true,
+                  confirmButtonText: "Send",
+                  cancelButtonText: "Cancel",
+                });
+                if (res.isConfirmed) {
+                  // TODO: call your real API to send the gift file here
+                  await Swal.fire({
+                    icon: "success",
+                    title: "Gift sent!",
+                    timer: 1500,
+                    showConfirmButton: false,
+                  });
+                  setActiveModal("gift-sent");
+                }
+              }}
             >
               Send Gift
             </button>
           </form>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === "donor-saved"} onClose={closeModal}>
-        <h3 className="modal-title">Successfully added donor.</h3>
-        <div className="modal-button-container">
-          <button
-            type="button"
-            className="yellow-modal-button"
-            onClick={() => setActiveModal("new-donor-type-selection")}
-          >
-            Add more
-          </button>
-          <button
-            type="button"
-            className="green-modal-button"
-            onClick={closeModal}
-          >
-            Close
-          </button>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === "gift-sent"} onClose={closeModal}>
-        <h3 className="modal-title">Gift Sent Successfully.</h3>
-        <div className="modal-button-container">
-          <button
-            type="button"
-            className="yellow-modal-button"
-            onClick={() => setActiveModal("gift-donor")}
-          >
-            Send more
-          </button>
-          <button
-            type="button"
-            className="green-modal-button"
-            onClick={closeModal}
-          >
-            Close
-          </button>
         </div>
       </Modal>
     </div>

@@ -1,24 +1,208 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Response,
+    Request,
+    UploadFile,
+    File,
+    Form,
+)
 from sqlalchemy.orm import Session
 from jose import JWTError
-from schemas import UserCreate, UserSchema, LoginSchema, TokenWithUserResponse, ID
-from models import User
+from schemas import (
+    UserCreate,
+    UserSchema,
+    LoginSchema,
+    TokenWithUserResponse,
+    ID,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
+from models import User, UserProfile
 from crud import create_user, authenticate_user, get_user_by_email
-from crud_functions.utils import uid_from_string
-
+from crud_functions.utils import uid_from_string, process_image_to_webp
+import json
 from auth import (
     create_access_token,
     create_refresh_token,
+    create_token,
     decode_token,
+    verify_token,
+    hash_password,
     SECRET_KEY,
-    ALGORITHM,
 )
 from database import get_db
 from fastapi import Header
+from email_handler import send_activation_email, send_reset_email
+from pathlib import Path
+from uuid import uuid4
+from decouple import config
+from authlib.integrations.starlette_client import OAuth
+from fastapi.responses import RedirectResponse
+import jwt
 
 router = APIRouter(tags=["users"])
 
+
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
+
+
 REFRESH_TOKEN_COOKIE = "refresh_token"
+
+UPLOAD_DIR = Path("media/profile_picture")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+MICROSOFT_CLIENT_ID = config("MICROSOFT_CLIENT_ID")
+MICROSOFT_CLIENT_SECRET = config("MICROSOFT_CLIENT_SECRET")
+MICROSOFT_TENANT = config("MICROSOFT_TENANT_ID", default="common")
+oauth = OAuth()
+oauth.register(
+    name="google",
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+    client_kwargs={"scope": "openid email profile"},
+)
+
+
+oauth.register(
+    name="microsoft",
+    client_id=MICROSOFT_CLIENT_ID,
+    client_secret=MICROSOFT_CLIENT_SECRET,
+    authorize_url="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+    access_token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    client_kwargs={
+        "scope": "openid email profile offline_access",
+        "validate_iss": False,
+    },
+    jwks_uri="https://login.microsoftonline.com/common/discovery/v2.0/keys",
+)
+
+
+@router.get("/auth/login")
+async def oauth_login(request: Request):
+    redirect_uri = request.url_for("auth_callback")
+    # Add extra info inside `state`
+    return await oauth.google.authorize_redirect(
+        request, redirect_uri, state="login"  # or "register"
+    )
+
+
+@router.get("/auth/register")
+async def oauth_register(request: Request):
+    redirect_uri = request.url_for("auth_callback")
+    return await oauth.google.authorize_redirect(
+        request, redirect_uri, state="register"
+    )
+
+
+@router.get("/auth/microsoft/login")
+async def microsoft_login(request: Request):
+    redirect_uri = request.url_for("microsoft_callback")
+    return await oauth.microsoft.authorize_redirect(
+        request, redirect_uri, state="login"
+    )
+
+
+@router.get("/auth/microsoft/register")
+async def microsoft_register(request: Request):
+    redirect_uri = request.url_for("microsoft_callback")
+    return await oauth.microsoft.authorize_redirect(
+        request, redirect_uri, state="register"
+    )
+
+
+async def add_user(email: str, username: str, sub: str, db: Session = next(get_db())):
+    new_user = create_user(
+        db,
+        user_id=uid_from_string(username),
+        email=email,
+        username=username,
+        user_type="user",
+        roles=["generic"],
+        sub=sub,
+    )
+    token = create_token(uid_from_string(username), "activation")
+    await send_activation_email(email, token)
+    return True
+
+
+@router.get("/auth/microsoft/callback")
+async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
+    print(request)
+    token = await oauth.microsoft.authorize_access_token(request)
+    user_info = token.get("userinfo")  # Microsoft returns user info here
+    state = request.query_params.get("state")
+    print(user_info)
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Failed to get Microsoft user info")
+
+    payload = {
+        "sub": user_info["sub"],  # unique Microsoft ID
+        "email": user_info.get("email") or user_info.get("preferred_username"),
+        "name": user_info.get("name"),
+    }
+
+    jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+    if state == "register":
+        await add_user(payload["email"], payload["name"], str(payload["sub"]), db)
+        redirect_url = f"http://localhost:5173/login"
+        return RedirectResponse(url=redirect_url)
+    else:
+        redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
+        return RedirectResponse(url=redirect_url)
+
+
+@router.get("/auth/callback")
+async def auth_callback(request: Request):
+    token = await oauth.google.authorize_access_token(request)
+    user_info = token.get("userinfo")
+    state = request.query_params.get("state")
+    if not user_info:
+        raise HTTPException(status_code=400, detail="Failed to get user info")
+
+    payload = {
+        "sub": user_info["sub"],  # unique provider ID
+        "email": user_info["email"],  # actual email
+    }
+    jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    if state == "register":
+        await add_user(user_info["email"], user_info["name"], str(user_info["sub"]))
+        redirect_url = f"http://localhost:5173/login"
+        return RedirectResponse(url=redirect_url)
+    else:
+        redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
+        return RedirectResponse(url=redirect_url)
+
+
+@router.post("/auth/callback/login")
+async def auth_callback_login(
+    token: str, response: Response, db: Session = Depends(get_db)
+):
+    decoded_payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    user = get_user_by_email(db, decoded_payload["email"])
+    if not user:
+        raise HTTPException(status_code=401, detail="Not registered yet")
+    if not user.sub == decoded_payload["sub"]:
+        raise HTTPException(status_code=401, detail="Not registered yet")
+
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
+    response.set_cookie(
+        key=REFRESH_TOKEN_COOKIE,
+        value=refresh_token,
+        httponly=True,
+        max_age=60 * 60 * 24 * 7,
+        samesite="Lax",
+        secure=False,
+    )
+
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 
 def get_token_from_cookie(request: Request):
@@ -54,15 +238,15 @@ def get_current_user_from_access_token(
 
 
 @router.post("/register", response_model=TokenWithUserResponse)
-def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
+async def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
     new_user = create_user(
         db,
-        user_id = uid_from_string(user.username),
+        user_id=uid_from_string(user.username),
         email=user.email,
         username=user.username,
         password=user.password,
-        user_type=user.user_type,
-        roles=user.roles,
+        user_type="user",
+        roles=["generic"],
     )
     access_token = create_access_token(data={"sub": new_user.email})
     refresh_token = create_refresh_token(data={"sub": new_user.email})
@@ -76,7 +260,8 @@ def register(user: UserCreate, response: Response, db: Session = Depends(get_db)
         samesite="Lax",
         secure=False,  # Set to True in production with HTTPS
     )
-
+    token = create_token(uid_from_string(user.username), "activation")
+    await send_activation_email(user.email, token)
     return {"access_token": access_token, "token_type": "bearer", "user": new_user}
 
 
@@ -123,13 +308,127 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 
+@router.post("/activate_account")
+def activate_account(
+    profile_file: UploadFile | None = File(None),
+    profile_info: str = Form(...),
+    token: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    try:
+        profile_data = json.loads(profile_info)
+        uid = verify_token(token, "activation")
+        if uid is None:
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+        # -------------------------
+        # Handle image
+        # -------------------------
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)  # ensure folder exists
+        default_image_path = UPLOAD_DIR / "defaultProfile.webp"
+
+        if profile_file and profile_file.filename:
+            ext = ".webp"
+            unique_name = f"{uuid4().hex}{ext}"
+            target_path = UPLOAD_DIR / unique_name
+            processed = process_image_to_webp(
+                profile_file
+            )  # your image processing function
+            with target_path.open("wb") as f:
+                f.write(processed)
+            image_path = str(target_path).replace("\\", "/")
+        else:
+            # If no file uploaded, use default profile image
+            image_path = str(default_image_path).replace("\\", "/")
+            if not default_image_path.exists():
+                # Optional: copy a bundled default file into UPLOAD_DIR
+                from shutil import copyfile
+
+                bundled_default = Path(
+                    "media/defaultProfile.webp"
+                )  # adjust path to your media folder
+                copyfile(bundled_default, default_image_path)
+
+        # -------------------------
+        # Save user profile
+        # -------------------------
+        profile_db = UserProfile(
+            user_id=uid,
+            first_name=profile_data.get("fname"),
+            last_name=profile_data.get("lname"),
+            profile_image=image_path,
+            phone_number=profile_data.get("contactInfo"),
+            bday=profile_data.get("birthday"),
+            gender=profile_data.get("gender"),
+            address=profile_data.get("address"),
+            bio=profile_data.get("bio"),
+        )
+        db.add(profile_db)
+
+        # -------------------------
+        # Update "is_activated" column
+        # -------------------------
+
+        user = db.query(User).filter(User.user_id == uid).first()
+        if user:
+            user.is_activated = True
+            db.commit()
+
+        db.refresh(profile_db)
+        return {"status": "success", "profile": profile_db.user_profile_id}
+
+    except Exception as e:
+        db.rollback()
+        import traceback
+
+        print("ERROR:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/forgot_password")
+async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = get_user_by_email(db, req.email)
+    if not user:
+        return {"message": "If this email exists, you’ll receive reset instructions."}
+    print(user.user_id)
+    token = create_token(user.user_id, "reset")
+    await send_reset_email(req.email, token)
+    return {"message": "Password reset email sent"}
+
+
+@router.post("/reset_password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        uid = verify_token(payload.token, "reset")
+        if uid is None:
+            raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+        hashed = hash_password(payload.password)
+        user = db.query(User).filter(User.user_id == uid).first()
+        if user:
+            user.hashed_password = hashed
+            db.commit()
+        return {"message": "Password has been updated"}
+
+    except Exception as e:
+        db.rollback()
+        import traceback
+
+        print("ERROR:", e)
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/users/me", response_model=UserSchema)
 def read_users_me(current_user: User = Depends(get_current_user_from_access_token)):
     return current_user
 
+
 @router.get("/users/me/id", response_model=ID)
 def read_user_id(current_user: User = Depends(get_current_user_from_access_token)):
     return {"id": current_user.user_id}
+
 
 @router.post("/logout")
 def logout(response: Response):

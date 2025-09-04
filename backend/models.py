@@ -281,7 +281,7 @@ class Donor(Base):
             return self.user.username
         return "Unknown Donor"
 
-    @donor_name.expression      # Queryable with donor_name
+    @donor_name.expression  # Queryable with donor_name
     def donor_name(cls):
         username_sq = (
             select(User.username)
@@ -297,6 +297,7 @@ class Donor(Base):
             literal("Unknown Donor"),
         )
 
+
 class DonationFrequency(enum.Enum):
     ONE_TIME = "ONE_TIME"
     MONTHLY = "MONTHLY"
@@ -310,9 +311,11 @@ class DonationStatus(enum.Enum):
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
 
+
 class DonationType(str, enum.Enum):
     CASH = "CASH"
     INKIND = "INKIND"
+
 
 class Donation(Base):
     __tablename__ = "donation_records"
@@ -323,9 +326,9 @@ class Donation(Base):
     donation_id = Column(Integer, primary_key=True)
     donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
     frequency = Column(
-        SqlEnum(DonationFrequency, name="donation_frequency"), 
-        nullable=False, 
-        server_default=DonationFrequency.ONE_TIME.value
+        SqlEnum(DonationFrequency, name="donation_frequency"),
+        nullable=False,
+        server_default=DonationFrequency.ONE_TIME.value,
     )
     frequency = Column(
         SqlEnum(DonationFrequency, name="donation_frequency"),
@@ -345,7 +348,9 @@ class Donation(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     donation_type = Column(
-        SqlEnum(DonationType, name="donation_type"), nullable=False, server_default=DonationType.CASH.value
+        SqlEnum(DonationType, name="donation_type"),
+        nullable=False,
+        server_default=DonationType.CASH.value,
     )  # "cash" or "inkind" etc.
 
     # # Recurring donation fields
@@ -463,7 +468,6 @@ class IndividualVolunteer(Base):
     )
 
 
-
 class OrganizationVolunteer(Base):
     __tablename__ = "organization_volunteer"
     __random_pk_field__ = "volunteer_id"
@@ -502,6 +506,7 @@ class OrganizationVolunteer(Base):
         passive_deletes=True,
     )
 
+
 class VolunteerCertificate(Base):
     __tablename__ = "volunteer_certificate"
 
@@ -524,7 +529,9 @@ class VolunteerCertificate(Base):
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)  # normalized POSIX path
     mime_type = Column(String(100), nullable=True)
-    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    uploaded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     # Enforce XOR ownership at the DB level
     __table_args__ = (
@@ -550,6 +557,7 @@ class VolunteerCertificate(Base):
         foreign_keys=[organization_volunteer_id],
     )
 
+
 # Procurement Request
 
 
@@ -565,8 +573,10 @@ class ProcurementRequest(Base):
     priority = Column(String(50), nullable=False)
     status = Column(String(50), nullable=False)
     description = Column(String(255), nullable=False)
+    justification = Column(String(255), nullable=False)
     date = Column(Date, nullable=False)
     comment = Column(String(255), nullable=True)
+    reason_or_code = Column(String(255), nullable=True)
 
     # ✅ should be plural (list of items)
     request_items = relationship("ProcurementRequestItem", back_populates="request")

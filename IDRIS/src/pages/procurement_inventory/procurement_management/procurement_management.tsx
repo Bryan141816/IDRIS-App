@@ -651,119 +651,6 @@ const ProcurementManagement = () => {
 
     const getModalContent = () => {
       switch (modalType) {
-        case "submit-request":
-          return (
-            <div className="modal-content">
-              <h3>Submit Procurement Request</h3>
-              <div className="form-group">
-                <label>Request Title</label>
-                <input type="text" placeholder="Enter request title" />
-              </div>
-              <div className="form-group">
-                <label>Department</label>
-                <select>
-                  <option>Select department</option>
-                  <option>Medical Response</option>
-                  <option>Operations</option>
-                  <option>Logistics</option>
-                  <option>Administration</option>
-                  <option>Finance</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Priority</label>
-                <select>
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Estimated Cost (PHP)</label>
-                <input type="number" placeholder="Enter estimated cost" />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  placeholder="Describe the procurement requirement"
-                  rows={4}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Justification</label>
-                <textarea
-                  placeholder="Provide justification for this request"
-                  rows={3}
-                ></textarea>
-              </div>
-            </div>
-          );
-        case "view-request":
-          return (
-            <div className="modal-content">
-              <h3>Request Details - {selectedItem?.requestId}</h3>
-              <div className="view-details">
-                <div className="detail-section">
-                  <h4>Request Information</h4>
-                  <div className="detail-row">
-                    <strong>Title:</strong>
-                    <span>{selectedItem?.title}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Requester:</strong>
-                    <span>{selectedItem?.requester}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Department:</strong>
-                    <span>{selectedItem?.department}</span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Priority:</strong>
-                    <span
-                      className={`priority-badge ${getPriorityColor(selectedItem?.priority || "")}`}
-                    >
-                      {selectedItem?.priority}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Status:</strong>
-                    <span
-                      className={`status-badge ${getStatusColor(selectedItem?.status || "")}`}
-                    >
-                      {selectedItem?.status}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <strong>Description:</strong>
-                    <span>{selectedItem?.description}</span>
-                  </div>
-                </div>
-                <div className="detail-section">
-                  <h4>Items Requested</h4>
-                  <div className="items-list">
-                    {selectedItem?.items?.map((item, index) => (
-                      <div key={index} className="item-row">
-                        <span>{item.name}</span>
-                        <span>Qty: {item.quantity}</span>
-                        <span>{formatCurrency(item.unitCost)}</span>
-                        <span>
-                          <strong>
-                            {formatCurrency(item.quantity * item.unitCost)}
-                          </strong>
-                        </span>
-                      </div>
-                    ))}
-                    <div className="items-total">
-                      <strong>
-                        Total:{" "}
-                        {formatCurrency(selectedItem?.estimatedCost || 0)}
-                      </strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
         case "approve-request":
           return (
             <div className="modal-content">
@@ -819,14 +706,18 @@ const ProcurementManagement = () => {
               </div>
               <div className="form-group">
                 <label>Rejection Reason *</label>
-                <select>
-                  <option>Select rejection reason</option>
-                  <option>Budget constraints</option>
-                  <option>Insufficient justification</option>
-                  <option>Duplicate request</option>
-                  <option>Policy violation</option>
-                  <option>Alternative solution available</option>
-                  <option>Other</option>
+                <select defaultValue="">
+                  <option value="">Select rejection reason</option>
+                  <option value="budget constraints">Budget constraints</option>
+                  <option value="insuficient justification">
+                    Insufficient justification
+                  </option>
+                  <option value="duplicate request">Duplicate request</option>
+                  <option value="policy violation">Policy violation</option>
+                  <option value="alternative solution available">
+                    Alternative solution available
+                  </option>
+                  <option value="other">Other</option>
                 </select>
               </div>
               <div className="form-group">
@@ -839,48 +730,7 @@ const ProcurementManagement = () => {
               </div>
             </div>
           );
-        case "update-status":
-          return (
-            <div className="modal-content">
-              <h3>Update Request Status - {selectedItem?.requestId}</h3>
-              <div className="form-group">
-                <label>Current Status</label>
-                <input type="text" value={selectedItem?.status} disabled />
-              </div>
-              <div className="form-group">
-                <label>New Status</label>
-                <select>
-                  <option>Pending Approval</option>
-                  <option>Under Review</option>
-                  <option>Approved</option>
-                  <option>In Progress</option>
-                  <option>Completed</option>
-                  <option>On Hold</option>
-                  <option>Cancelled</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Status Comments</label>
-                <textarea
-                  placeholder="Add comments about the status change"
-                  rows={3}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Notify Requester</label>
-                <div className="checkbox-group">
-                  <label>
-                    <input type="checkbox" defaultChecked />
-                    Send email notification
-                  </label>
-                  <label>
-                    <input type="checkbox" defaultChecked />
-                    Send SMS notification
-                  </label>
-                </div>
-              </div>
-            </div>
-          );
+
         default:
           return (
             <div className="modal-content">

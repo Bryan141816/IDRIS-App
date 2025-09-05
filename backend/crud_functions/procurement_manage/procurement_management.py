@@ -1,4 +1,7 @@
-from data_schemas.procurement_management_schema import ProcurementRequestCreate
+from data_schemas.procurement_management_schema import (
+    ProcurementRequestCreate,
+    UpdateProcurementRequest,
+)
 from datetime import datetime
 from sqlalchemy.orm import Session
 from models import ProcurementRequest, ProcurementRequestItem
@@ -43,3 +46,24 @@ class ProcurementRequestCRUD:
         db.commit()
         db.refresh(procurement_request)
         return procurement_request
+
+    @staticmethod
+    def update_procurement_request(db: Session, payload: UpdateProcurementRequest):
+        request = (
+            db.query(ProcurementRequest)
+            .filter(ProcurementRequest.request_id == payload.request_id)
+            .first()
+        )
+
+        if not request:
+            return None  # caller can handle 404
+        if payload.status is not None:
+            request.status = payload.status
+        if payload.comments is not None:
+            request.comment = payload.comments
+        if payload.reason_or_code is not None:
+            request.reason_or_code = payload.reason_or_code
+
+        db.commit()
+        db.refresh(request)
+        return request

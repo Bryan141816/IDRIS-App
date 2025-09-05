@@ -10,13 +10,16 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
 import math
+from fastapi import Request
 
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
     ProcurementRequestSchema,
+    UpdateProcurementRequest,
 )
 from crud_functions.procurement_manage.procurement_management import (
     ProcurementRequestCRUD,
+    UpdateProcurementRequest,
 )
 from routers.GetUserId import GetUserId
 
@@ -45,6 +48,14 @@ def get_request(db: Session = Depends(get_db)):
         .options(joinedload(ProcurementRequest.request_items))
         .all()
     )
+
+
+@router.post("/procurement_management/update_request")
+async def update_request(
+    request: UpdateProcurementRequest, db: Session = Depends(get_db)
+):
+
+    return ProcurementRequestCRUD.update_procurement_request(db, request)
 
 
 # @router.get(response_dashboard/demand_and_response

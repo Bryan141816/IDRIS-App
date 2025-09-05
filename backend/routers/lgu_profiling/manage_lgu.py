@@ -1,6 +1,7 @@
 from os import name
 from crud import delete, update
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query,FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
@@ -15,20 +16,35 @@ from schemas import (
     LGURecordsOut,
     BaranggayRecordsCreate,
     BaranggayRecordsOut,
+    HazardCreate,
+    HazardOut
 )
 from database import get_db
 from crud import delete, create_evacuation_center
-from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURecords
+from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURecords,Hazard
+
 from routers.role_checker import RoleChecker
 import math
 from typing import Union, Dict
-
+from datetime import datetime
 router = APIRouter(
     tags=["manage_lgu"],
     # dependencies=[Depends(RoleChecker(["operations admin"]))],
 )
 
 
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],                      # dev: you can also use ["*"]
+    allow_credentials=True,
+    allow_methods=["*"],    # or ["GET","POST","PUT","DELETE","PATCH","OPTIONS"]
+    allow_headers=["*"],
+)
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
@@ -305,29 +321,102 @@ def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="de
                 text=record.name,
                 font_weight=500,
                 color="#000",
-                width="250px",
+                width="100px",
             ),
             Cell(
                 type="Text",
                 text=str(record.lat),
                 font_weight=500,
                 color="#000",
-                width="250px",
+                width="100px",
             ),
             Cell(
                 type="Text",
                 text=str(record.lng),
                 font_weight=500,
                 color="#000",
-                width="250px",
+                width="100px",
             ),
             Cell(
                 type="Text",
                 text=str(record.description),
                 font_weight=500,
                 color="#000",
-                width="250px",
+                width="100px",
             ),
+            Cell(
+                type="Button",
+                text="View",
+                font_weight=500,
+                color="#fff",
+                background_color="#749AB6",
+                container_width="150px",
+                button_width="80px",
+            ),
+        ]
+        pages["row"].append({"data": row_data})
+
+    if pages["row"]:
+        table_datas.append(pages)
+
+    count = db.query(EvacuationCenter).count()
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
+
+
+
+def _fmt_dt(dt: datetime | None) -> str:
+    if not dt:
+        return "-"
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+@router.get("/lgu_profiling/manage_lgu/get_hazard", response_model=TableResponse)
+def get_hazard(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    Name: str = "desc"  # follow your existing pattern; use this for sort order on last_updated
+):
+    page = getDefaultPage(page)
+    offset = (page - 1) * 10
+
+    table_head = [
+        {"text": "Last Updated", "width": "150px", "action": "Sort"},
+        {"text": "Hazard_area", "width": "150px"},
+        {"text": "image_url", "width": "150px"},
+        {"text": "Hazard Type", "width": "150px"},
+        {"text": "Action", "width": "150px"},
+    ]
+
+    order = Hazard.last_updated.desc().nulls_last() if Name == "desc" else Hazard.last_updated.asc().nulls_last()
+
+    records = (
+        db.query(Hazard)
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
+    )
+
+    table_datas = []
+    pageCount = page
+    pages = {"page": pageCount, "row": []}
+
+    for record in records:
+        if len(pages["row"]) == 10:
+            table_datas.append(pages)
+            pageCount += 1
+            pages = {"page": pageCount, "row": []}
+
+        row_data = [
+            # Keep a hidden ID first, like your other tables
+            Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
+
+            # Match table_head order:
+            Cell(type="Text", text=_fmt_dt(record.last_updated), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=record.hazard_area, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=(record.image_url or "-"), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=record.hazard_type, font_weight=500, color="#000", width="150px"),
+
+            # Action button (same style you use elsewhere)
             Cell(
                 type="Button",
                 text="View",
@@ -343,25 +432,21 @@ def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="de
     if pages["row"]:
         table_datas.append(pages)
 
-    count = db.query(EvacuationCenter).count()
+    count = db.query(Hazard).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
-
-@router.get("/lgu_profiling/manage_lgu/get_hazard", response_model=TableResponse)
-def get_hazard(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
-    table_head = [
-        {"text": "Last Updated", "width": "150px", "action": "Sort"},
-        {"text": "Lat", "width": "150px"},
-        {"text": "Lng", "width": "150px"},
-        {"text": "LGU", "width": "150px"},
-        {"text": "Hazard Type", "width": "150px"},
-        {"text": "Action", "width": "150px"},
-    ]
-    table_datas = []
-
-    count = 0
-    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
+@router.post("/lgu_profiling/manage_lgu/add_hazard", response_model=HazardOut)
+def add_hazard(record: HazardCreate, db: Session = Depends(get_db)):
+    db_record = Hazard(
+        hazard_area=record.hazard_area,
+        hazard_type=record.hazard_type,
+        image_url=record.image_url,
+        action=record.action,
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
 
 @router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
 def get_evacuation(
@@ -443,8 +528,27 @@ def get_evacuation(
 
     count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
+@router.delete("/lgu_profiling/manage_lgu/delete_hazard/{record_id}", response_model=dict)
+def delete_hazard(record_id: int, db: Session = Depends(get_db)):
+    removed = delete(db, Hazard, record_id)
+    if not removed:
+        raise HTTPException(status_code=400, detail="Record not found.")
+    return {"message": f"Hazard with ID {record_id} deleted successfully."}
 
+@router.put("/lgu_profiling/manage_lgu/update_hazard/{record_id}", response_model=HazardOut)
+def update_hazard(record_id: int, payload: HazardCreate, db: Session = Depends(get_db)):
+    rec = db.get(Hazard, record_id)  # SQLAlchemy 2.x style
+    if not rec:
+        raise HTTPException(status_code=404, detail="Hazard record doesn't exist")
 
+    rec.hazard_area = payload.hazard_area
+    rec.hazard_type = payload.hazard_type
+    rec.image_url   = payload.image_url
+    rec.action      = payload.action
+
+    db.commit()
+    db.refresh(rec)
+    return rec 
 @router.post("/lgu_profiling/manage_lgu/add_lgu", response_model=LGURecordsOut)
 def add_lgu(record: LGURecordsCreate, db: Session = Depends(get_db)):
     db_record = LGURecords(

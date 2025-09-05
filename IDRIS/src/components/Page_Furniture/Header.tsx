@@ -8,6 +8,7 @@ import { LogoutIcon } from "./Icons";
 import { useNavigate } from "react-router-dom";
 import { logoutUser } from "../../API_Handler/auth.ts";
 import React from "react";
+import { NotificationsButton } from "./Notifications.tsx";
 interface FooterProps {
   onIconClick: () => void;
 }
@@ -37,7 +38,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
     showUserSettings((prevState) => !prevState);
   };
 
-  const { email, username } = useUserContext();
+  const { email, username, userId } = useUserContext();
   return (
     <header>
       <div id="left-items">
@@ -48,6 +49,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
       </div>
 
       <div id="right-items">
+        <NotificationsButton userId={userId}></NotificationsButton>
         <p id="rafi_btn">
           RAFI <ArrowDown width={16} height={20} />
         </p>
@@ -61,30 +63,32 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
         </div>
 
         {isUserSettingsVisible && (
-          <div id="user-account-settings-container">
-            <div className="user-icon">
-              <img
-                src={userProfile}
-                alt="user-profile"
-                style={{
-                  height: "32px",
-                  width: "32px",
-                }}
-              />
-              <CircleDot width={16} height={16} />
-            </div>
+          <>
+            <div id="user-account-settings-container">
+              <div className="user-icon">
+                <img
+                  src={userProfile}
+                  alt="user-profile"
+                  style={{
+                    height: "32px",
+                    width: "32px",
+                  }}
+                />
+                <CircleDot width={16} height={16} />
+              </div>
 
-            <div id="user-names">
-              <p className="user-name">{username}</p>
-              <p className="user-email">{email}</p>
+              <div id="user-names">
+                <p className="user-name">{username}</p>
+                <p className="user-email">{email}</p>
+              </div>
+              <LogoutIcon
+                width={24}
+                height={24}
+                className="logout-icon"
+                onClick={logOutUser}
+              />
             </div>
-            <LogoutIcon
-              width={24}
-              height={24}
-              className="logout-icon"
-              onClick={logOutUser}
-            />
-          </div>
+          </>
         )}
       </div>
     </header>

@@ -8,6 +8,10 @@ const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
     Component: module.default,
   }));
+const NotificationPage = () =>
+  import("./components/Page_Furniture/NotificationPage").then((module) => ({
+    Component: module.default,
+  }));
 
 const ReportsGeneration = () =>
   import("./pages/reports_generation/reports_generation").then((module) => ({
@@ -157,19 +161,15 @@ const FundingDonation = () =>
   );
 
 const DonorProfile = () =>
-  import(
-    "./pages/donations_management/donor/DonorProfile"
-  ).then(
+  import("./pages/donations_management/donor/DonorProfile").then((module) => ({
+    Component: module.default,
+  }));
+
+const Donor_Dashboard = () =>
+  import("./pages/donations_management/donor/DonorDashboard").then(
     (module) => ({ Component: module.default }),
   );
 
-const Donor_Dashboard = () =>
-  import(
-    "./pages/donations_management/donor/DonorDashboard"
-  ).then(
-    (module) => ({ Component: module.default }),
-  );
- 
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -269,6 +269,10 @@ export const router = createBrowserRouter([
       {
         path: "manage_users",
         lazy: UserManagement,
+      },
+      {
+        path: "notifications",
+        lazy: NotificationPage,
       },
       {
         path: "oauth_callback",

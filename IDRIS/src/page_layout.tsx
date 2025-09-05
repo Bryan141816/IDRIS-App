@@ -17,11 +17,18 @@ const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
 
 function PageLayout() {
   usePrefectLink();
-  const { setUserType, setEmail, setUsername, setUserReady, isUserReady } =
-    useUserContext();
+  const {
+    setUserType,
+    setEmail,
+    setUsername,
+    setUserReady,
+    isUserReady,
+    setUserId,
+  } = useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();
 
   const userData = useLoaderData() as {
+    user_id: number;
     user_type: string;
     email: string;
     username: string;
@@ -35,11 +42,13 @@ function PageLayout() {
       if (userData) {
         setUserType(userData.user_type);
         setEmail(userData.email);
+        setUserId(userData.user_id);
         setUsername(userData.username);
         setUserRoles(userData.roles);
       } else {
         setUserType("");
         setEmail("");
+        setUserId(null);
         setUsername("");
         setUserRoles([]);
       }
@@ -58,13 +67,13 @@ function PageLayout() {
     location.pathname === "/forgot_password" ||
     location.pathname === "/reset_password" ||
     location.pathname === "/oauth_callback" ||
-    location.pathname === "/donation_report" ;
+    location.pathname === "/donation_report";
   const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,
   );
   const shouldHideLayout =
-  isAuthPage || hideHeaderFooterRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
+    isAuthPage || hideHeaderFooterRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
 
   const [isNavbarVisible, setIsNavbarVisible] = useState(false);
   const toggleNavbar = () => setIsNavbarVisible((prev) => !prev);
@@ -85,13 +94,17 @@ function PageLayout() {
 
   return (
     <>
-      { !shouldHideUI && (
+      {!shouldHideUI && (
         <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
       )}
       <div id="right-body-section">
-        {(!shouldHideUI && !shouldHideLayout) && <Header onIconClick={toggleNavbar} />}
+        {!shouldHideUI && !shouldHideLayout && (
+          <Header onIconClick={toggleNavbar} />
+        )}
         <main>{content}</main>
-        {(!shouldHideUI && !shouldHideLayout) && !shouldHideHeaderFooter && <Footer />}
+        {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && (
+          <Footer />
+        )}
       </div>
     </>
   );

@@ -6,6 +6,7 @@ from datetime import date
 
 class RequestItems(BaseModel):
     item_name: str
+    category: str
     quantity: int
     price_p_each: float
 
@@ -22,6 +23,7 @@ class ProcurementRequestCreate(BaseModel):
 class ProcurementRequestItemSchema(BaseModel):
     item_id: int
     item_name: str
+    category: str
     quantity: int
     price_p_each: float
 

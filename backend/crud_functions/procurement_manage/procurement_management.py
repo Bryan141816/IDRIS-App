@@ -37,6 +37,7 @@ class ProcurementRequestCRUD:
                 request_id=procurement_request.request_id,
                 item_name=item.item_name,
                 quantity=item.quantity,
+                category=item.category,
                 price_p_each=item.price_p_each,
             )
             for item in request.request_items

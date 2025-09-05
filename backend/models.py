@@ -588,6 +588,7 @@ class ProcurementRequestItem(Base):
 
     request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
     item_name = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
     price_p_each = Column(Float, nullable=False)
 

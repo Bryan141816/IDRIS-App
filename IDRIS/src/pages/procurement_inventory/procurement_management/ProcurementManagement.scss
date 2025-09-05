@@ -1,10 +1,11 @@
 /* Procurement Management System Styles */
 @use '../../../styles/variables' as *;
+
 .procurement-management {
-     padding-top: 20px;
-    min-height: calc(100vh - 60px);
-    background: $backgroundColor;
-    overflow-y: auto;
+  padding-top: 20px;
+  min-height: calc(100vh - 60px);
+  background: $backgroundColor;
+  overflow-y: auto;
 
   @media (max-width: 1024px) {
     margin-left: 0;
@@ -521,7 +522,8 @@
       border-collapse: collapse;
       min-width: 800px;
 
-      th, td {
+      th,
+      td {
         padding: 1rem;
         text-align: left;
         border-bottom: 1px solid #e5e7eb;
@@ -869,7 +871,9 @@
           margin-bottom: 0.5rem;
         }
 
-        input, select, textarea {
+        input,
+        select,
+        textarea {
           width: 100%;
           padding: 0.75rem;
           border: 2px solid #c5d7e5;
@@ -955,7 +959,7 @@
         .items-list {
           .item-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
             gap: 1rem;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
@@ -980,7 +984,8 @@
         }
       }
 
-      .approval-summary, .rejection-summary {
+      .approval-summary,
+      .rejection-summary {
         background: #f8fafc;
         padding: 1rem;
         border-radius: 0.5rem;
@@ -1024,6 +1029,7 @@
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1065,6 +1071,7 @@ textarea:focus {
 
 /* High Contrast Mode Support */
 @media (prefers-contrast: high) {
+
   .stat-card,
   .request-card,
   .chart-container {

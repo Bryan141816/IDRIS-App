@@ -4,6 +4,7 @@ import {
   getStatusColor,
   formatCurrency,
   calculateTotal,
+  toTitleCase,
 } from "../ProcurementDefaults";
 import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { ModalOverlay } from "../ProcurementModalsDefault";
@@ -62,6 +63,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
               {selectedItem?.request_items?.map((item, index) => (
                 <div key={index} className="item-row">
                   <span>{item.item_name}</span>
+                  <span>{toTitleCase(item.category)}</span>
                   <span>Qty: {item.quantity}</span>
                   <span>{formatCurrency(item.price_p_each)}</span>
                   <span>

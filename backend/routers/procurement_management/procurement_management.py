@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
 import math
 from fastapi import Request
-
+from sqlalchemy import func
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
     ProcurementRequestSchema,
@@ -27,6 +27,93 @@ router = APIRouter(
     tags=["procurement_management"],
     dependencies=[Depends(RoleChecker(["logistics admin"]))],
 )
+
+# Dashboard Function
+
+
+@router.get("/procurement_management/get_dashboard_data")
+def get_request_counts(db: Session = Depends(get_db)):
+    # 📊 Total requests (only approved)
+    total_requests = (
+        db.query(func.count(ProcurementRequest.request_id))
+        .filter(func.lower(ProcurementRequest.status) == "approved")
+        .scalar()
+    )
+
+    # Pending count
+    total_pending = (
+        db.query(func.count(ProcurementRequest.request_id))
+        .filter(func.lower(ProcurementRequest.status) == "pending approval")
+        .scalar()
+    )
+
+    # Approved count
+    total_approved = total_requests
+
+    # 💰 Grand total value (only approved)
+    total_value = (
+        db.query(
+            func.sum(
+                ProcurementRequestItem.quantity * ProcurementRequestItem.price_p_each
+            )
+        )
+        .join(
+            ProcurementRequest,
+            ProcurementRequest.request_id == ProcurementRequestItem.request_id,
+        )
+        .filter(func.lower(ProcurementRequest.status) == "approved")
+        .scalar()
+    ) or 0.0
+
+    # 📦 Totals per category (only approved requests)
+    category_totals = (
+        db.query(
+            func.lower(ProcurementRequestItem.category).label("category"),
+            func.sum(
+                ProcurementRequestItem.quantity * ProcurementRequestItem.price_p_each
+            ).label("total"),
+        )
+        .join(
+            ProcurementRequest,
+            ProcurementRequest.request_id == ProcurementRequestItem.request_id,
+        )
+        .filter(func.lower(ProcurementRequest.status) == "approved")
+        .group_by(func.lower(ProcurementRequestItem.category))
+        .all()
+    )
+
+    # Convert to dictionary for easier lookup
+    category_dict = {cat.category: float(cat.total) for cat in category_totals}
+
+    # Fixed category mapping (frontend label → db lowercase key)
+    category_map = {
+        "Medical Supplies": "medical supplies",
+        "Equipment": "equipment",
+        "Transportation": "transportation",
+        "Office Supplies": "office supplies",
+    }
+
+    # 🧮 Build resource usage with percentages
+    resource_usage = [
+        {
+            "category": label,  # frontend-friendly name
+            "used": category_dict.get(db_key, 0.0),
+            "percentage": (
+                round((category_dict.get(db_key, 0.0) / total_value) * 100, 2)
+                if total_value > 0
+                else 0
+            ),
+        }
+        for label, db_key in category_map.items()
+    ]
+
+    return {
+        "total_requests": total_requests,
+        "total_pending": total_pending,
+        "total_approved": total_approved,
+        "total_value": total_value,
+        "resource_usage": resource_usage,
+    }
 
 
 @router.post("/procurement_management/add_request")

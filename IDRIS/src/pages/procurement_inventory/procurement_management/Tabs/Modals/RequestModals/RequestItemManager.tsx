@@ -1,10 +1,12 @@
 import { RequestItem } from "../ProcurementDefaults";
 import { useState } from "react";
+import { formatCurrency, toTitleCase } from "../ProcurementDefaults";
 interface RequestItemManagerProp {
   onAdd: (requestItem: Omit<RequestItem, "item_id">) => void;
   onDelete: (id: number) => void;
   requestItems: RequestItem[];
 }
+
 export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
   onAdd,
   onDelete,
@@ -12,11 +14,16 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
 }) => {
   const defaultItem: Omit<RequestItem, "item_id"> = {
     item_name: "",
+    category: "",
     quantity: 0,
     price_p_each: 0,
   };
   const [item, setItem] = useState<Omit<RequestItem, "item_id">>(defaultItem);
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e:
+      | React.ChangeEvent<HTMLInputElement>
+      | React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
 
     setItem((prev) => ({
@@ -45,7 +52,9 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
     >
       <form
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateRows: "repeat(3,1fr)",
           width: "100%",
           flexDirection: "row",
           gap: "5px",
@@ -59,7 +68,18 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
           onChange={handleChange}
           required
         />
-
+        <select
+          defaultValue=""
+          name="category"
+          value={item.category}
+          onChange={handleChange}
+        >
+          <option value="">Select Category</option>
+          <option value="medical supplies">Medical Supplies</option>
+          <option value="equipment">Equipment</option>
+          <option value="transportation">Transportation</option>
+          <option value="office supplies">Office Supplies</option>
+        </select>
         <input
           type="number"
           placeholder="Enter quantity"
@@ -68,7 +88,6 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
           onChange={handleChange}
           required
         />
-
         <input
           type="number"
           placeholder="Enter item price"
@@ -77,10 +96,13 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
           onChange={handleChange}
           required
         />
-
         <button
           className="primary-btn"
-          style={{ width: "fit-content", whiteSpace: "nowrap" }}
+          style={{
+            width: "100%",
+            whiteSpace: "nowrap",
+            gridColumn: "span 2",
+          }}
           onClick={handleAddItem}
         >
           Add Item
@@ -111,15 +133,25 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
               padding: "5px",
               gap: "5px",
               color: "black",
-              fontWeight: "600",
+              fontWeight: "500",
             }}
           >
-            <span style={{ width: "30%" }}>{item.item_name}</span>
-            <span style={{ width: "20%" }}>Qty: {item.quantity}</span>
-            <span style={{ width: "20%" }}>{item.price_p_each}</span>
-            <span style={{ width: "20%" }}>
-              {item.price_p_each * item.quantity}
-            </span>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                width: "100%",
+                gap: "5px",
+              }}
+            >
+              <span>Name: {item.item_name}</span>
+              <span>Cat: {toTitleCase(item.category)}</span>
+              <span>Qty: {item.quantity}</span>
+              <span>Cost: {formatCurrency(item.price_p_each)}</span>
+              <span>
+                Total: {formatCurrency(item.price_p_each * item.quantity)}
+              </span>
+            </div>
 
             <button
               className="primary-btn"

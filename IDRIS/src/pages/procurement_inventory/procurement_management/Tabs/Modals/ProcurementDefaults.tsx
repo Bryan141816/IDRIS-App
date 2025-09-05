@@ -14,6 +14,7 @@ export type User = {
 export type RequestItem = {
   item_id: number;
   item_name: string;
+  category: string;
   quantity: number;
   price_p_each: number;
 };
@@ -67,3 +68,9 @@ export const getStatusColor = (status: string) => {
 };
 export const calculateTotal = (items?: RequestItem[] | null): number =>
   items?.reduce((sum, item) => sum + item.quantity * item.price_p_each, 0) ?? 0;
+export const toTitleCase = (str: string) => {
+  return str
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};

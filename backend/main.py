@@ -26,27 +26,11 @@ from routers.volunteer_management import (
 )  # Import the org volunteer routes
 from routers.manage_users import ManageUsers
 from routers.procurement_management import procurement_management
-from redis_client import wait_redis, r
-import notification_handler
-
 from decouple import config
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-
-@app.on_event("startup")
-async def startup_event():
-    await wait_redis()  # Wait until Redis is ready
-
-
-@app.get("/ping")
-async def ping():
-    pong = await r.ping()
-    return {"pong": pong}
-
-
 SECRET_KEY = config("SECRET_KEY")
 app.add_middleware(
     CORSMiddleware,
@@ -64,7 +48,6 @@ app.add_middleware(
     secret_key=SECRET_KEY,
 )
 app.include_router(authentication.router)
-app.include_router(notification_handler.router)
 app.include_router(ManageUsers.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(users.router, prefix="/users", tags=["Utilities"])

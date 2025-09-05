@@ -14,7 +14,8 @@ const Login = () => {
   const [erroMessage, setErrorMessage] = useState("");
 
   const { setUserRoles } = useUserRoleContext();
-  const { setUserType, setEmail, setUsername, setUserReady } = useUserContext();
+  const { setUserType, setEmail, setUsername, setUserReady, setUserId } =
+    useUserContext();
 
   const navigate = useNavigate();
 
@@ -28,6 +29,7 @@ const Login = () => {
         setUserType(userData["user_type"]);
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
+        setUserId(userData["user_id"]);
         setUsername(userData["username"]);
         setUserReady(true);
         if (userData["roles"].includes("super admin")) {

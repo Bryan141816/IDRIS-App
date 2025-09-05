@@ -44,6 +44,7 @@ class UserCreate(UserBase):
 
 class UserSchema(UserBase):
     id: int
+    user_id: int
     roles: List[str]
     user_type: Optional[str]
 

@@ -12,7 +12,8 @@ const OauthCallback = () => {
   const token = queryParams.get("token");
 
   const { setUserRoles } = useUserRoleContext();
-  const { setUserType, setEmail, setUsername, setUserReady } = useUserContext();
+  const { setUserType, setEmail, setUsername, setUserReady, setUserId } =
+    useUserContext();
 
   const navigate = useNavigate();
   useEffect(() => {
@@ -24,6 +25,7 @@ const OauthCallback = () => {
         if (userData) {
           setUserType(userData["user_type"]);
           setUserRoles(userData["roles"]);
+          setUserId(userData["user_id"]);
           setEmail(userData["email"]);
           setUsername(userData["username"]);
           setUserReady(true);

@@ -1,9 +1,71 @@
 import React, { useState, ReactNode, useEffect } from "react";
 import "../ProcurementManagement.scss";
 import { v4 as uuidv4 } from "uuid";
-import { deleteRecord } from "../../../lgu_profiling/LGUmanagement/manage_LGU";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 type ModalType = "submit" | "view" | "approve" | "reject" | "update" | null;
+
+type User = {
+  user_id: number;
+  username: string;
+};
+
+type RequestItem = {
+  item_id: number;
+  item_name: string;
+  quantity: number;
+  price_p_each: number;
+};
+
+type RequestData = {
+  request_id: number;
+  requester: User; // ✅ instead of requester_id, now has username
+  title: string;
+  lgu_name: string;
+  priority: "low" | "medium" | "high";
+  status: "pending approval" | "approved" | "rejected" | "in progress";
+  description: string;
+  justification: string;
+  date: string; // ISO string from backend
+  comment?: string;
+  reason_or_code?: string;
+  request_items: RequestItem[];
+};
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+const getPriorityColor = (priority: string) => {
+  switch (priority.toLowerCase()) {
+    case "high":
+      return "high";
+    case "medium":
+      return "medium";
+    case "low":
+      return "low";
+    default:
+      return "medium";
+  }
+};
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "pending approval":
+      return "pending";
+    case "approved":
+      return "approved";
+    case "rejected":
+      return "rejected";
+    case "in progress":
+      return "in-progress";
+    default:
+      return "pending";
+  }
+};
+
+const calculateTotal = (items?: RequestItem[] | null): number =>
+  items?.reduce((sum, item) => sum + item.quantity * item.price_p_each, 0) ?? 0;
 
 const RequestTab = () => {
   // type RequestItem = {
@@ -98,54 +160,6 @@ const RequestTab = () => {
   // ];
   //
 
-  type User = {
-    user_id: number;
-    username: string;
-  };
-
-  type RequestItem = {
-    item_id: number;
-    item_name: string;
-    quantity: number;
-    price_p_each: number;
-  };
-
-  type RequestData = {
-    request_id: number;
-    requester: User; // ✅ instead of requester_id, now has username
-    title: string;
-    lgu_name: string;
-    priority: "low" | "medium" | "high";
-    status: "pending approval" | "approved" | "rejected" | "in progress";
-    description: string;
-    justification: string;
-    date: string; // ISO string from backend
-    comment?: string;
-    reason_or_code?: string;
-    request_items: RequestItem[];
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-  const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case "high":
-        return "high";
-      case "medium":
-        return "medium";
-      case "low":
-        return "low";
-      default:
-        return "medium";
-    }
-  };
-  const calculateTotal = (items: RequestItem[]): number =>
-    items.reduce((sum, item) => sum + item.quantity * item.price_p_each, 0);
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending approval":
@@ -199,6 +213,12 @@ const RequestTab = () => {
           onClose={closeModal}
         ></SubmitProcurementRequest>
       )}
+      {activeModal === "view" && (
+        <ViewDetails
+          onClose={closeModal}
+          selectedItem={selectedItem}
+        ></ViewDetails>
+      )}
       <div className="section-header">
         <h2>Procurement Requests</h2>
         <button className="primary-btn" onClick={() => openModal("submit")}>
@@ -239,7 +259,15 @@ const RequestTab = () => {
                   </div>
                   <div className="detail-row">
                     <span>Date:</span>
-                    <span>{new Date(request.date).toLocaleDateString()}</span>
+
+                    <span>
+                      {new Intl.DateTimeFormat("en-PH", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        timeZone: "Asia/Manila", // <-- force UTC+8
+                      }).format(new Date(request.date))}
+                    </span>
                   </div>
                   <div className="detail-row">
                     <span>Estimated Cost:</span>
@@ -332,18 +360,11 @@ const ModalOverlay: React.FC<ModalProps> = ({
     </div>
   );
 };
-interface SubmitProcurementRequestProp {
+interface DefaultModalProps {
   onClose: () => void;
 }
-type RequestItem = {
-  id: number;
-  name: string;
-  quantity: number;
-  unitCost: number;
-};
-const SubmitProcurementRequest: React.FC<SubmitProcurementRequestProp> = ({
-  onClose,
-}) => {
+
+const SubmitProcurementRequest: React.FC<DefaultModalProps> = ({ onClose }) => {
   const [request, setRequest] = useState<{
     title: string;
     lgu_name: string;
@@ -383,17 +404,17 @@ const SubmitProcurementRequest: React.FC<SubmitProcurementRequestProp> = ({
     console.log(response.data);
   };
 
-  const addRequestItem = (requestItem: Omit<RequestItem, "id">) => {
+  const addRequestItem = (requestItem: Omit<RequestItem, "item_id">) => {
     setRequestItems((prev) => [
       ...prev,
       {
         ...requestItem,
-        id: uuidv4(), // ✅ unique, stable ID
+        item_id: uuidv4(), // ✅ unique, stable ID
       },
     ]);
   };
   const deleteItem = (id: number) => {
-    setRequestItems((prev) => prev.filter((item) => item.id !== id));
+    setRequestItems((prev) => prev.filter((item) => item.item_id !== id));
   };
   return (
     <ModalOverlay onClose={onClose} modalType="submit" onSubmit={addRequest}>
@@ -466,7 +487,7 @@ const SubmitProcurementRequest: React.FC<SubmitProcurementRequestProp> = ({
 };
 
 interface RequestItemManagerProp {
-  onAdd: (requestItem: Omit<RequestItem, "id">) => void;
+  onAdd: (requestItem: Omit<RequestItem, "item_id">) => void;
   onDelete: (id: number) => void;
   requestItems: RequestItem[];
 }
@@ -475,12 +496,12 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
   onDelete,
   requestItems,
 }) => {
-  const defaultItem: Omit<RequestItem, "id"> = {
-    name: "",
+  const defaultItem: Omit<RequestItem, "item_id"> = {
+    item_name: "",
     quantity: 0,
-    unitCost: 0,
+    price_p_each: 0,
   };
-  const [item, setItem] = useState<Omit<RequestItem, "id">>(defaultItem);
+  const [item, setItem] = useState<Omit<RequestItem, "item_id">>(defaultItem);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -491,8 +512,8 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
     }));
   };
 
-  const isEmptyItem = (i: Omit<RequestItem, "id">) =>
-    i.name.trim() === "" || i.quantity === 0 || i.unitCost === 0;
+  const isEmptyItem = (i: Omit<RequestItem, "item_id">) =>
+    i.item_name.trim() === "" || i.quantity === 0 || i.price_p_each === 0;
   const handleAddItem = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isEmptyItem(item)) return;
     e.preventDefault(); // optional, only if you want to stop default form behavior
@@ -519,8 +540,8 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
         <input
           type="text"
           placeholder="Enter item name"
-          name="name"
-          value={item.name}
+          name="item_name"
+          value={item.item_name}
           onChange={handleChange}
           required
         />
@@ -537,8 +558,8 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
         <input
           type="number"
           placeholder="Enter item price"
-          name="unitCost"
-          value={item.unitCost}
+          name="price_p_each"
+          value={item.price_p_each}
           onChange={handleChange}
           required
         />
@@ -566,7 +587,7 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
       >
         {requestItems.map((item) => (
           <div
-            key={item.id} // 👈 important for React list rendering
+            key={item.item_id} // 👈 important for React list rendering
             style={{
               display: "flex",
               width: "100%",
@@ -579,11 +600,11 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
               fontWeight: "600",
             }}
           >
-            <span style={{ width: "30%" }}>{item.name}</span>
+            <span style={{ width: "30%" }}>{item.item_name}</span>
             <span style={{ width: "20%" }}>Qty: {item.quantity}</span>
-            <span style={{ width: "20%" }}>{item.unitCost}</span>
+            <span style={{ width: "20%" }}>{item.price_p_each}</span>
             <span style={{ width: "20%" }}>
-              {item.unitCost * item.quantity}
+              {item.price_p_each * item.quantity}
             </span>
 
             <button
@@ -593,7 +614,7 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
                 whiteSpace: "nowrap",
                 marginLeft: "auto",
               }}
-              onClick={() => onDelete(item.id)}
+              onClick={() => onDelete(item.item_id)}
             >
               Delete
             </button>
@@ -601,6 +622,82 @@ const RequestItemManager: React.FC<RequestItemManagerProp> = ({
         ))}
       </div>
     </div>
+  );
+};
+
+interface ViewDetailsProps extends DefaultModalProps {
+  selectedItem: RequestData | null;
+}
+
+const ViewDetails: React.FC<ViewDetailsProps> = ({ onClose, selectedItem }) => {
+  return (
+    <ModalOverlay onClose={onClose} modalType="view">
+      <div className="modal-content">
+        <h3>Request Details - {selectedItem?.request_id}</h3>
+        <div className="view-details">
+          <div className="detail-section">
+            <h4>Request Information</h4>
+            <div className="detail-row">
+              <strong>Title:</strong>
+              <span>{selectedItem?.title}</span>
+            </div>
+            <div className="detail-row">
+              <strong>Requester:</strong>
+              <span>{selectedItem?.requester.username}</span>
+            </div>
+            <div className="detail-row">
+              <strong>LGU Name:</strong>
+              <span>{selectedItem?.lgu_name}</span>
+            </div>
+            <div className="detail-row">
+              <strong>Priority:</strong>
+              <span
+                className={`priority-badge ${getPriorityColor(selectedItem?.priority || "")}`}
+              >
+                {selectedItem?.priority}
+              </span>
+            </div>
+            <div className="detail-row">
+              <strong>Status:</strong>
+              <span
+                className={`status-badge ${getStatusColor(selectedItem?.status || "")}`}
+              >
+                {selectedItem?.status}
+              </span>
+            </div>
+            <div className="detail-row">
+              <strong>Description:</strong>
+              <span>{selectedItem?.description}</span>
+            </div>
+          </div>
+          <div className="detail-section">
+            <h4>Items Requested</h4>
+            <div className="items-list">
+              {selectedItem?.request_items?.map((item, index) => (
+                <div key={index} className="item-row">
+                  <span>{item.item_name}</span>
+                  <span>Qty: {item.quantity}</span>
+                  <span>{formatCurrency(item.price_p_each)}</span>
+                  <span>
+                    <strong>
+                      {formatCurrency(item.quantity * item.price_p_each)}
+                    </strong>
+                  </span>
+                </div>
+              ))}
+              <div className="items-total">
+                <strong>
+                  Total:{" "}
+                  {formatCurrency(
+                    calculateTotal(selectedItem?.request_items) || 0,
+                  )}
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ModalOverlay>
   );
 };
 

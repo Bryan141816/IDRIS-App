@@ -5,9 +5,9 @@ from datetime import date
 
 
 class RequestItems(BaseModel):
-    name: str
+    item_name: str
     quantity: int
-    unitCost: float
+    price_p_each: float
 
 
 class ProcurementRequestCreate(BaseModel):
@@ -49,7 +49,7 @@ class ProcurementRequestSchema(BaseModel):
     status: str  # Same here
     description: str
     justification: str
-    date: date
+    date: datetime
     comment: Optional[str] = None
     reason_or_code: Optional[str] = None
 

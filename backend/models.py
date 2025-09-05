@@ -574,7 +574,7 @@ class ProcurementRequest(Base):
     status = Column(String(50), nullable=False)
     description = Column(String(255), nullable=False)
     justification = Column(String(255), nullable=False)
-    date = Column(Date, nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False)
     comment = Column(String(255), nullable=True)
     reason_or_code = Column(String(255), nullable=True)
 

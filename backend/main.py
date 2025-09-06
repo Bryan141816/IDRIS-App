@@ -27,7 +27,7 @@ from routers.volunteer_management import (
 from routers.manage_users import ManageUsers
 from routers.procurement_management import procurement_management
 from routers.notification import notification
-from redis_client import wait_redis, r
+from redis_client import r, close_redis
 import real_time_handler
 
 from decouple import config
@@ -51,6 +51,14 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
 )
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+
+    print("Redis connection closed")
+
+
 app.include_router(authentication.router)
 app.include_router(real_time_handler.router)
 app.include_router(notification.router)

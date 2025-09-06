@@ -34,32 +34,7 @@ const ProcurementManagement = () => {
   useEffect(() => {
     getDashboardData();
   }, []);
-  const resourceUsage = [
-    {
-      category: "Medical Supplies",
-      allocated: 500000,
-      used: 325000,
-      percentage: 65,
-    },
-    {
-      category: "Equipment",
-      allocated: 800000,
-      used: 480000,
-      percentage: 60,
-    },
-    {
-      category: "Transportation",
-      allocated: 1200000,
-      used: 720000,
-      percentage: 60,
-    },
-    {
-      category: "Office Supplies",
-      allocated: 150000,
-      used: 45000,
-      percentage: 30,
-    },
-  ];
+
   const renderDashboard = () => (
     <div className="dashboard-content">
       <div className="stats-grid">
@@ -180,13 +155,6 @@ const ProcurementManagement = () => {
           onClick={() => setActiveTab("requests")}
         >
           📋 Requests
-        </button>
-
-        <button
-          className={`nav-btn ${activeTab === "notifications" ? "active" : ""}`}
-          onClick={() => setActiveTab("notifications")}
-        >
-          🔔 Notifications
         </button>
       </div>
 

@@ -25,7 +25,7 @@ class DonationType(str, Enum):
 
 
 class FundingProposalCreate(BaseModel):
-    funding_id: int
+    funding_id: str
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")
@@ -71,7 +71,7 @@ class FundingProposalUpdate(BaseModel):
 # ======================
 
 class FundingProposalGet(BaseModel):
-    funding_id_: int = Field(..., alias="funding_id")
+    funding_id_: str = Field(..., alias="funding_id")
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")
@@ -86,7 +86,7 @@ class FundingProposalGet(BaseModel):
 
 
 class FundingProposalResponse(BaseModel):
-    funding_id: int = Field(..., alias="id")
+    funding_id: str = Field(..., alias="funding_id")
     title: str
     description: str
     budgetRequired: int = Field(..., alias="budget_required")

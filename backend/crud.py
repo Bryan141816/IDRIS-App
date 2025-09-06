@@ -73,7 +73,7 @@ def create_user(
     user_type: str,
     password: str | None = None,
     roles: list[str] = [],
-    user_id: int | None = None,
+    user_id: str | None = None,
     sub: str | None = None,
 ):
     hashed = None

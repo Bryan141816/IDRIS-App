@@ -92,7 +92,7 @@ def create_proposal_endpoint(
 
 @router_admin.put("/proposals/update_proposal/{funding_id}", response_model=FundingProposalResponse)
 def update_proposal_endpoint(
-    funding_id: int,
+    funding_id: str,
     title: str = Form(...),
     description: str = Form(...),
     budgetRequired: int = Form(...),

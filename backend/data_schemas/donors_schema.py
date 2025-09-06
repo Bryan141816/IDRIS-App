@@ -21,20 +21,20 @@ class DonorBase(BaseModel):
 
 class DonorCreate(DonorBase):
     # user_id is optional in the model; include here if you create donors tied to users
-    user_id: Optional[int] = None
+    user_id: Optional[str] = None
 
 
 class DonorUpdate(BaseModel):
     donor_type: Optional[DonorType] = None
     organization_name: Optional[str] = None
     is_verified: Optional[bool] = None
-    user_id: Optional[int] = None
+    user_id: Optional[str] = None
 
 
 # === Response Schemas ===
 class DonorResponse(BaseModel):
-    donorId: int = Field(..., alias="donor_id")
-    user_id: Optional[int] = None
+    donorId: str = Field(..., alias="donor_id")
+    user_id: Optional[str] = None
     organization_name: Optional[str] = None
     donor_type: DonorType
     is_verified: bool = False
@@ -78,7 +78,7 @@ class DonorStatsResponse(BaseModel):
 
 
 class IndividualDonorProfile(BaseModel):
-    donorId: int = Field(..., alias="donor_id")
+    donorId: str = Field(..., alias="donor_id")
     donor_name: str  # comes from Donor.donor_name @property
     donor_type: DonorType
     is_verified: bool
@@ -91,8 +91,8 @@ class IndividualDonorProfile(BaseModel):
 
 
 class DonorAllAttributes(BaseModel):
-    donorId: int = Field(..., alias="donor_id")
-    user_id: Optional[int] = None
+    donorId: str = Field(..., alias="donor_id")
+    user_id: Optional[str] = None
     donor_type: DonorType
     organization_name: Optional[str] = None
     is_verified: bool

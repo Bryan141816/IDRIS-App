@@ -35,19 +35,6 @@ from decouple import config
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
-
-@app.on_event("startup")
-async def startup_event():
-    await wait_redis()  # Wait until Redis is ready
-
-
-@app.get("/ping")
-async def ping():
-    pong = await r.ping()
-    return {"pong": pong}
-
-
 SECRET_KEY = config("SECRET_KEY")
 app.add_middleware(
     CORSMiddleware,

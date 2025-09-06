@@ -21,6 +21,8 @@ import {
   ViewBarangayModal,
   EditBarangayModal,
 } from "./Modals/BarangayModal";
+import { AddHazardModal, ViewHazardModal, EditHazardModal } from "./Modals/HazardModal";
+
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 /* ========================= API HELPERS ========================= */
@@ -336,6 +338,17 @@ const MapOfCebu = () => {
             }),
           );
           break;
+          case "hazard":
+  setSelectedViewData((prev) =>
+    safeUpdateByIndex(prev, {
+      2: payload.hazard_area,
+      3: payload.image_url,
+      4: payload.hazard_type,
+      // 1: optionally update last_updated if your API returns it; otherwise leave it
+    }),
+  );
+  break;
+
         case "rafi":
           setSelectedViewData((prev) =>
             safeUpdateByIndex(prev, {
@@ -392,6 +405,12 @@ const MapOfCebu = () => {
       />
 
       {/* ---------- ADD MODALS ---------- */}
+      <AddHazardModal
+  isModalOpen={addModalState.hazard}
+  closeModal={closeAddModal}
+  setMessageBox={setMessageBox}
+  handleAddRecord={handleAddRecord}
+/>
       <AddEvacuationModal
         isModalOpen={addModalState.evacuation}
         closeModal={closeAddModal}
@@ -501,6 +520,26 @@ const MapOfCebu = () => {
           handleEditRecord={handleEditRecord}
         />
       )}
+{/* HAZARD */}
+{viewModalState.hazard && activeTab === "hazard" && selectedViewData && (
+  <ViewHazardModal
+    isModalOpen={viewModalState.hazard}
+    closeModal={closeViewModal}
+    setMessageBox={setMessageBox}
+    selectedData={selectedViewData}
+    handleDeleteRecord={handleDeleteRecord}
+    openEditModal={openEditModal}
+  />
+)}
+{editModalState.hazard && activeTab === "hazard" && selectedViewData && (
+  <EditHazardModal
+    isModalOpen={editModalState.hazard}
+    closeModal={closeEditModal}
+    setMessageBox={setMessageBox}
+    selectedData={selectedViewData}
+    handleEditRecord={handleEditRecord}
+  />
+)}
 
       {/* ---------- TABS ---------- */}
       <div className="tabs">
@@ -613,17 +652,18 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report" />
                 <button>Search</button>
-                <button /* onClick={openAddModal} */>+ Add Hazard</button>
+               <button onClick={openAddModal}>+ Add Hazard</button>
+
               </div>
             </div>
             {hazardResponse ? (
-              <TableView
-                tableJSON={hazardResponse}
-                onClickCallback={() => {}}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
+            <TableView
+  tableJSON={hazardResponse}
+  onClickCallback={(row: TableRowShape) => openViewModal(row)}
+  setCallbackTableData={true}
+  pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
+  updateTable={(fn) => (refreshTable.current = fn)}
+/>
             ) : (
               <div>Loading data...</div>
             )}

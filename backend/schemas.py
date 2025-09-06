@@ -148,6 +148,22 @@ class EvacuationCenterOut(BaseModel):
     capacity: int
 
 
+class HazardBase(BaseModel):
+    hazard_area: str
+    hazard_type: str
+    image_url: str | None = None
+    action: str | None = None
+
+class HazardCreate(HazardBase):
+    pass
+
+class HazardOut(HazardBase):
+    id: int
+    last_updated: datetime | None = None
+
+    class Config:
+        from_attributes = True
+        
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

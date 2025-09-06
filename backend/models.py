@@ -108,6 +108,16 @@ class RAFIInfrastructure(Base):
     description = Column(String(255), nullable=False)
 
 
+class Hazard(Base):
+    __tablename__ = "hazards_record"
+
+    id = Column(Integer, primary_key=True, index=True)
+    hazard_area = Column(String(255), nullable=False)   # e.g., barangay, sitio, purok
+    hazard_type = Column(String, nullable=False)
+    image_url = Column(String, nullable=True)
+    action = Column(String, nullable=True)
+    last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     __random_pk_field__ = "evacuation_id"

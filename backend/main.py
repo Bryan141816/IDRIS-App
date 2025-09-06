@@ -26,8 +26,9 @@ from routers.volunteer_management import (
 )  # Import the org volunteer routes
 from routers.manage_users import ManageUsers
 from routers.procurement_management import procurement_management
+from routers.notification import notification
 from redis_client import wait_redis, r
-import notification_handler
+import real_time_handler
 
 from decouple import config
 
@@ -64,7 +65,8 @@ app.add_middleware(
     secret_key=SECRET_KEY,
 )
 app.include_router(authentication.router)
-app.include_router(notification_handler.router)
+app.include_router(real_time_handler.router)
+app.include_router(notification.router)
 app.include_router(ManageUsers.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(users.router, prefix="/users", tags=["Utilities"])

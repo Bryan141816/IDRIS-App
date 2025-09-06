@@ -13,6 +13,8 @@ import { usePrefectLink } from "./PrefetchLink";
 import Navbar from "./components/Page_Furniture/Navbar";
 import Header from "./components/Page_Furniture/Header";
 import Footer from "./components/Page_Furniture/Footer";
+import { RealTimeDataProvider } from "./RealTimeDataContext";
+import { NotificationProvider } from "./NotificationContext";
 const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
 
 function PageLayout() {
@@ -24,6 +26,7 @@ function PageLayout() {
     setUserReady,
     isUserReady,
     setUserId,
+    userId,
   } = useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();
 
@@ -93,20 +96,22 @@ function PageLayout() {
   }
 
   return (
-    <>
-      {!shouldHideUI && (
-        <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
-      )}
-      <div id="right-body-section">
-        {!shouldHideUI && !shouldHideLayout && (
-          <Header onIconClick={toggleNavbar} />
+    <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
+      <NotificationProvider>
+        {!shouldHideUI && (
+          <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
         )}
-        <main>{content}</main>
-        {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && (
-          <Footer />
-        )}
-      </div>
-    </>
+        <div id="right-body-section">
+          {!shouldHideUI && !shouldHideLayout && (
+            <Header onIconClick={toggleNavbar} />
+          )}
+          <main>{content}</main>
+          {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && (
+            <Footer />
+          )}
+        </div>
+      </NotificationProvider>
+    </RealTimeDataProvider>
   );
 }
 

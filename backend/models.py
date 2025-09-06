@@ -1,5 +1,7 @@
+from asyncio.base_events import Server
+from contextlib import nullcontext
 from datetime import timezone
-from enum import unique
+from enum import CONFORM, unique
 from typing import Counter
 from sqlalchemy import (
     Column,
@@ -76,6 +78,21 @@ class UserProfile(Base):
     user = relationship("User", back_populates="user_profile")
 
     user = relationship("User", back_populates="user_profile")
+
+
+class Notifications(Base):
+    __tablename__ = "notifications_table"
+    notification_id = Column(
+        Integer, index=True, primary_key=True, server_default=Identity()
+    )
+    to = Column(Integer, nullable=False)
+
+    from_origin = Column(String(255), nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(String(255), nullable=False)
+    url_redirect = Column(String(255), nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False)
+    isRead = Column(Boolean)
 
 
 # LGU Profiling

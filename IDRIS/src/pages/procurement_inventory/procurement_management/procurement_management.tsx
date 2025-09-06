@@ -3,6 +3,8 @@ import "./ProcurementManagement.scss";
 import RequestTab from "./Tabs/Request";
 import { formatCurrency } from "./Tabs/Modals/ProcurementDefaults";
 import { API } from "../../../API_Handler/Axio_API_Handler";
+import { useNavigate, useParams } from "react-router-dom";
+
 const ProcurementManagement = () => {
   type RequestCounts = {
     total_requests: number;
@@ -16,7 +18,10 @@ const ProcurementManagement = () => {
     }[];
   };
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
+  const { tab } = useParams<{ tab?: string }>();
+
+  const [activeTab, setActiveTab] = useState(tab || "dashboard");
   const [requestCounterData, setRequestCounterData] =
     useState<RequestCounts | null>(null);
 
@@ -31,9 +36,24 @@ const ProcurementManagement = () => {
       console.error(e);
     }
   };
+
   useEffect(() => {
     getDashboardData();
   }, []);
+
+  // Keep state in sync with URL
+  useEffect(() => {
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    navigate(`/procurement_inventory/procurement_management/${newTab}`, {
+      replace: false,
+    });
+  };
 
   const renderDashboard = () => (
     <div className="dashboard-content">
@@ -42,7 +62,6 @@ const ProcurementManagement = () => {
           <div className="stat-icon">📋</div>
           <div className="stat-info">
             <h3>
-              {" "}
               {requestCounterData
                 ? requestCounterData.total_requests
                 : "loading data"}
@@ -54,7 +73,6 @@ const ProcurementManagement = () => {
           <div className="stat-icon">⏳</div>
           <div className="stat-info">
             <h3>
-              {" "}
               {requestCounterData
                 ? requestCounterData.total_pending
                 : "loading data"}
@@ -116,24 +134,7 @@ const ProcurementManagement = () => {
         <div className="chart-container">
           <h3>Recent Notifications</h3>
           <div className="notifications-list">
-            {/* {notifications.map((notification) => ( */}
-            {/*   <div */}
-            {/*     key={notification.id} */}
-            {/*     className={`notification-item ${notification.read ? "read" : "unread"}`} */}
-            {/*   > */}
-            {/*     <div className="notification-content"> */}
-            {/*       <div className={`notification-type ${notification.type}`}> */}
-            {/*         {notification.type === "approval_required" && "⚠️"} */}
-            {/*         {notification.type === "status_update" && "📋"} */}
-            {/*         {notification.type === "rejection" && "❌"} */}
-            {/*       </div> */}
-            {/*       <div className="notification-text"> */}
-            {/*         <p>{notification.message}</p> */}
-            {/*         <small>{notification.timestamp}</small> */}
-            {/*       </div> */}
-            {/*     </div> */}
-            {/*   </div> */}
-            {/* ))} */}
+            {/* Notifications will go here */}
           </div>
         </div>
       </div>
@@ -146,13 +147,13 @@ const ProcurementManagement = () => {
       <div className="navigation">
         <button
           className={`nav-btn ${activeTab === "dashboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
+          onClick={() => handleTabChange("dashboard")}
         >
           📊 Dashboard
         </button>
         <button
           className={`nav-btn ${activeTab === "requests" ? "active" : ""}`}
-          onClick={() => setActiveTab("requests")}
+          onClick={() => handleTabChange("requests")}
         >
           📋 Requests
         </button>
@@ -160,7 +161,7 @@ const ProcurementManagement = () => {
 
       <div className="mains-content">
         {activeTab === "dashboard" && renderDashboard()}
-        {activeTab === "requests" && <RequestTab></RequestTab>}
+        {activeTab === "requests" && <RequestTab />}
       </div>
     </div>
   );

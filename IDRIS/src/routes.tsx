@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, redirect } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
@@ -445,7 +445,7 @@ export const router = createBrowserRouter([
         path: "procurement_inventory",
         children: [
           {
-            path: "procurement_inventory",
+            path: "", // index route (just /procurement_inventory)
             lazy: ProcurementInventory,
           },
           {
@@ -454,7 +454,19 @@ export const router = createBrowserRouter([
           },
           {
             path: "procurement_management",
-            lazy: ProcurementManagement,
+            children: [
+              {
+                path: ":tab", // e.g. /procurement_inventory/procurement_management/dashboard
+                lazy: ProcurementManagement,
+              },
+              {
+                index: true, // e.g. /procurement_inventory/procurement_management
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/procurement_management/dashboard",
+                  ),
+              },
+            ],
           },
         ],
       },

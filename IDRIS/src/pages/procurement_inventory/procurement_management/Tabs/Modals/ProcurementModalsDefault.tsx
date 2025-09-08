@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 export interface ProcurementDefaultModalProps {
   onClose: () => void;
   refreshData: () => void;
+  apiUrl?: string | null;
 }
 
 interface ModalProps {

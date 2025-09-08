@@ -161,7 +161,9 @@ const ProcurementManagement = () => {
 
       <div className="mains-content">
         {activeTab === "dashboard" && renderDashboard()}
-        {activeTab === "requests" && <RequestTab />}
+        {activeTab === "requests" && (
+          <RequestTab apiUrl="/procurement_management" />
+        )}
       </div>
     </div>
   );

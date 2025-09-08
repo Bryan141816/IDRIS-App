@@ -229,6 +229,11 @@ const ProcurementManagement = () =>
     "./pages/procurement_inventory/procurement_management/procurement_management"
   ).then((module) => ({ Component: module.default }));
 
+const RequestProcurement = () =>
+  import(
+    "./pages/procurement_inventory/request_procurement/request_prcurement"
+  ).then((module) => ({ Component: module.default }));
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -445,7 +450,7 @@ export const router = createBrowserRouter([
         path: "procurement_inventory",
         children: [
           {
-            path: "", // index route (just /procurement_inventory)
+            path: "procurement_inventory", // index route (just /procurement_inventory)
             lazy: ProcurementInventory,
           },
           {
@@ -469,6 +474,10 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      {
+        path: "request_procurement",
+        lazy: RequestProcurement,
       },
       {
         path: "finance&admin/finance_management",

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "../ProcurementManagement.scss";
 
 import { API } from "../../../../API_Handler/Axio_API_Handler";
@@ -15,14 +15,16 @@ import { ViewDetails } from "./Modals/RequestModals/ViewDetailsRequest";
 import { UpdateRequestStatus } from "./Modals/RequestModals/UpdateStatus";
 import { RejectRequest } from "./Modals/RequestModals/RejectRequest";
 import { ApproveRequest } from "./Modals/RequestModals/AcceptRequest";
-const RequestTab = () => {
+import { useUserRoleContext } from "../../../../UserRoleContext";
+interface RequestTabProps {
+  apiUrl: string;
+}
+const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
   const [requests, setRequests] = useState<RequestData[]>([]);
-
+  const { userRoles } = useUserRoleContext();
   const fetchData = async () => {
     try {
-      const response = await API.get<RequestData[]>(
-        "/procurement_management/get_request",
-      );
+      const response = await API.get<RequestData[]>(`${apiUrl}/get_request`);
       setRequests(response.data); // ✅ set state with response
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -54,6 +56,7 @@ const RequestTab = () => {
         <SubmitProcurementRequest
           onClose={closeModal}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></SubmitProcurementRequest>
       )}
       {activeModal === "view" && (
@@ -63,25 +66,29 @@ const RequestTab = () => {
           refreshData={refreshData}
         ></ViewDetails>
       )}
-      {activeModal === "update" && (
+
+      {activeModal === "update" && userRoles.includes("logistics admin") && (
         <UpdateRequestStatus
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></UpdateRequestStatus>
       )}
-      {activeModal === "reject" && (
+      {activeModal === "reject" && userRoles.includes("logistics admin") && (
         <RejectRequest
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></RejectRequest>
       )}
-      {activeModal === "approve" && (
+      {activeModal === "approve" && userRoles.includes("logistics admin") && (
         <ApproveRequest
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></ApproveRequest>
       )}
       <div className="section-header">
@@ -153,24 +160,26 @@ const RequestTab = () => {
                   >
                     View Details
                   </button>
-                  {request.status === "pending approval" && (
-                    <>
-                      <button
-                        className="approve-btn"
-                        onClick={() => openModal("approve", request)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="reject-btn"
-                        onClick={() => openModal("reject", request)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                  {request.status === "pending approval" &&
+                    userRoles.includes("logistics admin") && (
+                      <>
+                        <button
+                          className="approve-btn"
+                          onClick={() => openModal("approve", request)}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="reject-btn"
+                          onClick={() => openModal("reject", request)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
                   {request.status !== "approved" &&
-                    request.status !== "rejected" && (
+                    request.status !== "rejected" &&
+                    userRoles.includes("logistics admin") && (
                       <button
                         className="action-btn"
                         onClick={() => openModal("update", request)}

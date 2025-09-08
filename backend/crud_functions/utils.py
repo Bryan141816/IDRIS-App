@@ -3,9 +3,10 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import UploadFile
 from PIL import Image
 
-import io, hashlib, secrets, string
+import io, hashlib, secrets, string, random
 # SQLSTATE codes for Postgres
 PG_UNIQUE_VIOLATION = "23505"  # unique_violation
+ALPHABET = string.ascii_letters + string.digits  # 62 symbols
 
 
 def is_unique_violation_on(
@@ -81,10 +82,34 @@ def rand_alnum(n=20):
     alphabet = string.ascii_letters + string.digits  # A-Z a-z 0-9
     return ''.join(secrets.choice(alphabet) for _ in range(n))
 
-def uid_from_string(s: str) -> int:
-    digest = hashlib.sha256(s.encode()).hexdigest()
-    return int(digest, 16) % 90000000 + 10000000
 
+def uid_from_string(s: str, length: int = 6, salt: str = "") -> str:
+    """
+    Deterministic base62 code from a string (and optional salt/namespace).
+    Increase `length` to reduce collision risk.
+    """
+    digest = hashlib.sha256((salt + s).encode()).digest()  # 32 bytes
+    # Convert the full hash to an int, then base62-encode and take the prefix
+    n = int.from_bytes(digest, "big")
+
+    chars = []
+    base = len(ALPHABET)
+    while n > 0:
+        n, r = divmod(n, base)
+        chars.append(ALPHABET[r])
+    base62 = "".join(reversed(chars)) or ALPHABET[0]
+
+    # If base62 shorter than needed, pad using more hash bits (repeat hash)
+    if len(base62) < length:
+        # Derive extra entropy by hashing the hash text once more
+        d2 = hashlib.sha256(digest).digest()
+        n2 = int.from_bytes(d2, "big")
+        while len(base62) < length:
+            n2, r = divmod(n2, base)
+            base62 += ALPHABET[r]
+
+    return base62[:length]
+    
 def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), quality=80) -> bytes:
     contents = upload_file.file.read()
     image = Image.open(io.BytesIO(contents))
@@ -95,3 +120,6 @@ def process_image_to_webp(upload_file: UploadFile, max_size=(1080, 1080), qualit
     image.save(out, format="WEBP", quality=quality, optimize=True)
     out.seek(0)
     return out.read()
+
+def random_suffix(length: int = 6) -> str:
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))

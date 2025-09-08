@@ -4,6 +4,7 @@ from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy import extract, func, case, and_
 from typing import Optional, Sequence, Union
 from datetime import datetime
+from crud_functions.utils import random_suffix, uid_from_string
 
 from crud_functions.utils import _to_enum, uid_from_string, rand_alnum
 
@@ -75,6 +76,7 @@ class DonationCRUD:
             if type == DonationType.CASH:
                 cash = Donation_Cash(
                     donation_id=donation.donation_id,
+                    cash_id = uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                     amount=getattr(donation_data, "amount", None),  # Decimal/float OK; DB column is Numeric
                     payment_method=getattr(donation_data, "payment_method", None)
                 )
@@ -88,9 +90,9 @@ class DonationCRUD:
                     est_val = getattr(donation_data, "amount", None)
 
                 inkind = Donation_InKind(
+                    inkind_id = uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                     donation_id=donation.donation_id,
                     item_description=item_desc,
-                    description=getattr(donation_data, "description", None),
                     estimated_value=est_val,
                     quantity=getattr(donation_data, "quantity", None),
                 )
@@ -128,48 +130,13 @@ class DonationCRUD:
             funding_id = getattr(donation_data, "funding_id", None),
             frequency=frequency,
             amount=donation_data.amount,
-            description=donation_data.description,
+            # description=donation_data.description,
             status=DonationStatus.PENDING,
             kind="cash",
             next_donation_date=donation_data.next_donation_date,
             end_date=getattr(donation_data, "recurring_end_date", None),
             is_active=True,
             payment_method=donation_data.payment_method,
-        )
-        db.add(donation)
-        db.commit()
-        db.refresh(donation)
-        return donation
-
-    @staticmethod
-    def create_inkind_donation(db: Session, donation_data: InKindDonationCreate) -> Donation:
-        """
-        Maps:
-          - donation_type -> frequency (default ONE_TIME)
-        Forces 'kind' = "inkind".
-        """
-        frequency = _to_enum(
-            DonationFrequency,
-            getattr(donation_data, "donation_type", None),
-            default=DonationFrequency.ONE_TIME,
-        )
-
-        donation = Donation(
-            donor_id=donation_data.donor_id,
-            funding_id=donation_data.funding_id,
-            frequency=frequency,
-            amount=None,  # in-kind has no direct cash amount
-            description=donation_data.description,
-            status=DonationStatus.PENDING,
-            kind="inkind",
-            item_description=donation_data.item_description,
-            estimated_value=donation_data.estimated_value,
-            quantity=donation_data.quantity,
-            # in-kind not recurring by default; adjust if you support recurring in-kind
-            next_donation_date=None,
-            end_date=None,
-            is_active=False,
-            payment_method=None,
         )
         db.add(donation)
         db.commit()

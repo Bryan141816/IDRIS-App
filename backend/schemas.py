@@ -13,7 +13,7 @@ class Number(BaseModel):
 
 
 class ID(BaseModel):
-    id: int
+    id: str
 
 
 class LoginSchema(BaseModel):
@@ -44,7 +44,7 @@ class UserCreate(UserBase):
 
 class UserSchema(UserBase):
     id: int
-    user_id: int
+    user_id: str
     roles: List[str]
     user_type: Optional[str]
 
@@ -63,7 +63,7 @@ class UserUpdate(BaseModel):
 
 
 class UserSimple(BaseModel):
-    user_id: int
+    user_id: str
     username: str
     email: str
 

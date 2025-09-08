@@ -20,6 +20,7 @@ from sqlalchemy import (
     CheckConstraint,
     Index,
     ARRAY,
+    Text,
 )
 from sqlalchemy import event, func, case, literal, select
 from sqlalchemy.orm import relationship, Session
@@ -38,7 +39,7 @@ class User(Base):
     __random_pk_field__ = "user_id"
 
     id = Column(Integer, index=True, server_default=Identity())
-    user_id = Column(Integer, primary_key=True)
+    user_id = Column(String, primary_key=True)
     email = Column(String, unique=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String, nullable=True)
@@ -62,7 +63,7 @@ class UserProfile(Base):
     __random_pk_field__ = "user_profile_id"
     id = Column(Integer, index=True, server_default=Identity())
 
-    user_profile_id = Column(Integer, primary_key=True)
+    user_profile_id = Column(String, primary_key=True)
 
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
@@ -73,7 +74,7 @@ class UserProfile(Base):
     address = Column(String(255), nullable=True)
     bio = Column(String(500), nullable=True)
     user_id = Column(
-        Integer, ForeignKey("users.user_id"), nullable=False, unique=True
+        String, ForeignKey("users.user_id"), nullable=False, unique=True
     )  # Foreign key to User
 
     # Relationship
@@ -255,7 +256,7 @@ class FundingProposal(Base):
     __random_pk_field__ = "funding_id"
     id = Column(Integer, index=True, server_default=Identity())
 
-    funding_id = Column(Integer, primary_key=True)
+    funding_id = Column(String, primary_key=True)
     title = Column(String(255), nullable=False)
     description = Column(String, nullable=False)
     budget_required = Column(Integer, nullable=False)
@@ -279,9 +280,9 @@ class Donor(Base):
     __random_pk_field__ = "donor_id"
     id = Column(Integer, index=True, server_default=Identity())
 
-    donor_id = Column(Integer, primary_key=True)
+    donor_id = Column(String, primary_key=True)
 
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=True)
 
     donor_type = Column(String(20), nullable=False)
     organization_name = Column(
@@ -353,8 +354,8 @@ class Donation(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     # Core attributes
-    donation_id = Column(Integer, primary_key=True)
-    donor_id = Column(Integer, ForeignKey("donors.donor_id"), nullable=False)
+    donation_id = Column(String, primary_key=True)
+    donor_id = Column(String, ForeignKey("donors.donor_id"), nullable=False)
     frequency = Column(
         SqlEnum(DonationFrequency, name="donation_frequency"),
         nullable=False,
@@ -372,7 +373,7 @@ class Donation(Base):
     )
     # Additional fields
     funding_id = Column(
-        Integer, ForeignKey("funding_proposals.funding_id"), nullable=True
+        String, ForeignKey("funding_proposals.funding_id"), nullable=True
     )
     donation_date = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -411,12 +412,12 @@ class Donation_Cash(Base):
     __random_pk_field__ = "cash_id"
     id = Column(Integer, index=True, server_default=Identity())
 
-    cash_id = Column(Integer, primary_key=True)
+    cash_id = Column(String, primary_key=True)
     amount = Column(Numeric(10, 2), nullable=True)
     payment_method = Column(String(50), nullable=True)
 
     donation_id = Column(
-        Integer,
+        String,
         ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
@@ -429,8 +430,8 @@ class Donation_InKind(Base):
     __tablename__ = "donation_inkind"
     id = Column(Integer, index=True, server_default=Identity())
 
-    inkind_id = Column(Integer, primary_key=True)
-    description = Column(String(255), nullable=True)
+    inkind_id = Column(String, primary_key=True)
+    
     # In-kind donation fields
     item_description = Column(
         String, nullable=True
@@ -441,7 +442,7 @@ class Donation_InKind(Base):
     )  # Estimated monetary value of in-kind donation
 
     donation_id = Column(
-        Integer,
+        String,
         ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
@@ -467,7 +468,7 @@ class IndividualVolunteer(Base):
 
     volunteer_id = Column(Integer, primary_key=True)
 
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
     user = relationship("User", back_populates="volunteers")
 
     first_name = Column(String(50), nullable=False)
@@ -504,7 +505,7 @@ class OrganizationVolunteer(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
     user = relationship("User", back_populates="OrganizationVolunteer")
 
     organization_name = Column(String(255), nullable=False)
@@ -594,7 +595,7 @@ class VolunteerCertificate(Base):
 class ProcurementRequest(Base):
     __tablename__ = "procurement_request"
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    requester_id = Column(Integer, ForeignKey("users.user_id"))
+    requester_id = Column(String, ForeignKey("users.user_id"))
 
     requester = relationship("User", back_populates="procurement_request")
 
@@ -624,3 +625,55 @@ class ProcurementRequestItem(Base):
 
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="request_items")
+
+
+# ================================== FINANCE MODELS =====================================
+
+class TransactionType(enum.Enum):
+    INFLOW = "INFLOW"
+    OUTFLOW = "OUTFLOW"
+
+
+class RecordStatus(enum.Enum):
+    PENDING = "PENDING"          # recorded but not yet received/paid
+    RECEIVED = "RECEIVED"        # for inflows
+    PAID = "PAID"                # for outflows
+    APPROVED = "APPROVED"        # approver ok (often outflow)
+    DENIED = "DENIED"            # rejected
+    RECONCILED = "RECONCILED"    # cleared in reconciliation
+
+
+class FinanceRecord(Base):
+    __tablename__ = "finance_records"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    finance_id = Column(String, primary_key=True)
+    stakeholder_name = Column(String(255), nullable=False)
+    transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
+    amount = Column(Numeric(14, 2), nullable=False)
+    date = Column(Date, nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    status = Column(SqlEnum(RecordStatus), nullable=False, index=True, default=RecordStatus.PENDING)
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    audits = relationship("FinanceAudit", back_populates="record", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("ix_finance_type_date", "transaction_type", "date"),
+    )
+
+
+class FinanceAudit(Base):
+    __tablename__ = "finance_audits"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    audit_id = Column(String, primary_key=True)
+    record_id = Column(String, ForeignKey("finance_records.finance_id", ondelete="CASCADE"), nullable=False, index=True)
+    action = Column(String(64), nullable=False)  # e.g., create, update, reconcile, export
+    at = Column(DateTime, nullable=False, server_default=func.now())
+    actor = Column(String(128), nullable=True)   # optional: username/email
+    details = Column(Text, nullable=True)
+
+    record = relationship("FinanceRecord", back_populates="audits")
+

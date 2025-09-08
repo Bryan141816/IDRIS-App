@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from database import get_db
 from crud import delete
-from models import ProcurementRequest, ProcurementRequestItem  # no Role import datetime
+from models import ProcurementRequest, ProcurementRequestItem ,User # no Role import datetime
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -23,37 +23,67 @@ from crud_functions.procurement_manage.procurement_management import (
     UpdateProcurementRequest,
 )
 from routers.GetUserId import GetUserId
-from create_notification import send_notification
-
+from create_notification import send_notifications_bulk
+import asyncio
 router = APIRouter(
     tags=["request_procurement"],
     dependencies=[Depends(RoleChecker(["lgu officer"]))],
 )
 
 
+def get_logistics_admin_user_ids(db: Session):
+    """
+    Get all user_id values for users with the role 'logistics admin'.
+    """
+    users = db.query(User.user_id).filter(User.roles.any("logistics admin")).all()
+    # .all() returns list of tuples, extract values
+    return [u[0] for u in users]
+
 @router.post("/request_procurement/add_request")
-def add_request(
+async def add_request(
     request: ProcurementRequestCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(GetUserId()),
+    user_id: str = Depends(GetUserId()),
 ):
-    print(user_id)
+    admin_ids = get_logistics_admin_user_ids(db)
+
+    PH_TZ = ZoneInfo("Asia/Manila")
+    now_ph = datetime.now(PH_TZ)
+    payloads = [
+        {
+            "to": admin_id,
+            "from_origin": "procurement_management",
+            "title": "A new procurement request",
+            "message": "A new procurement request has been added",
+            "url_redirect": "/procurement_inventory/procurement_management/requests",
+            "isRead": False,
+            "date": now_ph,
+        }
+        for admin_id in admin_ids
+    ]
+
+    # Fire-and-forget
+    asyncio.create_task(send_notifications_bulk(db, payloads))
     return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
+
 
 
 @router.get(
     "/request_procurement/get_request", response_model=List[ProcurementRequestSchema]
 )
-def get_request(
+async def get_request(
     db: Session = Depends(get_db),
-    user_id: int = Depends(GetUserId()),
+    user_id: str = Depends(GetUserId()),
 ):
+
+
     return (
         db.query(ProcurementRequest)
         .options(joinedload(ProcurementRequest.request_items))
         .filter(ProcurementRequest.requester_id == user_id)
         .all()
     )
+
 
 
 #

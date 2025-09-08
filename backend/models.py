@@ -88,7 +88,7 @@ class Notifications(Base):
     notification_id = Column(
         Integer, index=True, primary_key=True, server_default=Identity()
     )
-    to = Column(Integer, nullable=False)
+    to = Column(String, nullable=False)
 
     from_origin = Column(String(255), nullable=False)
     title = Column(String(255), nullable=False)

@@ -27,33 +27,42 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 );
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
-  const { event } = useContext(RealTimeDataContext);
+  const { event, connected } = useContext(RealTimeDataContext);
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
 
-  // ⬇️ fetch notifications on mount
+  const fetchNotifications = async () => {
+    try {
+      const res = await API.get<NotificationType[]>("/get_notifications");
+      setNotifications(res.data);
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    }
+  };
+
+  // fetch on mount
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const res = await API.get<NotificationType[]>("/get_notifications");
-        setNotifications(res.data);
-      } catch (err) {
-        console.error("Failed to load notifications", err);
-      }
-    };
     fetchNotifications();
   }, []);
 
-  // ⬇️ append real-time notifications
+  // fetch again whenever SSE reconnects
+  useEffect(() => {
+    if (connected) {
+      console.log("SSE reconnected → refetching notifications");
+      fetchNotifications();
+    }
+  }, [connected]);
+
+  // append real-time notifications
   useEffect(() => {
     if (event?.event_type === "notification") {
       setNotifications((prev) => [event.data, ...(prev || [])]);
     }
   }, [event]);
 
-  // ⬇️ force re-render periodically for "time ago"
+  // rerender periodically for "time ago"
   useEffect(() => {
     const interval = setInterval(() => {
-      setNotifications((prev) => [...prev]); // trigger rerender
+      setNotifications((prev) => [...prev]);
     }, 60000);
     return () => clearInterval(interval);
   }, []);

@@ -8,10 +8,12 @@ export interface RealTimeEvent {
 
 interface RealTimeDataContextType {
   event: RealTimeEvent | null;
+  connected: boolean;
 }
 
 export const RealTimeDataContext = createContext<RealTimeDataContextType>({
   event: null,
+  connected: false,
 });
 
 interface RealTimeDataProviderProps {
@@ -24,31 +26,58 @@ export const RealTimeDataProvider: React.FC<RealTimeDataProviderProps> = ({
   url,
 }) => {
   const [event, setEvent] = useState<RealTimeEvent | null>(null);
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const eventSource = new EventSource(url);
+    let eventSource: EventSource | null = null;
+    let retryCount = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
 
-    eventSource.onmessage = (e: MessageEvent) => {
-      try {
-        const data: RealTimeEvent = JSON.parse(e.data);
-        setEvent(data);
-      } catch (err) {
-        console.error("Failed to parse SSE event:", err);
-      }
+    const connect = () => {
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource(url);
+
+      eventSource.onopen = () => {
+        console.log("SSE connected");
+        setConnected(true);
+        retryCount = 0;
+      };
+
+      eventSource.onmessage = (e: MessageEvent) => {
+        try {
+          const data: RealTimeEvent = JSON.parse(e.data);
+          setEvent(data);
+        } catch (err) {
+          console.error("Failed to parse SSE event:", err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        console.error("SSE error, closing connection");
+        setConnected(false);
+        eventSource?.close();
+
+        if (retryCount < 5) {
+          retryCount++;
+          timeoutId = setTimeout(connect, 1000);
+        } else {
+          retryCount = 0;
+          timeoutId = setTimeout(connect, 30 * 1000);
+        }
+      };
     };
 
-    eventSource.onerror = (err) => {
-      console.error("SSE error:", err);
-      eventSource.close();
-    };
+    connect();
 
     return () => {
-      eventSource.close();
+      eventSource?.close();
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [url]);
 
   return (
-    <RealTimeDataContext.Provider value={{ event }}>
+    <RealTimeDataContext.Provider value={{ event, connected }}>
       {children}
     </RealTimeDataContext.Provider>
   );

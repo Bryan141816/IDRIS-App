@@ -17,6 +17,8 @@ from routers.donations_management import (
     transparency_report_route,
     donations_route,
 )
+from routers.finance_management import finance_route
+
 from starlette.middleware.sessions import SessionMiddleware
 from routers.lgu_profiling import manage_lgu
 from fastapi.staticfiles import StaticFiles
@@ -92,6 +94,7 @@ app.include_router(
 
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
 
+app.include_router(finance_route.router, prefix="/finance", tags=["Finance Management"])
 # app.mount(
 #     "/media/transparency_reports",
 #     StaticFiles(directory="media/transparency_reports"),

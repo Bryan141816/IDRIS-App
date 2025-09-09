@@ -53,7 +53,7 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_token(user_id: int, token_type: str = "activation"):
+def create_token(user_id: str, token_type: str = "activation"):
     expire = datetime.utcnow() + timedelta(hours=24)
     to_encode = {"sub": str(user_id), "exp": expire, "type": token_type}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

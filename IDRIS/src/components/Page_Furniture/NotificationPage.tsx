@@ -22,7 +22,7 @@ function formatTimeAgo(isoString: string) {
 }
 
 type NotificationType = {
-  notification_id: number;
+  notification_id: string;
   title: string;
   message: string;
   url_redirect: string;

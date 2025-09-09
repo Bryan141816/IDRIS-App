@@ -28,6 +28,7 @@ from routers.volunteer_management import (
 )  # Import the org volunteer routes
 from routers.manage_users import ManageUsers
 from routers.procurement_management import procurement_management
+from routers.request_procurement import request_procurement
 from routers.notification import notification
 from redis_client import r, close_redis
 import real_time_handler
@@ -86,6 +87,7 @@ app.include_router(
     tags=["Transparency Report"],
 )
 app.include_router(procurement_management.router)
+app.include_router(request_procurement.router)
 
 # Add the organization volunteer routes here
 app.include_router(

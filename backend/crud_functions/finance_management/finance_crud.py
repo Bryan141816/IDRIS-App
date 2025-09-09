@@ -22,7 +22,7 @@ class FinanceRecordCRUD:
     def create_finance_record(db: Session, payload: InflowFinanceRecordCreate) -> FinanceRecord:
         obj = FinanceRecord(
             finance_id=uid_from_string(f"{payload.date}{random_suffix(6)}"),
-            source=payload.source,
+            counterparty=payload.counterparty,
             transaction_type=TransactionType(payload.transaction_type),
             amount=payload.amount,
             date=payload.date,
@@ -55,7 +55,29 @@ class FinanceRecordCRUD:
             stmt = stmt.filter(FinanceRecord.status == status)
         stmt = stmt.order_by(FinanceRecord.date.desc()).limit(limit).offset(offset)
         return list(db.execute(stmt).scalars().all())
-
+    
+    @staticmethod
+    def get_inflows(db: Session, page: int = 1, limit: int = 100):
+        skip = (page - 1) * limit
+        return (
+            db.query(FinanceRecord)
+            .filter(FinanceRecord.transaction_type == TransactionType.INFLOW)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        
+    @staticmethod
+    def get_outflows(db: Session, page: int = 1, limit: int = 100):
+        skip = (page - 1) * limit
+        return (
+            db.query(FinanceRecord)
+            .filter(FinanceRecord.transaction_type == TransactionType.OUTFLOW)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        
     # @staticmethod
     # def update(db: Session, finance_id: str, patch: FinanceRecordUpdate) -> Optional[FinanceRecord]:
     #     obj = db.get(FinanceRecord, finance_id)
@@ -110,12 +132,11 @@ class FinanceRecordCRUD:
         """
         Returns a list of dicts like:
         {
-          "budget_for": "FOOD AND WATER",
-          "inflow_total": Decimal("12345.67"),
-          "outflow_total": Decimal("890.00"),
-          "net_total": Decimal("11455.67"),
-          "inflow_count": 3,
-          "outflow_count": 2
+        "budget_for": "FOOD AND WATER",
+        "inflow_total": Decimal("12345.67"),
+        "outflow_total": Decimal("890.00"),
+        "net_total": Decimal("11455.67"),
+        "percentage_spent": Decimal("7.21")  # outflow / inflow * 100
         }
         """
 
@@ -153,44 +174,22 @@ class FinanceRecordCRUD:
             ),
             0,
         )
-        inflow_count = func.coalesce(
-            func.sum(
-                case(
-                    (FinanceRecord.transaction_type == TransactionType.INFLOW, literal(1)),
-                    else_=literal(0),
-                )
-            ),
-            0,
-        )
-        outflow_count = func.coalesce(
-            func.sum(
-                case(
-                    (FinanceRecord.transaction_type == TransactionType.OUTFLOW, literal(1)),
-                    else_=literal(0),
-                )
-            ),
-            0,
+
+        # percentage_spent = (outflow_total / inflow_total) * 100, guard divide-by-zero
+        denom = func.nullif(inflow_sum, 0)
+        percentage_spent = func.coalesce((outflow_sum * 100.0) / denom, 0.0)
+
+        base_select = select(
+            FinanceRecord.budget_for.label("budget_for"),
+            inflow_sum.label("inflow_total"),
+            outflow_sum.label("outflow_total"),
+            (inflow_sum - outflow_sum).label("net_total"),
+            percentage_spent.label("percentage_spent"),
         )
 
-        stmt = (
-            select(
-                FinanceRecord.budget_for.label("budget_for"),
-                inflow_sum.label("inflow_total"),
-                outflow_sum.label("outflow_total"),
-                (inflow_sum - outflow_sum).label("net_total"),
-                inflow_count.label("inflow_count"),
-                outflow_count.label("outflow_count"),
-            )
-            .where(and_(*filters)) if filters else
-            select(
-                FinanceRecord.budget_for.label("budget_for"),
-                inflow_sum.label("inflow_total"),
-                outflow_sum.label("outflow_total"),
-                (inflow_sum - outflow_sum).label("net_total"),
-                inflow_count.label("inflow_count"),
-                outflow_count.label("outflow_count"),
-            )
-        ).group_by(FinanceRecord.budget_for).order_by(FinanceRecord.budget_for)
+        stmt = (base_select.where(and_(*filters)) if filters else base_select) \
+            .group_by(FinanceRecord.budget_for) \
+            .order_by(FinanceRecord.budget_for)
 
         rows = db.execute(stmt).all()
 
@@ -201,8 +200,8 @@ class FinanceRecordCRUD:
                 "inflow_total": Decimal(r.inflow_total or 0),
                 "outflow_total": Decimal(r.outflow_total or 0),
                 "net_total": Decimal(r.net_total or 0),
-                "inflow_count": int(r.inflow_count or 0),
-                "outflow_count": int(r.outflow_count or 0),
+                # Convert to Decimal safely even if DB returns float
+                "percentage_spent": Decimal(str(r.percentage_spent or 0)),
             }
             for r in rows
         }
@@ -216,8 +215,7 @@ class FinanceRecordCRUD:
                         "inflow_total": Decimal("0"),
                         "outflow_total": Decimal("0"),
                         "net_total": Decimal("0"),
-                        "inflow_count": 0,
-                        "outflow_count": 0,
+                        "percentage_spent": Decimal("0"),
                     }
 
         # Stable order by enum name (or value)

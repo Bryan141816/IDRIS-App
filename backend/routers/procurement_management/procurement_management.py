@@ -122,7 +122,7 @@ def get_request_counts(db: Session = Depends(get_db)):
 def add_request(
     request: ProcurementRequestCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(GetUserId()),
+    user_id: str = Depends(GetUserId()),
 ):
     print(user_id)
     return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
@@ -143,7 +143,7 @@ def get_request(db: Session = Depends(get_db)):
 async def update_request(
     request: UpdateProcurementRequest,
     db: Session = Depends(get_db),
-    user_id: int = Depends(GetUserId()),
+    user_id: str = Depends(GetUserId()),
 ):
     updated_request = ProcurementRequestCRUD.update_procurement_request(db, request)
 
@@ -152,16 +152,15 @@ async def update_request(
 
     # Access requester_id directly from the updated object
     requester_id = updated_request.requester_id
-    print(user_id)
-    if int(requester_id) != int(user_id):
+    if requester_id != user_id:
         PH_TZ = ZoneInfo("Asia/Manila")
         now_ph = datetime.now(PH_TZ)
         payload = {
-            "to": requester_id,  # <-- here
+            "to": str(requester_id),  # <-- here
             "from_origin": "procurement_management",
             "title": "Request status have been updated",
             "message": f"Your request  {updated_request.title}({updated_request.request_id}) is now {updated_request.status}",
-            "url_redirect": "/procurement_inventory/procurement_management",
+            "url_redirect": "/request_procurement",
             "isRead": False,
             "date": now_ph,
         }

@@ -1,23 +1,12 @@
 import React, { useState } from 'react';
 import Swal from "sweetalert2";
 import { createInflowFinanceRecord } from '../../../API_Handler/finance_management_handler';
+import { InflowItem } from './FinanceManagement';
 
 export enum TransactionType {
   INFLOW = 'INFLOW',
   OUTFLOW = 'OUTFLOW',
 }
-
-type InflowItem = {
-  id: number;
-  source: string;
-  // source: string; // keep if you still use it elsewhere
-  amount: number;
-  category: string;
-  date: string;
-  status: 'Pending' | 'Received' | 'Processing';
-  description: string;
-  budget_for: string;
-};
 
 const fmt = (n: number | bigint) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
@@ -35,9 +24,9 @@ const InflowModal: React.FC<{
 
   const validate = () => {
     const errs: string[] = [];
-    if (!form.source?.trim()) errs.push('Source is required.');
+    if (!form.counterparty?.trim()) errs.push('Source is required.');
     if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
-    if (!form.category) errs.push('Category is required.');
+    if (!form.budget_for) errs.push('Category is required.');
     if (!form.date) errs.push('Date is required.');
     if(!form.budget_for) errs.push('Budget allocation is required.');
     return errs;
@@ -61,7 +50,6 @@ const InflowModal: React.FC<{
     // Normalize inflow transaction type -> backend enum
     const normalizeTransactionType = (type: string | null | undefined) => {
       if (type === "Inflow" || type === "INFLOW") return "INFLOW";
-      if (type === "Outflow" || type === "OUTFLOW") return "OUTFLOW";
       return "INFLOW"; // fallback default
     };
 
@@ -91,10 +79,10 @@ const InflowModal: React.FC<{
 
     // Build FormData for multipart/form-data submit
     const fd = new FormData();
-    fd.append('source', form.source!);
+    fd.append('counterparty', form.counterparty!);
     fd.append('transaction_type', normalizeTransactionType("INFLOW"));
     fd.append('amount', String(Number(form.amount)));
-    fd.append('category', form.category!);
+    fd.append('category', form.budget_for!);
     fd.append('date', form.date!); // yyyy-mm-dd
     fd.append('status', normalizeRecordStatus(form.status ?? 'PENDING'));
     if (form.description) fd.append('description', form.description);
@@ -172,8 +160,8 @@ const InflowModal: React.FC<{
                 disabled={readOnly}
                 type="text"
                 placeholder="Enter funding source"
-                defaultValue={form.source || ''}
-                onChange={e => setForm({ ...form, source: e.target.value })}
+                defaultValue={form.counterparty || ''}
+                onChange={e => setForm({ ...form, counterparty: e.target.value })}
               />
             </div>
 
@@ -193,8 +181,8 @@ const InflowModal: React.FC<{
               <label>Category</label>
               <select
                 disabled={readOnly}
-                defaultValue={form.category || ''}
-                onChange={e => setForm({ ...form, category: e.target.value })}
+                defaultValue={form.budget_for || ''}
+                onChange={e => setForm({ ...form, budget_for: e.target.value })}
               >
                 <option value="" disabled>Select category</option>
                 <option>Grant</option>
@@ -249,7 +237,7 @@ const InflowModal: React.FC<{
   );
 };
 
-const InflowsSection: React.FC<{ inflows: InflowItem[] }> = ({ inflows }) => {
+const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = []}) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selected, setSelected] = useState<InflowItem | undefined>();
@@ -281,11 +269,12 @@ const InflowsSection: React.FC<{ inflows: InflowItem[] }> = ({ inflows }) => {
             </tr>
           </thead>
           <tbody>
-            {inflows.map((row, index) => (
+            {inflows?.map((row, index) => (
               <tr key={index}>
-                <td>{row.source}</td>
+                {/* <input type="hidden" value={row.finance_id} /> */}
+                <td>{row.counterparty}</td>
                 <td className="amount positive">{fmt(row.amount)}</td>
-                <td>{row.category}</td>
+                <td>{row.budget_for}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
                 <td>{row.description}</td>

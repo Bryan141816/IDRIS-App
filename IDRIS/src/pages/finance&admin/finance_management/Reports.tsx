@@ -219,7 +219,7 @@ const ReportsExportsSection: React.FC<{ mode: Mode; reports?: ReportItem[] }> = 
 
       <GenerateReportModal open={openGen} onClose={() => setOpenGen(false)} />
       <ExportModal open={openExport.open} preset={openExport.preset} onClose={() => setOpenExport({ open: false })} />
-    </>
+    </> 
   );
 };
 

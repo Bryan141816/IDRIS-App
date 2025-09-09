@@ -24,7 +24,7 @@ const DamageAssessment = () =>
   }));
 
 const FinanceManagement = () =>
-  import("./pages/finance&admin/finance_management/finance_management").then(
+  import("./pages/finance&admin/finance_management/FinanceManagement").then(
     (module) => ({
       Component: module.default,
     }),
@@ -227,6 +227,11 @@ const DistributionPlanning = () =>
 const ProcurementManagement = () =>
   import(
     "./pages/procurement_inventory/procurement_management/procurement_management"
+  ).then((module) => ({ Component: module.default }));
+
+const RequestProcurement = () =>
+  import(
+    "./pages/procurement_inventory/request_procurement/request_prcurement"
   ).then((module) => ({ Component: module.default }));
 
 export const router = createBrowserRouter([
@@ -445,7 +450,7 @@ export const router = createBrowserRouter([
         path: "procurement_inventory",
         children: [
           {
-            path: "", // index route (just /procurement_inventory)
+            path: "procurement_inventory", // index route (just /procurement_inventory)
             lazy: ProcurementInventory,
           },
           {
@@ -469,6 +474,10 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      {
+        path: "request_procurement",
+        lazy: RequestProcurement,
       },
       {
         path: "finance&admin/finance_management",

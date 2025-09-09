@@ -11,16 +11,17 @@ from pydantic import BaseModel, ConfigDict, Field
 from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocation
 
 class FinanceRecordBase(BaseModel):
-    source: str
+    counterparty: str
     amount: Decimal
     date: date
     description: Optional[str] = None
     status: RecordStatus
+    budget_for: str
 
 
 class InflowFinanceRecordCreate(BaseModel):
     # finance_id is NOT required for create; DB should generate it
-    source: str
+    counterparty: str
     transaction_type: TransactionType = TransactionType.INFLOW
     amount: Decimal
     category: str
@@ -32,7 +33,7 @@ class InflowFinanceRecordCreate(BaseModel):
     @classmethod
     def as_form(
         cls,
-        source: str = Form(...),
+        counterparty: str = Form(...),
         transaction_type: TransactionType = Form(TransactionType.INFLOW),
         amount: Decimal = Form(...),
         category: str = Form(...),
@@ -43,7 +44,7 @@ class InflowFinanceRecordCreate(BaseModel):
         
     ) -> "InflowFinanceRecordCreate":
         return cls(
-            source=source,
+            counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
             category=category,
@@ -55,7 +56,6 @@ class InflowFinanceRecordCreate(BaseModel):
         
 class FinanceRecordRead(FinanceRecordBase):
     finance_id: str
-    created_at: datetime
-    updated_at: datetime
+    date: datetime
 
     model_config = ConfigDict(from_attributes=True)

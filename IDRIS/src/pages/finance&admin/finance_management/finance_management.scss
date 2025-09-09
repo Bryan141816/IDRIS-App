@@ -1,10 +1,12 @@
 @use '../../../styles/variables' as * ;
+
+
 .financial-management {
-    padding-top: 20px;
-    min-height: calc(100vh - 60px);
-    background: $backgroundColor;
+    padding: 20px;
+    height: 100%;
+    background: $ice-blue;
     overflow-y: auto;
-   
+
     @media (max-width: 1024px) {
       margin-left: 0;
     }
@@ -78,7 +80,8 @@
     border-bottom: 3px solid #c5d7e5;
     display: flex;
     overflow-x: auto;
-   
+    border-radius: 20px;
+
     .nav-btn {
       background: none;
       border: none;
@@ -166,7 +169,7 @@
   .dashboard-content {
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(40%, 2fr));
       gap: 1.5rem;
       margin-bottom: 2rem;
      
@@ -282,14 +285,14 @@
       .budget-bar {
         width: 100%;
         height: 12px;
-        background: #e5e7eb;
+        background: #e5e7eb; // 34d399
         border-radius: 6px;
         overflow: hidden;
         margin-bottom: 0.5rem;
        
         .budget-fill {
           height: 100%;
-          background: linear-gradient(90deg, #10b981, #34d399);
+          background: linear-gradient(90deg, #ef4444, #f87171);
           border-radius: 6px;
           transition: width 0.3s ease;
         }

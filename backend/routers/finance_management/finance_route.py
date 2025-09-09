@@ -31,29 +31,28 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
-@router_admin.post(
-    "/inflow/create",
-    response_model=FinanceRecordRead,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create a finance record"
-)
+@router_admin.post("/inflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)
 def create_finance_record(
     payload: InflowFinanceRecordCreate = Depends(InflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
 ):
+    payload.transaction_type = TransactionType.INFLOW
     print(payload)
     obj = FinanceRecordCRUD.create_finance_record(db, payload)
     return obj
 
-@router_admin_or_donor.get("/{finance_id}", response_model=FinanceRecordRead, summary="Get a finance record by ID" )
-def get_finance_record(finance_id: str, db: Session = Depends(get_db)):
-    obj = FinanceRecordCRUD.get(db, finance_id)
-    if not obj:
-        raise HTTPException(status_code=404, detail="Finance record not found")
+@router_admin.post("/outflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)
+def create_finance_record(
+    payload: InflowFinanceRecordCreate = Depends(InflowFinanceRecordCreate.as_form),
+    db: Session = Depends(get_db),
+):
+    payload.transaction_type = TransactionType.OUTFLOW
+    print(payload)
+    obj = FinanceRecordCRUD.create_finance_record(db, payload)
     return obj
 
 
-@router_admin_or_donor.get("/get_lists",response_model=List[FinanceRecordRead], summary="List finance records (filterable)" )
+@router_admin.get("/get_lists",response_model=List[FinanceRecordRead])
 def list_finance_records(
     transaction_type: Optional[TransactionType] = Query(None),
     status_filter: Optional[RecordStatus] = Query(None, alias="status"),
@@ -70,6 +69,23 @@ def list_finance_records(
     )
     return items
 
+@router_admin.get("/get_all/inflows", response_model=List[FinanceRecordRead])
+def get_inflows(page: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    Get all inflow finance records.
+    Supports pagination with skip & limit.
+    """
+    inflows = FinanceRecordCRUD.get_inflows(db, page=page, limit=limit)
+    return inflows
+
+@router_admin.get("/get_all/outflows", response_model=List[FinanceRecordRead])
+def get_outflows(page: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    Get all outflow finance records.
+    Supports pagination with skip & limit.
+    """
+    outflows = FinanceRecordCRUD.get_outflows(db, page=page, limit=limit)
+    return outflows
 
 # @router_admin.patch( "/update_record/{finance_id}", response_model=FinanceRecordRead, summary="Update editable fields of a finance record" )
 # def update_finance_record(finance_id: str, patch: FinanceRecordUpdate, db: Session = Depends(get_db)):
@@ -87,12 +103,37 @@ def list_finance_records(
 #     return obj
 
 
-# @router_admin.delete( "/{finance_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a finance record" )
-# def delete_finance_record(finance_id: str, db: Session = Depends(get_db)):
-#     ok = FinanceRecordCRUD.delete(db, finance_id)
-#     if not ok:
+# @router_admin_or_donor.get("/{finance_id}", response_model=FinanceRecordRead)
+# def get_finance_record(finance_id: str, db: Session = Depends(get_db)):
+#     obj = FinanceRecordCRUD.get(db, finance_id)
+#     if not obj:
 #         raise HTTPException(status_code=404, detail="Finance record not found")
-#     return None
+#     return obj
+
+
+@router_admin.get("/summary/budget_allocation")
+def get_budget_allocation_summary(
+    start_date: Optional[date] = Query(None, description="Filter start date"),
+    end_date: Optional[date] = Query(None, description="Filter end date"),
+    statuses: Optional[List[RecordStatus]] = Query(
+        None,
+        description="Statuses to include (default: RECEIVED, PAID, RECONCILED)",
+    ),
+    include_zero_rows: bool = Query(True, description="Include categories with zero totals"),
+    db: Session = Depends(get_db),
+):
+    """
+    Summarize inflows and outflows grouped by budget allocation.
+    """
+    result = FinanceRecordCRUD.summarize_by_budget_allocation(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        statuses=statuses,
+        include_zero_rows=include_zero_rows,
+    )
+    return result
+
 
 
 router = APIRouter()

@@ -7,7 +7,7 @@ import { RequestItemManager } from "./RequestItemManager";
 import { v4 as uuidv4 } from "uuid";
 export const SubmitProcurementRequest: React.FC<
   ProcurementDefaultModalProps
-> = ({ onClose, refreshData }) => {
+> = ({ onClose, refreshData, apiUrl }) => {
   const [request, setRequest] = useState<{
     title: string;
     lgu_name: string;
@@ -41,10 +41,7 @@ export const SubmitProcurementRequest: React.FC<
     let payload: any = request;
     payload.request_items = requestItems;
     try {
-      const response = await API.post(
-        "/procurement_management/add_request",
-        payload,
-      );
+      const response = await API.post(`${apiUrl}/add_request`, payload);
       console.log(response.data);
       refreshData();
       onClose();

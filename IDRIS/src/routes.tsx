@@ -24,7 +24,7 @@ const DamageAssessment = () =>
   }));
 
 const FinanceManagement = () =>
-  import("./pages/finance&admin/finance_management/finance_management").then(
+  import("./pages/finance&admin/finance_management/FinanceManagement").then(
     (module) => ({
       Component: module.default,
     }),

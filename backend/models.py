@@ -629,6 +629,15 @@ class ProcurementRequestItem(Base):
 
 # ================================== FINANCE MODELS =====================================
 
+class BudgetAllocation(enum.Enum):
+    EMERGENCY = "EMERGENCY SUPPLIES"
+    FOOD_WATER = "FOOD AND WATER"
+    TRANSPORTATION = "TRANSPORTATION"
+    EQUIPMENT = "EQUIPMENT"
+    ADMINISTRATIVE = "ADMINISTRATIVE"
+    DONATIONS = "DONATIONS"
+    GENERAL = "GENERAL"
+
 class TransactionType(enum.Enum):
     INFLOW = "INFLOW"
     OUTFLOW = "OUTFLOW"
@@ -648,7 +657,7 @@ class FinanceRecord(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     finance_id = Column(String, primary_key=True)
-    stakeholder_name = Column(String(255), nullable=False)
+    counterparty = Column(String(255), nullable=False) 
     transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
     amount = Column(Numeric(14, 2), nullable=False)
     date = Column(Date, nullable=False, index=True)
@@ -656,6 +665,8 @@ class FinanceRecord(Base):
     status = Column(SqlEnum(RecordStatus), nullable=False, index=True, default=RecordStatus.PENDING)
     created_at = Column(DateTime, nullable=False, default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    budget_for = Column(SqlEnum(BudgetAllocation), nullable=False, default = BudgetAllocation.GENERAL)
 
     audits = relationship("FinanceAudit", back_populates="record", cascade="all, delete-orphan")
 

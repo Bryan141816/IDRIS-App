@@ -1,4 +1,3 @@
-
 import asyncio
 from sqlalchemy.orm import Session
 from models import Notifications
@@ -20,6 +19,7 @@ def to_dict(obj):
 # ---------------------------
 # DB Insert Functions
 # ---------------------------
+
 
 def create_notification(db: Session, obj_in: dict) -> Notifications:
     """Insert a single notification."""
@@ -55,6 +55,7 @@ def create_notifications_bulk(db: Session, objs_in: List[Dict]) -> List[Notifica
 # Send Functions
 # ---------------------------
 
+
 async def send_notification(db: Session, obj_in: dict):
     """Insert + send a single notification."""
     notification = create_notification(db, obj_in)
@@ -76,4 +77,3 @@ async def send_notifications_bulk(db: Session, objs_in: List[Dict]):
 
     # Run all sends concurrently
     await asyncio.gather(*tasks)
-

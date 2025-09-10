@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "../ProcurementManagement.scss";
 
 import { API } from "../../../../API_Handler/Axio_API_Handler";
@@ -16,12 +16,14 @@ import { UpdateRequestStatus } from "./Modals/RequestModals/UpdateStatus";
 import { RejectRequest } from "./Modals/RequestModals/RejectRequest";
 import { ApproveRequest } from "./Modals/RequestModals/AcceptRequest";
 import { useUserRoleContext } from "../../../../UserRoleContext";
+import { RealTimeDataContext } from "../../../../RealTimeDataContext";
 interface RequestTabProps {
   apiUrl: string;
 }
 const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
   const [requests, setRequests] = useState<RequestData[]>([]);
   const { userRoles } = useUserRoleContext();
+  const { event, connected } = useContext(RealTimeDataContext);
   const fetchData = async () => {
     try {
       const response = await API.get<RequestData[]>(`${apiUrl}/get_request`);
@@ -49,6 +51,13 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
     setActiveModal(null);
     setSelectedItem(null);
   };
+  useEffect(() => {
+    if (event?.event_type === "add_procurement_event") {
+      const tempArr = [...requests];
+      tempArr.unshift(event.data);
+      setRequests(tempArr);
+    }
+  }, [event]);
 
   return (
     <div className="requests-content">

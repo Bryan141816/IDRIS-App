@@ -85,6 +85,7 @@ async def get_request(
         db.query(ProcurementRequest)
         .options(joinedload(ProcurementRequest.request_items))
         .filter(ProcurementRequest.requester_id == user_id)
+        .order_by(ProcurementRequest.date.desc())
         .all()
     )
 

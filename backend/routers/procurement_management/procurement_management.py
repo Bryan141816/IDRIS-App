@@ -135,6 +135,7 @@ def get_request(db: Session = Depends(get_db)):
     return (
         db.query(ProcurementRequest)
         .options(joinedload(ProcurementRequest.request_items))
+        .order_by(ProcurementRequest.date.desc())
         .all()
     )
 

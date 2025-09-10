@@ -1,6 +1,6 @@
 import "./DonationsDashboard.scss";
 import { useState, useEffect } from "react";
-import dayjs from "dayjs";
+// import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { MenuDots } from "../../../components/Page_Furniture/Icons";
 import { useUserRoleContext } from "../../../UserRoleContext";
@@ -19,7 +19,9 @@ import {
   getDonationRecord,
 } from "../../../API_Handler/donations_donation_handler";
 
-interface FundingProposalInterface {
+import { sampleDonationRecord, sampleFundingProposals } from './dummy_data';
+
+export interface FundingProposalInterface {
   funding_id: number;
   title: string;
   description: string;
@@ -29,7 +31,7 @@ interface FundingProposalInterface {
   image: string;
 }
 
-interface DonationRecordItem {
+export interface DonationRecordItem {
   donor_name?: string;
   amount?: number | string;
   funding_title?: string;
@@ -38,11 +40,6 @@ interface DonationRecordItem {
   item_description?: string;
   className?: string;
 }
-
-/* ---------- DUMMY DATA (used when API returns none / fails) ---------- */
-const dummyDonationRecords: DonationRecordItem[] = [];
-
-const dummyFundingProposals: FundingProposalInterface[] = [];
 
 const DonationsDashboard = () => {
   const navigate = useNavigate();
@@ -133,10 +130,10 @@ const DonationsDashboard = () => {
         const response = await getDonationRecord(donationsRecordsLimit);
         const arr = Array.isArray(response) ? response : [];
         // If no records, inject dummy
-        setDonationRecords(arr.length > 0 ? arr : dummyDonationRecords);
+        setDonationRecords(arr.length > 0 ? arr : sampleDonationRecord);
       } catch (error) {
         console.error("Failed to fetch donation records:", error);
-        setDonationRecords(dummyDonationRecords); // fallback to dummy on error
+        setDonationRecords(sampleDonationRecord); // fallback to dummy on error
       }
     };
 
@@ -158,7 +155,7 @@ const DonationsDashboard = () => {
 
         if (records.length === 0) {
           // Use dummy programs and lock pagination to 1 page
-          setFundingProposals(dummyFundingProposals);
+          setFundingProposals(sampleFundingProposals);
           setFundingProposalMaxPage(1);
         } else {
           setFundingProposals(records);
@@ -166,7 +163,7 @@ const DonationsDashboard = () => {
         }
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
-        setFundingProposals(dummyFundingProposals); // fallback to dummy on error
+        setFundingProposals(sampleFundingProposals); // fallback to dummy on error
         setFundingProposalMaxPage(1);
       } finally {
         setLoading(false);

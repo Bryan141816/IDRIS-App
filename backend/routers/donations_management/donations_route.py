@@ -12,6 +12,7 @@ from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
 
+router = APIRouter()
 
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
@@ -29,7 +30,7 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
-@router_donor.post("/one-time/create", response_model=DonationResponse)
+@router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
     try:
         return CRUD.create_one_time_pending_donation(db, donation)
@@ -141,7 +142,6 @@ def recent_donations(
     
     
     
-router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

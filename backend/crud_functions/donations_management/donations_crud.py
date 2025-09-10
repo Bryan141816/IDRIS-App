@@ -3,18 +3,24 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy import extract, func, case, and_
 from typing import Optional, Sequence, Union
-from datetime import datetime
-from crud_functions.utils import random_suffix, uid_from_string
+from decimal import Decimal
+from datetime import datetime, date, timezone
+from crud_functions.utils import random_suffix, uid_from_string, _to_enum, uid_from_string, rand_alnum
 
-from crud_functions.utils import _to_enum, uid_from_string, rand_alnum
+from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
 
 from models import (
+    Donor,
     Donation,
     DonationStatus,
     DonationFrequency,
     DonationType,
     Donation_Cash,
-    Donation_InKind
+    Donation_InKind,
+    FinanceRecord,
+    BudgetAllocation,
+    RecordStatus,
+    TransactionType,
 )
 
 from data_schemas.donation_schema import (
@@ -22,93 +28,118 @@ from data_schemas.donation_schema import (
     InKindDonationCreate,
 )
 
-# --- CRUD --------------------------------------------------------------------
+# -------------------- CRUD ---------------------------------------------------
 class DonationCRUD:
     # --- CREATE ---
     @staticmethod
     def create_one_time_pending_donation(db: Session, donation_data) -> Donation:
-        # Create a ONE_TIME PENDING donation and its child record:
-        print(donation_data.donation_type)
-        # 1) Resolve frequency (default ONE_TIME)
+        # Resolve enums with defaults
         frequency = _to_enum(
             DonationFrequency,
             getattr(donation_data, "frequency", None),
             default=DonationFrequency.ONE_TIME,
         )
-        
-        # 2) Resolve donation_type string (cash | inkind)
-        raw_kind = (
-            getattr(donation_data, "donation_type", None)  # Use donation_type explicitly
-            or "cash"
-        )
-        
-        type = _to_enum(
+        donation_type = _to_enum(
             DonationType,
             getattr(donation_data, "donation_type", None),
             default=DonationType.CASH,
         )
 
-        # Basic presence checks (optional; keep or remove as you like)
-        if not getattr(donation_data, "donor_id", None):
+        donor_id = getattr(donation_data, "donor_id", None)
+        if not donor_id:
             raise HTTPException(status_code=422, detail="donor_id is required")
 
         try:
-            # 3) Create parent Donation (no amount/description/payment_method on parent)
-            print(type)
+            # --- Parent donation ---
             donation = Donation(
-                donor_id=donation_data.donor_id,
-                funding_id = getattr(donation_data, "funding_id", None),
+                donor_id=donor_id,
+                funding_id=getattr(donation_data, "funding_id", None),
                 frequency=frequency,
                 status=DonationStatus.PENDING,
-                donation_type=type,  # Use the resolved donation_type
-                next_donation_date=None,  # one-time has no schedule
+                donation_type=donation_type,
+                next_donation_date=None,
                 end_date=None,
                 is_active=False,
             )
-
-            custom_id = uid_from_string(f"{rand_alnum()}")
-            donation.donation_id = custom_id
-
+            donation.donation_id = uid_from_string(f"{rand_alnum()}")
             db.add(donation)
-            db.flush()  # Get donation.donation_id for child rows
+            db.flush()  # ensure donation_id available
 
-            # 4) Create child row based on donation_type
-            if type == DonationType.CASH:
+            # --- Child row + capture amount/desc for FinanceRecord ---
+            amount_for_finance: Decimal = Decimal("0")
+            desc_for_finance: str = "Donation"
+
+            if donation_type == DonationType.CASH:
+                raw_amount = getattr(donation_data, "amount", None)
                 cash = Donation_Cash(
                     donation_id=donation.donation_id,
-                    cash_id = uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
-                    amount=getattr(donation_data, "amount", None),  # Decimal/float OK; DB column is Numeric
-                    payment_method=getattr(donation_data, "payment_method", None)
+                    cash_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
+                    amount=raw_amount,
+                    payment_method=getattr(donation_data, "payment_method", None),
                 )
                 db.add(cash)
-            else:  # "inkind"
-                # Map fields robustly:
-                item_desc = getattr(donation_data, "item_description", None) or getattr(donation_data, "description", None)
+                amount_for_finance = Decimal(str(raw_amount or 0))
+                desc_for_finance = "Cash donation"
+            else:
+                item_desc = getattr(donation_data, "item_description", None) \
+                            or getattr(donation_data, "description", None)
                 est_val = getattr(donation_data, "estimated_value", None)
                 if est_val is None:
-                    # Allow legacy `amount` for inkind estimated value
-                    est_val = getattr(donation_data, "amount", None)
+                    est_val = getattr(donation_data, "amount", None)  # legacy fallback
 
                 inkind = Donation_InKind(
-                    inkind_id = uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                     donation_id=donation.donation_id,
+                    inkind_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                     item_description=item_desc,
                     estimated_value=est_val,
                     quantity=getattr(donation_data, "quantity", None),
                 )
                 db.add(inkind)
+                amount_for_finance = Decimal(str(est_val or 0))
+                desc_for_finance = f"In-kind donation: {item_desc or 'items'}"
 
-            # 5) Commit and refresh with children
+            # --- Donor name (relationship if available; fallback fetch) ---
+            donor_name = None
+            try:
+                donor_name = donation.donor.donor_name  # type: ignore[attr-defined]
+            except Exception:
+                pass
+            if not donor_name:
+                donor = db.get(Donor, donor_id)
+                donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
+
+            # --- FinanceRecord in the SAME transaction, NO extra commit ---
+            # try:
+            #     budget_for_value = BudgetAllocation.DONATION
+            # except Exception:
+            #     budget_for_value = BudgetAllocation("DONATION")
+
+            # FinanceRecord.date is a DATE in your Pydantic model; use today() to match
+            finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
+
+            finance = FinanceRecord(
+                # let DB default or your model factory generate if possible; otherwise:
+                finance_id=uid_from_string(f"DON{random_suffix(8)}"),
+                counterparty=donor_name,
+                transaction_type=TransactionType.INFLOW,
+                amount=amount_for_finance,    # Decimal
+                date=finance_date,            # date, not datetime
+                description=desc_for_finance,
+                status=RecordStatus.PENDING,
+                budget_for=BudgetAllocation.DONATIONS,
+            )
+            db.add(finance)
+
+            # --- Commit all together ---
             db.commit()
-            db.refresh(donation)  # Relationships lazy-load; refresh parent state
-
+            db.refresh(donation)
             return donation
 
         except SQLAlchemyError as e:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Database error creating donation: {e}")
         
-            
+                    
     @staticmethod
     def create_recurring_donation(db: Session, donation_data: RecurringDonationCreate) -> Donation:
         """

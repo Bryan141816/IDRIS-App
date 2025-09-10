@@ -51,11 +51,42 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
     setActiveModal(null);
     setSelectedItem(null);
   };
+
   useEffect(() => {
     if (event?.event_type === "add_procurement_event") {
       const tempArr = [...requests];
-      tempArr.unshift(event.data);
+      tempArr.unshift(event.data as RequestData);
       setRequests(tempArr);
+    } else if (event?.event_type === "update_procurement_event") {
+      const { request_id, status, comments, reason_or_code } = event.data;
+
+      // Update requests list
+
+      const idx = requests.findIndex((req) => req.request_id === request_id);
+      if (idx !== -1) {
+        const updatedRequests = [...requests];
+        updatedRequests[idx] = {
+          ...updatedRequests[idx],
+          status: status ?? updatedRequests[idx].status,
+          comment: comments ?? updatedRequests[idx].comment,
+          reason_or_code: reason_or_code ?? updatedRequests[idx].reason_or_code,
+        };
+        setRequests(updatedRequests);
+      }
+
+      // Update selected item if it's the same request
+      if (selectedItem?.request_id === request_id) {
+        setSelectedItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: status ?? prev.status,
+                comment: comments ?? prev.comment,
+                reason_or_code: reason_or_code ?? prev.reason_or_code,
+              }
+            : prev,
+        );
+      }
     }
   }, [event]);
 

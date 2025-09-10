@@ -146,7 +146,9 @@ async def update_request(
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    updated_request = ProcurementRequestCRUD.update_procurement_request(db, request)
+    updated_request = ProcurementRequestCRUD.update_procurement_request(
+        db, request, user_id
+    )
 
     if not updated_request:
         return {"error": "Request not found"}

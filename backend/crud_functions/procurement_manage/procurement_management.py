@@ -14,22 +14,47 @@ PH_TZ = ZoneInfo("Asia/Manila")
 
 
 class ProcurementRequestCRUD:
+
     @staticmethod
-    async def broadcast_procurement_event(db, requester_id: str, payload: dict):
-        """Fire-and-forget broadcast to all logistics_admins except requester."""
-        logistics_admins: List[User] = (
-            db.query(User)
-            .filter(User.roles.any("logistics admin"))
-            .filter(User.user_id != requester_id)
-            .all()
+    async def broadcast_procurement_event(
+        db, requester_id: str, payload: dict, event_type: str
+    ):
+        """
+        Fire-and-forget broadcast to all logistics_admins except requester.
+        For update events, also include the original requester.
+        """
+        logistics_admins_query = db.query(User).filter(
+            User.roles.any("logistics admin")
         )
 
-        for admin in logistics_admins:
-            # fire-and-forget
-            asyncio.create_task(
-                send_real_time(admin.user_id, "add_procurement_event", payload)
+        if event_type == "add_procurement_event":
+            # All logistics admins except the one who made the request
+            logistics_admins = logistics_admins_query.filter(
+                User.user_id != requester_id
+            ).all()
+
+        elif event_type == "update_procurement_event":
+            # All logistics admins except the one performing the update
+            logistics_admins = logistics_admins_query.filter(
+                User.user_id != requester_id
+            ).all()
+
+            # Also include the original requester explicitly (even if not logistics admin)
+            requester_user = (
+                db.query(User).filter(User.user_id == payload["requester_id"]).first()
             )
-        print("fired")
+            if requester_user and requester_user.user_id not in [
+                u.user_id for u in logistics_admins
+            ]:
+                logistics_admins.append(requester_user)
+
+        else:
+            logistics_admins = []
+
+        # Fire events
+        for admin in logistics_admins:
+            asyncio.create_task(send_real_time(admin.user_id, event_type, payload))
+        print(payload["requester_id"])
 
     @staticmethod
     def create_procurement_request(
@@ -99,12 +124,16 @@ class ProcurementRequestCRUD:
             ],
         }
         asyncio.create_task(
-            ProcurementRequestCRUD.broadcast_procurement_event(db, user_id, response)
+            ProcurementRequestCRUD.broadcast_procurement_event(
+                db, user_id, response, "add_procurement_event"
+            )
         )
         return procurement_request
 
     @staticmethod
-    def update_procurement_request(db: Session, payload: UpdateProcurementRequest):
+    def update_procurement_request(
+        db: Session, payload: UpdateProcurementRequest, user_id: str
+    ):
         request = (
             db.query(ProcurementRequest)
             .filter(ProcurementRequest.request_id == payload.request_id)
@@ -120,6 +149,18 @@ class ProcurementRequestCRUD:
         if payload.reason_or_code is not None:
             request.reason_or_code = payload.reason_or_code
 
+        data = {
+            "request_id": request.request_id,
+            "status": request.status,
+            "comments": request.comment,
+            "reason_or_code": request.reason_or_code,
+            "requester_id": request.requester_id,
+        }
+        asyncio.create_task(
+            ProcurementRequestCRUD.broadcast_procurement_event(
+                db, user_id, data, "update_procurement_event"
+            )
+        )
         db.commit()
         db.refresh(request)
         return request

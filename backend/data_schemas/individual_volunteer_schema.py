@@ -1,8 +1,11 @@
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import date, datetime
 from pydantic import BaseModel, validator
-from models import VolunteerStatus
-from typing import Literal
+from models import VolunteerStatus  # SQLAlchemy Enum (serialized via use_enum_values)
+
+# Split the literals so application status ≠ availability status (front-end convenience)
+ApplicationStatus = Literal["submitted", "verifying", "approved", "rejected"]
+AvailabilityStatus = Literal["available", "unavailable", "assigned"]
 
 class VolunteerCertificateRead(BaseModel):
     id: int
@@ -31,10 +34,10 @@ class IndividualVolunteerBase(BaseModel):
     availability: Optional[str] = None
     medical_conditions: Optional[str] = None
     other_medical_conditions: Optional[str] = None
-    certification: Optional[str] = None  # file path or filename
+    certification: Optional[str] = None  # legacy single path
     skills: Optional[List[str]] = None   # API is a list
     status: Optional[VolunteerStatus] = VolunteerStatus.submitted
-    # Accept list from clients, but also convert DB CSV string -> list on read
+
     @validator("skills", pre=True)
     def parse_skills(cls, v):
         if v is None or isinstance(v, list):
@@ -68,8 +71,18 @@ class IndividualVolunteerRead(IndividualVolunteerBase):
     volunteer_id: int
     created_at: datetime
     certificates: List[VolunteerCertificateRead] = []
+    availability_status: Optional[VolunteerStatus] = None
+
+    # computed counters from column_property
+    tasks_joined: int = 0
+    active_tasks_joined: int = 0
+    events_joined: int = 0
+    active_events_joined: int = 0
+
     class Config:
         orm_mode = True
+        use_enum_values = True
 
 class IndividualVolunteerStatusUpdate(BaseModel):
-    status: Literal['pending','approved','rejected','submitted','verifying']
+    status: Optional[ApplicationStatus] = None
+    availability_status: Optional[AvailabilityStatus] = None

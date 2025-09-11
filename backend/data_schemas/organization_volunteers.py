@@ -1,8 +1,10 @@
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from pydantic import BaseModel, validator
 from models import VolunteerStatus
-from typing import Literal
+
+ApplicationStatus = Literal["submitted", "verifying", "approved", "rejected"]
+AvailabilityStatus = Literal["available", "unavailable", "assigned"]
 
 class VolunteerCertificateRead(BaseModel):
     id: int
@@ -35,11 +37,9 @@ class OrganizationVolunteerBase(BaseModel):
     organization_picture: Optional[str] = None   # file path or URL
     organization_certificate: Optional[str] = None  # file path or URL
 
-    # Defaults to "organization" to mirror your SQLAlchemy default
     volunteer_type: Optional[str] = "organization"
     status: Optional[VolunteerStatus] = VolunteerStatus.submitted
 
-    # --- light normalization (strip surrounding spaces) ---
     @validator(
         "organization_name",
         "organization_type",
@@ -58,17 +58,15 @@ class OrganizationVolunteerBase(BaseModel):
     def _strip_strings(cls, v):
         if isinstance(v, str):
             v = v.strip()
-            return v if v != "" else v  # keep empty if caller intentionally sends ""
+            return v  # keep empty if caller intentionally sends ""
         return v
 
 # ----------- CREATE SCHEMA -----------
 class OrganizationVolunteerCreate(OrganizationVolunteerBase):
-    # All required fields are inherited from Base (mirrors DB: nullable=False)
     pass
 
 # ----------- UPDATE/PATCH SCHEMA -----------
 class OrganizationVolunteerUpdate(BaseModel):
-    # Everything optional for partial updates
     organization_name: Optional[str] = None
     organization_type: Optional[str] = None
     organization_email: Optional[str] = None
@@ -104,7 +102,7 @@ class OrganizationVolunteerUpdate(BaseModel):
     def _strip_strings(cls, v):
         if isinstance(v, str):
             v = v.strip()
-            return v if v != "" else v
+            return v
         return v
 
 # ----------- READ SCHEMA -----------
@@ -112,8 +110,18 @@ class OrganizationVolunteerRead(OrganizationVolunteerBase):
     volunteer_id: int
     created_at: datetime
     certificates: List[VolunteerCertificateRead] = []
+    availability_status: Optional[VolunteerStatus] = None
+
+    # computed counters from column_property
+    tasks_joined: int = 0
+    active_tasks_joined: int = 0
+    events_joined: int = 0
+    active_events_joined: int = 0
+
     class Config:
         orm_mode = True
+        use_enum_values = True
 
-class IndividualVolunteerStatusUpdate(BaseModel):
-    status: Literal['pending','accepted','rejected','submitted']
+class OrganizationVolunteerStatusUpdate(BaseModel):
+    status: Optional[ApplicationStatus] = None
+    availability_status: Optional[AvailabilityStatus] = None

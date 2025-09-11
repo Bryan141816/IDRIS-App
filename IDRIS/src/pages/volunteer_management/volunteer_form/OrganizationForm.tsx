@@ -104,6 +104,15 @@ const OrganizationForm: React.FC = () => {
         );
     };
 
+    const normFile = (e: any) => {
+        if (Array.isArray(e)) return e;
+        if (!e) return [];
+        // keep only the newest (maxCount=1 enforcement)
+        const fl = (e.fileList || []).slice(-1);
+        // mark as 'done' so the picture-card shows correctly
+        return fl.map((f: AntdUploadFile) => ({ ...f, status: 'done' as const }));
+    };
+
     // 🔗 Called by your custom <UploadFile />
     const handleFileSelect = (file: File | null) => {
         setSelectedFile(file);
@@ -131,9 +140,10 @@ const OrganizationForm: React.FC = () => {
             formData.append('availability', values.availability.join(', '));
 
             // Files
+            const [picItem] = (values.organizationPicture ?? []) as AntdUploadFile[];
             const pictureFile = values.organizationPicture?.[0]?.originFileObj as File | undefined;
             if (pictureFile) {
-                formData.append('organization_picture_file', pictureFile);
+                formData.append('organization_picture_file', pictureFile, picItem?.name || pictureFile.name);
             }
             if (values.supportingFiles && values.supportingFiles.length > 0) {
                 values.supportingFiles.forEach((f: any) => {
@@ -367,7 +377,7 @@ const OrganizationForm: React.FC = () => {
                             label="Organizational Picture"
                             className="center-upload"
                             valuePropName="fileList"
-                            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+                            getValueFromEvent={normFile}
                         // rules={[{ required: true, message: 'Please upload your organizational picture' }]}
                         >
                             <Upload
@@ -375,10 +385,17 @@ const OrganizationForm: React.FC = () => {
                                 listType="picture-card"
                                 accept="image/png,image/jpeg,image/webp"
                                 maxCount={1}
-                                beforeUpload={beforeUpload}
+                                beforeUpload={beforeUpload}          // your validator (returns false or LIST_IGNORE)
                                 onPreview={handlePreview}
+                                onChange={({ fileList }) => {
+                                    // keep the form in sync explicitly (helps avoid edge cases)
+                                    form.setFieldsValue({ organizationPicture: fileList.slice(-1) });
+                                }}
+                                onRemove={() => {
+                                    form.setFieldsValue({ organizationPicture: [] });
+                                }}
                             >
-                                {pictureList?.length >= 1 ? null : (
+                                {(pictureList?.length ?? 0) >= 1 ? null : (
                                     <div>
                                         <PlusOutlined />
                                         <div style={{ marginTop: 8 }}>Upload</div>
@@ -386,7 +403,6 @@ const OrganizationForm: React.FC = () => {
                                 )}
                             </Upload>
                         </Form.Item>
-
                         {/* Image preview modal */}
                         <Modal open={previewOpen} title={previewTitle} footer={null} onCancel={() => setPreviewOpen(false)}>
                             <img alt="Organization preview" style={{ width: '100%' }} src={previewImage} />

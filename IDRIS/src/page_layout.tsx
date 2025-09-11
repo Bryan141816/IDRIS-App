@@ -58,7 +58,9 @@ function PageLayout() {
     location.pathname === "/forgot_password" ||
     location.pathname === "/reset_password" ||
     location.pathname === "/oauth_callback" ||
-    location.pathname === "/donation_report" ;
+    location.pathname === "/donation_report" ||
+    location.pathname === "/volunteer_management/VolunteerReports" ||
+    location.pathname === "/volunteer_management/ProgramsReports";
   const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,

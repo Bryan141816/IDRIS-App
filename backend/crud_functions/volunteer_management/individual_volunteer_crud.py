@@ -64,7 +64,6 @@ class IndividualVolunteerCRUD:
         certification_files: Optional[Union[List[UploadFile], UploadFile]] = None,
     ) -> IndividualVolunteer:
         """
-        Accepts either a list of UploadFile (preferred) or a single UploadFile (legacy).
         Saves all files as VolunteerCertificate rows.
         Also sets the legacy 'certification' column to the first file (if any) for backward compat.
         """
@@ -97,6 +96,7 @@ class IndividualVolunteerCRUD:
             certification=None,  # will set to first file path below (legacy)
             skills=skills_str,
             status=volunteer_data.status or VolunteerStatus.submitted,
+            # availability_status left to model default (unavailable)
         )
 
         try:
@@ -260,17 +260,24 @@ class IndividualVolunteerCRUD:
         if not db_volunteer:
             return False
 
-        # Optional: also remove legacy single certification file
-        old_cert = db_volunteer.certification
+        # Collect certificate file paths (legacy + multi)
+        file_paths: List[str] = []
+        if db_volunteer.certification:
+            file_paths.append(db_volunteer.certification)
+        for cert in list(getattr(db_volunteer, "certificates", []) or []):
+            if cert.file_path:
+                file_paths.append(cert.file_path)
 
         db.delete(db_volunteer)
         db.commit()
 
-        if old_cert and os.path.isfile(old_cert):
-            try:
-                os.remove(old_cert)
-            except Exception:
-                pass
+        # best-effort cleanup
+        for path in file_paths:
+            if path and os.path.isfile(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
 
         return True
 
@@ -297,3 +304,15 @@ class IndividualVolunteerCRUD:
             .first()
         )
         return rec.status if rec else None
+
+    @staticmethod
+    def update_availability_status(db: Session, volunteer_id: int, status: VolunteerStatus) -> IndividualVolunteer:
+        v = db.query(IndividualVolunteer).filter(IndividualVolunteer.volunteer_id == volunteer_id).first()
+        if not v:
+            raise HTTPException(status_code=404, detail="Individual volunteer not found")
+
+        # Update availability_status (NOT main status)
+        v.availability_status = status
+        db.commit()
+        db.refresh(v)
+        return v

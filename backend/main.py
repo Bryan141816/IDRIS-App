@@ -105,6 +105,12 @@ app.mount(
     name="certifications",
 )
 
+app.mount(
+    "/media/organization_pictures",
+    StaticFiles(directory="media/organization_pictures"),
+    name="organization_pictures",
+)
+
 
 @app.on_event("startup")
 async def on_startup():

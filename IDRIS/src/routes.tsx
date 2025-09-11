@@ -124,6 +124,18 @@ const ManageVolunteer = () =>
     (module) => ({ Component: module.default }),
   );
 
+const VolunteerReports = () =>
+  import(
+    "./pages/volunteer_management/volunteer_dashboard/VolunteerReports"
+  ).then((module) => ({ Component: module.default })
+);
+
+const ProgramsReports = () =>
+  import(
+    "./pages/volunteer_management/volunteer_dashboard/ProgramsReports"
+  ).then((module) => ({ Component: module.default })
+);
+
 // Donations Management
 const DonationsDashboard = () =>
   import(
@@ -169,7 +181,7 @@ const Donor_Dashboard = () =>
   ).then(
     (module) => ({ Component: module.default }),
   );
- 
+
 // Response Dashboard
 
 const ResponseDashboard = () =>
@@ -334,6 +346,14 @@ export const router = createBrowserRouter([
             path: "manage_volunteers",
             lazy: ManageVolunteer,
           },
+           {
+            path: "VolunteerReports",
+            lazy: VolunteerReports,
+          },
+           {
+            path: "ProgramsReports",
+            lazy: ProgramsReports,
+          },
         ],
       },
       {
@@ -480,6 +500,8 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/volunteer_management/manage_applicant": ManageApplicant,
   "/volunteer_management/volunteer_profiles": VolunteerProfiles,
   "/volunteer_management/manage_volunteers": ManageVolunteer,
+  "/volunteer_management/VolunteerReports": VolunteerReports,
+  "/volunteer_management/ProgramsReports": ProgramsReports,
 
   "/donations_management/donations_dashboard": DonationsDashboard,
   "/donations_management/list_of_rafi_donors": ListOfRafiDonors,

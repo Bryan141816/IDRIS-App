@@ -1,4 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { getReportData } from '../../../API_Handler/finance_management_handler';
+import {
+  downloadFinanceReportPDFFromRows,
+  previewPrintFinanceReportFromRowsUserGesture,
+  type Finance,
+  type CompanyInfo,
+} from "./FinanceReport"; // ← adjust path
 
 /* ────────────────────────────────────────────────────────────────────────────
    Types
@@ -20,7 +27,7 @@ type ExportPreset =
   | "Outflows Only"
   | "Budget Summary";
 
-type ExportFormat = "Excel (.xlsx)" | "PDF Report" | "CSV Data" | "JSON Data";
+type ExportFormat = "Excel (.xlsx)" | "PDF Report" | "CSV Data" | "JSON Data" | "Print";
 
 type ReportType =
   | "Monthly Summary"
@@ -29,6 +36,24 @@ type ReportType =
   | "Donor Report"
   | "Expense Analysis"
   | "Budget vs Actual";
+
+type FinanceStatuses = |
+  "PENDING" | "RECEIVED" | "PAID" |
+  "APPROVED" | "DENIED" | "RECONCILED";
+
+type BudgetAllocations = |
+  "EMERGENCY SUPPLIES" |
+  "FOOD AND WATER" |
+  "TRANSPORTATION" |
+  "EQUIPMENT" |
+  "ADMINISTRATIVE" |
+  "DONATIONS" |
+  "GENERAL";
+
+type ExportFilters = {
+  statuses: string[];
+  budget_for?: string;
+};
 
 interface ExportData {
   exportType: ExportPreset;
@@ -197,61 +222,116 @@ const ExportModal: React.FC<{
   open: boolean;
   preset?: ExportPreset;
   onClose: () => void;
-  onExport?: (data: ExportData) => void;
+  onExport?: (data: ExportData & { results?: any }) => void;
 }> = ({ open, preset = "Complete Financial Log", onClose, onExport }) => {
   const [exportType, setExportType] = useState<ExportPreset>(preset);
-  const [format, setFormat] = useState<ExportFormat>("Excel (.xlsx)");
+  const [format, setFormat] = useState<ExportFormat>();
+  const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
+  const [financeStatus, setFinanceStatus] = useState<FinanceStatuses[]>([]);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [includeAttachments, setIncludeAttachments] = useState(false);
   const [addAuditTrail, setAddAuditTrail] = useState(false);
   const [includePending, setIncludePending] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    // reset each time it opens and respect incoming preset
     setExportType(preset);
-    setFormat("Excel (.xlsx)");
+    // setFormat("Excel (.xlsx)");
     setFromDate("");
     setToDate("");
+    setBudgetAllocation([]);
+    setFinanceStatus([]);
     setIncludeAttachments(false);
     setAddAuditTrail(false);
     setIncludePending(false);
   }, [open, preset]);
 
+  const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+    setBudgetAllocation(selected as BudgetAllocations[]);
+  };
+
+  const handleStatuses = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+    setFinanceStatus(selected as FinanceStatuses[]);
+  };
+
   if (!open) return null;
 
-  const handleExport = () => {
-    const payload: ExportData = {
-      exportType,
-      format,
-      fromDate,
-      toDate,
-      includeAttachments,
-      addAuditTrail,
-      includePending,
-    };
-    onExport?.(payload);
-    onClose();
+  const invalidRange = fromDate && toDate && fromDate > toDate;
+
+  const handleExport = async () => {
+    if (invalidRange) return;
+
+    // build params exactly as your api handler expects
+    const from_date = fromDate || undefined;
+    const to_date = toDate || undefined;
+    const statuses = (financeStatus as unknown as string[]) || undefined;
+    const allocation_type = (budgetAllocation as unknown as string[]) || undefined;
+
+    setLoading(true);
+    try {
+      const results = await getReportData(from_date, to_date, statuses, allocation_type);
+
+      // ---- Generate PDF from the fetched rows ----
+      const reportTitle = [
+        "Finance Report",
+        fromDate && toDate ? `(${fromDate} → ${toDate})` : "",
+        allocation_type?.length ? `• ${allocation_type.join(", ")}` : "",
+        statuses?.length ? `• ${statuses.join(", ")}` : "",
+      ].filter(Boolean).join(" ");
+
+      const companyInfo: CompanyInfo = {
+        name: "RAFI Inc.",
+        tagline: "The Ramon Aboitiz Foundation Inc.",
+        address: { street: "35 Eduardo Aboitiz St", city: "Cebu City", state: "Philippines", zip: "6000" },
+        contact: { phone: "(09) 000-000-0000", email: "sampleemail@gmail.com" },
+      };
+
+      // choose one:
+      if (format === "Print") {
+        await previewPrintFinanceReportFromRowsUserGesture(results as Finance[], {
+          currency: "PHP",
+          reportTitle,
+          companyInfo,
+          logoUrl: "/logo.png", // optional
+        });
+      } else {
+        // default to direct download
+        await downloadFinanceReportPDFFromRows(results as Finance[], {
+          currency: "PHP",
+          reportTitle,
+          companyInfo,
+          logoUrl: "/logo.png", // optional
+        });
+      }
+
+      console.log("Report Result:", results);
+      // If you want to close only after success:
+      onClose();
+    } catch (err) {
+      // keep it simple per your request
+      console.error("getReportData failed", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal-header">
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
+          <button className="close-btn" onClick={onClose}>×</button>
         </div>
+
         <div className="modal-content">
           <h3>Export Financial Logs</h3>
 
           <div className="form-group">
             <label>Export Type</label>
-            <select
-              value={exportType}
-              onChange={(e) => setExportType(e.target.value as ExportPreset)}
-            >
+            <select value={exportType} onChange={(e) => setExportType(e.target.value as ExportPreset)}>
               <option>Complete Financial Log</option>
               <option>Inflows Only</option>
               <option>Outflows Only</option>
@@ -260,80 +340,58 @@ const ExportModal: React.FC<{
           </div>
 
           <div className="form-group">
-            <label>Format</label>
-            <select
-              value={format}
-              onChange={(e) => setFormat(e.target.value as ExportFormat)}
-            >
-              <option>Excel (.xlsx)</option>
-              <option>PDF Report</option>
-              <option>CSV Data</option>
-              <option>JSON Data</option>
+            <label>Date Range</label>
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <input type="date" placeholder="From" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <input type="date" placeholder="To" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+            {invalidRange && <small className="error-text">“From” must be on/before “To”.</small>}
+          </div>
+
+          <div className="form-group">
+            <label>Budget Allocation</label>
+            <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
+              <option>EMERGENCY SUPPLIES</option>
+              <option>FOOD AND WATER</option>
+              <option>TRANSPORTATION</option>
+              <option>EQUIPMENT</option>
+              <option>ADMINISTRATIVE</option>
+              <option>DONATIONS</option>
+              <option>GENERAL</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Date Range</label>
-            <div style={{ display: "flex", gap: "1rem" }}>
-              <input
-                type="date"
-                placeholder="From"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
-              <input
-                type="date"
-                placeholder="To"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
-            </div>
+            <label>Status</label>
+            <select multiple value={financeStatus} onChange={handleStatuses}>
+              <option>PENDING</option>
+              <option>PAID</option>
+              <option>RECEIVED</option>
+            </select>
           </div>
 
           <div className="form-group">
-            <label>Additional Options</label>
-            <div className="checkbox-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={includeAttachments}
-                  onChange={(e) => setIncludeAttachments(e.target.checked)}
-                />{" "}
-                Include attachments
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={addAuditTrail}
-                  onChange={(e) => setAddAuditTrail(e.target.checked)}
-                />{" "}
-                Add audit trail
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={includePending}
-                  onChange={(e) => setIncludePending(e.target.checked)}
-                />{" "}
-                Include pending transactions
-              </label>
-            </div>
+            <label>Format</label>
+            <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
+              <option>Excel (.xlsx)</option>
+              <option>PDF Report</option>
+              <option>CSV Data</option>
+              <option>JSON Data</option>
+              <option>Print</option>
+            </select>
           </div>
         </div>
 
         <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="primary-btn" onClick={handleExport}>
-            Export
+          <button className="secondary-btn" onClick={onClose} disabled={loading}>Cancel</button>
+          <button className="primary-btn" onClick={handleExport} disabled={invalidRange || loading}>
+            {loading ? "Exporting…" : "Export"}
           </button>
         </div>
       </div>
     </div>
   );
 };
-
 /* ────────────────────────────────────────────────────────────────────────────
    ReportsView
    ──────────────────────────────────────────────────────────────────────────── */

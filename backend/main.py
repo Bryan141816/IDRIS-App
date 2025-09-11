@@ -37,6 +37,8 @@ from redis_client import r, close_redis
 from routers.lgu_profiling.uploadedFiles import router as files_router
 import real_time_handler
 
+from routers.volunteer_management import assignment_routes
+
 from decouple import config
 
 Base.metadata.create_all(bind=engine)
@@ -123,6 +125,13 @@ app.mount(
     StaticFiles(directory="media/certifications"),
     name="certifications",
 )
+
+app.mount(
+    "/media/organization_pictures",
+    StaticFiles(directory="media/organization_pictures"),
+    name="organization_pictures",
+)
+
 app.mount(
     "/media/hazards",
     StaticFiles(directory="media/hazards"),

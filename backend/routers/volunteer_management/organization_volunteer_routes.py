@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form, Query
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
@@ -8,29 +8,26 @@ from routers.GetUserId import GetUserId
 from database import get_db
 from data_schemas.organization_volunteers import (
     OrganizationVolunteerCreate,
+    OrganizationVolunteerStatusUpdate,
     OrganizationVolunteerUpdate,
     OrganizationVolunteerRead,
-    VolunteerCertificateRead,
 )
 from crud_functions.volunteer_management.organization_volunteer_crud import (
     OrganizationVolunteerCRUD as CRUD,
 )
 from routers.role_checker import RoleChecker
-from models import OrganizationVolunteer  # optional import; safe to keep
+from models import OrganizationVolunteer, VolunteerStatus
 
 # Role-based routers
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
 )
-
 router_organization_volunteer = APIRouter(
     dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "generic"]))],
 )
-
 router_admin_or_organization_volunteer = APIRouter(
     dependencies=[Depends(RoleChecker(["operations admin", "superuser", "organization volunteer", "volunteer", "generic"]))],
 )
-
 router_authenticated = APIRouter(
     dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "operations admin", "volunteer", "generic"]))],
 )
@@ -52,9 +49,10 @@ def create_organization_volunteer_endpoint(
     contact_person_phone_number: Optional[str] = Form(None),
     contact_person_email: str = Form(...),
     availability: Optional[str] = Form(None),
-    organization_picture: Optional[UploadFile] = File(None),
-    certification_files: Optional[List[UploadFile]] = File(None),
-    organization_certificate: Optional[UploadFile] = File(None),
+
+    organization_picture_file: Optional[UploadFile] = File(None),
+    organization_certificate: Optional[List[UploadFile]] = File(None),
+
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
@@ -70,12 +68,17 @@ def create_organization_volunteer_endpoint(
         contact_person_phone_number=contact_person_phone_number,
         contact_person_email=contact_person_email,
         availability=availability,
-        organization_picture=None,  # set by CRUD if file uploaded
-        organization_certificate=None,  # set by CRUD if file uploaded
-        status=status
+        organization_picture=None,
+        organization_certificate=None,
+        status=status,
     )
-    files = certification_files or ([organization_certificate] if organization_certificate else None)
-    return CRUD.create_organization_volunteer(db, organization_data, files, organization_picture)
+
+    return CRUD.create_organization_volunteer(
+        db=db,
+        organization_data=organization_data,
+        certificates=organization_certificate,
+        organization_picture=organization_picture_file,
+    )
 
 # ---------------- CREATE (Admin creates for any organization volunteer) ----------------
 @router_admin.post("/create_for_user", response_model=OrganizationVolunteerRead)
@@ -91,9 +94,10 @@ def create_organization_volunteer_for_user_endpoint(
     contact_person_phone_number: Optional[str] = Form(None),
     contact_person_email: str = Form(...),
     availability: Optional[str] = Form(None),
-    organization_picture: Optional[UploadFile] = File(None),
-    certification_files: Optional[List[UploadFile]] = File(None),
-    organization_certificate: Optional[UploadFile] = File(None),
+
+    organization_picture_file: Optional[UploadFile] = File(None),
+    organization_certificate: Optional[List[UploadFile]] = File(None),
+
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
@@ -109,26 +113,26 @@ def create_organization_volunteer_for_user_endpoint(
         contact_person_phone_number=contact_person_phone_number,
         contact_person_email=contact_person_email,
         availability=availability,
-        organization_picture=None,  # set by CRUD if file uploaded
-        organization_certificate=None,  # set by CRUD if file uploaded
-        status=status
+        organization_picture=None,
+        organization_certificate=None,
+        status=status,
     )
-    files = certification_files or ([organization_certificate] if organization_certificate else None)
-    return CRUD.create_organization_volunteer(db, organization_data, files, organization_picture)
+
+    return CRUD.create_organization_volunteer(
+        db=db,
+        organization_data=organization_data,
+        certificates=organization_certificate,
+        organization_picture=organization_picture_file,
+    )
 
 # ---------------- READ ALL ----------------
 @router_admin_or_organization_volunteer.get("/get_all", response_model=List[OrganizationVolunteerRead])
-def get_all_organization_volunteers_endpoint(
-    db: Session = Depends(get_db),
-):
+def get_all_organization_volunteers_endpoint(db: Session = Depends(get_db)):
     return CRUD.get_all_organization_volunteers(db)
 
 # ---------------- READ BY ID ----------------
 @router_admin_or_organization_volunteer.get("/get_by_id", response_model=OrganizationVolunteerRead)
-def get_organization_volunteer_by_id_endpoint(
-    volunteer_id: int,
-    db: Session = Depends(get_db),
-):
+def get_organization_volunteer_by_id_endpoint(volunteer_id: int, db: Session = Depends(get_db)):
     try:
         volunteer = CRUD.get_organization_volunteer_by_id(db, volunteer_id)
         if not volunteer:
@@ -137,10 +141,39 @@ def get_organization_volunteer_by_id_endpoint(
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Database error occurred")
 
+@router_admin.patch("/{volunteer_id}/status", response_model=OrganizationVolunteerRead)
+def update_organization_volunteer_status(
+    volunteer_id: int,
+    payload: OrganizationVolunteerStatusUpdate,
+    db: Session = Depends(get_db),
+):
+    ov = db.get(OrganizationVolunteer, volunteer_id)
+    if not ov:
+        raise HTTPException(status_code=404, detail="Organization volunteer not found")
+
+    updated = False
+
+    if payload.status is not None:
+        ov.status = VolunteerStatus(payload.status)
+        updated = True
+        if payload.status == "approved" and payload.availability_status is None:
+            ov.availability_status = VolunteerStatus.available
+
+    if payload.availability_status is not None:
+        ov.availability_status = VolunteerStatus(payload.availability_status)
+        updated = True
+
+    if not updated:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    db.commit()
+    db.refresh(ov)
+    return ov
+
 # ---------------- READ CURRENT USER'S PROFILE ----------------
 @router_authenticated.get("/my_profile", response_model=OrganizationVolunteerRead)
 def get_my_organization_volunteer_profile_endpoint(
-    user_id: int = Query(...),  # Temporarily require user_id as query param (or use Depends(GetUserId()))
+    user_id: int = Depends(GetUserId()),
     db: Session = Depends(get_db),
 ):
     try:
@@ -151,12 +184,9 @@ def get_my_organization_volunteer_profile_endpoint(
     except SQLAlchemyError:
         raise HTTPException(status_code=500, detail="Database error occurred")
 
-# ---------------- READ BY USER ID (for authenticated users) ----------------
+# ---------------- READ BY USER ID ----------------
 @router_authenticated.get("/get_by_user_id", response_model=OrganizationVolunteerRead)
-def get_org_by_user_id(
-    user_id: int = Depends(GetUserId()),
-    db: Session = Depends(get_db),
-):
+def get_org_by_user_id(user_id: int = Depends(GetUserId()), db: Session = Depends(get_db)):
     v = CRUD.get_organization_volunteer_by_user_id(db, user_id)
     if not v:
         raise HTTPException(status_code=404, detail="Organization volunteer not found")
@@ -165,7 +195,7 @@ def get_org_by_user_id(
 # ---------------- UPDATE (User updates their own profile) ----------------
 @router_authenticated.put("/update_my_profile", response_model=OrganizationVolunteerRead)
 def update_my_organization_volunteer_profile_endpoint(
-    user_id: int = Form(...),  # Temporarily require user_id in form
+    user_id: int = Form(...),
     organization_name: Optional[str] = Form(None),
     organization_type: Optional[str] = Form(None),
     organization_email: Optional[str] = Form(None),
@@ -176,16 +206,14 @@ def update_my_organization_volunteer_profile_endpoint(
     contact_person_phone_number: Optional[str] = Form(None),
     contact_person_email: Optional[str] = Form(None),
     availability: Optional[str] = Form(None),
-    organization_picture: Optional[UploadFile] = File(None),
-    certification_files: Optional[List[UploadFile]] = File(None),
-    organization_certificate: Optional[UploadFile] = File(None),
+
+    organization_picture_file: Optional[UploadFile] = File(None),
+    organization_certificate: Optional[List[UploadFile]] = File(None),
+
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
-    # Find the user's volunteer profile
     volunteer = CRUD.get_organization_volunteer_by_user_id(db, user_id)
-    if status:
-        volunteer.status = status
     if not volunteer:
         raise HTTPException(status_code=404, detail="Organization volunteer profile not found")
 
@@ -200,10 +228,16 @@ def update_my_organization_volunteer_profile_endpoint(
         contact_person_phone_number=contact_person_phone_number,
         contact_person_email=contact_person_email,
         availability=availability,
-        status=status
+        status=status,
     )
-    files = certification_files or ([organization_certificate] if organization_certificate else None)
-    return CRUD.update_organization_volunteer(db, volunteer.volunteer_id, update_data, files, organization_picture)
+
+    return CRUD.update_organization_volunteer(
+        db=db,
+        volunteer_id=volunteer.volunteer_id,
+        update_data=update_data,
+        certificates=organization_certificate,
+        organization_picture=organization_picture_file,
+    )
 
 # ---------------- UPDATE (Admin updates any profile) ----------------
 @router_admin.put("/update/{volunteer_id}", response_model=OrganizationVolunteerRead)
@@ -219,9 +253,10 @@ def update_organization_volunteer_endpoint(
     contact_person_phone_number: Optional[str] = Form(None),
     contact_person_email: Optional[str] = Form(None),
     availability: Optional[str] = Form(None),
-    organization_picture: Optional[UploadFile] = File(None),
-    certification_files: Optional[List[UploadFile]] = File(None),
-    organization_certificate: Optional[UploadFile] = File(None),
+
+    organization_picture_file: Optional[UploadFile] = File(None),
+    organization_certificate: Optional[List[UploadFile]] = File(None),
+
     status: Optional[str] = Form("submitted"),
     db: Session = Depends(get_db),
 ):
@@ -236,17 +271,20 @@ def update_organization_volunteer_endpoint(
         contact_person_phone_number=contact_person_phone_number,
         contact_person_email=contact_person_email,
         availability=availability,
-        status=status
+        status=status,
     )
-    files = certification_files or ([organization_certificate] if organization_certificate else None)
-    return CRUD.update_organization_volunteer(db, volunteer_id, update_data, files, organization_picture)
+
+    return CRUD.update_organization_volunteer(
+        db=db,
+        volunteer_id=volunteer_id,
+        update_data=update_data,
+        certificates=organization_certificate,
+        organization_picture=organization_picture_file,
+    )
 
 # ---------------- DELETE ----------------
 @router_admin.delete("/delete/{volunteer_id}")
-def delete_organization_volunteer_endpoint(
-    volunteer_id: int,
-    db: Session = Depends(get_db),
-):
+def delete_organization_volunteer_endpoint(volunteer_id: int, db: Session = Depends(get_db)):
     success = CRUD.delete_organization_volunteer(db, volunteer_id)
     if not success:
         raise HTTPException(status_code=404, detail="Organization volunteer not found")

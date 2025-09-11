@@ -1,21 +1,22 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
-import { useUserContext } from "../../UserContext";
-import { useUserRoleContext } from "../../UserRoleContext";
 import Logo1 from "../../media/Logo1.png";
 import { Modal } from "./Modals";
-import { Link } from "react-router-dom";
 
-const Register = () => {
-  const [activeModal, setActiveModal] = useState<String>("");
+type ModalId = "" | "user-type" | "user-role" | "admin-role";
 
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [usertype, setUsertype] = useState("");
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
+const Register: React.FC = () => {
+  const [activeModal, setActiveModal] = useState<ModalId>("");
+
+  const [email, setEmail] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [userType, setUserType] = useState<"" | "admin" | "user">("");
+  const [selectedRole, setSelectedRole] = useState<string>("");
+
+  const [password, setPassword] = useState<string>("");
+  const [password2, setPassword2] = useState<string>("");
 
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
@@ -29,21 +30,16 @@ const Register = () => {
   const [showValidation, setShowValidation] = useState(false);
   const [showMatchValidation, setShowMatchValidation] = useState(false);
 
-  const fnSetUserType = (newUserType: string, newModal: string) => {
-    setUsertype(newUserType);
-    setActiveModal(newModal);
-  };
+  const navigate = useNavigate();
 
-  const validatePassword = (pwd: string) => {
-    return {
-      length: pwd.length >= 8,
-      uppercase: /[A-Z]/.test(pwd),
-      lowercase: /[a-z]/.test(pwd),
-      number: /\d/.test(pwd),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
-      match: pwd === password2 && pwd !== "",
-    };
-  };
+  const validatePassword = (pwd: string) => ({
+    length: pwd.length >= 8,
+    uppercase: /[A-Z]/.test(pwd),
+    lowercase: /[a-z]/.test(pwd),
+    number: /\d/.test(pwd),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
+    match: pwd === password2 && pwd !== "",
+  });
 
   useEffect(() => {
     if (password) {
@@ -67,20 +63,37 @@ const Register = () => {
     }
   }, [password, password2]);
 
-  const navigate = useNavigate(); // make sure this is declared at the top
+  // Step 1: Validate form, then open the "Register As" (user-type) modal.
+  const handleOpenRoleModal = (e?: React.FormEvent<HTMLFormElement>) => {
+    if (e) e.preventDefault();
 
-  const RegisterAs = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
     const validation = validatePassword(password);
     const isValid = Object.values(validation).every(Boolean);
 
     if (!isValid) {
       alert(
-        "Please ensure your password meets all requirements and passwords match",
+        "Please ensure your password meets all requirements and passwords match"
       );
       return;
     }
+    setActiveModal("user-type");
+  };
 
+  // Step 2: Admin/User fork
+  const selectUserType = (type: "admin" | "user") => {
+    setUserType(type);
+    setActiveModal(type === "admin" ? "admin-role" : "user-role");
+  };
+
+  // Step 3: Pick role -> call registration API
+  const handleRoleSelect = async (role: string) => {
+    setSelectedRole(role);
+    setActiveModal("");
+    await doRegister();
+  };
+
+  // Actual registration call (unchanged, safe)
+  const doRegister = async () => {
     try {
       const response = await fetch("http://localhost:8000/register", {
         method: "POST",
@@ -88,9 +101,10 @@ const Register = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: email,
-          username: username,
-          password: password,
+          email,
+          username,
+          password,
+          // role: selectedRole, // <-- Uncomment if your FastAPI /register accepts role
         }),
       });
 
@@ -98,22 +112,25 @@ const Register = () => {
         const err = await response.json();
         alert(`Registration failed: ${err.detail || "Unknown error"}`);
         return;
-      }
+        }
 
-      const data = await response.json();
+      await response.json();
       alert("Registration successful");
-      navigate("/login"); // navigate to login page after success (optional)
+      navigate("/login");
     } catch (error) {
       console.error("Registration error:", error);
       alert("Failed to register. Check your network or server.");
     }
   };
+
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/register";
   };
+
   const handleMicrosoftLogin = () => {
     window.location.href = "http://localhost:8000/auth/microsoft/register";
   };
+
   return (
     <section id="login-section">
       <LoginHeader />
@@ -126,9 +143,12 @@ const Register = () => {
           Integrated Disaster Response Information System
         </p>
       </div>
+
       <div id="login-form">
         <h1>Signup</h1>
-        <form onSubmit={RegisterAs}>
+
+        {/* Submit now ONLY opens the modal flow */}
+        <form onSubmit={handleOpenRoleModal}>
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -141,8 +161,9 @@ const Register = () => {
               required
             />
           </div>
+
           <div className="input-group">
-            <i className="fas fa-user fa-user input-icon"></i>
+            <i className="fas fa-user input-icon"></i>
             <input
               type="text"
               id="username"
@@ -166,50 +187,32 @@ const Register = () => {
               required
             />
           </div>
+
           {showValidation && (
             <div className="password-validation">
-              <div
-                className={`validation-item ${passwordValidation.length ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.length ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.length ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.length ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>At least 8 characters</span>
               </div>
-              <div
-                className={`validation-item ${passwordValidation.uppercase ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.uppercase ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.uppercase ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.uppercase ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>One uppercase letter</span>
               </div>
-              <div
-                className={`validation-item ${passwordValidation.lowercase ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.lowercase ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.lowercase ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.lowercase ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>One lowercase letter</span>
               </div>
-              <div
-                className={`validation-item ${passwordValidation.number ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.number ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.number ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.number ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>One number</span>
               </div>
-              <div
-                className={`validation-item ${passwordValidation.special ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.special ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.special ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.special ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>One special character</span>
               </div>
             </div>
           )}
+
           <div className="input-group">
             <i className="fas fa-lock input-icon"></i>
             <input
@@ -222,97 +225,90 @@ const Register = () => {
               required
             />
           </div>
+
           {showMatchValidation && (
             <div className="password-match-validation">
-              <div
-                className={`validation-item ${passwordValidation.match ? "valid" : "invalid"}`}
-              >
-                <i
-                  className={`fas ${passwordValidation.match ? "fa-check-circle" : "fa-times-circle"}`}
-                ></i>
+              <div className={`validation-item ${passwordValidation.match ? "valid" : "invalid"}`}>
+                <i className={`fas ${passwordValidation.match ? "fa-check-circle" : "fa-times-circle"}`}></i>
                 <span>
-                  {passwordValidation.match
-                    ? "Passwords match"
-                    : "Passwords do not match"}
+                  {passwordValidation.match ? "Passwords match" : "Passwords do not match"}
                 </span>
               </div>
             </div>
           )}
+
           <Link to="/login">Login</Link>
           <button type="submit">Signup</button>
         </form>
+
         <button onClick={handleGoogleLogin}>Register via Google</button>
         <button onClick={handleMicrosoftLogin}>Register via Microsoft</button>
       </div>
-      {/* <Modal */}
-      {/*   isOpen={activeModal == "user-type" ? true : false} */}
-      {/*   onClose={() => setActiveModal("")} */}
-      {/* > */}
-      {/*   <h3 id="login-modal-title">Register As</h3> */}
-      {/*   <hr /> */}
-      {/*   <div id="select-userType"> */}
-      {/*     <button */}
-      {/*       id="admin" */}
-      {/*       onClick={() => fnSetUserType("admin", "admin-role")} */}
-      {/*     > */}
-      {/*       Admin */}
-      {/*     </button> */}
-      {/*     <button id="user" onClick={() => fnSetUserType("user", "user-role")}> */}
-      {/*       User */}
-      {/*     </button> */}
-      {/*   </div> */}
-      {/* </Modal> */}
-      {/**/}
-      {/* <Modal */}
-      {/*   isOpen={activeModal == "user-role" ? true : false} */}
-      {/*   onClose={() => setActiveModal("")} */}
-      {/* > */}
-      {/*   <h3 id="login-user-role">Select User Role</h3> */}
-      {/*   <hr /> */}
-      {/*   <div id="select-userRole"> */}
-      {/*     <button id="generic" onClick={() => RegisterAs("generic")}> */}
-      {/*       Generic User */}
-      {/*     </button> */}
-      {/*   </div> */}
-      {/* </Modal> */}
-      {/**/}
-      {/* <Modal */}
-      {/*   isOpen={activeModal == "admin-role" ? true : false} */}
-      {/*   onClose={() => setActiveModal("")} */}
-      {/* > */}
-      {/*   <h3 id="admin-user-role">Select User Role</h3> */}
-      {/*   <hr /> */}
-      {/*   <div id="select-adminRole"> */}
-      {/*     <button */}
-      {/*       id="staff" */}
-      {/*       onClick={() => RegisterAs("disaster response admin")} */}
-      {/*     > */}
-      {/*       Disaster Response Admin */}
-      {/*     </button> */}
-      {/*     <button */}
-      {/*       id="logistics-admin" */}
-      {/*       onClick={() => RegisterAs("logistics admin")} */}
-      {/*     > */}
-      {/*       Logistics Admin */}
-      {/*     </button> */}
-      {/*     <button */}
-      {/*       id="operations-admin" */}
-      {/*       onClick={() => RegisterAs("operations admin")} */}
-      {/*     > */}
-      {/*       Operations Admin */}
-      {/*     </button> */}
-      {/*     <button */}
-      {/*       id="finance-admin" */}
-      {/*       onClick={() => RegisterAs("finance admin")} */}
-      {/*     > */}
-      {/*       Finance Admin */}
-      {/*     </button> */}
-      {/*     <button id="lgu" onClick={() => RegisterAs("lgu")}> */}
-      {/*       LGU Officer */}
-      {/*     </button> */}
-      {/*   </div> */}
-      {/* </Modal> */}
+
+      {/* Modal 1: Pick Admin/User */}
+      <Modal
+        isOpen={activeModal === "user-type"}
+        onClose={() => setActiveModal("")}
+      >
+        <h3 id="login-modal-title">Register As</h3>
+        <hr />
+        <div id="select-userType" style={{ display: "flex", gap: 12 }}>
+          <button id="admin" onClick={() => selectUserType("admin")}>
+            Admin
+          </button>
+          <button id="user" onClick={() => selectUserType("user")}>
+            User
+          </button>
+        </div>
+      </Modal>
+
+      {/* Modal 2: Roles for regular users */}
+      <Modal
+        isOpen={activeModal === "user-role"}
+        onClose={() => setActiveModal("")}
+      >
+        <h3 id="login-user-role">Select User Role</h3>
+        <hr />
+        <div id="select-userRole" style={{ display: "flex", gap: 12 }}>
+          <button id="generic" onClick={() => handleRoleSelect("generic")}>
+            Generic User
+          </button>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button onClick={() => setActiveModal("user-type")}>Back</button>
+        </div>
+      </Modal>
+
+      {/* Modal 3: Roles for admins */}
+      <Modal
+        isOpen={activeModal === "admin-role"}
+        onClose={() => setActiveModal("")}
+      >
+        <h3 id="admin-user-role">Select Admin Role</h3>
+        <hr />
+        <div id="select-adminRole" style={{ display: "grid", gap: 8 }}>
+          <button onClick={() => handleRoleSelect("disaster response admin")}>
+            Disaster Response Admin
+          </button>
+          <button onClick={() => handleRoleSelect("logistics admin")}>
+            Logistics Admin
+          </button>
+          <button onClick={() => handleRoleSelect("operations admin")}>
+            Operations Admin
+          </button>
+          <button onClick={() => handleRoleSelect("finance admin")}>
+            Finance Admin
+          </button>
+          <button onClick={() => handleRoleSelect("lgu")}>
+            LGU Officer
+          </button>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button onClick={() => setActiveModal("user-type")}>Back</button>
+        </div>
+      </Modal>
     </section>
   );
 };
+
 export default Register;

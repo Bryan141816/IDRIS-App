@@ -14,7 +14,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 type Donation = {
-  id: number | string;
+  id: string;
   amount: number;
   donation_date: string;   // ISO date or yyyy-mm-dd
   donation_type: string;   // e.g., "CASH", "CREDIT_CARD"
@@ -248,7 +248,7 @@ export default function DonationReport({
 
     doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
     doc.text(`Total Donations: ${formatCurrency(totalDonations)}`, boxX + 4, sumY + 13);
-    doc.text(`Number of Donors: ${rows.length}`, boxX + 4, sumY + 19);
+    doc.text(`Number of Donations: ${rows.length}`, boxX + 4, sumY + 19);
 
     const safeTitle = reportTitle.replace(/\s+/g, "_").toLowerCase();
     doc.save(`${safeTitle}.pdf`);
@@ -349,7 +349,7 @@ export default function DonationReport({
               </p>
             </div>
             <div className={styles.summaryItem}>
-              <p className={styles.summaryLabel}>Number of Donors:</p>
+              <p className={styles.summaryLabel}>Number of Donations:</p>
               <p className={`${styles.summaryValue} ${styles.donorCount}`}>{rows.length}</p>
             </div>
           </div>

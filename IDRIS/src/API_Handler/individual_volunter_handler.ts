@@ -1,66 +1,76 @@
-// volunteer_api_handler.ts
+// src/API_Handler/individual_volunteer_handler.ts
 import { API } from './Axio_API_Handler';
-import axios from "axios";
-// Create a new volunteer
+
+export type ApplicationStatus = 'submitted' | 'verifying' | 'approved' | 'rejected';
+export type AvailabilityStatus = 'available' | 'unavailable' | 'assigned';
+
+// Create (self)
 export async function createIndividualVolunteer(formData: FormData): Promise<any> {
-    formData.append('status', 'submitted');
-    const response = await API.post('/volunteer/create', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-    return response.data;
-}
-
-// Get all volunteers (no pagination yet — optional upgrade)
-export async function getAllVolunteers(): Promise<any[]> {
-    const response = await API.get('/volunteer/get_all');
-    return response.data;
-}
-
-// Get volunteer by ID
-export async function getVolunteerById(id: number): Promise<any> {
-    const response = await API.get('/volunteer/get_by_id', {
-        params: { volunteer_id: id },
-    });
-    return response.data;
-}
-
-// Update volunteer
-export async function updateVolunteer(id: number, formData: FormData, status?: string): Promise<any> {
-    if (status) {
-        formData.append('status', status);
-    }
-    const response = await API.put(`/volunteer/update/${id}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-    return response.data;
-}
-
-// Delete volunteer
-export async function deleteVolunteer(id: number): Promise<any> {
-    const response = await API.delete(`/volunteer/delete/${id}`);
-    return response.data;
-}
-const API_BASE = "http://localhost:8000";
-
-export async function updateVolunteerStatus(
-  id: number,
-  status: 'pending' | 'approved' | 'rejected' | 'submitted' | 'verifying'
-) {
-  const res = await API.patch(`/volunteer/${id}/status`, { status });
+  // Default status is handled server-side; keep explicit if you want:
+  if (!formData.has('status')) formData.append('status', 'submitted');
+  const res = await API.post('/volunteer/create', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data;
 }
 
+// Read all
+export async function getAllVolunteers(): Promise<any[]> {
+  const res = await API.get('/volunteer/get_all');
+  return res.data;
+}
 
-export const getVolunteerByUserId = async (user_id: number) => {
-    try {
-        const response = await axios.get(`/api/volunteers/${user_id}`);
-        return response.data; // Assuming it returns the volunteer data if found
-    } catch (error) {
-        console.error("Error fetching volunteer by user ID:", error);
-        return null;
-    }
-};
+// Read by id
+export async function getVolunteerById(id: number): Promise<any> {
+  const res = await API.get('/volunteer/get_by_id', { params: { volunteer_id: id } });
+  return res.data;
+}
+
+// Read my profile (auth-based; no params)
+export async function getMyVolunteerProfile(): Promise<any> {
+  const res = await API.get('/volunteer/my_profile');
+  return res.data;
+}
+
+// Read by current user id (auth-based; no params)
+export async function getVolunteerByUserId(): Promise<any> {
+  const res = await API.get('/volunteer/get_by_user_id');
+  return res.data;
+}
+
+// Update (admin path)
+export async function updateVolunteerAdmin(id: number, formData: FormData, status?: ApplicationStatus): Promise<any> {
+  if (status) formData.set('status', status);
+  const res = await API.put(`/volunteer/update/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+// Update my profile (self path)
+export async function updateMyVolunteerProfile(formData: FormData, status?: ApplicationStatus): Promise<any> {
+  if (status) formData.set('status', status);
+  const res = await API.put('/volunteer/update_my_profile', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+// Delete
+export async function deleteVolunteer(id: number): Promise<any> {
+  const res = await API.delete(`/volunteer/delete/${id}`);
+  return res.data;
+}
+
+// Patch status (admin)
+export async function updateVolunteerStatus(
+  id: number,
+  status?: ApplicationStatus,
+  availability_status?: AvailabilityStatus
+): Promise<any> {
+  const payload: any = {};
+  if (status) payload.status = status;
+  if (availability_status) payload.availability_status = availability_status;
+  const res = await API.patch(`/volunteer/${id}/status`, payload);
+  return res.data;
+}

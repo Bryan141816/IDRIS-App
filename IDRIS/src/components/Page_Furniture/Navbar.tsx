@@ -89,32 +89,42 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                             </Link>
                         </div>
 
-                        {userType === "operations admin" && (
-                            <>
-                                <div
-                                    className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-                                >
-                                    <Link
-                                        to="/lgu_profiling/evacuationandshelter"
-                                        className="nav-sub-item"
-                                        onClick={onClose}
-                                    >
-                                        Evacuation and Shelter Management
-                                    </Link>
-                                </div>
-                                <div
-                                    className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-                                >
-                                    <Link
-                                        to="/lgu_profiling/LGUmanagement"
-                                        className="nav-sub-item"
-                                        onClick={onClose}
-                                    >
-                                        Pin Location Management
-                                    </Link>
-                                </div>
-                            </>
-                        )}
+                       {userType === "admin" && userRoles.includes("lgu officer") && (
+  <div className="nav-items" id="lgu-profiling">
+    <div
+      className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
+      onClick={() => toggleNav("lgu")}
+    >
+      <LGU width={14} height={14} className="sidebar-icons" />
+      <a href="#" className="non-redirect">LGU PROFILING</a>
+    </div>
+
+    <div className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}>
+      <Link
+        to="/lgu_profiling/map_of_cebu"
+        className="nav-sub-item"
+        onClick={onClose}
+      >
+        Map of Cebu
+      </Link>
+      <Link
+        to="/lgu_profiling/evacuationandshelter"
+        className="nav-sub-item"
+        onClick={onClose}
+      >
+        Evacuation and Shelter Management
+      </Link>
+      <Link
+        to="/lgu_profiling/LGUmanagement"
+        className="nav-sub-item"
+        onClick={onClose}
+      >
+        Pin Location Management
+      </Link>
+    </div>
+  </div>
+)}
+
                     </div>
                 )}
 

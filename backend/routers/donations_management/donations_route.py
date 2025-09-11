@@ -1,9 +1,10 @@
+import logging, traceback
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from database import get_db
 from data_schemas.donation_schema import DonationCreate, DonationResponse, RecurringDonationCreate, InKindDonationCreate
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
-from crud_functions.utils import uid_from_string
 from datetime import datetime, timezone
 from routers.role_checker import RoleChecker
 
@@ -11,6 +12,7 @@ from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
 
+router = APIRouter()
 
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
@@ -28,13 +30,21 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
-@router_donor.post("/one-time/create", response_model=DonationResponse)
+@router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
     try:
         return CRUD.create_one_time_pending_donation(db, donation)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logging.exception("Database error creating donation")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+        logging.exception("Unexpected error creating donation")
+        # while debugging, you can re-raise to see full stack:
+        # raise
+        raise HTTPException(status_code=500, detail="Unexpected server error")
+    
 @router_admin.post("/recurring/create")
 def create_recurring_donation_route(
     donation_data: RecurringDonationCreate,
@@ -132,7 +142,6 @@ def recent_donations(
     
     
     
-router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

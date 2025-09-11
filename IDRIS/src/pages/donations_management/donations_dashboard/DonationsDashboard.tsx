@@ -1,6 +1,6 @@
 import "./DonationsDashboard.scss";
 import { useState, useEffect } from "react";
-import dayjs from "dayjs";
+// import dayjs from "dayjs";
 import { Link, useNavigate } from "react-router-dom";
 import { MenuDots } from "../../../components/Page_Furniture/Icons";
 import { useUserRoleContext } from "../../../UserRoleContext";
@@ -19,7 +19,9 @@ import {
   getDonationRecord,
 } from "../../../API_Handler/donations_donation_handler";
 
-interface FundingProposalInterface {
+import { sampleDonationRecord, sampleFundingProposals } from './dummy_data';
+
+export interface FundingProposalInterface {
   funding_id: number;
   title: string;
   description: string;
@@ -29,7 +31,7 @@ interface FundingProposalInterface {
   image: string;
 }
 
-interface DonationRecordItem {
+export interface DonationRecordItem {
   donor_name?: string;
   amount?: number | string;
   funding_title?: string;
@@ -38,71 +40,6 @@ interface DonationRecordItem {
   item_description?: string;
   className?: string;
 }
-
-/* ---------- DUMMY DATA (used when API returns none / fails) ---------- */
-const dummyDonationRecords: DonationRecordItem[] = [
-  {
-    donor_name: "Anonymous Donor",
-    amount: 2500,
-    funding_title: "General Operations",
-    donation_date: new Date(),
-    donation_type: "cash",
-  },
-  {
-    donor_name: "Good Hearts Org.",
-    amount: 15000,
-    funding_title: "School Supplies Drive",
-    donation_date: new Date(Date.now() - 86400000 * 2),
-    donation_type: "inkind",
-    item_description: "notebooks, pencils, crayons",
-  },
-  {
-    donor_name: "Maria D.",
-    amount: 1000,
-    funding_title: "Medical Mission",
-    donation_date: new Date(Date.now() - 86400000 * 5),
-    donation_type: "cash",
-  },
-];
-
-const dummyFundingProposals: FundingProposalInterface[] = [
-  {
-    funding_id: 1001,
-    title: "Clean Water Initiative",
-    description: "No Funding Proposal Found.",
-    total_donated: 75000,
-    budget_required: 150000,
-    status: "active",
-    image: "", // let FundingCard handle placeholder
-  },
-  {
-    funding_id: 1002,
-    title: "Community Feeding Program",
-    description: "No Funding Proposal Found.",
-    total_donated: 0,
-    budget_required: 80000,
-    status: "active",
-    image: "",
-  },
-  {
-    funding_id: 1003,
-    title: "Disaster Relief Packs",
-    description: "No Funding Proposal Found.",
-    total_donated: 0,
-    budget_required: 250000,
-    status: "active",
-    image: "",
-  },
-  {
-    funding_id: 1004,
-    title: "After-School Tutorials",
-    description: "No Funding Proposal Found.",
-    total_donated: 0,
-    budget_required: 60000,
-    status: "active",
-    image: "",
-  },
-];
 
 const DonationsDashboard = () => {
   const navigate = useNavigate();
@@ -193,10 +130,10 @@ const DonationsDashboard = () => {
         const response = await getDonationRecord(donationsRecordsLimit);
         const arr = Array.isArray(response) ? response : [];
         // If no records, inject dummy
-        setDonationRecords(arr.length > 0 ? arr : dummyDonationRecords);
+        setDonationRecords(arr.length > 0 ? arr : sampleDonationRecord);
       } catch (error) {
         console.error("Failed to fetch donation records:", error);
-        setDonationRecords(dummyDonationRecords); // fallback to dummy on error
+        setDonationRecords(sampleDonationRecord); // fallback to dummy on error
       }
     };
 
@@ -218,7 +155,7 @@ const DonationsDashboard = () => {
 
         if (records.length === 0) {
           // Use dummy programs and lock pagination to 1 page
-          setFundingProposals(dummyFundingProposals);
+          setFundingProposals(sampleFundingProposals);
           setFundingProposalMaxPage(1);
         } else {
           setFundingProposals(records);
@@ -226,7 +163,7 @@ const DonationsDashboard = () => {
         }
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
-        setFundingProposals(dummyFundingProposals); // fallback to dummy on error
+        setFundingProposals(sampleFundingProposals); // fallback to dummy on error
         setFundingProposalMaxPage(1);
       } finally {
         setLoading(false);

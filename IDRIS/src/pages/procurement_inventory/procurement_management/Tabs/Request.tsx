@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "../ProcurementManagement.scss";
 
 import { API } from "../../../../API_Handler/Axio_API_Handler";
@@ -15,14 +15,18 @@ import { ViewDetails } from "./Modals/RequestModals/ViewDetailsRequest";
 import { UpdateRequestStatus } from "./Modals/RequestModals/UpdateStatus";
 import { RejectRequest } from "./Modals/RequestModals/RejectRequest";
 import { ApproveRequest } from "./Modals/RequestModals/AcceptRequest";
-const RequestTab = () => {
+import { useUserRoleContext } from "../../../../UserRoleContext";
+import { RealTimeDataContext } from "../../../../RealTimeDataContext";
+interface RequestTabProps {
+  apiUrl: string;
+}
+const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
   const [requests, setRequests] = useState<RequestData[]>([]);
-
+  const { userRoles } = useUserRoleContext();
+  const { event, connected } = useContext(RealTimeDataContext);
   const fetchData = async () => {
     try {
-      const response = await API.get<RequestData[]>(
-        "/procurement_management/get_request",
-      );
+      const response = await API.get<RequestData[]>(`${apiUrl}/get_request`);
       setRequests(response.data); // ✅ set state with response
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -48,12 +52,51 @@ const RequestTab = () => {
     setSelectedItem(null);
   };
 
+  useEffect(() => {
+    if (event?.event_type === "add_procurement_event") {
+      const tempArr = [...requests];
+      tempArr.unshift(event.data as RequestData);
+      setRequests(tempArr);
+    } else if (event?.event_type === "update_procurement_event") {
+      const { request_id, status, comments, reason_or_code } = event.data;
+
+      // Update requests list
+
+      const idx = requests.findIndex((req) => req.request_id === request_id);
+      if (idx !== -1) {
+        const updatedRequests = [...requests];
+        updatedRequests[idx] = {
+          ...updatedRequests[idx],
+          status: status ?? updatedRequests[idx].status,
+          comment: comments ?? updatedRequests[idx].comment,
+          reason_or_code: reason_or_code ?? updatedRequests[idx].reason_or_code,
+        };
+        setRequests(updatedRequests);
+      }
+
+      // Update selected item if it's the same request
+      if (selectedItem?.request_id === request_id) {
+        setSelectedItem((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: status ?? prev.status,
+                comment: comments ?? prev.comment,
+                reason_or_code: reason_or_code ?? prev.reason_or_code,
+              }
+            : prev,
+        );
+      }
+    }
+  }, [event]);
+
   return (
     <div className="requests-content">
       {activeModal === "submit" && (
         <SubmitProcurementRequest
           onClose={closeModal}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></SubmitProcurementRequest>
       )}
       {activeModal === "view" && (
@@ -63,25 +106,29 @@ const RequestTab = () => {
           refreshData={refreshData}
         ></ViewDetails>
       )}
-      {activeModal === "update" && (
+
+      {activeModal === "update" && userRoles.includes("logistics admin") && (
         <UpdateRequestStatus
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></UpdateRequestStatus>
       )}
-      {activeModal === "reject" && (
+      {activeModal === "reject" && userRoles.includes("logistics admin") && (
         <RejectRequest
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></RejectRequest>
       )}
-      {activeModal === "approve" && (
+      {activeModal === "approve" && userRoles.includes("logistics admin") && (
         <ApproveRequest
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          apiUrl={apiUrl}
         ></ApproveRequest>
       )}
       <div className="section-header">
@@ -153,24 +200,26 @@ const RequestTab = () => {
                   >
                     View Details
                   </button>
-                  {request.status === "pending approval" && (
-                    <>
-                      <button
-                        className="approve-btn"
-                        onClick={() => openModal("approve", request)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="reject-btn"
-                        onClick={() => openModal("reject", request)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
+                  {request.status === "pending approval" &&
+                    userRoles.includes("logistics admin") && (
+                      <>
+                        <button
+                          className="approve-btn"
+                          onClick={() => openModal("approve", request)}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="reject-btn"
+                          onClick={() => openModal("reject", request)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
                   {request.status !== "approved" &&
-                    request.status !== "rejected" && (
+                    request.status !== "rejected" &&
+                    userRoles.includes("logistics admin") && (
                       <button
                         className="action-btn"
                         onClick={() => openModal("update", request)}

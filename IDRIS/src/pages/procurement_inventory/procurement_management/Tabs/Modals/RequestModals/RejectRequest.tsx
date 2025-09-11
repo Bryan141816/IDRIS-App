@@ -11,6 +11,7 @@ export const RejectRequest: React.FC<RejectRequestProps> = ({
   onClose,
   refreshData,
   selectedItem,
+  apiUrl,
 }) => {
   const [rejectForm, setRejectForm] = useState<{
     request_id: number | null;
@@ -43,10 +44,7 @@ export const RejectRequest: React.FC<RejectRequestProps> = ({
   };
   const handleRejectRequest = async () => {
     try {
-      const response = await API.post(
-        "/procurement_management/update_request",
-        rejectForm,
-      );
+      const response = await API.post(`${apiUrl}/update_request`, rejectForm);
       console.log("✅ Update success:", response.data);
       refreshData();
       onClose();

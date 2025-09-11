@@ -12,6 +12,7 @@ from routers.role_checker import RoleChecker
 import math
 from fastapi import Request
 from sqlalchemy import func
+from zoneinfo import ZoneInfo
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
     ProcurementRequestSchema,
@@ -22,6 +23,7 @@ from crud_functions.procurement_manage.procurement_management import (
     UpdateProcurementRequest,
 )
 from routers.GetUserId import GetUserId
+from create_notification import send_notification
 
 router = APIRouter(
     tags=["procurement_management"],
@@ -120,7 +122,7 @@ def get_request_counts(db: Session = Depends(get_db)):
 def add_request(
     request: ProcurementRequestCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(GetUserId()),
+    user_id: str = Depends(GetUserId()),
 ):
     print(user_id)
     return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
@@ -133,238 +135,37 @@ def get_request(db: Session = Depends(get_db)):
     return (
         db.query(ProcurementRequest)
         .options(joinedload(ProcurementRequest.request_items))
+        .order_by(ProcurementRequest.date.desc())
         .all()
     )
 
 
 @router.post("/procurement_management/update_request")
 async def update_request(
-    request: UpdateProcurementRequest, db: Session = Depends(get_db)
+    request: UpdateProcurementRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
 ):
+    updated_request = ProcurementRequestCRUD.update_procurement_request(
+        db, request, user_id
+    )
 
-    return ProcurementRequestCRUD.update_procurement_request(db, request)
+    if not updated_request:
+        return {"error": "Request not found"}
 
-
-# @router.get(response_dashboard/demand_and_response
-#     "/response_dashboard/demand_and_response/get_map_pin",
-#     response_model=List[Dict[str, Any]],
-# )
-# def get_markers(db: Session = Depends(get_db)):
-#     records = db.query(DemandAndResponse).all()
-#
-#     markers = []
-#     for i, record in enumerate(records, 1):
-#         marker = {
-#             "id": f"d{i}",
-#             "type": "demand",
-#             "label": record.title_lable,
-#             "lat": record.lat,
-#             "lng": record.lng,
-#             "address": record.address,
-#             "contact": {
-#                 "name": "Unknown",  # Replace if you have these fields
-#                 "phone": "N/A",  # Replace if available
-#             },
-#             "priority": record.priority,
-#             "status": record.status,
-#             "needs": record.needs,
-#             "submitted_at": record.submitted_at.isoformat(),
-#             "last_updated": record.last_updated.isoformat(),
-#         }
-#         markers.append(marker)
-#
-#     return markers
-#
-#
-# def getDefaultPage(page):
-#     return math.floor((page - 1) / 100) * 100 + 1
-#
-#
-# @router.get(
-#     "/response_dashboard/demand_and_response/list_view", response_model=TableResponse
-# )
-# def get_table(
-#     db: Session = Depends(get_db),
-#     page: int = Query(1, get=1),
-#     Last_Updated: str = "desc",
-# ):
-#     # Table header remains the same
-#     page = getDefaultPage(page)
-#     offset = (page - 1) * 10
-#     table_head = [
-#         {"text": "Last Updated", "width": "200px", "action": "Sort"},
-#         {"text": "Title", "width": "250px"},
-#         {"text": "Address", "width": "250px"},
-#         {"text": "Lat", "width": "150px"},
-#         {"text": "Long", "width": "150px"},
-#         {"text": "Status", "width": "150px"},
-#         {"text": "Needs", "width": "400px"},
-#         {"text": "Priority", "width": "150px"},
-#         {"text": "Action", "width": "150px"},
-#     ]
-#
-#     # Query all reports (limit if needed)
-#     order = (
-#         DemandAndResponse.last_updated.desc()
-#         if Last_Updated == "desc"
-#         else DemandAndResponse.last_updated.asc()
-#     )
-#     reports = (
-#         db.query(DemandAndResponse).order_by(order).limit(100).offset(offset).all()
-#     )
-#
-#     table_datas = []
-#     pageCount = page
-#     pages = {"page": pageCount, "row": []}
-#     for index, report in enumerate(reports):
-#
-#         if len(pages["row"]) == 10:
-#             table_datas.append(pages)
-#             pageCount += 1
-#             pages = {"page": pageCount, "row": []}
-#
-#         needs_list = report.needs
-#         needs_str = ", ".join(
-#             [f"{need['need']} - {need['amount']}" for need in needs_list]
-#         )
-#         row_data = [
-#             Cell(
-#                 type="Hidden",  # Custom type handled in frontend
-#                 text=str(report.id),
-#                 font_weight=0,
-#                 color="#000",
-#                 width="0px",
-#             ),
-#             Cell(
-#                 type="Hidden",
-#                 text="no-text",
-#                 value=report.needs,
-#                 font_weight=0,
-#                 width="0px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=report.last_updated.strftime("%B %d, %Y"),
-#                 font_weight=500,
-#                 color="#000",
-#                 width="200px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=report.title_lable,
-#                 font_weight=500,
-#                 color="#000",
-#                 width="250px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=report.address,
-#                 font_weight=500,
-#                 color="#000",
-#                 width="250px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=str(report.lat),
-#                 font_weight=500,
-#                 color="#000",
-#                 width="150px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=str(report.lng),
-#                 font_weight=500,
-#                 color="#000",
-#                 width="150px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=report.status,
-#                 font_weight=500,
-#                 color="#000",
-#                 width="150px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=needs_str,
-#                 font_weight=500,
-#                 color="#000",
-#                 width="400px",
-#             ),
-#             Cell(
-#                 type="Text",
-#                 text=report.priority,
-#                 font_weight=500,
-#                 color="#000",
-#                 width="150px",
-#             ),
-#             Cell(
-#                 type="Button",
-#                 text="View",
-#                 font_weight=500,
-#                 color="#fff",
-#                 background_color="#749AB6",
-#                 container_width="150px",
-#                 button_width="120px",
-#             ),
-#         ]
-#         pages["row"].append({"data": row_data})
-#
-#     if pages["row"]:
-#         table_datas.append(pages)
-#
-#     count = db.query(DemandAndResponse).count()
-#     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-#
-#
-# @router.post(
-#     "/response_dashboard/demand_and_response/add_record",
-#     response_model=DemandAndResponseOut,
-# )
-# def add_response_report(record: DemandAndResponseCreate, db: Session = Depends(get_db)):
-#     return create_demand_and_response_record(db, record)
-#
-#
-# @router.delete(
-#     "/response_dashboard/demand_and_response/delete_record/{record_id}",
-#     response_model=dict,
-# )
-# def delete_response_report(record_id: int, db: Session = Depends(get_db)):
-#     deleted_report = delete(db, DemandAndResponse, record_id)
-#     if not deleted_report:
-#         raise HTTPException(status_code=400, detail="Response report not found.")
-#     return {"message": f"Response report with ID {record_id} deleted successfully."}
-#
-#
-# @router.put("/response_dashboard/demand_and_response/update_record/{record_id}")
-# def update_report(
-#     record_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)
-# ):
-#     record = db.query(DemandAndResponse).get(record_id)
-#
-#     if not record:
-#         raise HTTPException(status_code=404, detail="Response record doesn't exist")
-#     if update.title_lable is not None:
-#         record.title_lable = update.title_lable
-#     if update.address is not None:
-#         record.address = update.address
-#     if update.lat is not None:
-#         record.lat = update.lat
-#     if update.lng is not None:
-#         record.lng = update.lng
-#     if update.status is not None:
-#         record.status = update.status
-#     if update.needs is not None:
-#         record.needs = [
-#             item.dict() if isinstance(item, BaseModel) else item
-#             for item in update.needs
-#         ]
-#     if update.priority is not None:
-#         record.priority = update.priority
-#
-#     record.last_updated = datetime.now(timezone.utc)
-#
-#     db.commit()
-#     db.refresh(record)
-#
-#     return {"detail": "Report updated succesfully", "report": record}
+    # Access requester_id directly from the updated object
+    requester_id = updated_request.requester_id
+    if requester_id != user_id:
+        PH_TZ = ZoneInfo("Asia/Manila")
+        now_ph = datetime.now(PH_TZ)
+        payload = {
+            "to": str(requester_id),  # <-- here
+            "from_origin": "procurement_management",
+            "title": "Request status have been updated",
+            "message": f"Your request  {updated_request.title}({updated_request.request_id}) is now {updated_request.status}",
+            "url_redirect": "/request_procurement",
+            "isRead": False,
+            "date": now_ph,
+        }
+        await send_notification(db, payload)
+    return updated_request

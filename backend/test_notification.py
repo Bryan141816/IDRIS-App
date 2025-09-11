@@ -7,7 +7,14 @@ from redis_client import r  # your async Redis client
 async def send_test_notification(user_id: str):
     """Send a test notification with a fixed title and message."""
     channel = f"notifications:{user_id}"
-    payload = {"title": "Test notification", "message": "This is a test notification"}
+
+    payload = {
+        "event_type": "notification",
+        "data": {
+            "title": "Test notification",
+            "message": "This is a test notification",
+        },
+    }
     await r.publish(channel, json.dumps(payload))
     print(f"Sent test notification to user {user_id}")
 

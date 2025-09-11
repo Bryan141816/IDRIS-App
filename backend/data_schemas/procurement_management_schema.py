@@ -35,7 +35,7 @@ class ProcurementRequestItemSchema(BaseModel):
 # ProcurementRequest Schema
 # ----------------------------
 class UserOut(BaseModel):
-    user_id: int
+    user_id: str
     username: str
 
     class Config:
@@ -44,7 +44,7 @@ class UserOut(BaseModel):
 
 class ProcurementRequestSchema(BaseModel):
     request_id: int
-    requester_id: int
+    requester_id: str
     title: str
     lgu_name: str
     priority: str  # You can switch to Literal if you want strict validation

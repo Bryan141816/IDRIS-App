@@ -11,6 +11,7 @@ export const UpdateRequestStatus: React.FC<UpdateRequestStatusProps> = ({
   onClose,
   refreshData,
   selectedItem,
+  apiUrl,
 }) => {
   const statuses = [
     "Pending Approval",
@@ -53,10 +54,7 @@ export const UpdateRequestStatus: React.FC<UpdateRequestStatusProps> = ({
     console.log("➡️ Sending updateValues:", updateValues);
 
     try {
-      const response = await API.post(
-        "/procurement_management/update_request",
-        updateValues,
-      );
+      const response = await API.post(`${apiUrl}/update_request`, updateValues);
       console.log("✅ Update success:", response.data);
       refreshData();
       onClose();

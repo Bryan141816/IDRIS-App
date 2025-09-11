@@ -351,7 +351,8 @@ class DonorCRUD:
         return ListOfDonorsResponse(max_page=max_page, donors=records)
 
     @staticmethod
-    def get_donor_profile_by_user_id(db: Session, user_id: int):
+    def get_donor_profile_by_user_id(db: Session, user_id: str):
+        print(user_id)
         donor = db.query(Donor).filter(Donor.user_id == user_id).first()
         if donor is None:
             return None
@@ -365,7 +366,7 @@ class DonorCRUD:
         )
 
     @staticmethod
-    def get_donor_id_by_user_id(db: Session, user_id: int) -> int:
+    def get_donor_id_by_user_id(db: Session, user_id: str) -> int:
         donor_id = db.query(Donor.donor_id).filter(Donor.user_id == user_id).scalar()
         if not donor_id:
             raise HTTPException(status_code=404, detail="Donor not found for this user")

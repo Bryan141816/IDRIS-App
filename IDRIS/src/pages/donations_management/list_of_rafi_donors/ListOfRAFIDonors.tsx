@@ -48,44 +48,6 @@ interface SearchedDonorsAPIResponse {
   search: string;
 }
 
-/** ---------- DUMMY DONORS (used if API returns empty or fails) ---------- */
-const dummyDonors: DonorData[] = [
-  {
-    donorId: 0,
-    donor_name: "Donor Name",
-    organization_name: "",
-    total_donation: 0,
-    date_joined: new Date().toISOString(),
-  },
-  {
-    donorId: 0,
-    donor_name: "",
-    organization_name: "Donor Name",
-    total_donation: 0,
-    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-  },
-  {
-    donorId: 0,
-    donor_name: "Donor Name",
-    organization_name: "",
-    total_donation: 0,
-    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-  },
-  {
-    donorId: 0,
-    donor_name: "",
-    organization_name: "Donor Name",
-    total_donation: 0,
-    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-  },
-  {
-    donorId: 0,
-    donor_name: "Donor Name",
-    organization_name: "",
-    total_donation: 0,
-    date_joined: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString(),
-  },
-];
 
 const ListOfRAFIDonors = () => {
   // User view Options

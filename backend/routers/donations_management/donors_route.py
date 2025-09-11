@@ -43,7 +43,7 @@ router_admin_or_donor = APIRouter(
 
 @router_admin_or_donor.post("/create_donor", response_model=DonorResponse)  # mark used
 def create_individual_donor_endpoint(
-    user_id: int = Form(...),
+    user_id: str = Form(...),
     donor_type: Optional[str] = Form("Individual"),
     organization_name: Optional[str] = Form(None),
     date_joined: Optional[datetime.date] = Form(None),

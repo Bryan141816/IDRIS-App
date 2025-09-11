@@ -13,7 +13,7 @@ class Number(BaseModel):
 
 
 class ID(BaseModel):
-    id: int
+    id: str
 
 
 class LoginSchema(BaseModel):
@@ -44,6 +44,7 @@ class UserCreate(UserBase):
 
 class UserSchema(UserBase):
     id: int
+    user_id: str
     roles: List[str]
     user_type: Optional[str]
 
@@ -62,7 +63,7 @@ class UserUpdate(BaseModel):
 
 
 class UserSimple(BaseModel):
-    user_id: int
+    user_id: str
     username: str
     email: str
 
@@ -147,6 +148,22 @@ class EvacuationCenterOut(BaseModel):
     capacity: int
 
 
+class HazardBase(BaseModel):
+    hazard_area: str
+    hazard_type: str
+    image_url: str | None = None
+    action: str | None = None
+
+class HazardCreate(HazardBase):
+    pass
+
+class HazardOut(HazardBase):
+    id: int
+    last_updated: datetime | None = None
+
+    class Config:
+        from_attributes = True
+        
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate, redirect } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
@@ -6,6 +6,10 @@ import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
 
 const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
+    Component: module.default,
+  }));
+const NotificationPage = () =>
+  import("./components/Page_Furniture/NotificationPage").then((module) => ({
     Component: module.default,
   }));
 
@@ -20,7 +24,7 @@ const DamageAssessment = () =>
   }));
 
 const FinanceManagement = () =>
-  import("./pages/finance&admin/finance_management/finance_management").then(
+  import("./pages/finance&admin/finance_management/FinanceManagement").then(
     (module) => ({
       Component: module.default,
     }),
@@ -136,6 +140,7 @@ const ProgramsReports = () =>
   ).then((module) => ({ Component: module.default })
 );
 
+
 // Donations Management
 const DonationsDashboard = () =>
   import(
@@ -169,18 +174,15 @@ const FundingDonation = () =>
   );
 
 const DonorProfile = () =>
-  import(
-    "./pages/donations_management/donor/DonorProfile"
-  ).then(
+  import("./pages/donations_management/donor/DonorProfile").then((module) => ({
+    Component: module.default,
+  }));
+
+const Donor_Dashboard = () =>
+  import("./pages/donations_management/donor/DonorDashboard").then(
     (module) => ({ Component: module.default }),
   );
 
-const Donor_Dashboard = () =>
-  import(
-    "./pages/donations_management/donor/DonorDashboard"
-  ).then(
-    (module) => ({ Component: module.default }),
-  );
 
 // Response Dashboard
 
@@ -241,6 +243,11 @@ const ProcurementManagement = () =>
     "./pages/procurement_inventory/procurement_management/procurement_management"
   ).then((module) => ({ Component: module.default }));
 
+const RequestProcurement = () =>
+  import(
+    "./pages/procurement_inventory/request_procurement/request_prcurement"
+  ).then((module) => ({ Component: module.default }));
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -281,6 +288,10 @@ export const router = createBrowserRouter([
       {
         path: "manage_users",
         lazy: UserManagement,
+      },
+      {
+        path: "notifications",
+        lazy: NotificationPage,
       },
       {
         path: "oauth_callback",
@@ -461,7 +472,7 @@ export const router = createBrowserRouter([
         path: "procurement_inventory",
         children: [
           {
-            path: "procurement_inventory",
+            path: "procurement_inventory", // index route (just /procurement_inventory)
             lazy: ProcurementInventory,
           },
           {
@@ -470,9 +481,25 @@ export const router = createBrowserRouter([
           },
           {
             path: "procurement_management",
-            lazy: ProcurementManagement,
+            children: [
+              {
+                path: ":tab", // e.g. /procurement_inventory/procurement_management/dashboard
+                lazy: ProcurementManagement,
+              },
+              {
+                index: true, // e.g. /procurement_inventory/procurement_management
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/procurement_management/dashboard",
+                  ),
+              },
+            ],
           },
         ],
+      },
+      {
+        path: "request_procurement",
+        lazy: RequestProcurement,
       },
       {
         path: "finance&admin/finance_management",

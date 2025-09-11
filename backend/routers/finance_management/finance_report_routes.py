@@ -36,7 +36,7 @@ def list_inflows(
     statuses: Optional[List[RecordStatus]] = Query(
         None, description="Filter by status values (e.g., PENDING, PAID)"
     ),
-    allocation_type: Optional[BudgetAllocation] = Query(
+    allocation_type: Optional[List[BudgetAllocation]] = Query(
         None, description="Filter by budget allocation type"
     ),
     db: Session = Depends(get_db),

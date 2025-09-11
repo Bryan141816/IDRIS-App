@@ -50,11 +50,28 @@ export async function getBudgetAllocationSummary(options?: {
   return data;
 }
 
-export async function getFundingProposalTotalInKindDonations(month: number, year: number): Promise<any>{
-  const response = await API.get(`/finance/get_report/by_month/inkind`,{
-    params: { month, year }
-  },
-  )
-  return response.data
+export async function getReportData(
+  from_date?: string,
+  to_date?: string,
+  statuses?: string[],
+  allocation_type?: string[]
+): Promise<any> {
+  const { data } = await API.get("/finance_reports/get-report/all", {
+    params: {
+      from_date,
+      to_date,
+      statuses,
+      allocation_type,
+    },
+  });
+  return data;
 }
+
+// export async function getFundingProposalTotalInKindDonations(month: number, year: number): Promise<any>{
+//   const response = await API.get(`/finance/get_report/by_month/inkind`,{
+//     params: { month, year }
+//   },
+//   )
+//   return response.data
+// }
 

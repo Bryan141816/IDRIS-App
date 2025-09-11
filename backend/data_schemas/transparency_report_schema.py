@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import date
 
 class CashTransparencyResponseSchema(BaseModel):
-    id: int
+    donation_id: str
     donation_date: date
     amount: float
     donor_name: str
@@ -23,7 +23,7 @@ class CashTransparencyResponseSchema(BaseModel):
 
         # Manually assign values from the SQLAlchemy object
         return {
-            "id": donation.donation_id,
+            "donation_id": donation.donation_id,
             "donation_date": donation.donation_date.date() if donation.donation_date else None,
             "amount": (
                 donation.cash.amount if donation.donation_type == "cash" and donation.cash else

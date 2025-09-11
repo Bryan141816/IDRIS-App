@@ -63,7 +63,7 @@ class TransparencyReportCRUD:
             # Create a response schema for each donation, combining donation details and cash_amount
             donation_responses.append(
                 CashTransparencyResponseSchema(
-                    id=donation.donation_id,
+                    donation_id=donation.donation_id,
                     donation_date=donation_date,
                     amount=float(donation.cash.amount or 0),  # Ensure amount is a float and defaults to 0 if None
                     donor_name=donation.donor.donor_name if donation.donor.donor_name else "Anonymous",

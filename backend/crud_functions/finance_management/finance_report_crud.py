@@ -19,7 +19,7 @@ class FinanceReport:
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
         statuses: Optional[List[RecordStatus]] = None,
-        allocation_type: Optional[BudgetAllocation] = None,
+        allocation_type: Optional[List[BudgetAllocation]] = None,
     ):
         """
         Fetch inflows filtered by date range, statuses, and allocation_type.
@@ -38,7 +38,7 @@ class FinanceReport:
 
         # Filter by allocation_type (budget_for)
         if allocation_type:
-            query = query.filter(FinanceRecord.budget_for == allocation_type)
+            query = query.filter(FinanceRecord.budget_for.in_(allocation_type))
 
         return query.order_by(FinanceRecord.date.desc()).all()
     

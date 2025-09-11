@@ -69,26 +69,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
         {/* LGU OFFICER (ADMIN) ONLY */}
         {userType === "admin" && userRoles.includes("lgu officer") && (
           <div className="nav-items" id="lgu-profiling">
-            <div
-              className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
-              onClick={() => toggleNav("lgu")}
-            >
-              <LGU width={14} height={14} className="sidebar-icons" />
-              <a href="#" className="non-redirect">LGU PROFILING</a>
-            </div>
+          
 
-                        <div
-                            className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
-                        >
-                            <Link
-                                to="/lgu_profiling/map_of_cebu"
-                                className="nav-sub-item"
-                                onClick={onClose}
-                            >
-                                Map of Cebu
-                            </Link>
-                        </div>
-
+                      
                        {userType === "admin" && userRoles.includes("lgu officer") && (
   <div className="nav-items" id="lgu-profiling">
     <div

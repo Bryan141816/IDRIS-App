@@ -34,6 +34,7 @@ from routers.procurement_management import procurement_management
 from routers.request_procurement import request_procurement
 from routers.notification import notification
 from redis_client import r, close_redis
+from routers.lgu_profiling.uploadedFiles import router as files_router
 import real_time_handler
 
 from decouple import config

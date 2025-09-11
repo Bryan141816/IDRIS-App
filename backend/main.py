@@ -37,7 +37,7 @@ from redis_client import r, close_redis
 from routers.lgu_profiling.uploadedFiles import router as files_router
 import real_time_handler
 
-from routers.volunteer_management import assignment_routes
+from routers.volunteer_management.assignment_routes import router as assignment_router
 
 from decouple import config
 
@@ -104,6 +104,7 @@ app.include_router(
     tags=["Organization Volunteer Management"],
 )
 app.include_router(individual_volunteer_routes.router, tags=["Volunteer Management"])
+app.include_router(assignment_router, tags=["Programs/Events"])
 
 app.include_router(finance_route.router, prefix="/finance", tags=["Finance Management"])
 app.include_router(finance_report_routes.router, prefix="/finance_reports", tags=["Finance Reports"])

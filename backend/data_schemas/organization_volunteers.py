@@ -20,7 +20,7 @@ class VolunteerCertificateRead(BaseModel):
 
 # ----------- SHARED SCHEMA -----------
 class OrganizationVolunteerBase(BaseModel):
-    user_id: int
+    user_id: str
 
     organization_name: str
     organization_type: str

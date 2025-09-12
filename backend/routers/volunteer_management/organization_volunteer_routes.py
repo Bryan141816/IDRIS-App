@@ -13,7 +13,10 @@ from data_schemas.organization_volunteers import (
     OrganizationVolunteerRead,
 )
 from crud_functions.volunteer_management.organization_volunteer_crud import (
-    OrganizationVolunteerCRUD as CRUD,
+    OrganizationVolunteerCRUD as CRUD
+)
+from crud_functions.volunteer_management.availability_crud import (
+ refresh_all_availability
 )
 from routers.role_checker import RoleChecker
 from models import OrganizationVolunteer, VolunteerStatus
@@ -128,6 +131,8 @@ def create_organization_volunteer_for_user_endpoint(
 # ---------------- READ ALL ----------------
 @router_admin_or_organization_volunteer.get("/get_all", response_model=List[OrganizationVolunteerRead])
 def get_all_organization_volunteers_endpoint(db: Session = Depends(get_db)):
+    # ✅ Auto-flip availability before returning
+    refresh_all_availability(db)
     return CRUD.get_all_organization_volunteers(db)
 
 # ---------------- READ BY ID ----------------
@@ -268,7 +273,7 @@ def update_organization_volunteer_endpoint(
         organization_address=organization_address,
         contact_person_name=contact_person_name,
         contact_person_position=contact_person_position,
-        contact_person_phone_number=contact_person_phone_number,
+        contact_person_phone_number=organization_phone_number,
         contact_person_email=contact_person_email,
         availability=availability,
         status=status,

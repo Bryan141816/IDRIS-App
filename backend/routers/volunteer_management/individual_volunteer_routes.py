@@ -13,7 +13,10 @@ from data_schemas.individual_volunteer_schema import (
     IndividualVolunteerStatusUpdate,
 )
 from crud_functions.volunteer_management.individual_volunteer_crud import (
-    IndividualVolunteerCRUD as CRUD,
+    IndividualVolunteerCRUD as CRUD
+)
+from crud_functions.volunteer_management.availability_crud import (
+    refresh_all_availability
 )
 from routers.role_checker import RoleChecker
 from models import IndividualVolunteer, VolunteerStatus
@@ -124,6 +127,8 @@ def create_individual_volunteer_for_user_endpoint(
 # ---------------- READ ALL ----------------
 @router_admin_or_volunteer.get("/get_all", response_model=List[IndividualVolunteerRead])
 def get_all_volunteers_endpoint(db: Session = Depends(get_db)):
+    # ✅ Auto-flip availability before returning
+    refresh_all_availability(db)
     return CRUD.get_all_volunteers(db)
 
 # ---------------- READ BY ID ----------------
@@ -273,14 +278,6 @@ def update_volunteer_status(
     db.commit()
     db.refresh(iv)
     return iv
-
-# ---------------- READ BY USER ID (for authenticated users) ----------------
-@router_authenticated.get("/get_by_user_id", response_model=IndividualVolunteerRead)
-def get_by_user_id(user_id: int = Depends(GetUserId()), db: Session = Depends(get_db)):
-    v = CRUD.get_volunteer_by_user_id(db, user_id)
-    if not v:
-        raise HTTPException(status_code=404, detail="Volunteer not found")
-    return v
 
 # Final router to include in main.py
 router = APIRouter()

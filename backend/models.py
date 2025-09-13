@@ -167,21 +167,16 @@ class EvacuationCenter(Base):
 
 class LGURecords(Base):
     __tablename__ = "lgu_records"
-    __random_pk_field__ = "LGU_id"
-
-    id = Column(Integer, primary_key=True, index=True)
-    lgu_name = Column(String(255), nullable=False)
-    lgu_picture = Column(String, nullable=True)
-
+    id = Column(Integer, index=True, primary_key=True, server_default=Identity())
+    name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
-    contact_info = Column(String(255), nullable=True)
-    schools = Column(JSON, nullable=True, default=list)
-    suppliers = Column(JSON, nullable=True, default=list)
-    players = Column(JSON, nullable=True, default=list)
-    gyms = Column(JSON, nullable=True, default=list)
-    population = Column(Integer, nullable=True)
-    available_resources = Column(JSON, nullable=True, default=list)
+    classification = Column(String(255), nullable=False)
+    population = Column(Integer, nullable=False)
+    contact_info = Column(String(255), nullable=False)
+    risk_level = Column(String(50), nullable=False)
+
+    # relationship to Barangay
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
 
@@ -970,6 +965,15 @@ class ProcurementRequestItem(Base):
 
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="request_items")
+
+
+class WarehouseZones(Base):
+    __tablename__ = "warehouse_zones"
+    warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    zone_name = Column(String(255), nullable=False)
+    zone_type = Column(String(255), nullable=False)
+    capacity = Column(Integer, nullable=False)
+    manager = Column(String(255), nullable=False)
 
 
 # ================================== FINANCE MODELS =====================================

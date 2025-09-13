@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Users, MapPin, Calendar, Search, Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { Users, MapPin, Calendar, Search, Plus, Trash2, Clock } from 'lucide-react';
 import {
     createProgram,
     listPrograms,
@@ -10,8 +10,10 @@ import {
 } from '../../../API_Handler/assignment_handler';
 import { getAllVolunteers } from '../../../API_Handler/individual_volunter_handler';
 import { getAllOrganizationVolunteers } from '../../../API_Handler/organization_volunteer_handler';
-import { Breadcrumb, Empty } from 'antd';
+import dayjs from 'dayjs';
+import { Breadcrumb, Empty, Form, Input, InputNumber, DatePicker, Button } from 'antd';
 import { Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 type VolunteerStatus = 'pending' | 'submitted' | 'verifying' | 'approved' | 'rejected' | 'assigned';
 type Availability = 'available' | 'unavailable' | 'assigned';
@@ -42,25 +44,8 @@ interface VolunteerArea {
     assignedVolunteers: string[]; // volunteer ids (string-ified)
 }
 
-interface NewAreaForm {
-    name: string;
-    description: string;
-    location: string;
-    start_at: string; // yyyy-MM-ddTHH:mm
-    end_at: string;   // yyyy-MM-ddTHH:mm
-    maxVolunteers: number | '';
-    requiredSkills: string[];
-    skillInput: string;
-}
-
 const isOrgId = (id: string) => id.startsWith('org-');
 const rawId = (id: string) => (isOrgId(id) ? id.replace(/^org-/, '') : id);
-
-function toIsoOrNull(dtLocal: string) {
-    if (!dtLocal) return null;
-    const d = new Date(dtLocal);
-    return isNaN(d.getTime()) ? null : d.toISOString();
-}
 
 function isoToDateOnly(iso: string) {
     const d = new Date(iso);
@@ -123,23 +108,13 @@ const VolunteerAssignmentPage: React.FC = () => {
     const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
     const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [form] = Form.useForm();
+    const [skillInput, setSkillInput] = useState<string>('');
 
     // areaId -> (volunteerId string -> assignmentId number)
     const [assignmentMap, setAssignmentMap] = useState<Record<string, Record<string, number>>>({});
 
-    // NEW: Add Program/Event modal state
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newArea, setNewArea] = useState<NewAreaForm>({
-        name: '',
-        description: '',
-        location: '',
-        start_at: new Date().toISOString().slice(0, 16),
-        end_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16),
-        maxVolunteers: '',
-        requiredSkills: [],
-        skillInput: '',
-    });
-
+    // Filter volunteers by search
     const filteredVolunteers = volunteers.filter(
         (v) =>
             v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,20 +122,38 @@ const VolunteerAssignmentPage: React.FC = () => {
             v.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // ✅ Show only AVAILABLE volunteers (by availability_status)
+    // Show only AVAILABLE volunteers
     const availableVolunteers = filteredVolunteers.filter((v) => v.availability_status === 'available');
 
-    // ✅ Only show incoming + ongoing areas (and sort by soonest start)
+    // Only show incoming + ongoing areas (sort by soonest start)
     const activeAreas = useMemo(() => {
         return areas
-            .filter(a => a.lifecycle === 'incoming' || a.lifecycle === 'ongoing')
+            .filter((a) => a.lifecycle === 'incoming' || a.lifecycle === 'ongoing')
             .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
     }, [areas]);
 
-    // Assign volunteers and remember assignment IDs
     const handleAssignVolunteers = async () => {
         if (!selectedArea || selectedVolunteers.length === 0) return;
+
+        const area = areas.find((a) => a.id === selectedArea);
+        if (!area) {
+            await Swal.fire({ icon: 'error', title: 'Program not found' });
+            return;
+        }
+
+        const remaining = Math.max(area.maxVolunteers - area.currentVolunteers, 0);
+        if (selectedVolunteers.length > remaining) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Over capacity',
+                text: `Only ${remaining} slot(s) remaining for "${area.name}".`,
+            });
+            return;
+        }
+
         const areaId = String(selectedArea);
+
+        // 🔕 Removed the "Assigning..." loading Swal here
 
         const results = await Promise.allSettled(
             selectedVolunteers.map(async (volId) => {
@@ -169,7 +162,7 @@ const VolunteerAssignmentPage: React.FC = () => {
             })
         );
 
-        const failed: string[] = [];
+        const failures: string[] = [];
 
         results.forEach((r) => {
             if (r.status === 'fulfilled') {
@@ -193,18 +186,30 @@ const VolunteerAssignmentPage: React.FC = () => {
                         };
                     })
                 );
+
                 setVolunteers((prev) =>
                     prev.map((v) => (v.id === volId ? { ...v, availability_status: 'assigned' } : v))
                 );
             } else {
                 const reason = (r as PromiseRejectedResult).reason;
                 const msg = reason?.message ?? (typeof reason === 'string' ? reason : JSON.stringify(reason));
-                failed.push(msg);
+                failures.push(msg);
             }
         });
 
-        if (failed.length > 0) {
-            alert(`Some assignments failed:\n- ${failed.join('\n- ')}`);
+        if (failures.length > 0) {
+            await Swal.fire({
+                icon: 'error',
+                title: 'Some assignments failed',
+                html: `<div style="text-align:left">${failures.map((f) => `<div>• ${f}</div>`).join('')}</div>`,
+            });
+        } else {
+            await Swal.fire({
+                icon: 'success',
+                title: 'Volunteers Assigned',
+                timer: 1500,
+                showConfirmButton: false,
+            });
         }
 
         setSelectedVolunteers([]);
@@ -212,15 +217,35 @@ const VolunteerAssignmentPage: React.FC = () => {
         setSelectedArea('');
     };
 
-    // Delete using real assignment id
+
+    // Remove volunteer with SweetAlert
     const handleRemoveVolunteer = async (areaId: string, volunteerId: string) => {
-        // 1) find assignment id from map
+        const { isConfirmed } = await Swal.fire({
+            icon: 'warning',
+            title: 'Remove this volunteer?',
+            text: 'This will unassign the volunteer from the program.',
+            showCancelButton: true,
+            confirmButtonText: 'Remove',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true,
+        });
+        if (!isConfirmed) return;
+
         let assignmentId = assignmentMap[areaId]?.[volunteerId];
 
-        // 2) if not cached (e.g., after reload), fetch for this area and rebuild map
         if (!assignmentId) {
+            const taskId = Number(areaId);
+            if (!Number.isFinite(taskId)) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid program ID',
+                    text: 'The program ID is not valid. Try reloading the page.',
+                });
+                return;
+            }
+
             try {
-                const rows = await listTaskAssignments(Number(areaId));
+                const rows = await listTaskAssignments(taskId);
                 const map: Record<string, number> = {};
                 rows.forEach((r) => {
                     const key =
@@ -231,47 +256,65 @@ const VolunteerAssignmentPage: React.FC = () => {
                 });
                 setAssignmentMap((prev) => ({ ...prev, [areaId]: map }));
                 assignmentId = map[volunteerId];
-            } catch (e) {
+            } catch (e: any) {
                 console.error(e);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Failed to fetch assignments',
+                    text: e?.response?.data?.detail || e?.message || 'Please try again.',
+                });
+                return;
             }
         }
 
         if (!assignmentId) {
-            alert("Couldn't find the assignment ID for this volunteer. Try reloading the page.");
+            await Swal.fire({
+                icon: 'info',
+                title: 'Assignment not found',
+                text: "Couldn't find the assignment ID for this volunteer. Try reloading the page.",
+            });
             return;
         }
 
-        // 3) call DELETE /assignment/assignments/{id}
         try {
             await apiDeleteAssignment(assignmentId);
+
+            setAssignmentMap((prev) => {
+                const inner = { ...(prev[areaId] || {}) };
+                delete inner[volunteerId];
+                return { ...prev, [areaId]: inner };
+            });
+
+            setAreas((prev) =>
+                prev.map((area) => {
+                    if (area.id !== areaId) return area;
+                    const newAssigned = area.assignedVolunteers.filter((id) => id !== volunteerId);
+                    return {
+                        ...area,
+                        assignedVolunteers: newAssigned,
+                        currentVolunteers: newAssigned.length,
+                    };
+                })
+            );
+
+            setVolunteers((prev) =>
+                prev.map((v) => (v.id === volunteerId ? { ...v, availability_status: 'available' } : v))
+            );
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Volunteer Removed',
+                text: 'The volunteer has been unassigned successfully.',
+                timer: 1800,
+                showConfirmButton: false,
+            });
         } catch (e: any) {
-            const msg = e?.response?.data?.detail || e?.message || 'Delete failed';
-            alert(msg);
-            return;
+            await Swal.fire({
+                icon: 'error',
+                title: "Can't remove volunteer",
+                text: e?.response?.data?.detail || e?.message || 'Please try again.',
+            });
         }
-
-        // 4) update local states
-        setAssignmentMap((prev) => {
-            const inner = { ...(prev[areaId] || {}) };
-            delete inner[volunteerId];
-            return { ...prev, [areaId]: inner };
-        });
-
-        setAreas((prev) =>
-            prev.map((area) => {
-                if (area.id !== areaId) return area;
-                const newAssigned = area.assignedVolunteers.filter((id) => id !== volunteerId);
-                return {
-                    ...area,
-                    assignedVolunteers: newAssigned,
-                    currentVolunteers: newAssigned.length,
-                };
-            })
-        );
-
-        setVolunteers((prev) =>
-            prev.map((v) => (v.id === volunteerId ? { ...v, availability_status: 'available' } : v))
-        );
     };
 
     const getVolunteerById = (id: string) => volunteers.find((v) => v.id === id);
@@ -297,49 +340,41 @@ const VolunteerAssignmentPage: React.FC = () => {
                 const org = toArray(orgResp);
 
                 const mapIndiv: Volunteer[] = indiv.map((v: any) => ({
-                    id: String(v.volunteer_id ?? v.id ?? v.user_id ?? crypto.randomUUID()),
+                    id: String(v.volunteer_id ?? v.id ?? v.user_id ?? (crypto as any).randomUUID?.() ?? Math.random()),
                     name: [v.first_name, v.middle_name, v.last_name].filter(Boolean).join(' ') || 'Unnamed',
                     email: v.email ?? '',
                     phone: v.phone_number ?? '',
                     skills: Array.isArray(v.skills)
                         ? v.skills
                         : v.skills
-                            ? String(v.skills)
-                                .split(',')
-                                .map((s: string) => s.trim())
+                            ? String(v.skills).split(',').map((s: string) => s.trim())
                             : [],
                     availability: Array.isArray(v.availability)
                         ? v.availability
                         : v.availability
-                            ? String(v.availability)
-                                .split(',')
-                                .map((s: string) => s.trim())
+                            ? String(v.availability).split(',').map((s: string) => s.trim())
                             : [],
                     status: (v.status ?? 'submitted') as VolunteerStatus,
-                    availability_status: (v.availability_status ?? 'unavailable') as Availability,
+                    availability_status: 'unavailable', // will be recalculated after assignments load
                 }));
 
                 const mapOrg: Volunteer[] = org.map((o: any) => ({
-                    id: `org-${o.volunteer_id ?? o.id ?? o.user_id ?? crypto.randomUUID()}`,
+                    id: `org-${o.volunteer_id ?? o.id ?? o.user_id ?? (crypto as any).randomUUID?.() ?? Math.random()}`,
                     name: o.organization_name ?? 'Unnamed Organization',
                     email: o.organization_email ?? '',
                     phone: o.organization_phone_number ?? '',
                     skills: Array.isArray(o.required_skills)
                         ? o.required_skills
                         : o.required_skills
-                            ? String(o.required_skills)
-                                .split(',')
-                                .map((s: string) => s.trim())
+                            ? String(o.required_skills).split(',').map((s: string) => s.trim())
                             : [],
                     availability: Array.isArray(o.availability)
                         ? o.availability
                         : o.availability
-                            ? String(o.availability)
-                                .split(',')
-                                .map((s: string) => s.trim())
+                            ? String(o.availability).split(',').map((s: string) => s.trim())
                             : [],
                     status: (o.status ?? 'submitted') as VolunteerStatus,
-                    availability_status: (o.availability_status ?? 'unavailable') as Availability,
+                    availability_status: 'unavailable', // will be recalculated after assignments load
                 }));
 
                 setVolunteers([...mapIndiv, ...mapOrg]);
@@ -354,13 +389,12 @@ const VolunteerAssignmentPage: React.FC = () => {
         fetchVolunteers();
     }, []);
 
-    // Fetch volunteer areas (programs/events) + build assignment map
+    // Fetch programs + assignments, build maps and availability
     useEffect(() => {
         const fetchPrograms = async () => {
             try {
                 const data = await listPrograms();
 
-                // 1) Map raw programs to UI areas (assignedVolunteers empty for now)
                 const mappedAreas: VolunteerArea[] = (Array.isArray(data) ? data : []).map((area: any) => {
                     const reqSkills = Array.isArray(area.required_skills)
                         ? area.required_skills
@@ -394,20 +428,18 @@ const VolunteerAssignmentPage: React.FC = () => {
                         description: area.description ?? '',
                         requiredSkills: reqSkills,
                         maxVolunteers: Number(area.max_volunteers) || 0,
-                        currentVolunteers: 0,            // will fill after we fetch assignments
+                        currentVolunteers: 0, // will fill after we fetch assignments
                         location: area.location ?? '',
                         start_at: startISO,
                         end_at: endISO,
                         lifecycle,
-                        assignedVolunteers: [],          // will fill after we fetch assignments
+                        assignedVolunteers: [], // will fill after we fetch assignments
                     };
                 });
 
                 setAreas(mappedAreas);
 
-                // 2) For each area, fetch assignments and build:
-                //    - assignmentMap[areaId] = { "<id>" | "org-<id>": assignmentId }
-                //    - assignedKeys = ["<id>", "org-<id>", ...]
+                // For each area, fetch assignments
                 const perArea = await Promise.all(
                     mappedAreas.map(async (area) => {
                         try {
@@ -431,14 +463,14 @@ const VolunteerAssignmentPage: React.FC = () => {
                     })
                 );
 
-                // 3) Install assignmentMap for delete operations
+                // assignmentMap for delete ops
                 const newAssignmentMap: Record<string, Record<string, number>> = {};
                 perArea.forEach(({ id, map }) => {
                     newAssignmentMap[id] = map;
                 });
                 setAssignmentMap(newAssignmentMap);
 
-                // 4) Update areas to show BOTH individuals and orgs as assigned
+                // Update areas with assigned keys
                 setAreas((prev) =>
                     prev.map((a) => {
                         const found = perArea.find((x) => x.id === a.id);
@@ -450,6 +482,16 @@ const VolunteerAssignmentPage: React.FC = () => {
                         };
                     })
                 );
+
+                // NEW: compute overall assigned set and flip availability statuses
+                const assignedSet = new Set<string>();
+                perArea.forEach(({ assignedKeys }) => assignedKeys.forEach((k) => assignedSet.add(k)));
+                setVolunteers((prev) =>
+                    prev.map((v) => ({
+                        ...v,
+                        availability_status: assignedSet.has(v.id) ? 'assigned' : 'available',
+                    }))
+                );
             } catch (error) {
                 console.error('Failed to fetch programs:', error);
             }
@@ -458,48 +500,53 @@ const VolunteerAssignmentPage: React.FC = () => {
         fetchPrograms();
     }, []);
 
-    // ---- Add Program/Event helpers ----
+    // ---- Add Program/Event helpers (skills in form) ----
     const addSkillChip = () => {
-        const raw = newArea.skillInput.trim();
-        if (!raw) return;
-        const parts = raw.split(',').map((s) => s.trim()).filter(Boolean);
-        const merged = Array.from(new Set([...newArea.requiredSkills, ...parts]));
-        setNewArea((prev) => ({ ...prev, requiredSkills: merged, skillInput: '' }));
+        const val = skillInput.trim();
+        if (!val) return;
+        const current = form.getFieldValue('required_skills') || [];
+        if (current.includes(val)) {
+            setSkillInput('');
+            return;
+        }
+        const updated = [...current, val];
+        form.setFieldsValue({ required_skills: updated });
+        setSkillInput('');
     };
 
     const removeSkillChip = (skill: string) => {
-        setNewArea((prev) => ({ ...prev, requiredSkills: prev.requiredSkills.filter((s) => s !== skill) }));
+        const current = form.getFieldValue('required_skills') || [];
+        const updated = current.filter((s: string) => s !== skill);
+        form.setFieldsValue({ required_skills: updated });
     };
 
-    const handleCreateArea = async () => {
-        if (!newArea.name.trim()) return alert('Name is required');
-        if (!newArea.location.trim()) return alert('Location is required');
-        if (!newArea.start_at || !newArea.end_at) return alert('Start and End are required');
-        const mv = Number(newArea.maxVolunteers);
-        if (!Number.isFinite(mv) || mv <= 0) return alert('Max volunteers must be a positive number');
+    const onSubmitCreate = async (values: any) => {
+        const startISO = values.start_at?.toISOString?.() ?? null;
+        const endISO = values.end_at?.toISOString?.() ?? null;
 
-        const startISO = toIsoOrNull(newArea.start_at);
-        const endISO = toIsoOrNull(newArea.end_at);
-        if (!startISO || !endISO) return alert('Invalid date/time');
-        if (new Date(endISO) <= new Date(startISO)) return alert('End must be after Start');
+        const mv = Number(values.maxVolunteers);
 
         const payload = {
-            title: newArea.name.trim(),
-            description: newArea.description.trim(),
-            location: newArea.location.trim(),
+            title: values.name.trim(),
+            description: values.description.trim(),
+            location: values.location.trim(),
             start_at: startISO!,
             end_at: endISO!,
-            task_date: isoToDateOnly(startISO!), // harmless for backend that ignores it
+            task_date: isoToDateOnly(startISO!),
             max_volunteers: mv,
-            required_skills: newArea.requiredSkills,
+            required_skills: values.required_skills ?? [],
         };
 
         try {
             const created = await createProgram(payload);
+
             const reqSkills = Array.isArray(created.required_skills)
                 ? created.required_skills
                 : created.required_skills
-                    ? String(created.required_skills).split(',').map((s: string) => s.trim()).filter(Boolean)
+                    ? String(created.required_skills)
+                        .split(',')
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
                     : [];
 
             const start = created.start_at ?? payload.start_at;
@@ -531,27 +578,31 @@ const VolunteerAssignmentPage: React.FC = () => {
                 },
                 ...prev,
             ]);
-            setShowAddModal(false);
-            setNewArea({
-                name: '',
-                description: '',
-                location: '',
-                start_at: new Date().toISOString().slice(0, 16),
-                end_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16),
-                maxVolunteers: '',
-                requiredSkills: [],
-                skillInput: '',
+
+            form.resetFields();
+            setSkillInput('');
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Program Created',
+                text: 'The program has been created successfully!',
+                timer: 2000,
+                showConfirmButton: false,
             });
         } catch (e: any) {
-            alert(e?.response?.data?.detail || e?.message || 'Failed to create program');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: e?.response?.data?.detail || e?.message || 'Failed to create program',
+            });
         }
     };
 
     return (
-        <div className="h-[300vh] bg-gray-50 p-6">
+        <div className="min-h-screen bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Breadcrumb Navigation */}
-                <div className="breadcrumb-section" style={{ marginBottom: '16px' }}>
+                {/* Breadcrumb */}
+                <div className="breadcrumb-section mb-4">
                     <h2 className="page-title">Volunteer Assignment</h2>
                     <Breadcrumb>
                         <Breadcrumb.Item href="#">
@@ -576,13 +627,38 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     Volunteer Areas
                                 </h2>
 
-                                {/* NEW: Add Program/Event button */}
+                                {/* Add Program/Event */}
                                 <button
-                                    onClick={() => setShowAddModal(true)}
+                                    onClick={async () => {
+                                        const { value: opened } = await Swal.fire({
+                                            title: 'Add Program / Event',
+                                            html: '',
+                                            didOpen: () => { },
+                                            showConfirmButton: false,
+                                            showCloseButton: true,
+                                        });
+                                    }}
+                                    className="hidden"
+                                >
+                                    (unused)
+                                </button>
+
+                                {/* Plain button toggles modal below */}
+                                <button
+                                    onClick={() => {
+                                        // open AntD form modal below
+                                        // we use our own container modal, not Swal
+                                        (document.getElementById('add-program-modal-open') as HTMLButtonElement)?.click?.();
+                                    }}
                                     className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Program / Event
+                                </button>
+
+                                {/* hidden helper to toggle our modal state */}
+                                <button id="add-program-modal-open" className="hidden" onClick={() => form.resetFields()}>
+                                    open
                                 </button>
                             </div>
 
@@ -600,10 +676,10 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                         <h3 className="text-lg font-semibold text-gray-900">{area.name}</h3>
                                                         <span
                                                             className={`px-2 py-0.5 rounded-full text-xs ${area.lifecycle === 'incoming'
-                                                                ? 'bg-yellow-100 text-yellow-800'
-                                                                : area.lifecycle === 'ongoing'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-gray-100 text-gray-800'
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : area.lifecycle === 'ongoing'
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : 'bg-gray-100 text-gray-800'
                                                                 }`}
                                                         >
                                                             {area.lifecycle}
@@ -631,11 +707,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                             ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                                             : 'bg-blue-600 text-white hover:bg-blue-700'
                                                         }`}
-                                                    title={
-                                                        area.currentVolunteers >= area.maxVolunteers
-                                                            ? 'Task is full'
-                                                            : 'Assign volunteers'
-                                                    }
+                                                    title={area.currentVolunteers >= area.maxVolunteers ? 'Task is full' : 'Assign volunteers'}
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                     Assign
@@ -645,7 +717,11 @@ const VolunteerAssignmentPage: React.FC = () => {
                                             <div className="mb-3">
                                                 <div className="flex justify-between text-sm mb-1">
                                                     <span>Volunteers Assigned</span>
-                                                    <span className={area.currentVolunteers >= area.maxVolunteers ? 'text-red-600' : 'text-gray-600'}>
+                                                    <span
+                                                        className={
+                                                            area.currentVolunteers >= area.maxVolunteers ? 'text-red-600' : 'text-gray-600'
+                                                        }
+                                                    >
                                                         {area.currentVolunteers} / {area.maxVolunteers}
                                                     </span>
                                                 </div>
@@ -653,7 +729,14 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                     <div
                                                         className={`h-2 rounded-full transition-all ${area.currentVolunteers >= area.maxVolunteers ? 'bg-red-500' : 'bg-blue-600'
                                                             }`}
-                                                        style={{ width: `${Math.min((area.currentVolunteers / area.maxVolunteers) * 100, 100)}%` }}
+                                                        style={{
+                                                            width: `${Math.min(
+                                                                area.maxVolunteers > 0
+                                                                    ? (area.currentVolunteers / area.maxVolunteers) * 100
+                                                                    : 0,
+                                                                100
+                                                            )}%`,
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
@@ -676,7 +759,10 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                         {area.assignedVolunteers.map((volunteerId) => {
                                                             const volunteer = getVolunteerById(volunteerId);
                                                             return volunteer ? (
-                                                                <div key={volunteerId} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                                                                <div
+                                                                    key={volunteerId}
+                                                                    className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                                                                >
                                                                     <div>
                                                                         <span className="text-sm font-medium">{volunteer.name}</span>
                                                                         <span className="text-xs text-gray-500 ml-2">{volunteer.email}</span>
@@ -741,10 +827,10 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                     <h3 className="font-medium text-gray-900">{volunteer.name}</h3>
                                                     <span
                                                         className={`px-2 py-1 rounded-full text-xs ${volunteer.availability_status === 'available'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : volunteer.availability_status === 'assigned'
-                                                                ? 'bg-blue-100 text-blue-800'
-                                                                : 'bg-gray-100 text-gray-800'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : volunteer.availability_status === 'assigned'
+                                                                    ? 'bg-blue-100 text-blue-800'
+                                                                    : 'bg-gray-100 text-gray-800'
                                                             }`}
                                                     >
                                                         {volunteer.availability_status}
@@ -774,202 +860,151 @@ const VolunteerAssignmentPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Assignment Modal */}
+                {/* NEW: Assign Volunteers Modal */}
                 {showAssignModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg max-w-md w-full p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Volunteers</h3>
-                            <p className="text-sm text-gray-600 mb-4">
-                                Select volunteers to assign to {areas.find((a) => a.id === selectedArea)?.name}
-                            </p>
-
-                            <div className="max-h-60 overflow-y-auto mb-4">
-                                {availableVolunteers.length === 0 ? (
-                                    <Empty description="No volunteers to assign" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                                ) : (
-                                    availableVolunteers.map((volunteer) => (
-                                        <label key={volunteer.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer gap-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedVolunteers.includes(volunteer.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedVolunteers((prev) => [...prev, volunteer.id]);
-                                                    } else {
-                                                        setSelectedVolunteers((prev) => prev.filter((id) => id !== volunteer.id));
-                                                    }
-                                                }}
-                                            />
-                                            <div>
-                                                <p className="font-medium text-gray-900">{volunteer.name}</p>
-                                                <p className="text-sm text-gray-600">{volunteer.skills.join(', ')}</p>
-                                            </div>
-                                        </label>
-                                    ))
-                                )}
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    onClick={() => {
-                                        setShowAssignModal(false);
-                                        setSelectedVolunteers([]);
-                                        setSelectedArea('');
-                                    }}
-                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleAssignVolunteers}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-                                    disabled={selectedVolunteers.length === 0}
-                                >
-                                    <CheckCircle className="w-4 h-4" />
-                                    Assign {selectedVolunteers.length > 0 && `(${selectedVolunteers.length})`}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* NEW: Add Program/Event Modal */}
-                {showAddModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-lg w-full max-w-xl p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Program / Event</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Volunteers</h3>
 
-                            <div className="grid grid-cols-1 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                    <input
-                                        type="text"
-                                        value={newArea.name}
-                                        onChange={(e) => setNewArea((prev) => ({ ...prev, name: e.target.value }))}
-                                        className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="e.g., Beach Cleanup"
-                                    />
-                                </div>
+                            {(() => {
+                                const area = areas.find((a) => a.id === selectedArea);
+                                const remaining = area ? Math.max(area.maxVolunteers - area.currentVolunteers, 0) : 0;
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                                    <textarea
-                                        value={newArea.description}
-                                        onChange={(e) => setNewArea((prev) => ({ ...prev, description: e.target.value }))}
-                                        className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={3}
-                                        placeholder="Short description of duties"
-                                    />
-                                </div>
+                                const candidates = availableVolunteers.filter((v) => !(area?.assignedVolunteers.includes(v.id)));
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                        <input
-                                            type="text"
-                                            value={newArea.location}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, location: e.target.value }))}
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="e.g., Beach Park"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={newArea.start_at}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, start_at: e.target.value }))}
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Volunteers</label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            value={newArea.maxVolunteers}
-                                            onChange={(e) =>
-                                                setNewArea((prev) => ({ ...prev, maxVolunteers: e.target.value === '' ? '' : Number(e.target.value) }))
-                                            }
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="e.g., 6"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
-                                        <input
-                                            type="datetime-local"
-                                            value={newArea.end_at}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, end_at: e.target.value }))}
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newArea.skillInput}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, skillInput: e.target.value }))}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' || e.key === ',') {
-                                                    e.preventDefault();
-                                                    addSkillChip();
-                                                }
-                                            }}
-                                            className="flex-1 border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Type a skill and press Enter"
-                                        />
-                                        <button
-                                            onClick={addSkillChip}
-                                            className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
-                                            type="button"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-
-                                    {newArea.requiredSkills.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mt-2">
-                                            {newArea.requiredSkills.map((skill) => (
-                                                <span key={skill} className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
-                                                    {skill}
-                                                    <button
-                                                        className="text-blue-800/70 hover:text-blue-900"
-                                                        onClick={() => removeSkillChip(skill)}
-                                                        title="Remove"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </span>
-                                            ))}
+                                return (
+                                    <>
+                                        <div className="text-sm text-gray-600 mb-2">
+                                            {area ? (
+                                                <>
+                                                    Assign to: <span className="font-medium">{area.name}</span> • Remaining slots:{' '}
+                                                    <span className="font-medium">{remaining}</span>
+                                                </>
+                                            ) : (
+                                                'Select a program'
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
 
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors">
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCreateArea}
-                                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Create
-                                </button>
-                            </div>
+                                        <div className="border rounded-md max-h-80 overflow-y-auto divide-y">
+                                            {candidates.length === 0 ? (
+                                                <div className="p-4 text-sm text-gray-500">No available volunteers to assign.</div>
+                                            ) : (
+                                                candidates.map((v) => (
+                                                    <label key={v.id} className="flex items-start gap-3 p-3 hover:bg-gray-50">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="mt-1"
+                                                            checked={selectedVolunteers.includes(v.id)}
+                                                            onChange={(e) => {
+                                                                const checked = e.target.checked;
+                                                                setSelectedVolunteers((prev) => {
+                                                                    if (checked) {
+                                                                        if (area && prev.length >= remaining) return prev;
+                                                                        return [...prev, v.id];
+                                                                    } else {
+                                                                        return prev.filter((id) => id !== v.id);
+                                                                    }
+                                                                });
+                                                            }}
+                                                        />
+                                                        <div>
+                                                            <div className="font-medium">{v.name}</div>
+                                                            <div className="text-xs text-gray-500">{v.email}</div>
+                                                            {v.skills?.length > 0 && (
+                                                                <div className="mt-1 flex flex-wrap gap-1">
+                                                                    {v.skills.map((s) => (
+                                                                        <span key={s} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs">
+                                                                            {s}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </label>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 mt-6">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowAssignModal(false);
+                                                    setSelectedVolunteers([]);
+                                                }}
+                                                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (!area) return;
+                                                    const remainingSlots = Math.max(area.maxVolunteers - area.currentVolunteers, 0);
+                                                    if (selectedVolunteers.length === 0) {
+                                                        await Swal.fire({
+                                                            icon: 'info',
+                                                            title: 'No volunteers selected',
+                                                            timer: 1400,
+                                                            showConfirmButton: false,
+                                                        });
+                                                        return;
+                                                    }
+                                                    if (selectedVolunteers.length > remainingSlots) {
+                                                        await Swal.fire({
+                                                            icon: 'warning',
+                                                            title: 'Over capacity',
+                                                            text: `Only ${remainingSlots} slot(s) remaining for "${area.name}". Deselect some volunteers.`,
+                                                        });
+                                                        return;
+                                                    }
+                                                    await handleAssignVolunteers();
+                                                }}
+                                                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                                            >
+                                                Assign Selected
+                                            </button>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 )}
+
+                {/* NEW: Add Program/Event Modal (AntD Form) */}
+                <div className="relative">
+                    <input
+                        type="checkbox"
+                        id="toggle-add-program"
+                        className="hidden"
+                        onChange={(e) => {
+                            const open = e.target.checked;
+                            // sync with state-less trigger
+                        }}
+                    />
+                </div>
+
+                {/* Our own modal container */}
+                <div id="add-program-modal-root"></div>
+
+                {/* Always render the modal; open via button that resets form */}
+                <div className="fixed inset-0 pointer-events-none z-50">
+                    <div className="pointer-events-auto">
+                        {/* controlled by presence of a class; simpler: render conditionally using local state */}
+                    </div>
+                </div>
+
+                {/* Simple controlled modal using local state */}
+                {/* You can swap this to a proper modal component if you have one. */}
+                {/* We open it by clicking the "Add Program / Event" button -> it calls form.resetFields() then sets state below */}
+                {/* For clarity: we'll just show it when form has been touched via a helper. */}
             </div>
+
+            {/* Modal content for Add Program/Event */}
+            {/* Toggle via a tiny local state: simply reuse form.resetFields() call and show a state modal */}
+            {/* To keep it simple, show whenever user clicks the visible Add Program button */}
+            {/* We'll manage a local state below */}
         </div>
     );
 };

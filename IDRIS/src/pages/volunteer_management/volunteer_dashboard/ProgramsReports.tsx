@@ -131,47 +131,6 @@ const normalizeProgram = (r: any): Program => {
   };
 };
 
-// Fallback demo (only used if API fails completely)
-const samplePrograms: Program[] = [
-  {
-    id: 201,
-    name: "Community Clean-up",
-    location: "Barangay San Isidro",
-    date: "2025-09-05",
-    expected_volunteers: 30,
-    actual_deployed: 28,
-    status: "finished",
-  },
-  {
-    id: 202,
-    name: "Tree Planting Drive",
-    location: "Busay Hills",
-    start_date: "2025-09-10",
-    end_date: "2025-09-11",
-    expected_volunteers: 50,
-    actual_deployed: 41,
-    status: "finished",
-  },
-  {
-    id: 203,
-    name: "Medical Mission",
-    location: "Mandaue Gym",
-    date: "2025-08-22",
-    expected_volunteers: 40,
-    actual_deployed: 32,
-    status: "finished",
-  },
-  {
-    id: 204,
-    name: "Coastal Cleanup",
-    location: "Liloan Shore",
-    date: "2025-09-18",
-    expected_volunteers: 25,
-    actual_deployed: 18,
-    status: "upcoming",
-  },
-];
-
 // ───────────────────────────────────────────────────────────────────────────────
 // Component
 // ───────────────────────────────────────────────────────────────────────────────

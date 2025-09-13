@@ -21,7 +21,7 @@ class VolunteerCertificateRead(BaseModel):
 
 # ----------- SHARED SCHEMA -----------
 class IndividualVolunteerBase(BaseModel):
-    user_id: int
+    user_id: str
     first_name: str
     middle_name: Optional[str] = None
     last_name: str

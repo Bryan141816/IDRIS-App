@@ -35,6 +35,32 @@ from database import Base
 import enum, random
 from datetime import datetime, UTC
 from sqlalchemy import Column, DateTime
+from datetime import datetime, timezone
+import enum
+
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    CheckConstraint,
+    UniqueConstraint,
+    Identity,
+    func,
+    case,
+    literal,
+    select,
+    and_,
+)
+from sqlalchemy.orm import relationship, column_property
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import Enum as SqlEnum
+
+# for god sake ayaw e butang sa ubos ang import libog kaau
 
 
 class User(Base):
@@ -480,18 +506,10 @@ class Donation_InKind(Base):
 
 
 # imports (keep your own project Base import as-is)
-from datetime import datetime, timezone
-import enum
 
-from sqlalchemy import (
-    Column, Integer, String, Text, Date, DateTime, ForeignKey, Index,
-    CheckConstraint, UniqueConstraint, Identity, func, case, literal, select, and_
-)
-from sqlalchemy.orm import relationship, column_property
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy import Enum as SqlEnum
 
 # ------------------ VOLUNTEER MANAGEMENT MODELS
+
 
 class VolunteerStatus(enum.Enum):
     submitted = "submitted"
@@ -534,10 +552,14 @@ class IndividualVolunteer(Base):
     other_medical_conditions = Column(String(255), nullable=True, default="N/A")
     certification = Column(String(255), nullable=True)
     skills = Column(String(255), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     volunteer_type = Column(String(50), nullable=False, default="individual")
     status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
-    availability_status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable)
+    availability_status = Column(
+        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
+    )
 
     certificates = relationship(
         "VolunteerCertificate",
@@ -566,12 +588,20 @@ class OrganizationVolunteer(Base):
     contact_person_phone_number = Column(String(20), nullable=True)
     contact_person_email = Column(String(100), nullable=False)
     availability = Column(String(255), nullable=True)
-    organization_picture = Column(String(255), nullable=True)  # URL or path to the picture
-    organization_certificate = Column(String(255), nullable=True)  # URL or path to the certificate
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    organization_picture = Column(
+        String(255), nullable=True
+    )  # URL or path to the picture
+    organization_certificate = Column(
+        String(255), nullable=True
+    )  # URL or path to the certificate
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     volunteer_type = Column(String(50), nullable=False, default="organization")
     status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
-    availability_status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable)
+    availability_status = Column(
+        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
+    )
 
     certificates = relationship(
         "VolunteerCertificate",
@@ -603,7 +633,9 @@ class VolunteerCertificate(Base):
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(512), nullable=False)  # normalized POSIX path
     mime_type = Column(String(100), nullable=True)
-    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    uploaded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     # Enforce XOR ownership at the DB level
     __table_args__ = (
@@ -640,7 +672,9 @@ class Event(Base):
     # Optional global date, but your UI sets date at task level—keep for future use
     event_date = Column(Date, nullable=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     tasks = relationship("Task", back_populates="event", cascade="all, delete-orphan")
 
@@ -649,21 +683,27 @@ class Task(Base):
     __tablename__ = "task"
 
     id = Column(Integer, primary_key=True)
-    event_id = Column(Integer, ForeignKey("event.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_id = Column(
+        Integer, ForeignKey("event.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     title = Column(String(120), nullable=False)
     description = Column(Text)
     location = Column(String(255))
 
     start_at = Column(DateTime(timezone=True), nullable=False, index=True)
-    end_at   = Column(DateTime(timezone=True), nullable=False, index=True)
+    end_at = Column(DateTime(timezone=True), nullable=False, index=True)
 
     max_volunteers = Column(Integer, nullable=False)
     required_skills = Column(String(500))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     event = relationship("Event", back_populates="tasks")
-    assignments = relationship("Assignment", back_populates="task", cascade="all, delete-orphan")
+    assignments = relationship(
+        "Assignment", back_populates="task", cascade="all, delete-orphan"
+    )
 
     # derive lifecycle from now
     @hybrid_property
@@ -686,37 +726,64 @@ class Task(Base):
 
 
 class AssignmentStatus(str, enum.Enum):
-    applied    = "applied"
-    invited    = "invited"
-    accepted   = "accepted"
-    declined   = "declined"
+    applied = "applied"
+    invited = "invited"
+    accepted = "accepted"
+    declined = "declined"
     waitlisted = "waitlisted"
     checked_in = "checked_in"
-    no_show    = "no_show"
-    completed  = "completed"
-    cancelled  = "cancelled"
+    no_show = "no_show"
+    completed = "completed"
+    cancelled = "cancelled"
 
 
 class Assignment(Base):
     __tablename__ = "assignment"
 
     id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True)
+    task_id = Column(
+        Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # Assign EITHER an individual OR an organization (XOR)
-    individual_volunteer_id   = Column(Integer, ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"), nullable=True, index=True)
-    organization_volunteer_id = Column(Integer, ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"), nullable=True, index=True)
+    individual_volunteer_id = Column(
+        Integer,
+        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    organization_volunteer_id = Column(
+        Integer,
+        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
-    status = Column(SqlEnum(AssignmentStatus), nullable=False, server_default=AssignmentStatus.applied.value)
-    notes  = Column(Text)
+    status = Column(
+        SqlEnum(AssignmentStatus),
+        nullable=False,
+        server_default=AssignmentStatus.applied.value,
+    )
+    notes = Column(Text)
 
-    created_at  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
     task = relationship("Task", back_populates="assignments")
     # string names avoid circular import
-    individual_volunteer   = relationship("IndividualVolunteer", foreign_keys=[individual_volunteer_id])
-    organization_volunteer = relationship("OrganizationVolunteer", foreign_keys=[organization_volunteer_id])
+    individual_volunteer = relationship(
+        "IndividualVolunteer", foreign_keys=[individual_volunteer_id]
+    )
+    organization_volunteer = relationship(
+        "OrganizationVolunteer", foreign_keys=[organization_volunteer_id]
+    )
 
     __table_args__ = (
         # exactly one owner
@@ -726,15 +793,24 @@ class Assignment(Base):
             name="ck_assignment_exactly_one_owner",
         ),
         # prevent duplicates on same task
-        UniqueConstraint("task_id", "individual_volunteer_id",   name="uq_task_individual"),
-        UniqueConstraint("task_id", "organization_volunteer_id", name="uq_task_organization"),
+        UniqueConstraint(
+            "task_id", "individual_volunteer_id", name="uq_task_individual"
+        ),
+        UniqueConstraint(
+            "task_id", "organization_volunteer_id", name="uq_task_organization"
+        ),
         Index("ix_assignment_status", "status"),
     )
+
 
 # ------------------ Computed counters (attach after classes to avoid forward-ref issues)
 
 # Which statuses mean a volunteer actually "joined" a program/task
-JOINED_STATUSES = (AssignmentStatus.accepted, AssignmentStatus.checked_in, AssignmentStatus.completed)
+JOINED_STATUSES = (
+    AssignmentStatus.accepted,
+    AssignmentStatus.checked_in,
+    AssignmentStatus.completed,
+)
 
 # IndividualVolunteer counters
 IndividualVolunteer.tasks_joined = column_property(
@@ -893,6 +969,7 @@ class ProcurementRequestItem(Base):
 
 # ================================== FINANCE MODELS =====================================
 
+
 class BudgetAllocation(enum.Enum):
     EMERGENCY = "EMERGENCY SUPPLIES"
     FOOD_WATER = "FOOD AND WATER"
@@ -902,18 +979,19 @@ class BudgetAllocation(enum.Enum):
     DONATIONS = "DONATIONS"
     GENERAL = "GENERAL"
 
+
 class TransactionType(enum.Enum):
     INFLOW = "INFLOW"
     OUTFLOW = "OUTFLOW"
 
 
 class RecordStatus(enum.Enum):
-    PENDING = "PENDING"          # recorded but not yet received/paid
-    RECEIVED = "RECEIVED"        # for inflows
-    PAID = "PAID"                # for outflows
-    APPROVED = "APPROVED"        # approver ok (often outflow)
-    DENIED = "DENIED"            # rejected
-    RECONCILED = "RECONCILED"    # cleared in reconciliation
+    PENDING = "PENDING"  # recorded but not yet received/paid
+    RECEIVED = "RECEIVED"  # for inflows
+    PAID = "PAID"  # for outflows
+    APPROVED = "APPROVED"  # approver ok (often outflow)
+    DENIED = "DENIED"  # rejected
+    RECONCILED = "RECONCILED"  # cleared in reconciliation
 
 
 class FinanceRecord(Base):
@@ -926,17 +1004,23 @@ class FinanceRecord(Base):
     amount = Column(Numeric(14, 2), nullable=False)
     date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    status = Column(SqlEnum(RecordStatus), nullable=False, index=True, default=RecordStatus.PENDING)
-    created_at = Column(DateTime, nullable=False, default=func.now())
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    budget_for = Column(SqlEnum(BudgetAllocation), nullable=False, default = BudgetAllocation.GENERAL)
-
-    audits = relationship("FinanceAudit", back_populates="record", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        Index("ix_finance_type_date", "transaction_type", "date"),
+    status = Column(
+        SqlEnum(RecordStatus), nullable=False, index=True, default=RecordStatus.PENDING
     )
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    budget_for = Column(
+        SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
+    )
+
+    audits = relationship(
+        "FinanceAudit", back_populates="record", cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (Index("ix_finance_type_date", "transaction_type", "date"),)
 
 
 class FinanceAudit(Base):
@@ -944,10 +1028,17 @@ class FinanceAudit(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     audit_id = Column(String, primary_key=True)
-    record_id = Column(String, ForeignKey("finance_records.finance_id", ondelete="CASCADE"), nullable=False, index=True)
-    action = Column(String(64), nullable=False)  # e.g., create, update, reconcile, export
+    record_id = Column(
+        String,
+        ForeignKey("finance_records.finance_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    action = Column(
+        String(64), nullable=False
+    )  # e.g., create, update, reconcile, export
     at = Column(DateTime, nullable=False, server_default=func.now())
-    actor = Column(String(128), nullable=True)   # optional: username/email
+    actor = Column(String(128), nullable=True)  # optional: username/email
     details = Column(Text, nullable=True)
 
     record = relationship("FinanceRecord", back_populates="audits")

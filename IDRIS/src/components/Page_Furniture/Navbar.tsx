@@ -67,7 +67,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       {/* Keep ALL nav-items inside this container */}
       <div id="nav-links">
         {/* LGU PROFILING */}
-        {((userType === "admin" && userRoles.includes("lgu officer")) ||
+        {((userType === "admin" &&
+          (userRoles.includes("lgu officer") ||
+            userRoles.includes("disaster response admin"))) ||
           userRoles.includes("generic")) && (
           <div className="nav-items" id="lgu-profiling">
             <div
@@ -83,7 +85,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             <div
               className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}
             >
-              {/* Visible to ALL who can see LGU PROFILING (including generic) */}
+              {/* Visible to ALL who can see LGU PROFILING (generic + allowed admins) */}
               <Link
                 to="/lgu_profiling/map_of_cebu"
                 className="nav-sub-item"
@@ -94,14 +96,19 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
 
               {/* Admin + LGU officer ONLY */}
               {userType === "admin" && userRoles.includes("lgu officer") && (
-                <>
-                  <Link
-                    to="/lgu_profiling/evacuationandshelter"
-                    className="nav-sub-item"
-                    onClick={onClose}
-                  >
-                    Evacuation and Shelter Management
-                  </Link>
+                <Link
+                  to="/lgu_profiling/evacuationandshelter"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Evacuation and Shelter Management
+                </Link>
+              )}
+
+              {/* Admin + (LGU officer OR Disaster Response Admin) */}
+              {userType === "admin" &&
+                (userRoles.includes("lgu officer") ||
+                  userRoles.includes("disaster response admin")) && (
                   <Link
                     to="/lgu_profiling/LGUmanagement"
                     className="nav-sub-item"
@@ -109,8 +116,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                   >
                     Pin Location Management
                   </Link>
-                </>
-              )}
+                )}
             </div>
           </div>
         )}

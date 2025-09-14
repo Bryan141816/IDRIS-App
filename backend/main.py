@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from decouple import config
-
+from routers.lgu_profiling import  mapofcebu  
 from database import Base, engine
 from routers.auth import authentication, users
 from routers.response_dashboard import (
@@ -143,9 +143,12 @@ app.mount(
     StaticFiles(directory="media/lgu_pictures"),
     name="lgu_pictures",
 )
+app.include_router(manage_lgu.router, prefix="/lgu_profiling")
+app.include_router(mapofcebu.router, prefix="/lgu_profiling")  # ⬅ add this
 
 @app.on_event("startup")
 async def on_startup():
     print("Registered routes:")
     for route in app.routes:
         print(route.path)
+    

@@ -1,14 +1,13 @@
+/* === Container & header === */
 .lgu-container {
   position: relative;
   max-width: 1200px;
-  width: 70%; /* responsive width, avoid horizontal scroll */
-  margin: 40px auto; /* center horizontally */
-  padding: 40px;
+  width: 70%;
+  margin: 40px auto;
+  padding: 56px 40px 40px; /* extra top so the back button doesn't overlap */
   background-color: #fafafa;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   border-radius: 12px;
-  overflow: visible; /* allow container to grow naturally */
-  /* remove any max-height or fixed height */
 }
 
 .back-button {
@@ -25,45 +24,111 @@
   width: fit-content !important;
 }
 
+
 .lgu-title {
   text-align: center;
   font-size: 32px;
   font-weight: 700;
-  margin-bottom: 40px;
+  margin: 0 0 28px;
   color: #222;
 }
 
 .lgu-image {
   display: block;
-  max-width: 50%;
-  margin: 0 auto 40px auto;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto 32px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+/* === Grid for key/value fields === */
 .lgu-grid {
   display: grid;
-  grid-template-columns: 220px 1fr;
-  row-gap: 20px;
+  grid-template-columns: 240px 1fr;  /* left labels, right values */
   column-gap: 40px;
-  font-size: 20px;
+  row-gap: 16px;
+  font-size: 18px;
   color: #333;
-  line-height: 1.5;
+  align-items: start;
 }
 
 .lgu-key {
   font-weight: 600;
-  color: #555;
+  color: #4a5568;
   text-align: right;
-  padding-right: 15px;
+  padding-right: 8px;
+  align-self: start;       /* keep label aligned to top of its value block */
   user-select: none;
 }
 
-.lgu-value ul {
-  margin: 0;
-  padding-left: 22px;
+.lgu-value {
+  line-height: 1.5;
+  word-break: break-word;
 }
 
+/* === Section title (Local Context) spans full width === */
+.lgu-section-title {
+  grid-column: 1 / -1;     /* span both columns */
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a202c;
+  margin-top: 12px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* === Lists inside values (for arrays/JSON) === */
+.lgu-value ul {
+  margin: 6px 0 0;
+  padding-left: 22px;
+  list-style: disc;
+}
+
+.lgu-value ul li {
+  margin: 4px 0;
+}
+
+/* === Object-style rows rendered by renderJson(...) === */
+.lgu-list-object {
+  display: grid;
+  grid-template-columns: max-content 1fr;  /* key then value */
+  column-gap: 10px;
+  row-gap: 6px;
+  padding: 6px 10px;
+  background: #f7fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 8px;
+}
+
+.lgu-list-row .lgu-list-key {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.lgu-list-row .lgu-list-value {
+  color: #2d3748;
+  word-break: break-word;
+}
+
+/* === Error state === */
 .lgu-error {
   padding: 40px;
+}
+
+/* === Responsive === */
+@media (max-width: 1024px) {
+  .lgu-container { width: 92%; }
+  .lgu-grid { grid-template-columns: 200px 1fr; column-gap: 28px; }
+}
+
+@media (max-width: 720px) {
+  .lgu-container { width: 94%; padding: 56px 16px 24px; }
+  .lgu-grid { grid-template-columns: 1fr; }
+  .lgu-key {
+    text-align: left;
+    padding-right: 0;
+    margin-top: 8px;
+  }
+  .lgu-section-title { margin-top: 4px; }
 }

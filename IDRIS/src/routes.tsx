@@ -84,7 +84,7 @@ const LGUSeeMore = () =>
 const ManageLGU = () =>
   import("./pages/lgu_profiling/LGUmanagement/manage_LGU").then((module) => ({
     Component: module.default,
-  }));
+  }));  
 
 //Volunteer Management
 const TrackVolunteerApplication = () =>
@@ -316,10 +316,9 @@ export const router = createBrowserRouter([
             path: "LGUmanagement",
             lazy: ManageLGU,
           },
-          {
-            path: "LGUSeeMore/:lguName",
-            lazy: LGUSeeMore,
-          },
+          { path: "LGUSeeMore/:id",
+            lazy: LGUSeeMore },
+
         ],
       },
       {

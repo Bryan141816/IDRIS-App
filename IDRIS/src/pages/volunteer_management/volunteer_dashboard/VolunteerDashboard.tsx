@@ -10,7 +10,7 @@ import { getAllVolunteers } from "../../../API_Handler/individual_volunter_handl
 import { getAllOrganizationVolunteers } from "../../../API_Handler/organization_volunteer_handler";
 import { message, Empty } from "antd";
 import { MapPin, Calendar as CalendarIcon } from "lucide-react";
-import { listPrograms } from "../../../API_Handler/assignment_handler";
+import { listPrograms, createAssignment as apiCreateAssignment } from "../../../API_Handler/assignment_handler";
 
 interface IndividualVolunteerRead {
   volunteer_id: number;
@@ -84,6 +84,11 @@ export default function IDRISDashboard() {
 
   const [newsAnnouncements, setNewsAnnouncements] = useState<NewsAnnouncement[]>([]);
   const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
+
+  // NEW: current user's volunteer profiles (individual/org)
+  const [myVolunteer, setMyVolunteer] = useState<IndividualVolunteerRead | null>(null);
+  const [myOrgVolunteer, setMyOrgVolunteer] = useState<any | null>(null);
+  const [joining, setJoining] = useState<Record<number, boolean>>({}); // programId -> loading
 
   // ---------- helpers ----------
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -267,7 +272,7 @@ export default function IDRISDashboard() {
     return activeNewsAnnouncements.map((n) => {
       if (n.start_at && n.end_at) {
         return { id: n.id, title: n.title, location: n.location, startISO: n.start_at, endISO: n.end_at };
-      }
+        }
       if (n.task_date) {
         const startISO = new Date(`${n.task_date}T08:00:00`).toISOString();
         const endISO = new Date(`${n.task_date}T17:00:00`).toISOString();
@@ -318,6 +323,7 @@ export default function IDRISDashboard() {
     if (selectedVolunteer) setVolunteerStatus(statusOf(selectedVolunteer));
   }, [selectedVolunteer]);
 
+  // Fetch volunteers + my profiles
   useEffect(() => {
     const fetchVolunteers = async () => {
       try {
@@ -346,7 +352,28 @@ export default function IDRISDashboard() {
       }
     };
 
+    // try fetch "my" individual/org volunteer profiles (requires auth)
+    const fetchMyProfiles = async () => {
+      try {
+        const iv = await fetch(`${API_BASE}/volunteer/my_profile`, { credentials: "include" });
+        if (iv.ok) {
+          const data = await iv.json();
+          setMyVolunteer({ ...data, status: normalizeStatus(data) });
+        }
+      } catch {/* ignore */}
+
+      try {
+        const ov = await fetch(`${API_BASE}/organization_volunteer/my_profile`, { credentials: "include" });
+        if (ov.ok) {
+          const data = await ov.json();
+          setMyOrgVolunteer({ ...data, status: normalizeStatus(data) });
+        }
+      } catch {/* ignore */}
+    };
+
     fetchVolunteers();
+    fetchMyProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const totalVolunteersNumber = useMemo(() => {
@@ -434,6 +461,61 @@ export default function IDRISDashboard() {
     () => organizationVolunteers.filter((o) => (o?.status ?? "").toLowerCase() === "approved"),
     [organizationVolunteers]
   );
+
+  // ---------- JOIN LOGIC ----------
+  const canJoin = (n: NewsAnnouncement) =>
+    n.lifecycle !== "finished" && n.currentVolunteers < n.maxVolunteers;
+
+  const joinProgram = async (n: NewsAnnouncement) => {
+    if (!canJoin(n)) return;
+
+    // prefer individual volunteer if approved; else try org volunteer if approved
+    const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
+    const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
+
+    if (!iv && !ov) {
+      // Not a volunteer yet, or not approved → guide to Become a Volunteer
+      setIsVolunteerModalOpen(true);
+      return;
+    }
+
+    try {
+      setJoining((prev) => ({ ...prev, [n.id]: true }));
+
+      if (iv) {
+        await apiCreateAssignment(n.id, { individual_volunteer_id: iv.volunteer_id });
+      } else if (ov) {
+        await apiCreateAssignment(n.id, { organization_volunteer_id: ov.volunteer_id });
+      }
+
+      message.success(`You joined "${n.title}"`);
+      // update local counters
+      setNewsAnnouncements((prev) =>
+        prev.map((x) =>
+          x.id === n.id
+            ? {
+                ...x,
+                currentVolunteers: Math.min(x.currentVolunteers + 1, x.maxVolunteers),
+                volunteersNeeded: Math.max(x.volunteersNeeded - 1, 0),
+              }
+            : x
+        )
+      );
+    } catch (e: any) {
+      const detail =
+        e?.response?.data?.detail ||
+        e?.message ||
+        "Failed to join this event";
+      // Handle duplicate join (409) gracefully if your backend returns it
+      if (String(detail).toLowerCase().includes("already") || e?.response?.status === 409) {
+        message.info("You already joined this event.");
+      } else {
+        message.error(detail);
+      }
+    } finally {
+      setJoining((prev) => ({ ...prev, [n.id]: false }));
+    }
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -655,7 +737,7 @@ export default function IDRISDashboard() {
                       </div>
 
                       <div className="days">
-                        {days.map((d, idx) => {
+                        {generateCalendarDays().map((d, idx) => {
                           const cellDate = d
                             ? new Date(viewDate.getFullYear(), viewDate.getMonth(), d)
                             : null;
@@ -722,7 +804,7 @@ export default function IDRISDashboard() {
               <div className="card news-card">
                 <div className="news-header">
                   <h2 className="news-title">News & Announcements</h2>
-                  {userType === "user" && userRoles.includes("operations admin") ? (
+                  {isOpsAdmin ? (
                     <button
                       onClick={() => navigate("/volunteer_management/volunteer_assignment")}
                       className="add-program-btn"
@@ -751,6 +833,10 @@ export default function IDRISDashboard() {
                           : 0;
                       const barColor =
                         item.currentVolunteers >= item.maxVolunteers ? "bg-red-500" : "bg-blue-600";
+                      const disabled = !canJoin(item) || !!joining[item.id];
+                      const buttonLabel = item.lifecycle === "finished"
+                        ? "Closed"
+                        : (item.currentVolunteers >= item.maxVolunteers ? "Full" : (joining[item.id] ? "Joining..." : "Join"));
 
                       return (
                         <div
@@ -786,6 +872,22 @@ export default function IDRISDashboard() {
                                 </span>
                               </div>
                             </div>
+
+                            {/* JOIN BUTTON */}
+                            {!isOpsAdmin && (
+                              <button
+                                onClick={() => joinProgram(item)}
+                                disabled={disabled}
+                                className={`px-3 py-1 rounded-md text-sm transition-colors ${
+                                  disabled
+                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                }`}
+                                title={disabled ? "You can't join this event now" : "Join this event"}
+                              >
+                                {buttonLabel}
+                              </button>
+                            )}
                           </div>
 
                           {/* Assigned / Capacity + progress + Needed */}

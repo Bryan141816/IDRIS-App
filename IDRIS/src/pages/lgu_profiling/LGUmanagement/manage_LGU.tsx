@@ -21,24 +21,30 @@ import {
   ViewBarangayModal,
   EditBarangayModal,
 } from "./Modals/BarangayModal";
-import { AddHazardModal, ViewHazardModal, EditHazardModal } from "./Modals/HazardModal";
+import {
+  AddHazardModal,
+  ViewHazardModal,
+  EditHazardModal,
+} from "./Modals/hazardModal";
 
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 /* ========================= API HELPERS ========================= */
 export async function getRecord(record_type: string): Promise<any> {
-  const response = await API.get(`/lgu_profiling/manage_lgu/get_${record_type}`);
+  const response = await API.get(
+    `/lgu_profiling/manage_lgu/get_${record_type}`
+  );
   return response.data;
 }
 
 export async function addRecord(
   record_type: string,
-  payload: any,
+  payload: any
 ): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.post(
       `/lgu_profiling/manage_lgu/add_${record_type}`,
-      payload,
+      payload
     );
 
     if (response.data?.success === false) {
@@ -61,13 +67,13 @@ export async function addRecord(
 
 export async function deleteRecord(
   record_type: string,
-  reportId: string,
+  reportId: string
 ): Promise<any> {
   try {
     const response = await API.delete(
-      `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`,
+      `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`
     );
-  return response;
+    return response;
   } catch (error: any) {
     if (error.response) {
       console.error("Error: ", error.response.data.detail);
@@ -81,12 +87,12 @@ export async function deleteRecord(
 export async function updateRecord(
   record_type: string,
   reportId: string,
-  payload: any,
+  payload: any
 ): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.put(
       `/lgu_profiling/manage_lgu/update_${record_type}/${reportId}`,
-      payload,
+      payload
     );
 
     if (response.data?.success === false) {
@@ -129,15 +135,21 @@ const MapOfCebu = () => {
   >("lgu");
 
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
-  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(null);
+  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(
+    null
+  );
   const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
-  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
-  const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
+  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(
+    null
+  );
+  const [evacuationResponse, setEvacuationResponse] =
+    useState<TableReponse | null>(null);
 
   const refreshTable = useRef<() => void>(() => {});
   const handleRefreshTable = () => refreshTable.current?.();
 
-  const [selectedViewData, setSelectedViewData] = useState<TableRowShape | null>(null);
+  const [selectedViewData, setSelectedViewData] =
+    useState<TableRowShape | null>(null);
 
   const [addModalState, setAddModalState] = useState({
     lgu: false,
@@ -268,7 +280,7 @@ const MapOfCebu = () => {
 
   const safeUpdateByIndex = (
     prev: TableRowShape | null,
-    mapping: Record<number, any>,
+    mapping: Record<number, any>
   ): TableRowShape | null => {
     if (!prev?.data || !Array.isArray(prev.data)) return prev;
     const newData = prev.data.map((cell, idx) => {
@@ -312,7 +324,7 @@ const MapOfCebu = () => {
               6: payload.population,
               7: payload.contact_info,
               8: payload.risk_level,
-            }),
+            })
           );
           break;
         case "lgu":
@@ -325,9 +337,26 @@ const MapOfCebu = () => {
               5: payload.population,
               6: payload.contact_info,
               7: payload.risk_level,
-            }),
+              8: payload.description,
+              9: Array.isArray(payload.resources)
+                ? payload.resources.join(", ")
+                : payload.resources,
+              10: Array.isArray(payload.players)
+                ? payload.players.join(", ")
+                : payload.players,
+              11: Array.isArray(payload.schools)
+                ? payload.schools.join(", ")
+                : payload.schools,
+              12: Array.isArray(payload.gyms)
+                ? payload.gyms.join(", ")
+                : payload.gyms,
+              13: Array.isArray(payload.local_suppliers)
+                ? payload.local_suppliers.join(", ")
+                : payload.local_suppliers,
+            })
           );
           break;
+
         case "evacuation":
           setSelectedViewData((prev) =>
             safeUpdateByIndex(prev, {
@@ -335,19 +364,19 @@ const MapOfCebu = () => {
               2: payload.lat,
               3: payload.lng,
               4: payload.capacity,
-            }),
+            })
           );
           break;
-          case "hazard":
-  setSelectedViewData((prev) =>
-    safeUpdateByIndex(prev, {
-      2: payload.hazard_area,
-      3: payload.image_url,
-      4: payload.hazard_type,
-      // 1: optionally update last_updated if your API returns it; otherwise leave it
-    }),
-  );
-  break;
+        case "hazard":
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              2: payload.hazard_area,
+              3: payload.image_url,
+              4: payload.hazard_type,
+              // 1: optionally update last_updated if your API returns it; otherwise leave it
+            })
+          );
+          break;
 
         case "rafi":
           setSelectedViewData((prev) =>
@@ -356,7 +385,7 @@ const MapOfCebu = () => {
               2: payload.lat,
               3: payload.lng,
               4: payload.description,
-            }),
+            })
           );
           break;
         default:
@@ -386,9 +415,27 @@ const MapOfCebu = () => {
 
   /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
-    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
-    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
-    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setAddModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
+    setViewModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
+    setEditModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
     setSelectedViewData(null);
     fetchData(activeTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -406,11 +453,11 @@ const MapOfCebu = () => {
 
       {/* ---------- ADD MODALS ---------- */}
       <AddHazardModal
-  isModalOpen={addModalState.hazard}
-  closeModal={closeAddModal}
-  setMessageBox={setMessageBox}
-  handleAddRecord={handleAddRecord}
-/>
+        isModalOpen={addModalState.hazard}
+        closeModal={closeAddModal}
+        setMessageBox={setMessageBox}
+        handleAddRecord={handleAddRecord}
+      />
       <AddEvacuationModal
         isModalOpen={addModalState.evacuation}
         closeModal={closeAddModal}
@@ -459,46 +506,54 @@ const MapOfCebu = () => {
       )}
 
       {/* BARANGAY */}
-      {viewModalState.barangay && activeTab === "barangay" && selectedViewData && (
-        <ViewBarangayModal
-          isModalOpen={viewModalState.barangay}
-          closeModal={closeViewModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleDeleteRecord={handleDeleteRecord}
-          openEditModal={openEditModal}
-        />
-      )}
-      {editModalState.barangay && activeTab === "barangay" && selectedViewData && (
-        <EditBarangayModal
-          isModalOpen={editModalState.barangay}
-          closeModal={closeEditModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleEditRecord={handleEditRecord}
-        />
-      )}
+      {viewModalState.barangay &&
+        activeTab === "barangay" &&
+        selectedViewData && (
+          <ViewBarangayModal
+            isModalOpen={viewModalState.barangay}
+            closeModal={closeViewModal}
+            setMessageBox={setMessageBox}
+            selectedData={selectedViewData}
+            handleDeleteRecord={handleDeleteRecord}
+            openEditModal={openEditModal}
+          />
+        )}
+      {editModalState.barangay &&
+        activeTab === "barangay" &&
+        selectedViewData && (
+          <EditBarangayModal
+            isModalOpen={editModalState.barangay}
+            closeModal={closeEditModal}
+            setMessageBox={setMessageBox}
+            selectedData={selectedViewData}
+            handleEditRecord={handleEditRecord}
+          />
+        )}
 
       {/* EVACUATION */}
-      {viewModalState.evacuation && activeTab === "evacuation" && selectedViewData && (
-        <ViewEvecuationModal
-          isModalOpen={viewModalState.evacuation}
-          closeModal={closeViewModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleDeleteRecord={handleDeleteRecord}
-          openEditModal={openEditModal}
-        />
-      )}
-      {editModalState.evacuation && activeTab === "evacuation" && selectedViewData && (
-        <EditEvacuationModal
-          isModalOpen={editModalState.evacuation}
-          closeModal={closeEditModal}
-          setMessageBox={setMessageBox}
-          selectedData={selectedViewData}
-          handleEditRecord={handleEditRecord}
-        />
-      )}
+      {viewModalState.evacuation &&
+        activeTab === "evacuation" &&
+        selectedViewData && (
+          <ViewEvecuationModal
+            isModalOpen={viewModalState.evacuation}
+            closeModal={closeViewModal}
+            setMessageBox={setMessageBox}
+            selectedData={selectedViewData}
+            handleDeleteRecord={handleDeleteRecord}
+            openEditModal={openEditModal}
+          />
+        )}
+      {editModalState.evacuation &&
+        activeTab === "evacuation" &&
+        selectedViewData && (
+          <EditEvacuationModal
+            isModalOpen={editModalState.evacuation}
+            closeModal={closeEditModal}
+            setMessageBox={setMessageBox}
+            selectedData={selectedViewData}
+            handleEditRecord={handleEditRecord}
+          />
+        )}
 
       {/* RAFI */}
       {viewModalState.rafi && activeTab === "rafi" && selectedViewData && (
@@ -520,26 +575,26 @@ const MapOfCebu = () => {
           handleEditRecord={handleEditRecord}
         />
       )}
-{/* HAZARD */}
-{viewModalState.hazard && activeTab === "hazard" && selectedViewData && (
-  <ViewHazardModal
-    isModalOpen={viewModalState.hazard}
-    closeModal={closeViewModal}
-    setMessageBox={setMessageBox}
-    selectedData={selectedViewData}
-    handleDeleteRecord={handleDeleteRecord}
-    openEditModal={openEditModal}
-  />
-)}
-{editModalState.hazard && activeTab === "hazard" && selectedViewData && (
-  <EditHazardModal
-    isModalOpen={editModalState.hazard}
-    closeModal={closeEditModal}
-    setMessageBox={setMessageBox}
-    selectedData={selectedViewData}
-    handleEditRecord={handleEditRecord}
-  />
-)}
+      {/* HAZARD */}
+      {viewModalState.hazard && activeTab === "hazard" && selectedViewData && (
+        <ViewHazardModal
+          isModalOpen={viewModalState.hazard}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        />
+      )}
+      {editModalState.hazard && activeTab === "hazard" && selectedViewData && (
+        <EditHazardModal
+          isModalOpen={editModalState.hazard}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        />
+      )}
 
       {/* ---------- TABS ---------- */}
       <div className="tabs">
@@ -629,7 +684,9 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report" />
                 <button>Search</button>
-                <button onClick={openAddModal}>+ Add Rafi Infrastructure</button>
+                <button onClick={openAddModal}>
+                  + Add Rafi Infrastructure
+                </button>
               </div>
             </div>
             {rafiResponse ? (
@@ -652,18 +709,17 @@ const MapOfCebu = () => {
               <div className="table-actions">
                 <input type="text" placeholder="Search report" />
                 <button>Search</button>
-               <button onClick={openAddModal}>+ Add Hazard</button>
-
+                <button onClick={openAddModal}>+ Add Hazard</button>
               </div>
             </div>
             {hazardResponse ? (
-            <TableView
-  tableJSON={hazardResponse}
-  onClickCallback={(row: TableRowShape) => openViewModal(row)}
-  setCallbackTableData={true}
-  pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-  updateTable={(fn) => (refreshTable.current = fn)}
-/>
+              <TableView
+                tableJSON={hazardResponse}
+                onClickCallback={(row: TableRowShape) => openViewModal(row)}
+                setCallbackTableData={true}
+                pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
+                updateTable={(fn) => (refreshTable.current = fn)}
+              />
             ) : (
               <div>Loading data...</div>
             )}

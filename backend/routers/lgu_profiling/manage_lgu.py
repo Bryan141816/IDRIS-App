@@ -1,10 +1,12 @@
 from os import name
+from pathlib import Path
 from crud import delete, update
 from fastapi import APIRouter, Query,FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
+from fastapi import Request
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     ErrorResponse,
@@ -13,6 +15,7 @@ from schemas import (
     RafiInfrastructureCreate,
     RafiInfrastructureOut,
     LGURecordsCreate,
+    LGURecordsUpdate, 
     LGURecordsOut,
     BaranggayRecordsCreate,
     BaranggayRecordsOut,
@@ -47,101 +50,96 @@ app.add_middleware(
 )
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
-
-
 @router.get("/lgu_profiling/manage_lgu/get_lgu", response_model=TableResponse)
-def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
+def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str = "desc"):
+
+    def _summ(v: list | None, _label: str = "") -> str:
+        """Summarize arrays; return '-' if empty; return str(v) if not a list."""
+        if not v:
+            return "-"
+        if isinstance(v, list):
+            shown = [str(x) for x in v[:3]]
+            more = max(len(v) - len(shown), 0)
+            return ", ".join(shown) + (f" (+{more})" if more > 0 else "")
+        return str(v)
+
+    def _desc(txt: str | None, limit: int = 80) -> str:
+        if not txt:
+            return "-"
+        return txt if len(txt) <= limit else txt[:limit - 1] + "…"
 
     page = getDefaultPage(page)
     offset = (page - 1) * 10
+
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
-        {"text": "Lat", "width": "150px"},
-        {"text": "Lng", "width": "150px"},
-        {"text": "Classification", "width": "150px"},
-        {"text": "Population", "width": "150px"},
-        {"text": "Contact Info", "width": "150px"},
-        {"text": "Risk Level", "width": "150px"},
-        {"text": "Action", "width": "150px"},
+        {"text": "Lat", "width": "100px"},
+        {"text": "Lng", "width": "100px"},
+        {"text": "Classification", "width": "140px"},
+        {"text": "Population", "width": "120px"},
+        {"text": "Contact Info", "width": "160px"},
+        {"text": "Risk Level", "width": "110px"},
+        {"text": "Description", "width": "220px"},
+        {"text": "Resources", "width": "180px"},
+        {"text": "Players", "width": "160px"},
+        {"text": "Schools", "width": "160px"},
+        {"text": "Gyms", "width": "120px"},
+        {"text": "Suppliers", "width": "180px"},
+        {"text": "Picture", "width": "220px"},   # ✅ show if there is an uploaded picture
+        {"text": "Action", "width": "120px"},
     ]
+
     order = LGURecords.name.desc() if Name == "desc" else LGURecords.name.asc()
-    records = db.query(LGURecords).order_by(order).limit(100).offset(offset).all()
-    table_datas = []
+    records = (
+        db.query(LGURecords)
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
+    )
+
+    table_datas: list[dict] = []
     pageCount = page
     pages = {"page": pageCount, "row": []}
+
     for record in records:
         if len(pages["row"]) == 10:
             table_datas.append(pages)
             pageCount += 1
             pages = {"page": pageCount, "row": []}
+
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=record.name,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lat),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lng),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.classification),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.population),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.contact_info),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.risk_level),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
+            # hidden id
+            Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
+
+            # visible cols (align exactly with table_head)
+            Cell(type="Text", text=(record.name or "-"), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(record.lat if record.lat is not None else "-"), font_weight=500, color="#000", width="100px"),
+            Cell(type="Text", text=str(record.lng if record.lng is not None else "-"), font_weight=500, color="#000", width="100px"),
+            Cell(type="Text", text=(record.classification or "-"), font_weight=500, color="#000", width="140px"),
+            Cell(type="Text", text=str(record.population if record.population is not None else "-"), font_weight=500, color="#000", width="120px"),
+            Cell(type="Text", text=(record.contact_info or "-"), font_weight=500, color="#000", width="160px"),
+            Cell(type="Text", text=(record.risk_level or "-"), font_weight=500, color="#000", width="110px"),  # ✅ fixed position
+            Cell(type="Text", text=_desc(record.description), font_weight=400, color="#000", width="220px"),
+            Cell(type="Text", text=_summ(record.resources, "Resources"), font_weight=400, color="#000", width="180px"),
+            Cell(type="Text", text=_summ(record.players, "Players"), font_weight=400, color="#000", width="160px"),
+            Cell(type="Text", text=_summ(record.schools, "Schools"), font_weight=400, color="#000", width="160px"),
+            Cell(type="Text", text=_summ(record.gyms, "Gyms"), font_weight=400, color="#000", width="120px"),
+            Cell(type="Text", text=_summ(record.local_suppliers, "Suppliers"), font_weight=400, color="#000", width="180px"),
+            Cell(type="Text",text=(record.lgu_picture or "-"),font_weight=400,color="#000",width="180px",),
+
             Cell(
                 type="Button",
                 text="View",
                 font_weight=500,
                 color="#fff",
                 background_color="#749AB6",
-                container_width="150px",
-                button_width="120px",
+                container_width="120px",
+                button_width="100px",
             ),
         ]
         pages["row"].append({"data": row_data})
+
     if pages["row"]:
         table_datas.append(pages)
 
@@ -559,6 +557,13 @@ def add_lgu(record: LGURecordsCreate, db: Session = Depends(get_db)):
         population=record.population,
         contact_info=record.contact_info,
         risk_level=record.risk_level,
+        lgu_picture=record.lgu_picture,
+        description=record.description,
+        resources=record.resources,
+        players=record.players,
+        schools=record.schools,
+        gyms=record.gyms,
+        local_suppliers=record.local_suppliers,
     )
     db.add(db_record)
     db.commit()
@@ -576,30 +581,27 @@ def delete_lgu(record_id: int, db: Session = Depends(get_db)):
 
 @router.put("/lgu_profiling/manage_lgu/update_lgu/{record_id}")
 def update_lgu(
-    record_id: int, payload: LGURecordsCreate, db: Session = Depends(get_db)
+    record_id: int,
+    payload: LGURecordsUpdate,   db: Session = Depends(get_db),
 ):
     record = db.query(LGURecords).get(record_id)
-
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
-    if payload.name is not None:
-        record.name = payload.name
-    if payload.lat is not None:
-        record.lat = payload.lat
-    if payload.lng is not None:
-        record.lng = payload.lng
-    if payload.classification is not None:
-        record.classification = payload.classification
-    if payload.population is not None:
-        record.population = payload.population
-    if payload.contact_info is not None:
-        record.contact_info = payload.contact_info
-    if payload.risk_level is not None:
-        record.risk_level = payload.risk_level
+
+    # Only update provided fields (None = ignore; [] clears list fields if sent)
+    updatable = [
+        "name", "lat", "lng", "classification", "population",
+        "contact_info", "risk_level",
+        "lgu_picture", "description",
+        "resources", "players", "schools", "gyms", "local_suppliers",
+    ]
+    for field in updatable:
+        val = getattr(payload, field, None)
+        if val is not None:
+            setattr(record, field, val)
 
     db.commit()
     db.refresh(record)
-
     return {"detail": "Record updated succesfully", "record": record}
 
 

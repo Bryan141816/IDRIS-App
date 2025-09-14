@@ -74,6 +74,7 @@ class Token(BaseModel):
     access_token: str
 
 
+
 class LGURecordsCreate(BaseModel):
     name: str
     lat: float
@@ -82,7 +83,29 @@ class LGURecordsCreate(BaseModel):
     population: int
     contact_info: str
     risk_level: str
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
 
+class LGURecordsUpdate(BaseModel):
+    name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    classification: Optional[str] = None
+    population: Optional[int] = None
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
 
 class LGURecordsOut(BaseModel):
     id: int
@@ -93,6 +116,16 @@ class LGURecordsOut(BaseModel):
     population: int
     contact_info: str
     risk_level: str
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
+
+    class Config:
+        from_attributes = True 
 
 
 class BaranggayRecordsCreate(BaseModel):

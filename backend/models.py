@@ -167,7 +167,8 @@ class EvacuationCenter(Base):
 
 class LGURecords(Base):
     __tablename__ = "lgu_records"
-    id = Column(Integer, index=True, primary_key=True, server_default=Identity())
+
+    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -176,8 +177,17 @@ class LGURecords(Base):
     contact_info = Column(String(255), nullable=False)
     risk_level = Column(String(50), nullable=False)
 
-    # relationship to Barangay
+    lgu_picture = Column(String, nullable=True)  
+    description = Column(Text, nullable=True)
+
+    resources = Column(JSON, nullable=True)
+    players = Column(JSON, nullable=True)
+    schools = Column(JSON, nullable=True)
+    gyms = Column(JSON, nullable=True)
+    local_suppliers = Column(JSON, nullable=True)
+
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
+
 
 
 class BaranggayRecords(Base):
@@ -188,7 +198,7 @@ class BaranggayRecords(Base):
     lng = Column(Float, nullable=False)
 
     # foreign key to LGU
-    lgu_id = Column(Integer, ForeignKey("lgu_records.id"), nullable=False)
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
         Integer, ForeignKey("evacuation_center.evacuation_id"), nullable=False
     )

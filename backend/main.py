@@ -138,6 +138,11 @@ app.mount(
     StaticFiles(directory="media/hazards"),
     name="hazards",
 )
+app.mount(
+    "/media/lgu_pictures",
+    StaticFiles(directory="media/lgu_pictures"),
+    name="lgu_pictures",
+)
 
 @app.on_event("startup")
 async def on_startup():

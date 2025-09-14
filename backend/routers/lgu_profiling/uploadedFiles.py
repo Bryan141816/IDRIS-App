@@ -6,32 +6,63 @@ import imghdr
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
-# Save hazards inside media/hazards
+# Base media dir
 MEDIA_DIR = Path("media")
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Subfolders
 HAZARDS_DIR = MEDIA_DIR / "hazards"
 HAZARDS_DIR.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_TYPES = {"jpeg", "png", "gif", "bmp", "webp"}
+LGU_DIR = MEDIA_DIR / "lgu_pictures"
+LGU_DIR.mkdir(parents=True, exist_ok=True)
 
-@router.post("/hazards")
-async def upload_hazard(request: Request, file: UploadFile = File(...)):
-    contents = await file.read()
+# imghdr returns: 'jpeg', 'png', 'gif', 'bmp', 'webp', (sometimes 'tiff')
+ALLOWED_TYPES = {"jpeg", "png", "gif", "bmp", "webp", "tiff"}
+
+def _save_image_or_400(dest_dir: Path, request: Request, file: UploadFile) -> JSONResponse:
+    """
+    Validates an image file, writes it to dest_dir with a unique name,
+    and returns JSONResponse with a public URL.
+    """
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    # Read file bytes
+    contents = file.file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    # Detect image type from bytes
     img_type = imghdr.what(None, h=contents)
     if img_type not in ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported image type: {img_type}"
-        )
+        raise HTTPException(status_code=400, detail=f"Unsupported image type: {img_type}")
 
-    # unique filename
+    # Build unique filename with correct extension
     ext = "jpg" if img_type == "jpeg" else img_type
     filename = f"{uuid4().hex}.{ext}"
-    dest_path = HAZARDS_DIR / filename
+    dest_path = dest_dir / filename
 
+    # Persist to disk
     with open(dest_path, "wb") as f:
         f.write(contents)
 
+    # Build absolute URL for the static mount
     base = str(request.base_url).rstrip("/")
-    public_url = f"{base}/media/hazards/{filename}"
+    # Map dest_dir to its public route
+    if dest_dir == HAZARDS_DIR:
+        public_url = f"{base}/media/hazards/{filename}"
+    elif dest_dir == LGU_DIR:
+        public_url = f"{base}/media/lgu_pictures/{filename}"
+    else:
+        public_url = f"{base}/media/{filename}"  # fallback
 
     return JSONResponse({"url": public_url})
+
+@router.post("/hazards")
+async def upload_hazard(request: Request, file: UploadFile = File(...)):
+    return _save_image_or_400(HAZARDS_DIR, request, file)
+
+@router.post("/lgu_pictures")
+async def upload_lgu_picture(request: Request, file: UploadFile = File(...)):
+    return _save_image_or_400(LGU_DIR, request, file)

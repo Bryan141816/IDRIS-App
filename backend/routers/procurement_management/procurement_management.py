@@ -121,7 +121,6 @@ def add_request(
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    print(user_id)
     return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
 
 

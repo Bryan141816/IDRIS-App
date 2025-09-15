@@ -74,9 +74,23 @@ class Token(BaseModel):
     access_token: str
 
 
+class LGURecordsCreate(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
 
 
-        <div className="lgu-key">Population:</div>
 class LGURecordsUpdate(BaseModel):
     name: Optional[str] = None
     lat: Optional[float] = None

@@ -114,11 +114,11 @@ function PageLayout() {
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
         )}
         <div id="right-body-section">
-          {!shouldHideUI && !shouldHideLayout && !isPrintPage && (
+          {!shouldHideUI && !shouldHideLayout && (
             <Header onIconClick={toggleNavbar} />
           )}
           <main>{content}</main>
-          {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && !isPrintPage && (
+          {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && (
             <Footer />
           )}
         </div>

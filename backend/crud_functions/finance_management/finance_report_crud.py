@@ -10,6 +10,7 @@ from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocatio
 from data_schemas.finance_record_schema import (
     InflowFinanceRecordCreate,
 )
+from .finance_utils import _to_alloc_enums, _to_status_enums
 
 
 class FinanceReport:
@@ -32,16 +33,19 @@ class FinanceReport:
         if to_date:
             query = query.filter(FinanceRecord.date <= to_date)
 
-        # Filter by statuses (list)
-        if statuses and len(statuses) > 0:
-            query = query.filter(FinanceRecord.status.in_(statuses))
+        # Normalize lists to the strings your DB actually stores
+        norm_statuses = _to_status_enums(statuses or [])
+        norm_allocs   = _to_alloc_enums(allocation_type or [])
 
-        # Filter by allocation_type (budget_for)
-        if allocation_type:
-            query = query.filter(FinanceRecord.budget_for.in_(allocation_type))
+        if norm_statuses:
+            query = query.filter(FinanceRecord.status.in_(norm_statuses))
 
+        if norm_allocs:
+            query = query.filter(FinanceRecord.budget_for.in_(norm_allocs))    
+        
+        print(str(query))
         return query.order_by(FinanceRecord.date.desc()).all()
-    
+            
     @staticmethod
     def get_inflows(
         db: Session,

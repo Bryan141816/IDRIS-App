@@ -4,7 +4,7 @@ import NavTabs from './NavTabs';
 import DashboardSection from './DashboardSection';
 import InflowsSection from './InflowsSection';
 import OutflowsSection from './OutflowsSection';
-import ReportsExportsSection from './Reports';
+import ReportsExportSection from './ReportsExportSection';
 import { 
   getInflowFinanceRecords, 
   getOutflowFinanceRecords, 
@@ -131,10 +131,10 @@ const FinanceAdmin: React.FC = () => {
         {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} />}
 
         {activeTab === 'reports' && (
-          <ReportsExportsSection mode="reports" reports={financialReports} />
+          <ReportsExportSection mode="reports" reports={financialReports} />
         )}
 
-        {activeTab === 'exports' && <ReportsExportsSection mode="exports" />}
+        {activeTab === 'exports' && <ReportsExportSection mode="exports" />}
       </div>
     </div>
   );

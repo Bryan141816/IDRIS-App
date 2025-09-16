@@ -69,16 +69,26 @@ function PageLayout() {
     location.pathname === "/activate" ||
     location.pathname === "/forgot_password" ||
     location.pathname === "/reset_password" ||
-    location.pathname === "/oauth_callback" ||
-    location.pathname === "/donation_report" ||
-    location.pathname === "/volunteer_management/VolunteerReports" ||
-    location.pathname === "/volunteer_management/ProgramsReports";
+    location.pathname === "/oauth_callback";
+
   const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,
   );
+
+  const isPrintPage = 
+    location.pathname === "/donation_report"  ||
+    location.pathname === "/volunteer_management/VolunteerReports" ||
+    location.pathname === "/volunteer_management/ProgramsReports";
+
+  const hideNavbarRoutes = ["/finance_printable"]
+  const shouldHideNavbar = 
+    isPrintPage || hideNavbarRoutes.includes(location.pathname);
+    
   const shouldHideLayout =
-    isAuthPage || hideHeaderFooterRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
+    isAuthPage || 
+    hideHeaderFooterRoutes.includes(location.pathname) ||
+    hideNavbarRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
 
   const [isNavbarVisible, setIsNavbarVisible] = useState(false);
   const toggleNavbar = () => setIsNavbarVisible((prev) => !prev);
@@ -100,15 +110,15 @@ function PageLayout() {
   return (
     <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
       <NotificationProvider>
-        {!shouldHideUI && (
+        {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
         )}
         <div id="right-body-section">
-          {!shouldHideUI && !shouldHideLayout && (
+          {!shouldHideUI && !shouldHideLayout && !isPrintPage && (
             <Header onIconClick={toggleNavbar} />
           )}
           <main>{content}</main>
-          {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && (
+          {!shouldHideUI && !shouldHideLayout && !shouldHideHeaderFooter && !isPrintPage && (
             <Footer />
           )}
         </div>

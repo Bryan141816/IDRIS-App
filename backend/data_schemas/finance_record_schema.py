@@ -24,7 +24,6 @@ class InflowFinanceRecordCreate(BaseModel):
     counterparty: str
     transaction_type: TransactionType = TransactionType.INFLOW
     amount: Decimal
-    category: str
     status: RecordStatus = RecordStatus.PENDING
     description: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
@@ -36,7 +35,6 @@ class InflowFinanceRecordCreate(BaseModel):
         counterparty: str = Form(...),
         transaction_type: TransactionType = Form(TransactionType.INFLOW),
         amount: Decimal = Form(...),
-        category: str = Form(...),
         status: RecordStatus = Form(RecordStatus.PENDING),
         description: Optional[str] = Form(None),
         date: date = Form(...),
@@ -47,7 +45,6 @@ class InflowFinanceRecordCreate(BaseModel):
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            category=category,
             status=status,
             description=description,
             date=date,

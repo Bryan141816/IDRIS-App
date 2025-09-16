@@ -23,8 +23,16 @@ const DamageAssessment = () =>
     Component: module.default,
   }));
 
+// FINANCE MANAGEMENT
 const FinanceManagement = () =>
   import("./pages/finance_admin/finance_management/FinanceManagement").then(
+    (module) => ({
+      Component: module.default,
+    }),
+  );
+
+const FinancePrintPage = () =>
+  import("./pages/finance_admin/finance_management/FinanceReportPDF").then(
     (module) => ({
       Component: module.default,
     }),
@@ -504,6 +512,10 @@ export const router = createBrowserRouter([
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
       },
+      {
+        path: "/finance_printable",
+        lazy: FinancePrintPage,
+      },
     ],
   },
 ]);
@@ -556,4 +568,5 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/procurement_inventory/procurement_management": ProcurementManagement,
 
   "/finance&admin/finance_management": FinanceManagement,
+  "/finance_printable": FinancePrintPage,
 };

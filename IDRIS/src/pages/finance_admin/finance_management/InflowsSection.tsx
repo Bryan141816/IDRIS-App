@@ -56,8 +56,7 @@ const InflowModal: React.FC<{
     // Normalize record status -> backend enum
     const normalizeRecordStatus = (status: string | null | undefined) => {
       if (status === "Pending" || status === "PENDING") return "PENDING";
-      if (status === "Approved" || status === "APPROVED") return "APPROVED";
-      if (status === "Rejected" || status === "REJECTED") return "REJECTED";
+      if (status === "Received" || status === "RECEIVED") return "RECEIVED";
       return "PENDING"; // fallback default
     };
 
@@ -82,7 +81,7 @@ const InflowModal: React.FC<{
     fd.append('counterparty', form.counterparty!);
     fd.append('transaction_type', normalizeTransactionType("INFLOW"));
     fd.append('amount', String(Number(form.amount)));
-    fd.append('category', form.budget_for!);
+    // fd.append('category', form.budget_for!);
     fd.append('date', form.date!); // yyyy-mm-dd
     fd.append('status', normalizeRecordStatus(form.status ?? 'PENDING'));
     if (form.description) fd.append('description', form.description);
@@ -178,22 +177,6 @@ const InflowModal: React.FC<{
             </div>
 
             <div className="form-group">
-              <label>Category</label>
-              <select
-                disabled={readOnly}
-                defaultValue={form.budget_for || ''}
-                onChange={e => setForm({ ...form, budget_for: e.target.value })}
-              >
-                <option value="" disabled>Select category</option>
-                <option>Grant</option>
-                <option>Donation</option>
-                <option>International Aid</option>
-                <option>Fundraising</option>
-                <option>Government Fund</option>
-              </select>
-            </div>
-
-            <div className="form-group">
               <label>Date Received</label>
               <input
                 disabled={readOnly}
@@ -212,7 +195,6 @@ const InflowModal: React.FC<{
               >
                 <option>PENDING</option>
                 <option>RECEIVED</option>
-                <option>PAID</option>
               </select>
             </div>
 

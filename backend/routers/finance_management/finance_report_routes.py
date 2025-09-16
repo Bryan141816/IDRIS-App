@@ -36,14 +36,19 @@ def list_inflows(
     statuses: Optional[List[RecordStatus]] = Query(
         None, description="Filter by status values (e.g., PENDING, PAID)"
     ),
-    allocation_type: Optional[List[BudgetAllocation]] = Query(
-        None, description="Filter by budget allocation type"
-    ),
+    allocation_type_a: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type"),
+    allocation_type_b: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type[]"),
+
+    statuses_a: Optional[List[RecordStatus]] = Query(None, alias="statuses"),
+    statuses_b: Optional[List[RecordStatus]] = Query(None, alias="statuses[]"),
     db: Session = Depends(get_db),
 ):
     """
     Get inflows with optional filters: date range, status list, and allocation type.
     """
+    allocation_type = (allocation_type_a or []) + (allocation_type_b or [])
+    statuses = (statuses_a or []) + (statuses_b or [])
+        
     inflows = FinanceReport.get_all(
         db=db,
         from_date=from_date,
@@ -52,6 +57,8 @@ def list_inflows(
         allocation_type=allocation_type,
     )
 
+    inflows = inflows or []
+    print(inflows)
     # Return as dicts (or use Pydantic schema if you already have one)
     return [
         {

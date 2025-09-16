@@ -27,7 +27,7 @@ class FinanceRecordCRUD:
             amount=payload.amount,
             date=payload.date,
             description=payload.description,
-            status=RecordStatus.PENDING,
+            status=payload.status,
             budget_for = BudgetAllocation(payload.budget_for)
         )
         db.add(obj)

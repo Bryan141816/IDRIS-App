@@ -70,7 +70,7 @@ async def add_request(
 
     # Fire-and-forget
     asyncio.create_task(send_notifications_bulk(db, payloads))
-    return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
+    return await ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
 
 
 @router.get(

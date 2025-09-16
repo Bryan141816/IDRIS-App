@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
-import Logo1 from "../../media/Logo1.png";
+import Logo1 from "../../media/logo1.png";
 import { Modal } from "./Modals";
 
 type ModalId = "" | "user-type" | "user-role" | "admin-role";
@@ -112,7 +112,7 @@ const Register: React.FC = () => {
         const err = await response.json();
         alert(`Registration failed: ${err.detail || "Unknown error"}`);
         return;
-        }
+      }
 
       await response.json();
       alert("Registration successful");

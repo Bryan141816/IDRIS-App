@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
 import { useUserRoleContext } from "../../UserRoleContext";
-import Logo1 from "../../media/Logo1.png";
+import Logo1 from "../../media/logo1.png";
 import { Link } from "react-router-dom";
 import { loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
 import { useUserContext } from "../../UserContext";

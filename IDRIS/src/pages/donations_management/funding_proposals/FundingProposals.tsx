@@ -2,7 +2,7 @@ import "./FundingProposals.scss";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import FundingCard from "./fundingCard";
+import FundingCard from "./FundingCard";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getFundingProposals } from "../../../API_Handler/donations_funding_proposals_handler";

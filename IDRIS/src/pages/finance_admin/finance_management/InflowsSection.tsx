@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Swal from "sweetalert2";
-import { createInflowFinanceRecord } from '../../../API_Handler/finance_management_handler';
+import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { InflowItem } from './FinanceManagement';
 
 export enum TransactionType {
@@ -11,6 +11,107 @@ export enum TransactionType {
 const fmt = (n: number | bigint) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
 
+// ---- helpers -----------------------------------------------------
+const toDateInput = (value?: string | Date | number | null) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  const local = new Date(d.getTime() - tzOffset);
+  return local.toISOString().slice(0, 10);
+};
+
+const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
+
+const normalizeRecordStatus = (status: string | null | undefined) => {
+  const s = (status || "").toUpperCase();
+  if (s === "PENDING") return "PENDING";
+  if (s === "RECEIVED") return "RECEIVED";
+  return "PENDING";
+};
+
+const normalizeBudgetAllocationName = (input: string | null | undefined) => {
+  if (!input) return "GENERAL";
+  const s = input.trim().toUpperCase().replace(/&/g, "AND");
+  if (s.startsWith("EMERGENCY")) return "EMERGENCY";
+  if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
+  if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
+  if (s.startsWith("EQUIP")) return "EQUIPMENT";
+  if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
+  if (s === "GENERAL") return "GENERAL";
+  return "GENERAL";
+};
+
+const validate = (form: Partial<InflowItem>) => {
+  const errs: string[] = [];
+  if (!form.counterparty?.trim()) errs.push('Source is required.');
+  if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
+  if (!form.budget_for) errs.push('Category is required.');
+  if (!form.date) errs.push('Date is required.');
+  if (!form.budget_for) errs.push('Budget allocation is required.');
+  return errs;
+};
+
+const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
+  const fd = new FormData();
+  if (isUpdate) { fd.append("finance_id", String(form.finance_id)); }
+  fd.append('counterparty', form.counterparty!);
+  fd.append('transaction_type', normalizeTransactionType("INFLOW"));
+  fd.append('amount', String(Number(form.amount)));
+  fd.append('date', form.date!); // "YYYY-MM-DD"
+  fd.append('status', normalizeRecordStatus(form.status ?? 'PENDING'));
+  if (form.description) fd.append('description', form.description);
+  fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
+  return fd;
+};
+
+const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
+  try {
+    // show loading
+    void Swal.fire({
+      title: loadingTitle,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      showConfirmButton: false,
+    });
+
+    const result = await task();
+
+    // switch to success (clear spinner first)
+    Swal.hideLoading();
+    await Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Operation completed.',
+      confirmButtonText: 'Great!',
+      allowOutsideClick: true,
+      showConfirmButton: true,
+    });
+
+    return result;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.detail ||
+      error?.message ||
+      'An unexpected error occurred.';
+
+    Swal.hideLoading();
+    await Swal.fire({
+      icon: 'error',
+      title: 'Operation failed',
+      text: message,
+      confirmButtonText: 'OK',
+      allowOutsideClick: true,
+      showConfirmButton: true,
+    });
+
+    throw error;
+  }
+  // IMPORTANT: no 'finally Swal.close()' here
+};
+
+
+// ---- Modal -------------------------------------------------------
 const InflowModal: React.FC<{
   open: boolean;
   mode: 'add' | 'edit' | 'view';
@@ -20,109 +121,53 @@ const InflowModal: React.FC<{
 }> = ({ open, mode, initial, onClose, onSave }) => {
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
   const readOnly = mode === 'view';
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        ...initial,
+        date: toDateInput(initial?.date as any),
+      });
+    }
+  }, [open, initial]);
+
   if (!open) return null;
 
-  const validate = () => {
-    const errs: string[] = [];
-    if (!form.counterparty?.trim()) errs.push('Source is required.');
-    if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
-    if (!form.budget_for) errs.push('Category is required.');
-    if (!form.date) errs.push('Date is required.');
-    if(!form.budget_for) errs.push('Budget allocation is required.');
-    return errs;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readOnly) return;
 
-    const errors = validate();
+    const errors = validate(form);
     if (errors.length) {
-      await Swal.fire({
-        icon: 'warning',
-        title: 'Check the form',
-        text: errors.join(' '),
-        confirmButtonText: 'OK',
-      });
+      await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
 
-    // Normalize inflow transaction type -> backend enum
-    const normalizeTransactionType = (type: string | null | undefined) => {
-      if (type === "Inflow" || type === "INFLOW") return "INFLOW";
-      return "INFLOW"; // fallback default
-    };
-
-    // Normalize record status -> backend enum
-    const normalizeRecordStatus = (status: string | null | undefined) => {
-      if (status === "Pending" || status === "PENDING") return "PENDING";
-      if (status === "Received" || status === "RECEIVED") return "RECEIVED";
-      return "PENDING"; // fallback default
-    };
-
-    const normalizeBudgetAllocationName = (input: string | null | undefined) => {
-      if (!input) return "GENERAL";
-      const s = input.trim().toUpperCase().replace(/&/g, "AND");
-    
-      if (s.startsWith("EMERGENCY")) return "EMERGENCY";
-      if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
-      if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
-      if (s.startsWith("EQUIP")) return "EQUIPMENT";
-      if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
-      if (s === "GENERAL") return "GENERAL";
-    
-      return "GENERAL";
-    };
-
-    const dt = new Date(form.date!);
-
-    // Build FormData for multipart/form-data submit
-    const fd = new FormData();
-    fd.append('counterparty', form.counterparty!);
-    fd.append('transaction_type', normalizeTransactionType("INFLOW"));
-    fd.append('amount', String(Number(form.amount)));
-    // fd.append('category', form.budget_for!);
-    fd.append('date', form.date!); // yyyy-mm-dd
-    fd.append('status', normalizeRecordStatus(form.status ?? 'PENDING'));
-    if (form.description) fd.append('description', form.description);
-    fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
-
-    console.log([...fd.entries()]);
-    try {
-      Swal.fire({
-        title: 'Saving inflow…',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const created = await createInflowFinanceRecord(fd); // posts multipart/form-data
-
-      await Swal.fire({
-        icon: 'success',
-        title: 'Inflow saved',
-        text: 'The inflow record has been created successfully.',
-        confirmButtonText: 'Great!',
-      });
-
-      onSave?.(created);
-      onClose();
-    } catch (error: any) {
-      console.error('Error:', error);
-      const message =
-        error?.response?.data?.detail ||
-        error?.message ||
-        'An unexpected error occurred while creating the inflow record.';
-
-      await Swal.fire({
-        icon: 'error',
-        title: 'Failed to save inflow',
-        text: message,
-        confirmButtonText: 'OK',
-      });
-    } finally {
-      Swal.close();
-    }
+    const fd = buildFormData(form);
+    const created = await withSwal('Saving inflow…', () => createInflowFinanceRecord(fd));
+    onSave?.(created);
+    onClose();
   };
+
+  const submitUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors = validate(form);
+    if (errors.length) {
+      await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
+      return;
+    }
+
+    const fd = buildFormData(form , true);
+
+    console.log(fd);
+    const updated = await withSwal('Updating inflow…', () => UpdateReportData(fd));
+
+    onSave?.(updated);
+    onClose();
+  };
+
+  const onSubmit = mode === 'edit' ? submitUpdate : submitCreate;
 
   return (
     <div className="modal-overlay">
@@ -131,15 +176,17 @@ const InflowModal: React.FC<{
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
 
-        {/* FORM WRAPPER */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit}>
           <div className="modal-content">
-            <h3>{mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}</h3>
+            <h3>
+              {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
+            </h3>
 
             <div className="form-group">
-              <label htmlFor="">Budget For</label>
+              <label>Budget For</label>
               <select
                 disabled={readOnly}
+                value={form.budget_for || ""}
                 onChange={e => setForm({ ...form, budget_for: e.target.value })}
               >
                 <option value="" disabled>Select category</option>
@@ -159,7 +206,7 @@ const InflowModal: React.FC<{
                 disabled={readOnly}
                 type="text"
                 placeholder="Enter funding source"
-                defaultValue={form.counterparty || ''}
+                value={form.counterparty || ""}
                 onChange={e => setForm({ ...form, counterparty: e.target.value })}
               />
             </div>
@@ -169,9 +216,9 @@ const InflowModal: React.FC<{
               <input
                 disabled={readOnly}
                 type="number"
-                placeholder="Enter amount"
                 min={0}
-                defaultValue={form.amount ?? ''}
+                placeholder="Enter amount"
+                value={form.amount ?? ""}
                 onChange={e => setForm({ ...form, amount: +e.target.value })}
               />
             </div>
@@ -181,7 +228,7 @@ const InflowModal: React.FC<{
               <input
                 disabled={readOnly}
                 type="date"
-                defaultValue={form.date || ''}
+                value={form.date || ""}
                 onChange={e => setForm({ ...form, date: e.target.value })}
               />
             </div>
@@ -190,11 +237,11 @@ const InflowModal: React.FC<{
               <label>Status</label>
               <select
                 disabled={readOnly}
-                defaultValue={form.status || 'Pending'}
+                value={form.status || "PENDING"}
                 onChange={e => setForm({ ...form, status: e.target.value as InflowItem['status'] })}
               >
-                <option>PENDING</option>
-                <option>RECEIVED</option>
+                <option value="PENDING">PENDING</option>
+                <option value="RECEIVED">RECEIVED</option>
               </select>
             </div>
 
@@ -203,7 +250,7 @@ const InflowModal: React.FC<{
               <textarea
                 disabled={readOnly}
                 placeholder="Enter description"
-                defaultValue={form.description || ''}
+                value={form.description || ""}
                 onChange={e => setForm({ ...form, description: e.target.value })}
               />
             </div>
@@ -211,7 +258,11 @@ const InflowModal: React.FC<{
 
           <div className="modal-actions">
             <button type="button" className="secondary-btn" onClick={onClose}>Cancel</button>
-            {mode !== 'view' && <button type="submit" className="primary-btn">Save</button>}
+            {mode !== 'view' && (
+              <button type="submit" className="primary-btn">
+                {mode === 'edit' ? 'Update' : 'Save'}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -219,15 +270,34 @@ const InflowModal: React.FC<{
   );
 };
 
-const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = []}) => {
+// ---- Section -----------------------------------------------------
+const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) => {
+  const [rows, setRows] = useState<InflowItem[]>(inflows);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selected, setSelected] = useState<InflowItem | undefined>();
+
+  useEffect(() => {
+    setRows(inflows);
+  }, [inflows]);
 
   const open = (mode: 'add' | 'edit' | 'view', row?: InflowItem) => {
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
+  };
+
+  // Merge helper (replace by finance_id or push if new)
+  const upsertRow = (item: InflowItem) => {
+    setRows(prev => {
+      const idx = prev.findIndex(r => String((r as any).finance_id) === String((item as any).finance_id));
+      if (idx >= 0) {
+        const copy = prev.slice();
+        copy[idx] = { ...prev[idx], ...item };
+        return copy;
+      }
+      return [item, ...prev];
+    });
   };
 
   return (
@@ -251,9 +321,8 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = []}) =
             </tr>
           </thead>
           <tbody>
-            {inflows?.map((row, index) => (
+            {rows?.map((row, index) => (
               <tr key={index}>
-                {/* <input type="hidden" value={row.finance_id} /> */}
                 <td>{row.counterparty}</td>
                 <td className="amount positive">{fmt(row.amount)}</td>
                 <td>{row.budget_for}</td>
@@ -275,7 +344,11 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = []}) =
         mode={modalMode}
         initial={selected}
         onClose={() => setModalOpen(false)}
-        onSave={() => setModalOpen(false)} // still closes after success
+        onSave={(saved) => {
+            setModalOpen(false)
+            upsertRow(saved as InflowItem)
+          }
+        }
       />
     </div>
   );

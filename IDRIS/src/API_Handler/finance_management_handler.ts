@@ -67,11 +67,10 @@ export async function getReportData(
   return data;
 }
 
-// export async function getFundingProposalTotalInKindDonations(month: number, year: number): Promise<any>{
-//   const response = await API.get(`/finance/get_report/by_month/inkind`,{
-//     params: { month, year }
-//   },
-//   )
-//   return response.data
-// }
 
+export async function UpdateReportData(form: FormData): Promise<any> {
+  const { data } = await API.patch('/finance/update_record', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}

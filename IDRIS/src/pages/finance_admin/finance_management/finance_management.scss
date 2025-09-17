@@ -605,7 +605,7 @@
     font-weight: 600;
     text-transform: uppercase;
    
-    &.received {
+    &.received, &.paid {
       background: rgba(16, 185, 129, 0.1);
       color: #10b981;
     }
@@ -630,9 +630,22 @@
       color: #22c55e;
     }
    
+    /* Cancelled → red */
     &.cancelled {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15); /* slightly deeper red */
+      color: #dc2626; /* stronger red */
+    }
+    
+    /* Denied → orange */
+    &.denied {
+      background: rgba(251, 146, 60, 0.15); /* amber background */
+      color: #ea580c; /* darker orange */
+    }
+    
+    /* Reconciled → blue/green to signal "cleared" */
+    &.reconciled {
+      background: rgba(16, 185, 129, 0.15); /* teal green bg */
+      color: #059669; /* emerald text */
     }
    
     &.generated {

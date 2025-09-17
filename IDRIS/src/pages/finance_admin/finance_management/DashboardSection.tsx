@@ -92,7 +92,7 @@ const BudgetOverview: React.FC<{ data: BudgetItem[] }> = ({ data }) => (
           <div
             className="budget-bar"
             style={{
-              background: b.percentage_spent === 0
+              background: (b.inflow_total === 0)
                 ? "#e5e7eb"
                 : "linear-gradient(90deg, #10b981, #34d399)",
             }}

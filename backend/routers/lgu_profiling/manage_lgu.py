@@ -7,21 +7,27 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, func
 from fastapi import Request
+from uuid import uuid4
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     ErrorResponse,
     EvacuationCenterOut,
     EvacuationCenterCreate,
     RafiInfrastructureCreate,
+    RafiInfrastructureUpdate,
     RafiInfrastructureOut,
     LGURecordsCreate,
     LGURecordsUpdate, 
     LGURecordsOut,
     BaranggayRecordsCreate,
-    BaranggayRecordsOut,
+    BaranggayRecordsOut,        
     HazardCreate,
     HazardOut
 )
+from fastapi import UploadFile, File, Form
+from pathlib import Path
+import imghdr
+
 from database import get_db
 from crud import delete, create_evacuation_center
 from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURecords,Hazard
@@ -275,93 +281,79 @@ def get_barangay(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
+
+
+PER_PAGE = 10
+
+def _abs_media_url(request: Request, p: str | None) -> str:
+    if not p or p.strip() == "-":
+        return "-"
+    p = p.strip()
+    if p.lower().startswith(("http://", "https://")):
+        return p
+    base = str(request.base_url).rstrip("/")
+    return f"{base}{p if p.startswith('/') else '/' + p}"
+
 @router.get("/lgu_profiling/manage_lgu/get_rafi", response_model=TableResponse)
-def get_rafi(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"):
-    page = getDefaultPage(page)
-    offset = (page - 1) * 10
+def get_rafi(
+    request: Request,
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    name: str = Query("desc")  # asc|desc
+):
+    # ----- paging -----
+    page = int(page)
+    offset = (page - 1) * PER_PAGE
+
+    # ----- table header -----
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
         {"text": "Lat", "width": "150px"},
         {"text": "Lng", "width": "150px"},
-        {"text": "Description", "width": "150px"},
-        {"text": "Action", "width": "150px"},
+        {"text": "Description", "width": "200px"},
+        {"text": "Picture", "width": "200px"},
+        {"text": "Action", "width": "120px"},
     ]
-    order = (
-        RAFIInfrastructure.name.desc()
-        if Name == "desc"
-        else RAFIInfrastructure.name.asc()
-    )
+
+    # ----- ordering -----
+    order = RAFIInfrastructure.rafi_name.desc() if str(name).lower() == "desc" \
+            else RAFIInfrastructure.rafi_name.asc()
+
+    total = db.query(RAFIInfrastructure).count()
     records = (
-        db.query(RAFIInfrastructure).order_by(order).limit(100).offset(offset).all()
+        db.query(RAFIInfrastructure)
+          .order_by(order)
+          .limit(PER_PAGE)
+          .offset(offset)
+          .all()
     )
 
-    table_datas = []
+    # ----- rows (keep indexes aligned with your frontend) -----
+    table_datas: list[dict] = []
+    pages = {"page": page, "row": []}
 
-    pageCount = page
-    pages = {"page": pageCount, "row": []}
-
-    for record in records:
-        if len(pages["row"]) == 10:
-            table_datas.append(pages)
-            pageCount += 1
-            pages = {"page": pageCount, "row": []}
+    for r in records:
+        abs_pic = _abs_media_url(request, r.rafi_pic)
 
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=record.name,
-                font_weight=500,
-                color="#000",
-                width="100px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lat),
-                font_weight=500,
-                color="#000",
-                width="100px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lng),
-                font_weight=500,
-                color="#000",
-                width="100px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.description),
-                font_weight=500,
-                color="#000",
-                width="100px",
-            ),
-            Cell(
-                type="Button",
-                text="View",
-                font_weight=500,
-                color="#fff",
-                background_color="#749AB6",
-                container_width="150px",
-                button_width="80px",
-            ),
+            # 0 hidden id
+            Cell(type="Hidden", text=str(r.rafi_id), font_weight=0,   color="#000", width="0px"),
+            # 1 name
+            Cell(type="Text",   text=(r.rafi_name or "-"), font_weight=500, color="#000", width="150px"),
+            # 2 lat
+            Cell(type="Text",   text=str(r.lat),           font_weight=500, color="#000", width="150px"),
+            Cell(type="Text",   text=str(r.lng),           font_weight=500, color="#000", width="150px"),
+            Cell(type="Text",   text=(r.rafi_desc or "-"), font_weight=500, color="#000", width="200px"),
+            Cell(type="Text",   text=(abs_pic or "-"),     font_weight=400, color="#000", width="200px"),
+            Cell(type="Button", text="View", font_weight=500, color="#fff",
+                 background_color="#749AB6", container_width="120px", button_width="100px"),
         ]
         pages["row"].append({"data": row_data})
 
     if pages["row"]:
         table_datas.append(pages)
 
-    count = db.query(EvacuationCenter).count()
-    return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
-
-
+    return TableResponse(table_head=table_head, table_datas=table_datas, count=total)
 def _fmt_dt(dt: datetime | None) -> str:
     if not dt:
         return "-"
@@ -785,43 +777,122 @@ def update_evacuation(
     return {"detail": "Record updated succesfully", "record": record}
 
 
-@router.post("/lgu_profiling/manage_lgu/add_rafi", response_model=RafiInfrastructureOut)
-def add_rafi(record: RafiInfrastructureCreate, db: Session = Depends(get_db)):
-    db_record = RAFIInfrastructure(
-        name=record.name, lat=record.lat, lng=record.lng, description=record.description
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-    return db_record
+# Reuse same layout as uploadedFiles.py
+MEDIA_DIR = Path("media")
+RAFIS_DIR = MEDIA_DIR / "rafi_pictures"
+RAFIS_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_TYPES = {"jpeg", "png", "gif", "bmp", "webp", "tiff"}
 
+@router.post("/lgu_profiling/manage_lgu/add_rafi", response_model=RafiInfrastructureOut)
+def add_rafi(
+    request: Request,
+    rafi_name: str = Form(...),
+    lat: float = Form(...),
+    lng: float = Form(...),
+    rafi_desc: str = Form(""),
+    rafi_pic: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
+    pic_url: str | None = None
+
+    if rafi_pic and rafi_pic.filename:
+        contents = rafi_pic.file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        kind = imghdr.what(None, h=contents)
+        if kind not in ALLOWED_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unsupported image type: {kind}")
+
+        ext = "jpg" if kind == "jpeg" else kind
+        unique = uuid4().hex
+        filename = f"{Path(rafi_pic.filename).stem}-{unique}.{ext}"
+        dest = RAFIS_DIR / filename
+        with open(dest, "wb") as f:
+            f.write(contents)
+
+        pic_url = f"/media/rafi_pictures/{filename}"
+
+    rec = RAFIInfrastructure(
+        rafi_name=rafi_name,
+        lat=lat,
+        lng=lng,
+        rafi_desc=rafi_desc,
+        rafi_pic=pic_url,
+    )
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    # Return absolute URL so frontend can use it directly
+    if rec.rafi_pic:
+        rec.rafi_pic = _abs_media_url(request, rec.rafi_pic)
+
+    return rec
 
 @router.delete("/lgu_profiling/manage_lgu/delete_rafi/{record_id}", response_model=dict)
 def delete_rafi(record_id: int, db: Session = Depends(get_db)):
-    deleted_report = delete(db, RAFIInfrastructure, record_id)
-    if not deleted_report:
-        raise HTTPException(status_code=400, detail="Record not found.")
-    return {"message": f"Record with ID {record_id} deleted successfully."}
-
-
-@router.put("/lgu_profiling/manage_lgu/update_rafi/{record_id}")
-def update_rafi(
-    record_id: int, payload: RafiInfrastructureCreate, db: Session = Depends(get_db)
-):
-    record = db.query(RAFIInfrastructure).get(record_id)
-
+    record = db.query(RAFIInfrastructure).filter(RAFIInfrastructure.rafi_id == record_id).first()
     if not record:
-        raise HTTPException(status_code=404, detail="Response record doesn't exist")
-    if payload.name is not None:
-        record.name = payload.name
-    if payload.lat is not None:
-        record.lat = payload.lat
-    if payload.lng is not None:
-        record.lng = payload.lng
-    if payload.description is not None:
-        record.description = payload.description
+        raise HTTPException(status_code=404, detail="RAFI record not found.")
+
+    db.delete(record)
+    db.commit()
+    return {"message": f"RAFI Infrastructure with ID {record_id} deleted successfully."}
+@router.put("/lgu_profiling/manage_lgu/update_rafi/{record_id}", response_model=dict)
+def update_rafi(
+    request: Request,
+    record_id: int,
+    rafi_name: str = Form(None),
+    lat: float = Form(None),
+    lng: float = Form(None),
+    rafi_desc: str = Form(None),
+    rafi_pic: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
+    record = db.query(RAFIInfrastructure).filter(RAFIInfrastructure.rafi_id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="RAFI record doesn't exist")
+
+    # Update simple fields
+    if rafi_name is not None: record.rafi_name = rafi_name
+    if lat is not None:       record.lat = lat
+    if lng is not None:       record.lng = lng
+    if rafi_desc is not None: record.rafi_desc = rafi_desc
+
+    # New image? Save with a unique filename
+    if rafi_pic and rafi_pic.filename:
+        contents = rafi_pic.file.read()
+        if not contents:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+        kind = imghdr.what(None, h=contents)
+        if kind not in ALLOWED_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unsupported image type: {kind}")
+
+        ext = "jpg" if kind == "jpeg" else kind
+        unique = uuid4().hex
+        filename = f"{Path(rafi_pic.filename).stem}-{unique}.{ext}"
+        dest = RAFIS_DIR / filename
+        with open(dest, "wb") as f:
+            f.write(contents)
+
+        record.rafi_pic = f"/media/rafi_pictures/{filename}"
 
     db.commit()
     db.refresh(record)
 
-    return {"detail": "Record updated succesfully", "record": record}
+    # Make returned path absolute
+    abs_pic = _abs_media_url(request, record.rafi_pic)
+
+    return {
+        "detail": "RAFI record updated successfully",
+        "record": {
+            "rafi_id": record.rafi_id,
+            "rafi_name": record.rafi_name,
+            "lat": record.lat,
+            "lng": record.lng,
+            "rafi_desc": record.rafi_desc,
+            "rafi_pic": abs_pic,
+        },
+    }

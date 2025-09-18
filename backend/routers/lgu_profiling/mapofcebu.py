@@ -4,9 +4,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import LGURecords
-
-router = APIRouter(prefix="/mapofcebu", tags=["Map of Cebu"])
+from models import LGURecords, RAFIInfrastructure
+router = APIRouter(prefix="/lgu_profiling/mapofcebu", tags=["Map of Cebu"])
 
 # ---------- Helpers ----------
 
@@ -39,6 +38,14 @@ def has_coords(r: LGURecords) -> bool:
         return False
 
 # ---------- Schemas ----------
+
+class RafiPointOut(BaseModel):
+    id: int
+    name: str
+    lat: float
+    lng: float
+    description: Optional[str] = None
+    imageUrl: Optional[str] = None
 
 class MapPointOut(BaseModel):
     id: int
@@ -121,3 +128,22 @@ def get_lgu_by_id(id: int, request: Request, db: Session = Depends(get_db)):
 @router.get("/lgu", response_model=LGUDetailOut)
 def get_lgu_legacy(id: int = Query(...), request: Request = None, db: Session = Depends(get_db)):
     return get_lgu_by_id(id=id, request=request, db=db)
+
+# ---- rafffiiii ----
+
+@router.get("/rafi", response_model=List[RafiPointOut])
+def list_rafi_points(request: Request, db: Session = Depends(get_db)):
+    rows = db.query(RAFIInfrastructure).all()
+
+    return [
+        RafiPointOut(
+            id=r.rafi_id,
+            name=r.rafi_name,
+            lat=float(r.lat),
+            lng=float(r.lng),
+            description=r.rafi_desc,
+            imageUrl=to_image_url(request, r.rafi_pic),
+        )
+        for r in rows
+        if r.lat is not None and r.lng is not None
+    ]

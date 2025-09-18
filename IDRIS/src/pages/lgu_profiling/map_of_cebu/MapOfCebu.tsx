@@ -1,4 +1,4 @@
-// IDRIS/src/pages/lgu_profiling/map_of_cebu/MapOfCebu.tsx
+// MapOfCebu.tsx
 import { useEffect, useMemo, useState } from "react";
 import MapView, { MarkerType } from "../../../components/MapView/MapView";
 import { Link } from "react-router-dom";
@@ -7,7 +7,7 @@ import "../css/MapOfCebu.css";
 type HazardPhoto = { src: string; label: string };
 type MarkerWithPhotos = MarkerType & {
   hazardPhotos?: HazardPhoto[];
-  lguId?: number; // real LGU id from backend
+  lguId?: number;
 };
 
 type LGUPoint = {
@@ -24,44 +24,21 @@ type LGUPoint = {
   resources?: string[] | null;
 };
 
+type RafiPoint = {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  description?: string | null;
+  imageUrl?: string | null;
+};
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu"; // ✅ matches your FastAPI include_router
-
-/** ======= SAMPLE ONLY for non-LGU types ======= **/
-const barangaySamples: MarkerWithPhotos[] = [
-  {
-    lat: 10.34,
-    lng: 123.9,
-    lguName: "Barangay Apas",
-    type: "barangay",
-    description: "It is a residential area known for its proximity to Cebu IT Park...",
-    population: "15,000",
-    resources: "Basic Medical Kits, Barangay Tanod, Community Health Workers",
-    evacuationCenter: "Barangay Apas Hall",
-    image: "../images/baranggay/baranggay.jpg",
-    hazardAreas: [],
-    hazardPhotos: [{ src: "../images/hazards/apas_flood_1.jpg", label: "Flood-prone: Sitio Kamputhaw" }],
-  },
-];
-
-const raffiSamples: MarkerWithPhotos[] = [
-  {
-    lat: 10.35,
-    lng: 123.91,
-    lguName: "RAFI Infra A",
-    type: "raffi",
-    description: "The facility includes warehouses and transportation hubs.",
-    population: "-",
-    resources: "-",
-    evacuationCenter: "-",
-    image: "../images/raffi/raffi.jpg",
-    hazardAreas: [],
-  },
-];
-/** ============================================ **/
+const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
 
 const MapOfCebu = () => {
   const [lguMarkers, setLguMarkers] = useState<MarkerWithPhotos[]>([]);
+  const [raffiMarkers, setRaffiMarkers] = useState<MarkerWithPhotos[]>([]); // 👈 new
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,10 +48,11 @@ const MapOfCebu = () => {
   const [pathCoordinates, setPathCoordinates] = useState<[number, number][] | null>(null);
   const [evacuationCenter, setEvacuationCenter] = useState<MarkerType | null>(null);
 
+  // Fetch LGU points
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_URL}${MAPOFCEBU_BASE}/points`); // ✅
+        const res = await fetch(`${API_URL}${MAPOFCEBU_BASE}/points`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: LGUPoint[] = await res.json();
 
@@ -89,14 +67,42 @@ const MapOfCebu = () => {
           evacuationCenter: "",
           image: p.imageUrl || "/images/lgu/default.jpg",
           hazardAreas: [],
-          lguId: p.id, // 👈 important
+          lguId: p.id,
         }));
 
         setLguMarkers(mapped);
       } catch (e: any) {
         setError(e?.message || "Failed to load LGU points.");
+      }
+    })();
+  }, []);
+
+  // Fetch RAFI points
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}${MAPOFCEBU_BASE}/rafi`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data: RafiPoint[] = await res.json();
+
+        const mapped: MarkerWithPhotos[] = data.map((r) => ({
+          lat: r.lat,
+          lng: r.lng,
+          lguName: r.name,         // label used by your MarkerType
+          type: "raffi",           // marker type used by your MapView
+          description: r.description || "",
+          population: "-",         // not applicable for RAFI
+          resources: "-",          // not applicable for RAFI
+          evacuationCenter: "-",   // not applicable for RAFI
+          image: r.imageUrl || "/images/raffi/raffi.jpg",
+          hazardAreas: [],
+        }));
+
+        setRaffiMarkers(mapped);
+      } catch (e: any) {
+        setError(e?.message || "Failed to load RAFI points.");
       } finally {
-        setLoading(false);
+        setLoading(false); // overall loading can end after RAFI returns
       }
     })();
   }, []);
@@ -137,13 +143,14 @@ const MapOfCebu = () => {
     ]);
   };
 
+  // 👇 remove raffiSamples; use real fetched markers instead
   const combinedMarkers = useMemo(() => {
-    let base: MarkerWithPhotos[] = [...lguMarkers, ...barangaySamples, ...raffiSamples];
+    let base: MarkerWithPhotos[] = [...lguMarkers, ...raffiMarkers /*, ...barangaySamples (until you fetch real) */];
     if (selectedType) base = base.filter((m) => m.type === selectedType);
     return evacuationCenter ? [...base, evacuationCenter] : base;
-  }, [lguMarkers, selectedType, evacuationCenter]);
+  }, [lguMarkers, raffiMarkers, selectedType, evacuationCenter]);
 
-  if (loading) return <div style={{ padding: 16 }}>Loading LGU markers…</div>;
+  if (loading) return <div style={{ padding: 16 }}>Loading markers…</div>;
   if (error) return <div style={{ padding: 16, color: "crimson" }}>{error}</div>;
 
   return (
@@ -159,7 +166,7 @@ const MapOfCebu = () => {
         <h4>Legend</h4>
         <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU</div>
         <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay</div>
-        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFFI Infrastructure</div>
+        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure</div>
       </div>
 
       <div className="map-container">

@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict,Field
 from typing import List, Optional
 
 
@@ -150,21 +150,31 @@ class BaranggayRecordsOut(BaseModel):
     contact_info: str
     risk_level: str
 
-
 class RafiInfrastructureCreate(BaseModel):
-    name: str
+    rafi_name: str
     lat: float
     lng: float
-    description: str
+    rafi_desc: Optional[str] = None
+    rafi_pic: Optional[str] = None  # store URL if you’re using 2-step upload
 
 
+class RafiInfrastructureUpdate(BaseModel):
+    rafi_name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    rafi_desc: Optional[str] = None
+    rafi_pic: Optional[str] = None
+    
 class RafiInfrastructureOut(BaseModel):
-    id: int
-    name: str
+    rafi_id: int
+    rafi_name: str
     lat: float
     lng: float
-    description: str
+    rafi_desc: Optional[str]
+    rafi_pic: Optional[str]
 
+    class Config:
+        from_attributes = True
 
 class EvacuationCenterCreate(BaseModel):
     name: str

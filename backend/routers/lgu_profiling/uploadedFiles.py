@@ -12,10 +12,10 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
 # Subfolders
 HAZARDS_DIR = MEDIA_DIR / "hazards"
-HAZARDS_DIR.mkdir(parents=True, exist_ok=True)
-
-LGU_DIR = MEDIA_DIR / "lgu_pictures"
-LGU_DIR.mkdir(parents=True, exist_ok=True)
+LGU_DIR     = MEDIA_DIR / "lgu_pictures"
+RAFIS_DIR   = MEDIA_DIR / "rafi_pictures"
+for d in (HAZARDS_DIR, LGU_DIR, RAFIS_DIR):
+    d.mkdir(parents=True, exist_ok=True)
 
 # imghdr returns: 'jpeg', 'png', 'gif', 'bmp', 'webp', (sometimes 'tiff')
 ALLOWED_TYPES = {"jpeg", "png", "gif", "bmp", "webp", "tiff"}
@@ -49,13 +49,16 @@ def _save_image_or_400(dest_dir: Path, request: Request, file: UploadFile) -> JS
 
     # Build absolute URL for the static mount
     base = str(request.base_url).rstrip("/")
-    # Map dest_dir to its public route
+
     if dest_dir == HAZARDS_DIR:
         public_url = f"{base}/media/hazards/{filename}"
     elif dest_dir == LGU_DIR:
         public_url = f"{base}/media/lgu_pictures/{filename}"
+    elif dest_dir == RAFIS_DIR:
+        public_url = f"{base}/media/rafi_pictures/{filename}"
     else:
-        public_url = f"{base}/media/{filename}"  # fallback
+        # Fallback (shouldn't hit if you pass a known dir)
+        public_url = f"{base}/media/{filename}"
 
     return JSONResponse({"url": public_url})
 
@@ -66,3 +69,7 @@ async def upload_hazard(request: Request, file: UploadFile = File(...)):
 @router.post("/lgu_pictures")
 async def upload_lgu_picture(request: Request, file: UploadFile = File(...)):
     return _save_image_or_400(LGU_DIR, request, file)
+
+@router.post("/rafi_pictures")
+async def upload_rafi_picture(request: Request, file: UploadFile = File(...)):
+    return _save_image_or_400(RAFIS_DIR, request, file)

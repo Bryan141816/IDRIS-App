@@ -377,18 +377,63 @@ const MapOfCebu = () => {
             })
           );
           break;
+case "rafi": {
+  // ----- read values whether payload is FormData or plain object -----
+  let rafi_name: string | null | undefined;
+  let latStr: string | null | undefined;
+  let lngStr: string | null | undefined;
+  let rafi_desc: string | null | undefined;
+  let userPickedNewFile = false;
 
-        case "rafi":
-          setSelectedViewData((prev) =>
-            safeUpdateByIndex(prev, {
-              1: payload.name,
-              2: payload.lat,
-              3: payload.lng,
-              4: payload.description,
-            })
-          );
-          break;
-        default:
+  if (payload instanceof FormData) {
+    rafi_name = payload.get("rafi_name") as string;
+    latStr    = payload.get("lat") as string;
+    lngStr    = payload.get("lng") as string;
+    rafi_desc = payload.get("rafi_desc") as string;
+    userPickedNewFile = payload.has("rafi_pic");
+  } else {
+    rafi_name = payload.rafi_name ?? payload.name;
+    latStr    = payload.lat != null ? String(payload.lat) : undefined;
+    lngStr    = payload.lng != null ? String(payload.lng) : undefined;
+    rafi_desc = payload.rafi_desc ?? payload.description;
+  }
+
+  const lat = latStr != null ? Number(latStr) : undefined;
+  const lng = lngStr != null ? Number(lngStr) : undefined;
+
+  // ✅ get correct pic URL from backend response
+  const newPicFromResp = (response as any)?.record?.rafi_pic as string | undefined;
+  const prevPic = (selectedViewData?.data?.[5]?.text as string) || undefined;
+
+  // add cache-buster
+  const cacheBust = (url?: string) =>
+    url ? `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}` : url;
+
+  const picToUse =
+    newPicFromResp ? cacheBust(newPicFromResp)
+    : userPickedNewFile ? cacheBust(prevPic)
+    : prevPic;
+
+  // ✅ immediately tell View modal to reload
+  document.dispatchEvent(
+    new CustomEvent("rafi:updated", {
+      detail: { id, rafi_pic: newPicFromResp },
+    })
+  );
+
+  setSelectedViewData(prev =>
+    safeUpdateByIndex(prev, {
+      1: rafi_name ?? (prev?.data?.[1]?.text as string),
+      2: lat != null ? String(lat) : (prev?.data?.[2]?.text as string),
+      3: lng != null ? String(lng) : (prev?.data?.[3]?.text as string),
+      4: rafi_desc ?? (prev?.data?.[4]?.text as string),
+      5: picToUse as string, // 👈 update image immediately
+    })
+  );
+  break;
+}
+
+ default:
           break;
       }
     } catch {

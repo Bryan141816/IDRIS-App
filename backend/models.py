@@ -130,14 +130,13 @@ class Notifications(Base):
 # LGU Profiling
 class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
-    __random_pk_field__ = "infastructure_id"
-    id = Column(Integer, index=True, server_default=Identity())
 
-    infastructure_id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
+    rafi_id = Column(Integer, primary_key=True, index=True, server_default=Identity())
+    rafi_name = Column(String(255), nullable=False)   # <-- must exist
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
-    description = Column(String(255), nullable=False)
+    rafi_desc = Column(String(255), nullable=True)
+    rafi_pic = Column(String, nullable=True)  # URL or file path
 
 
 class Hazard(Base):

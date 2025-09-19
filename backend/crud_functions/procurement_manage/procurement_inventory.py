@@ -15,6 +15,7 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def create_warehouse_zone(db: Session, payload: WarehouseZoneCreate):
         warehouse_zone = WarehouseZones(
+            status=payload.status,
             zone_name=payload.zone_name,
             zone_type=payload.zone_type,
             capacity=payload.capacity,
@@ -25,3 +26,7 @@ class ProcurementInventoryCRUD:
         db.refresh(warehouse_zone)
 
         return warehouse_zone
+
+    @staticmethod
+    def get_all_warehouse_zones(db: Session):
+        return db.query(WarehouseZones).order_by(WarehouseZones.zone_name.desc()).all()

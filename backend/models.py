@@ -132,7 +132,7 @@ class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
 
     rafi_id = Column(Integer, primary_key=True, index=True, server_default=Identity())
-    rafi_name = Column(String(255), nullable=False)   # <-- must exist
+    rafi_name = Column(String(255), nullable=False)  # <-- must exist
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
     rafi_desc = Column(String(255), nullable=True)
@@ -167,7 +167,9 @@ class EvacuationCenter(Base):
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
+    id = Column(
+        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
+    )
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -176,7 +178,7 @@ class LGURecords(Base):
     contact_info = Column(String(255), nullable=False)
     risk_level = Column(String(50), nullable=False)
 
-    lgu_picture = Column(String, nullable=True)  
+    lgu_picture = Column(String, nullable=True)
     description = Column(Text, nullable=True)
 
     resources = Column(JSON, nullable=True)
@@ -186,7 +188,6 @@ class LGURecords(Base):
     local_suppliers = Column(JSON, nullable=True)
 
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
-
 
 
 class BaranggayRecords(Base):
@@ -978,7 +979,9 @@ class ProcurementRequestItem(Base):
 
 class WarehouseZones(Base):
     __tablename__ = "warehouse_zones"
+
     warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    status = Column(String(255), nullable=False)
     zone_name = Column(String(255), nullable=False)
     zone_type = Column(String(255), nullable=False)
     capacity = Column(Integer, nullable=False)

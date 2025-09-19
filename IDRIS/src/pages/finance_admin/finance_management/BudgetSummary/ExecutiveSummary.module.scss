@@ -1,0 +1,93 @@
+/* MainPage.module.scss */
+
+.section {
+    display: block;
+    padding: 1rem 0;
+  }
+  
+  .sectionTitle {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 1rem 0;
+  }
+  
+  /* KPI grid (top cards) */
+  .kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  
+    @media (min-width: 768px) {
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+  
+  /* Summary box */
+  .summaryBox {
+    background-color: #f9fafb;          /* slate-50 */
+    border: 1px solid #e5e7eb;          /* gray-200 */
+    border-radius: 0.5rem;              /* 8px */
+    padding: 1.25rem;
+  
+    @media (min-width: 768px) {
+      padding: 1.5rem;
+    }
+  }
+  
+  .summaryTitle {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+  }
+  
+  /* Two-column grid for the bullet lists */
+  .summaryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+  
+    @media (min-width: 768px) {
+      gap: 1.5rem;
+    }
+  }
+  
+  /* Bullet list styling */
+  .highlightList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem; /* 14px */
+    line-height: 1.45;
+  
+    li {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+  
+      /* space between dot and text */
+      span + span {
+        /* the text span after the dot */
+        flex: 1 1 auto;
+      }
+    }
+  }
+  
+  /* Dots */
+  %dotBase {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    margin-top: 6px;   /* aligns with first line of text */
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  
+  .dotGreen { @extend %dotBase; background-color: #22c55e; } /* green-500 */
+  .dotBlue  { @extend %dotBase; background-color: #3b82f6; } /* blue-500  */
+  .dotYellow{ @extend %dotBase; background-color: #eab308; } /* yellow-500*/
+  .dotRed   { @extend %dotBase; background-color: #ef4444; } /* red-500   */
+  

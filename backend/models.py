@@ -987,6 +987,23 @@ class WarehouseZones(Base):
     capacity = Column(Integer, nullable=False)
     manager = Column(String(255), nullable=False)
 
+    inventory_items = relationship("InventoryItems", back_populates="warehouse")
+
+
+class InventoryItems(Base):
+    __tablename__ = "inventory_items"
+
+    inventory_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    item_name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    category = Column(String(255), nullable=False)
+    location = Column(Integer, ForeignKey("warehouse_zones.warehouse_id"))
+    batch = Column(String(255), nullable=False)
+    expiry = Column(Date, nullable=False)
+    status = Column(String(255), nullable=False)
+
+    warehouse = relationship("WarehouseZones", back_populates="inventory_items")
+
 
 # ================================== FINANCE MODELS =====================================
 

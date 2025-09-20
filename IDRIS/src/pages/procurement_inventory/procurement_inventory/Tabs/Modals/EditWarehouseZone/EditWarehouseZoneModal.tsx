@@ -6,13 +6,15 @@ import {
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
-export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
+type EditWarehouseZoneProp = DefaultInventoryModalProps & {
+  selectedData: WarehouseZone;
+};
+export const AddWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
   onClose,
   refreshData,
 }) => {
-  type WarehouseZoneForm = Omit<WarehouseZone, "warehouse_id">;
-
-  const [formData, setFormData] = useState<WarehouseZoneForm>({
+  const [formData, setFormData] = useState<WarehouseZone>({
+    warehouse_id: 0,
     status: "active",
     zone_name: "",
     zone_type: "",

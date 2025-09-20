@@ -41,3 +41,12 @@ export interface DefaultInventoryModalProps {
   onClose: () => void;
   refreshData: () => void;
 }
+
+export interface WarehouseZone {
+  warehouse_id: number;
+  status: string;
+  zone_name: string;
+  zone_type: string;
+  capacity: number;
+  manager: string;
+}

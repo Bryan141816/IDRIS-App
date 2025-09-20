@@ -149,19 +149,25 @@ class Hazard(Base):
     action = Column(String, nullable=True)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     __random_pk_field__ = "evacuation_id"
-    id = Column(Integer, index=True, server_default=Identity())
 
+    id = Column(Integer, index=True, server_default=Identity())
     evacuation_id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
     capacity = Column(Integer, nullable=False)
+    occupied = Column(Integer, nullable=False, server_default="0")
 
-    barangay = relationship("BaranggayRecords", back_populates="evacucation_center")
+    # ✅ cascade delete to barangays
+    barangay = relationship(
+        "BaranggayRecords",
+        back_populates="evacucation_center",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class LGURecords(Base):
@@ -189,28 +195,34 @@ class LGURecords(Base):
 
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
-
+# models.py
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
+
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
 
-    # foreign key to LGU
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
+
+    # ⬇️ change: allow NULL + set-null on parent delete
     evacucation_center_id = Column(
-        Integer, ForeignKey("evacuation_center.evacuation_id"), nullable=False
+        Integer,
+        ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
+        nullable=True,   # ⬅️ important
     )
 
     population = Column(Integer, nullable=False)
     contact_info = Column(String(255), nullable=False)
     risk_level = Column(String(50), nullable=False)
 
-    # relationship back to LGU
     lgu = relationship("LGURecords", back_populates="baranggays")
-    evacucation_center = relationship("EvacuationCenter", back_populates="barangay")
-
+    evacucation_center = relationship(
+        "EvacuationCenter",
+        back_populates="barangay",
+        passive_deletes=True,   # ok to keep
+    )
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"

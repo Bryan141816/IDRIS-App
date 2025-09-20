@@ -236,26 +236,32 @@ const MapOfCebu = () => {
   };
 
   /* ---------- CRUD handlers ---------- */
-  const handleDeleteRecord = async (id: string) => {
-    try {
-      await deleteRecord(activeTab, id);
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "message",
-        message: "Record deleted successfully",
-      }));
-      closeViewModal();
-      handleRefreshTable();
-    } catch {
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "message",
-        message: "Delete failed. Please try again.",
-      }));
-    }
-  };
+const handleDeleteRecord = async (id: string) => {
+  try {
+    await deleteRecord(activeTab, id);
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: true,
+      type: "message",
+      message: "Record deleted successfully",
+    }));
+    closeViewModal();
+    handleRefreshTable();
+  } catch (err: any) {
+    const serverDetail =
+      err?.response?.data?.detail ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Delete failed. Please try again.";
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: true,
+      type: "message",
+      message: serverDetail, // 👈 will show: “Cannot delete: this evacuation center is linked…”
+    }));
+  }
+};
+
 
   const handleAddRecord = async (payload: any) => {
     const response = await addRecord(activeTab, payload);

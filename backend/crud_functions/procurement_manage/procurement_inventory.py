@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
 from typing import List
+from fastapi import HTTPException, status
 
 
 class ProcurementInventoryCRUD:
@@ -30,3 +31,25 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def get_all_warehouse_zones(db: Session):
         return db.query(WarehouseZones).order_by(WarehouseZones.zone_name.desc()).all()
+
+    @staticmethod
+    def update_warehouse_zone(db: Session, payload: WarehouseZoneOut):
+        zone = (
+            db.query(WarehouseZones)
+            .filter(WarehouseZones.warehouse_id == payload.warehouse_id)
+            .first()
+        )
+
+        if not zone:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Warehouse zone with id {payload.warehouse_id} not found",
+            )
+
+        # Update only provided fields
+        for key, value in payload.dict(exclude_unset=True).items():
+            setattr(zone, key, value)
+
+        db.commit()
+        db.refresh(zone)
+        return zone

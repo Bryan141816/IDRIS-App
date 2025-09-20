@@ -9,18 +9,12 @@ import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 type EditWarehouseZoneProp = DefaultInventoryModalProps & {
   selectedData: WarehouseZone;
 };
-export const AddWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
+export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
   onClose,
   refreshData,
+  selectedData,
 }) => {
-  const [formData, setFormData] = useState<WarehouseZone>({
-    warehouse_id: 0,
-    status: "active",
-    zone_name: "",
-    zone_type: "",
-    capacity: 0,
-    manager: "",
-  });
+  const [formData, setFormData] = useState<WarehouseZone>(selectedData);
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
@@ -32,7 +26,7 @@ export const AddWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
   };
   const handleSubmit = () => {
     const callFunction = async () => {
-      const response = await AddWareHouse();
+      const response = await EditWarehouse();
       if (response) {
         refreshData();
         onClose();
@@ -41,26 +35,34 @@ export const AddWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
     callFunction();
   };
 
-  const AddWareHouse = async () => {
+  const EditWarehouse = async () => {
     try {
       const response = await API.post(
-        "/procurement_inventory/add_warehouse_zone",
+        "/procurement_inventory/update_warehouse_zone",
         formData,
       );
       return response.data; // ✅ now it's the actual data
     } catch (e: any) {
-      console.error(`Error in adding warehouse zone:`, e);
+      console.error(`Error in updating warehouse zone:`, e);
       return false;
     }
   };
   return (
     <InventoryModal
       onClose={onClose}
-      modalType="add-warehouse"
+      modalType="edit-warehouse"
       onSubmit={handleSubmit}
     >
       <div className="modal-content">
-        <h3>Create Warehouse Zone</h3>
+        <h3>Edit Warehouse Zone</h3>
+        <div className="form-group">
+          <label>Status</label>
+          <select name="status" value={formData.status} onChange={handleChange}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="under maintenance">Under Maintenance</option>{" "}
+          </select>
+        </div>
         <div className="form-group">
           <label>Zone Name</label>
           <input

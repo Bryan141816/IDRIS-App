@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { AddWarehouseZone } from "./Modals/AddWarehouseZone/AddWarehouseZone";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
+import { WarehouseZone } from "./Modals/ModalDefault";
+import { EditWarehouseZone } from "./Modals/EditWarehouseZone/EditWarehouseZoneModal";
 interface WarehouseZoneProps {
   warehouse_id: number;
   status: string;
@@ -37,11 +39,25 @@ const donations = [
   },
 ];
 
-const WarehouseZone = () => {
+const WarehouseZoneComponent = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [warehouseZones, setWarehouseZone] = useState<WarehouseZoneProps[]>([]);
-  const openModal = (type: string) => {
+  const [selecteZone, setSelectedZone] = useState<WarehouseZone>({
+    warehouse_id: -1,
+    status: "",
+    zone_name: "",
+    zone_type: "",
+    capacity: 0,
+    manager: "",
+  });
+  const openModal = (
+    type: string,
+    selectedZone: WarehouseZone | null = null,
+  ) => {
     setActiveModal(type);
+    if (selectedZone) {
+      setSelectedZone(selectedZone);
+    }
   };
   const closeModal = () => {
     setActiveModal(null);
@@ -72,6 +88,13 @@ const WarehouseZone = () => {
           onClose={closeModal}
           refreshData={handleFetch}
         ></AddWarehouseZone>
+      )}
+      {activeModal === "edit-zone" && (
+        <EditWarehouseZone
+          onClose={closeModal}
+          refreshData={handleFetch}
+          selectedData={selecteZone}
+        ></EditWarehouseZone>
       )}
       <div className="section-header">
         <h2>Warehouse Zones</h2>
@@ -121,7 +144,12 @@ const WarehouseZone = () => {
               {/* </div> */}
 
               <div className="warehouse-actions">
-                <button className="action-btn">Edit Zone</button>
+                <button
+                  className="action-btn"
+                  onClick={() => openModal("edit-zone", zone)}
+                >
+                  Edit Zone
+                </button>
                 <button className="action-btn">Assign Storage</button>
               </div>
             </div>
@@ -132,4 +160,4 @@ const WarehouseZone = () => {
   );
 };
 
-export default WarehouseZone;
+export default WarehouseZoneComponent;

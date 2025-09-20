@@ -27,3 +27,10 @@ def add_warehouse_zone(request: WarehouseZoneCreate, db: Session = Depends(get_d
 )
 def get_warehouse_zone(db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.get_all_warehouse_zones(db)
+
+
+@router.post(
+    "/procurement_inventory/update_warehouse_zone", response_model=WarehouseZoneOut
+)
+def update_warehouse_zone(payload: WarehouseZoneOut, db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.update_warehouse_zone(db, payload)

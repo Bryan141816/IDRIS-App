@@ -128,24 +128,34 @@ class LGURecordsOut(BaseModel):
         from_attributes = True 
 
 
+
 class BaranggayRecordsCreate(BaseModel):
     name: str
     lat: float
     lng: float
     LGU: str
-    evacuation: str
+    evacuation: Optional[str] = None   # ✅ allow None
     population: int
     contact_info: str
     risk_level: str
 
-
+class BaranggayRecordsUpdate(BaseModel):
+    name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    LGU: Optional[str] = None
+    evacuation: Optional[str] = None   # <- None or "" means DETACH
+    population: Optional[int] = None
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+    
 class BaranggayRecordsOut(BaseModel):
     id: int
     name: str
     lat: float
     lng: float
     lgu_id: int
-    evacucation_center_id: int
+    evacucation_center_id: Optional[int] = None  # ✅ allow None
     population: int
     contact_info: str
     risk_level: str
@@ -181,6 +191,7 @@ class EvacuationCenterCreate(BaseModel):
     lat: float
     lng: float
     capacity: int
+    occupied: int = 0
 
 
 class EvacuationCenterOut(BaseModel):
@@ -189,6 +200,7 @@ class EvacuationCenterOut(BaseModel):
     lat: float
     lng: float
     capacity: int
+    occupied: int  
 
 
 class HazardBase(BaseModel):

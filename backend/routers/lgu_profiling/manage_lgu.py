@@ -20,6 +20,7 @@ from schemas import (
     LGURecordsUpdate, 
     LGURecordsOut,
     BaranggayRecordsCreate,
+    BaranggayRecordsUpdate,
     BaranggayRecordsOut,        
     HazardCreate,
     HazardOut
@@ -34,7 +35,7 @@ from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURe
 
 from routers.role_checker import RoleChecker
 import math
-from typing import Union, Dict
+from typing import Union, Dict,List
 from datetime import datetime
 router = APIRouter(
     tags=["manage_lgu"],
@@ -438,23 +439,36 @@ def add_hazard(record: HazardCreate, db: Session = Depends(get_db)):
     db.refresh(db_record)
     return db_record
 
+
+    
+    # --------------------Evacuation center-----------------------------
 @router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
 def get_evacuation(
     db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"
 ):
     page = getDefaultPage(page)
     offset = (page - 1) * 10
+
+    # ✅ Consistent widths across head + row
     table_head = [
         {"text": "Name", "width": "150px", "action": "Sort"},
         {"text": "Lat", "width": "150px"},
         {"text": "Lng", "width": "150px"},
         {"text": "Capacity", "width": "150px"},
+        {"text": "Occupied", "width": "150px"},
         {"text": "Action", "width": "150px"},
     ]
+
     order = (
         EvacuationCenter.name.desc() if Name == "desc" else EvacuationCenter.name.asc()
     )
-    records = db.query(EvacuationCenter).order_by(order).limit(100).offset(offset).all()
+    records = (
+        db.query(EvacuationCenter)
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
+    )
     table_datas = []
 
     pageCount = page
@@ -466,41 +480,12 @@ def get_evacuation(
             pages = {"page": pageCount, "row": []}
 
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=record.name,
-                font_weight=500,
-                color="#000",
-                width="250px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lat),
-                font_weight=500,
-                color="#000",
-                width="250px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.lng),
-                font_weight=500,
-                color="#000",
-                width="250px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.capacity),
-                font_weight=500,
-                color="#000",
-                width="250px",
-            ),
+            Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
+            Cell(type="Text", text=record.name, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=f"{record.lat:.6f}", font_weight=500, color="#000", width="150px"),   # short lat
+            Cell(type="Text", text=f"{record.lng:.6f}", font_weight=500, color="#000", width="150px"),   # short lng
+            Cell(type="Text", text=str(record.capacity), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(record.occupied), font_weight=500, color="#000", width="150px"),
             Cell(
                 type="Button",
                 text="View",
@@ -518,6 +503,17 @@ def get_evacuation(
 
     count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
+
+    # -----Evacuation center delte when it is linked to baranggay-----------------------------
+@router.get("/lgu_profiling/manage_lgu/evacuation/{record_id}/linked_barangays", response_model=dict)
+def get_linked_barangays(record_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(BaranggayRecords)
+          .filter(BaranggayRecords.evacucation_center_id == record_id)
+          .all()
+    )
+    names: List[str] = [r.name for r in rows]
+    return {"count": len(rows), "names": names}
 @router.delete("/lgu_profiling/manage_lgu/delete_hazard/{record_id}", response_model=dict)
 def delete_hazard(record_id: int, db: Session = Depends(get_db)):
     removed = delete(db, Hazard, record_id)
@@ -686,38 +682,23 @@ def delete_barangay(record_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Record not found.")
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
-
 @router.put("/lgu_profiling/manage_lgu/update_barangay/{record_id}")
 def update_barangay(
-    record_id: int, payload: BaranggayRecordsCreate, db: Session = Depends(get_db)
+    record_id: int,
+    payload: BaranggayRecordsUpdate,
+    db: Session = Depends(get_db),
 ):
-    lgu = find_lgu(q=payload.LGU, sim_threshold=0.96, db=db)
-    if len(lgu) <= 0:
-        return {
-            "success": False,
-            "error": f"{payload.LGU} doesn't exist in LGU records",
-        }
-
-    evacuation = find_evacuation(q=payload.evacuation, sim_threshold=0.96, db=db)
-    if len(evacuation) <= 0:
-        return {
-            "success": False,
-            "error": f"{payload.evacuation} doesn't exist in Evacuation Center records",
-        }
     record = db.query(BaranggayRecords).get(record_id)
-
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
+
+    # 1) Basic fields (only update if provided)
     if payload.name is not None:
         record.name = payload.name
     if payload.lat is not None:
         record.lat = payload.lat
     if payload.lng is not None:
         record.lng = payload.lng
-    if len(lgu) > 0:
-        record.lgu_id = lgu[0].id
-    if len(evacuation) > 0:
-        record.evacucation_center_id = evacuation[0].id
     if payload.population is not None:
         record.population = payload.population
     if payload.contact_info is not None:
@@ -725,9 +706,27 @@ def update_barangay(
     if payload.risk_level is not None:
         record.risk_level = payload.risk_level
 
+    # 2) LGU — resolve only if provided
+    if payload.LGU is not None:
+        lgu = find_lgu(q=payload.LGU, sim_threshold=0.96, db=db)
+        if len(lgu) <= 0:
+            return {"success": False, "error": f"{payload.LGU} doesn't exist in LGU records"}
+        record.lgu_id = lgu[0].id
+
+    # 3) Evacuation — DETACH if None or "", otherwise resolve name
+    if payload.evacuation is not None:
+        ev = (payload.evacuation or "").strip()
+        if ev == "":
+            # DETACH
+            record.evacucation_center_id = None
+        else:
+            evacuation = find_evacuation(q=ev, sim_threshold=0.96, db=db)
+            if len(evacuation) <= 0:
+                return {"success": False, "error": f"{ev} doesn't exist in Evacuation Center records"}
+            record.evacucation_center_id = evacuation[0].id
+
     db.commit()
     db.refresh(record)
-
     return {"detail": "Record updated succesfully", "record": record}
 
 
@@ -736,7 +735,11 @@ def update_barangay(
 )
 def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)):
     db_record = EvacuationCenter(
-        name=record.name, lat=record.lat, lng=record.lng, capacity=record.capacity
+        name=record.name,
+        lat=record.lat,
+        lng=record.lng,
+        capacity=record.capacity,
+        occupied=record.occupied or 0,   # <-- ensure default
     )
     db.add(db_record)
     db.commit()
@@ -748,11 +751,25 @@ def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)
     "/lgu_profiling/manage_lgu/delete_evacuation/{record_id}", response_model=dict
 )
 def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
+    # 🔍 Check if any barangay still references this evacuation center
+    refs = (
+        db.query(BaranggayRecords)
+        .filter(BaranggayRecords.evacucation_center_id == record_id)
+        .count()
+    )
+
+    if refs > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete: this evacuation center is linked to one or more barangay records. Please detach or reassign first.",
+        )
+
+    # ✅ Use your delete helper
     deleted_report = delete(db, EvacuationCenter, record_id)
     if not deleted_report:
         raise HTTPException(status_code=400, detail="Record not found.")
-    return {"message": f"Record with ID {record_id} deleted successfully."}
 
+    return {"message": f"Record with ID {record_id} deleted successfully."}
 
 @router.put("/lgu_profiling/manage_lgu/update_evacuation/{record_id}")
 def update_evacuation(
@@ -770,6 +787,8 @@ def update_evacuation(
         record.lng = payload.lng
     if payload.capacity is not None:
         record.capacity = payload.capacity
+    if payload.occupied is not None:
+        record.occupied = payload.occupied
 
     db.commit()
     db.refresh(record)

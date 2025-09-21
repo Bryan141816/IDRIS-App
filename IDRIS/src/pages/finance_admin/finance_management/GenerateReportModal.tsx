@@ -32,9 +32,10 @@ type BudgetAllocations =
 type Props = {
   open: boolean;
   onClose: () => void;
+  isSummary?: boolean;
 };
 
-const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
+const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false }) => {
   const navigate = useNavigate(); // Initialize navigate
 
   const [reportType, setReportType] = useState<ReportType>("Monthly");
@@ -107,7 +108,7 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
     setFinanceStatus(selected);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerateReport = async () => {
     const { from, to, error } = computeRange();
     if (error) return;
 
@@ -147,8 +148,8 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
         reportType === "Monthly"
           ? `${yearValue}-${monthValue}`
           : reportType === "Quarterly"
-          ? `${yearValue} ${quarter}`
-          : yearValue;
+            ? `${yearValue} ${quarter}`
+            : yearValue;
 
       const reportTitle = [
         "Finance Report",
@@ -178,6 +179,17 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
     }
   };
 
+  const handleGenerateBudgetSummary = () => {
+    const { from, to, error } = computeRange();
+    if (error) return;
+
+    console.log("from:", from, " and to:", to);
+
+    navigate("/finance&admin/finance_management/budget_summary", {
+      state: { date_from: from, date_to: to }
+    });
+  };
+
   if (!open) return null;
 
   return (
@@ -188,7 +200,10 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
         </div>
 
         <div className="modal-content">
-          <h3>Generate Financial Report</h3>
+          { isSummary ? 
+            <h3>Generate Budget Summary</h3> :
+            <h3>Generate Financial Report</h3>
+          }
 
           {/* Report Type */}
           <div className="form-group">
@@ -281,37 +296,42 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
           </div>
 
           {/* Filters (NEW) */}
-          <div className="form-group">
-            <label>Budget Allocation</label>
-            <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
-              <option>EMERGENCY SUPPLIES</option>
-              <option>FOOD AND WATER</option>
-              <option>TRANSPORTATION</option>
-              <option>EQUIPMENT</option>
-              <option>ADMINISTRATIVE</option>
-              <option>DONATIONS</option>
-              <option>GENERAL</option>
-            </select>
-          </div>
 
-          <div className="form-group">
-            <label>Status</label>
-            <select multiple value={financeStatus} onChange={handleStatuses}>
-              <option>PENDING</option>
-              <option>PAID</option>
-              <option>RECEIVED</option>
-              <option>APPROVED</option>
-              <option>DENIED</option>
-              <option>RECONCILED</option>
-            </select>
-          </div>
+          {!isSummary &&
+            <div className="form-group">
+              <label>Budget Allocation</label>
+              <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
+                <option>EMERGENCY SUPPLIES</option>
+                <option>FOOD AND WATER</option>
+                <option>TRANSPORTATION</option>
+                <option>EQUIPMENT</option>
+                <option>ADMINISTRATIVE</option>
+                <option>DONATIONS</option>
+                <option>GENERAL</option>
+              </select>
+            </div>
+          }
+
+          {!isSummary &&
+            <div className="form-group">
+              <label>Status</label>
+              <select multiple value={financeStatus} onChange={handleStatuses}>
+                <option>PENDING</option>
+                <option>PAID</option>
+                <option>RECEIVED</option>
+                <option>APPROVED</option>
+                <option>DENIED</option>
+                <option>RECONCILED</option>
+              </select>
+            </div>
+          }
 
           {/* Output format */}
           <div className="form-group">
             <label>Format</label>
             <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
-              <option>PDF Report</option>
-              <option>Print</option>
+              {/* <option>PDF Report</option> */}
+              <option selected>Print</option>
             </select>
           </div>
         </div>
@@ -322,7 +342,7 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose }) => {
           </button>
           <button
             className="primary-btn"
-            onClick={handleGenerate}
+            onClick={isSummary ? handleGenerateBudgetSummary : handleGenerateReport}
             disabled={!!invalidPeriodMsg || loading}
           >
             {loading ? "Generating…" : "Generate"}

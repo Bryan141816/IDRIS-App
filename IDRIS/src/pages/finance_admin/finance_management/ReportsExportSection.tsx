@@ -19,18 +19,16 @@ type ExportModalState = { open: boolean; preset?: ExportPreset };
 const ReportsView: React.FC<{
   onOpenGenerate: () => void;
   onOpenExport: (preset?: ExportPreset) => void;
-}> = ({ onOpenGenerate, onOpenExport }) => {
+  onOpenGenerateSummary: () => void;
+}> = ({ onOpenGenerate, onOpenExport, onOpenGenerateSummary }) => {
   const navigate = useNavigate();
 
-  const handleBudgetSummary = () => {
-    navigate("/finance&admin/finance_management/budget_summary");
-  };
   return (
     <div className="reports-content">
       <div className="section-header">
         <h2>Review Financial Reports</h2>
         <div className="header-actions">
-          <button className="secondary-btn" onClick={handleBudgetSummary}>
+          <button className="secondary-btn" onClick={onOpenGenerateSummary}>
             📊 Generate Budget Summary
           </button>
           <button className="primary-btn" onClick={onOpenGenerate}>
@@ -101,6 +99,7 @@ const ReportsExportsSection: React.FC<{
 }> = ({ mode = [] }) => {
   const [openGen, setOpenGen] = useState(false);
   const [openExport, setOpenExport] = useState<ExportModalState>({ open: false });
+  const [openSummary, setOpenSummary] = useState(false);
 
   return (
     <>
@@ -109,6 +108,7 @@ const ReportsExportsSection: React.FC<{
         <ReportsView
           onOpenGenerate={() => setOpenGen(true)}
           onOpenExport={(preset) => setOpenExport({ open: true, preset })}
+          onOpenGenerateSummary={() => setOpenSummary(true) }
         />
         <br />
         <ExportsView onOpen={(preset) => setOpenExport({ open: true, preset })} />
@@ -117,6 +117,7 @@ const ReportsExportsSection: React.FC<{
       }
 
       <GenerateReportModal open={openGen} onClose={() => setOpenGen(false)} />
+      <GenerateReportModal open={ openSummary } onClose={() => setOpenSummary(false)} isSummary={true} />
 
       <ExportModal
         open={openExport.open}

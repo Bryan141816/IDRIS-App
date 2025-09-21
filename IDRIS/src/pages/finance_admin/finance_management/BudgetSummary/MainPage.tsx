@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import styles from "./MainPage.module.scss";
 import RAFI_Shield from "../../../../media/RAFI_Shield.png";
 
@@ -26,15 +27,9 @@ const companyInfo: CompanyInfo & { _reportTitle?: string } = {
   _reportTitle: "",
 };
 
-type FinancialReportDashboardProps = {
-  date_from?: string; 
-  date_to?: string;
-};
-
-const FinancialReportDashboard: React.FC<FinancialReportDashboardProps> = ({
-  date_from,
-  date_to,
-}) => {
+const FinancialReportDashboard: React.FC = () => {
+  const location = useLocation();
+  const state = location.state as { date_from?: string; date_to?: string };
   const printableRef = useRef<HTMLDivElement>(null);
   const [exportMode, setExportMode] = useState(false);
 
@@ -46,19 +41,13 @@ const FinancialReportDashboard: React.FC<FinancialReportDashboardProps> = ({
   const today = new Date();
   const startOfYear = new Date(today.getFullYear(), 0, 1);
 
-  const effectiveDateFrom = date_from ?? startOfYear.toISOString().split("T")[0];
-  const effectiveDateTo = date_to ?? today.toISOString().split("T")[0];
+  const effectiveDateFrom = state?.date_from ?? startOfYear.toISOString().split("T")[0];
+  const effectiveDateTo = state?.date_to ?? today.toISOString().split("T")[0];
 
-  console.log(data);
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const form = new FormData();
-        form.append("date_from", effectiveDateFrom);
-        form.append("date_to", effectiveDateTo);
-
-        const response = await getBudgetSummary(form);
-        console.log("Form", form);
+        const response = await getBudgetSummary(effectiveDateFrom, effectiveDateTo);
         setData(response);
       } catch (err: any) {
         console.error("Failed to fetch summary:", err);
@@ -101,7 +90,7 @@ const FinancialReportDashboard: React.FC<FinancialReportDashboardProps> = ({
   }));
 
   // PDF export via doc.html capturing the DOM
-  const handleDownloadPDF = async () => {
+  {/* const handleDownloadPDF = async () => {
     // Switch charts to <img> snapshots for reliable capture
     setExportMode(true);
     // Let React commit the DOM updates
@@ -156,11 +145,10 @@ const FinancialReportDashboard: React.FC<FinancialReportDashboardProps> = ({
       el.classList.remove("pdfExport");
       setExportMode(false);
     }
-  };
+  }; */}
 
   return (
     <div className={styles.budgetReport}>
-      {/* Capture THIS inner container; it has a stable width/height */}
       <div className={styles.container} ref={printableRef}>
         {/* Header */}
         <div className={styles.reportHeader}>

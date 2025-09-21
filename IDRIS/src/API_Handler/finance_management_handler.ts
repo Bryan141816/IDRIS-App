@@ -75,7 +75,9 @@ export async function UpdateReportData(form: FormData): Promise<any> {
   return data;
 }
 
-export async function getBudgetSummary(form: FormData): Promise<any> {
-  const { data } = await API.get('/finance_reports/get/budget_summary');
+export async function getBudgetSummary(date_from: string, date_to: string): Promise<any> {
+  const { data } = await API.get("/finance_reports/get/budget_summary", {
+    params: { date_from, date_to }
+  });
   return data;
 }

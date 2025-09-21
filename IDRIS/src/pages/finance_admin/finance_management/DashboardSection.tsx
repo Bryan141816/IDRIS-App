@@ -151,11 +151,7 @@ const DashboardSection: React.FC<{
   inflows: InflowItem[];
   outflows: OutflowItem[];
   budgetData: BudgetItem[];
-
 }> = ({ inflows, outflows, budgetData }) => {
-  // 👇 log received outflows
-  // console.log("Received OutflowItems:", outflows);
-
   return (
     <div className="dashboard-content">
       <StatsGrid inflows={inflows} outflows={outflows} />

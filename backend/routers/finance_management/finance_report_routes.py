@@ -181,6 +181,8 @@ def budget_summary(
     Returns aggregated KPIs and breakdown grouped by allocation.
     Only accepts date_from/date_to. If neither provided, defaults to year-to-date.
     """
+    print("Date from: ", date_from)
+    print("Date To:", date_to)
     try:
         result = FinanceReport.get_budget_summary(
             db=db,

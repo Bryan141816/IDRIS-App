@@ -171,6 +171,26 @@ def budget_vs_actual_analysis(
     )
     return result
     
+@router.get("/get/budget_summary", name="budget_summary")
+def budget_summary(
+    date_from: Optional[date] = Query(None, description="YYYY-MM-DD"),
+    date_to: Optional[date] = Query(None, description="YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns aggregated KPIs and breakdown grouped by allocation.
+    Only accepts date_from/date_to. If neither provided, defaults to year-to-date.
+    """
+    try:
+        result = FinanceReport.get_budget_summary(
+            db=db,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except Exception as e:
+        # Surface database/logic errors as 500 (adjust for prod)
+        raise HTTPException(status_code=500, detail=str(e))
+    return result        
         
 router.include_router(router_admin)
 router.include_router(router_donor)

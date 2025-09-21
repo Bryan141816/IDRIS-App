@@ -76,7 +76,7 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
             {data.breakdown.allocation.map((item, index) => {
               const inflow = toNum(item.inflow);
               const outflow = toNum(item.outflow);
-              const util = inflow > 0 ? ((outflow / inflow) * 100).toFixed(1) : "0.0";
+              const util = inflow > 0 ? (((inflow - outflow) / inflow) * 100).toFixed(1) : "0.0";
 
               return (
                 <tr

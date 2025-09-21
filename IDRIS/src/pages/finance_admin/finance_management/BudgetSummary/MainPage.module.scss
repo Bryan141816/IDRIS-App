@@ -10,13 +10,12 @@ $gray-300: #d1d5db;
 $gray-600: #4b5563;
 $gray-700: #374151;
 $gray-800: #1f2937;
-$color-border: #1f2937;
-$color-border-light: #e5e7eb;
-$color-primary: #2563eb;
-$color-white: #ffffff;
+$color-border: #9ca3af;       
+$color-border-light: #9ca3af; 
+$color-primary: #2563eb;  
+$color-white: #ffffff;   
 
 .budgetReport {
-  min-height: 100vh;
   background-color: $color-white;
   padding: 2rem;
 
@@ -205,7 +204,7 @@ $color-white: #ffffff;
 
     .chartContainer {
       background-color: $color-white;
-      border: 1px solid $color-border-light;
+      border: 1px solid $color-border;
       border-radius: 0.5rem;
       padding: 1.5rem;
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import GenerateReportModal from "./GenerateReportModal";
 import ExportModal, { ExportPreset } from "./ExportModal";
 
@@ -16,65 +17,39 @@ type ReportItem = {
 type ExportModalState = { open: boolean; preset?: ExportPreset };
 
 const ReportsView: React.FC<{
-  reports: ReportItem[];
   onOpenGenerate: () => void;
   onOpenExport: (preset?: ExportPreset) => void;
-}> = ({ reports, onOpenGenerate, onOpenExport }) => (
-  <div className="reports-content">
-    <div className="section-header">
-      <h2>Review Financial Reports</h2>
-      <div className="header-actions">
-        <button className="secondary-btn" onClick={onOpenGenerate}>
-          📊 Generate Budget Summary
-        </button>
-        <button className="primary-btn" onClick={onOpenGenerate}>
-          + Generate Report
-        </button>
-      </div>
-    </div>
+}> = ({ onOpenGenerate, onOpenExport }) => {
+  const navigate = useNavigate();
 
-    <div className="reports-grid">
-      {reports.map((r) => (
-        <div key={r.id} className="report-card">
-          <div className="report-header">
-            <h3>{r.name}</h3>
-            <span className={`status-badge ${r.status.toLowerCase()}`}>{r.status}</span>
-          </div>
-          <div className="report-details">
-            <div className="detail-row">
-              <span>Type:</span>
-              <span>{r.type}</span>
-            </div>
-            <div className="detail-row">
-              <span>Period:</span>
-              <span>{r.period}</span>
-            </div>
-            <div className="detail-row">
-              <span>Generated:</span>
-              <span>{new Date(r.generated).toLocaleDateString()}</span>
-            </div>
-            <div className="report-actions">
-              <button className="action-btn" onClick={onOpenGenerate}>View</button>
-              <button className="action-btn" onClick={() => onOpenExport("Complete Financial Log")}>
-                Export
-              </button>
-            </div>
-          </div>
+  const handleBudgetSummary = () => {
+    navigate("/finance&admin/finance_management/budget_summary");
+  };
+  return (
+    <div className="reports-content">
+      <div className="section-header">
+        <h2>Review Financial Reports</h2>
+        <div className="header-actions">
+          <button className="secondary-btn" onClick={handleBudgetSummary}>
+            📊 Generate Budget Summary
+          </button>
+          <button className="primary-btn" onClick={onOpenGenerate}>
+            + Generate Report
+          </button>
         </div>
-      ))}
-    </div>
+      </div>
 
-    <div className="audit-section">
-      <h3>Generate Budget Summaries and Audits</h3>
-      <div className="audit-actions">
-        <button className="audit-btn" onClick={onOpenGenerate}>📈 Monthly Audit</button>
-        <button className="audit-btn" onClick={onOpenGenerate}>📊 Quarterly Review</button>
-        <button className="audit-btn" onClick={onOpenGenerate}>📋 Annual Summary</button>
-        <button className="audit-btn" onClick={onOpenGenerate}>✅ Compliance Audit</button>
+      <div className="audit-section">
+        <h3>Generate Budget Summaries and Audits</h3>
+        <div className="audit-actions">
+          <button className="audit-btn" onClick={onOpenGenerate}>📈 Monthly Audit</button>
+          <button className="audit-btn" onClick={onOpenGenerate}>📊 Quarterly Review</button>
+          <button className="audit-btn" onClick={onOpenGenerate}>📋 Annual Summary</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ExportsView: React.FC<{
   onOpen: (preset?: ExportPreset) => void;
@@ -123,22 +98,23 @@ const ExportsView: React.FC<{
 
 const ReportsExportsSection: React.FC<{
   mode: Mode;
-  reports?: ReportItem[];
-}> = ({ mode, reports = [] }) => {
+}> = ({ mode = [] }) => {
   const [openGen, setOpenGen] = useState(false);
   const [openExport, setOpenExport] = useState<ExportModalState>({ open: false });
 
   return (
     <>
-      {mode === "reports" ? (
+      {mode === "reports" && (
+        <>
         <ReportsView
-          reports={reports}
           onOpenGenerate={() => setOpenGen(true)}
           onOpenExport={(preset) => setOpenExport({ open: true, preset })}
         />
-      ) : (
+        <br />
         <ExportsView onOpen={(preset) => setOpenExport({ open: true, preset })} />
-      )}
+        </>
+      )
+      }
 
       <GenerateReportModal open={openGen} onClose={() => setOpenGen(false)} />
 

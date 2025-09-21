@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import styles from "./MainPage.module.scss";
 import RAFI_Shield from "../../../../media/RAFI_Shield.png";
 
@@ -9,14 +9,9 @@ import PendingTransactionsChart from "./PendingTransactionChart";
 import DataTable from "./DataTable";
 
 import { jsPDF } from "jspdf";
-
-// Types
-type CompanyInfo = {
-  name: string;
-  tagline: string;
-  address: { street: string; city: string; state: string; zip: string };
-  contact: { phone: string; email: string };
-};
+import { getBudgetSummary } from "../../../../API_Handler/finance_management_handler";
+import { CompanyInfo, FinanceRecordType, emptyFinanceRecord } from "../types";
+import { formatCurrency, formatDate, getActionRequired, getTotalPendingTransactions } from "../helpers";
 
 const companyInfo: CompanyInfo & { _reportTitle?: string } = {
   name: "RAFI Inc.",
@@ -31,90 +26,63 @@ const companyInfo: CompanyInfo & { _reportTitle?: string } = {
   _reportTitle: "",
 };
 
-const FinancialReportDashboard: React.FC = () => {
-  // IMPORTANT: capture the inner container for stable size
+type FinancialReportDashboardProps = {
+  date_from?: string; 
+  date_to?: string;
+};
+
+const FinancialReportDashboard: React.FC<FinancialReportDashboardProps> = ({
+  date_from,
+  date_to,
+}) => {
   const printableRef = useRef<HTMLDivElement>(null);
   const [exportMode, setExportMode] = useState(false);
 
-  const data = {
-    filters: {
-      date_from: "2025-01-01",
-      date_to: "2025-09-30",
-      group_by: "allocation",
-      include_pending: true,
-    },
-    kpis: {
-      total_inflow: "825000.00",
-      total_outflow: "603500.00",
-      net_balance: "221500.00",
-      pending_inflow: "12000.00",
-      pending_outflow: "35000.00",
-      denied_total: "5000.00",
-      last_updated: "2025-09-19T10:58:11",
-    },
-    breakdown: {
-      allocation: [
-        {
-          allocation: "EMERGENCY",
-          inflow: "300000.00",
-          outflow: "250000.00",
-          net: "50000.00",
-          pending_inflow: "0.00",
-          pending_outflow: "10000.00",
-          denied: "0.00",
-        },
-        {
-          allocation: "FOOD_WATER",
-          inflow: "200000.00",
-          outflow: "180000.00",
-          net: "20000.00",
-          pending_inflow: "5000.00",
-          pending_outflow: "0.00",
-          denied: "0.00",
-        },
-        {
-          allocation: "GENERAL",
-          inflow: "325000.00",
-          outflow: "173500.00",
-          net: "151500.00",
-          pending_inflow: "7000.00",
-          pending_outflow: "25000.00",
-          denied: "5000.00",
-        },
-      ],
-    },
-    diagnostics: { records_considered: 412 },
-  };
+  // state for API data
+  const [data, setData] = useState<FinanceRecordType>(emptyFinanceRecord);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const today = new Date();
+  const startOfYear = new Date(today.getFullYear(), 0, 1);
+
+  const effectiveDateFrom = date_from ?? startOfYear.toISOString().split("T")[0];
+  const effectiveDateTo = date_to ?? today.toISOString().split("T")[0];
+
+  console.log(data);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const form = new FormData();
+        form.append("date_from", effectiveDateFrom);
+        form.append("date_to", effectiveDateTo);
+
+        const response = await getBudgetSummary(form);
+        console.log("Form", form);
+        setData(response);
+      } catch (err: any) {
+        console.error("Failed to fetch summary:", err);
+        setError("Could not load financial data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+  if (loading) return <div>Loading report…</div>;
+  if (error) return <div style={{ color: "red" }}>{error}</div>;
+  if (!data) return <div>No data available.</div>;
 
   const reportTitle = `Financial Report • ${new Date(
     data.filters.date_from
   ).toLocaleDateString()} – ${new Date(
     data.filters.date_to
-  ).toLocaleDateString()} • Grouped by ${String(
-    data.filters.group_by
-  ).toUpperCase()}`;
+  ).toLocaleDateString()}`;
 
   companyInfo._reportTitle = reportTitle;
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-  const formatCurrency = (value: string | number | null | undefined) => {
-    const num = Number.parseFloat(String(value ?? "0"));
-    const safe = Number.isFinite(num) ? num : 0;
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(safe);
-  };
 
   // Chart prep
   const chartData = data.breakdown.allocation.map((item) => ({
@@ -232,12 +200,12 @@ const FinancialReportDashboard: React.FC = () => {
                 >
                   Print Report
                 </button>
-                <button
+                {/* <button
                   onClick={handleDownloadPDF}
                   className={styles.printButton}
                 >
                   Download PDF
-                </button>
+                </button> */}
               </div>
               <span>Total Records: {data.diagnostics.records_considered}</span>
             </div>
@@ -299,7 +267,7 @@ const FinancialReportDashboard: React.FC = () => {
                   <span
                     className={`${styles.statusValue} ${styles.pendingInflow}`}
                   >
-                    {formatCurrency(47000)}
+                    {formatCurrency(getTotalPendingTransactions(data))}
                   </span>
                 </div>
                 <div className={styles.statusItem}>
@@ -329,8 +297,7 @@ const FinancialReportDashboard: React.FC = () => {
                 <div className={styles.actionBox}>
                   <p>
                     <strong>Action Required:</strong>{" "}
-                    {formatCurrency(35000)} in pending outflows require immediate
-                    review.
+                    {getActionRequired(data)}
                   </p>
                 </div>
               </div>
@@ -348,10 +315,10 @@ const FinancialReportDashboard: React.FC = () => {
                 {new Date(data.filters.date_from).toLocaleDateString()} -{" "}
                 {new Date(data.filters.date_to).toLocaleDateString()}
               </p>
-              <p>Group By: {data.filters.group_by}</p>
+              {/* <p>Group By: {data.filters.group_by}</p>
               <p>
                 Include Pending: {data.filters.include_pending ? "Yes" : "No"}
-              </p>
+              </p> */}
             </div>
             <div className={styles.footerColumn}>
               <h4>Data Summary</h4>

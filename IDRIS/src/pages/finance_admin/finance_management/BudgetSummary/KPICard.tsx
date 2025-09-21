@@ -24,7 +24,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, icon: Icon, color = "bl
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "0.5rem",
-        border: "2px solid #e5e7eb",
+        border: "2px solid #9ca3af",
         padding: "1rem",
       }}
     >

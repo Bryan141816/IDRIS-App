@@ -4,30 +4,13 @@ import { getReportData } from "../../../API_Handler/finance_management_handler";
 import {
   downloadFinanceReportPDFFromRows,
   previewPrintFinanceReportFromRowsUserGesture,
-  type Finance,
-  type CompanyInfo,
 } from "./FinanceReport";
+import { Finance, CompanyInfo, FinanceStatuses, BudgetAllocations } from './types';
 
 export type ReportType = "Monthly" | "Quarterly" | "Annual";
 type ExportFormat = "PDF Report" | "Print";
 
 // Local filter enums (adjust to match your backend exactly)
-type FinanceStatuses =
-  | "PENDING"
-  | "RECEIVED"
-  | "PAID"
-  | "APPROVED"
-  | "DENIED"
-  | "RECONCILED";
-
-type BudgetAllocations =
-  | "EMERGENCY SUPPLIES"
-  | "FOOD AND WATER"
-  | "TRANSPORTATION"
-  | "EQUIPMENT"
-  | "ADMINISTRATIVE"
-  | "DONATIONS"
-  | "GENERAL";
 
 type Props = {
   open: boolean;

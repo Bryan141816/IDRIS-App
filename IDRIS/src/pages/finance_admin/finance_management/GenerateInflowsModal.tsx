@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getInflowsReport } from '../../../API_Handler/finance_management_handler';
-
+import { getInflowsReport, getOutflowsReport } from '../../../API_Handler/finance_management_handler';
+import { FinanceStatuses, BudgetAllocations } from './types';
 type ReportType = "Monthly" | "Quarterly" | "Annual";
 type FinanceStatus = "PENDING" | "RECEIVED";
 type ExportFormat = "Print";
@@ -70,7 +70,7 @@ const GenerateInflowsModal: React.FC<Props> = ({
   open,
   onClose,
   isInflows = true,
-  navigatePath = "/finance&admin/finance_management/inflows",
+  navigatePath = "/finance_printable",
 }) => {
   const navigate = useNavigate();
 
@@ -80,7 +80,8 @@ const GenerateInflowsModal: React.FC<Props> = ({
   const [yearValue, setYearValue] = useState<string>("");
 
   // Status limited to Pending & Received
-  const [financeStatus, setFinanceStatus] = useState<FinanceStatus[]>(["PENDING", "RECEIVED"]);
+  const [financeStatus, setFinanceStatus] = useState<FinanceStatus[]>([]);
+  const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
 
   const [format, setFormat] = useState<ExportFormat>("Print");
   const [loading, setLoading] = useState(false);
@@ -91,7 +92,7 @@ const GenerateInflowsModal: React.FC<Props> = ({
     setMonthValue("");
     setQuarter("");
     setYearValue("");
-    setFinanceStatus(["PENDING", "RECEIVED"]);
+    setFinanceStatus([]);
     setFormat("Print");
   }, [open]);
 
@@ -101,6 +102,11 @@ const GenerateInflowsModal: React.FC<Props> = ({
     (reportType === "Annual" && !yearValue && "Select a year.") ||
     "";
 
+  const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[];
+    setBudgetAllocation(selected);
+  };
+
   const handleStatuses = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = Array.from(e.target.selectedOptions, (o) => o.value as FinanceStatus);
     setFinanceStatus(selected);
@@ -109,34 +115,45 @@ const GenerateInflowsModal: React.FC<Props> = ({
   const handleGenerate = async () => {
     const { from, to, error } = computeRange(reportType, yearValue, monthValue, quarter);
     if (error || !from || !to) return;
-
+  
     setLoading(true);
     try {
-      const results = await getInflowsReport(from, to, financeStatus);
-
-      const rangeLabel =
-        reportType === "Monthly"
-          ? `${yearValue}-${monthValue}`
-          : reportType === "Quarterly"
-          ? `${yearValue} ${quarter}`
-          : yearValue;
-
-      const title = `Inflows ${rangeLabel}${
-        financeStatus.length ? ` • ${financeStatus.join(", ")}` : ""
-      }`;
-
-      // Push to your inflows page/print view with state
+      let data: any; // <- declare once in outer scope
+  
+      // Call the correct API with range + statuses (+ optional allocation)
+      if (isInflows) {
+        data = await getInflowsReport(
+          from,
+          to,
+          financeStatus as string[],
+          (budgetAllocation as unknown as string[]) ?? undefined
+        );
+      } else {
+        data = await getOutflowsReport(
+          from,
+          to,
+          financeStatus as string[],
+          (budgetAllocation as unknown as string[]) ?? undefined
+        );
+      }
+  
+      console.log("Report data:", data);
+  
       navigate(navigatePath, {
-        state: { date_from: from, date_to: to, title, inflows: results, statuses: financeStatus },
+        state: {
+          finances: Array.isArray(data) ? data : (data?.finances ?? []),
+        },
       });
-
+  
       onClose();
     } catch (err) {
-      console.error("Generate Inflows failed", err);
+      console.error("Generate report request failed:", err);
     } finally {
       setLoading(false);
     }
   };
+  
+
 
   if (!open) return null;
 
@@ -225,6 +242,19 @@ const GenerateInflowsModal: React.FC<Props> = ({
             {invalidPeriodMsg && <small className="error-text">{invalidPeriodMsg}</small>}
           </div>
 
+          <div className="form-group">
+            <label>Budget Allocation</label>
+            <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
+              <option>EMERGENCY SUPPLIES</option>
+              <option>FOOD AND WATER</option>
+              <option>TRANSPORTATION</option>
+              <option>EQUIPMENT</option>
+              <option>ADMINISTRATIVE</option>
+              <option>DONATIONS</option>
+              <option>GENERAL</option>
+            </select>
+          </div>
+
           {/* Status (Pending/Received only) */}
           <div className="form-group">
             <label htmlFor="statusSelect">Status</label>
@@ -234,16 +264,16 @@ const GenerateInflowsModal: React.FC<Props> = ({
               value={financeStatus}
               onChange={handleStatuses}
             >
-                <option>PENDING</option>
-                { isInflows && <option>PAID</option>}
-                { isInflows && <option>RECEIVED</option>}
-                { !isInflows && <option>APPROVED</option>}
-                { !isInflows && <option>DENIED</option>}
-                { !isInflows && <option>RECONCILED</option>}
+              <option>PENDING</option>
+              {isInflows && <option>PAID</option>}
+              {isInflows && <option>RECEIVED</option>}
+              {!isInflows && <option>APPROVED</option>}
+              {!isInflows && <option>DENIED</option>}
+              {!isInflows && <option>RECONCILED</option>}
             </select>
           </div>
 
-          {/* Output format */}
+          {/* Output format (kept hidden/commented as in your snippet) */}
           {/* <div className="form-group">
             <label htmlFor="format">Format</label>
             <select id="format" value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>

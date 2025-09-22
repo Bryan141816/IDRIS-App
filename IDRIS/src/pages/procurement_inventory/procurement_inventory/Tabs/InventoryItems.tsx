@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
 interface InventoryItemProps {
   id: number | string;
   name: string;
@@ -72,12 +72,19 @@ const getStockStatus = (quantity: number = 0) => {
 
 const InventoryItems = () => {
 
-  const [activeModal, setActiveModal] = useState("");
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
-  const openModal = (name: string, item: any | null = null) => { }
-
+  const openModal = (name: string, item: any | null = null) => {
+    setActiveModal(name)
+  }
+  const closeModal = () => {
+    setActiveModal(null)
+  }
   return (
     <>
+      {activeModal == "add-item" && (
+        <AddInventoryItemTab onClose={closeModal} refreshData={() => { }}></AddInventoryItemTab>
+      )}
       <div className="inventory-content">
         <div className="section-header">
           <h2>Inventory Dashboard</h2>

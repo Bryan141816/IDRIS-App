@@ -995,6 +995,7 @@ class WarehouseZones(Base):
     warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
     status = Column(String(255), nullable=False)
     zone_name = Column(String(255), nullable=False)
+
     zone_type = Column(String(255), nullable=False)
     capacity = Column(Integer, nullable=False)
     manager = Column(String(255), nullable=False)

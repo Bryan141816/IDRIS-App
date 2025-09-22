@@ -50,3 +50,13 @@ export interface WarehouseZone {
   capacity: number;
   manager: string;
 }
+
+export interface InventoryItemsProps {
+  inventory_id: number;
+  item_name: string;
+  quantity: number;
+  location: number;
+  batch: string;
+  expiry: Date | null;
+  status: string;
+}

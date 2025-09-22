@@ -1,6 +1,7 @@
 import React, { act, useState } from "react";
 import "./procurement_inventory.scss";
 import WarehouseZone from "./Tabs/Warehousezones";
+import InventoryItems from "./Tabs/InventoryItems";
 const FinanceAdmin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showModal, setShowModal] = useState(false);
@@ -180,13 +181,13 @@ const FinanceAdmin = () => {
     | InventoryItemProps
     | WarehouseZoneProps
     | {
-        id: number;
-        donor: string;
-        items: string;
-        quantity: number;
-        date: string;
-        status: string;
-      }
+      id: number;
+      donor: string;
+      items: string;
+      quantity: number;
+      date: string;
+      status: string;
+    }
     | null; // updated to include donation object
 
   const openModal = (type: ModalType, item: ItemType = null): void => {
@@ -218,8 +219,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter item name"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "name" in selectedItem
                       ? selectedItem.name
                       : ""
                   }
@@ -232,8 +233,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter quantity"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "quantity" in selectedItem
                       ? selectedItem.quantity
                       : ""
                   }
@@ -244,8 +245,8 @@ const FinanceAdmin = () => {
                 <select
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "category" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "category" in selectedItem
                       ? selectedItem.category
                       : ""
                   }
@@ -264,8 +265,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter batch number"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "batch" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "batch" in selectedItem
                       ? selectedItem.batch
                       : ""
                   }
@@ -277,11 +278,11 @@ const FinanceAdmin = () => {
                   type="date"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "expiry" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "expiry" in selectedItem
                       ? (selectedItem.expiry instanceof Date
-                          ? selectedItem.expiry.toISOString().split("T")[0]
-                          : selectedItem.expiry) || ""
+                        ? selectedItem.expiry.toISOString().split("T")[0]
+                        : selectedItem.expiry) || ""
                       : ""
                   }
                 />
@@ -291,8 +292,8 @@ const FinanceAdmin = () => {
                 <select
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "location" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "location" in selectedItem
                       ? selectedItem.location
                       : ""
                   }
@@ -323,8 +324,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter zone name"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "name" in selectedItem
                       ? selectedItem.name
                       : ""
                   }
@@ -335,8 +336,8 @@ const FinanceAdmin = () => {
                 <select
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "type" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "type" in selectedItem
                       ? selectedItem.type
                       : ""
                   }
@@ -355,8 +356,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter capacity"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "capacity" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "capacity" in selectedItem
                       ? selectedItem.capacity
                       : ""
                   }
@@ -369,8 +370,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter manager name"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "manager" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "manager" in selectedItem
                       ? selectedItem.manager
                       : ""
                   }
@@ -394,8 +395,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter donor name"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "donor" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "donor" in selectedItem
                       ? selectedItem.donor
                       : ""
                   }
@@ -408,8 +409,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter items"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "items" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "items" in selectedItem
                       ? selectedItem.items
                       : ""
                   }
@@ -422,8 +423,8 @@ const FinanceAdmin = () => {
                   placeholder="Enter quantity"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "quantity" in selectedItem
                       ? selectedItem.quantity
                       : ""
                   }
@@ -435,8 +436,8 @@ const FinanceAdmin = () => {
                   type="date"
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "date" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "date" in selectedItem
                       ? selectedItem.date
                       : ""
                   }
@@ -447,8 +448,8 @@ const FinanceAdmin = () => {
                 <select
                   defaultValue={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "status" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "status" in selectedItem
                       ? selectedItem.status
                       : "Pending"
                   }
@@ -469,8 +470,8 @@ const FinanceAdmin = () => {
                   <strong>Item Name:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "name" in selectedItem
                       ? selectedItem.name
                       : ""}
                   </span>
@@ -479,8 +480,8 @@ const FinanceAdmin = () => {
                   <strong>Quantity:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "quantity" in selectedItem
                       ? selectedItem.quantity
                       : ""}{" "}
                     units
@@ -490,8 +491,8 @@ const FinanceAdmin = () => {
                   <strong>Category:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "category" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "category" in selectedItem
                       ? selectedItem.category
                       : ""}
                   </span>
@@ -500,8 +501,8 @@ const FinanceAdmin = () => {
                   <strong>Location:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "location" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "location" in selectedItem
                       ? selectedItem.location
                       : ""}
                   </span>
@@ -510,8 +511,8 @@ const FinanceAdmin = () => {
                   <strong>Batch:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "batch" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "batch" in selectedItem
                       ? selectedItem.batch
                       : "N/A"}
                   </span>
@@ -520,9 +521,9 @@ const FinanceAdmin = () => {
                   <strong>Expiry:</strong>
                   <span>
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "expiry" in selectedItem &&
-                    selectedItem.expiry
+                      typeof selectedItem === "object" &&
+                      "expiry" in selectedItem &&
+                      selectedItem.expiry
                       ? new Date(selectedItem.expiry).toLocaleDateString()
                       : "N/A"}
                   </span>
@@ -533,8 +534,8 @@ const FinanceAdmin = () => {
                     className={`status-badge ${selectedItem ? getStockStatus(typeof selectedItem === "object" && "quantity" in selectedItem ? selectedItem.quantity : 0) : ""}`}
                   >
                     {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "status" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "status" in selectedItem
                       ? selectedItem.status
                       : ""}
                   </span>
@@ -583,8 +584,8 @@ const FinanceAdmin = () => {
                   type="text"
                   value={
                     selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
+                      typeof selectedItem === "object" &&
+                      "name" in selectedItem
                       ? selectedItem.name
                       : ""
                   }
@@ -789,79 +790,7 @@ const FinanceAdmin = () => {
           </div>
         )}
         {activeTab == "inventory" && (
-          <div className="inventory-content">
-            <div className="section-header">
-              <h2>Inventory Dashboard</h2>
-              <div className="header-actions">
-                <button
-                  className="secondary-btn"
-                  onClick={() => openModal("export")}
-                >
-                  📊 Export Report
-                </button>
-                <button
-                  className="primary-btn"
-                  onClick={() => openModal("add-item")}
-                >
-                  + Add Item
-                </button>
-              </div>
-            </div>
-
-            <div className="inventory-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item Name</th>
-                    <th>Quantity</th>
-                    <th>Category</th>
-                    <th>Location</th>
-                    <th>Batch</th>
-                    <th>Expiry</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventoryItems.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.name}</td>
-                      <td>{item.quantity}</td>
-                      <td>{item.category}</td>
-                      <td>{item.location}</td>
-                      <td>{item.batch}</td>
-                      <td>
-                        {item.expiry
-                          ? new Date(item.expiry).toLocaleDateString()
-                          : "N/A"}
-                      </td>
-                      <td>
-                        <span
-                          className={`status-badge ${getStockStatus(item.quantity)}`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="action-btn"
-                          onClick={() => openModal("edit-item", item)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="action-btn"
-                          onClick={() => openModal("view-item", item)}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <InventoryItems></InventoryItems>
         )}
         {activeTab == "warehouses" && <WarehouseZone></WarehouseZone>}
         {activeTab == "donations" && (

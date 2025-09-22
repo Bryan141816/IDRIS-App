@@ -16,6 +16,76 @@ services:
             - /app/node_modules
         environment:
             - VITE_API_URL=http://localhost:8000
+version: '3.9'
+
+services:
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend
+        container_name: vite_frontend
+        ports:
+            - "5173:5173"
+        depends_on:
+            - backend
+        volumes:
+            - ./IDRIS:/app
+            - /app/node_modules
+        environment:
+            - VITE_API_URL=http://localhost:8000
+
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile.backend
+        container_name: fastapi_backend
+        ports:
+            - "8000:8000"
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_started
+        environment:
+            DATABASE_URL: postgresql://postgres:password@db:5432/mydatabase
+            REDIS_URL: redis://redis:6379/0   # <--- add this so your backend knows where Redis is
+            PYTHONPATH: /app
+            DOCKER_ENV: "true"
+        volumes:
+            - ./backend:/app
+        restart: unless-stopped
+
+    db:
+        image: postgres:15
+        container_name: postgres_db
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: mydatabase
+        ports:
+            - "5432:5432"
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+        restart: unless-stopped
+
+    redis:
+        image: redis:7
+        container_name: redis_server
+        ports:
+            - "6379:6379"
+        volumes:
+            - redisdata:/data
+        restart: unless-stopped
+
+volumes:
+    pgdata:
+    redisdata:
+
 
     backend:
         build:

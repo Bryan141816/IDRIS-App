@@ -1,4 +1,3 @@
-// MapOfCebu.tsx
 import { useEffect, useMemo, useState } from "react";
 import MapView, { MarkerType } from "../../../components/MapView/MapView";
 import { Link } from "react-router-dom";
@@ -33,12 +32,42 @@ type RafiPoint = {
   imageUrl?: string | null;
 };
 
+// Sample data for Barangay
+const barangaySamples: MarkerWithPhotos[] = [
+  {
+    lat: 10.34,
+    lng: 123.9,
+    lguName: "Barangay Apas",
+    type: "barangay",
+    description: "It is a residential area known for its proximity to Cebu IT Park...",
+    population: "15,000",
+    resources: "Basic Medical Kits, Barangay Tanod, Community Health Workers",
+    evacuationCenter: "Barangay Apas Hall",
+    image: "../images/baranggay/baranggay.jpg",
+    hazardAreas: [],
+    hazardPhotos: [{ src: "../images/hazards/apas_flood_1.jpg", label: "Flood-prone: Sitio Kamputhaw" }],
+  },
+  {
+    lat: 10.33,
+    lng: 123.88,
+    lguName: "Barangay Labangon",
+    type: "barangay",
+    description: "A residential area with a mix of commercial establishments.",
+    population: "20,000",
+    resources: "Barangay Health Center, Rescue Team, Community Volunteers",
+    evacuationCenter: "Labangon Gym",
+    image: "../images/baranggay/baranggay_labangon.jpg",
+    hazardAreas: [],
+    hazardPhotos: [{ src: "../images/hazards/labangon_flood_1.jpg", label: "Flood-prone: Sitio Banawa" }],
+  },
+];
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
 
 const MapOfCebu = () => {
   const [lguMarkers, setLguMarkers] = useState<MarkerWithPhotos[]>([]);
-  const [raffiMarkers, setRaffiMarkers] = useState<MarkerWithPhotos[]>([]); // 👈 new
+  const [raffiMarkers, setRaffiMarkers] = useState<MarkerWithPhotos[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,12 +117,12 @@ const MapOfCebu = () => {
         const mapped: MarkerWithPhotos[] = data.map((r) => ({
           lat: r.lat,
           lng: r.lng,
-          lguName: r.name,         // label used by your MarkerType
-          type: "raffi",           // marker type used by your MapView
+          lguName: r.name,
+          type: "raffi",
           description: r.description || "",
-          population: "-",         // not applicable for RAFI
-          resources: "-",          // not applicable for RAFI
-          evacuationCenter: "-",   // not applicable for RAFI
+          population: "-",
+          resources: "-",
+          evacuationCenter: "-",
           image: r.imageUrl || "/images/raffi/raffi.jpg",
           hazardAreas: [],
         }));
@@ -102,7 +131,7 @@ const MapOfCebu = () => {
       } catch (e: any) {
         setError(e?.message || "Failed to load RAFI points.");
       } finally {
-        setLoading(false); // overall loading can end after RAFI returns
+        setLoading(false);
       }
     })();
   }, []);
@@ -143,9 +172,12 @@ const MapOfCebu = () => {
     ]);
   };
 
-  // 👇 remove raffiSamples; use real fetched markers instead
   const combinedMarkers = useMemo(() => {
-    let base: MarkerWithPhotos[] = [...lguMarkers, ...raffiMarkers /*, ...barangaySamples (until you fetch real) */];
+    let base: MarkerWithPhotos[] = [
+      ...lguMarkers,
+      ...raffiMarkers,
+      ...barangaySamples, // Adding sample Barangay markers
+    ];
     if (selectedType) base = base.filter((m) => m.type === selectedType);
     return evacuationCenter ? [...base, evacuationCenter] : base;
   }, [lguMarkers, raffiMarkers, selectedType, evacuationCenter]);

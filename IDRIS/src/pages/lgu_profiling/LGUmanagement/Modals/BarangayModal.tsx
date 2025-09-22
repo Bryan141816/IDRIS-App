@@ -20,8 +20,7 @@ type FuzzySeachElementProps = {
 };
 
 const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
-  value,
-  setLGUID,
+  value
   name,
   searchURL,
 }) => {

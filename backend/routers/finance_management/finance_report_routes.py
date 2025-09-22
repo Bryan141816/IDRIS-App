@@ -115,6 +115,7 @@ def list_inflows(
             "status": rec.status.value,
             "budget_for": rec.budget_for.value,
             "description": rec.description,
+            "transaction_type": rec.transaction_type.value,
         }
         for rec in (inflows or [])
     ]
@@ -160,6 +161,7 @@ def list_outflows(
             "status": rec.status.value,
             "budget_for": rec.budget_for.value,
             "description": rec.description,
+            "transaction_type": rec.transaction_type.value,
         }
         for rec in (outflows or [])
     ]

@@ -6,25 +6,7 @@ import {
   getFundingProposalTotalCashDonations,
   getFundingProposalTotalInKindDonations,
 } from "../../../API_Handler/donations_transparency_report";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-export type Finance = {
-  finance_id: number | string;
-  counterparty: string;
-  amount: number;
-  date: string;            // ISO-like string is fine
-  budget_for: string;
-  description: string;
-  status: string;
-  transaction_type: string;
-};
-
-export type CompanyInfo = {
-  name: string;
-  tagline: string;
-  address: { street: string; city: string; state: string; zip: string };
-  contact: { phone: string; email: string };
-};
+import { Finance, CompanyInfo } from './types';
 
 export type ReportOptions = {
   currency?: string;       // default "USD"

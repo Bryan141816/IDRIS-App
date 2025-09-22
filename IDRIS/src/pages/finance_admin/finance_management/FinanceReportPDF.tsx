@@ -2,29 +2,12 @@ import { useState } from "react";
 import { useLocation } from 'react-router-dom';
 import styles from "./FinanceReport.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
-import Swal from "sweetalert2";
+import { formatDateOnly, formatCurrency, urlToDataUrl } from "./helpers";
+import { CompanyInfo, Finance } from "./types";
 
 // PDF libs
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-export type Finance = {
-  finance_id: number | string;
-  counterparty: string;
-  amount: number;
-  date: string;            // ISO-like string is fine
-  budget_for: string;
-  description: string;
-  status: string;
-  transaction_type: string;
-};
-
-type CompanyInfo = {
-  name: string;
-  tagline: string;
-  address: { street: string; city: string; state: string; zip: string };
-  contact: { phone: string; email: string };
-};
 
 export default function FinanceReport({
   finances = [],
@@ -45,15 +28,17 @@ export default function FinanceReport({
   const location = useLocation();
   const _finances = location.state?.finances;
 
+  const repTitle =
+  (location.state as any)?.title ??
+  (location.state as any)?.reportTitle ??
+  undefined;
+
+  const title = repTitle ?? reportTitle ?? "Finance Report";
+
   // ------- Rows: no placeholders; show empty state instead -------
   const [rows, setRows] = useState<Finance[]>(Array.isArray(_finances) ? _finances : []);
   console.log("Rows", rows);
-  // ------- Helpers -------
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount || 0);
 
-  const formatDate = (isoLike: string) =>
-    new Date(isoLike).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   const totalAmount = rows.reduce((sum, f) => sum + (Number.isFinite(f.amount) ? f.amount : 0), 0);
 
@@ -62,20 +47,6 @@ export default function FinanceReport({
     return (styles as Record<string, string>)[key] ?? "";
   };
 
-  // ------- Download as PDF (jsPDF + autotable) -------
-  const urlToDataUrl = async (url: string): Promise<string | null> => {
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return null;
-    }
-  };
 
   const handleDownloadPDF = async () => {
     const doc = new jsPDF({ orientation: "p", unit: "mm", format: "letter" });
@@ -135,7 +106,7 @@ export default function FinanceReport({
           String(r.finance_id),
           r.counterparty,
           formatCurrency(r.amount),
-          formatDate(r.date),
+          formatDateOnly(r.date),
           r.budget_for,
           r.description,
           r.transaction_type,
@@ -207,7 +178,7 @@ export default function FinanceReport({
         </div>
 
         <div className={styles.reportInfo}>
-          <h2 className={styles.reportTitle}>{reportTitle}</h2>
+          <h2 className={styles.reportTitle}>{title}</h2>
           <div className={styles.reportMetadata}>
             <span>Generated on: {new Date().toLocaleDateString()}</span>
             <div className={styles.printSection}>
@@ -241,7 +212,7 @@ export default function FinanceReport({
                   <td className={styles.tableCell}>{f.finance_id}</td>
                   <td className={styles.tableCell}>{f.counterparty}</td>
                   <td className={`${styles.tableCell} ${styles.amount}`}>{formatCurrency(f.amount)}</td>
-                  <td className={styles.tableCell}>{formatDate(f.date)}</td>
+                  <td className={styles.tableCell}>{formatDateOnly(f.date)}</td>
                   <td className={styles.tableCell}>{f.budget_for}</td>
                   <td className={styles.tableCell}>{f.description}</td>
                   <td className={styles.tableCell}>{f.transaction_type}</td>

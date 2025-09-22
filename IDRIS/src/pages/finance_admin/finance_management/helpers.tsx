@@ -22,7 +22,7 @@ export const formatCurrency = (value: string | number | null | undefined) => {
   const safe = Number.isFinite(num) ? num : 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "PHP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(safe);
@@ -50,4 +50,19 @@ export const getTotalPendingTransactions = (data: FinanceRecordType): number => 
   const pendingOut = parseFloat(data.kpis.pending_outflow || "0");
   const pendingIn = parseFloat(data.kpis.pending_inflow || "0");
   return pendingOut + pendingIn;
+};
+
+  // ------- Download as PDF (jsPDF + autotable) -------
+export const urlToDataUrl = async (url: string): Promise<string | null> => {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
 };

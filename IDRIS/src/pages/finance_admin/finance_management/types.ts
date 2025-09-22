@@ -1,5 +1,33 @@
 export type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'reports' | 'exports';
 
+export type FinanceStatuses =
+  | "PENDING"
+  | "RECEIVED"
+  | "PAID"
+  | "APPROVED"
+  | "DENIED"
+  | "RECONCILED";
+
+export type BudgetAllocations =
+  | "EMERGENCY SUPPLIES"
+  | "FOOD AND WATER"
+  | "TRANSPORTATION"
+  | "EQUIPMENT"
+  | "ADMINISTRATIVE"
+  | "DONATIONS"
+  | "GENERAL";
+
+export type Finance = {
+  finance_id: number | string;
+  counterparty: string;
+  amount: number;
+  date: string;       // ISO-like string is fine
+  budget_for: string;
+  description: string;
+  status: string;
+  transaction_type: string;
+};
+
 export interface InflowItem {
   id: number;
   source: string;

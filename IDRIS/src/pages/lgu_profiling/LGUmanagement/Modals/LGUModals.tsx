@@ -301,23 +301,12 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
   });
   const [uploading, setUploading] = useState(false);
 
-  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);  
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
-const closeLocationPicker = () => setLocationPickerIsOpen(false);
-
-const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
-  // Update the form with new coordinates
-  setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
-  // Ensure the map component re-renders by setting the new coordinates
-  setMapCoordinates({ lat: mapData.lat, lng: mapData.lng }); // Update map coordinates
-};
-
-const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number }>({
-  lat: form.lat,
-  lng: form.lng,
-});
-
-<MapWithPin lat={mapCoordinates.lat} lng={mapCoordinates.lng} />;
+  const closeLocationPicker = () => setLocationPickerIsOpen(false);
+  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+    setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -326,7 +315,7 @@ const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number 
       [name]: name === "population" ? Number(value) : value,
     }));
   };
-  
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -390,8 +379,6 @@ const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number 
                     lng,
                     classification: prev.classification || classificationGuess || "",
                   }));
-                  // Optional: auto-open picker centered at result
-                  // setLocationPickerIsOpen(true);
                 }}
               />
             </div>
@@ -411,12 +398,8 @@ const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number 
             </div>
           </div>
 
-          {form.lat !== 0 && form.lng !== 0 && (
-            <div style={{ width: "100%", height: "30vh", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
-              <MapWithPin lat={form.lat} lng={form.lng} />
-            </div>
-          )}
-
+          {/* Removed the Map with Pin component here */}
+          
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>
             <select id="classification" name="classification" required value={form.classification} onChange={handleChange}>
@@ -523,6 +506,7 @@ const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number 
     </>
   );
 };
+
 
 /* ======================= VIEW LGU ======================= */
 export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
@@ -755,11 +739,11 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
             </div>
           </div>
 
-          {form.lat !== 0 && form.lng !== 0 && (
+         {/* {form.lat !== 0 && form.lng !== 0 && (
             <div style={{ width: "100%", height: "30vh", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
               <MapWithPin lat={form.lat} lng={form.lng} />
             </div>
-          )}
+          )}*/}
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>

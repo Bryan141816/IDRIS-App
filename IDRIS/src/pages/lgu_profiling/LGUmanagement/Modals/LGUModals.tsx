@@ -1,5 +1,5 @@
 import { BaseModalProps } from "../ModalProps";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -44,6 +44,24 @@ type LGUForm = {
   local_suppliers?: string;
 };
 
+type PhotonFeature = {
+  geometry?: { type: "Point"; coordinates: [number, number] }; // [lon, lat]
+  properties?: {
+    name?: string;
+    country?: string;
+    state?: string;
+    county?: string;
+    city?: string;
+    locality?: string;
+    district?: string;
+    suburb?: string;
+    postcode?: string;
+    osm_value?: string; // city, town, village, suburb, hamlet, etc.
+  };
+};
+
+type PhotonResp = { features?: PhotonFeature[] };
+
 /* helper: convert comma-separated lists to arrays */
 const formatPayload = (form: LGUForm) => ({
   name: form.name,
@@ -61,6 +79,202 @@ const formatPayload = (form: LGUForm) => ({
   gyms: form.gyms ? form.gyms.split(",").map((s) => s.trim()).filter(Boolean) : [],
   local_suppliers: form.local_suppliers ? form.local_suppliers.split(",").map((s) => s.trim()).filter(Boolean) : [],
 });
+
+/* ======================= AUTOCOMPLETE (Photon) ======================= */
+/**
+ * Lightweight typeahead for LGU names using photon.komoot.io
+ * - Debounced fetch
+ * - Filters to Philippines + Cebu
+ * - Bias to Cebu with lat/lon
+ * - Enter selects first item
+ */
+const CEBU_LAT = 10.3157;
+const CEBU_LON = 123.8854;
+
+function classifyFromPhoton(osmValue?: string): "province" | "city" | "municipality" | "barangay" | "" {
+  const v = (osmValue || "").toLowerCase();
+  if (v === "city") return "city";
+  if (v === "town" || v === "municipality") return "municipality";
+  // Many barangays appear as suburb, quarter, village, neighbourhood, hamlet, district
+  if (["suburb", "village", "hamlet", "neighbourhood", "neighborhood", "quarter", "district", "residential"].includes(v)) {
+    return "barangay";
+  }
+  return "";
+}
+
+function formatDisplayName(p: NonNullable<PhotonFeature["properties"]>) {
+  const bits = [
+    p.name,
+    p.city || p.county || p.district || p.locality || p.suburb,
+    p.state,
+    p.country,
+  ].filter(Boolean);
+  // De-duplicate consecutive text
+  return bits.filter((b, i, a) => (i === 0 ? true : b !== a[i - 1])).join(", ");
+}
+
+const AutocompleteLGU: React.FC<{
+  value: string;
+  onPick: (payload: { name: string; lat: number; lng: number; classificationGuess: string }) => void;
+  onChange: (name: string) => void;
+}> = ({ value, onPick, onChange }) => {
+  const [q, setQ] = useState(value);
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<PhotonFeature[]>([]);
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => setQ(value), [value]);
+
+  useEffect(() => {
+    // close on click-out
+    const onDoc = (e: MouseEvent) => {
+      if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const doSearch = async (term: string) => {
+    if (!term || term.trim().length < 2) {
+      setItems([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      // bias to Cebu; lang en; limit 8; include query "Cebu Philippines"
+      const url = new URL("https://photon.komoot.io/api/");
+      url.searchParams.set("q", term);
+      url.searchParams.set("limit", "8");
+      url.searchParams.set("lang", "en");
+      url.searchParams.set("lat", String(CEBU_LAT));
+      url.searchParams.set("lon", String(CEBU_LON));
+      // const example: photon.komoot.io/api/?q=sabang sibonga&lat=10.291054&lon=123.879071
+      const resp = await fetch(url.toString());
+      const data: PhotonResp = await resp.json();
+
+      const filtered = (data.features || []).filter((f) => {
+        const p = f.properties || {};
+        const isPH = (p.country || "").toLowerCase().includes("philippines");
+        const isCebu =
+          (p.state || "").toLowerCase().includes("cebu") ||
+          (p.county || "").toLowerCase().includes("cebu") ||
+          (p.city || "").toLowerCase().includes("cebu");
+        return isPH && isCebu;
+      });
+
+      setItems(filtered);
+      setActiveIndex(0);
+      setOpen(true);
+    } catch {
+      setItems([]);
+      setOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onInputChange = (v: string) => {
+    setQ(v);
+    onChange(v);
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => doSearch(v), 250);
+  };
+
+  const commitPick = (f: PhotonFeature) => {
+    const p = f.properties || {};
+    const coords = f.geometry?.coordinates || [0, 0];
+    const lng = coords[0] || 0;
+    const lat = coords[1] || 0;
+    const classificationGuess = classifyFromPhoton(p.osm_value) || "";
+    const name = p.name || formatDisplayName(p) || "";
+    onPick({ name, lat, lng, classificationGuess });
+    setQ(name);
+    setOpen(false);
+  };
+
+  const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (!open || items.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => (i + 1) % items.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => (i - 1 + items.length) % items.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      commitPick(items[activeIndex]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div ref={boxRef} style={{ position: "relative", width: "100%" }}>
+      <input
+        type="text"
+        placeholder="Type LGU name (e.g., Sabang, Sibonga)…"
+        value={q}
+        onChange={(e) => onInputChange(e.target.value)}
+        onFocus={() => { if (items.length) setOpen(true); }}
+        onKeyDown={onKeyDown}
+      />
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            zIndex: 9999,
+            top: "100%",
+            left: 0,
+            right: 0,
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 6,
+            boxShadow: "0 8px 16px rgba(0,0,0,0.08)",
+            maxHeight: 240,
+            overflowY: "auto",
+          }}
+        >
+          {loading && <div style={{ padding: 8, fontSize: 12 }}>Searching…</div>}
+          {!loading && items.length === 0 && (
+            <div style={{ padding: 8, fontSize: 12, color: "#6b7280" }}>No results in Cebu, Philippines</div>
+          )}
+          {!loading &&
+            items.map((f, idx) => {
+              const p = f.properties || {};
+              const label = formatDisplayName(p);
+              const isActive = idx === activeIndex;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => commitPick(f)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "8px 10px",
+                    background: isActive ? "#f3f4f6" : "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: 14,
+                  }}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                >
+                  <div style={{ fontWeight: 600 }}>{p.name || label}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    {label}
+                    {p.osm_value ? ` • ${p.osm_value}` : ""}
+                  </div>
+                </button>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ======================= ADD LGU ======================= */
 export const AddLGUModal: React.FC<addLGUModalProps> = ({
@@ -87,12 +301,23 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
   });
   const [uploading, setUploading] = useState(false);
 
-  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);  
   const openLocationPicker = () => setLocationPickerIsOpen(true);
-  const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
-    setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
-  };
+const closeLocationPicker = () => setLocationPickerIsOpen(false);
+
+const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  // Update the form with new coordinates
+  setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
+  // Ensure the map component re-renders by setting the new coordinates
+  setMapCoordinates({ lat: mapData.lat, lng: mapData.lng }); // Update map coordinates
+};
+
+const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number }>({
+  lat: form.lat,
+  lng: form.lng,
+});
+
+<MapWithPin lat={mapCoordinates.lat} lng={mapCoordinates.lng} />;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -153,7 +378,23 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
           {/* BASIC FIELDS */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
-            <input type="text" name="name" value={form.name} onChange={handleChange} />
+            <div style={{ width: "100%" }}>
+              <AutocompleteLGU
+                value={form.name}
+                onChange={(name) => setForm((prev) => ({ ...prev, name }))}
+                onPick={({ name, lat, lng, classificationGuess }) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    name,
+                    lat,
+                    lng,
+                    classification: prev.classification || classificationGuess || "",
+                  }));
+                  // Optional: auto-open picker centered at result
+                  // setLocationPickerIsOpen(true);
+                }}
+              />
+            </div>
           </div>
 
           <div className="horizontal-container">
@@ -163,11 +404,18 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
               <button
                 style={{ backgroundColor: "transparent", border: "1px solid #ddd", outline: "none", color: "#3b82f6", width: "35px", borderRadius: "5px" }}
                 onClick={openLocationPicker}
+                title="Center & fine-tune on map"
               >
                 <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
               </button>
             </div>
           </div>
+
+          {form.lat !== 0 && form.lng !== 0 && (
+            <div style={{ width: "100%", height: "30vh", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+              <MapWithPin lat={form.lat} lng={form.lng} />
+            </div>
+          )}
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>
@@ -291,8 +539,6 @@ export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
     if (!isModalOpen) setIsMoreOptionVisible(false);
   }, [isModalOpen]);
 
-  // NOTE: If you want to display the picture here, ensure the LGU table includes a "Picture" column
-  // and set its index below. For now, no picture column is in your table schema.
   const cell = (i: number) => selectedData?.data?.[i]?.text ?? "";
   const lat = Number.parseFloat(String(cell(2))) || 0;
   const lng = Number.parseFloat(String(cell(3))) || 0;
@@ -371,7 +617,6 @@ export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
           <span style={{ width: "100%", textAlign: "center" }}>{cell(7)}</span>
         </div>
 
-        {/* These rely on your backend table including these columns (it does in your updated get_lgu) */}
         <div className="horizontal-container"><span className="item-details-identifier">Description:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(8)}</span></div>
         <div className="horizontal-container"><span className="item-details-identifier">Resources:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(9)}</span></div>
         <div className="horizontal-container"><span className="item-details-identifier">Players:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(10)}</span></div>
@@ -405,7 +650,7 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
     contact_info: String(cell(6)),
     risk_level: String(cell(7)),
     description: String(cell(8) || ""),
-    lgu_picture: "", // not in table; user can re-upload/replace here
+    lgu_picture: "",
     resources: String(cell(9) || ""),
     players: String(cell(10) || ""),
     schools: String(cell(11) || ""),
@@ -476,10 +721,24 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
             <span className="details-title">Update LGU</span>
           </div>
 
-          {/* repeat fields like in Add modal */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
-            <input type="text" name="name" value={form.name} onChange={handleChange} />
+            <div style={{ width: "100%" }}>
+              <AutocompleteLGU
+                value={form.name}
+                onChange={(name) => setForm((prev) => ({ ...prev, name }))}
+                onPick={({ name, lat, lng, classificationGuess }) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    name,
+                    lat,
+                    lng,
+                    classification: prev.classification || classificationGuess || "",
+                  }));
+                  // setLocationPickerIsOpen(true); // optional
+                }}
+              />
+            </div>
           </div>
 
           <div className="horizontal-container">
@@ -489,11 +748,18 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
               <button
                 style={{ backgroundColor: "transparent", border: "1px solid #ddd", outline: "none", color: "#3b82f6", width: "35px", borderRadius: "5px" }}
                 onClick={openLocationPicker}
+                title="Center & fine-tune on map"
               >
                 <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
               </button>
             </div>
           </div>
+
+          {form.lat !== 0 && form.lng !== 0 && (
+            <div style={{ width: "100%", height: "30vh", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+              <MapWithPin lat={form.lat} lng={form.lng} />
+            </div>
+          )}
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>

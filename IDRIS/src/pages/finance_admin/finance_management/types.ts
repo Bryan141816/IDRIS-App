@@ -46,8 +46,8 @@ export interface CompanyInfo {
 
 export interface FinanceRecordType {
   filters: {
-    date_from: string;   // ISO date string e.g. "2025-01-01"
-    date_to: string;     // ISO date string e.g. "2025-09-30"
+    from_date: string;   // ISO date string e.g. "2025-01-01"
+    to_date: string;     // ISO date string e.g. "2025-09-30"
     group_by?: string;   // e.g. "allocation"
     include_pending?: boolean;
   };
@@ -78,8 +78,8 @@ export interface FinanceRecordType {
 
 export const emptyFinanceRecord: FinanceRecordType = {
   filters: {
-    date_from: "",
-    date_to: "",
+    from_date: "",
+    to_date: "",
   },
   kpis: {
     total_inflow: "0.00",

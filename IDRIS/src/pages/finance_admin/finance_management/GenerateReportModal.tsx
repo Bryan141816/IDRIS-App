@@ -76,28 +76,28 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
       if (!yearValue || !monthValue) return { error: "Select year and month." };
       const y = Number(yearValue);
       const m = Number(monthValue);
-      const from = new Date(y, m - 1, 1);
-      const to = new Date(y, m, 0);
+      const from = new Date(Date.UTC(y, m - 1, 1));
+      const to = new Date(Date.UTC(y, m, 0));
       return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
     }
-
+  
     if (reportType === "Quarterly") {
       if (!yearValue || !quarter) return { error: "Select year and quarter." };
       const y = Number(yearValue);
       const map = { Q1: [0, 2], Q2: [3, 5], Q3: [6, 8], Q4: [9, 11] } as const;
       const [startM, endM] = map[quarter];
-      const from = new Date(y, startM, 1);
-      const to = new Date(y, endM + 1, 0);
+      const from = new Date(Date.UTC(y, startM, 1));
+      const to = new Date(Date.UTC(y, endM + 1, 0));
       return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
     }
-
+  
     if (!yearValue) return { error: "Select a year." };
     const y = Number(yearValue);
-    const from = new Date(y, 0, 1);
-    const to = new Date(y, 12, 0);
+    const from = new Date(Date.UTC(y, 0, 1));
+    const to = new Date(Date.UTC(y, 11, 31));
     return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
   };
-
+  
   // Handlers for filters (NEW)
   const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[];
@@ -186,7 +186,7 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     console.log("from:", from, " and to:", to);
 
     navigate("/finance&admin/finance_management/budget_summary", {
-      state: { date_from: from, date_to: to }
+      state: { date_from: from, date_to: to, title: "Budget Summary"}
     });
   };
 
@@ -352,5 +352,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     </div>
   );
 };
+
 
 export default GenerateReportModal;

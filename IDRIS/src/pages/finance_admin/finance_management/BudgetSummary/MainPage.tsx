@@ -12,7 +12,7 @@ import DataTable from "./DataTable";
 import { jsPDF } from "jspdf";
 import { getBudgetSummary } from "../../../../API_Handler/finance_management_handler";
 import { CompanyInfo, FinanceRecordType, emptyFinanceRecord } from "../types";
-import { formatCurrency, formatDate, getActionRequired, getTotalPendingTransactions } from "../helpers";
+import { formatCurrency, formatDate, formatDateOnly, getActionRequired, getTotalPendingTransactions } from "../helpers";
 
 const companyInfo: CompanyInfo & { _reportTitle?: string } = {
   name: "RAFI Inc.",
@@ -29,7 +29,7 @@ const companyInfo: CompanyInfo & { _reportTitle?: string } = {
 
 const FinancialReportDashboard: React.FC = () => {
   const location = useLocation();
-  const state = location.state as { date_from?: string; date_to?: string };
+  const state = location.state as { date_from?: string; date_to?: string; title?: string; };
   const printableRef = useRef<HTMLDivElement>(null);
   const [exportMode, setExportMode] = useState(false);
 
@@ -65,11 +65,13 @@ const FinancialReportDashboard: React.FC = () => {
   if (error) return <div style={{ color: "red" }}>{error}</div>;
   if (!data) return <div>No data available.</div>;
 
-  const reportTitle = `Financial Report • ${new Date(
-    data.filters.date_from
-  ).toLocaleDateString()} – ${new Date(
-    data.filters.date_to
-  ).toLocaleDateString()}`;
+  const title = state?.title || "Financial Report";
+  const reportTitle = `${title} • ${
+    data.filters.from_date ? formatDateOnly(data.filters.from_date) : "N/A"
+  } – ${
+    data.filters.to_date ? formatDateOnly(data.filters.to_date) : "N/A"
+  }`;
+  
 
   companyInfo._reportTitle = reportTitle;
 
@@ -300,8 +302,8 @@ const FinancialReportDashboard: React.FC = () => {
               <h4>Report Parameters</h4>
               <p>
                 Date Range:{" "}
-                {new Date(data.filters.date_from).toLocaleDateString()} -{" "}
-                {new Date(data.filters.date_to).toLocaleDateString()}
+                {new Date(data.filters.from_date).toLocaleDateString()} -{" "}
+                {new Date(data.filters.to_date).toLocaleDateString()}
               </p>
               {/* <p>Group By: {data.filters.group_by}</p>
               <p>

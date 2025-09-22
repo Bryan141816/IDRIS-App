@@ -487,50 +487,50 @@
   }
   
   
-  /* Audit Section */
-  .audit-section {
-    background: #ffffff;
-    padding: 2rem;
-    border-radius: 1rem;
-    box-shadow: 0 4px 12px rgba(116, 154, 182, 0.15);
+  // /* Audit Section */
+  // .audit-section {
+  //   background: #ffffff;
+  //   padding: 2rem;
+  //   border-radius: 1rem;
+  //   box-shadow: 0 4px 12px rgba(116, 154, 182, 0.15);
    
-    h3 {
-      color: #749ab6;
-      font-size: 1.25rem;
-      font-weight: 600;
-      margin: 0 0 1.5rem 0;
-      text-align: center;
-    }
+  //   h3 {
+  //     color: #749ab6;
+  //     font-size: 1.25rem;
+  //     font-weight: 600;
+  //     margin: 0 0 1.5rem 0;
+  //     text-align: center;
+  //   }
    
-    .audit-actions {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
+  //   .audit-actions {
+  //     display: grid;
+  //     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  //     gap: 1rem;
      
-      .audit-btn {
-        background: linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%);
-        color: #ffffff;
-        border: none;
-        padding: 1rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
+  //     .audit-btn {
+  //       background: linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%);
+  //       color: #ffffff;
+  //       border: none;
+  //       padding: 1rem 1.5rem;
+  //       border-radius: 0.5rem;
+  //       font-weight: 600;
+  //       font-size: 0.875rem;
+  //       cursor: pointer;
+  //       transition: all 0.3s ease;
+  //       text-align: center;
        
-        &:hover {
-          background: linear-gradient(135deg, #5a8aa8 0%, #4a7a9a 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(116, 154, 182, 0.3);
-        }
+  //       &:hover {
+  //         background: linear-gradient(135deg, #5a8aa8 0%, #4a7a9a 100%);
+  //         transform: translateY(-1px);
+  //         box-shadow: 0 4px 12px rgba(116, 154, 182, 0.3);
+  //       }
        
-        &:active {
-          transform: translateY(0);
-        }
-      }
-    }
-  }
+  //       &:active {
+  //         transform: translateY(0);
+  //       }
+  //     }
+  //   }
+  // }
   
   
   /* Export Options */

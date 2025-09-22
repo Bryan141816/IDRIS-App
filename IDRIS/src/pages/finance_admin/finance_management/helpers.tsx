@@ -9,6 +9,14 @@ export const formatDate = (dateString: string) =>
     minute: "2-digit",
   });
 
+export const formatDateOnly = (dateString: string) =>
+  new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+
 export const formatCurrency = (value: string | number | null | undefined) => {
   const num = Number.parseFloat(String(value ?? "0"));
   const safe = Number.isFinite(num) ? num : 0;

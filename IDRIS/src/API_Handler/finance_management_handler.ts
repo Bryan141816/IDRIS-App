@@ -75,9 +75,43 @@ export async function UpdateReportData(form: FormData): Promise<any> {
   return data;
 }
 
-export async function getBudgetSummary(date_from: string, date_to: string): Promise<any> {
+export async function getBudgetSummary(from_date: string, to_date: string): Promise<any> {
   const { data } = await API.get("/finance_reports/get/budget_summary", {
-    params: { date_from, date_to }
+    params: { from_date, to_date }
+  });
+  return data;
+}
+
+export async function getInflowsReport(
+  from_date?: string,
+  to_date?: string,
+  statuses?: string[],
+  allocation_type?: string[]
+): Promise<any> {
+  const { data } = await API.get("/finance_reports/get_report/inflows", {
+    params: {
+      from_date,
+      to_date,
+      statuses,
+      allocation_type,
+    },
+  });
+  return data;
+}
+
+export async function getOutflowsReport(
+  from_date?: string,
+  to_date?: string,
+  statuses?: string[],
+  allocation_type?: string[]
+): Promise<any> {
+  const { data } = await API.get("/finance_reports/get_report/outflows", {
+    params: {
+      from_date,
+      to_date,
+      statuses,
+      allocation_type,
+    },
   });
   return data;
 }

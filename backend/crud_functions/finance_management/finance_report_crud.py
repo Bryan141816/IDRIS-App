@@ -53,62 +53,54 @@ class FinanceReport:
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
         statuses: Optional[List[RecordStatus]] = None,
-        allocation_type: Optional[BudgetAllocation] = None,
+        allocation_type: Optional[List[BudgetAllocation]] = None,
     ):
-        """
-        Fetch inflows filtered by date range, statuses, and allocation_type.
-        """
-        query = db.query(FinanceRecord).filter(
-            FinanceRecord.transaction_type == TransactionType.INFLOW
-        )
+        q = select(FinanceRecord).where(FinanceRecord.transaction_type == TransactionType.INFLOW)
 
-        # Filter by date range
         if from_date:
-            query = query.filter(FinanceRecord.date >= from_date)
+            q = q.where(FinanceRecord.date >= from_date)
         if to_date:
-            query = query.filter(FinanceRecord.date <= to_date)
+            q = q.where(FinanceRecord.date <= to_date)
 
-        # Filter by statuses (list)
-        if statuses and len(statuses) > 0:
-            query = query.filter(FinanceRecord.status.in_(statuses))
+        norm_statuses = _to_status_enums(statuses or [])
+        norm_allocs = _to_alloc_enums(allocation_type or [])
 
-        # Filter by allocation_type (budget_for)
-        if allocation_type:
-            query = query.filter(FinanceRecord.budget_for == allocation_type)
+        if norm_statuses:
+            q = q.where(FinanceRecord.status.in_(norm_statuses))
 
-        return query.order_by(FinanceRecord.date.desc()).all()
-    
+        if norm_allocs:
+            q = q.where(FinanceRecord.budget_for.in_(norm_allocs))
+
+        q = q.order_by(FinanceRecord.date.desc())
+        return list(db.execute(q).scalars().all())
+            
     @staticmethod
     def get_outflows(
         db: Session,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
         statuses: Optional[List[RecordStatus]] = None,
-        allocation_type: Optional[BudgetAllocation] = None,
+        allocation_type: Optional[List[BudgetAllocation]] = None,
     ):
-        """
-        Fetch inflows filtered by date range, statuses, and allocation_type.
-        """
-        query = db.query(FinanceRecord).filter(
-            FinanceRecord.transaction_type == TransactionType.OUTFLOW
-        )
+        q = select(FinanceRecord).where(FinanceRecord.transaction_type == TransactionType.OUTFLOW)
 
-        # Filter by date range
         if from_date:
-            query = query.filter(FinanceRecord.date >= from_date)
+            q = q.where(FinanceRecord.date >= from_date)
         if to_date:
-            query = query.filter(FinanceRecord.date <= to_date)
+            q = q.where(FinanceRecord.date <= to_date)
 
-        # Filter by statuses (list)
-        if statuses and len(statuses) > 0:
-            query = query.filter(FinanceRecord.status.in_(statuses))
+        norm_statuses = _to_status_enums(statuses or [])
+        norm_allocs = _to_alloc_enums(allocation_type or [])
 
-        # Filter by allocation_type (budget_for)
-        if allocation_type:
-            query = query.filter(FinanceRecord.budget_for == allocation_type)
+        if norm_statuses:
+            q = q.where(FinanceRecord.status.in_(norm_statuses))
+        
+        if norm_allocs:
+            q = q.where(FinanceRecord.budget_for.in_(norm_allocs))
 
-        return query.order_by(FinanceRecord.date.desc()).all()
-    
+        q = q.order_by(FinanceRecord.date.desc())
+        return list(db.execute(q).scalars().all())
+        
     @staticmethod
     def get_budget_vs_actual_stats(
         db: Session,
@@ -161,24 +153,24 @@ class FinanceReport:
     @staticmethod
     def get_budget_summary(
         db: Session,
-        date_from: Optional[date] = None,
-        date_to: Optional[date] = None,
+        from_date: Optional[date] = None,
+        to_date: Optional[date] = None,
     ) -> Dict[str, Any]:
         """
         Return aggregated dashboard dict grouped by allocation (budget_for).
-        Only accepts date_from/date_to. If neither provided, defaults to year-to-date.
+        Only accepts from_date/to_date. If neither provided, defaults to year-to-date.
         Includes all statuses in KPIs and breakdown; pending/denied are still reported separately.
         """
 
         # default date window if none provided: year-to-date
-        if not date_from and not date_to:
+        if not from_date and not to_date:
             today = date.today()
-            date_from = date(today.year, 1, 1)
-            date_to = today
+            from_date = date(today.year, 1, 1)
+            to_date = today
 
         # Base query with filters (for diagnostics) - includes all statuses
         base_q = db.query(FinanceRecord).filter(
-            FinanceRecord.date >= date_from, FinanceRecord.date <= date_to
+            FinanceRecord.date >= from_date, FinanceRecord.date <= to_date
         )
         records_considered = base_q.count()
 
@@ -193,7 +185,7 @@ class FinanceReport:
                 ),
                 0,
             )
-        ).filter(FinanceRecord.date >= date_from, FinanceRecord.date <= date_to)
+        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         total_inflow = Decimal(total_inflow_q.scalar() or 0)
 
         # total outflow (all statuses)
@@ -207,7 +199,7 @@ class FinanceReport:
                 ),
                 0,
             )
-        ).filter(FinanceRecord.date >= date_from, FinanceRecord.date <= date_to)
+        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         total_outflow = Decimal(total_outflow_q.scalar() or 0)
 
         # pending inflow/outflow (status == PENDING)
@@ -225,7 +217,7 @@ class FinanceReport:
                 ),
                 0,
             )
-        ).filter(FinanceRecord.date >= date_from, FinanceRecord.date <= date_to)
+        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         pending_inflow = Decimal(pending_inflow_q.scalar() or 0)
 
         pending_outflow_q = db.query(
@@ -242,21 +234,21 @@ class FinanceReport:
                 ),
                 0,
             )
-        ).filter(FinanceRecord.date >= date_from, FinanceRecord.date <= date_to)
+        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         pending_outflow = Decimal(pending_outflow_q.scalar() or 0)
 
         # denied total (all denied amounts)
         denied_q = db.query(func.coalesce(func.sum(FinanceRecord.amount), 0)).filter(
             FinanceRecord.status == RecordStatus.DENIED,
-            FinanceRecord.date >= date_from,
-            FinanceRecord.date <= date_to,
+            FinanceRecord.date >= from_date,
+            FinanceRecord.date <= to_date,
         )
         denied_total = Decimal(denied_q.scalar() or 0)
 
         # last_updated (most recent updated_at for the window)
         max_updated = db.query(func.max(FinanceRecord.updated_at)).filter(
-            FinanceRecord.date >= date_from,
-            FinanceRecord.date <= date_to,
+            FinanceRecord.date >= from_date,
+            FinanceRecord.date <= to_date,
         ).scalar()
         last_updated_val = max_updated or datetime.utcnow()
 
@@ -319,7 +311,7 @@ class FinanceReport:
                     0,
                 ).label("denied"),
             )
-            .filter(FinanceRecord.date >= date_from, FinanceRecord.date <= date_to)
+            .filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
             .group_by(FinanceRecord.budget_for)
         )
 
@@ -346,8 +338,8 @@ class FinanceReport:
 
         result = {
             "filters": {
-                "date_from": date_from.isoformat() if date_from else None,
-                "date_to": date_to.isoformat() if date_to else None,
+                "from_date": from_date.isoformat() if from_date else None,
+                "to_date": to_date.isoformat() if to_date else None,
             },
             "kpis": {
                 "total_inflow": _decimal_to_str(total_inflow),

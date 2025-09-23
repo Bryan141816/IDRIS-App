@@ -63,22 +63,42 @@ function PageLayout() {
 
   const location = useLocation();
   const navigation = useNavigation();
+
   const isAuthPage =
     location.pathname === "/login" ||
     location.pathname === "/register" ||
     location.pathname === "/activate" ||
     location.pathname === "/forgot_password" ||
     location.pathname === "/reset_password" ||
-    location.pathname === "/oauth_callback" ||
-    location.pathname === "/donation_report" ||
-    location.pathname === "/volunteer_management/VolunteerReports" ||
-    location.pathname === "/volunteer_management/ProgramsReports";
-  const hideHeaderFooterRoutes = ["/lgu_profiling/map_of_cebu"];
+    location.pathname === "/oauth_callback";
+
+  const hideHeaderFooterRoutes = [
+    "/lgu_profiling/map_of_cebu", 
+    "/donation_report",
+    "/volunteer_management/VolunteerReports",
+    "/volunteer_management/ProgramsReports",
+    "/finance&admin/finance_management/budget_summary",
+  ];
+
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(
     location.pathname,
   );
+
+  const isPrintPage = 
+    location.pathname === "/donation_report";
+
+
+  const hideNavbarRoutes = [
+    "/finance_printable", 
+  ]
+  
+  const shouldHideNavbar = 
+    isPrintPage || hideNavbarRoutes.includes(location.pathname);
+    
   const shouldHideLayout =
-    isAuthPage || hideHeaderFooterRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
+    isAuthPage || 
+    hideHeaderFooterRoutes.includes(location.pathname) ||
+    hideNavbarRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
 
   const [isNavbarVisible, setIsNavbarVisible] = useState(false);
   const toggleNavbar = () => setIsNavbarVisible((prev) => !prev);
@@ -100,7 +120,7 @@ function PageLayout() {
   return (
     <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
       <NotificationProvider>
-        {!shouldHideUI && (
+        {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />
         )}
         <div id="right-body-section">

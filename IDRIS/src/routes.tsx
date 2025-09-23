@@ -3,6 +3,7 @@ import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
 import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
+import { buildFinanceReportPDFBlob } from "./pages/finance_admin/finance_management/FinanceReport";
 
 const UserNotAllowed = () =>
   import("./components/Page_Furniture/UserNotAllowed").then((module) => ({
@@ -23,8 +24,23 @@ const DamageAssessment = () =>
     Component: module.default,
   }));
 
+// FINANCE MANAGEMENT
 const FinanceManagement = () =>
   import("./pages/finance_admin/finance_management/FinanceManagement").then(
+    (module) => ({
+      Component: module.default,
+    }),
+  );
+
+const FinancePrintPage = () =>
+  import("./pages/finance_admin/finance_management/FinanceReportPDF").then(
+    (module) => ({
+      Component: module.default,
+    }),
+  );
+
+const FinanceBudgetSummary = () =>
+  import("./pages/finance_admin/finance_management/BudgetSummary/MainPage").then(
     (module) => ({
       Component: module.default,
     }),
@@ -84,7 +100,7 @@ const LGUSeeMore = () =>
 const ManageLGU = () =>
   import("./pages/lgu_profiling/LGUmanagement/manage_LGU").then((module) => ({
     Component: module.default,
-  }));
+  }));  
 
 //Volunteer Management
 const TrackVolunteerApplication = () =>
@@ -316,10 +332,9 @@ export const router = createBrowserRouter([
             path: "LGUmanagement",
             lazy: ManageLGU,
           },
-          {
-            path: "LGUSeeMore/:lguName",
-            lazy: LGUSeeMore,
-          },
+          { path: "LGUSeeMore/:id",
+            lazy: LGUSeeMore },
+
         ],
       },
       {
@@ -505,6 +520,14 @@ export const router = createBrowserRouter([
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
       },
+      {
+        path: "/finance_printable",
+        lazy: FinancePrintPage,
+      },
+      {
+        path: "/finance&admin/finance_management/budget_summary",
+        lazy: FinanceBudgetSummary,
+      }
     ],
   },
 ]);
@@ -557,4 +580,6 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/procurement_inventory/procurement_management": ProcurementManagement,
 
   "/finance&admin/finance_management": FinanceManagement,
+  "/finance_printable": FinancePrintPage,
+  "/finance&admin/finance_management/budget_summary": FinanceBudgetSummary,
 };

@@ -8,7 +8,8 @@ from sqlalchemy import select, func, case, literal, and_
 from crud_functions.utils import uid_from_string, random_suffix
 from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocation 
 from data_schemas.finance_record_schema import (
-    InflowFinanceRecordCreate,
+    InflowFinanceRecordCreate, 
+    FinanceRecordUpdate,
 )
 
 
@@ -27,7 +28,7 @@ class FinanceRecordCRUD:
             amount=payload.amount,
             date=payload.date,
             description=payload.description,
-            status=RecordStatus.PENDING,
+            status=payload.status,
             budget_for = BudgetAllocation(payload.budget_for)
         )
         db.add(obj)
@@ -78,27 +79,31 @@ class FinanceRecordCRUD:
             .all()
         )
         
-    # @staticmethod
-    # def update(db: Session, finance_id: str, patch: FinanceRecordUpdate) -> Optional[FinanceRecord]:
-    #     obj = db.get(FinanceRecord, finance_id)
-    #     if not obj:
-    #         return None
+    @staticmethod
+    def update(db: Session, finance_id: str, patch: FinanceRecordUpdate) -> Optional[FinanceRecord]:
+        obj = db.get(FinanceRecord, finance_id)
+        if not obj:
+            return None
 
-    #     if patch.source is not None:
-    #         obj.source = patch.source
-    #     if patch.transaction_type is not None:
-    #         obj.transaction_type = TransactionType(patch.transaction_type)
-    #     if patch.amount is not None:
-    #         obj.amount = patch.amount
-    #     if patch.date is not None:
-    #         obj.date = patch.date
-    #     if patch.description is not None:
-    #         obj.description = patch.description
+        if patch.counterparty is not None:
+            obj.counterparty = patch.counterparty
+        if patch.transaction_type is not None:
+            obj.transaction_type = patch.transaction_type
+        if patch.amount is not None:
+            obj.amount = patch.amount
+        if patch.date is not None:
+            obj.date = patch.date
+        if patch.status is not None:
+            obj.status = patch.status
+        if patch.budget_for is not None:
+            obj.budget_for = patch.budget_for
+        if patch.description is not None:
+            obj.description = patch.description
 
-    #     db.add(obj)
-    #     db.commit()
-    #     db.refresh(obj)
-    #     return obj
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
 
     # @staticmethod
     # def update_status(db: Session, finance_id: str, payload: FinanceRecordStatusUpdate) -> Optional[FinanceRecord]:

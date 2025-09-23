@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict,Field
 from typing import List, Optional
 
 
@@ -82,7 +82,30 @@ class LGURecordsCreate(BaseModel):
     population: int
     contact_info: str
     risk_level: str
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
 
+
+class LGURecordsUpdate(BaseModel):
+    name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    classification: Optional[str] = None
+    population: Optional[int] = None
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
 
 class LGURecordsOut(BaseModel):
     id: int
@@ -93,6 +116,17 @@ class LGURecordsOut(BaseModel):
     population: int
     contact_info: str
     risk_level: str
+    lgu_picture: Optional[str] = None
+    description: Optional[str] = None
+    resources: Optional[List[str]] = None
+    players: Optional[List[str]] = None
+    schools: Optional[List[str]] = None
+    gyms: Optional[List[str]] = None
+    local_suppliers: Optional[List[str]] = None
+
+    class Config:
+        from_attributes = True 
+
 
 
 class BaranggayRecordsCreate(BaseModel):
@@ -100,44 +134,64 @@ class BaranggayRecordsCreate(BaseModel):
     lat: float
     lng: float
     LGU: str
-    evacuation: str
+    evacuation: Optional[str] = None   # ✅ allow None
     population: int
     contact_info: str
     risk_level: str
 
-
+class BaranggayRecordsUpdate(BaseModel):
+    name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    LGU: Optional[str] = None
+    evacuation: Optional[str] = None   # <- None or "" means DETACH
+    population: Optional[int] = None
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+    
 class BaranggayRecordsOut(BaseModel):
     id: int
     name: str
     lat: float
     lng: float
     lgu_id: int
-    evacucation_center_id: int
+    evacucation_center_id: Optional[int] = None  # ✅ allow None
     population: int
     contact_info: str
     risk_level: str
 
-
 class RafiInfrastructureCreate(BaseModel):
-    name: str
+    rafi_name: str
     lat: float
     lng: float
-    description: str
+    rafi_desc: Optional[str] = None
+    rafi_pic: Optional[str] = None  # store URL if you’re using 2-step upload
 
 
+class RafiInfrastructureUpdate(BaseModel):
+    rafi_name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    rafi_desc: Optional[str] = None
+    rafi_pic: Optional[str] = None
+    
 class RafiInfrastructureOut(BaseModel):
-    id: int
-    name: str
+    rafi_id: int
+    rafi_name: str
     lat: float
     lng: float
-    description: str
+    rafi_desc: Optional[str]
+    rafi_pic: Optional[str]
 
+    class Config:
+        from_attributes = True
 
 class EvacuationCenterCreate(BaseModel):
     name: str
     lat: float
     lng: float
     capacity: int
+    occupied: int = 0
 
 
 class EvacuationCenterOut(BaseModel):
@@ -146,6 +200,7 @@ class EvacuationCenterOut(BaseModel):
     lat: float
     lng: float
     capacity: int
+    occupied: int  
 
 
 class HazardBase(BaseModel):

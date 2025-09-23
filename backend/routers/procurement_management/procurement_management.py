@@ -116,13 +116,12 @@ def get_request_counts(db: Session = Depends(get_db)):
 
 
 @router.post("/procurement_management/add_request")
-def add_request(
+async def add_request(
     request: ProcurementRequestCreate,
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    print(user_id)
-    return ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
+    return await ProcurementRequestCRUD.create_procurement_request(db, request, user_id)
 
 
 @router.get(
@@ -143,7 +142,7 @@ async def update_request(
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    updated_request = ProcurementRequestCRUD.update_procurement_request(
+    updated_request =  await ProcurementRequestCRUD.update_procurement_request(
         db, request, user_id
     )
 

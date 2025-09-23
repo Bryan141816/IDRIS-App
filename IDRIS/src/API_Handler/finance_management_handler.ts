@@ -67,11 +67,51 @@ export async function getReportData(
   return data;
 }
 
-// export async function getFundingProposalTotalInKindDonations(month: number, year: number): Promise<any>{
-//   const response = await API.get(`/finance/get_report/by_month/inkind`,{
-//     params: { month, year }
-//   },
-//   )
-//   return response.data
-// }
 
+export async function UpdateReportData(form: FormData): Promise<any> {
+  const { data } = await API.patch('/finance/update_record', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function getBudgetSummary(from_date: string, to_date: string): Promise<any> {
+  const { data } = await API.get("/finance_reports/get/budget_summary", {
+    params: { from_date, to_date }
+  });
+  return data;
+}
+
+export async function getInflowsReport(
+  from_date?: string,
+  to_date?: string,
+  statuses?: string[],
+  allocation_type?: string[]
+): Promise<any> {
+  const { data } = await API.get("/finance_reports/get_report/inflows", {
+    params: {
+      from_date,
+      to_date,
+      statuses,
+      allocation_type,
+    },
+  });
+  return data;
+}
+
+export async function getOutflowsReport(
+  from_date?: string,
+  to_date?: string,
+  statuses?: string[],
+  allocation_type?: string[]
+): Promise<any> {
+  const { data } = await API.get("/finance_reports/get_report/outflows", {
+    params: {
+      from_date,
+      to_date,
+      statuses,
+      allocation_type,
+    },
+  });
+  return data;
+}

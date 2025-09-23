@@ -57,7 +57,7 @@ class ProcurementRequestCRUD:
         print(payload["requester_id"])
 
     @staticmethod
-    def create_procurement_request(
+    async def create_procurement_request(
         db: Session, request: ProcurementRequestCreate, user_id: str
     ):
         # get current Philippine time
@@ -131,7 +131,7 @@ class ProcurementRequestCRUD:
         return procurement_request
 
     @staticmethod
-    def update_procurement_request(
+    async def update_procurement_request(
         db: Session, payload: UpdateProcurementRequest, user_id: str
     ):
         request = (

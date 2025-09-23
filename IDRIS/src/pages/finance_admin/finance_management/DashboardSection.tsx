@@ -8,18 +8,17 @@ const fmt = (n: number | bigint) =>
     minimumFractionDigits: 0,
   }).format(n);
 
-  const totalIn = (rows: InflowItem[]) =>
-    rows
-      .filter((r) => (r.status ?? '').toUpperCase() === 'RECEIVED')
-      .reduce((s, r) => s + toNumber(r.amount), 0);
-  
-  const totalOut = (rows: OutflowItem[]) =>
-    rows
-      .filter((r) => (r.status ?? '').toUpperCase() === 'PAID')
-      .reduce((s, r) => s + toNumber(r.amount), 0);
-  
+const totalIn = (rows: InflowItem[]) =>
+  rows
+    .filter((r) => (r.status ?? '').toUpperCase() === 'RECEIVED')
+    .reduce((s, r) => s + toNumber(r.amount), 0);
+
+const totalOut = (rows: OutflowItem[]) =>
+  rows
+    .filter((r) => (r.status ?? '').toUpperCase() === 'PAID')
+    .reduce((s, r) => s + toNumber(r.amount), 0);
+
 const toNumber = (v: number | string | bigint | null | undefined): number => {
-  console.log(v);
   if (typeof v === 'number') return v;
   if (typeof v === 'bigint') return Number(v);
   if (v == null) return 0;
@@ -90,8 +89,18 @@ const BudgetOverview: React.FC<{ data: BudgetItem[] }> = ({ data }) => (
               {fmt(b.outflow_total)} / {fmt(b.inflow_total)}
             </span>
           </div>
-          <div className="budget-bar">
-            <div className="budget-fill" style={{ width: `${toDecimal2(b.percentage_spent)}%` }} />
+          <div
+            className="budget-bar"
+            style={{
+              background: (b.inflow_total === 0)
+                ? "#e5e7eb"
+                : "linear-gradient(90deg, #10b981, #34d399)",
+            }}
+          >
+            <div
+              className="budget-fill"
+              style={{ width: `${toDecimal2(b.percentage_spent)}%` }}
+            />
           </div>
           <div className="budget-percentage">{toDecimal2(b.percentage_spent)}% used</div>
         </div>
@@ -142,11 +151,7 @@ const DashboardSection: React.FC<{
   inflows: InflowItem[];
   outflows: OutflowItem[];
   budgetData: BudgetItem[];
-
 }> = ({ inflows, outflows, budgetData }) => {
-  // 👇 log received outflows
-  console.log("Received OutflowItems:", outflows);
-
   return (
     <div className="dashboard-content">
       <StatsGrid inflows={inflows} outflows={outflows} />

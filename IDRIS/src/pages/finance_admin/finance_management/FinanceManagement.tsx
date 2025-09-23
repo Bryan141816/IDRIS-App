@@ -4,7 +4,7 @@ import NavTabs from './NavTabs';
 import DashboardSection from './DashboardSection';
 import InflowsSection from './InflowsSection';
 import OutflowsSection from './OutflowsSection';
-import ReportsExportsSection from './Reports';
+import ReportsExportSection from './ReportsExportSection';
 import { 
   getInflowFinanceRecords, 
   getOutflowFinanceRecords, 
@@ -49,16 +49,16 @@ const FinanceAdmin: React.FC = () => {
   const [fundOutflows, setFundOutFlows] = useState<OutflowItem[]>([]);
   ;
 
-  const financialReports = [
-    {
-      id: 1,
-      name: 'Monthly Financial Summary - May 2024',
-      type: 'Monthly Report',
-      period: 'May 2024',
-      generated: '2024-05-31',
-      status: 'Generated' as const,
-    },
-  ];
+  // const financialReports = [
+  //   {
+  //     id: 1,
+  //     name: 'Monthly Financial Summary - May 2024',
+  //     type: 'Monthly Report',
+  //     period: 'May 2024',
+  //     generated: '2024-05-31',
+  //     status: 'Generated' as const,
+  //   },
+  // ];
 
   const [budgetData, setBudgetData] = useState<BudgetItem[]>([]);
 
@@ -131,10 +131,10 @@ const FinanceAdmin: React.FC = () => {
         {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} />}
 
         {activeTab === 'reports' && (
-          <ReportsExportsSection mode="reports" reports={financialReports} />
+          <ReportsExportSection mode="reports"/>
         )}
 
-        {activeTab === 'exports' && <ReportsExportsSection mode="exports" />}
+        {activeTab === 'exports' && <ReportsExportSection mode="exports" />}
       </div>
     </div>
   );

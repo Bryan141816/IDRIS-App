@@ -13,15 +13,14 @@ import { MapWithPin } from "../ModalProps";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
 type FuzzySeachElementProps = {
-  value: string | null;
+  value: string | null;                     // controlled by parent
   setLGUID: (id: string, name: string) => void;
-  name: string;
+  name: string;                             // parent field name
   searchURL: string;
 };
 
 const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   value,
-  setLGUID,
   name,
   searchURL,
 }) => {
@@ -31,34 +30,25 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
     lat?: number;
     lng?: number;
     contact_info?: string;
-    // ...more fields if you have them
   };
-  const [inputVal, setInputVal] = useState(value);
+
   const [results, setResults] = useState<LGURecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown on outside click / esc / tab
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      console.log(wrapperRef.current);
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setIsSearching(false);
       }
     };
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab" || event.key === "Escape") {
-        setIsSearching(false);
-      }
+      if (event.key === "Tab" || event.key === "Escape") setIsSearching(false);
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
@@ -68,50 +58,47 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   async function searchLGU(
     q: string,
     sim_threshold: number = 0.2,
-  ): Promise<any | false> {
+  ): Promise<LGURecord[] | false> {
     try {
       const response = await API.get(
-        `${searchURL}?q=${q}&sim_threshold=${sim_threshold}`,
+        `${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`
       );
-      return response.data;
+      const data = response.data;
+      return Array.isArray(data) ? data : (data ? [data] : []);
     } catch (error) {
-      console.error("Failed to add record:", error);
+      console.error("Search failed:", error);
       return false;
     }
   }
-  function normalizeToArray<T>(data: T | T[] | null | undefined | false): T[] {
-    if (!data) return [];
-    return Array.isArray(data) ? data : [data];
-  }
+
+  // When parent clears value (e.g., Detach), close dropdown & clear results
   useEffect(() => {
-    if (inputVal.length <= 0) {
+    if (!value || value.trim() === "") {
       setIsSearching(false);
+      setResults([]);
     }
-    setLGUID(inputVal, name);
-  }, [inputVal]);
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  }, [value]);
+
+  // On input change: update parent directly; debounce the search for dropdown
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value;
-    setInputVal(q);
+    setLGUID(q, name); // single source of truth in parent
 
-    // Clear any existing timeout if the user keeps typing
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // Debounce: wait 500ms (you can adjust) before running search
     debounceRef.current = setTimeout(async () => {
-      if (!q.trim()) {
+      const trimmed = q.trim();
+      if (!trimmed) {
         setResults([]);
         setIsSearching(false);
         return;
       }
-
+      const res = await searchLGU(trimmed);
+      setResults(Array.isArray(res) ? res : []);
       setIsSearching(true);
-
-      const data = await searchLGU(q); // your async call
-      setResults(normalizeToArray<LGURecord>(data));
     }, 500);
   };
+
   return (
     <div
       ref={wrapperRef}
@@ -124,16 +111,14 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
       }}
     >
       <input
-        value={inputVal}
-        onChange={(e) => {
-          handleSearch(e);
-        }}
+        value={value ?? ""}                     // controlled by parent
+        onChange={handleChange}                 // notify parent directly
         onFocus={() => {
-          if (inputVal.length > 0) {
-            setIsSearching(true);
-          }
+          if ((value ?? "").length > 0 && results.length > 0) setIsSearching(true);
         }}
+        placeholder="Type to search…"
       />
+
       {isSearching && (
         <div
           style={{
@@ -146,30 +131,39 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
             maxHeight: "200px",
             position: "absolute",
             top: "100%",
+            left: 0,
             borderRadius: "5px",
             backgroundColor: "white",
+            overflowY: "auto",
+            zIndex: 10000,
           }}
         >
           {results.length > 0 ? (
-            results.map((val, i) => (
-              <button
-                style={{
-                  padding: "5px",
-                  width: "100%",
-                  zIndex: "10000",
-                  textAlign: "start",
-                }}
-                onClick={() => {
-                  setLGUID(String(val.name), name);
-                  setInputVal(String(val.name));
-                  setIsSearching(false);
-                }}
-              >
-                {val.name}
-              </button>
-            ))
+            <div style={{ width: "100%" }}>
+              {results.map((val, i) => (
+                <button
+                  key={`${val.id ?? val.name}-${i}`}
+                  style={{
+                    padding: "5px",
+                    width: "100%",
+                    textAlign: "start",
+                    background: "white",
+                    border: "none",
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    // choose -> set in parent, close dropdown
+                    setLGUID(String(val.name), name);
+                    setIsSearching(false);
+                  }}
+                >
+                  {val.name}
+                </button>
+              ))}
+            </div>
           ) : (
-            <div>No results found...</div>
+            <div style={{ padding: "8px" }}>No results found…</div>
           )}
         </div>
       )}
@@ -527,18 +521,18 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
   handleEditRecord,
   selectedData,
 }) => {
-  type evacuationProp = {
+  type EvacuationProp = {
     name: string;
     lat: number;
     lng: number;
     LGU: string | null;
-    evacuation: string | null;
+    evacuation: string | null; // "" (empty) will mean DETACH
     population: number;
     contact_info: string;
     risk_level: string;
   };
-  console.log(selectedData);
-  const [addEvacuationForm, setAddEvacuationForm] = useState<evacuationProp>({
+
+  const [addEvacuationForm, setAddEvacuationForm] = useState<EvacuationProp>({
     name: selectedData.data[1].text,
     lat: parseFloat(selectedData.data[2].text),
     lng: parseFloat(selectedData.data[3].text),
@@ -548,36 +542,70 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     contact_info: selectedData.data[7].text,
     risk_level: selectedData.data[8].text,
   });
+
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: {
-    lat: number;
-    lng: number;
-  }) => {
+
+  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
     setAddEvacuationForm((prev) => ({
       ...prev,
       lat: mapData.lat,
       lng: mapData.lng,
     }));
   };
+
   const handleAddModalChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
+    const nextVal =
+      type === "number" && value !== "" ? Number(value) : (value as any);
+
     setAddEvacuationForm((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: nextVal,
     }));
   };
+
   const handleSearchChange = (id: string, name: string) => {
-    console.log(id);
     setAddEvacuationForm((prevData) => ({
       ...prevData,
       [name]: id.toString(),
     }));
   };
+
+  const confirmDetachEvacuation = () => {
+    const current = (addEvacuationForm.evacuation || "").trim();
+
+    // If already empty, just inform the user.
+    if (current === "") {
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "No evacuation center is currently set.",
+      }));
+      return;
+    }
+
+    // Ask for confirmation before detaching
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: true,
+      type: "confirm",
+      message:
+        `Are you sure you want to detach the evacuation center ` +
+        (current ? `“${current}” ` : "") +
+        `from “${addEvacuationForm.name}”?`,
+      onSubmit: () => {
+        // User confirmed -> clear the field (backend will interpret "" as DETACH)
+        setAddEvacuationForm((p) => ({ ...p, evacuation: "" }));
+      },
+    }));
+  };
+
   return (
     <>
       {locationPickerIsOpen && (
@@ -589,11 +617,14 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
           lng={addEvacuationForm.lng}
         />
       )}
+
       <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
         <div className="modal-container">
           <div className="horizontal-container">
-            <span className="details-title">Add Evacuation</span>
+            <span className="details-title">Edit Barangay</span>
           </div>
+
+          {/* Name */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
             <input
@@ -603,6 +634,8 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
               onChange={handleAddModalChange}
             />
           </div>
+
+          {/* Location */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div
@@ -634,32 +667,56 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
                 }}
                 onClick={openLocationPicker}
               >
-                {" "}
-                <FontAwesomeIcon
-                  icon={faMapMarkerAlt}
-                  style={{ height: "20px" }}
-                />
+                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
               </button>
             </div>
           </div>
+
+          {/* LGU */}
           <div className="horizontal-container">
             <span className="item-details-identifier">LGU:</span>
             <FuzzySeachElement
-              value={addEvacuationForm.LGU}
+              value={addEvacuationForm.LGU ?? ""}
               name="LGU"
               setLGUID={handleSearchChange}
               searchURL="/lgu_profiling/manage_lgu/search_lgu"
-            ></FuzzySeachElement>
+            />
           </div>
-          <div className="horizontal-container">
+
+          {/* Evacuation Center + Detach (with confirm) */}
+          <div className="horizontal-container" style={{ alignItems: "center" }}>
             <span className="item-details-identifier">Evacuation Center:</span>
-            <FuzzySeachElement
-              value={addEvacuationForm.evacuation}
-              name="evacuation"
-              setLGUID={handleSearchChange}
-              searchURL="/lgu_profiling/manage_lgu/search_evacuation"
-            ></FuzzySeachElement>
+            <div style={{ display: "flex", width: "100%", gap: "8px" }}>
+              <div style={{ flex: 1 }}>
+                <FuzzySeachElement
+                  value={addEvacuationForm.evacuation ?? ""}
+                  name="evacuation"
+                  setLGUID={handleSearchChange}
+                  searchURL="/lgu_profiling/manage_lgu/search_evacuation"
+                />
+              </div>
+              <button
+                type="button"
+                title="Detach evacuation center"
+                style={{
+                  padding: "6px 10px",
+                  backgroundColor: "#f87171",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  height: "32px",
+                  alignSelf: "center",
+                }}
+                onClick={confirmDetachEvacuation}
+              >
+                Detach
+              </button>
+            </div>
           </div>
+
+          {/* Population */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
             <input
@@ -667,17 +724,22 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
               name="population"
               value={addEvacuationForm.population}
               onChange={handleAddModalChange}
+              min={0}
             />
           </div>
+
+          {/* Contact Info */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
             <input
-              type="number"
+              type="text"
               name="contact_info"
               value={addEvacuationForm.contact_info}
               onChange={handleAddModalChange}
             />
           </div>
+
+          {/* Risk Level */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Risk Level:</span>
             <select
@@ -687,28 +749,27 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
               value={addEvacuationForm.risk_level}
               onChange={handleAddModalChange}
             >
-              <option value="" selected disabled>
-                Select LGU Level
+              <option value="" disabled>
+                Select Risk Level
               </option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>
-              <option value="High">Long</option>
+              <option value="high">High</option>
             </select>
           </div>
+
+          {/* Actions */}
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
               onClick={() => {
                 setMessageBox((prev) => ({
-                  ...prev, // preserves onClose and anything else
-                  isOpen: true, // your new values
+                  ...prev,
+                  isOpen: true,
                   type: "confirm",
-                  message: "Are you sure you want to add this record?",
+                  message: "Are you sure you want to update this record?",
                   onSubmit: () => {
-                    handleEditRecord(
-                      selectedData.data[0].text,
-                      addEvacuationForm,
-                    );
+                    handleEditRecord(selectedData.data[0].text, addEvacuationForm);
                   },
                 }));
               }}

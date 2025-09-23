@@ -8,7 +8,7 @@ from database import get_db
 from data_schemas.finance_record_schema import (
     InflowFinanceRecordCreate,
     FinanceRecordRead,
-    # FinanceRecordUpdate,
+    FinanceRecordUpdate,
     # FinanceRecordStatusUpdate,
     TransactionType,
     RecordStatus,
@@ -87,12 +87,12 @@ def get_outflows(page: int = 0, limit: int = 100, db: Session = Depends(get_db))
     outflows = FinanceRecordCRUD.get_outflows(db, page=page, limit=limit)
     return outflows
 
-# @router_admin.patch( "/update_record/{finance_id}", response_model=FinanceRecordRead, summary="Update editable fields of a finance record" )
-# def update_finance_record(finance_id: str, patch: FinanceRecordUpdate, db: Session = Depends(get_db)):
-#     obj = FinanceRecordCRUD.update(db, finance_id, patch)
-#     if not obj:
-#         raise HTTPException(status_code=404, detail="Finance record not found")
-#     return obj
+@router_admin.patch( "/update_record", response_model=FinanceRecordRead, summary="Update editable fields of a finance record" )
+def update_finance_record(patch: FinanceRecordUpdate = Depends(FinanceRecordUpdate.as_form), db: Session = Depends(get_db)):
+    obj = FinanceRecordCRUD.update(db, patch.finance_id, patch)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Finance record not found")
+    return obj
 
 
 # @router_admin.patch( "/{finance_id}/status", response_model=FinanceRecordRead, summary="Update status of a finance record" )

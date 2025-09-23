@@ -388,7 +388,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                         </div>
                     </div>
                 )}
-                {userType === "admin" && (
+                {userRoles.includes("operations admin") && userType === "admin" && (
                     <div className="nav-items" id="user_management">
                         <div
                             className={`flex-control ${activeNav === "user_management" ? "active" : ""

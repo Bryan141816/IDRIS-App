@@ -202,6 +202,9 @@ class BaranggayRecords(Base):
     evacucation_center = relationship("EvacuationCenter", back_populates="barangay")
 
 
+
+
+
 class ResponseReport(Base):
     __tablename__ = "response_reports"
     __random_pk_field__ = "response_id"

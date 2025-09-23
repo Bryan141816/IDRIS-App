@@ -397,7 +397,7 @@ export default function IDRISDashboard() {
   const closeVolunteerModal = (): void => setIsVolunteerModalOpen(false);
   const openReportModal = (): void => setIsReportsModalOpen(true);
   const closeReportModal = (): void => setIsReportsModalOpen(false);
-  const isOpsAdmin = userType === "user" && userRoles.includes("operations admin");
+  const isOpsAdmin = userType === "admin" && userRoles.includes("operations admin");
 
   useEffect(() => {
     const savedDate = localStorage.getItem("viewDate");
@@ -563,7 +563,7 @@ export default function IDRISDashboard() {
                   <div className="card-title-white">Total Volunteers</div>
                   <div className="card-number">{totalVolunteers}</div>
                 </div>
-                {userType === "user" && userRoles.includes("operations admin") ? (
+                {userType === "admin" && userRoles.includes("operations admin") ? (
                   <>
                     <button
                       className="manage-btn"

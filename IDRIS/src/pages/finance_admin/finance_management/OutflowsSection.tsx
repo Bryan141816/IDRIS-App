@@ -5,45 +5,25 @@ import {
   UpdateReportData, // make sure this exists in your API handler
 } from '../../../API_Handler/finance_management_handler';
 import { OutflowItem } from './FinanceManagement';
+import {
+  toDateInput,
+  normalizeBudgetAllocationName,
+  validate,
+  formatCurrency,
+  withSwal,
+} from './helpers';
 
-const fmt = (n: number | bigint) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
-
-// ---------- helpers ----------
-const toDateInput = (value?: string | Date | number | null) => {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const tzOffset = d.getTimezoneOffset() * 60000;
-  const local = new Date(d.getTime() - tzOffset);
-  return local.toISOString().slice(0, 10);
+export const normalizeRecordStatus = (status: string | null | undefined) => {
+  const s = (status || "").toUpperCase();
+  if (s === "PENDING") return "PENDING";
+  if (s === "PAID") return "PAID";
+  if (s === "APPROVED") return "APPROVED";
+  if (s === "DENIED") return "DENIED";
+  if (s === "RECONCILED") return "RECONCILED";
+  
+  return "PENDING";
 };
 
-const normalizeRecordStatus = (status?: string | null) => {
-  const s = (status || '').toUpperCase();
-  if (['PAID', 'APPROVED', 'DENIED', 'RECONCILED'].includes(s)) return s;
-  return 'APPROVED';
-};
-const normalizeBudgetAllocationName = (input?: string | null) => {
-  if (!input) return 'GENERAL';
-  const s = input.trim().toUpperCase().replace(/&/g, 'AND');
-  if (s.startsWith('EMERGENCY')) return 'EMERGENCY';
-  if (s.includes('FOOD') || s.includes('WATER')) return 'FOOD AND WATER';
-  if (s.startsWith('TRANSPO') || s.includes('TRANSPORT')) return 'TRANSPORTATION';
-  if (s.startsWith('EQUIP')) return 'EQUIPMENT';
-  if (s.startsWith('ADMIN')) return 'ADMINISTRATIVE';
-  if (s === 'GENERAL') return 'GENERAL';
-  return 'GENERAL';
-};
-const validate = (form: Partial<OutflowItem>) => {
-  const errs: string[] = [];
-  if (!form.counterparty?.trim()) errs.push('Vendor is required.');
-  if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
-  if (!form.budget_for) errs.push('Category is required.');
-  if (!form.date) errs.push('Date is required.');
-  if (!form.budget_for) errs.push('Budget allocation is required.');
-  return errs;
-};
 const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   const fd = new FormData();
   if (isUpdate) fd.append('finance_id', String((form as any).finance_id));
@@ -55,20 +35,6 @@ const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   if (form.description) fd.append('description', form.description);
   fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
   return fd;
-};
-const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
-  try {
-    void Swal.fire({ title: loadingTitle, allowOutsideClick: false, didOpen: () => Swal.showLoading(), showConfirmButton: false });
-    const result = await task();
-    Swal.hideLoading();
-    await Swal.fire({ icon: 'success', title: 'Success', text: 'Operation completed.', confirmButtonText: 'Great!' });
-    return result;
-  } catch (error: any) {
-    const message = error?.response?.data?.detail || error?.message || 'An unexpected error occurred.';
-    Swal.hideLoading();
-    await Swal.fire({ icon: 'error', title: 'Operation failed', text: message, confirmButtonText: 'OK' });
-    throw error;
-  }
 };
 
 // ---------- Modal ----------
@@ -110,13 +76,12 @@ const OutflowModal: React.FC<{
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = validate(form);
-    if (errors.length) {
-      await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' ') });
-      return;
-    }
-    const fd = buildFormData(form, true);
+
+    const fd = new FormData();
+    fd.append('finance_id', String((form as any).finance_id));
+    fd.append('status', normalizeRecordStatus(form.status));
     console.log(fd);
+
     const updated = await withSwal('Updating expense…', () => UpdateReportData(fd));
     onSave?.(updated);
     onClose();
@@ -132,64 +97,73 @@ const OutflowModal: React.FC<{
           <div className="modal-content">
             <h3>{mode === 'add' ? 'Record New Expense' : mode === 'edit' ? 'Edit Expense' : 'View Expense'}</h3>
 
-            <div className="form-group">
-              <label>Budget For</label>
-              <select
-                disabled={readOnly}
-                value={form.budget_for || ''}
-                onChange={e => setForm({ ...form, budget_for: e.target.value })}
-              >
-                <option value="" disabled>Select category</option>
-                <option>Emergency Supplies</option>
-                <option>Food & Water</option>
-                <option>Transportation</option>
-                <option>Equipment</option>
-                <option>Administrative</option>
-                <option>Donations</option>
-                <option>General Expenses</option>
-              </select>
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Budget For</label>
+                <select
+                  disabled={readOnly}
+                  value={form.budget_for || ''}
+                  onChange={e => setForm({ ...form, budget_for: e.target.value })}
+                >
+                  <option value="" disabled>Select category</option>
+                  <option>Emergency Supplies</option>
+                  <option>Food & Water</option>
+                  <option>Transportation</option>
+                  <option>Equipment</option>
+                  <option>Administrative</option>
+                  <option>Donations</option>
+                  <option>General Expenses</option>
+                </select>
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Amount (PHP)</label>
-              <input
-                disabled={readOnly}
-                type="number"
-                min={0}
-                placeholder="Enter amount"
-                value={form.amount ?? ''}
-                onChange={e => setForm({ ...form, amount: +e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Amount (PHP)</label>
+                <input
+                  disabled={readOnly}
+                  type="number"
+                  min={0}
+                  placeholder="Enter amount"
+                  value={form.amount ?? ''}
+                  onChange={e => setForm({ ...form, amount: +e.target.value })}
+                />
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Vendor/Supplier</label>
-              <input
-                disabled={readOnly}
-                type="text"
-                placeholder="Enter vendor name"
-                value={form.counterparty || ''}
-                onChange={e => setForm({ ...form, counterparty: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Vendor/Supplier</label>
+                <input
+                  disabled={readOnly}
+                  type="text"
+                  placeholder="Enter vendor name"
+                  value={form.counterparty || ''}
+                  onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                />
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Date</label>
-              <input
-                disabled={readOnly}
-                type="date"
-                value={form.date || ''}
-                onChange={e => setForm({ ...form, date: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Date</label>
+                <input
+                  disabled={readOnly}
+                  type="date"
+                  value={form.date || ''}
+                  onChange={e => setForm({ ...form, date: e.target.value })}
+                />
+              </div>
+            }
 
             <div className="form-group">
               <label>Status</label>
               <select
                 disabled={readOnly}
-                value={form.status || 'RECONCILED'}
+                value={form.status || 'PENDING'}
                 onChange={e => setForm({ ...form, status: e.target.value as OutflowItem['status'] })}
               >
+                <option value="PENDING">PENDING</option>
                 <option value="PAID">PAID</option>
                 <option value="APPROVED">APPROVED</option>
                 <option value="DENIED">DENIED</option>
@@ -197,15 +171,17 @@ const OutflowModal: React.FC<{
               </select>
             </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                disabled={readOnly}
-                placeholder="Enter description"
-                value={form.description || ''}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  disabled={readOnly}
+                  placeholder="Enter description"
+                  value={form.description || ''}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+            }
           </div>
 
           <div className="modal-actions">
@@ -274,7 +250,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
             {rows.map((row, index) => (
               <tr key={(row as any).finance_id ?? index}>
                 <td>{row.budget_for}</td>
-                <td className="amount negative">{fmt(row.amount)}</td>
+                <td className="amount negative">{formatCurrency(row.amount)}</td>
                 <td>{row.counterparty}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
@@ -296,7 +272,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
         onClose={() => setModalOpen(false)}
         onSave={(saved) => {
           setModalOpen(false);
-          upsertRow(saved as OutflowItem); 
+          upsertRow(saved as OutflowItem);
         }}
       />
     </div>

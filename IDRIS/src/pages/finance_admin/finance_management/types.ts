@@ -17,6 +17,11 @@ export type BudgetAllocations =
   | "DONATIONS"
   | "GENERAL";
 
+export enum TransactionType {
+  INFLOW = 'INFLOW',
+  OUTFLOW = 'OUTFLOW',
+}
+
 export type Finance = {
   finance_id: number | string;
   counterparty: string;

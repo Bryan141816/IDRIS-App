@@ -1,4 +1,9 @@
+import Swal from "sweetalert2";
+import { InflowItem, OutflowItem } from './FinanceManagement';
 import { FinanceRecordType } from "./types";
+
+// export const formatCurrency = (n: number | bigint) =>
+//   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
 
 export const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleString("en-US", {
@@ -16,6 +21,14 @@ export const formatDateOnly = (dateString: string) =>
     day: "numeric",
   });
 
+export const toDateInput = (value?: string | Date | number | null) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  const local = new Date(d.getTime() - tzOffset);
+  return local.toISOString().slice(0, 10);
+};
 
 export const formatCurrency = (value: string | number | null | undefined) => {
   const num = Number.parseFloat(String(value ?? "0"));
@@ -52,7 +65,7 @@ export const getTotalPendingTransactions = (data: FinanceRecordType): number => 
   return pendingOut + pendingIn;
 };
 
-  // ------- Download as PDF (jsPDF + autotable) -------
+// ------- Download as PDF (jsPDF + autotable) -------
 export const urlToDataUrl = async (url: string): Promise<string | null> => {
   try {
     const res = await fetch(url);
@@ -65,4 +78,73 @@ export const urlToDataUrl = async (url: string): Promise<string | null> => {
   } catch {
     return null;
   }
+};
+
+export const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
+
+export const normalizeBudgetAllocationName = (input: string | null | undefined) => {
+  if (!input) return "GENERAL";
+  const s = input.trim().toUpperCase().replace(/&/g, "AND");
+  if (s.startsWith("EMERGENCY")) return "EMERGENCY";
+  if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
+  if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
+  if (s.startsWith("EQUIP")) return "EQUIPMENT";
+  if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
+  if (s === "GENERAL") return "GENERAL";
+  return "GENERAL";
+};
+
+export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {
+  const errs: string[] = [];
+  if (!form.counterparty?.trim()) errs.push('Source is required.');
+  if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
+  if (!form.budget_for) errs.push('Category is required.');
+  if (!form.date) errs.push('Date is required.');
+  if (!form.budget_for) errs.push('Budget allocation is required.');
+  return errs;
+};
+
+export const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
+  try {
+    // show loading
+    void Swal.fire({
+      title: loadingTitle,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      showConfirmButton: false,
+    });
+
+    const result = await task();
+
+    // switch to success (clear spinner first)
+    Swal.hideLoading();
+    await Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Operation completed.',
+      confirmButtonText: 'Great!',
+      allowOutsideClick: true,
+      showConfirmButton: true,
+    });
+
+    return result;
+  } catch (error: any) {
+    const message =
+      error?.response?.data?.detail ||
+      error?.message ||
+      'An unexpected error occurred.';
+
+    Swal.hideLoading();
+    await Swal.fire({
+      icon: 'error',
+      title: 'Operation failed',
+      text: message,
+      confirmButtonText: 'OK',
+      allowOutsideClick: true,
+      showConfirmButton: true,
+    });
+
+    throw error;
+  }
+  // IMPORTANT: no 'finally Swal.close()' here
 };

@@ -828,7 +828,7 @@
           }
          
           textarea {
-            resize: vertical;
+            resize: none;
             min-height: 80px;
           }
          
@@ -967,3 +967,6 @@
     }
   }
   
+textarea{
+  resize: none;
+}

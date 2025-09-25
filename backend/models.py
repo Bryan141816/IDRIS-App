@@ -1033,11 +1033,9 @@ class BudgetAllocation(enum.Enum):
     DONATIONS = "DONATIONS"
     GENERAL = "GENERAL"
 
-
 class TransactionType(enum.Enum):
     INFLOW = "INFLOW"
     OUTFLOW = "OUTFLOW"
-
 
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid

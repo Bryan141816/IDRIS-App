@@ -1,55 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import Swal from "sweetalert2";
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { InflowItem } from './FinanceManagement';
+import Swal from "sweetalert2";
 
-export enum TransactionType {
-  INFLOW = 'INFLOW',
-  OUTFLOW = 'OUTFLOW',
-}
+import {
+  toDateInput,
+  normalizeTransactionType,
+  normalizeBudgetAllocationName,
+  validate,
+  withSwal,
+  formatCurrency,
+} from './helpers';
 
-const fmt = (n: number | bigint) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
-
-// ---- helpers -----------------------------------------------------
-const toDateInput = (value?: string | Date | number | null) => {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const tzOffset = d.getTimezoneOffset() * 60000;
-  const local = new Date(d.getTime() - tzOffset);
-  return local.toISOString().slice(0, 10);
-};
-
-const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
-
-const normalizeRecordStatus = (status: string | null | undefined) => {
+export const normalizeRecordStatus = (status: string | null | undefined) => {
   const s = (status || "").toUpperCase();
   if (s === "PENDING") return "PENDING";
   if (s === "RECEIVED") return "RECEIVED";
   return "PENDING";
-};
-
-const normalizeBudgetAllocationName = (input: string | null | undefined) => {
-  if (!input) return "GENERAL";
-  const s = input.trim().toUpperCase().replace(/&/g, "AND");
-  if (s.startsWith("EMERGENCY")) return "EMERGENCY";
-  if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
-  if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
-  if (s.startsWith("EQUIP")) return "EQUIPMENT";
-  if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
-  if (s === "GENERAL") return "GENERAL";
-  return "GENERAL";
-};
-
-const validate = (form: Partial<InflowItem>) => {
-  const errs: string[] = [];
-  if (!form.counterparty?.trim()) errs.push('Source is required.');
-  if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
-  if (!form.budget_for) errs.push('Category is required.');
-  if (!form.date) errs.push('Date is required.');
-  if (!form.budget_for) errs.push('Budget allocation is required.');
-  return errs;
 };
 
 const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
@@ -64,52 +31,6 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
   return fd;
 };
-
-const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
-  try {
-    // show loading
-    void Swal.fire({
-      title: loadingTitle,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-      showConfirmButton: false,
-    });
-
-    const result = await task();
-
-    // switch to success (clear spinner first)
-    Swal.hideLoading();
-    await Swal.fire({
-      icon: 'success',
-      title: 'Success',
-      text: 'Operation completed.',
-      confirmButtonText: 'Great!',
-      allowOutsideClick: true,
-      showConfirmButton: true,
-    });
-
-    return result;
-  } catch (error: any) {
-    const message =
-      error?.response?.data?.detail ||
-      error?.message ||
-      'An unexpected error occurred.';
-
-    Swal.hideLoading();
-    await Swal.fire({
-      icon: 'error',
-      title: 'Operation failed',
-      text: message,
-      confirmButtonText: 'OK',
-      allowOutsideClick: true,
-      showConfirmButton: true,
-    });
-
-    throw error;
-  }
-  // IMPORTANT: no 'finally Swal.close()' here
-};
-
 
 // ---- Modal -------------------------------------------------------
 const InflowModal: React.FC<{
@@ -158,7 +79,7 @@ const InflowModal: React.FC<{
       return;
     }
 
-    const fd = buildFormData(form , true);
+    const fd = buildFormData(form, true);
 
     console.log(fd);
     const updated = await withSwal('Updating inflow…', () => UpdateReportData(fd));
@@ -182,56 +103,64 @@ const InflowModal: React.FC<{
               {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
             </h3>
 
-            <div className="form-group">
-              <label>Budget For</label>
-              <select
-                disabled={readOnly}
-                value={form.budget_for || ""}
-                onChange={e => setForm({ ...form, budget_for: e.target.value })}
-              >
-                <option value="" disabled>Select category</option>
-                <option>Emergency Supplies</option>
-                <option>Food & Water</option>
-                <option>Transportation</option>
-                <option>Equipment</option>
-                <option>Administrative</option>
-                <option>Donations</option>
-                <option>General Expenses</option>
-              </select>
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Budget For</label>
+                <select
+                  disabled={readOnly}
+                  value={form.budget_for || ""}
+                  onChange={e => setForm({ ...form, budget_for: e.target.value })}
+                >
+                  <option value="" disabled>Select category</option>
+                  <option>Emergency Supplies</option>
+                  <option>Food & Water</option>
+                  <option>Transportation</option>
+                  <option>Equipment</option>
+                  <option>Administrative</option>
+                  <option>Donations</option>
+                  <option>General Expenses</option>
+                </select>
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Source</label>
-              <input
-                disabled={readOnly}
-                type="text"
-                placeholder="Enter funding source"
-                value={form.counterparty || ""}
-                onChange={e => setForm({ ...form, counterparty: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Source</label>
+                <input
+                  disabled={readOnly}
+                  type="text"
+                  placeholder="Enter funding source"
+                  value={form.counterparty || ""}
+                  onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                />
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Amount (PHP)</label>
-              <input
-                disabled={readOnly}
-                type="number"
-                min={0}
-                placeholder="Enter amount"
-                value={form.amount ?? ""}
-                onChange={e => setForm({ ...form, amount: +e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Amount (PHP)</label>
+                <input
+                  disabled={readOnly}
+                  type="number"
+                  min={0}
+                  placeholder="Enter amount"
+                  value={form.amount ?? ""}
+                  onChange={e => setForm({ ...form, amount: +e.target.value })}
+                />
+              </div>
+            }
 
-            <div className="form-group">
-              <label>Date Received</label>
-              <input
-                disabled={readOnly}
-                type="date"
-                value={form.date || ""}
-                onChange={e => setForm({ ...form, date: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Date Received</label>
+                <input
+                  disabled={readOnly}
+                  type="date"
+                  value={form.date || ""}
+                  onChange={e => setForm({ ...form, date: e.target.value })}
+                />
+              </div>
+            }
 
             <div className="form-group">
               <label>Status</label>
@@ -245,15 +174,17 @@ const InflowModal: React.FC<{
               </select>
             </div>
 
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                disabled={readOnly}
-                placeholder="Enter description"
-                value={form.description || ""}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  disabled={readOnly}
+                  placeholder="Enter description"
+                  value={form.description || ""}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+            }
           </div>
 
           <div className="modal-actions">
@@ -324,7 +255,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
             {rows?.map((row, index) => (
               <tr key={index}>
                 <td>{row.counterparty}</td>
-                <td className="amount positive">{fmt(row.amount)}</td>
+                <td className="amount positive">{formatCurrency(row.amount)}</td>
                 <td>{row.budget_for}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
@@ -345,9 +276,9 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
         initial={selected}
         onClose={() => setModalOpen(false)}
         onSave={(saved) => {
-            setModalOpen(false)
-            upsertRow(saved as InflowItem)
-          }
+          setModalOpen(false)
+          upsertRow(saved as InflowItem)
+        }
         }
       />
     </div>

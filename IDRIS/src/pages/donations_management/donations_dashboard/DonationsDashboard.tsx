@@ -193,7 +193,17 @@ const DonationsDashboard = () => {
   return (
     <>
       <div id="dashboard">
-        <h3 className="public-feed-title">Donations Statistics</h3>
+        <div className="public-feed-title">
+          <div className="title-child">
+            <h3>Donations Statistics</h3>
+          </div>
+          {isAdmin && (
+            <div className="icon-container closer-texts" onClick={() => navigate("/donation_report")}>
+              <MenuDots className="menu-icon" />
+              Generate Report
+            </div>
+          )}
+        </div>
 
         <div id="donation-statistic">
           <div id="grid-container">
@@ -246,38 +256,39 @@ const DonationsDashboard = () => {
           </div>
         </div>
 
-        <h3 className="public-feed-title funding-proposal-titles">
-          Donations Per Site
-          {isAdmin && (
-            <div className="icon-container closer-texts" onClick={() => navigate("/donation_report")}>
-              <MenuDots className="menu-icon" />
-              Generate Report
+        <div className="donations-container">
+          <div className="donation-pie-chart-container">
+            <h3 className="public-feed-title funding-proposal-titles">
+              Donation Distribution
+            </h3>
+            <DashboardPieChart />
+          </div>
+
+          <div className="donation-record-container">
+            {/* =============== Donation Record (always renders; dummy if empty) =============== */}
+            <div id="donation-record-list">
+              <h3 className="public-feed-title funding-proposal-titles">Recent Donations</h3>
+              {donationRecords.map((donation, index) => (
+                <DonationRecordCard
+                  key={index}
+                  donor_name={donation.donor_name}
+                  amount={donation.amount}
+                  funding_title={donation.funding_title}
+                  donation_date={safeParseDate(donation.donation_date)}
+                  donation_type={donation.donation_type}
+                  item_description={donation.item_description}
+                  className="donation-record"
+                />
+              ))}
             </div>
-          )}
-        </h3>
-
-        <DashboardPieChart />
-
-        {/* =============== Donation Record (always renders; dummy if empty) =============== */}
-        <h3 className="public-feed-title">Donation Record</h3>
-        <div id="donation-record-container">
-          {donationRecords.map((donation, index) => (
-            <DonationRecordCard
-              key={index}
-              donor_name={donation.donor_name}
-              amount={donation.amount}
-              funding_title={donation.funding_title}
-              donation_date={safeParseDate(donation.donation_date)}
-              donation_type={donation.donation_type}
-              item_description={donation.item_description}
-              className="donation-record"
-            />
-          ))}
+          </div>
         </div>
 
         {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
-        <h3 id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
-          Recent Programs:
+        <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
+          <div className="title-child">
+            <h3>Donations Statistics</h3>
+          </div>          
           {isAdmin && (
             <Link to="/donations_management/funding_proposals">
               <div className="icon-container">
@@ -286,7 +297,7 @@ const DonationsDashboard = () => {
               </div>
             </Link>
           )}
-        </h3>
+        </div>
 
         <div id="funding-proposals">
           {fundingProposals.map((funding, index) => (

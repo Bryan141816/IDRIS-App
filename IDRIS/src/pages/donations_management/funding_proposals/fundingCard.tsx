@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
+import { formatCurrency } from "../helpers";
 
 const backendUrl = "http://127.0.0.1:8000";
 
@@ -108,7 +109,7 @@ const FundingCard: React.FC<FundingProp> = ({
         <div className={styles.progressContainer}>
           <p className={styles.progress}>
             <CircleDot width={16} height={16} className={styles.circleDot} />
-            PHP {donated} / {target}
+            {formatCurrency(donated / target)}
           </p>
           <p className={styles.percentage}>{percentage}%</p>
         </div>

@@ -3,9 +3,12 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from database import get_db
-from data_schemas.donation_schema import DonationCreate, DonationResponse, RecurringDonationCreate, InKindDonationCreate
+from data_schemas.donation_schema import ( 
+                                          DonationCreate, DonationResponse, RecurringDonationCreate, 
+                                          InKindDonationCreate, DonationHistoryResponse
+                                        )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from routers.role_checker import RoleChecker
 
 from typing import Optional, List
@@ -139,6 +142,51 @@ def recent_donations(
         date_to=_parse_iso(to),    
         status=status_list,    
     )
+
+@router.get("/me", response_model=List[DonationHistoryResponse])
+def get_my_donations(
+    current_user: User = Depends(get_current_user_from_access_token),
+    db: Session = Depends(get_db),
+    from_: Optional[date] = Query(None, alias="from"),
+    to: Optional[date] = Query(None, alias="to"),
+    status: Optional[str] = Query(None),
+    type: Optional[str] = Query(None),
+    limit: int = 100,
+    page: int = 0,
+):
+    # Status can be a CSV string
+    status_list = [s.strip().upper() for s in status.split(",")] if status else None
+
+    # Type can be a CSV string
+    type_list = [t.strip().upper() for t in type.split(",")] if type else None
+    
+    donor_profiles = current_user.donor_profile
+    
+    if not donor_profiles:
+            raise HTTPException(
+                status_code=404, 
+                detail="Donor profile not found for this user."
+            )     
+               
+    first_profile = donor_profiles[0]
+    
+    donor_id = first_profile.donor_id
+    print(f"Successfully retrieved donor_id: {donor_id}")
+    
+    print("From: ", from_)
+    print("To: ", to)
+    donations = CRUD.get_donations_by_donor_id(
+        db,
+        donor_id=donor_id,
+        date_from=from_,
+        date_to=to,
+        status=status_list,
+        dtype=type_list,
+        limit=limit,
+        page=page,
+    )
+    print(donations)
+    return donations
     
     
     

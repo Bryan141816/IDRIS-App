@@ -152,3 +152,45 @@ class DonationResponse(BaseModel):
         populate_by_name = True
 
 
+class DonationCashResponse(BaseModel):
+    """Schema for nested cash donation details."""
+    cash_id: str
+    amount: Optional[float] = None
+    payment_method: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class DonationInKindResponse(BaseModel):
+    """Schema for nested in-kind donation details."""
+    inkind_id: str
+    item_description: Optional[str] = None
+    description: Optional[str] = None
+    quantity: Optional[str] = None
+    estimated_value: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+        
+class DonationHistoryResponse(BaseModel):
+    """Main response model for a single donation."""
+    donation_id: str
+    donor_id: str   
+    frequency: str 
+    status: str   
+    
+    # Missing fields from your front-end and database model
+    proposal_id: Optional[str] = None 
+    donation_date: datetime
+    donation_type: str
+    next_donation_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+    # Missing nested objects
+    cash: Optional[DonationCashResponse] = None
+    inkind: Optional[DonationInKindResponse] = None
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True

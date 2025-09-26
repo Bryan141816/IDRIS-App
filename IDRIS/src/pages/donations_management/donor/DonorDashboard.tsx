@@ -24,7 +24,7 @@ import { DownloadOutlined, EyeOutlined, ReloadOutlined, FileTextOutlined } from 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
 
 import {
-  DonorAggregates, getDonorAggregates_legacy
+  DonorAggregates, fetchMyDonations, getDonorAggregates_legacy
 } from '../../../API_Handler/donations_donation_handler';
 
 const { RangePicker } = DatePicker;
@@ -57,7 +57,6 @@ interface DonationInKind {
 export interface DonationRow {
   donation_id: number;
   donor_id: number;
-  proposal_id?: number | null;
   donation_date: string; // ISO string from API
   donation_type: DonationType;
   status: DonationStatus;
@@ -106,24 +105,8 @@ interface FetchParams {
   userId?: number; // inferred from session; optional here
   from?: string; // ISO
   to?: string; // ISO
-  status?: DonationStatus | "ALL";
-  type?: DonationType | "ALL";
-}
-
-async function fetchMyDonations(params: FetchParams): Promise<DonationRow[]> {
-  // ⚠️ Replace the URL to match your backend. Example endpoints:
-  // GET /donations/me?from=...&to=...&status=...&type=...
-  // or GET /donation_records/user/:userId
-  const query = new URLSearchParams();
-  if (params.from) query.append("from", params.from);
-  if (params.to) query.append("to", params.to);
-  if (params.status && params.status !== "ALL") query.append("status", params.status);
-  if (params.type && params.type !== "ALL") query.append("type", params.type);
-
-  const url = `/api/donations/me?${query.toString()}`;
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) throw new Error(`Failed to fetch donations (${res.status})`);
-  return res.json();
+  status?: DonationStatus;
+  type?: DonationType;
 }
 
 async function downloadDonationReceipt(donationId: number) {
@@ -147,14 +130,29 @@ async function downloadDonationReceipt(donationId: number) {
  * ------------------------------
  */
 
-const DonorDashboard: React.FC = () => {
+export const DonorDashboard: React.FC = () => {
+  // Date formatting utility
+  const toISODate = (d?: string | Date | null): string | undefined => {
+    if (!d) return undefined;
+    const date = d instanceof Date ? d : new Date(d);
+    // Check for invalid date
+    if (isNaN(date.getTime())) return undefined;
+    
+    const year = date.getFullYear();
+    // getMonth() is 0-indexed, so add 1 and pad with '0'
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
   // Filters
   const _date = new Date();
-  const [date_from, setDateFrom] = useState<string | null>(new Date(_date.getFullYear(), 0, 1).toISOString());
-  const [date_to, setDateTo] = useState<string | null>(_date.toDateString());
+  const [date_from, setDateFrom] = useState<string | null | undefined>(toISODate(new Date(_date.getFullYear(), 0, 1)) ?? null);
+  const [date_to, setDateTo] = useState<string | null | undefined>(toISODate(_date) ?? null);
   const [status, setStatus] = useState<DonationStatus | "ALL">("ALL");
   const [dtype, setDtype] = useState<DonationType | "ALL">("ALL");
-
+  const [page, setPage ] = useState<number>(1);
   // Data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,25 +164,26 @@ const DonorDashboard: React.FC = () => {
   // DONOR DATAS
   const [donorData, setDonorData] = useState<DonorAggregates>();
 
-  const toISO = (d?: string | Date | null) => {
-    if (!d) return undefined;
-    if (d instanceof Date) return d.toISOString();
-    // string
-    return d.includes("T") ? d : new Date(d).toISOString();
-  };
-
   const reload = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      
-      const startISO = toISO(date_from) ?? new Date(new Date().getFullYear(), 0, 1).toISOString();
+      const from = toISODate(date_from);
+      const to = toISODate(date_to);
 
-      const endISO =
-        toISO(date_to) ?? new Date().toISOString(); // default to NOW
+      // Fetch aggregates
+      const aggData = await getDonorAggregates_legacy(from, to);
+      setDonorData(aggData);
 
-      const data = await getDonorAggregates_legacy(
-        startISO, endISO
-      );
-      console.log(data);
+      // Fetch donation history
+      const donationRows = await handlefetchMyDonations({
+        from,
+        to,
+        status: status === "ALL" ? undefined : status,
+        type: dtype === "ALL" ? undefined : dtype,
+      });
+      setRows(donationRows);
+
     } catch (e: any) {
       console.error(e);
       setError(e?.message ?? "Failed to load donations");
@@ -241,6 +240,22 @@ const DonorDashboard: React.FC = () => {
       .sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([month, value]) => ({ month, value }));
   }, [rows]);
+
+  async function handlefetchMyDonations(params: FetchParams): Promise<DonationRow[]> {
+    try {
+      const response = await fetchMyDonations(params.from, params.to, params.status, params.type, 50, page);
+  
+      if (!response) {
+        throw new Error(`Failed to fetch donations: ${response.statusText}`);
+      }
+      
+      console.log(response);
+      return response;
+    } catch (error) {
+      console.error("An error occurred while fetching donations:", error);
+      return [];
+    }
+  }
 
   const columns = [
     {
@@ -332,7 +347,7 @@ const DonorDashboard: React.FC = () => {
   ];
 
   const onExportCsv = () => {
-    const headers = ["Donation ID","Date","Type","Amount/Value","Status","Frequency","Proposal ID"]; 
+    const headers = ["Donation ID","Date","Type","Amount/Value","Status","Frequency"]; 
     const body = rows.map((r) => [
       r.donation_id,
       new Date(r.donation_date).toISOString(),
@@ -340,7 +355,6 @@ const DonorDashboard: React.FC = () => {
       r.donation_type === "CASH" ? r.cash?.amount ?? "" : r.inkind?.estimated_value ?? "",
       r.status,
       r.frequency,
-      r.proposal_id ?? "",
     ]);
 
     const csv = [headers, ...body].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -360,10 +374,10 @@ const DonorDashboard: React.FC = () => {
         <Space wrap>
           <RangePicker 
             onChange={(vals) => {
-              const from = vals?.[0]?.toDate().toISOString();
-              const to = vals?.[1]?.toDate().toISOString();
-              // setDateFrom(from);
-              // setDateTo(to);
+              const from = vals?.[0] ? toISODate(vals[0].toDate()) : null;
+              const to = vals?.[1] ? toISODate(vals[1].toDate()) : null;
+              setDateFrom(from);
+              setDateTo(to);
             }}
             allowEmpty={[true, true]}
           />
@@ -423,34 +437,10 @@ const DonorDashboard: React.FC = () => {
             <Statistic title="Completed Donations" value={totals.completed} />
           </Card>
         </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic title="Active Recurring" value={totals.recActive} />
-          </Card>
-        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} lg={9}>
-          <Card title="Giving Over Time">
-            {rows.length === 0 ? (
-              <Empty description="No data" />
-            ) : (
-              <div style={{ width: "100%", height: 240 }}>
-                <ResponsiveContainer>
-                  <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 10, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <RTooltip formatter={(v: any) => currency(v as number)} labelFormatter={(l) => `Month: ${l}`} />
-                    <Line type="monotone" dataKey="value" dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </Card>
-        </Col>
-        {/* <Col xs={24} lg={15}>
+        <Col xs={24} lg={15}>
           <Card title={tableHeader} bodyStyle={{ paddingTop: 0 }}>
             {loading ? (
               <Skeleton active paragraph={{ rows: 6 }} />
@@ -466,11 +456,8 @@ const DonorDashboard: React.FC = () => {
               />
             )}
           </Card>
-        </Col> */}
+        </Col>
       </Row>
-
     </div>
   );
 };
-
-export default DonorDashboard

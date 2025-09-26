@@ -4,11 +4,11 @@ from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 from sqlalchemy import extract, func, case, and_
 from typing import Optional, Sequence, Union
 from decimal import Decimal
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from crud_functions.utils import random_suffix, uid_from_string, _to_enum, uid_from_string, rand_alnum
 
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
-
+from data_schemas.donation_schema import DonationHistoryResponse
 from models import (
     Donor,
     Donation,
@@ -440,3 +440,53 @@ class DonationCRUD:
             "donation_count": int(donation_count or 0),
             "active_recurring_count": int(active_recurring_count or 0),
         }
+
+    @staticmethod
+    def get_donations_by_donor_id(
+        db: Session,
+        donor_id: str,
+        limit: int = 100,
+        page: int = 1,
+        *,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        status: Optional[Sequence[DonationStatus]] = None,
+        dtype: Optional[Sequence[DonationType]] = None,
+    ):
+        """
+        Donation history for a single donor, with filters.
+        """
+        q = (
+            db.query(Donation)
+            .options(
+                joinedload(Donation.cash),
+                joinedload(Donation.inkind),
+                joinedload(Donation.proposal),
+            )
+            .filter(Donation.donor_id == donor_id)
+        )
+                
+        if date_from:
+            q = q.filter(Donation.donation_date >= date_from)
+        if date_to:
+            adjusted_date_to = date_to + timedelta(days=1)
+            q = q.filter(Donation.donation_date < adjusted_date_to)
+        if status:
+            q = q.filter(Donation.status.in_(status))
+        if dtype:
+            q = q.filter(Donation.donation_type.in_(dtype))
+
+        offset = (page - 1) * limit
+
+        db_donations = q.order_by(Donation.donation_date.desc()).limit(limit).offset(offset).all()
+        responses = []
+        for db_donation in db_donations:
+            try:
+                # Pydantic v2: read attributes from ORM object
+                resp = DonationHistoryResponse.model_validate(db_donation, from_attributes=True)
+            except AttributeError:
+                # Fallback: older Pydantic v1 API
+                resp = DonationHistoryResponse.from_orm(db_donation)
+            responses.append(resp)
+
+        return responses

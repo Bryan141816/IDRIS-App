@@ -7,6 +7,7 @@ import { Modal } from "../../../components/Page_Furniture/Modals";
 import DonorStatusButton from '../../../components/Page_Furniture/TwoModeButton';
 import { createNewDonor } from '../../../API_Handler/donations_donors_handler';
 import { fetchCurrentUserId } from '../../../API_Handler/auth';
+import { DonorDashboard } from './DonorDashboard';
 import Swal from "sweetalert2";
 
 interface DonorProfile {
@@ -389,6 +390,8 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+
+      <DonorDashboard />
 
       {renderRegisterDonorModal()}
 

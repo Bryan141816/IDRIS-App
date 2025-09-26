@@ -5,6 +5,7 @@ interface InventoryModalProps {
   onSubmit?: () => void | null;
   children: ReactNode;
   modalType: string;
+  zIndex?: number;
 }
 
 export const InventoryModal: React.FC<InventoryModalProps> = ({
@@ -12,9 +13,10 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   onSubmit,
   children,
   modalType,
+  zIndex = 900,
 }) => {
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" style={{ zIndex }}>
       <div className="modal">
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
@@ -55,8 +57,8 @@ export interface InventoryItemsProps {
   inventory_id: number;
   item_name: string;
   quantity: number;
-  location: number;
+  category: string;
   batch: string;
-  expiry: Date | null;
+  expiry: string;
   status: string;
 }

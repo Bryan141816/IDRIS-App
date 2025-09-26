@@ -149,6 +149,7 @@ class Hazard(Base):
     action = Column(String, nullable=True)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
 class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     __random_pk_field__ = "evacuation_id"
@@ -195,6 +196,7 @@ class LGURecords(Base):
 
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
+
 # models.py
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
@@ -210,7 +212,7 @@ class BaranggayRecords(Base):
     evacucation_center_id = Column(
         Integer,
         ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
-        nullable=True,   # ⬅️ important
+        nullable=True,  # ⬅️ important
     )
 
     population = Column(Integer, nullable=False)
@@ -221,10 +223,8 @@ class BaranggayRecords(Base):
     evacucation_center = relationship(
         "EvacuationCenter",
         back_populates="barangay",
-        passive_deletes=True,   # ok to keep
+        passive_deletes=True,  # ok to keep
     )
-
-
 
 
 class ResponseReport(Base):
@@ -1013,9 +1013,11 @@ class InventoryItems(Base):
     item_name = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
     category = Column(String(255), nullable=False)
-    location = Column(Integer, ForeignKey("warehouse_zones.warehouse_id"))
+    location = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=True
+    )
     batch = Column(String(255), nullable=False)
-    expiry = Column(Date, nullable=False)
+    expiry = Column(Date, nullable=True)
     status = Column(String(255), nullable=False)
 
     warehouse = relationship("WarehouseZones", back_populates="inventory_items")
@@ -1033,9 +1035,11 @@ class BudgetAllocation(enum.Enum):
     DONATIONS = "DONATIONS"
     GENERAL = "GENERAL"
 
+
 class TransactionType(enum.Enum):
     INFLOW = "INFLOW"
     OUTFLOW = "OUTFLOW"
+
 
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid

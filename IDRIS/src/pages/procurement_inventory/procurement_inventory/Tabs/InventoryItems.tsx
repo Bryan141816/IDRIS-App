@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
+import { API } from "../../../../API_Handler/Axio_API_Handler";
 interface InventoryItemProps {
   id: number | string;
   name: string;
@@ -71,19 +72,39 @@ const getStockStatus = (quantity: number = 0) => {
 };
 
 const InventoryItems = () => {
-
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   const openModal = (name: string, item: any | null = null) => {
-    setActiveModal(name)
-  }
+    setActiveModal(name);
+  };
   const closeModal = () => {
-    setActiveModal(null)
-  }
+    setActiveModal(null);
+  };
+  const fetchData = async () => {
+    try {
+      const response = await API.get(
+        "/procurement_inventory/get_inventory_item",
+      );
+      return response.data;
+    } catch (e: any) {
+      console.error(`Error in fetching inventory item : ${e}`);
+      return false;
+    }
+  };
+  useEffect(() => {
+    const handleFetch = async () => {
+      const response = await fetchData();
+      console.log(response);
+    };
+    handleFetch();
+  }, []);
   return (
     <>
       {activeModal == "add-item" && (
-        <AddInventoryItemTab onClose={closeModal} refreshData={() => { }}></AddInventoryItemTab>
+        <AddInventoryItemTab
+          onClose={closeModal}
+          refreshData={() => {}}
+        ></AddInventoryItemTab>
       )}
       <div className="inventory-content">
         <div className="section-header">
@@ -158,8 +179,22 @@ const InventoryItems = () => {
           </table>
         </div>
       </div>
-
     </>
-  )
-}
+  );
+};
 export default InventoryItems;
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// Im going to kill myself if this shit isn't done in the end of the mont

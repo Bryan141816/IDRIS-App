@@ -4,7 +4,8 @@ import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
 import './FundingDonation.scss';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
-import { createOneTimeDonation } from '../../../API_Handler/donations_donation_handler';
+import { createDonation } from '../../../API_Handler/donations_donation_handler';
+import Swal from 'sweetalert2';
 
 const DonationPage: React.FC = () => {
   const location = useLocation();
@@ -28,23 +29,28 @@ const DonationPage: React.FC = () => {
     cvv: ''
   });
 
-  useEffect(( ) => {
-    const fetchUserid = async() => {
-      try{
-        const response = await getDonorIdByLoggedUser();
-        setDonorId(response);
-        console.log("Donor id: ", response);
-        console.log("Proposal id: ", fundingId);
-      } catch(error){
-        console.error(error);
-      }
+  const fetchAndSetUserId = async () => {
+    try {
+      const response = await getDonorIdByLoggedUser();
+      setDonorId(response);
+    } catch (error) {
+      console.error('Failed to fetch donor id', error);
     }
+  };
 
-    fetchUserid();
+  useEffect(() => {
+    fetchAndSetUserId();
   }, []);
 
   const handleDonationInputChange = (field: string, value: string) => {
-    setDonationFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'amount') {
+      const numericValue = value.replace(/[^0-9.]/g, '');
+      if (/^\d*\.?\d*$/.test(numericValue)) {
+        setDonationFormData(prev => ({ ...prev, [field]: numericValue }));
+      }
+    } else {
+      setDonationFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handlePaymentInputChange = (field: string, value: string) => {
@@ -55,14 +61,25 @@ const DonationPage: React.FC = () => {
     // Handle cancel logic
   };
 
+  const resetForms = () => {
+    setDonationFormData({ amount: '', description: '' });
+    setPaymentFormData({ cardHolderName: '', cardNumber: '', expiryDate: '', cvv: '' });
+    setDonationFrequency('One-time');
+    setDonationKind('In-Kind');
+    setPaymentMethod('visa');
+  };
+
+
   const handleNext = async () => {
     // Handle next logic
     try{      
         // build FormData to send donation
         const normalizeDonationFrequency = (type: string | null) => {
           if (type === "One-time") return "ONE_TIME";
-          if (type === "Recurring") return "RECURRING";
-          return "ONE_TIME";
+          if (type === "Monthly") return "MONTHLY";
+          if (type === "Quarterly") return "QUARTERLY";
+          if (type === "Yearly") return "YEARLY";
+          return "ONE_TIME"; // fallback
         };
 
         const normalizeDonationType = (type: string | null) => {
@@ -70,7 +87,7 @@ const DonationPage: React.FC = () => {
           if ( type == "Cash" ) return "CASH";
           return type?.toUpperCase();
         }
-
+        console.log(donationFrequency);
         console.log(normalizeDonationFrequency(donationFrequency));
         console.log("donorId:", donorId, typeof donorId);
         console.log("fundingId:", fundingId, typeof fundingId);
@@ -85,13 +102,24 @@ const DonationPage: React.FC = () => {
           donation_type: normalizeDonationType(donationKind),
           payment_method: paymentMethod
         }
-        console.log("Form Datas:");
-        console.log(formData);
-        const donationResponse = await createOneTimeDonation(formData);
+        const donationResponse = await createDonation(formData);
         console.log("create donation response: ", donationResponse.data);
+        Swal.fire({
+          title: 'Success!',
+          text: 'Your donation has been created successfully.',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+        await fetchAndSetUserId(); // refresh donor-related data
+        resetForms();
     } catch (err) {
       console.error(err);
-      // setError("Failed to fetch profile.");
+        Swal.fire({
+          title: 'Error!',
+          text: 'There was an error submitting your donation. Please try again.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
     }
 
   };

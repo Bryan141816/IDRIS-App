@@ -5,6 +5,7 @@ from sqlalchemy import extract, func, case, and_
 from typing import Optional, Sequence, Union
 from decimal import Decimal
 from datetime import datetime, date, timezone, timedelta
+from calendar import monthrange
 from crud_functions.utils import random_suffix, uid_from_string, _to_enum, uid_from_string, rand_alnum
 
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
@@ -31,6 +32,17 @@ from data_schemas.donation_schema import (
 # -------------------- CRUD ---------------------------------------------------
 class DonationCRUD:
     # --- CREATE ---
+    def create_donation(db: Session, donation_data) -> Donation:
+        frequency = _to_enum(
+            DonationFrequency,
+            getattr(donation_data, "frequency", None),
+            default=DonationFrequency.ONE_TIME,
+        )
+        if frequency == DonationFrequency.ONE_TIME:
+            return DonationCRUD.create_one_time_pending_donation(db, donation_data)
+        else:
+            return DonationCRUD.create_recurring_donation(db, donation_data)
+    
     @staticmethod
     def create_one_time_pending_donation(db: Session, donation_data) -> Donation:
         # Resolve enums with defaults
@@ -139,42 +151,112 @@ class DonationCRUD:
             db.rollback()
             raise HTTPException(status_code=500, detail=f"Database error creating donation: {e}")
         
-                    
     @staticmethod
     def create_recurring_donation(db: Session, donation_data: RecurringDonationCreate) -> Donation:
-        """
-        Maps:
-          - donation_type/recurring_frequency -> frequency
-          - recurring_end_date -> end_date
-        Forces 'kind' = "cash".
-        """
-        # Prefer explicit recurring_frequency; fall back to donation_type; else MONTHLY
-        freq_source = (
-            getattr(donation_data, "recurring_frequency", None)
-            or getattr(donation_data, "donation_type", None)
-            or DonationFrequency.MONTHLY
+        frequency = _to_enum(
+            DonationFrequency,
+            getattr(donation_data, "frequency", None),
+            default=DonationFrequency.MONTHLY,
         )
-        frequency = _to_enum(DonationFrequency, freq_source, default=DonationFrequency.MONTHLY)
 
+        # compute next_donation_date (similar logic as we discussed)
+        today = datetime.now(timezone.utc).date()
+        provided_next = getattr(donation_data, "next_donation_date", None)
+        start_date = provided_next or getattr(donation_data, "start_date", None) or today
+
+        computed_next: Optional[date] = None
+        if frequency == DonationFrequency.ONE_TIME:
+            computed_next = None
+        else:
+            months_delta = 1 if frequency == DonationFrequency.MONTHLY else (
+                3 if frequency == DonationFrequency.QUARTERLY else (
+                    12 if frequency == DonationFrequency.YEARLY else 1
+                )
+            )
+            seed = provided_next or start_date
+            if hasattr(seed, "date") and not isinstance(seed, date):
+                seed = seed.date()
+            try:
+                next_dt = _add_months(seed, months_delta)
+            except Exception:
+                next_dt = _add_months(today, months_delta)
+            while next_dt <= today:
+                next_dt = _add_months(next_dt, months_delta)
+            computed_next = next_dt
+
+        # --- Create parent Donation WITHOUT 'amount' / 'payment_method' ---
         donation = Donation(
-            donor_id=donation_data.donor_id,
-            funding_id = getattr(donation_data, "funding_id", None),
+            donor_id=getattr(donation_data, "donor_id", None),
+            funding_id=getattr(donation_data, "funding_id", None),
             frequency=frequency,
-            amount=donation_data.amount,
-            # description=donation_data.description,
             status=DonationStatus.PENDING,
-            kind="cash",
-            next_donation_date=donation_data.next_donation_date,
+            # adjust field names to match your model (you used 'kind' earlier)
+            next_donation_date=computed_next,
             end_date=getattr(donation_data, "recurring_end_date", None),
             is_active=True,
-            payment_method=donation_data.payment_method,
         )
+        donation.donation_id = uid_from_string(f"{rand_alnum()}")
         db.add(donation)
+        db.flush()  # ensure donation_id available for child rows
+
+        # --- Create child row that actually stores amount/payment_method or in-kind fields ---
+        donation_type = _to_enum(
+            DonationType,
+            getattr(donation_data, "donation_type", None),
+            default=DonationType.CASH,
+        )
+
+        if donation_type == DonationType.CASH:
+            raw_amount = getattr(donation_data, "amount", None)
+            cash = Donation_Cash(
+                donation_id=donation.donation_id,
+                cash_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
+                amount=Decimal(str(raw_amount or 0)),
+                payment_method=getattr(donation_data, "payment_method", None),
+            )
+            db.add(cash)
+            amount_for_finance = Decimal(str(raw_amount or 0))
+            desc_for_finance = "Cash donation"
+        else:
+            item_desc = getattr(donation_data, "item_description", None) or getattr(donation_data, "description", None)
+            est_val = getattr(donation_data, "estimated_value", None) or getattr(donation_data, "amount", None)
+            inkind = Donation_InKind(
+                donation_id=donation.donation_id,
+                inkind_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
+                item_description=item_desc,
+                estimated_value=est_val,
+                quantity=getattr(donation_data, "quantity", None),
+            )
+            db.add(inkind)
+            amount_for_finance = Decimal(str(est_val or 0))
+            desc_for_finance = f"In-kind donation: {item_desc or 'items'}"
+
+        # --- (optional) Create FinanceRecord if your system needs it ---
+        donor_name = None
+        try:
+            donor_name = donation.donor.donor_name  # may work if relationship populated
+        except Exception:
+            pass
+        if not donor_name:
+            donor = db.get(Donor, getattr(donation_data, "donor_id", None))
+            donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
+
+        finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
+        finance = FinanceRecord(
+            finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
+            counterparty=donor_name,
+            transaction_type=TransactionType.INFLOW,
+            amount=amount_for_finance,
+            date=finance_date,
+            description=desc_for_finance,
+            status=RecordStatus.PENDING,
+            budget_for=BudgetAllocation.DONATIONS,
+        )
+        db.add(finance)
+
         db.commit()
         db.refresh(donation)
         return donation
-
-    # --- STATUS UPDATES ---
 
     @staticmethod
     def cancel_donation_status(db: Session, donation_id: int) -> Donation:
@@ -490,3 +572,11 @@ class DonationCRUD:
             responses.append(resp)
 
         return responses
+    
+
+def _add_months(orig: date, months: int) -> date:
+    """Return date after adding `months` calendar months, clamping day to month length."""
+    year = orig.year + (orig.month - 1 + months) // 12
+    month = (orig.month - 1 + months) % 12 + 1
+    day = min(orig.day, monthrange(year, month)[1])
+    return date(year, month, day)

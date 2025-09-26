@@ -33,8 +33,25 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
 )
 
+@router.post("/create", response_model=DonationResponse)
+def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
+    print(donation)
+    try:
+        return CRUD.create_donation(db, donation)
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logging.exception("Database error creating donation")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+        logging.exception("Unexpected error creating donation")
+        # while debugging, you can re-raise to see full stack:
+        # raise
+        raise HTTPException(status_code=500, detail="Unexpected server error")
+
 @router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
+    print(donation)
     try:
         return CRUD.create_one_time_pending_donation(db, donation)
     except HTTPException:
@@ -53,6 +70,7 @@ def create_recurring_donation_route(
     donation_data: RecurringDonationCreate,
     db: Session = Depends(get_db)
 ):
+    print(donation_data)
     try:
         return CRUD.create_recurring_donation(db, donation_data)
     except Exception as e:

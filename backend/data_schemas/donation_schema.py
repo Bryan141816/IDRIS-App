@@ -46,11 +46,11 @@ class DonationCreate(BaseModel):
 
     payment_method: Optional[str] = None  # e.g., gcash, bank, etc.
 
-    @field_validator("frequency")
-    def frequency_must_be_one_time(cls, v):
-        if v != DonationFrequency.ONE_TIME:
-            raise ValueError("Use RecurringDonationCreate for recurring donations.")
-        return v
+    # @field_validator("frequency")
+    # def frequency_must_be_one_time(cls, v):
+    #     if v != DonationFrequency.ONE_TIME:
+    #         raise ValueError("Use RecurringDonationCreate for recurring donations.")
+    #     return v
 
     @field_validator("amount")
     def amount_required_positive(cls, v):

@@ -1,6 +1,14 @@
 
 import { API } from './Axio_API_Handler';
 
+export async function createDonation(data: any): Promise<any> {
+  return await API.post("/donations/create", data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 export async function createOneTimeDonation(data: any): Promise<any> {
   return await API.post("/donations/one-time/create", data, {
     headers: {

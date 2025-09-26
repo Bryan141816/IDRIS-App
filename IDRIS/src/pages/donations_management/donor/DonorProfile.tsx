@@ -64,11 +64,12 @@ const donorData: DonorData = {
 };
 
 const UserProfile = () => {
-  const { userRoles } = useUserRoleContext();
+  const { userRoles, setUserRoles } = useUserRoleContext();
   const [profile, setProfile] = useState<DonorProfile | null>(null);
   const [donorId, setDonorId] = useState<number | null>(null);
-  const [userId, setUserId] = useState<number | null >(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [isRegistered, setIsRegistered] = useState(false);
 
   const [userProfilePicture] = useState<string | undefined>(undefined);
   const [userBackgroundPicture] = useState<string | undefined>(undefined);
@@ -77,23 +78,27 @@ const UserProfile = () => {
     try {
       const response = await getIndividualDonorProfile();
       setProfile(response);
-      setDonorId((response as any)?.donor_id ?? (response as any)?.donorId ?? null);
+      const newDonorId = (response as any)?.donor_id ?? (response as any)?.donorId ?? null;
+      setDonorId(newDonorId);
+      if (newDonorId) {
+        setIsRegistered(true);
+      }
     } catch (err) {
       console.error(err);
       // setError("Failed to fetch profile.");
     }
   };
-  
+
   useEffect(() => {
     fetchProfile();
   }, []);
 
   useEffect(() => {
     const fetchUserid = async () => {
-      try{
+      try {
         const response = await fetchCurrentUserId();
         setUserId(response.id);
-      } catch(error){
+      } catch (error) {
         console.error(error);
       }
     };
@@ -192,19 +197,23 @@ const UserProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isIndividual && (!organizationName || organizationName.trim() === "")) {
+      Swal.fire({
+        icon: "error",
+        title: "Validation Error",
+        text: "Organization name cannot be empty.",
+        confirmButtonColor: "#ef4444",
+      });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("user_id", userId?.toString() ?? "");
     formData.append("donor_type", isIndividual ? "Individual" : "Organization");
     formData.append("organization_name", organizationName || "");
 
     try {
-      const res = await createNewDonor(formData);
-
-      // Consider any 2xx as success
-      const ok = res && typeof res.status === "number" && res.status >= 200 && res.status < 300;
-      if (!ok) {
-        throw new Error(`Failed to register donor (status: ${res?.status})`);
-      }
+      await createNewDonor(formData);
 
       // Close the registration form modal
       setActiveModal("");
@@ -218,6 +227,12 @@ const UserProfile = () => {
         text: "Your donor registration has been completed.",
         confirmButtonColor: "#16a34a"
       });
+
+      setIsRegistered(true);
+      if (setUserRoles) {
+        setUserRoles([...userRoles, "donor"]);
+      }
+
     } catch (err) {
       console.error(err);
 
@@ -242,14 +257,14 @@ const UserProfile = () => {
           <img src={userProfilePicture || NoImage} alt="user-profile" className="profile-picture" />
           <p>{profile?.donor_name}</p>
 
-          <DonorStatusButton 
+          <DonorStatusButton
             isFirstMode={isIndividual}
             onToggle={() => setIsIndividual(!isIndividual)}
             firstLabel='Individual'
             secondLabel='Organization'
             id="donor-status-button"
           />
-          
+
           {!isIndividual && (
             <>
               <label htmlFor="organization-name">Organization Name: </label>
@@ -305,13 +320,14 @@ const UserProfile = () => {
               </span>
             </p>
             <p className="role-assigned">
-              {userRoles[0] ? userRoles[0].toUpperCase() : "USER"} ({donorId ?? "—"})
+              {userRoles && userRoles.length > 0 ? userRoles[0].toUpperCase() : "USER"} ({donorId ?? "—"})
             </p>
           </div>
 
-          <button id="register-button" onClick={() => setActiveModal("registration-form")}>
-            Register as Donor
-          </button>
+            <button id="register-button" onClick={() => setActiveModal("registration-form")} disabled={isRegistered}>
+              { isRegistered ? "Registered" : "Register as Donor"}
+            </button>
+          
         </div>
 
         <hr />

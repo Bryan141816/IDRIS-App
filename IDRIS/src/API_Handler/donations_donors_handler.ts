@@ -13,7 +13,7 @@ export async function createNewDonor(formData: FormData): Promise<any> {
       'Content-Type': 'multipart/form-data',
     },
   });
-  return response;
+  return response.data;
 }
 
 export async function searchDonorUsers(search = ''): Promise<any> {

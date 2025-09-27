@@ -1,6 +1,7 @@
 // src/components/tables/DataTable.tsx
 import React from "react";
 import styles from "./MainPage.module.scss";
+import { formatCurrency } from "../../../helpers";
 
 /* ========== Types ========== */
 export type AllocationItem = {
@@ -38,14 +39,6 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
     const n = typeof v === "number" ? v : parseFloat(String(v ?? "0"));
     return Number.isFinite(n) ? n : 0;
   };
-
-  const formatCurrency = (value: number | string) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(toNum(value));
 
   // Optional: compute overall utilization (Outflow / Inflow)
   const totalInflow = toNum(kpis.total_inflow);

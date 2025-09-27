@@ -3,6 +3,7 @@ import React from "react";
 import { TrendingUp, TrendingDown, DollarSign, Clock, XCircle } from "lucide-react";
 import KPICard from "./KPICard";
 import styles from "./ExecutiveSummary.module.scss";
+import { formatCurrency } from "../../../helpers";
 
 type Kpis = {
   total_inflow: number | string;
@@ -19,14 +20,6 @@ const toNum = (v: number | string | null | undefined): number => {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? "0").replace(/,/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
-
-const formatCurrency = (value: number | string | null | undefined): string =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(toNum(value));
 
 const ExecutiveSummary: React.FC<Props> = ({ kpis }) => {
   // normalize once to numbers

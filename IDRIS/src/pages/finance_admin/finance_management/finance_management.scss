@@ -736,7 +736,12 @@
     }
   }
   
-  
+  .title-btn-container{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
+
   /* Modal Styles */
   .modal-overlay {
     position: fixed;

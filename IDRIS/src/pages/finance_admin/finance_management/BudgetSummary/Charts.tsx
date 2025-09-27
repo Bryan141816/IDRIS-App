@@ -1,5 +1,5 @@
-// src/components/charts/Charts.tsx
 import React from "react";
+import { formatCurrency } from "../../../helpers";
 import {
   Chart as ChartJS,
   registerables,
@@ -69,14 +69,14 @@ export const BarChartComponent: React.FC<{
     const options: ChartOptions<"bar"> = {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false, // 👈 ensure deterministic frame for export
+      animation: false,
       plugins: {
         legend: { position: "top" },
         tooltip: {
           callbacks: {
             label: (context) => {
               const val = context.parsed.y ?? 0;
-              return `${context.dataset.label}: $${Number(val).toLocaleString()}`;
+              return `${context.dataset.label}: ${formatCurrency(val)}`;
             },
           },
         },
@@ -85,7 +85,7 @@ export const BarChartComponent: React.FC<{
         y: {
           beginAtZero: true,
           ticks: {
-            callback: (value) => `$${(Number(value || 0) / 1000).toFixed(0)}K`,
+            callback: (value) => `${formatCurrency((Number(value || 0) / 1000).toFixed(0))}K`,
           },
         },
       },
@@ -182,7 +182,7 @@ export const PieChartComponent: React.FC<{
               const val = Number(context.parsed) || 0;
               const total = ds?.reduce((s, v) => s + Number(v || 0), 0) ?? 0;
               const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
-              return `${context.label}: $${val.toLocaleString()} (${pct}%)`;
+              return `${context.label}: ${formatCurrency(val)} (${pct}%)`;
             },
           },
         },

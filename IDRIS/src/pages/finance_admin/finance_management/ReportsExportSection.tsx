@@ -1,19 +1,9 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import GenerateReportModal from "./GenerateReportModal";
 import GenerateInflowsModal from "./GenerateInflowsModal";
 import ExportModal, { ExportPreset } from "./ExportModal";
 
 type Mode = "reports" | "exports";
-
-type ReportItem = {
-  id: number;
-  name: string;
-  type: string;
-  period: string;
-  generated: string;
-  status: "Generated" | "Draft";
-};
 
 type ExportModalState = { open: boolean; preset?: ExportPreset };
 
@@ -40,16 +30,6 @@ const ReportsView: React.FC<{
       </div>
 
       <div className="export-options">
-        {/* ---------------- CURRENTLY THE "GENERATE REPORT" -----------------*/}
-        {/* <div className="export-card">
-          <div className="export-icon">📊</div>
-          <h3>Complete Financial Log</h3>
-          <p>Export all inflows, outflows, and transactions</p>
-          <button className="export-btn" onClick={onOpenGenerateSummary}>
-            Export Complete Log
-          </button>
-        </div> */}
-
         <div className="export-card">
           <div className="export-icon">💰</div>
           <h3>Inflow Summary</h3>
@@ -69,27 +49,7 @@ const ReportsView: React.FC<{
             onOpenGenerateInflowsOrOutflows();
           }}>Export Expenses</button>
         </div>
-
-        {/* ---------------- CURRENTLY THE "GENERATE BUDGET SUMMARY" -----------------*/}
-        {/* <div className="export-card">
-          <div className="export-icon">📈</div>
-          <h3>Budget Analysis</h3>
-          <p>Export budget vs actual spending analysis</p>
-          <button className="export-btn" onClick={onOpenGenerate}>Export Budget Report</button>
-        </div> */}
       </div>
-
-
-      {/* <div className="audit-section">
-        <h3>Generate Budget Summaries and Audits</h3>
-        <div className="audit-actions">
-          <button className="audit-btn" onClick={onOpenGenerate}>📈 Monthly Audit</button>
-          <button className="audit-btn" onClick={onOpenGenerate}>📊 Quarterly Review</button>
-          <button className="audit-btn" onClick={onOpenGenerate}>📋 Annual Summary</button>
-        </div>
-
-      </div> */}
-
     </div>
   );
 };
@@ -117,14 +77,14 @@ const ExportsView: React.FC<{
 
       <div className="export-card">
         <div className="export-icon">💰</div>
-        <h3>Inflow Summary</h3>
+        <h3>Inflow Report</h3>
         <p>Export donations, grants, and income sources</p>
         <button className="export-btn" onClick={() => onOpen("Inflows Only")}>Export Inflows</button>
       </div>
 
       <div className="export-card">
         <div className="export-icon">💸</div>
-        <h3>Expense Report</h3>
+        <h3>Outflow Report</h3>
         <p>Export all expenditures and purchases</p>
         <button className="export-btn" onClick={() => onOpen("Outflows Only")}>Export Expenses</button>
       </div>

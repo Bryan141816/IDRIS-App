@@ -1,9 +1,6 @@
-import Swal from "sweetalert2";
 import { InflowItem, OutflowItem } from './FinanceManagement';
 import { FinanceRecordType } from "./types";
-
-// export const formatCurrency = (n: number | bigint) =>
-//   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 0 }).format(n);
+import { formatCurrency } from '../../helpers';
 
 export const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleString("en-US", {
@@ -28,17 +25,6 @@ export const toDateInput = (value?: string | Date | number | null) => {
   const tzOffset = d.getTimezoneOffset() * 60000;
   const local = new Date(d.getTime() - tzOffset);
   return local.toISOString().slice(0, 10);
-};
-
-export const formatCurrency = (value: string | number | null | undefined) => {
-  const num = Number.parseFloat(String(value ?? "0"));
-  const safe = Number.isFinite(num) ? num : 0;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(safe);
 };
 
 export const getActionRequired = (data: FinanceRecordType): string => {
@@ -85,7 +71,7 @@ export const normalizeTransactionType = (_: string | null | undefined) => "INFLO
 export const normalizeBudgetAllocationName = (input: string | null | undefined) => {
   if (!input) return "GENERAL";
   const s = input.trim().toUpperCase().replace(/&/g, "AND");
-  if (s.startsWith("EMERGENCY")) return "EMERGENCY";
+  if (s.startsWith("EMERGENCY")) return "EMERGENCY SUPPLIES";
   if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
   if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
   if (s.startsWith("EQUIP")) return "EQUIPMENT";
@@ -104,47 +90,76 @@ export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {
   return errs;
 };
 
-export const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
-  try {
-    // show loading
-    void Swal.fire({
-      title: loadingTitle,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-      showConfirmButton: false,
-    });
+export const totalIn = (rows: InflowItem[]) =>
+  rows
+    .filter((r) => (r.status ?? '').toUpperCase() === 'RECEIVED')
+    .reduce((s, r) => s + toNumber(r.amount), 0);
 
-    const result = await task();
+export const totalOut = (rows: OutflowItem[]) =>
+  rows
+    .filter((r) => (r.status ?? '').toUpperCase() === 'PAID')
+    .reduce((s, r) => s + toNumber(r.amount), 0);
 
-    // switch to success (clear spinner first)
-    Swal.hideLoading();
-    await Swal.fire({
-      icon: 'success',
-      title: 'Success',
-      text: 'Operation completed.',
-      confirmButtonText: 'Great!',
-      allowOutsideClick: true,
-      showConfirmButton: true,
-    });
-
-    return result;
-  } catch (error: any) {
-    const message =
-      error?.response?.data?.detail ||
-      error?.message ||
-      'An unexpected error occurred.';
-
-    Swal.hideLoading();
-    await Swal.fire({
-      icon: 'error',
-      title: 'Operation failed',
-      text: message,
-      confirmButtonText: 'OK',
-      allowOutsideClick: true,
-      showConfirmButton: true,
-    });
-
-    throw error;
-  }
-  // IMPORTANT: no 'finally Swal.close()' here
+export const toNumber = (v: number | string | bigint | null | undefined): number => {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'bigint') return Number(v);
+  if (v == null) return 0;
+  // strip currency symbols, commas, spaces
+  const n = Number(String(v).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? n : 0;
 };
+
+export const toDecimal2 = (value: number | string | null | undefined): number => {
+  if (value == null || value === '') return 0.00;
+
+  const num = Number(value);
+  if (isNaN(num)) return 0.00;
+
+  return parseFloat(num.toFixed(2));
+};
+
+
+// export const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
+//   try {
+//     // show loading
+//     void Swal.fire({
+//       title: loadingTitle,
+//       allowOutsideClick: false,
+//       didOpen: () => Swal.showLoading(),
+//       showConfirmButton: false,
+//     });
+
+//     const result = await task();
+
+//     // switch to success (clear spinner first)
+//     Swal.hideLoading();
+//     await Swal.fire({
+//       icon: 'success',
+//       title: 'Success',
+//       text: 'Operation completed.',
+//       confirmButtonText: 'Great!',
+//       allowOutsideClick: true,
+//       showConfirmButton: true,
+//     });
+
+//     return result;
+//   } catch (error: any) {
+//     const message =
+//       error?.response?.data?.detail ||
+//       error?.message ||
+//       'An unexpected error occurred.';
+
+//     Swal.hideLoading();
+//     await Swal.fire({
+//       icon: 'error',
+//       title: 'Operation failed',
+//       text: message,
+//       confirmButtonText: 'OK',
+//       allowOutsideClick: true,
+//       showConfirmButton: true,
+//     });
+
+//     throw error;
+//   }
+//   // IMPORTANT: no 'finally Swal.close()' here
+// };

@@ -38,10 +38,10 @@ function PageLayout() {
     roles: string[];
   } | null;
 
-  const [isInit, setIsInit] = useState(false); // local flag to ensure init only runs once
+  // const [isInit, setIsInit] = useState(false); // local flag to ensure init only runs once
 
   useEffect(() => {
-    if (!isInit) {
+    // if (!isInit) {
       if (userData) {
         setUserType(userData.user_type);
         setEmail(userData.email);
@@ -57,9 +57,8 @@ function PageLayout() {
       }
       const timeout = setTimeout(() => setUserReady(true), 0);
       return () => clearTimeout(timeout);
-      setIsInit(true);
-    }
-  }, [userData, isInit]);
+      // setIsInit(true);
+    },[userData]); 
 
   const location = useLocation();
   const navigation = useNavigation();

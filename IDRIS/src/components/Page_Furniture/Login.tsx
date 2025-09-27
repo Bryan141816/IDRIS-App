@@ -38,8 +38,10 @@ const Login = () => {
           navigate("/volunteer_management/volunteer_dashboard");
         } else if (userData["roles"].includes("operations admin")) {
           navigate("/donations_management/donations_dashboard");
+        } else if (userData["roles"].includes("finance admin")){
+          navigate("/finance&admin/finance_management");
         } else {
-          throw new Error("No valid role assigned to this user.");
+          navigate("/donations_management/donations_dashboard");
         }
       } else {
         throw new Error("Invalid user data received.");

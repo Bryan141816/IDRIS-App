@@ -12,7 +12,8 @@ import DataTable from "./DataTable";
 import { jsPDF } from "jspdf";
 import { getBudgetSummary } from "../../../../API_Handler/finance_management_handler";
 import { CompanyInfo, FinanceRecordType, emptyFinanceRecord } from "../types";
-import { formatCurrency, formatDate, formatDateOnly, getActionRequired, getTotalPendingTransactions } from "../helpers";
+import { formatDate, formatDateOnly, getActionRequired, getTotalPendingTransactions } from "../helpers";
+import { formatCurrency } from "../../../helpers";
 
 const companyInfo: CompanyInfo & { _reportTitle?: string } = {
   name: "RAFI Inc.",
@@ -91,64 +92,6 @@ const FinancialReportDashboard: React.FC = () => {
     value: item.net,
   }));
 
-  // PDF export via doc.html capturing the DOM
-  {/* const handleDownloadPDF = async () => {
-    // Switch charts to <img> snapshots for reliable capture
-    setExportMode(true);
-    // Let React commit the DOM updates
-    await new Promise((r) => setTimeout(r, 80));
-
-    const el = printableRef.current;
-    if (!el) return;
-
-    // Debug: ensure the node has size
-    const rect = el.getBoundingClientRect();
-    if (!rect.width || !rect.height) {
-      setExportMode(false);
-      alert("Export container has zero size. Check the ref location.");
-      return;
-    }
-
-    // Apply export skin (smaller fonts, break-inside avoid, etc.)
-    el.classList.add("pdfExport");
-    // Give the class a tick to apply
-    await new Promise((r) => setTimeout(r, 0));
-
-    const doc = new jsPDF({ orientation: "p", unit: "mm", format: "letter" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = { top: 18, right: 15, bottom: 15, left: 15 };
-
-    // Render the DOM wider so it gets downscaled into the PDF area
-    // 1440 is a safe width; bump to 1600/1920 if you still want it smaller.
-    const windowWidthPx = Math.max(Math.round(rect.width), 1440);
-
-    try {
-      await doc.html(el, {
-        x: margin.left,
-        y: margin.top,
-        width: pageW - margin.left - margin.right, // mm in PDF
-        windowWidth: windowWidthPx, // px to render DOM
-        // Let jsPDF paginate. Keep options minimal for stability.
-        html2canvas: {
-          scale: 2, // crisp output; doesn't change physical size
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          // If you still get blanks due to CORS/images, try:
-          // allowTaint: true,
-          // foreignObjectRendering: false,
-        },
-      });
-
-      const filename = `financial_report_${data.filters.date_from}_${data.filters.date_to}_${data.filters.group_by}`
-        .replace(/[^\w\-]+/g, "_")
-        .concat(".pdf");
-      doc.save(filename);
-    } finally {
-      el.classList.remove("pdfExport");
-      setExportMode(false);
-    }
-  }; */}
-
   return (
     <div className={styles.budgetReport}>
       <div className={styles.container} ref={printableRef}>
@@ -190,14 +133,8 @@ const FinancialReportDashboard: React.FC = () => {
                 >
                   Print Report
                 </button>
-                {/* <button
-                  onClick={handleDownloadPDF}
-                  className={styles.printButton}
-                >
-                  Download PDF
-                </button> */}
               </div>
-              <span>Total Records: {data.diagnostics.records_considered}</span>
+              <span>From {data.diagnostics.records_considered} records</span>
             </div>
           </div>
         </div>
@@ -305,10 +242,6 @@ const FinancialReportDashboard: React.FC = () => {
                 {new Date(data.filters.from_date).toLocaleDateString()} -{" "}
                 {new Date(data.filters.to_date).toLocaleDateString()}
               </p>
-              {/* <p>Group By: {data.filters.group_by}</p>
-              <p>
-                Include Pending: {data.filters.include_pending ? "Yes" : "No"}
-              </p> */}
             </div>
             <div className={styles.footerColumn}>
               <h4>Data Summary</h4>

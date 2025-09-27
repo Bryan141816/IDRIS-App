@@ -3,9 +3,14 @@ import { getReportData } from "../../../API_Handler/finance_management_handler";
 import {
   downloadFinanceReportPDFFromRows,
   previewPrintFinanceReportFromRowsUserGesture,
+} from "./FinanceReport";
+
+import {
   type Finance,
   type CompanyInfo,
-} from "./FinanceReport";
+  type FinanceStatuses,
+  type BudgetAllocations,
+} from './types';
 
 export type ExportPreset =
   | "Complete Financial Log"
@@ -19,23 +24,6 @@ export type ExportFormat =
   | "CSV Data"
   | "JSON Data"
   | "Print";
-
-export type FinanceStatuses =
-  | "PENDING"
-  | "RECEIVED"
-  | "PAID"
-  | "APPROVED"
-  | "DENIED"
-  | "RECONCILED";
-
-export type BudgetAllocations =
-  | "EMERGENCY SUPPLIES"
-  | "FOOD AND WATER"
-  | "TRANSPORTATION"
-  | "EQUIPMENT"
-  | "ADMINISTRATIVE"
-  | "DONATIONS"
-  | "GENERAL";
 
 type ReportType = "Monthly" | "Quarterly" | "Annual";
 

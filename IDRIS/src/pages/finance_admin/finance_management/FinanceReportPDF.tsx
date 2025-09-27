@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLocation } from 'react-router-dom';
 import styles from "./FinanceReport.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
-import { formatDateOnly, formatCurrency, urlToDataUrl } from "./helpers";
+import { formatDateOnly, urlToDataUrl } from "./helpers";
+import { formatCurrency } from "../../helpers";
 import { CompanyInfo, Finance } from "./types";
 
 // PDF libs

@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel
+from datetime import date
 
 
 class WarehouseZoneCreate(BaseModel):
@@ -34,7 +35,7 @@ class InventoryItemsOut(BaseModel):
     category: str
     location: Optional[WarehouseZoneOut] = None
     batch: str
-    expiry: Optional[str] = None
+    expiry: Optional[date] = None
     status: str
 
     class Config:

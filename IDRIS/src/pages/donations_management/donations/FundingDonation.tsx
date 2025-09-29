@@ -29,6 +29,8 @@ const DonationPage: React.FC = () => {
     cvv: ''
   });
 
+  const [errors, setErrors] = useState<any>({});
+
   const fetchAndSetUserId = async () => {
     try {
       const response = await getDonorIdByLoggedUser();
@@ -70,7 +72,29 @@ const DonationPage: React.FC = () => {
   };
 
 
+  const validate = () => {
+    const newErrors: any = {};
+    if (!donationFormData.description) {
+      newErrors.description = 'Description is required.';
+    }
+    if (!donationFormData.amount) {
+      newErrors.amount = 'Amount is required for cash donations.';
+    }
+
+    if (paymentMethod === 'visa' || paymentMethod === 'add') {
+      if (!paymentFormData.cardHolderName) newErrors.cardHolderName = 'Card holder name is required.';
+      if (!paymentFormData.cardNumber) newErrors.cardNumber = 'Card number is required.';
+      if (!paymentFormData.expiryDate) newErrors.expiryDate = 'Expiry date is required.';
+      if (!paymentFormData.cvv) newErrors.cvv = 'CVV is required.';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleNext = async () => {
+    if (!validate()) {
+      return;
+    }
     // Handle next logic
     try{      
         // build FormData to send donation
@@ -137,6 +161,7 @@ const DonationPage: React.FC = () => {
             setDonationFrequency={setDonationFrequency}
             formData={donationFormData}
             handleInputChange={handleDonationInputChange}
+            errors={errors}
           />
 
           {/* Right Side - Payment Method */}
@@ -147,6 +172,7 @@ const DonationPage: React.FC = () => {
             handleInputChange={handlePaymentInputChange}
             onCancel={handleCancel}
             onNext={handleNext}
+            errors={errors}
           />
         </div>
       </div>

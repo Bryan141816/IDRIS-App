@@ -5,8 +5,7 @@ import userProfile from "../../media/account-profile.png";
 import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { LogoutIcon } from "./Icons";
-import { useNavigate } from "react-router-dom";
-import { logoutUser } from "../../API_Handler/auth.ts";
+import { useLogout } from "../../utils/useLogout.ts";
 import React from "react";
 import { NotificationsButton } from "./Notifications.tsx";
 interface FooterProps {
@@ -14,39 +13,17 @@ interface FooterProps {
 }
 
 const Header: React.FC<FooterProps> = ({ onIconClick }) => {
-  const navigate = useNavigate();
   const [isUserSettingsVisible, showUserSettings] = useState<boolean>(false);
-  const { setUserType, setEmail, setUsername, setUserReady, userType } =
-    useUserContext();
-  const { setUserRoles, userRoles, highestRole } = useUserRoleContext();
+  const { userType } = useUserContext();
+  const { highestRole } = useUserRoleContext();
+  const logout = useLogout();
   const logOutUser = async () => {
     try {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      sessionStorage.removeItem("accessToken");
-      await logoutUser();
-
+      await logout();
       showUserSettings(false);
-      setUserType("");
-      setEmail("");
-      setUsername("");
-      setUserRoles?.([]);
-      setUserReady(false);
-
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 50); // 10ms is enough
     } catch (err) {
       console.error("Logout failed:", err);
       showUserSettings(false);
-      setUserType("");
-      setEmail("");
-      setUsername("");
-      setUserRoles?.([]);
-      setUserReady(false);
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 50); // 10ms is enough
     }
   };
 

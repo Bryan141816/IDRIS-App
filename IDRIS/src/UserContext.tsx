@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+} from "react";
 
 type UserContextType = {
   userId: number | null;
@@ -19,11 +25,11 @@ export const UserContext = createContext<UserContextType>({
   email: "",
   username: "",
   isUserReady: false,
-  setUserId: () => {},
-  setUserType: () => {},
-  setEmail: () => {},
-  setUsername: () => {},
-  setUserReady: () => {},
+  setUserId: () => { },
+  setUserType: () => { },
+  setEmail: () => { },
+  setUsername: () => { },
+  setUserReady: () => { },
 });
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
@@ -33,24 +39,23 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [username, setUsername] = useState("");
   const [isUserReady, setUserReady] = useState(false);
 
-  return (
-    <UserContext.Provider
-      value={{
-        userId,
-        setUserId,
-        userType,
-        setUserType,
-        email,
-        setEmail,
-        username,
-        setUsername,
-        isUserReady,
-        setUserReady,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
+  const value = useMemo(
+    () => ({
+      userId,
+      setUserId,
+      userType,
+      setUserType,
+      email,
+      setEmail,
+      username,
+      setUsername,
+      isUserReady,
+      setUserReady,
+    }),
+    [userId, userType, email, username, isUserReady],
   );
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
-export const useUserContext = () => useContext(UserContext);
+  export const useUserContext = () => useContext(UserContext);

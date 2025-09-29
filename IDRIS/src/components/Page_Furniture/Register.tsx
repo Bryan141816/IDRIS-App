@@ -4,6 +4,7 @@ import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
 import Logo1 from "../../media/logo1.png";
 import { Modal } from "./Modals";
+import Swal from 'sweetalert2';
 
 type ModalId = "" | "user-type" | "user-role" | "admin-role";
 
@@ -71,10 +72,11 @@ const Register: React.FC = () => {
     const isValid = Object.values(validation).every(Boolean);
 
     if (!isValid) {
-      alert(
-        "Please ensure your password meets all requirements and passwords match"
-      );
-      return;
+      Swal.fire({
+        icon: "error",
+        title: "Password Invalid",
+        text: "Please ensure your password meets all requirements and that the passwords match.",
+      });      return;
     }
     setActiveModal("user-type");
   };
@@ -110,16 +112,28 @@ const Register: React.FC = () => {
 
       if (!response.ok) {
         const err = await response.json();
-        alert(`Registration failed: ${err.detail || "Unknown error"}`);
+        Swal.fire({
+          icon: "error",
+          title: "Invalid email or password",
+          text: `Registration failed: ${err.detail || "Unknown error"}`,
+        });
         return;
       }
 
       await response.json();
-      alert("Registration successful");
-      navigate("/login");
+      Swal.fire({
+        icon: "success",
+        title: "Registration successful",
+      });
+    navigate("/login");
     } catch (error) {
       console.error("Registration error:", error);
-      alert("Failed to register. Check your network or server.");
+      Swal.fire({
+        icon: "error",
+        title: "Failed to register",
+        text: "Check your network or server",
+      });
+
     }
   };
 

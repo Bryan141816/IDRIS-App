@@ -20,18 +20,34 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
     useUserContext();
   const { setUserRoles, userRoles, highestRole } = useUserRoleContext();
   const logOutUser = async () => {
-    showUserSettings(false);
-    setUserType("");
-    setEmail("");
-    setUsername("");
-    setUserRoles([]);
-    setUserReady(false);
-    await logoutUser();
+    try {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      sessionStorage.removeItem("accessToken");
+      await logoutUser();
 
-    // Delay navigation slightly to let state update flush
-    setTimeout(() => {
-      navigate("/login", { replace: true });
-    }, 10); // 10ms is enough
+      showUserSettings(false);
+      setUserType("");
+      setEmail("");
+      setUsername("");
+      setUserRoles?.([]);
+      setUserReady(false);
+
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 50); // 10ms is enough
+    } catch (err) {
+      console.error("Logout failed:", err);
+      showUserSettings(false);
+      setUserType("");
+      setEmail("");
+      setUsername("");
+      setUserRoles?.([]);
+      setUserReady(false);
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 50); // 10ms is enough
+    }
   };
 
   const toggleUserSettingsVisibility = () => {

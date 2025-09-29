@@ -7,6 +7,7 @@ import Logo1 from "../../media/logo1.png";
 import { Link } from "react-router-dom";
 import { loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
 import { useUserContext } from "../../UserContext";
+import { handleRoleBasedRedirect } from "../../utils/handleRoleBasedRedirect.ts";
 
 const Login = () => {
   const [email, setEmailEntry] = useState("");
@@ -32,17 +33,7 @@ const Login = () => {
         setUserId(userData["user_id"]);
         setUsername(userData["username"]);
         setUserReady(true);
-        if (userData["roles"].includes("super admin")) {
-          navigate("/volunteer_management/volunteer_dashboard");
-        } else if (userData["roles"].includes("volunteer")) {
-          navigate("/volunteer_management/volunteer_dashboard");
-        } else if (userData["roles"].includes("operations admin")) {
-          navigate("/donations_management/donations_dashboard");
-        } else if (userData["roles"].includes("finance admin")){
-          navigate("/finance&admin/finance_management");
-        } else {
-          navigate("/donations_management/donations_dashboard");
-        }
+        handleRoleBasedRedirect(userData["roles"], navigate);
       } else {
         throw new Error("Invalid user data received.");
       }

@@ -114,7 +114,7 @@ const Register: React.FC = () => {
         const err = await response.json();
         Swal.fire({
           icon: "error",
-          title: "Invalid email or password",
+          title: "Failed to register",
           text: `Registration failed: ${err.detail || "Unknown error"}`,
         });
         return;
@@ -130,7 +130,7 @@ const Register: React.FC = () => {
       console.error("Registration error:", error);
       Swal.fire({
         icon: "error",
-        title: "Failed to register",
+        title: "Network Error",
         text: "Check your network or server",
       });
 

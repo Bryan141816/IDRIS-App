@@ -66,6 +66,10 @@ def get_user_by_email(db: Session, email: str):
     return db.query(User).filter(User.email == email).first()
 
 
+def get_user_by_username(db: Session, username: str):
+    return db.query(User).filter(User.username == username).first()
+
+
 def create_user(
     db: Session,
     email: str,
@@ -76,6 +80,10 @@ def create_user(
     user_id: str | None = None,
     sub: str | None = None,
 ):
+    if get_user_by_username(db, username):
+        raise ValueError("Username already in use")
+    if get_user_by_email(db, email):
+        raise ValueError("Email already registered")
     hashed = None
     if password:
 

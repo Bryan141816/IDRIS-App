@@ -10,13 +10,14 @@ import Swal from 'sweetalert2';
 const DonationPage: React.FC = () => {
   const location = useLocation();
   const fundingId = location.state?.funding_id;
+  console.log(fundingId);
 
   const [donorId, setDonorId] = useState<number | null>(null);
 
   const [donationKind, setDonationKind] = useState('In-Kind');
   const [donationFrequency, setDonationFrequency] = useState('One-time');
   const [paymentMethod, setPaymentMethod] = useState('visa');
-  
+
   const [donationFormData, setDonationFormData] = useState({
     amount: '',
     description: ''
@@ -96,54 +97,54 @@ const DonationPage: React.FC = () => {
       return;
     }
     // Handle next logic
-    try{      
-        // build FormData to send donation
-        const normalizeDonationFrequency = (type: string | null) => {
-          if (type === "One-time") return "ONE_TIME";
-          if (type === "Monthly") return "MONTHLY";
-          if (type === "Quarterly") return "QUARTERLY";
-          if (type === "Yearly") return "YEARLY";
-          return "ONE_TIME"; // fallback
-        };
+    try {
+      // build FormData to send donation
+      const normalizeDonationFrequency = (type: string | null) => {
+        if (type === "One-time") return "ONE_TIME";
+        if (type === "Monthly") return "MONTHLY";
+        if (type === "Quarterly") return "QUARTERLY";
+        if (type === "Yearly") return "YEARLY";
+        return "ONE_TIME"; // fallback
+      };
 
-        const normalizeDonationType = (type: string | null) => {
-          if ( type == "In-Kind" ) return "INKIND";
-          if ( type == "Cash" ) return "CASH";
-          return type?.toUpperCase();
-        }
-        console.log(donationFrequency);
-        console.log(normalizeDonationFrequency(donationFrequency));
-        console.log("donorId:", donorId, typeof donorId);
-        console.log("fundingId:", fundingId, typeof fundingId);
-        console.log("Donation Type: ", normalizeDonationType(donationKind));
+      const normalizeDonationType = (type: string | null) => {
+        if (type == "In-Kind") return "INKIND";
+        if (type == "Cash") return "CASH";
+        return type?.toUpperCase();
+      }
+      console.log(donationFrequency);
+      console.log(normalizeDonationFrequency(donationFrequency));
+      console.log("donorId:", donorId, typeof donorId);
+      console.log("fundingId:", fundingId, typeof fundingId);
+      console.log("Donation Type: ", normalizeDonationType(donationKind));
 
-        const formData = {
-          donor_id: donorId,
-          frequency: normalizeDonationFrequency(donationFrequency),
-          amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
-          description: donationFormData.description,
-          funding_id: fundingId,
-          donation_type: normalizeDonationType(donationKind),
-          payment_method: paymentMethod
-        }
-        const donationResponse = await createDonation(formData);
-        console.log("create donation response: ", donationResponse.data);
-        Swal.fire({
-          title: 'Success!',
-          text: 'Your donation has been created successfully.',
-          icon: 'success',
-          confirmButtonText: 'OK'
-        });
-        await fetchAndSetUserId(); // refresh donor-related data
-        resetForms();
+      const formData = {
+        donor_id: donorId,
+        frequency: normalizeDonationFrequency(donationFrequency),
+        amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
+        description: donationFormData.description,
+        funding_id: fundingId,
+        donation_type: normalizeDonationType(donationKind),
+        payment_method: paymentMethod
+      }
+      const donationResponse = await createDonation(formData);
+      console.log("create donation response: ", donationResponse.data);
+      Swal.fire({
+        title: 'Success!',
+        text: 'Your donation has been created successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+      await fetchAndSetUserId(); // refresh donor-related data
+      resetForms();
     } catch (err) {
       console.error(err);
-        Swal.fire({
-          title: 'Error!',
-          text: 'There was an error submitting your donation. Please try again.',
-          icon: 'error',
-          confirmButtonText: 'OK'
-        });
+      Swal.fire({
+        title: 'Error!',
+        text: 'There was an error submitting your donation. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
     }
 
   };
@@ -152,28 +153,30 @@ const DonationPage: React.FC = () => {
     <div className="donation-page">
       <div className="donation-page__container">
         <div className="donation-page__grid">
-          
           {/* Left Side - Donor Info & Donation Details */}
-          <DonorDonationForm
-            donationKind={donationKind}
-            setDonationKind={setDonationKind}
-            donationFrequency={donationFrequency}
-            setDonationFrequency={setDonationFrequency}
-            formData={donationFormData}
-            handleInputChange={handleDonationInputChange}
-            errors={errors}
-          />
+          <div id='funding-info'></div>
+          <div id='payment-form'>
+            <DonorDonationForm
+              donationKind={donationKind}
+              setDonationKind={setDonationKind}
+              donationFrequency={donationFrequency}
+              setDonationFrequency={setDonationFrequency}
+              formData={donationFormData}
+              handleInputChange={handleDonationInputChange}
+              errors={errors}
+            />
 
-          {/* Right Side - Payment Method */}
-          <PaymentForm
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            formData={paymentFormData}
-            handleInputChange={handlePaymentInputChange}
-            onCancel={handleCancel}
-            onNext={handleNext}
-            errors={errors}
-          />
+            {/* Right Side - Payment Method */}
+            <PaymentForm
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              formData={paymentFormData}
+              handleInputChange={handlePaymentInputChange}
+              onCancel={handleCancel}
+              onNext={handleNext}
+              errors={errors}
+            />
+          </div>
         </div>
       </div>
     </div>

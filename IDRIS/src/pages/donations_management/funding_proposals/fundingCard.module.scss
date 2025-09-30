@@ -112,11 +112,10 @@
   justify-content: space-between;
   border-top: 1px solid #c5d7e5;
 
-
   .progressContainer {
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: space-between;
     align-items: center;
     width: 100%;
   }
@@ -153,6 +152,7 @@
   }
 
   .donateButton {
+    font-size: 24px;
     width: 100%;
     background-color: $primary-color;
     color: #fff;

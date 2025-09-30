@@ -88,6 +88,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               </div>
               <p className="payment-method__label">Add</p>
             </button>
+
+            <button
+              onClick={() => setPaymentMethod('paymongo')}
+              className={`payment-method ${
+                paymentMethod === 'paymongo' ? 'payment-method--active' : ''
+              }`}
+            >
+              <div className="payment-method__card payment-method__card--paymongo">
+                <span>P</span>
+              </div>
+              <p className="payment-method__label">PayMongo</p>
+            </button>
+
           </div>
         </div>
 

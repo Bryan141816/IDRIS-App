@@ -4,7 +4,7 @@ import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
 import './fundingDonation.scss';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
-import { createDonation } from '../../../API_Handler/donations_donation_handler';
+import { createDonation, createPayMongoCheckout } from '../../../API_Handler/donations_donation_handler';
 import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
 import { formatCurrency, computePercentage } from '../helpers';
 import Swal from 'sweetalert2';
@@ -108,11 +108,41 @@ const DonationPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handlePayMongoCheckout = async () => {
+    try {
+      const data = {
+        amount: donationFormData.amount,
+        description: donationFormData.description,
+      };
+      console.log("data: ", data);
+      const response = await createPayMongoCheckout(data);
+      if (response.data && response.data.data.attributes.checkout_url) {
+        window.location.href = response.data.data.attributes.checkout_url;
+      }
+      console.log("response: ", response.data.data.attributes.checkout_url);
+    } catch (error) {
+      console.error(error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Something went wrong with PayMongo checkout!',
+      });
+    }
+  };
+
   const handleNext = async () => {
     if (!validate()) {
       return;
     }
-    // Handle next logic
+
+    if (paymentMethod === 'paymongo') {
+      handlePayMongoCheckout();
+    } else {
+      handleOtherPayments();
+    }
+  }
+
+  const handleOtherPayments = async () => {
     try {
       // build FormData to send donation
       const normalizeDonationFrequency = (type: string | null) => {

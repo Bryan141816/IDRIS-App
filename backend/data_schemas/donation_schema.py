@@ -194,3 +194,7 @@ class DonationHistoryResponse(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+        
+class PayMongoCheckoutRequest(BaseModel):
+    amount: float
+    description: str

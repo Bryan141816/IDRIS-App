@@ -4,8 +4,11 @@ import FilterBar from "../../../components/Page_Furniture/Filter";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import FundingCard from "./fundingCard";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getFundingProposals } from "../../../API_Handler/donations_funding_proposals_handler";
+import DonationStatus from './DonationStatus';
+
+import Swal from 'sweetalert2';
 
 interface Proposal {
   funding_id: number;
@@ -18,6 +21,7 @@ interface Proposal {
 
 const FundingProposals = () => {
   const { userRoles } = useUserRoleContext();
+  const location = useLocation();
   const navigate = useNavigate();
   const filterItems = ["Ascending", "Descending"];
 
@@ -33,6 +37,34 @@ const FundingProposals = () => {
   const [noResults, setNoResults] = useState<boolean>(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+
+    if (status === 'success') {
+      Swal.fire({
+        icon: 'success',
+        title: 'Donation Successful!',
+        text: 'Thank you for your generous donation.',
+      });
+
+      // remove the status param so alert won't reappear on refresh
+      params.delete('status');
+      const newSearch = params.toString();
+      const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      navigate(newPath, { replace: true });
+    } else if (status === 'failed') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Donation Failed',
+        text: 'Something went wrong with your donation. Please try again.',
+      });
+
+      params.delete('status');
+      const newSearch = params.toString();
+      const newPath = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      navigate(newPath, { replace: true });
+    }
+
     async function fetchProposals() {
       setIsLoading(true);
       try {
@@ -53,7 +85,7 @@ const FundingProposals = () => {
       }
     }
     fetchProposals();
-  }, [searched, page]);
+  }, [searched, page, location.search, navigate]);
 
   const filteredProposals = proposals
     .filter((p) => p.title.toLowerCase().includes(searched.toLowerCase()))
@@ -95,7 +127,7 @@ const FundingProposals = () => {
         )}
       </div>
 
-      { !noResults &&
+      {!noResults &&
         <div id="transparency-report-page-control" className="page-contorol">
           <button
             className="prev-page"
@@ -141,7 +173,7 @@ const FundingProposals = () => {
         )}
       </div>
 
-      { !noResults &&
+      {!noResults &&
         <div id="transparency-report-page-control" className="page-contorol">
           <button
             className="prev-page"

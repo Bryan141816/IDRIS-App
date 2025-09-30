@@ -287,7 +287,7 @@ const DonationsDashboard = () => {
         {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
         <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
           <div className="title-child">
-            <h3>Donations Statistics</h3>
+            <h3>Recent Programs</h3>
           </div>          
           {isAdmin && (
             <Link to="/donations_management/funding_proposals">

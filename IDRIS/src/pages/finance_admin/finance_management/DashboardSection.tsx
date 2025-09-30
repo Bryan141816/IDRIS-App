@@ -1,40 +1,7 @@
 import React from 'react';
 import { InflowItem, OutflowItem, BudgetItem } from './FinanceManagement';
-
-const fmt = (n: number | bigint) =>
-  new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 0,
-  }).format(n);
-
-const totalIn = (rows: InflowItem[]) =>
-  rows
-    .filter((r) => (r.status ?? '').toUpperCase() === 'RECEIVED')
-    .reduce((s, r) => s + toNumber(r.amount), 0);
-
-const totalOut = (rows: OutflowItem[]) =>
-  rows
-    .filter((r) => (r.status ?? '').toUpperCase() === 'PAID')
-    .reduce((s, r) => s + toNumber(r.amount), 0);
-
-const toNumber = (v: number | string | bigint | null | undefined): number => {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'bigint') return Number(v);
-  if (v == null) return 0;
-  // strip currency symbols, commas, spaces
-  const n = Number(String(v).replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(n) ? n : 0;
-};
-
-const toDecimal2 = (value: number | string | null | undefined): number => {
-  if (value == null || value === '') return 0.00;
-
-  const num = Number(value);
-  if (isNaN(num)) return 0.00;
-
-  return parseFloat(num.toFixed(2));
-};
+import { formatCurrency } from '../../helpers';
+import { totalIn, totalOut, toDecimal2 } from './helpers';
 
 const StatsGrid: React.FC<{ inflows: InflowItem[]; outflows: OutflowItem[] }> = ({
   inflows,
@@ -48,21 +15,21 @@ const StatsGrid: React.FC<{ inflows: InflowItem[]; outflows: OutflowItem[] }> = 
       <div className="stat-card inflow">
         <div className="stat-icon">💰</div>
         <div className="stat-info">
-          <h3>{fmt(totalIn(inflows))}</h3>
+          <h3>{formatCurrency(totalIn(inflows))}</h3>
           <p>Total Inflow</p>
         </div>
       </div>
       <div className="stat-card outflow">
         <div className="stat-icon">💸</div>
         <div className="stat-info">
-          <h3>{fmt(totalOut((outflows)))}</h3>
+          <h3>{formatCurrency(totalOut((outflows)))}</h3>
           <p>Total Outflow</p>
         </div>
       </div>
       <div className="stat-card balance">
         <div className="stat-icon">💳</div>
         <div className="stat-info">
-          <h3>{fmt(totalIn(inflows) - totalOut(outflows))}</h3>
+          <h3>{formatCurrency(totalIn(inflows) - totalOut(outflows))}</h3>
           <p>Current Balance</p>
         </div>
       </div>
@@ -86,7 +53,7 @@ const BudgetOverview: React.FC<{ data: BudgetItem[] }> = ({ data }) => (
           <div className="budget-info">
             <span className="budget-category">{b.budget_for}</span>
             <span className="budget-amounts">
-              {fmt(b.outflow_total)} / {fmt(b.inflow_total)}
+              {formatCurrency(b.outflow_total)} / {formatCurrency(b.inflow_total)}
             </span>
           </div>
           <div
@@ -137,7 +104,7 @@ const RecentTransactions: React.FC<{
                 className={`transaction-amount ${isIn ? 'positive' : 'negative'}`}
               >
                 {isIn ? '+' : '-'}
-                {fmt(t.amount)}
+                {formatCurrency(t.amount)}
               </div>
             </div>
           );

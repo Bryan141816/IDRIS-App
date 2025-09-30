@@ -1,4 +1,11 @@
-import { createContext, useContext, useMemo, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
 
 type UserRoleContextType = {
   userRoles: string[];
@@ -15,7 +22,7 @@ const ROLE_PRECEDENCE: Record<string, number> = {
 
 export const UserRoleContext = createContext<UserRoleContextType>({
   userRoles: [],
-  setUserRoles: () => {},
+  setUserRoles: () => { },
   highestRole: null,
 });
 
@@ -23,30 +30,35 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [userRoles, setUserRolesState] = useState<string[]>([]);
 
   // Normalize to unique, lowercase roles when setting
-  const setUserRoles = (roles: string[]) => {
-    const norm = Array.from(new Set(roles.map(r => r.toLowerCase().trim())));
+  const setUserRoles = useCallback((roles: string[]) => {
+    const norm = Array.from(new Set(roles.map((r) => r.toLowerCase().trim())));
     setUserRolesState(norm);
-  };
+  }, []);
 
   const highestRole = useMemo(() => {
     if (userRoles.length === 0) return null;
 
     // find the best precedence value
     const minPrecedence = Math.min(
-      ...userRoles.map(r => ROLE_PRECEDENCE[r] ?? Infinity)
+      ...userRoles.map((r) => ROLE_PRECEDENCE[r] ?? Infinity),
     );
 
     // collect all roles with that precedence
     const topRoles = userRoles.filter(
-      r => (ROLE_PRECEDENCE[r] ?? Infinity) === minPrecedence
+      (r) => (ROLE_PRECEDENCE[r] ?? Infinity) === minPrecedence,
     );
 
     // join with "/" if more than one
     return topRoles.length > 0 ? topRoles.join("/") : null;
   }, [userRoles]);
 
+  const value = useMemo(
+    () => ({ userRoles, setUserRoles, highestRole }),
+    [userRoles, setUserRoles, highestRole],
+  );
+
   return (
-    <UserRoleContext.Provider value={{ userRoles, setUserRoles, highestRole }}>
+    <UserRoleContext.Provider value={value}>
       {children}
     </UserRoleContext.Provider>
   );

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { InflowItem } from './FinanceManagement';
+import { FilterModal } from './FilterModal';
 import Swal from "sweetalert2";
-
+import { formatCurrency } from '../../helpers';
 import {
   toDateInput,
   normalizeTransactionType,
   normalizeBudgetAllocationName,
   validate,
-  withSwal,
-  formatCurrency,
 } from './helpers';
 
+import {
+  withSwal
+} from '../../withSwal';
+
+// CAN'T BE IN HELPER BECAUSE OF STATUS DIFFERENCE
 export const normalizeRecordStatus = (status: string | null | undefined) => {
   const s = (status || "").toUpperCase();
   if (s === "PENDING") return "PENDING";
@@ -57,35 +61,44 @@ const InflowModal: React.FC<{
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readOnly) return;
-
+  
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
-
+  
     const fd = buildFormData(form);
-    const created = await withSwal('Saving inflow…', () => createInflowFinanceRecord(fd));
-    onSave?.(created);
-    onClose();
+    console.log(fd);
+    try {
+      const created = await withSwal('Saving inflow…', () => createInflowFinanceRecord(fd));
+      onSave?.(created);
+      onClose();
+    } catch (err) {
+      // withSwal already showed an error modal; optionally log
+      console.error('createInflowFinanceRecord error:', err);
+      // do not close any modal here — withSwal handled modals
+    }
   };
 
   const submitUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
-
+  
     const fd = buildFormData(form, true);
-
-    console.log(fd);
-    const updated = await withSwal('Updating inflow…', () => UpdateReportData(fd));
-
-    onSave?.(updated);
-    onClose();
+  
+    try {
+      const updated = await withSwal('Updating inflow…', () => UpdateReportData(fd));
+      onSave?.(updated);
+      onClose();
+    } catch (err) {
+      // don't close modal here (withSwal handled modals)
+    }
   };
 
   const onSubmit = mode === 'edit' ? submitUpdate : submitCreate;
@@ -207,6 +220,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selected, setSelected] = useState<InflowItem | undefined>();
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   useEffect(() => {
     setRows(inflows);
@@ -216,6 +230,20 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
+  };
+
+  const handleApplyFilters = (filters: { from?: string; to?: string }) => {
+    if (filters.from && filters.to) {
+      const fromDate = new Date(filters.from).getTime();
+      const toDate = new Date(filters.to).getTime();
+      const filtered = inflows.filter(item => {
+        const itemDate = new Date(item.date).getTime();
+        return itemDate >= fromDate && itemDate <= toDate;
+      });
+      setRows(filtered);
+    } else {
+      setRows(inflows);
+    }
   };
 
   // Merge helper (replace by finance_id or push if new)
@@ -235,7 +263,10 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
     <div className="inflows-content">
       <div className="section-header">
         <h2>Track Inflow of Funds (Donations, Grants)</h2>
-        <button className="primary-btn" onClick={() => open('add')}>+ Record Inflow</button>
+        <div className='title-btn-container'>
+          <button className="secondary-btn" onClick={() => setFilterModalOpen(true)}>Filter</button>
+          <button className="primary-btn" onClick={() => open('add')}>+ Record Inflow</button>
+        </div>
       </div>
 
       <div className="inflows-table">
@@ -280,6 +311,11 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
           upsertRow(saved as InflowItem)
         }
         }
+      />
+      <FilterModal
+        open={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        onApplyFilters={handleApplyFilters}
       />
     </div>
   );

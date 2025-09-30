@@ -6,6 +6,7 @@ import {
   useLocation,
   useNavigation,
   useLoaderData,
+  useNavigate,
 } from "react-router-dom";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { usePrefectLink } from "./PrefetchLink";
@@ -15,6 +16,7 @@ import Header from "./components/Page_Furniture/Header";
 import Footer from "./components/Page_Furniture/Footer";
 import { RealTimeDataProvider } from "./RealTimeDataContext";
 import { NotificationProvider } from "./NotificationContext";
+import { handleRoleBasedRedirect } from "./utils/handleRoleBasedRedirect";
 const ProtectedRoute = lazy(() => import("./ProtectedRoute"));
 
 function PageLayout() {
@@ -29,6 +31,7 @@ function PageLayout() {
     userId,
   } = useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();
+  const navigate = useNavigate();
 
   const userData = useLoaderData() as {
     user_id: number;
@@ -38,32 +41,7 @@ function PageLayout() {
     roles: string[];
   } | null;
 
-  const [isInit, setIsInit] = useState(false); // local flag to ensure init only runs once
-
-  useEffect(() => {
-    if (!isInit) {
-      if (userData) {
-        setUserType(userData.user_type);
-        setEmail(userData.email);
-        setUserId(userData.user_id);
-        setUsername(userData.username);
-        setUserRoles(userData.roles);
-      } else {
-        setUserType("");
-        setEmail("");
-        setUserId(null);
-        setUsername("");
-        setUserRoles([]);
-      }
-      const timeout = setTimeout(() => setUserReady(true), 0);
-      return () => clearTimeout(timeout);
-      setIsInit(true);
-    }
-  }, [userData, isInit]);
-
   const location = useLocation();
-  const navigation = useNavigation();
-
   const isAuthPage =
     location.pathname === "/login" ||
     location.pathname === "/register" ||
@@ -71,6 +49,40 @@ function PageLayout() {
     location.pathname === "/forgot_password" ||
     location.pathname === "/reset_password" ||
     location.pathname === "/oauth_callback";
+
+  useEffect(() => {
+    if (userData) {
+      if (isAuthPage) {
+        handleRoleBasedRedirect(userData.roles, navigate);
+        return;
+      }
+      setUserType(userData.user_type);
+      setEmail(userData.email);
+      setUserId(userData.user_id);
+      setUsername(userData.username);
+      setUserRoles(userData.roles);
+    } else {
+      setUserType("");
+      setEmail("");
+      setUserId(null);
+      setUsername("");
+      setUserRoles([]);
+    }
+    const timeout = setTimeout(() => setUserReady(true), 0);
+    return () => clearTimeout(timeout);
+  }, [
+    userData,
+    isAuthPage,
+    navigate,
+    setUserType,
+    setEmail,
+    setUserId,
+    setUsername,
+    setUserRoles,
+    setUserReady,
+  ]);
+
+  const navigation = useNavigation();
 
   const hideHeaderFooterRoutes = [
     "/lgu_profiling/map_of_cebu",

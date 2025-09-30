@@ -4,7 +4,12 @@ from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from models import WarehouseZones
-from data_schemas.procurement_inventory import WarehouseZoneCreate, WarehouseZoneOut
+from data_schemas.procurement_inventory import (
+    WarehouseZoneCreate,
+    WarehouseZoneOut,
+    InventoryItemCreate,
+    InventoryItemsOut,
+)
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
 )
@@ -13,7 +18,7 @@ from typing import List
 
 router = APIRouter(
     tags=["procurement_inventory"],
-    dependencies=[Depends(RoleChecker(["logistics admin"]))],  # ✅ correct
+    dependencies=[Depends(RoleChecker(["logistics admin"]))],
 )
 
 
@@ -34,3 +39,15 @@ def get_warehouse_zone(db: Session = Depends(get_db)):
 )
 def update_warehouse_zone(payload: WarehouseZoneOut, db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.update_warehouse_zone(db, payload)
+
+
+@router.post("/procurement_inventory/add_inventory_item")
+def add_inventory_item(payload: InventoryItemCreate, db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.create_inventory_item(db, payload)
+
+
+@router.get(
+    "/procurement_inventory/get_inventory_item", response_model=List[InventoryItemsOut]
+)
+def get_inventory_item(db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.get_all_inventory_item(db)

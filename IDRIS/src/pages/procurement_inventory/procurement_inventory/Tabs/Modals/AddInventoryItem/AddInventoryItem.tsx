@@ -1,4 +1,8 @@
-import { DefaultInventoryModalProps, InventoryModal, InventoryItemsProps } from "../ModalDefault";
+import {
+  DefaultInventoryModalProps,
+  InventoryModal,
+  InventoryItemsProps,
+} from "../ModalDefault";
 
 import { useState, ChangeEvent } from "react";
 interface WarehouseZoneProps {
@@ -10,6 +14,7 @@ interface WarehouseZoneProps {
   manager: string;
   status: string;
 }
+import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
 const warehouseZones: WarehouseZoneProps[] = [
   {
@@ -54,102 +59,109 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
   onClose,
   refreshData,
 }) => {
-  type InventoryItemForm = Omit<InventoryItemsProps, "inventory_id">
-  const [addForm, setAddForm] = useState<InventoryItemForm>(
-    {
-      item_name: "",
-      quantity: 0,
-      category: "",
-      location: -1,
-      batch: "",
-      expiry: "",
-      status: "in stock",
-    }
-  )
+  type InventoryItemForm = Omit<InventoryItemsProps, "inventory_id">;
+  const [addForm, setAddForm] = useState<InventoryItemForm>({
+    item_name: "",
+    quantity: 0,
+    category: "",
+    batch: "",
+    expiry: "",
+    status: "in stock",
+  });
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setAddForm((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
+
+  const handleRequest = async () => {
+    try {
+      const response = await API.post(
+        "/procurement_inventory/add_inventory_item",
+        addForm,
+      );
+      return response.data;
+    } catch (e: any) {
+      console.error(`Error on adding inventory item: ${e}`);
+      return false;
+    }
+  };
+
   const handleSubmit = () => {
-    console.log(addForm)
-  }
+    const _submit = async () => {
+      const response = await handleRequest();
+    };
+    _submit();
+  };
+
   return (
-    <InventoryModal onClose={onClose} modalType="add-warehouse" onSubmit={handleSubmit}>
-
-      <div className="modal-content">
-        <div className="form-group">
-          <label>Item Name</label>
-          <input
-            type="text"
-            placeholder="Enter item name"
-            value={addForm.item_name}
-            name="item_name"
-            onChange={handleChange}
-          />
+    <>
+      <InventoryModal
+        onClose={onClose}
+        modalType="add-warehouse"
+        onSubmit={handleSubmit}
+      >
+        <div className="modal-content">
+          <div className="form-group">
+            <label>Item Name</label>
+            <input
+              type="text"
+              placeholder="Enter item name"
+              value={addForm.item_name}
+              name="item_name"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label>Quantity</label>
+            <input
+              type="number"
+              placeholder="Enter quantity"
+              value={addForm.quantity}
+              name="quantity"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label>Category</label>
+            <select
+              value={addForm.category}
+              name="category"
+              onChange={handleChange}
+            >
+              <option value="">Select category</option>
+              <option value="food">Food</option>
+              <option value="medical">Medical</option>
+              <option value="clothing">Clothing</option>
+              <option value="beverages">Beverages</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Batch Number</label>
+            <input
+              type="text"
+              placeholder="Enter batch number"
+              value={addForm.batch}
+              name="batch"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label>Expiry Date</label>
+            <input
+              type="date"
+              value={addForm.expiry}
+              name="expiry"
+              onChange={handleChange}
+            />
+          </div>
         </div>
-        <div className="form-group">
-          <label>Quantity</label>
-          <input
-            type="number"
-            placeholder="Enter quantity"
-            value={addForm.quantity}
-            name="quantity"
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group">
-          <label>Category</label>
-          <select value={addForm.category} name="category" onChange={handleChange}>
-            <option value="">Select category</option>
-            <option value="food">Food</option>
-            <option value="medical">Medical</option>
-            <option value="clothing">Clothing</option>
-            <option value="beverages">Beverages</option>
-          </select>
-
-        </div>
-        <div className="form-group">
-          <label >Batch Number</label>
-          <input
-            type="text"
-            placeholder="Enter batch number"
-            value={addForm.batch}
-            name="batch"
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group">
-          <label>Expiry Date</label>
-          <input
-            type="date"
-            value={addForm.expiry}
-            name="expiry"
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group">
-          <select
-            value={addForm.location}
-            name="location"
-            onChange={handleChange}
-          >
-            <option>Select location</option>
-            {warehouseZones.map((zone) => (
-              <option key={zone.id} value={zone.id}>
-                {zone.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-    </InventoryModal>
-
-  )
-}
+      </InventoryModal>
+    </>
+  );
+};

@@ -1,4 +1,4 @@
-import styles from "./FundingCard.module.scss";
+import styles from "./fundingCard.module.scss";
 import defaultFundingImage from "../files/default_image.jpg";
 import { CircleDot } from "../../../components/Page_Furniture/Icons";
 import { useState, useEffect, useRef } from "react";

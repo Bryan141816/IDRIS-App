@@ -66,7 +66,7 @@ const FinanceAdmin: React.FC = () => {
     const fetchAllInflows = async () => {
       try {
         const inflows = await getInflowFinanceRecords();
-  
+
         if (inflows != null) {
           setFundInFlows(inflows);
         } else {
@@ -80,7 +80,7 @@ const FinanceAdmin: React.FC = () => {
     const fetchAllOutflows = async () => {
       try {
         const outflows = await getOutflowFinanceRecords();
-  
+
         if (outflows != null) {
           setFundOutFlows(outflows);
         } else {
@@ -94,7 +94,7 @@ const FinanceAdmin: React.FC = () => {
     const fetchFinanceSummary = async () => {
       try {
         const summary = await getBudgetAllocationSummary();
-    
+
         if (summary != null) {
           console.log("Budget allocation:", summary);
           setBudgetData(summary);

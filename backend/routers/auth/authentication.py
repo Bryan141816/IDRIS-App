@@ -116,18 +116,21 @@ async def microsoft_register(request: Request):
 
 
 async def add_user(email: str, username: str, sub: str, db: Session = next(get_db())):
-    new_user = create_user(
-        db,
-        user_id=uid_from_string(username),
-        email=email,
-        username=username,
-        user_type="user",
-        roles=["generic"],
-        sub=sub,
-    )
-    token = create_token(uid_from_string(username), "activation")
-    await send_activation_email(email, token)
-    return True
+    try:
+        new_user = create_user(
+            db,
+            user_id=uid_from_string(username),
+            email=email,
+            username=username,
+            user_type="user",
+            roles=["generic"],
+            sub=sub,
+        )
+        token = create_token(uid_from_string(username), "activation")
+        await send_activation_email(email, token)
+        return None
+    except ValueError as e:
+        return str(e)
 
 
 @router.get("/auth/microsoft/callback")
@@ -149,8 +152,13 @@ async def microsoft_callback(request: Request, db: Session = Depends(get_db)):
     jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
     if state == "register":
-        await add_user(payload["email"], payload["name"], str(payload["sub"]), db)
-        redirect_url = f"http://localhost:5173/login"
+        error = await add_user(
+            payload["email"], payload["name"], str(payload["sub"]), db
+        )
+        if error:
+            redirect_url = f"http://localhost:5173/login?error={error}"
+        else:
+            redirect_url = f"http://localhost:5173/login"
         return RedirectResponse(url=redirect_url)
     else:
         redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
@@ -171,8 +179,13 @@ async def auth_callback(request: Request):
     }
     jwt_token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
     if state == "register":
-        await add_user(user_info["email"], user_info["name"], str(user_info["sub"]))
-        redirect_url = f"http://localhost:5173/login"
+        error = await add_user(
+            user_info["email"], user_info["name"], str(user_info["sub"])
+        )
+        if error:
+            redirect_url = f"http://localhost:5173/login?error={error}"
+        else:
+            redirect_url = f"http://localhost:5173/login"
         return RedirectResponse(url=redirect_url)
     else:
         redirect_url = f"http://localhost:5173/oauth_callback?token={jwt_token}"
@@ -239,30 +252,33 @@ def get_current_user_from_access_token(
 
 @router.post("/register", response_model=TokenWithUserResponse)
 async def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
-    new_user = create_user(
-        db,
-        user_id=uid_from_string(user.username),
-        email=user.email,
-        username=user.username,
-        password=user.password,
-        user_type="user",
-        roles=["generic"],
-    )
-    access_token = create_access_token(data={"sub": new_user.email})
-    refresh_token = create_refresh_token(data={"sub": new_user.email})
+    try:
+        new_user = create_user(
+            db,
+            user_id=uid_from_string(user.username),
+            email=user.email,
+            username=user.username,
+            password=user.password,
+            user_type="user",
+            roles=["generic"],
+        )
+        access_token = create_access_token(data={"sub": new_user.email})
+        refresh_token = create_refresh_token(data={"sub": new_user.email})
 
-    # Set refresh token in cookie
-    response.set_cookie(
-        key=REFRESH_TOKEN_COOKIE,
-        value=refresh_token,
-        httponly=True,
-        max_age=60 * 60 * 24 * 7,  # 7 days
-        samesite="Lax",
-        secure=False,  # Set to True in production with HTTPS
-    )
-    token = create_token(uid_from_string(user.username), "activation")
-    await send_activation_email(user.email, token)
-    return {"access_token": access_token, "token_type": "bearer", "user": new_user}
+        # Set refresh token in cookie
+        response.set_cookie(
+            key=REFRESH_TOKEN_COOKIE,
+            value=refresh_token,
+            httponly=True,
+            max_age=60 * 60 * 24 * 7,  # 7 days
+            samesite="Lax",
+            secure=False,  # Set to True in production with HTTPS
+        )
+        token = create_token(uid_from_string(user.username), "activation")
+        await send_activation_email(user.email, token)
+        return {"access_token": access_token, "token_type": "bearer", "user": new_user}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/login", response_model=TokenWithUserResponse)

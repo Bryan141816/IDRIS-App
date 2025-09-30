@@ -1,6 +1,7 @@
 import React from 'react';
-import { DollarSign, User } from 'lucide-react';
+import { PhilippinePesoIcon, User } from 'lucide-react';
 import './DonationInfo.scss';
+import { formatCurrency } from '../helpers';
 
 interface DonorDonationFormProps {
   donationKind: string;
@@ -12,6 +13,7 @@ interface DonorDonationFormProps {
     description: string;
   };
   handleInputChange: (field: string, value: string) => void;
+  errors: any;
 }
 
 const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
@@ -20,7 +22,8 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
   donationFrequency,
   setDonationFrequency,
   formData,
-  handleInputChange
+  handleInputChange,
+  errors
 }) => {
   return (
     <div className="donor-form">
@@ -79,25 +82,27 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
           <textarea
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
-            className="form-group__textarea"
+            className={`form-group__textarea ${errors.description ? 'input-error' : ''}`}
             rows={4}
             placeholder="Enter donation description..."
           />
+          {errors.description && <p className="error-message">{errors.description}</p>}
         </div>
 
         {/* Amount */}
         <div className="form-group">
           <label className="form-group__label">Amount</label>
           <div className="input-with-icon">
-            <DollarSign className="input-with-icon__icon" />
+            <PhilippinePesoIcon className="input-with-icon__icon" />
             <input
               type="number"
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
-              className="input-with-icon__input"
+              className={`input-with-icon__input ${errors.amount ? 'input-error' : ''}`}
               placeholder="0.00"
             />
           </div>
+          {errors.amount && <p className="error-message">{errors.amount}</p>}
         </div>
       </div>
     </div>

@@ -288,14 +288,13 @@ export default function DonationReport({
                 className={styles.printButton}
                 onClick={() => setActiveModal("transparency-report-modal")}
               >
-                Request
+                Filter
               </button>
             </div>
             <span>Total Records: {rows.length}</span>
           </div>
         </div>
       </div>
-
       {/* Body */}
       <main className={styles.reportMain}>
         <div className={styles.tableContainer}>

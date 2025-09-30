@@ -1,69 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
-interface InventoryItemProps {
-  id: number | string;
-  name: string;
-  quantity: number;
-  category: string;
-  location: string;
-  batch: string;
-  expiry?: string | null | undefined | Date;
+import { API } from "../../../../API_Handler/Axio_API_Handler";
+// interface InventoryItemProps {
+//   id: number | string;
+//   name: string;
+//   quantity: number;
+//   category: string;
+//   location: string;
+//   batch: string;
+//   expiry?: string | null | undefined | Date;
+//   status: string;
+// }
+//
+// // Sample inventory data
+// const inventoryItems: InventoryItemProps[] = [
+//   {
+//     id: 1,
+//     name: "Rice Packs",
+//     quantity: 1250,
+//     category: "Food",
+//     location: "Warehouse A - Zone 1",
+//     expiry: "2024-08-15",
+//     batch: "RC-2024-001",
+//     status: "In Stock",
+//   },
+//   {
+//     id: 2,
+//     name: "Water Bottles",
+//     quantity: 3500,
+//     category: "Beverages",
+//     location: "Warehouse B - Zone 2",
+//     expiry: "2025-12-30",
+//     batch: "WB-2024-045",
+//     status: "In Stock",
+//   },
+//   {
+//     id: 3,
+//     name: "Medical Supplies",
+//     quantity: 85,
+//     category: "Medical",
+//     location: "Medical Storage - Zone 1",
+//     expiry: "2024-06-20",
+//     batch: "MS-2024-012",
+//     status: "Low Stock",
+//   },
+//   {
+//     id: 4,
+//     name: "Blankets",
+//     quantity: 450,
+//     category: "Clothing",
+//     location: "Warehouse C - Zone 3",
+//     expiry: null,
+//     batch: "BL-2024-008",
+//     status: "In Stock",
+//   },
+//   {
+//     id: 5,
+//     name: "First Aid Kits",
+//     quantity: 12,
+//     category: "Medical",
+//     location: "Medical Storage - Zone 2",
+//     expiry: "2024-07-10",
+//     batch: "FA-2024-003",
+//     status: "Critical",
+//   },
+// ];
+interface WarehouseZone {
+  warehouse_id: number;
   status: string;
+  zone_name: string;
+  zone_type: string;
+  capacity: number;
+  manager: string;
 }
 
-// Sample inventory data
-const inventoryItems: InventoryItemProps[] = [
-  {
-    id: 1,
-    name: "Rice Packs",
-    quantity: 1250,
-    category: "Food",
-    location: "Warehouse A - Zone 1",
-    expiry: "2024-08-15",
-    batch: "RC-2024-001",
-    status: "In Stock",
-  },
-  {
-    id: 2,
-    name: "Water Bottles",
-    quantity: 3500,
-    category: "Beverages",
-    location: "Warehouse B - Zone 2",
-    expiry: "2025-12-30",
-    batch: "WB-2024-045",
-    status: "In Stock",
-  },
-  {
-    id: 3,
-    name: "Medical Supplies",
-    quantity: 85,
-    category: "Medical",
-    location: "Medical Storage - Zone 1",
-    expiry: "2024-06-20",
-    batch: "MS-2024-012",
-    status: "Low Stock",
-  },
-  {
-    id: 4,
-    name: "Blankets",
-    quantity: 450,
-    category: "Clothing",
-    location: "Warehouse C - Zone 3",
-    expiry: null,
-    batch: "BL-2024-008",
-    status: "In Stock",
-  },
-  {
-    id: 5,
-    name: "First Aid Kits",
-    quantity: 12,
-    category: "Medical",
-    location: "Medical Storage - Zone 2",
-    expiry: "2024-07-10",
-    batch: "FA-2024-003",
-    status: "Critical",
-  },
-];
+interface InventoryItemsProps {
+  inventory_id: number;
+  item_name: string;
+  quantity: number;
+  category: string;
+  batch: string;
+  expiry: string;
+  status: string;
+  location: WarehouseZone | null;
+}
 const getStockStatus = (quantity: number = 0) => {
   if (quantity < 50) return "critical";
   if (quantity < 200) return "low";
@@ -71,19 +91,43 @@ const getStockStatus = (quantity: number = 0) => {
 };
 
 const InventoryItems = () => {
-
   const [activeModal, setActiveModal] = useState<string | null>(null);
-
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemsProps[]>(
+    [],
+  );
   const openModal = (name: string, item: any | null = null) => {
-    setActiveModal(name)
-  }
+    setActiveModal(name);
+  };
   const closeModal = () => {
-    setActiveModal(null)
-  }
+    setActiveModal(null);
+  };
+  const fetchData = async () => {
+    try {
+      const response = await API.get(
+        "/procurement_inventory/get_inventory_item",
+      );
+      return response.data;
+    } catch (e: any) {
+      console.error(`Error in fetching inventory item : ${e}`);
+      return false;
+    }
+  };
+  useEffect(() => {
+    const handleFetch = async () => {
+      const response = await fetchData();
+      console.log(response);
+
+      setInventoryItems(response);
+    };
+    handleFetch();
+  }, []);
   return (
     <>
       {activeModal == "add-item" && (
-        <AddInventoryItemTab onClose={closeModal} refreshData={() => { }}></AddInventoryItemTab>
+        <AddInventoryItemTab
+          onClose={closeModal}
+          refreshData={() => {}}
+        ></AddInventoryItemTab>
       )}
       <div className="inventory-content">
         <div className="section-header">
@@ -120,11 +164,17 @@ const InventoryItems = () => {
             </thead>
             <tbody>
               {inventoryItems.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.name}</td>
+                <tr key={item.inventory_id}>
+                  <td>{item.item_name}</td>
                   <td>{item.quantity}</td>
                   <td>{item.category}</td>
-                  <td>{item.location}</td>
+                  <td>
+                    {item.location
+                      ? typeof item.location === "string"
+                        ? item.location
+                        : item.location.zone_name
+                      : "No location assigned"}
+                  </td>
                   <td>{item.batch}</td>
                   <td>
                     {item.expiry
@@ -158,8 +208,22 @@ const InventoryItems = () => {
           </table>
         </div>
       </div>
-
     </>
-  )
-}
+  );
+};
 export default InventoryItems;
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+// Im going to kill myself if this shit isn't done in the end of the mont

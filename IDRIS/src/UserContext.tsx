@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext } from "react";
 
 type UserContextType = {
   userId: number | null;
@@ -25,32 +25,5 @@ export const UserContext = createContext<UserContextType>({
   setUsername: () => {},
   setUserReady: () => {},
 });
-
-export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [userId, setUserId] = useState<number | null>(null);
-  const [userType, setUserType] = useState("");
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [isUserReady, setUserReady] = useState(false);
-
-  return (
-    <UserContext.Provider
-      value={{
-        userId,
-        setUserId,
-        userType,
-        setUserType,
-        email,
-        setEmail,
-        username,
-        setUsername,
-        isUserReady,
-        setUserReady,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
-  );
-};
 
 export const useUserContext = () => useContext(UserContext);

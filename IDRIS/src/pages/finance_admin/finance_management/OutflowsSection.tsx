@@ -5,13 +5,15 @@ import {
   UpdateReportData, // make sure this exists in your API handler
 } from '../../../API_Handler/finance_management_handler';
 import { OutflowItem } from './FinanceManagement';
+import { FilterModal } from './FilterModal';
+import { formatCurrency } from '../../helpers';
 import {
   toDateInput,
   normalizeBudgetAllocationName,
   validate,
-  formatCurrency,
-  withSwal,
 } from './helpers';
+
+import { withSwal } from '../../withSwal';
 
 export const normalizeRecordStatus = (status: string | null | undefined) => {
   const s = (status || "").toUpperCase();
@@ -204,6 +206,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selected, setSelected] = useState<OutflowItem | undefined>();
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   useEffect(() => { setRows(outflows); }, [outflows]);
 
@@ -211,6 +214,20 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
+  };
+
+  const handleApplyFilters = (filters: { from?: string; to?: string }) => {
+    if (filters.from && filters.to) {
+      const fromDate = new Date(filters.from).getTime();
+      const toDate = new Date(filters.to).getTime();
+      const filtered = outflows.filter(item => {
+        const itemDate = new Date(item.date).getTime();
+        return itemDate >= fromDate && itemDate <= toDate;
+      });
+      setRows(filtered);
+    } else {
+      setRows(outflows);
+    }
   };
 
   // same upsert pattern as InflowSection
@@ -230,7 +247,10 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
     <div className="outflows-content">
       <div className="section-header">
         <h2>Track Outflow of Funds (Purchases and Expenses)</h2>
-        <button className="primary-btn" onClick={() => open('add')}>+ Record Expense</button>
+        <div className='title-btn-container'>
+          <button className="secondary-btn" onClick={() => setFilterModalOpen(true)}>Filter</button>
+          <button className="primary-btn" onClick={() => open('add')}>+ Record Expense</button>
+        </div>
       </div>
 
       <div className="outflows-table">
@@ -274,6 +294,11 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
           setModalOpen(false);
           upsertRow(saved as OutflowItem);
         }}
+      />
+      <FilterModal
+        open={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        onApplyFilters={handleApplyFilters}
       />
     </div>
   );

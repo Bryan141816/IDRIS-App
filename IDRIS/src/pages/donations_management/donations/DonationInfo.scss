@@ -166,6 +166,21 @@
   }
 }
 
+.input-error {
+  border-color: #ef4444;
+
+  &:focus {
+    border-color: #ef4444;
+    // ring-color: #ef4444;
+  }
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
 // Responsive design
 @media (max-width: 768px) {
   .donor-form {

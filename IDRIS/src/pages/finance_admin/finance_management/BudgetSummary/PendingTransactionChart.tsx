@@ -7,6 +7,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 import styles from "./Charts.module.scss"; 
+import { formatCurrency } from "../../../helpers";
 ChartJS.register(...registerables);
 
 export type PendingDatum = {
@@ -78,7 +79,7 @@ const PendingTransactionsChart: React.FC<Props> = ({
           callbacks: {
             label: (context) => {
               const val = context.parsed.y ?? 0;
-              return `${context.dataset.label}: $${Number(val).toLocaleString()}`;
+              return `${context.dataset.label}: ${formatCurrency(val)}`;
             },
           },
         },
@@ -87,7 +88,7 @@ const PendingTransactionsChart: React.FC<Props> = ({
         y: {
           beginAtZero: true,
           ticks: {
-            callback: (value) => `$${(Number(value || 0) / 1000).toFixed(0)}K`,
+            callback: (value) => `${formatCurrency((Number(value || 0) / 1000).toFixed(0))}K`,
           },
         },
       },

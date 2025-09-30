@@ -62,8 +62,10 @@ const barangaySamples: MarkerWithPhotos[] = [
   },
 ];
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
+// Normalize: remove trailing slashes from RAW_API, then append base
+const API_BASE = `${RAW_API.replace(/\/+$/, "")}${MAPOFCEBU_BASE}`;
 
 const MapOfCebu = () => {
   const [lguMarkers, setLguMarkers] = useState<MarkerWithPhotos[]>([]);
@@ -79,11 +81,16 @@ const MapOfCebu = () => {
 
   // Fetch LGU points
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
+      const url = `${API_BASE}/points`;
+      console.debug("[LGU URL]", url);
       try {
-        const res = await fetch(`${API_URL}${MAPOFCEBU_BASE}/points`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) throw new Error(`GET /points failed: HTTP ${res.status}`);
         const data: LGUPoint[] = await res.json();
+        if (cancelled) return;
 
         const mapped: MarkerWithPhotos[] = data.map((p) => ({
           lat: p.lat,
@@ -101,18 +108,31 @@ const MapOfCebu = () => {
 
         setLguMarkers(mapped);
       } catch (e: any) {
-        setError(e?.message || "Failed to load LGU points.");
+        console.error("LGU fetch error:", e);
+        setError((prev) => prev ?? (e?.message || "Failed to load LGU points."));
+      } finally {
+        // Ensure UI can proceed even if this request fails
+        setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch RAFI points
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
+      const url = `${API_BASE}/rafi`;
+      console.debug("[RAFI URL]", url);
       try {
-        const res = await fetch(`${API_URL}${MAPOFCEBU_BASE}/rafi`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) throw new Error(`GET /rafi failed: HTTP ${res.status}`);
         const data: RafiPoint[] = await res.json();
+        if (cancelled) return;
 
         const mapped: MarkerWithPhotos[] = data.map((r) => ({
           lat: r.lat,
@@ -129,11 +149,17 @@ const MapOfCebu = () => {
 
         setRaffiMarkers(mapped);
       } catch (e: any) {
-        setError(e?.message || "Failed to load RAFI points.");
+        console.error("RAFI fetch error:", e);
+        setError((prev) => prev ?? (e?.message || "Failed to load RAFI points."));
       } finally {
+        // Ensure UI can proceed even if this request fails
         setLoading(false);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleMarkerClick = (marker: MarkerWithPhotos) => {
@@ -176,29 +202,59 @@ const MapOfCebu = () => {
     let base: MarkerWithPhotos[] = [
       ...lguMarkers,
       ...raffiMarkers,
-      ...barangaySamples, // Adding sample Barangay markers
+      ...barangaySamples,
     ];
     if (selectedType) base = base.filter((m) => m.type === selectedType);
     return evacuationCenter ? [...base, evacuationCenter] : base;
   }, [lguMarkers, raffiMarkers, selectedType, evacuationCenter]);
 
-  if (loading) return <div style={{ padding: 16 }}>Loading markers…</div>;
-  if (error) return <div style={{ padding: 16, color: "crimson" }}>{error}</div>;
+  if (loading) {
+    return <div style={{ padding: 16 }}>Loading markers…</div>;
+  }
 
   return (
     <div className={`main-container ${sidebarOpen ? "sidebar-open" : ""}`}>
+      {error && (
+        <div
+          style={{
+            padding: 12,
+            background: "#fff3cd",
+            color: "#664d03",
+            border: "1px solid #ffecb5",
+            marginBottom: 8,
+          }}
+          role="alert"
+        >
+          ⚠️ {error}. Showing available data (local samples and any successful fetches).
+        </div>
+      )}
+
       <div className="map-buttons">
-        <button className="map-button" onClick={() => setSelectedType(null)}>Show All</button>
-        <button className="map-button" onClick={() => setSelectedType("lgu")}>LGU</button>
-        <button className="map-button" onClick={() => setSelectedType("barangay")}>Barangay</button>
-        <button className="map-button" onClick={() => setSelectedType("raffi")}>RAFI Infrastructure</button>
+        <button className="map-button" onClick={() => setSelectedType(null)}>
+          Show All
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("lgu")}>
+          LGU
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("barangay")}>
+          Barangay
+        </button>
+        <button className="map-button" onClick={() => setSelectedType("raffi")}>
+          RAFI Infrastructure
+        </button>
       </div>
 
       <div className="legend-box">
         <h4>Legend</h4>
-        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU</div>
-        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay</div>
-        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure</div>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU
+        </div>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay
+        </div>
+        <div className="legend-item">
+          <span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure
+        </div>
       </div>
 
       <div className="map-container">
@@ -212,7 +268,9 @@ const MapOfCebu = () => {
 
       {sidebarOpen && selectedMarker && (
         <div className="sidebar">
-          <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
+          <button className="close-sidebar" onClick={handleCloseSidebar}>
+            x
+          </button>
           {selectedMarker.image && <img src={selectedMarker.image} alt={selectedMarker.lguName} />}
           <h2>{selectedMarker.lguName}</h2>
           <hr />
@@ -220,9 +278,15 @@ const MapOfCebu = () => {
           <hr />
           {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
             <>
-              <p><strong>Population:</strong> {selectedMarker.population}</p>
-              <p><strong>Available Resources:</strong> {selectedMarker.resources || "-"}</p>
-              <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
+              <p>
+                <strong>Population:</strong> {selectedMarker.population}
+              </p>
+              <p>
+                <strong>Available Resources:</strong> {selectedMarker.resources || "-"}
+              </p>
+              <p>
+                <strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}
+              </p>
 
               {selectedMarker.type === "lgu" && selectedMarker.lguId != null && (
                 <Link

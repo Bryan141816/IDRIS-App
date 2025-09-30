@@ -1,449 +1,325 @@
-import {
-  TableView,
-  TableReponse,
-} from "../../../components/TableView/table_view";
-import "./ReportList.scss";
-import { Modal } from "../../../components/Page_Furniture/Modals";
-import React, { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
-import {
-  faEllipsisVertical,
-  faTrash,
-  faPen,
-} from "@fortawesome/free-solid-svg-icons";
-import {
-  getReportList,
-  addResponseReport,
-  deleteResponseReport,
-  updateResponseReport,
-} from "../../../API_Handler/reponse_dashboard_report_list";
-
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { MessageBox } from "../../../components/Page_Furniture/MessageBox.tsx";
+import { 
+  faSearch, 
+  faFilter, 
+  faExclamationTriangle, 
+  faUsers, 
+  faMapMarkerAlt, 
+  faClock,
+  faPlus,
+  faEdit,
+  faTrash
+} from "@fortawesome/free-solid-svg-icons";
+import { fetchData } from "../../API_Handler/response_dashboard";
+import "./ReportList.scss";
 
-type MessageBoxState = {
-  isOpen: boolean;
-  type: "message" | "confirm";
-  message: string;
-  onSubmit?: () => void;
-  onClose: () => void;
-};
-
-type BaseModalProps = {
-  isModalOpen: boolean;
-  closeModal: () => void;
-  setMessageBox: React.Dispatch<React.SetStateAction<MessageBoxState>>;
-};
-type AddReportListProps = BaseModalProps & {
-  handleAddReportSubmit: (reportType: string) => void;
-};
-type EditReportModalProps = BaseModalProps & {
-  handleEditReport: (editReportType: string, editStatus: string) => void;
-  defaultReportType: string;
-  defaultStatus: string;
-};
-type ViewReportModalProps = BaseModalProps & {
-  handleDeleteReport: (report_id: string) => void;
-  openEditModal: () => void;
-  isViewModalSelected: any;
-};
-
-const ViewReportModal = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  handleDeleteReport,
-  openEditModal,
-  isViewModalSelected,
-}: ViewReportModalProps) => {
-  const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
-  useEffect(() => {
-    if (!isModalOpen) {
-      setMoreOptionVisible(false);
-    }
-  }, [isModalOpen]);
-  const toggleMoreOptionVisible = () =>
-    setMoreOptionVisible(!isMoreOptionVisible);
-
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal}>
-      <div className="modal-container">
-        <div className="horizontal-container space-between-container">
-          <span className="title-modal-text">View Report</span>
-          <div
-            className="horizontal-container"
-            style={{ width: "auto", gap: "5px" }}
-          >
-            <button className="mark-as-button">Mark as Started</button>
-            <div className="more-options-container">
-              <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon
-                  icon={faEllipsisVertical}
-                  style={{ height: "20px" }}
-                />
-              </button>
-              {isMoreOptionVisible && (
-                <div className="more-options-viewer">
-                  <button
-                    onClick={() => {
-                      closeModal();
-                      openEditModal();
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faPen} />
-                    Edit Record
-                  </button>
-                  <button
-                    style={{ color: "red" }}
-                    onClick={() => {
-                      setMessageBox((prev) => ({
-                        ...prev, // preserves onClose and anything else
-                        isOpen: true, // your new values
-                        type: "confirm",
-                        message: "Are you sure you want to delete this report?",
-                        onSubmit: () =>
-                          handleDeleteReport(isViewModalSelected.data[0].text),
-                      }));
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faTrash} /> Delete Record
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="horizontal-container">
-          <span className="details-title">Details</span>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Report Type:</span>
-          <span>{isViewModalSelected.data[2].text}</span>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Status:</span>
-          <span>{isViewModalSelected.data[3].text}</span>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Date:</span>
-          <span>{isViewModalSelected.data[1].text}</span>
-        </div>
-        <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
-            Close
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-const EditReportModal = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  handleEditReport,
-  defaultReportType,
-  defaultStatus,
-}: EditReportModalProps) => {
-  const [editReportType, setEditReportType] = useState(defaultReportType);
-  const [editStatus, setEditStatus] = useState(defaultStatus);
-  const handleEditReportTypeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setEditReportType(event.target.value);
+interface ReportEntry {
+  id: string;
+  timestamp: string;
+  report_type: "incident_report" | "supply_request" | "team_deployment" | "status_update";
+  location: {
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
   };
-  const handleEditStatusChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setEditStatus(event.target.value);
-  };
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal}>
-      <div className="modal-container">
-        <div className="horizontal-container">
-          <span className="details-title">Edit Report</span>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Report Type:</span>
-          <select value={editReportType} onChange={handleEditReportTypeChange}>
-            <option value="EOD Report">EOD Report</option>
-            <option value="Budget Report">Budget Report</option>
-            <option value="Distribution Report">Distribution Report</option>
-            <option value="Demand Assessment">Demand Assessment</option>
-            <option value="Modality Report">Modality Report</option>
-            <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-          </select>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Status:</span>
-          <select value={editStatus} onChange={handleEditStatusChange}>
-            <option value="Filed">Filed</option>
-            <option value="Started">Started</option>
-            <option value="Cancelled">Cancelled</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-        <div className="action-button">
-          <button
-            onClick={() => {
-              setMessageBox((prev) => ({
-                ...prev, // preserves onClose and anything else
-                isOpen: true, // your new values
-                type: "confirm",
-                message: "Are you sure you want to edit this report?",
-                onSubmit: () => handleEditReport(editReportType, editStatus),
-              }));
-            }}
-            style={{ backgroundColor: "rgba(0, 102, 255, 0.5)" }}
-          >
-            Submit
-          </button>
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
+  priority: "low" | "medium" | "high" | "urgent";
+  title: string;
+  description: string;
+  assigned_team?: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled";
+  created_by: string;
+  updated_at: string;
+}
 
-const AddReportList = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  handleAddReportSubmit,
-}: AddReportListProps) => {
-  const [reportType, setReportType] = useState("EOD Report");
-  const handleReportTypeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    setReportType(event.target.value);
-  };
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal}>
-      <div className="modal-container">
-        <div className="horizontal-container">
-          <span className="details-title">Create Report</span>
-        </div>
-        <div className="horizontal-separator"></div>
-        <div className="horizontal-container modal-forms">
-          <span className="item-details-identifier">Report Type:</span>
-          <select value={reportType} onChange={handleReportTypeChange}>
-            <option value="EOD Report">EOD Report</option>
-            <option value="Budget Report">Budget Report</option>
-            <option value="Distribution Report">Distribution Report</option>
-            <option value="Demand Assessment">Demand Assessment</option>
-            <option value="Modality Report">Modality Report</option>
-            <option value="In-Kind Monitoring">In-Kind Monitoring</option>
-          </select>
-        </div>
-        <div className="horizontal-separator"></div>
-        <div className="action-button">
-          <button
-            style={{
-              backgroundColor: "rgba(248, 75, 77)",
-              color: "white",
-            }}
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-          <button
-            style={{
-              backgroundColor: "rgba(0, 102, 255)",
-              color: "white",
-            }}
-            onClick={() => {
-              setMessageBox((prev) => ({
-                ...prev, // preserves onClose and anything else
-                isOpen: true, // your new values
-                type: "confirm",
-                message: "Are you sure you want to add this report?",
-                onSubmit: () => handleAddReportSubmit(reportType),
-              }));
-            }}
-          >
-            Add Report
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-const ReportList = () => {
-  const [response_data, setResposeData] = useState<TableReponse | null>(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isAddModalOpen, setAddModalOpen] = useState(false);
-  const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
-  const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
-
-  const refreshTable = useRef<() => void>(() => {});
-
-  const closeMessageBox = () => {
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: false,
-    }));
-  };
-
-  const [messageBox, setMessageBox] = useState<MessageBoxState>({
-    isOpen: false,
-    type: "message",
-    message: "",
-    onSubmit: undefined,
-    onClose: closeMessageBox,
-  });
-
-  const openViewModal = () => setIsViewModalOpen(true);
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-  };
-
-  const openAddModal = () => setAddModalOpen(true);
-  const closeAddModal = () => setAddModalOpen(false);
-
-  const openEditModal = () => setIsEditModeEnabled(true);
-  const closeEditModal = () => setIsEditModeEnabled(false);
-
-  async function fetchData() {
-    try {
-      const response = await getReportList();
-      setResposeData(response);
-    } catch (error) {
-      console.error(error);
-    }
-  }
+const ReportList: React.FC = () => {
+  const [reports, setReports] = useState<ReportEntry[]>([]);
+  const [filteredReports, setFilteredReports] = useState<ReportEntry[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    loadReports();
   }, []);
-  const handleRefreshTable = () => refreshTable.current?.();
-  const handleAddReportSubmit = async (reportType: string) => {
+
+  useEffect(() => {
+    applyFilters();
+  }, [reports, searchTerm, filterType, filterStatus, filterPriority]);
+
+  const loadReports = async () => {
+    setIsLoading(true);
     try {
-      await addResponseReport(reportType);
-      closeAddModal();
-      setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
-        type: "message",
-        message: "Report is successfuly added?",
-        onClose: closeMessageBox,
-      }));
-      handleRefreshTable();
+      await fetchData<ReportEntry[]>("/response_dashboard/reports/all", setReports);
     } catch (error) {
-      console.error("Failed to add report: ", error);
+      console.error("Failed to load reports:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteReport = async (report_id: String) => {
-    try {
-      await deleteResponseReport(report_id);
-      closeViewModal();
-      setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
-        type: "message",
-        message: "Report is successfuly deleted?",
-        onClose: closeMessageBox,
-      }));
-      handleRefreshTable();
-    } catch (error) {
-      console.error("Failed to delete report: ", error);
+  const applyFilters = () => {
+    let filtered = reports;
+
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(report =>
+        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.created_by.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
+
+    // Type filter
+    if (filterType !== "all") {
+      filtered = filtered.filter(report => report.report_type === filterType);
+    }
+
+    // Status filter
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(report => report.status === filterStatus);
+    }
+
+    // Priority filter
+    if (filterPriority !== "all") {
+      filtered = filtered.filter(report => report.priority === filterPriority);
+    }
+
+    setFilteredReports(filtered);
   };
 
-  const handleEditReport = async (
-    editReportType: string,
-    editStatus: string,
-  ) => {
-    const response = await updateResponseReport(
-      isViewModalSelected.data[0].text,
-      editReportType,
-      editStatus,
-    );
-    if (response.sucess) {
-      closeEditModal();
-      isViewModalSelected.data[2].text = response.data.report.report_type;
-      isViewModalSelected.data[3].text = response.data.report.status;
-      setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
-        type: "message",
-        message: "Report is successfuly updated?",
-        onClose: closeMessageBox,
-      }));
-      handleRefreshTable();
-      openViewModal();
-    } else {
-      console.error("Error updating report: " + response.error);
+  const getReportTypeStyle = (type: string) => {
+    const styles = {
+      incident_report: { color: "#dc3545", icon: faExclamationTriangle, label: "Incident Report" },
+      supply_request: { color: "#28a745", icon: faMapMarkerAlt, label: "Supply Request" },
+      team_deployment: { color: "#007bff", icon: faUsers, label: "Team Deployment" },
+      status_update: { color: "#ffc107", icon: faClock, label: "Status Update" }
+    };
+    return styles[type as keyof typeof styles] || { color: "#6c757d", icon: faMapMarkerAlt, label: "Report" };
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const styles = {
+      urgent: { color: "#dc3545", bg: "#fff5f5" },
+      high: { color: "#fd7e14", bg: "#fff8f0" },
+      medium: { color: "#ffc107", bg: "#fffbf0" },
+      low: { color: "#28a745", bg: "#f0fff4" }
+    };
+    return styles[priority as keyof typeof styles] || { color: "#6c757d", bg: "#f8f9fa" };
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      pending: { color: "#6c757d", bg: "#f8f9fa" },
+      in_progress: { color: "#007bff", bg: "#e3f2fd" },
+      completed: { color: "#28a745", bg: "#e8f5e8" },
+      cancelled: { color: "#dc3545", bg: "#ffebee" }
+    };
+    return styles[status as keyof typeof styles] || { color: "#6c757d", bg: "#f8f9fa" };
+  };
+
+  const formatDateTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    if (window.confirm("Are you sure you want to delete this report?")) {
+      try {
+        // Add delete API call here
+        setReports(reports.filter(report => report.id !== reportId));
+      } catch (error) {
+        console.error("Failed to delete report:", error);
+      }
     }
   };
 
   return (
-    <div className="report-container">
-      <MessageBox
-        isOpen={messageBox.isOpen}
-        onClose={messageBox.onClose}
-        type={messageBox.type}
-        message={messageBox.message}
-        onSubmit={messageBox.onSubmit}
-      ></MessageBox>
+    <div className="report-list">
+      <div className="page-header">
+        <h2>Report Management</h2>
+        <button className="btn-primary">
+          <FontAwesomeIcon icon={faPlus} />
+          Add New Report
+        </button>
+      </div>
 
-      {isViewModalSelected && (
-        <EditReportModal
-          isModalOpen={isEditModeEnabled}
-          closeModal={closeEditModal}
-          setMessageBox={setMessageBox}
-          handleEditReport={handleEditReport}
-          defaultReportType={isViewModalSelected.data[2].text}
-          defaultStatus={isViewModalSelected.data[3].text}
-        ></EditReportModal>
-      )}
-
-      <AddReportList
-        isModalOpen={isAddModalOpen}
-        closeModal={closeAddModal}
-        handleAddReportSubmit={handleAddReportSubmit}
-        setMessageBox={setMessageBox}
-      />
-      {isViewModalSelected && (
-        <ViewReportModal
-          isModalOpen={isViewModalOpen}
-          closeModal={closeViewModal}
-          setMessageBox={setMessageBox}
-          isViewModalSelected={isViewModalSelected}
-          handleDeleteReport={handleDeleteReport}
-          openEditModal={openEditModal}
-        ></ViewReportModal>
-      )}
-
-      <div className="horizontal-container">
-        <div className="navigator-container">
-          <Link to="/response_dashboard">Response Dashboard</Link>
-          <h3>/Report List</h3>
+      {/* Enhanced Filters Section */}
+      <div className="filters-section">
+        <div className="search-box">
+          <FontAwesomeIcon icon={faSearch} />
+          <input
+            type="text"
+            placeholder="Search reports..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <div className="table-actions">
-          <input type="text" placeholder="Search report"></input>
-          <button>Search</button>
-          <button onClick={openAddModal}>+ Add Report</button>
+
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+          className="filter-select"
+        >
+          <option value="all">All Types</option>
+          <option value="incident_report">Incident Reports</option>
+          <option value="supply_request">Supply Requests</option>
+          <option value="team_deployment">Team Deployments</option>
+          <option value="status_update">Status Updates</option>
+        </select>
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="filter-select"
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          className="filter-select"
+        >
+          <option value="all">All Priorities</option>
+          <option value="urgent">Urgent</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+
+      {/* Reports Statistics */}
+      <div className="reports-stats">
+        <div className="stat-card">
+          <div className="stat-value">{reports.length}</div>
+          <div className="stat-label">Total Reports</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{reports.filter(r => r.status === 'pending').length}</div>
+          <div className="stat-label">Pending</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{reports.filter(r => r.status === 'in_progress').length}</div>
+          <div className="stat-label">In Progress</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{reports.filter(r => r.status === 'completed').length}</div>
+          <div className="stat-label">Completed</div>
         </div>
       </div>
 
-      {response_data ? (
-        <TableView
-          tableJSON={response_data}
-          onClickCallback={(row: any) => {
-            setIsViewModalSelected(row);
-            openViewModal();
-          }}
-          setCallbackTableData={true}
-          pageRequest="/report_list?page="
-          updateTable={(fn) => (refreshTable.current = fn)}
-        />
-      ) : (
-        <div>Loading data...</div>
-      )}
+      {/* Reports Table */}
+      <div className="reports-table-container">
+        {isLoading ? (
+          <div className="loading-state">Loading reports...</div>
+        ) : (
+          <table className="reports-table">
+            <thead>
+              <tr>
+                <th>Date/Time</th>
+                <th>Type</th>
+                <th>Title</th>
+                <th>Priority</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReports.map((report) => {
+                const typeStyle = getReportTypeStyle(report.report_type);
+                const priorityStyle = getPriorityBadge(report.priority);
+                const statusStyle = getStatusBadge(report.status);
+
+                return (
+                  <tr key={report.id}>
+                    <td>{formatDateTime(report.timestamp)}</td>
+                    <td>
+                      <div className="report-type">
+                        <FontAwesomeIcon 
+                          icon={typeStyle.icon} 
+                          style={{ color: typeStyle.color, marginRight: "8px" }}
+                        />
+                        <span style={{ fontSize: "0.85rem" }}>
+                          {typeStyle.label}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="title-cell">
+                      <div className="title-content">
+                        <span className="report-title">{report.title}</span>
+                        <span className="report-description">{report.description}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span 
+                        className="priority-badge"
+                        style={{
+                          backgroundColor: priorityStyle.bg,
+                          color: priorityStyle.color,
+                          border: `1px solid ${priorityStyle.color}40`
+                        }}
+                      >
+                        {report.priority.toUpperCase()}
+                      </span>
+                    </td>
+                    <td>{report.location.name}</td>
+                    <td>
+                      <span 
+                        className="status-badge"
+                        style={{
+                          backgroundColor: statusStyle.bg,
+                          color: statusStyle.color,
+                          border: `1px solid ${statusStyle.color}40`
+                        }}
+                      >
+                        {report.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td>{report.created_by}</td>
+                    <td>
+                      <div className="action-buttons">
+                        <button className="btn-icon view" title="View Report">
+                          <FontAwesomeIcon icon={faSearch} />
+                        </button>
+                        <button className="btn-icon edit" title="Edit Report">
+                          <FontAwesomeIcon icon={faEdit} />
+                        </button>
+                        <button 
+                          className="btn-icon delete" 
+                          title="Delete Report"
+                          onClick={() => handleDeleteReport(report.id)}
+                        >
+                          <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+
+        {filteredReports.length === 0 && !isLoading && (
+          <div className="empty-state">
+            <FontAwesomeIcon icon={faSearch} size="2x" />
+            <h3>No Reports Found</h3>
+            <p>Try adjusting your search criteria or filters</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
 export default ReportList;

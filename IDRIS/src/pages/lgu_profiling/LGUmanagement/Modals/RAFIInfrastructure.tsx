@@ -204,10 +204,10 @@ export const AddRafiModal: React.FC<addRafiModalProp> = ({
           </div>
 
           <div className="action-button">
-            <button style={{ backgroundColor: "#749AB6" }} onClick={submit}>
+            <button style={{ backgroundColor: "#749AB6", color:"#ffff" }} onClick={submit}>
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={cancel}>
+            <button style={{ backgroundColor: "#F84B4D", color:"#ffff"  }} onClick={cancel}>
               Cancel
             </button>
           </div>
@@ -574,10 +574,10 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
           </div>
 
           <div className="action-button">
-            <button style={{ backgroundColor: "#749AB6" }} onClick={submit}>
+            <button style={{ backgroundColor: "#749AB6", color: "#ffff"  }} onClick={submit}>
               Update
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            <button style={{ backgroundColor: "#F84B4D", color: "#ffff"  }} onClick={closeModal}>
               Cancel
             </button>
           </div>

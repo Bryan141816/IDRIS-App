@@ -89,6 +89,11 @@ const EvacuationAndShelter = () =>
   ).then((module) => ({
     Component: module.default,
   }));
+const ShelterReportDashboard = () =>
+  import(
+    "./pages/lgu_profiling/evacuationandshelter/ShelterReportDashboard").then((module) => ({
+      Component: module.default,
+  }));
 const LGU = () =>
   import("./pages/lgu_profiling/map_of_cebu/lgu").then((module) => ({
     Component: module.default,
@@ -100,7 +105,7 @@ const LGUSeeMore = () =>
 const ManageLGU = () =>
   import("./pages/lgu_profiling/LGUmanagement/manage_LGU").then((module) => ({
     Component: module.default,
-  }));  
+  }));
 
 //Volunteer Management
 const TrackVolunteerApplication = () =>
@@ -325,6 +330,10 @@ export const router = createBrowserRouter([
             lazy: EvacuationAndShelter,
           },
           {
+            path: "shelter_report_dashboard",
+            lazy: ShelterReportDashboard,
+          },
+          {
             path: "LGU",
             lazy: LGU,
           },
@@ -537,6 +546,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
 
   "/lgu_profiling/map_of_cebu": MapOfCebu,
   "/lgu_profiling/evacuationandshelter": EvacuationAndShelter,
+  "/lgu_profiling/shelter_report_dashboard": ShelterReportDashboard,
   "/lgu_profiling/LGU": LGU,
   "/lgu_profiling/LGUmanagement": ManageLGU,
   "/lgu_profiling/LGUSeeMore": LGUSeeMore, // dynamic segment ignored in key

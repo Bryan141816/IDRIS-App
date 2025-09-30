@@ -73,10 +73,11 @@ function PageLayout() {
     location.pathname === "/oauth_callback";
 
   const hideHeaderFooterRoutes = [
-    "/lgu_profiling/map_of_cebu", 
+    "/lgu_profiling/map_of_cebu",
     "/donation_report",
     "/volunteer_management/VolunteerReports",
     "/volunteer_management/ProgramsReports",
+    "/lgu_profiling/shelter_report_dashboard",
     "/finance&admin/finance_management/budget_summary",
   ];
 
@@ -84,19 +85,19 @@ function PageLayout() {
     location.pathname,
   );
 
-  const isPrintPage = 
+  const isPrintPage =
     location.pathname === "/donation_report";
 
 
   const hideNavbarRoutes = [
-    "/finance_printable", 
+    "/finance_printable",
   ]
-  
-  const shouldHideNavbar = 
+
+  const shouldHideNavbar =
     isPrintPage || hideNavbarRoutes.includes(location.pathname);
-    
+
   const shouldHideLayout =
-    isAuthPage || 
+    isAuthPage ||
     hideHeaderFooterRoutes.includes(location.pathname) ||
     hideNavbarRoutes.includes(location.pathname); // DISPLAY ONLY PRINTABLE LAYOUT
 

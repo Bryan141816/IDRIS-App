@@ -15,6 +15,8 @@ from data_schemas.funding_proposal_schema import (
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
     )
 
+router = APIRouter()
+
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
 )
@@ -59,8 +61,8 @@ def read_all_proposals(
         print(f"Router error: {e}")
         raise HTTPException(status_code=500, detail="Error fetching proposals")
 
-@router_admin.get("/proposals/get_proposal/{funding_id}", response_model=FundingProposalGet)
-def read_one_proposal(funding_id: int, db: Session = Depends(get_db)):
+@router.get("/proposals/get_proposal/{funding_id}", response_model=FundingProposalGet)
+def read_one_proposal(funding_id: str, db: Session = Depends(get_db)):
     try:
         proposal = CRUD.get_proposal_by_id(db=db, funding_id=funding_id)
         if not proposal:
@@ -140,7 +142,6 @@ def get_total_holding(
     return response
 
 
-router = APIRouter()
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

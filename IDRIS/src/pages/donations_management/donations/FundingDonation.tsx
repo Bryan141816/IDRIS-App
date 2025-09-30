@@ -2,15 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
-import './FundingDonation.scss';
+import './fundingDonation.scss';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
 import { createDonation } from '../../../API_Handler/donations_donation_handler';
+import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
+import { formatCurrency, computePercentage } from '../helpers';
 import Swal from 'sweetalert2';
+
+const backendUrl = "http://127.0.0.1:8000";
 
 const DonationPage: React.FC = () => {
   const location = useLocation();
   const fundingId = location.state?.funding_id;
-  console.log(fundingId);
+  const [fundingProposal, setFundingProposal] = useState<any>(null);
 
   const [donorId, setDonorId] = useState<number | null>(null);
 
@@ -43,7 +47,19 @@ const DonationPage: React.FC = () => {
 
   useEffect(() => {
     fetchAndSetUserId();
-  }, []);
+    if (fundingId) {
+      const fetchProposal = async () => {
+        try {
+          const proposal = await getFundingProposalsById(fundingId);
+          console.log(proposal);
+          setFundingProposal(proposal);
+        } catch (error) {
+          console.error('Failed to fetch funding proposal', error);
+        }
+      };
+      fetchProposal();
+    }
+  }, [fundingId]);
 
   const handleDonationInputChange = (field: string, value: string) => {
     if (field === 'amount') {
@@ -102,7 +118,7 @@ const DonationPage: React.FC = () => {
       const normalizeDonationFrequency = (type: string | null) => {
         if (type === "One-time") return "ONE_TIME";
         if (type === "Monthly") return "MONTHLY";
-        if (type === "Quarterly") return "QUARTERLY";
+        if (type === "Quarterly") return "QUARTERLY";2
         if (type === "Yearly") return "YEARLY";
         return "ONE_TIME"; // fallback
       };
@@ -149,12 +165,49 @@ const DonationPage: React.FC = () => {
 
   };
 
+  
+
   return (
     <div className="donation-page">
       <div className="donation-page__container">
         <div className="donation-page__grid">
           {/* Left Side - Donor Info & Donation Details */}
-          <div id='funding-info'></div>
+          <div id='funding-info'>
+            {fundingProposal && (
+              <div className="funding-content">
+                <div className="funding-image-container">
+                  <img src={`${backendUrl}/${fundingProposal.image}`}
+                    alt={`Image of ${fundingProposal.title}`}
+                    className="funding-image" />
+                </div>
+
+                <h2 className="funding-title">{fundingProposal.title}</h2>
+                <p className="funding-description">{fundingProposal.description}</p>
+
+                <div className="progress-container">
+                  <div className="progress-info">
+                    <span className="progress-label">Raised: {formatCurrency(fundingProposal.total_donated)}</span>
+                    <span className="progress-percentage">{computePercentage(
+                      Number(fundingProposal.total_donated),
+                      Number(fundingProposal.budget_required)
+                    )}%</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className="progress-fill"></div>
+                  </div>
+                </div>
+
+                <div className="impact-statement">
+                  <p className="impact-text">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+                    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
           <div id='payment-form'>
             <DonorDonationForm
               donationKind={donationKind}

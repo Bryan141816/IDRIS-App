@@ -40,3 +40,5 @@ backend/media/**/*.*
 # Environment files
 .env
 *.env
+.env2
+*.env2

@@ -106,8 +106,8 @@ function PageLayout() {
     "/finance_printable",
   ]
 
-  const shouldHideNavbar =
-    isPrintPage || hideNavbarRoutes.includes(location.pathname);
+  const shouldHideNavbar = false;
+    // isPrintPage || hideNavbarRoutes.includes(location.pathname);
 
   const shouldHideLayout =
     isAuthPage ||

@@ -1,7 +1,8 @@
 from uuid import uuid4
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, literal, or_
-from typing import List, Optional, Dict
+from sqlalchemy import func
+from typing import List, Optional, Dict, Any
+from decimal import Decimal
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
@@ -162,8 +163,51 @@ class FundingProposalCRUD:
             raise
 
     @staticmethod
-    def get_proposal_by_id(db: Session, funding_id: int) -> Optional[FundingProposal]:
-        return db.query(FundingProposal).filter(FundingProposal.id == funding_id).first()
+    def get_proposal_by_id(db: Session, funding_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Return a dict matching the FundingProposalGet schema (uses alias keys).
+        Computes `total_donated` by summing Donation_Cash.amount for donations
+        referencing the proposal.
+        """
+        proposal = (
+            db.query(FundingProposal)
+            .filter(FundingProposal.funding_id == funding_id)
+            .first()
+        )
+        if not proposal:
+            return None
+
+        # Sum cash amounts for donations tied to this funding proposal.
+        total_amount = (
+            db.query(func.coalesce(func.sum(Donation_Cash.amount), 0))
+            .join(Donation, Donation.donation_id == Donation_Cash.donation_id)
+            .filter(Donation.funding_id == funding_id)
+            .scalar()
+        )
+
+        # Ensure Decimal -> float and avoid None
+        if total_amount is None:
+            total_amount = Decimal("0.00")
+        elif not isinstance(total_amount, Decimal):
+            # SQLAlchemy may return Decimal or numeric type; normalize to Decimal
+            try:
+                total_amount = Decimal(total_amount)
+            except Exception:
+                total_amount = Decimal(str(total_amount))
+
+        result = {
+            # use the alias keys expected by your Pydantic model
+            "funding_id": proposal.funding_id,
+            "title": proposal.title,
+            "description": proposal.description,
+            "budget_required": proposal.budget_required,
+            "total_donated": float(total_amount),
+            "created_at": proposal.created_at,
+            "updated_at": proposal.updated_at,
+            "image": proposal.image,
+        }
+        
+        return result
 
     @staticmethod
     def update_proposal(

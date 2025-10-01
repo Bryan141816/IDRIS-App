@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate, redirect } from "react-router-dom";
 import PageLayout from "./page_layout";
 import PageLoader from "./components/Page_Furniture/Loader";
 import { authLoader } from "./AuthLoader";
-import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
+// import DonorDashboard from "./pages/donations_management/donor/DonorDashboard";
 import { buildFinanceReportPDFBlob } from "./pages/finance_admin/finance_management/FinanceReport";
 
 const UserNotAllowed = () =>
@@ -153,13 +153,13 @@ const VolunteerReports = () =>
   import(
     "./pages/volunteer_management/volunteer_dashboard/VolunteerReports"
   ).then((module) => ({ Component: module.default })
-);
+  );
 
 const ProgramsReports = () =>
   import(
     "./pages/volunteer_management/volunteer_dashboard/ProgramsReports"
   ).then((module) => ({ Component: module.default })
-);
+  );
 
 
 // Donations Management
@@ -199,10 +199,15 @@ const DonorProfile = () =>
     Component: module.default,
   }));
 
-const Donor_Dashboard = () =>
-  import("./pages/donations_management/donor/DonorDashboard").then(
+const DonationStatus = () =>
+  import("./pages/donations_management/donations/DonationStatus").then(
     (module) => ({ Component: module.default }),
   );
+
+// const Donor_Dashboard = () =>
+//   import("./pages/donations_management/donor/DonorDashboard").then(
+//     (module) => ({ Component: module.default }),
+//   );
 
 
 // Response Dashboard
@@ -345,8 +350,10 @@ export const router = createBrowserRouter([
             path: "LGUmanagement",
             lazy: ManageLGU,
           },
-          { path: "LGUSeeMore/:id",
-            lazy: LGUSeeMore },
+          {
+            path: "LGUSeeMore/:id",
+            lazy: LGUSeeMore
+          },
 
         ],
       },
@@ -385,11 +392,11 @@ export const router = createBrowserRouter([
             path: "manage_volunteers",
             lazy: ManageVolunteer,
           },
-           {
+          {
             path: "VolunteerReports",
             lazy: VolunteerReports,
           },
-           {
+          {
             path: "ProgramsReports",
             lazy: ProgramsReports,
           },
@@ -429,6 +436,10 @@ export const router = createBrowserRouter([
             path: "funding_donation",
             lazy: FundingDonation,
           },
+          {
+            path: "donation_status",
+            lazy: DonationStatus,
+          },
         ],
       },
       {
@@ -440,10 +451,10 @@ export const router = createBrowserRouter([
         path: "donor_profile",
         lazy: DonorProfile,
       },
-      {
-        path: "donor_dashboard",
-        lazy: Donor_Dashboard,
-      },
+      // {
+      //   path: "donor_dashboard",
+      //   lazy: Donor_Dashboard,
+      // },
       {
         path: "response_dashboard",
         children: [
@@ -579,7 +590,8 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
 
   "/donation_report": DonationsReport,
   "/donor_profile": DonorProfile,
-  "/donor_dashboard": Donor_Dashboard,
+  "/donation_status": DonationStatus,
+  // "/donor_dashboard": Donor_Dashboard,
 
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/emergency_report": EmegencyReport,

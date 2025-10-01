@@ -121,12 +121,22 @@ const InventoryItems = () => {
     };
     handleFetch();
   }, []);
+
+  const updateTable = () => {
+    const handleFetch = async () => {
+      const response = await fetchData();
+      console.log(response);
+
+      setInventoryItems(response);
+    };
+    handleFetch();
+  };
   return (
     <>
       {activeModal == "add-item" && (
         <AddInventoryItemTab
           onClose={closeModal}
-          refreshData={() => {}}
+          refreshData={updateTable}
         ></AddInventoryItemTab>
       )}
       <div className="inventory-content">

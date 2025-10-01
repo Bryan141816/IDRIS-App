@@ -1,11 +1,13 @@
 import logging, traceback
+import httpx
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from numbers import Number
 from database import get_db
 from data_schemas.donation_schema import ( 
                                           DonationCreate, DonationResponse, RecurringDonationCreate, 
-                                          InKindDonationCreate, DonationHistoryResponse
+                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest
                                         )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date
@@ -14,6 +16,8 @@ from routers.role_checker import RoleChecker
 from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
+from settings import settings
+from .helper import to_centavos
 
 router = APIRouter()
 
@@ -206,8 +210,75 @@ def get_my_donations(
     print(donations)
     return donations
     
+
+@router.post("/paymongo/checkout")
+async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
     
+    if not settings.PAYMONGO_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
     
+    PAYMONGO_SECRET_KEY = settings.PAYMONGO_SECRET_KEY
+    amountPesos = to_centavos(request.amount)
+    # Option A (recommended): let httpx set Basic auth for you
+    payload = {
+        "data": {
+            "attributes": {
+                "line_items": [
+                    {
+                        "currency": "PHP",
+                        "amount": int(amountPesos * 1),  # amount in centavos
+                        "name": "Donation",
+                        "quantity": 1,
+                    }
+                ],
+                "payment_method_types": ["card", "gcash", "paymaya"],
+                # "success_url": request.success_url,
+                # "cancel_url": request.cancel_url,
+                "description": request.description,
+            }
+        }
+    }
+    print(payload)
+
+    async with httpx.AsyncClient() as client:
+        try:
+            # pass auth=(username, password). For PayMongo Basic auth, username is the secret key and password is empty.
+            resp = await client.post(
+                "https://api.paymongo.com/v1/checkout_sessions",
+                json=payload,
+                auth=(PAYMONGO_SECRET_KEY, ""),
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            # forward PayMongo error body with proper status
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/paymongo/session/{session_id}")
+async def get_session_status(session_id: str):
+    secret = settings.PAYMONGO_SECRET_KEY
+    if not secret:
+        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                f"https://api.paymongo.com/v1/checkout_sessions/{session_id}",
+                auth=(secret, ""),
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

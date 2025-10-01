@@ -95,6 +95,8 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
   const handleSubmit = () => {
     const _submit = async () => {
       const response = await handleRequest();
+      refreshData();
+      onClose();
     };
     _submit();
   };

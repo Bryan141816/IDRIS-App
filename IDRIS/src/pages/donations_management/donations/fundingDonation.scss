@@ -71,6 +71,13 @@
   background-color: #fff;
   border-radius: 20px;
   padding: 20px;
+  margin-bottom: 20px;
+
+  h1{
+    margin-top: 0;
+    color: #004d80;
+    font-size: 2rem;
+  }
 }
 
 .funding-title {
@@ -222,6 +229,50 @@
   background: #e8f4fd;
   border-radius: 12px;
   text-align: center;
+}
+
+.funding-details {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 20px;
+}
+
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.stat {
+  .stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+  .stat-label {
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.donor-message {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e0f7fa;
+  border-left: 5px solid #007bff;
+  border-radius: 8px;
+  h3, h1 {
+    margin-top: 0;
+    color: #004d80;
+    font-size: 1.5em;
+  }
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #333;
+  }
 }
 
 .impact-text {

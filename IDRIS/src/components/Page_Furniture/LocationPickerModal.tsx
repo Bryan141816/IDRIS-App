@@ -110,7 +110,7 @@ const LocationPickerModal: React.FC<PickerProps> = ({
         </MapContainer>
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6" }}
+            style={{ backgroundColor: "#749AB6", color:"#ffff" }}
             disabled={!marker}
             onClick={() => {
               if (marker) {
@@ -121,7 +121,7 @@ const LocationPickerModal: React.FC<PickerProps> = ({
           >
             Submit
           </button>
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={onCloseProp}>
+          <button style={{ backgroundColor: "#F84B4D", color:"#ffff"  }} onClick={onCloseProp}>
             Cancel
           </button>
         </div>

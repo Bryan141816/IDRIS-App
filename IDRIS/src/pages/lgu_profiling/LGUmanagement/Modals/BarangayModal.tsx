@@ -34,7 +34,7 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
 
   const [results, setResults] = useState<LGURecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click / esc / tab
@@ -358,7 +358,7 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
           </div>
           <div className="action-button">
             <button
-              style={{ backgroundColor: "#749AB6" }}
+              style={{ backgroundColor: "#749AB6", color: "#ffff"  }}
               onClick={() => {
                 setMessageBox((prev) => ({
                   ...prev, // preserves onClose and anything else
@@ -373,7 +373,7 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
             >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            <button style={{ backgroundColor: "#F84B4D", color: "#ffff"  }} onClick={closeModal}>
               Cancel
             </button>
           </div>
@@ -785,3 +785,6 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     </>
   );
 };
+function setLGUID(q: string, name: string) {
+    throw new Error("Function not implemented.");
+}

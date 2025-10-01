@@ -673,12 +673,6 @@ case "rafi": {
         >
           Hazard Mapping
         </button>
-        <button
-          onClick={() => setActiveTab("evacuation")}
-          className={activeTab === "evacuation" ? "active-tab" : ""}
-        >
-          Evacuation Center
-        </button>
       </div>
 
       {/* ---------- CONTENT ---------- */}

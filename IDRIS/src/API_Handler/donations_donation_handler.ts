@@ -1,6 +1,7 @@
 
 import { API } from './Axio_API_Handler';
 
+
 export async function createDonation(data: any): Promise<any> {
   return await API.post("/donations/create", data, {
     headers: {
@@ -74,4 +75,12 @@ export async function fetchMyDonations(
 
   const { data } = await API.get("/donations/me", { params });
   return data;
+}
+
+export async function createPayMongoCheckout(data: any): Promise<any> {
+  return await API.post("donations/paymongo/checkout", data, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 }

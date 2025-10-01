@@ -1,6 +1,7 @@
-import React from 'react';
-import { DollarSign, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { PhilippinePesoIcon, User } from 'lucide-react';
 import './DonationInfo.scss';
+import { formatCurrency } from '../helpers';
 
 interface DonorDonationFormProps {
   donationKind: string;
@@ -12,6 +13,7 @@ interface DonorDonationFormProps {
     description: string;
   };
   handleInputChange: (field: string, value: string) => void;
+  errors: any;
 }
 
 const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
@@ -20,23 +22,33 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
   donationFrequency,
   setDonationFrequency,
   formData,
-  handleInputChange
+  handleInputChange,
+  errors
 }) => {
+
+  const [activeAmount, setActiveAmount] = useState<string>("0");
+
+  const [isCustom, setIsCustom] = useState<boolean>(true);
+
+  const handleCustomAmount = (_iscustom: boolean, amount: string = "0") => {
+    if (_iscustom) {
+      handleInputChange('amount', '');
+      setIsCustom(true);
+    } else {
+      handleInputChange('amount', amount)
+      setIsCustom(false);
+    }
+    setActiveAmount(amount);
+  }
+
+  const formatAmount = (value: number | string) => {
+    if (!value) return "";
+    return Number(value).toLocaleString("en-US");
+  };
+
   return (
     <div className="donor-form">
       <div className="donor-form__content">
-        
-        {/* Volunteer Info */}
-        <div className="volunteer-info">
-          <div className="volunteer-info__avatar">
-            <User className="volunteer-info__icon" />
-          </div>
-          <div className="volunteer-info__details">
-            <h3 className="volunteer-info__name">Volunteer name</h3>
-            <p className="volunteer-info__role">Role Assigned (Volunteer ID)</p>
-          </div>
-        </div>
-
         {/* Donation Frequency */}
         <div className="form-group">
           <label className="form-group__label">Donation Frequency:</label>
@@ -45,9 +57,8 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
               <button
                 key={freq}
                 onClick={() => setDonationFrequency(freq)}
-                className={`button-group__item ${
-                  donationFrequency === freq ? 'button-group__item--active-blue' : ''
-                }`}
+                className={`button-group__item ${donationFrequency === freq ? 'button-group__item--active-blue' : ''
+                  }`}
               >
                 {freq}
               </button>
@@ -63,9 +74,8 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
               <button
                 key={kind}
                 onClick={() => setDonationKind(kind)}
-                className={`button-group__item ${
-                  donationKind === kind ? 'button-group__item--active-green' : ''
-                }`}
+                className={`button-group__item ${donationKind === kind ? 'button-group__item--active-green' : ''
+                  }`}
               >
                 {kind}
               </button>
@@ -75,29 +85,61 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
 
         {/* Description */}
         <div className="form-group">
-          <label className="form-group__label">Description</label>
+          <label className="form-group__label">Message:</label>
           <textarea
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
-            className="form-group__textarea"
+            className={`form-group__textarea ${errors.description ? 'input-error' : ''}`}
             rows={4}
             placeholder="Enter donation description..."
           />
+          {errors.description && <p className="error-message">{errors.description}</p>}
         </div>
 
         {/* Amount */}
         <div className="form-group">
-          <label className="form-group__label">Amount</label>
+          <label className="form-group__label">Amount:</label>
+          <div className='selectable-amount-container'>
+            <button
+              className={`selectable-amount-item ${activeAmount === '1000' ? "active" : ""}`}
+              value={1000}
+              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+            >{formatCurrency(1000)}
+            </button>
+
+            <button
+              className={`selectable-amount-item ${activeAmount === '5000' ? "active" : ""}`}
+              value={5000}
+              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+            >{formatCurrency(5000)}
+            </button>
+
+            <button
+              className={`selectable-amount-item ${activeAmount === '10000' ? "active" : ""}`}
+              value={10000}
+              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+            >{formatCurrency(10000)}
+            </button>
+
+            <button
+              className={`selectable-amount-item ${activeAmount === '0' ? "active" : ""}`}
+              onClick={() => handleCustomAmount(true)}
+            >Custom
+            </button>
+          </div>
           <div className="input-with-icon">
-            <DollarSign className="input-with-icon__icon" />
+            <PhilippinePesoIcon className="input-with-icon__icon" />
             <input
-              type="number"
-              value={formData.amount}
+              type="decimal"
+              pattern="[0-9]*\.?[0-9]*"
+              value={formatAmount(formData.amount)}
               onChange={(e) => handleInputChange('amount', e.target.value)}
-              className="input-with-icon__input"
+              className={`input-with-icon__input ${errors.amount ? 'input-error' : ''}`}
               placeholder="0.00"
+              disabled={!isCustom}
             />
           </div>
+          {errors.amount && <p className="error-message">{errors.amount}</p>}
         </div>
       </div>
     </div>

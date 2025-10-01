@@ -399,7 +399,7 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
           </div>
 
           {/* Removed the Map with Pin component here */}
-          
+
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>
             <select id="classification" name="classification" required value={form.classification} onChange={handleChange}>
@@ -483,7 +483,7 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
 
           <div className="action-button">
             <button
-              style={{ backgroundColor: "#749AB6" }}
+              style={{ backgroundColor: "#749AB6", color: "#ffff"  }}
               disabled={uploading}
               onClick={() => {
                 setMessageBox((prev) => ({
@@ -497,7 +497,7 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
             >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            <button style={{ backgroundColor: "#F84B4D", color: "#ffff"  }} onClick={closeModal}>
               Cancel
             </button>
           </div>

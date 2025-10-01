@@ -22,6 +22,7 @@ interface MapViewProps {
   onMarkerClick?: (marker: MarkerType) => void;
   fitBounds?: boolean;
   pathCoordinates?: [number, number][] | null; // new prop for path line
+  customIcon?: L.Icon;
 }
 
 const getIconByType = (type?: string) => {
@@ -31,7 +32,7 @@ const getIconByType = (type?: string) => {
   else if (type === "barangay") iconUrl = "/images/icons/baranggay.png";
   else if (type === "raffi") iconUrl = "/images/icons/raffi.png";
   else if (type === "hazard") iconUrl = "/images/icons/hazard.png";
-  else if (type === "evacuation") iconUrl = "/images/icons/evacuation.png"; 
+  else if (type === "evacuation") iconUrl = "/images/icons/evacuation.png";
 
   return L.icon({
     iconUrl,
@@ -60,9 +61,10 @@ const MapView: React.FC<MapViewProps> = ({
   onMarkerClick,
   fitBounds = false,
   pathCoordinates,
+  customIcon,
 }) => {
   return (
-    <MapContainer center={center} zoom={13} style={{ height: "100%", width: "100%" }} attributionControl={false}>
+    <MapContainer center={center} zoom={13} zoomControl={false} style={{ height: "100%", width: "100%" }} attributionControl={false}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
@@ -74,7 +76,7 @@ const MapView: React.FC<MapViewProps> = ({
         <Marker
           key={index}
           position={[point.lat, point.lng]}
-          icon={getIconByType(point.type)}
+          icon={customIcon || getIconByType(point.type)}
           eventHandlers={{
             click: () => onMarkerClick && onMarkerClick(point),
           }}

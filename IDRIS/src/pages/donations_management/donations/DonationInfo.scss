@@ -87,6 +87,31 @@
   }
 }
 
+.selectable-amount-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, auto);  
+  gap: 10px;
+}
+
+.selectable-amount-item {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectable-amount-item:hover {
+  background-color: #f3f3f3;
+}
+
+.selectable-amount-item.active {
+  background-color: #007bff; 
+  color: #fff;
+  border-color: #007bff;
+}
+
 .button-group {
   display: flex;
   gap: 0.75rem;
@@ -164,6 +189,21 @@
       color: #9ca3af;
     }
   }
+}
+
+.input-error {
+  border-color: #ef4444;
+
+  &:focus {
+    border-color: #ef4444;
+    // ring-color: #ef4444;
+  }
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 // Responsive design

@@ -14,6 +14,7 @@ interface PaymentFormProps {
   handleInputChange: (field: string, value: string) => void;
   onCancel: () => void;
   onNext: () => void;
+  errors: any;
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({
@@ -22,7 +23,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   formData,
   handleInputChange,
   onCancel,
-  onNext
+  onNext,
+  errors
 }) => {
   return (
     <div className="payment-form">
@@ -86,6 +88,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               </div>
               <p className="payment-method__label">Add</p>
             </button>
+
+            <button
+              onClick={() => setPaymentMethod('paymongo')}
+              className={`payment-method ${
+                paymentMethod === 'paymongo' ? 'payment-method--active' : ''
+              }`}
+            >
+              <div className="payment-method__card payment-method__card--paymongo">
+                <span>P</span>
+              </div>
+              <p className="payment-method__label">PayMongo</p>
+            </button>
+
           </div>
         </div>
 
@@ -101,9 +116,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                 type="text"
                 value={formData.cardHolderName}
                 onChange={(e) => handleInputChange('cardHolderName', e.target.value)}
-                className="form-field__input"
+                className={`form-field__input ${errors.cardHolderName ? 'input-error' : ''}`}
                 placeholder="Enter card holder name"
               />
+              {errors.cardHolderName && <p className="error-message">{errors.cardHolderName}</p>}
             </div>
 
             {/* Card Number */}
@@ -115,11 +131,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   type="text"
                   value={formData.cardNumber}
                   onChange={(e) => handleInputChange('cardNumber', e.target.value)}
-                  className="input-with-icon__input"
+                  className={`input-with-icon__input ${errors.cardNumber ? 'input-error' : ''}`}
                   placeholder="1234 5678 9012 3456"
                   maxLength={19}
                 />
               </div>
+              {errors.cardNumber && <p className="error-message">{errors.cardNumber}</p>}
             </div>
 
             {/* Expiry Date and CVV */}
@@ -130,10 +147,11 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   type="text"
                   value={formData.expiryDate}
                   onChange={(e) => handleInputChange('expiryDate', e.target.value)}
-                  className="form-field__input"
+                  className={`form-field__input ${errors.expiryDate ? 'input-error' : ''}`}
                   placeholder="MM/YY"
                   maxLength={5}
                 />
+                {errors.expiryDate && <p className="error-message">{errors.expiryDate}</p>}
               </div>
               <div className="form-field">
                 <label className="form-field__label">CVV</label>
@@ -141,10 +159,11 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   type="text"
                   value={formData.cvv}
                   onChange={(e) => handleInputChange('cvv', e.target.value)}
-                  className="form-field__input"
+                  className={`form-field__input ${errors.cvv ? 'input-error' : ''}`}
                   placeholder="123"
                   maxLength={4}
                 />
+                {errors.cvv && <p className="error-message">{errors.cvv}</p>}
               </div>
             </div>
           </div>

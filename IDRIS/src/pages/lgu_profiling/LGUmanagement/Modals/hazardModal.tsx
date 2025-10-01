@@ -229,14 +229,14 @@ export const AddHazardModal: React.FC<AddProps> = ({
 
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1 }}
+            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1 , color: "#ffff" }}
             onClick={onSubmit}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Add"}
           </button>
           <button
-            style={{ backgroundColor: "#F84B4D" }}
+            style={{ backgroundColor: "#F84B4D", color: "#ffff"  }}
             onClick={closeModal}
             disabled={isSubmitting}
           >

@@ -1,5 +1,5 @@
 // App.tsx
-import { UserProvider } from "./UserContext";
+import { UserProvider } from "./providers/UserContextProvider";
 import { UserRoleProvider } from "./UserRoleContext";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./routes.tsx";

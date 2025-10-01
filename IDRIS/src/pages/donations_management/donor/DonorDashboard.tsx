@@ -1,48 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Card,
-  Table,
-  Tag,
-  Space,
-  Button,
-  DatePicker,
-  Select,
-  Typography,
-  Row,
-  Col,
-  Statistic,
-  Tooltip,
-  Divider,
-  Empty,
-  Skeleton,
-  message,
-  Drawer,
-  Descriptions,
-  Badge,
-} from "antd";
-import { DownloadOutlined, EyeOutlined, ReloadOutlined, FileTextOutlined } from "@ant-design/icons";
+import './DonorDashboard.scss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
+import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy } from '../../../API_Handler/donations_donation_handler';
 
-import {
-  DonorAggregates, fetchMyDonations, getDonorAggregates_legacy
-} from '../../../API_Handler/donations_donation_handler';
-
-const { RangePicker } = DatePicker;
-const { Title, Text } = Typography;
-
-/**
- * ------------------------------
- * Types
- * ------------------------------
- */
-
+// Types
 type DonationType = "CASH" | "INKIND";
 type DonationStatus = "PENDING" | "COMPLETED" | "FAILED" | "CANCELLED";
 type DonationFrequency = "ONE_TIME" | "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 interface DonationCash {
   cash_id: number;
-  amount: string | number | null; // Numeric(10,2)
+  amount: string | number | null;
   payment_method?: string | null;
 }
 
@@ -57,7 +25,7 @@ interface DonationInKind {
 export interface DonationRow {
   donation_id: number;
   donor_id: number;
-  donation_date: string; // ISO string from API
+  donation_date: string;
   donation_type: DonationType;
   status: DonationStatus;
   frequency: DonationFrequency;
@@ -66,14 +34,18 @@ export interface DonationRow {
   is_active?: boolean | null;
   cash?: DonationCash | null;
   inkind?: DonationInKind | null;
+  proposal_id?: number | null;
 }
 
-/**
- * ------------------------------
- * Utilities
- * ------------------------------
- */
+interface FetchParams {
+  userId?: number;
+  from?: string;
+  to?: string;
+  status?: DonationStatus;
+  type?: DonationType;
+}
 
+// Utilities
 const currency = (v?: number | string | null) => {
   if (v === undefined || v === null || v === "") return "—";
   const n = typeof v === "string" ? Number(v) : v;
@@ -81,87 +53,66 @@ const currency = (v?: number | string | null) => {
   return n.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 });
 };
 
-const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleString() : "—");
+const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : "—");
 
 const statusColor: Record<DonationStatus, string> = {
-  PENDING: "processing",
-  COMPLETED: "success",
-  FAILED: "error",
-  CANCELLED: "default",
+  PENDING: "#fcb814",
+  COMPLETED: "#10b981",
+  FAILED: "#ef4444",
+  CANCELLED: "#6b7280",
 };
 
 const typeColor: Record<DonationType, string> = {
-  CASH: "blue",
-  INKIND: "gold",
+  CASH: "#749AB6",
+  INKIND: "#fcb814",
 };
 
-/**
- * ------------------------------
- * API layer (replace endpoints to match your backend)
- * ------------------------------
- */
-
-interface FetchParams {
-  userId?: number; // inferred from session; optional here
-  from?: string; // ISO
-  to?: string; // ISO
-  status?: DonationStatus;
-  type?: DonationType;
-}
-
 async function downloadDonationReceipt(donationId: number) {
-  // ⚠️ Replace with your receipt endpoint
-  const url = `/api/donations/${donationId}/receipt`; // returns application/pdf
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) throw new Error("Could not fetch receipt");
-  const blob = await res.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `donation-${donationId}-receipt.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(a.href);
+  try {
+    const url = `/api/donations/${donationId}/receipt`;
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) throw new Error("Could not fetch receipt");
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `donation-${donationId}-receipt.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  } catch (error) {
+    console.error("Download failed:", error);
+    alert("Unable to download receipt");
+  }
 }
-
-/**
- * ------------------------------
- * DonorDashboard Component
- * ------------------------------
- */
 
 export const DonorDashboard: React.FC = () => {
-  // Date formatting utility
   const toISODate = (d?: string | Date | null): string | undefined => {
     if (!d) return undefined;
     const date = d instanceof Date ? d : new Date(d);
-    // Check for invalid date
     if (isNaN(date.getTime())) return undefined;
     
     const year = date.getFullYear();
-    // getMonth() is 0-indexed, so add 1 and pad with '0'
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-
     return `${year}-${month}-${day}`;
   };
 
-  // Filters
+  // State
   const _date = new Date();
   const [date_from, setDateFrom] = useState<string | null | undefined>(toISODate(new Date(_date.getFullYear(), 0, 1)) ?? null);
   const [date_to, setDateTo] = useState<string | null | undefined>(toISODate(_date) ?? null);
   const [status, setStatus] = useState<DonationStatus | "ALL">("ALL");
   const [dtype, setDtype] = useState<DonationType | "ALL">("ALL");
-  const [page, setPage ] = useState<number>(1);
-  // Data
+  const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<DonationRow[]>([]);
+  const [selectedDonation, setSelectedDonation] = useState<DonationRow | null>(null);
+  const [sortField, setSortField] = useState<string>('donation_date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Drawer state
-  const [active, setActive] = useState<DonationRow | null>(null);
-
-  // DONOR DATAS
+  // Data
   const [donorData, setDonorData] = useState<DonorAggregates>();
 
   const reload = async () => {
@@ -194,10 +145,22 @@ export const DonorDashboard: React.FC = () => {
 
   useEffect(() => {
     void reload();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, dtype, date_from, date_to]);
 
-  // Aggregations / Impact
+  async function handlefetchMyDonations(params: FetchParams): Promise<DonationRow[]> {
+    try {
+      const response = await fetchMyDonations(params.from, params.to, params.status, params.type, 50, page);
+      if (!response) {
+        throw new Error("Failed to fetch donations");
+      }
+      return response;
+    } catch (error) {
+      console.error("An error occurred while fetching donations:", error);
+      return [];
+    }
+  }
+
+  // Aggregations
   const totals = useMemo(() => {
     let totalCash = 0;
     let totalInKind = 0;
@@ -221,130 +184,40 @@ export const DonorDashboard: React.FC = () => {
     return { totalCash, totalInKind, recActive, completed };
   }, [rows]);
 
-  const chartData = useMemo(() => {
-    // Monthly aggregation (YYYY-MM)
-    const map = new Map<string, number>();
-    rows.forEach((r) => {
-      const key = new Date(r.donation_date);
-      if (Number.isNaN(key.getTime())) return;
-      const ym = `${key.getFullYear()}-${String(key.getMonth() + 1).padStart(2, "0")}`;
-
-      let val = 0;
-      if (r.donation_type === "CASH" && r.cash?.amount) val = Number(r.cash.amount) || 0;
-      if (r.donation_type === "INKIND" && r.inkind?.estimated_value) val = Number(r.inkind.estimated_value) || 0;
-
-      map.set(ym, (map.get(ym) || 0) + val);
-    });
-
-    return Array.from(map.entries())
-      .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([month, value]) => ({ month, value }));
-  }, [rows]);
-
-  async function handlefetchMyDonations(params: FetchParams): Promise<DonationRow[]> {
-    try {
-      const response = await fetchMyDonations(params.from, params.to, params.status, params.type, 50, page);
-  
-      if (!response) {
-        throw new Error(`Failed to fetch donations: ${response.statusText}`);
-      }
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      let aVal: any, bVal: any;
       
-      console.log(response);
-      return response;
-    } catch (error) {
-      console.error("An error occurred while fetching donations:", error);
-      return [];
-    }
-  }
+      switch (sortField) {
+        case 'donation_date':
+          aVal = new Date(a.donation_date).getTime();
+          bVal = new Date(b.donation_date).getTime();
+          break;
+        case 'amount':
+          aVal = a.donation_type === "CASH" ? Number(a.cash?.amount || 0) : Number(a.inkind?.estimated_value || 0);
+          bVal = b.donation_type === "CASH" ? Number(b.cash?.amount || 0) : Number(b.inkind?.estimated_value || 0);
+          break;
+        default:
+          aVal = (a as any)[sortField] || '';
+          bVal = (b as any)[sortField] || '';
+      }
 
-  const columns = [
-    {
-      title: "Date",
-      dataIndex: "donation_date",
-      key: "donation_date",
-      render: (v: string) => fmtDate(v),
-      sorter: (a: DonationRow, b: DonationRow) => new Date(a.donation_date).getTime() - new Date(b.donation_date).getTime(),
-      defaultSortOrder: "descend" as const,
-    },
-    {
-      title: "Type",
-      dataIndex: "donation_type",
-      key: "donation_type",
-      render: (t: DonationType) => <Tag color={typeColor[t]}>{t === "CASH" ? "Cash" : "In-kind"}</Tag>,
-      filters: [
-        { text: "Cash", value: "CASH" },
-        { text: "In-kind", value: "INKIND" },
-      ],
-      onFilter: (val: any, r: DonationRow) => r.donation_type === val,
-    },
-    {
-      title: "Amount / Value",
-      key: "amount",
-      render: (_: any, r: DonationRow) => {
-        const amt = r.donation_type === "CASH" ? r.cash?.amount : r.inkind?.estimated_value;
-        return <span style={{ fontVariantNumeric: "tabular-nums" }}>{currency(amt)}</span>;
-      },
-      sorter: (a: DonationRow, b: DonationRow) => {
-        const av = a.donation_type === "CASH" ? Number(a.cash?.amount || 0) : Number(a.inkind?.estimated_value || 0);
-        const bv = b.donation_type === "CASH" ? Number(b.cash?.amount || 0) : Number(b.inkind?.estimated_value || 0);
-        return av - bv;
-      },
-      align: "right" as const,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (s: DonationStatus) => <Tag color={statusColor[s]}>{s}</Tag>,
-      filters: [
-        { text: "Pending", value: "PENDING" },
-        { text: "Completed", value: "COMPLETED" },
-        { text: "Failed", value: "FAILED" },
-        { text: "Cancelled", value: "CANCELLED" },
-      ],
-      onFilter: (val: any, r: DonationRow) => r.status === val,
-    },
-    {
-      title: "Frequency",
-      dataIndex: "frequency",
-      key: "frequency",
-      render: (f: DonationFrequency) => (f === "ONE_TIME" ? "One-time" : f.charAt(0) + f.slice(1).toLowerCase()),
-    },
-    {
-      title: "Proposal",
-      dataIndex: "proposal_id",
-      key: "proposal_id",
-      render: (p: number | null) => (p ? <a href={`/proposals/${p}`} onClick={(e) => e.stopPropagation()}>FP-{p}</a> : "—"),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_: any, r: DonationRow) => (
-        <Space>
-          <Tooltip title="View details">
-            <Button icon={<EyeOutlined />} onClick={(e) => { e.stopPropagation(); setActive(r); }} />
-          </Tooltip>
-          <Tooltip title="Download receipt (PDF)">
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              disabled={r.status !== "COMPLETED"}
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  await downloadDonationReceipt(r.donation_id);
-                  message.success("Receipt downloaded");
-                } catch (err: any) {
-                  console.error(err);
-                  message.error("Unable to download receipt");
-                }
-              }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+      if (sortDirection === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+  }, [rows, sortField, sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   const onExportCsv = () => {
     const headers = ["Donation ID","Date","Type","Amount/Value","Status","Frequency"]; 
@@ -368,96 +241,275 @@ export const DonorDashboard: React.FC = () => {
     URL.revokeObjectURL(a.href);
   };
 
-  const tableHeader = (
-    <Row gutter={[12, 12]} align="middle" justify="space-between">
-      <Col xs={24} md={12}>
-        <Space wrap>
-          <RangePicker 
-            onChange={(vals) => {
-              const from = vals?.[0] ? toISODate(vals[0].toDate()) : null;
-              const to = vals?.[1] ? toISODate(vals[1].toDate()) : null;
-              setDateFrom(from);
-              setDateTo(to);
-            }}
-            allowEmpty={[true, true]}
-          />
-          <Select
-            value={status}
-            onChange={(v) => setStatus(v as any)}
-            style={{ minWidth: 160 }}
-            options={[
-              { value: "ALL", label: "All statuses" },
-              { value: "PENDING", label: "Pending" },
-              { value: "COMPLETED", label: "Completed" },
-              { value: "FAILED", label: "Failed" },
-              { value: "CANCELLED", label: "Cancelled" },
-            ]}
-          />
-          <Select
-            value={dtype}
-            onChange={(v) => setDtype(v as any)}
-            style={{ minWidth: 160 }}
-            options={[
-              { value: "ALL", label: "All types" },
-              { value: "CASH", label: "Cash" },
-              { value: "INKIND", label: "In-kind" },
-            ]}
-          />
-        </Space>
-      </Col>
-      <Col xs={24} md={12} style={{ textAlign: "right" }}>
-        <Space>
-          <Button icon={<FileTextOutlined />} onClick={onExportCsv}>Export CSV</Button>
-          <Button icon={<ReloadOutlined />} onClick={() => reload()}>Refresh</Button>
-        </Space>
-      </Col>
-    </Row>
-  );
+  if (loading) {
+    return (
+      <div className="donor-dashboard">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading your donation history...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 16 }}>
-      <Title level={2} style={{ marginBottom: 4 }}>Donor Dashboard</Title>
-      <Text type="secondary">Track your donations, view impact, and download your receipts.</Text>
+    <div className="donor-dashboard">
+      <div className="dashboard-header">
+        <div className="header-content">
+          <h2 className="dashboard-title">Donor Dashboard</h2>
+          <p className="dashboard-subtitle">Track your donations, view impact, and download your receipts.</p>
+        </div>
+      </div>
 
-      <Divider />
+      {/* Statistics Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-content">
+            <h3 className="stat-title">Total Cash Donated</h3>
+            <p className="stat-value">{currency(totals.totalCash)}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-content">
+            <h3 className="stat-title">In‑kind (est. value)</h3>
+            <p className="stat-value">{currency(totals.totalInKind)}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-content">
+            <h3 className="stat-title">Completed Donations</h3>
+            <p className="stat-value">{totals.completed}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-content">
+            <h3 className="stat-title">Active Recurring</h3>
+            <p className="stat-value">{totals.recActive}</p>
+          </div>
+        </div>
+      </div>
 
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic title="Total Cash Donated" value={totals.totalCash} prefix="₱" precision={2} />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic title="In‑kind (est. value)" value={totals.totalInKind} prefix="₱" precision={2} />
-          </Card>
-        </Col>
-        <Col xs={24} md={6}>
-          <Card>
-            <Statistic title="Completed Donations" value={totals.completed} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} lg={15}>
-          <Card title={tableHeader} bodyStyle={{ paddingTop: 0 }}>
-            {loading ? (
-              <Skeleton active paragraph={{ rows: 6 }} />
-            ) : error ? (
-              <Empty description={error} />
-            ) : (
-              <Table<DonationRow>
-                rowKey={(r) => r.donation_id}
-                columns={columns as any}
-                dataSource={rows}
-                pagination={{ pageSize: 8, showSizeChanger: true }}
-                onRow={(r) => ({ onClick: () => setActive(r) })}
+      {/* Filters and Table */}
+      <div className="table-container">
+        <div className="table-header">
+          <div className="filter-controls">
+            <div className="filter-group">
+              <label>From:</label>
+              <input
+                type="date"
+                value={date_from || ''}
+                onChange={(e) => setDateFrom(e.target.value || null)}
+                className="date-input"
               />
+            </div>
+            <div className="filter-group">
+              <label>To:</label>
+              <input
+                type="date"
+                value={date_to || ''}
+                onChange={(e) => setDateTo(e.target.value || null)}
+                className="date-input"
+              />
+            </div>
+            <div className="filter-group">
+              <label>Status:</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="filter-select"
+              >
+                <option value="ALL">All statuses</option>
+                <option value="PENDING">Pending</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="FAILED">Failed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Type:</label>
+              <select
+                value={dtype}
+                onChange={(e) => setDtype(e.target.value as any)}
+                className="filter-select"
+              >
+                <option value="ALL">All types</option>
+                <option value="CASH">Cash</option>
+                <option value="INKIND">In-kind</option>
+              </select>
+            </div>
+          </div>
+          <div className="action-buttons">
+            <button className="export-btn" onClick={onExportCsv}>
+              📄 Export CSV
+            </button>
+            <button className="refresh-btn" onClick={reload}>
+              🔄 Refresh
+            </button>
+          </div>
+        </div>
+
+        {error ? (
+          <div className="error-state">
+            <p>Error: {error}</p>
+          </div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="donations-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort('donation_date')} className="sortable">
+                    Date {sortField === 'donation_date' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('donation_type')} className="sortable">
+                    Type {sortField === 'donation_type' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('amount')} className="sortable">
+                    Amount/Value {sortField === 'amount' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th onClick={() => handleSort('status')} className="sortable">
+                    Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th>Frequency</th>
+                  <th>Proposal</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedRows.map((row) => (
+                  <tr key={row.donation_id} onClick={() => setSelectedDonation(row)}>
+                    <td>{fmtDate(row.donation_date)}</td>
+                    <td>
+                      <span className={`type-tag ${row.donation_type.toLowerCase()}`}>
+                        {row.donation_type === "CASH" ? "Cash" : "In-kind"}
+                      </span>
+                    </td>
+                    <td className="amount-cell">
+                      {currency(row.donation_type === "CASH" ? row.cash?.amount : row.inkind?.estimated_value)}
+                    </td>
+                    <td>
+                      <span className={`status-tag ${row.status.toLowerCase()}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td>{row.frequency === "ONE_TIME" ? "One-time" : row.frequency.charAt(0) + row.frequency.slice(1).toLowerCase()}</td>
+                    <td>
+                      {row.proposal_id ? (
+                        <a href={`/proposals/${row.proposal_id}`} onClick={(e) => e.stopPropagation()}>
+                          FP-{row.proposal_id}
+                        </a>
+                      ) : "—"}
+                    </td>
+                    <td>
+                      <div className="action-buttons-cell">
+                        <button
+                          className="view-btn"
+                          onClick={(e) => { e.stopPropagation(); setSelectedDonation(row); }}
+                          title="View details"
+                        >
+                          👁️
+                        </button>
+                        <button
+                          className="download-btn"
+                          disabled={row.status !== "COMPLETED"}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              await downloadDonationReceipt(row.donation_id);
+                            } catch (err: any) {
+                              console.error(err);
+                              alert("Unable to download receipt");
+                            }
+                          }}
+                          title="Download receipt"
+                        >
+                          📥
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {sortedRows.length === 0 && (
+              <div className="empty-state">
+                <p>No donations found matching your criteria.</p>
+              </div>
             )}
-          </Card>
-        </Col>
-      </Row>
+          </div>
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {selectedDonation && (
+        <div className="modal-overlay" onClick={() => setSelectedDonation(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Donation Details</h3>
+              <button className="close-btn" onClick={() => setSelectedDonation(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-grid">
+                <div className="detail-item">
+                  <label>Donation ID:</label>
+                  <span>{selectedDonation.donation_id}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Date:</label>
+                  <span>{fmtDate(selectedDonation.donation_date)}</span>
+                </div>
+                <div className="detail-item">
+                  <label>Type:</label>
+                  <span className={`type-tag ${selectedDonation.donation_type.toLowerCase()}`}>
+                    {selectedDonation.donation_type === "CASH" ? "Cash" : "In-kind"}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>Status:</label>
+                  <span className={`status-tag ${selectedDonation.status.toLowerCase()}`}>
+                    {selectedDonation.status}
+                  </span>
+                </div>
+                <div className="detail-item">
+                  <label>Frequency:</label>
+                  <span>{selectedDonation.frequency === "ONE_TIME" ? "One-time" : selectedDonation.frequency}</span>
+                </div>
+                {selectedDonation.donation_type === "CASH" && selectedDonation.cash && (
+                  <>
+                    <div className="detail-item">
+                      <label>Amount:</label>
+                      <span>{currency(selectedDonation.cash.amount)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Payment Method:</label>
+                      <span>{selectedDonation.cash.payment_method || "—"}</span>
+                    </div>
+                  </>
+                )}
+                {selectedDonation.donation_type === "INKIND" && selectedDonation.inkind && (
+                  <>
+                    <div className="detail-item">
+                      <label>Item Description:</label>
+                      <span>{selectedDonation.inkind.item_description || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Quantity:</label>
+                      <span>{selectedDonation.inkind.quantity || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Estimated Value:</label>
+                      <span>{currency(selectedDonation.inkind.estimated_value)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Description:</label>
+                      <span>{selectedDonation.inkind.description || "—"}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

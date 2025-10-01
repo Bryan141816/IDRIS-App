@@ -89,6 +89,7 @@ function PageLayout() {
     "/donation_report",
     "/volunteer_management/VolunteerReports",
     "/volunteer_management/ProgramsReports",
+    "/lgu_profiling/shelter_report_dashboard",
     "/finance&admin/finance_management/budget_summary",
   ];
 
@@ -96,9 +97,13 @@ function PageLayout() {
     location.pathname,
   );
 
-  const isPrintPage = location.pathname === "/donation_report";
+  const isPrintPage =
+    location.pathname === "/donation_report";
 
-  const hideNavbarRoutes = ["/finance_printable"];
+
+  const hideNavbarRoutes = [
+    "/finance_printable",
+  ]
 
   const shouldHideNavbar = false;
     // isPrintPage || hideNavbarRoutes.includes(location.pathname);

@@ -69,7 +69,7 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
       lat: mapData.lat,
       lng: mapData.lng,
     }));
-  };
+  }
 
   const handleAddModalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -170,7 +170,7 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
 
           <div className="action-button">
             <button
-              style={{ backgroundColor: "#749AB6" }}
+              style={{ backgroundColor: "#749AB6", color: "#ffff"  }}
               onClick={() => {
                 setMessageBox((prev) => ({
                   ...prev,
@@ -185,7 +185,7 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
             >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            <button style={{ backgroundColor: "#F84B4D", color: "#ffff" }} onClick={closeModal}>
               Cancel
             </button>
           </div>

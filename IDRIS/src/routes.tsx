@@ -200,7 +200,7 @@ const DonorProfile = () =>
   }));
 
 const DonationStatus = () =>
-  import("./pages/donations_management/funding_proposals/DonationStatus").then(
+  import("./pages/donations_management/donations/DonationStatus").then(
     (module) => ({ Component: module.default }),
   );
 

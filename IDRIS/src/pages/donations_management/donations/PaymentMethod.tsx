@@ -76,19 +76,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               <p className="payment-method__label">GCash</p>
             </button>
 
-            {/* Add New */}
-            <button
-              onClick={() => setPaymentMethod('add')}
-              className={`payment-method ${
-                paymentMethod === 'add' ? 'payment-method--active' : ''
-              }`}
-            >
-              <div className="payment-method__card payment-method__card--add">
-                <span>+</span>
-              </div>
-              <p className="payment-method__label">Add</p>
-            </button>
-
             <button
               onClick={() => setPaymentMethod('paymongo')}
               className={`payment-method ${

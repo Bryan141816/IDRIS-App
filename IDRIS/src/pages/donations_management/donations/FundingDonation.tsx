@@ -7,6 +7,8 @@ import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_ha
 import { createDonation, createPayMongoCheckout } from '../../../API_Handler/donations_donation_handler';
 import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
 import { formatCurrency, computePercentage } from '../helpers';
+import DonationStatus from '../donations/DonationStatus';
+
 import Swal from 'sweetalert2';
 
 const backendUrl = "http://127.0.0.1:8000";
@@ -15,7 +17,7 @@ const DonationPage: React.FC = () => {
   const location = useLocation();
   const fundingId = location.state?.funding_id;
   const [fundingProposal, setFundingProposal] = useState<any>(null);
-
+  const [ isDonationPending, setIsDonationPending ] = useState<boolean>(false);
   const [donorId, setDonorId] = useState<number | null>(null);
 
   const [donationKind, setDonationKind] = useState('In-Kind');
@@ -110,22 +112,36 @@ const DonationPage: React.FC = () => {
 
   const handlePayMongoCheckout = async () => {
     try {
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      // const successUrl = `${baseUrl}/donations_management/payment_verify`;
+      // const cancelUrl = `${baseUrl}/donations_management/payment_verify`;
+
       const data = {
-        amount: donationFormData.amount,
+        amount: parseFloat(donationFormData.amount),
         description: donationFormData.description,
+        // success_url: successUrl,
+        // cancel_url: cancelUrl,
       };
-      console.log("data: ", data);
+
       const response = await createPayMongoCheckout(data);
-      if (response.data && response.data.data.attributes.checkout_url) {
-        window.location.href = response.data.data.attributes.checkout_url;
+      setIsDonationPending(true);
+      const checkoutUrl = response.data?.data?.attributes?.checkout_url;
+      const sessionId = response.data?.data?.id;
+
+      if (checkoutUrl && sessionId) {
+        localStorage.setItem("paymongo_session_id", sessionId);
+        window.open(
+          checkoutUrl,
+          "_blank",
+          "noopener,noreferrer,width=800,height=600"
+        );
       }
-      console.log("response: ", response.data.data.attributes.checkout_url);
     } catch (error) {
-      console.error(error);
+      console.error("PayMongo checkout error:", error);
       Swal.fire({
         icon: 'error',
-        title: 'Oops...',
-        text: 'Something went wrong with PayMongo checkout!',
+        title: 'Checkout Error',
+        text: 'Something went wrong during the PayMongo checkout process.',
       });
     }
   };
@@ -199,6 +215,7 @@ const DonationPage: React.FC = () => {
 
   return (
     <div className="donation-page">
+      { isDonationPending && <DonationStatus />}
       <div className="donation-page__container">
         <div className="donation-page__grid">
           {/* Left Side - Donor Info & Donation Details */}

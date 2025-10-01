@@ -232,8 +232,8 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
                     }
                 ],
                 "payment_method_types": ["card", "gcash", "paymaya"],
-                "success_url": "http://localhost:5173/donations_management/funding_proposals?status=success",
-                "cancel_url": "http://localhost:5173/donations_management/funding_proposals?status=failed",
+                # "success_url": request.success_url,
+                # "cancel_url": request.cancel_url,
                 "description": request.description,
             }
         }
@@ -253,6 +253,27 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
             return resp.json()
         except httpx.HTTPStatusError as e:
             # forward PayMongo error body with proper status
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/paymongo/session/{session_id}")
+async def get_session_status(session_id: str):
+    secret = settings.PAYMONGO_SECRET_KEY
+    if not secret:
+        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                f"https://api.paymongo.com/v1/checkout_sessions/{session_id}",
+                auth=(secret, ""),
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

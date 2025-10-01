@@ -198,3 +198,5 @@ class DonationHistoryResponse(BaseModel):
 class PayMongoCheckoutRequest(BaseModel):
     amount: float
     description: str
+    # success_url: str
+    # cancel_url: str

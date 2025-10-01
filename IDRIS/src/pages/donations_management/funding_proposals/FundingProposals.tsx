@@ -1,12 +1,12 @@
 import "./FundingProposals.scss";
 import SearchBar from "../../../components/Page_Furniture/Search";
 import FilterBar from "../../../components/Page_Furniture/Filter";
+import { PlusCircle } from '../../../components/Page_Furniture/Icons';
 import { useUserRoleContext } from "../../../UserRoleContext";
 import FundingCard from "./fundingCard";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getFundingProposals } from "../../../API_Handler/donations_funding_proposals_handler";
-import DonationStatus from './DonationStatus';
 
 import Swal from 'sweetalert2';
 
@@ -123,6 +123,7 @@ const FundingProposals = () => {
             onClick={() => navigate("/donations_management/funding_proposals/create")}
           >
             Create New Proposal
+            <PlusCircle width={24} height={24} className="add_donor" />
           </button>
         )}
       </div>

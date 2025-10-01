@@ -10,6 +10,10 @@ export async function createDonation(data: any): Promise<any> {
   });
 }
 
+export async function getPayMongoSession(sessionId: string): Promise<any> {
+  return await API.get(`donations/paymongo/session/${sessionId}`);
+}
+
 export async function createOneTimeDonation(data: any): Promise<any> {
   return await API.post("/donations/one-time/create", data, {
     headers: {

@@ -3,10 +3,13 @@ import { useLocation } from 'react-router-dom';
 import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
 import './fundingDonation.scss';
+import MessagePic from '../../../media/Message_from_the_heart.png';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
 import { createDonation, createPayMongoCheckout } from '../../../API_Handler/donations_donation_handler';
 import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
 import { formatCurrency, computePercentage } from '../helpers';
+import DonationStatus from '../donations/DonationStatus';
+
 import Swal from 'sweetalert2';
 
 const backendUrl = "http://127.0.0.1:8000";
@@ -15,12 +18,12 @@ const DonationPage: React.FC = () => {
   const location = useLocation();
   const fundingId = location.state?.funding_id;
   const [fundingProposal, setFundingProposal] = useState<any>(null);
-
+  const [isDonationPending, setIsDonationPending] = useState<boolean>(false);
   const [donorId, setDonorId] = useState<number | null>(null);
 
   const [donationKind, setDonationKind] = useState('In-Kind');
   const [donationFrequency, setDonationFrequency] = useState('One-time');
-  const [paymentMethod, setPaymentMethod] = useState('visa');
+  const [paymentMethod, setPaymentMethod] = useState('paymongo');
 
   const [donationFormData, setDonationFormData] = useState({
     amount: '',
@@ -85,7 +88,7 @@ const DonationPage: React.FC = () => {
     setPaymentFormData({ cardHolderName: '', cardNumber: '', expiryDate: '', cvv: '' });
     setDonationFrequency('One-time');
     setDonationKind('In-Kind');
-    setPaymentMethod('visa');
+    setPaymentMethod('paymongo');
   };
 
 
@@ -110,22 +113,36 @@ const DonationPage: React.FC = () => {
 
   const handlePayMongoCheckout = async () => {
     try {
+      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      // const successUrl = `${baseUrl}/donations_management/payment_verify`;
+      // const cancelUrl = `${baseUrl}/donations_management/payment_verify`;
+
       const data = {
-        amount: donationFormData.amount,
+        amount: parseFloat(donationFormData.amount),
         description: donationFormData.description,
+        // success_url: successUrl,
+        // cancel_url: cancelUrl,
       };
-      console.log("data: ", data);
+
       const response = await createPayMongoCheckout(data);
-      if (response.data && response.data.data.attributes.checkout_url) {
-        window.location.href = response.data.data.attributes.checkout_url;
+      setIsDonationPending(true);
+      const checkoutUrl = response.data?.data?.attributes?.checkout_url;
+      const sessionId = response.data?.data?.id;
+
+      if (checkoutUrl && sessionId) {
+        localStorage.setItem("paymongo_session_id", sessionId);
+        window.open(
+          checkoutUrl,
+          "_blank",
+          "noopener,noreferrer,width=800,height=600"
+        );
       }
-      console.log("response: ", response.data.data.attributes.checkout_url);
     } catch (error) {
-      console.error(error);
+      console.error("PayMongo checkout error:", error);
       Swal.fire({
         icon: 'error',
-        title: 'Oops...',
-        text: 'Something went wrong with PayMongo checkout!',
+        title: 'Checkout Error',
+        text: 'Something went wrong during the PayMongo checkout process.',
       });
     }
   };
@@ -148,7 +165,7 @@ const DonationPage: React.FC = () => {
       const normalizeDonationFrequency = (type: string | null) => {
         if (type === "One-time") return "ONE_TIME";
         if (type === "Monthly") return "MONTHLY";
-        if (type === "Quarterly") return "QUARTERLY";2
+        if (type === "Quarterly") return "QUARTERLY"; 2
         if (type === "Yearly") return "YEARLY";
         return "ONE_TIME"; // fallback
       };
@@ -195,47 +212,54 @@ const DonationPage: React.FC = () => {
 
   };
 
-  
+
 
   return (
     <div className="donation-page">
+      {isDonationPending && <DonationStatus />}
       <div className="donation-page__container">
         <div className="donation-page__grid">
           {/* Left Side - Donor Info & Donation Details */}
           <div id='funding-info'>
             {fundingProposal && (
-              <div className="funding-content">
-                <div className="funding-image-container">
-                  <img src={`${backendUrl}/${fundingProposal.image}`}
-                    alt={`Image of ${fundingProposal.title}`}
-                    className="funding-image" />
-                </div>
-
-                <h2 className="funding-title">{fundingProposal.title}</h2>
-                <p className="funding-description">{fundingProposal.description}</p>
-
-                <div className="progress-container">
-                  <div className="progress-info">
-                    <span className="progress-label">Raised: {formatCurrency(fundingProposal.total_donated)}</span>
-                    <span className="progress-percentage">{computePercentage(
-                      Number(fundingProposal.total_donated),
-                      Number(fundingProposal.budget_required)
-                    )}%</span>
+              <>
+                <div className="funding-content">
+                  <div className="funding-image-container">
+                    <img src={`${backendUrl}/${fundingProposal.image}`}
+                      alt={`Image of ${fundingProposal.title}`}
+                      className="funding-image" />
                   </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill"></div>
+
+                  <h2 className="funding-title">{fundingProposal.title}</h2>
+                  <p className="funding-description">{fundingProposal.description}</p>
+
+                  <div className="progress-container">
+                    <div className="progress-info">
+                      <span className="progress-label">Raised: {formatCurrency(fundingProposal.total_donated)}</span>
+                      <span className="progress-percentage">{computePercentage(
+                        Number(fundingProposal.total_donated),
+                        Number(fundingProposal.budget_required)
+                      )}%</span>
+                    </div>
+                    <div className="progress-bar">
+                      <div className="progress-fill"></div>
+                    </div>
                   </div>
                 </div>
+                <div className="funding-content">
+                  <h1>Message from us</h1>
+                  <div className="donor-message">
+                    <p className="impact-text">
+                      "Your contribution will directly support our mission and make a tangible impact. Join us in creating a better future for those in need. Every donation counts."                  </p>
+                  </div>
 
-                <div className="impact-statement">
-                  <p className="impact-text">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-                    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                  </p>
+                  <div className="donor-message">
+                    <img src={MessagePic} alt="Message from the heart" />
+                    <h3>A Message from the Heart</h3>
+                    <p>"Your generosity empowers us to make a real difference. Every contribution, no matter the size, brings us closer to our goal and helps build a stronger community. Thank you for being a beacon of hope."</p>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
           <div id='payment-form'>

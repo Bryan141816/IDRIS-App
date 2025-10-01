@@ -6,6 +6,7 @@ import { API } from "../../../API_Handler/Axio_API_Handler";
 import LocationPickerModal from "../../../components/Page_Furniture/LocationPickerModal";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { Empty } from "antd";
 
 const greenPinIcon = new L.Icon({
     iconUrl: "/images/icons/evac.png",
@@ -287,39 +288,50 @@ const EvacuationAndShelter = () => {
                     <h2><i className="fas fa-map-marked-alt"></i> Shelter Status</h2>
                 </div>
                 <div className="shelter-list">
-                    {shelters.map(({ id, name, address, capacity, occupied, status }) => {
-                        const capacityPercent = capacity === 0 ? 0 : Math.min(100, Math.round((occupied / capacity) * 100));
-                        return (
-                            <div className="shelter-item" key={id} style={{ position: "relative" }}>
-                                <div className="shelter-info" style={{ position: "relative" }}>
-                                    <h4 className="shelter-title-row">
-                                        <span>{name}</span>
-                                        <button
-                                            className="kebab-menu-btn"
-                                            aria-label="Options"
-                                            onClick={() => handleDropdownToggle(id)}
-                                            type="button"
-                                        >
-                                            <span className="kebab-menu-icon">⋮</span>
-                                        </button>
-                                        {dropdownOpenId === id && (
-                                            <div className="kebab-dropdown">
-                                                <button className="kebab-dropdown-item" onClick={() => handleEditClick(id, occupied, capacity)}><i className="fas fa-edit"></i> Edit</button>
-                                                <button className="kebab-dropdown-item danger" onClick={() => handleDeleteClick(id)}><i className="fas fa-trash"></i> Delete</button>
-                                            </div>
-                                        )}
-                                    </h4>
-                                    <p><i className="fas fa-map-marker-alt" /> {address}</p>
+                    {shelters.length === 0 ? (
+                        // Substitute Empty with your preferred empty state component or message
+                        <Empty description="No shelters added yet" />
+                    ) : (
+                        shelters.map(({ id, name, address, capacity, occupied, status }) => {
+                            const capacityPercent = capacity === 0 ? 0 : Math.min(100, Math.round((occupied / capacity) * 100));
+                            return (
+                                <div className="shelter-item" key={id} style={{ position: "relative" }}>
+                                    <div className="shelter-info" style={{ position: "relative" }}>
+                                        <h4 className="shelter-title-row">
+                                            <span>{name}</span>
+                                            <button
+                                                className="kebab-menu-btn"
+                                                aria-label="Options"
+                                                onClick={() => handleDropdownToggle(id)}
+                                                type="button"
+                                            >
+                                                <span className="kebab-menu-icon">⋮</span>
+                                            </button>
+                                            {dropdownOpenId === id && (
+                                                <div className="kebab-dropdown">
+                                                    <button className="kebab-dropdown-item" onClick={() => handleEditClick(id, occupied, capacity)}>
+                                                        <i className="fas fa-edit"></i> Edit
+                                                    </button>
+                                                    <button className="kebab-dropdown-item danger" onClick={() => handleDeleteClick(id)}>
+                                                        <i className="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </h4>
+                                        <p><i className="fas fa-map-marker-alt" /> {address}</p>
+                                    </div>
+                                    <div className="shelter-stats">
+                                        <div className="capacity-bar">
+                                            <div className="capacity-fill" style={{ width: `${capacityPercent}%` }} />
+                                        </div>
+                                        <span className="capacity-text">{occupied}/{capacity} people</span>
+                                        <span className="capacity-percent">{capacityPercent}%</span>
+                                    </div>
+                                    <span className={`shelter-badge ${status.toLowerCase()}`}>{status}</span>
                                 </div>
-                                <div className="shelter-stats">
-                                    <div className="capacity-bar"><div className="capacity-fill" style={{ width: `${capacityPercent}%` }} /></div>
-                                    <span className="capacity-text">{occupied}/{capacity} people</span>
-                                    <span className="capacity-percent">{capacityPercent}%</span>
-                                </div>
-                                <span className={`shelter-badge ${status.toLowerCase()}`}>{status}</span>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    )}
                 </div>
             </section>
             {/* Edit Modal */}

@@ -29,20 +29,31 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   return (
     <div className="payment-form">
       <div className="payment-form__content">
-        
+
         <h2 className="payment-form__title">Payment</h2>
-        
+
         {/* Payment Method Selection */}
         <div className="payment-methods">
           <label className="payment-methods__label">Choose Payment Method</label>
           <div className="payment-methods__grid">
             
+            {/* PayMongo */}
+            <button
+              onClick={() => setPaymentMethod('paymongo')}
+              className={`payment-method ${paymentMethod === 'paymongo' ? 'payment-method--active' : ''
+                }`}
+            >
+              <div className="payment-method__card payment-method__card--paymongo">
+                <span>PayMongo</span>
+              </div>
+              <p className="payment-method__label">PayMongo</p>
+            </button>
+
             {/* Visa */}
             <button
               onClick={() => setPaymentMethod('visa')}
-              className={`payment-method ${
-                paymentMethod === 'visa' ? 'payment-method--active' : ''
-              }`}
+              className={`payment-method ${paymentMethod === 'visa' ? 'payment-method--active' : ''
+                }`}
             >
               <div className="payment-method__card payment-method__card--visa">
                 VISA
@@ -53,9 +64,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             {/* PayPal */}
             <button
               onClick={() => setPaymentMethod('paypal')}
-              className={`payment-method ${
-                paymentMethod === 'paypal' ? 'payment-method--active' : ''
-              }`}
+              className={`payment-method ${paymentMethod === 'paypal' ? 'payment-method--active' : ''
+                }`}
             >
               <div className="payment-method__card payment-method__card--paypal">
                 PayPal
@@ -66,39 +76,13 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             {/* GCash */}
             <button
               onClick={() => setPaymentMethod('gcash')}
-              className={`payment-method ${
-                paymentMethod === 'gcash' ? 'payment-method--active' : ''
-              }`}
+              className={`payment-method ${paymentMethod === 'gcash' ? 'payment-method--active' : ''
+                }`}
             >
               <div className="payment-method__card payment-method__card--gcash">
                 <span>G</span>
               </div>
               <p className="payment-method__label">GCash</p>
-            </button>
-
-            {/* Add New */}
-            <button
-              onClick={() => setPaymentMethod('add')}
-              className={`payment-method ${
-                paymentMethod === 'add' ? 'payment-method--active' : ''
-              }`}
-            >
-              <div className="payment-method__card payment-method__card--add">
-                <span>+</span>
-              </div>
-              <p className="payment-method__label">Add</p>
-            </button>
-
-            <button
-              onClick={() => setPaymentMethod('paymongo')}
-              className={`payment-method ${
-                paymentMethod === 'paymongo' ? 'payment-method--active' : ''
-              }`}
-            >
-              <div className="payment-method__card payment-method__card--paymongo">
-                <span>P</span>
-              </div>
-              <p className="payment-method__label">PayMongo</p>
             </button>
 
           </div>
@@ -108,7 +92,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         {(paymentMethod === 'visa' || paymentMethod === 'add') && (
           <div className="credit-card-form">
             <h3 className="credit-card-form__title">Credit Card Information</h3>
-            
+
             {/* Card Holder Name */}
             <div className="form-field">
               <label className="form-field__label">Card Holder Name</label>
@@ -171,13 +155,13 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
         {/* Action Buttons */}
         <div className="action-buttons">
-          <button 
+          <button
             onClick={onCancel}
             className="action-buttons__button action-buttons__button--cancel"
           >
             ← Cancel
           </button>
-          <button 
+          <button
             onClick={onNext}
             className="action-buttons__button action-buttons__button--next"
           >
@@ -186,7 +170,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         </div>
       </div>
     </div>
-  );    
+  );
 };
 
 export default PaymentForm;

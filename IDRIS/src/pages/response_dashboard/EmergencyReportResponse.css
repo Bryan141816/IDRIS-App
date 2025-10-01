@@ -1,0 +1,626 @@
+/* Variables */
+:root {
+  --primary-color: #2563eb;
+  --success-color: #059669;
+  --warning-color: #92400e;
+  --error-color: #991b1b;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+}
+
+/* Report Container */
+.erc-report-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  min-height: 210%;
+  padding: 2rem;
+}
+
+/* Breadcrumb Section */
+.breadcrumb-section {
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--gray-800);
+}
+
+/* Report Header */
+.erc-report-header {
+  border-bottom: 2px solid var(--gray-300);
+  padding-bottom: 20px;
+  margin-bottom: 30px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.erc-horizontal-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.erc-company-branding {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.erc-company-logo {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+
+.erc-company-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.erc-company-name {
+  margin: 0;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.erc-company-tagline {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gray-600);
+}
+
+.erc-company-info {
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.erc-company-info p {
+  margin: 0.25rem 0;
+}
+
+.erc-company-legal-name {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 4px 0;
+}
+
+.erc-company-address {
+  margin: 2px 0;
+}
+
+.erc-company-contact {
+  margin: 2px 0;
+}
+
+/* Report Info */
+.erc-report-info {
+  margin-top: 1.5rem;
+  background-color: var(--gray-50);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.erc-report-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.erc-report-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+}
+
+.print-section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* BLUE BUTTONS */
+.erc-print-button {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-family: inherit;
+}
+
+.erc-print-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* Main Content */
+.erc-report-main {
+  max-height: none;
+  height: auto;
+  overflow: visible;
+  flex: 1 1 auto;
+  padding: 0;
+}
+
+.erc-section {
+  margin-bottom: 30px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.erc-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+/* Metric Cards - NO SCROLLBAR */
+.erc-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  overflow: visible;
+}
+
+.erc-metric-card {
+  background: var(--gray-50);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  text-align: center;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.erc-metric-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0 0 8px 0;
+}
+
+.erc-metric-label {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin: 0;
+}
+
+/* Tables - NON-SCROLLABLE */
+.erc-table-container {
+  margin-bottom: 30px;
+  overflow: visible;
+  width: 100%;
+}
+
+.erc-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--gray-300);
+  table-layout: auto;
+  page-break-inside: auto;
+}
+
+.erc-table thead {
+  background: var(--gray-100);
+}
+
+.erc-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--gray-800);
+  border-bottom: 2px solid var(--gray-300);
+}
+
+.erc-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: var(--gray-700);
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.erc-table tbody tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+}
+
+.erc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Priority Colors */
+.priority-urgent {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.priority-high {
+  font-weight: 600;
+  color: #ea580c;
+}
+
+.priority-medium {
+  font-weight: 600;
+  color: #ca8a04;
+}
+
+.priority-low {
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* Performance Metrics Section */
+.erc-summary-section {
+  background: var(--gray-50);
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-300);
+  margin-bottom: 30px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.erc-summary-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 1rem 0;
+}
+
+.erc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.erc-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.erc-summary-label {
+  font-size: 14px;
+  color: var(--gray-600);
+  margin: 0;
+  font-weight: 500;
+}
+
+.erc-summary-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin: 0;
+}
+
+.erc-target-text {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--gray-600);
+  margin-left: 6px;
+}
+
+/* Print Footer */
+.erc-print-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-300);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--gray-600);
+}
+
+.erc-print-footer p {
+  margin: 0.25rem 0;
+}
+
+/* Print Styles - MULTI-PAGE SUPPORT WITH PROPER FORMATTING */
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.5in;
+  }
+
+  .breadcrumb-section,
+  .print-section {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .erc-report-container {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    min-height: unset !important;
+    height: auto !important;
+    width: 100%;
+    margin: 0;
+    padding: 0 !important;
+    box-sizing: border-box;
+    background: #fff !important;
+  }
+
+  /* FIXED: Keep header together on same page */
+  .erc-report-header {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    padding: 0 0 10px 0;
+    margin-bottom: 15px;
+  }
+
+  /* FIXED: Keep horizontal layout in print */
+  .erc-horizontal-flex {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: nowrap !important;
+    gap: 10px;
+    margin-bottom: 10px;
+    page-break-inside: avoid !important;
+  }
+
+  .erc-company-branding {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .erc-company-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+  }
+
+  .erc-company-title {
+    flex-shrink: 0;
+  }
+
+  .erc-company-name {
+    font-size: 1.125rem;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .erc-company-tagline {
+    font-size: 0.75rem;
+    margin: 2px 0 0 0;
+  }
+
+  /* FIXED: Keep company info on same line */
+  .erc-company-info {
+    font-size: 0.65rem;
+    text-align: right !important;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .erc-company-info p {
+    margin: 1px 0;
+  }
+
+  /* FIXED: Keep report info together with header */
+  .erc-report-info {
+    margin-top: 10px;
+    background-color: var(--gray-100);
+    padding: 8px;
+    border-radius: 4px;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  .erc-report-title {
+    font-size: 1rem;
+    margin: 0 0 6px 0;
+  }
+
+  .erc-report-metadata {
+    font-size: 0.7rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Main content starts fresh below header */
+  .erc-report-main {
+    flex: 1 1 auto;
+    height: auto !important;
+    page-break-before: avoid;
+  }
+
+  /* Section spacing for print */
+  .erc-section {
+    margin-bottom: 15px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .erc-section-title {
+    font-size: 0.95rem;
+    margin: 0 0 10px 0;
+    padding-bottom: 4px;
+  }
+
+  /* Compact metric cards for print */
+  .erc-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    overflow: visible;
+  }
+
+  .erc-metric-card {
+    padding: 10px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .erc-metric-value {
+    font-size: 1.5rem;
+    margin: 0 0 4px 0;
+  }
+
+  .erc-metric-label {
+    font-size: 0.7rem;
+  }
+
+  /* Table formatting for print */
+  .erc-table-container {
+    page-break-inside: auto;
+    margin-bottom: 15px;
+  }
+
+  .erc-table {
+    width: 100%;
+    table-layout: auto;
+    page-break-inside: auto;
+    font-size: 0.8rem;
+  }
+
+  .erc-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .erc-table th,
+  .erc-table td {
+    width: auto !important;
+    padding: 4px 6px;
+    font-size: 0.75rem;
+  }
+
+  .erc-table th {
+    font-size: 0.8rem;
+  }
+
+  /* Summary section for print */
+  .erc-summary-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background-color: var(--gray-100);
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+
+  .erc-summary-title {
+    font-size: 0.95rem;
+    margin: 0 0 8px 0;
+  }
+
+  .erc-summary-grid {
+    gap: 10px;
+  }
+
+  .erc-summary-label {
+    font-size: 0.75rem;
+  }
+
+  .erc-summary-value {
+    font-size: 1rem;
+    color: #000000;
+  }
+
+  .erc-target-text {
+    font-size: 0.7rem;
+  }
+
+  /* Print footer */
+  .erc-print-footer {
+    margin-top: 20px;
+    border-top: 1px solid var(--gray-300);
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--gray-600);
+    page-break-inside: avoid;
+  }
+
+  .erc-print-footer p {
+    margin: 2px 0;
+  }
+
+  /* Hide scrollbars for print */
+  *::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
+  /* Make priority colors print-friendly */
+  .priority-urgent,
+  .priority-high,
+  .priority-medium,
+  .priority-low {
+    color: #000000 !important;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .erc-report-container {
+    padding: 1rem;
+  }
+
+  .erc-horizontal-flex {
+    flex-direction: column;
+  }
+
+  .erc-company-info {
+    text-align: left;
+  }
+
+  .erc-metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .erc-report-metadata {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .print-section {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .erc-print-button {
+    width: 100%;
+  }
+}

@@ -211,6 +211,10 @@ const ResponseDashboard = () =>
   import("./pages/response_dashboard/ResponseDashboard").then((module) => ({
     Component: module.default,
   }));
+ const EmegencyReport = () =>
+    import("./pages/response_dashboard/EmergencyReponseReport").then((module) => ({
+       Component: module.default,
+  }));
 const ReportList = () =>
   import("./pages/response_dashboard/report_list/ReportList").then(
     (module) => ({
@@ -448,6 +452,10 @@ export const router = createBrowserRouter([
             lazy: ResponseDashboard,
           },
           {
+            path: "emergency_report",
+            lazy: EmegencyReport,
+          },
+          {
             path: "report_list",
             lazy: ReportList,
             handle: { allowedRoles: ["operations admin"] },
@@ -574,6 +582,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donor_dashboard": Donor_Dashboard,
 
   "/response_dashboard": ResponseDashboard,
+  "/response_dashboard/emergency_report": EmegencyReport,
   "/response_dashboard/report_list": ReportList,
   "/response_dashboard/demand_and_response_map": DemandAndResponseMap,
   "/response_dashboard/demand_and_response_map/list_view":

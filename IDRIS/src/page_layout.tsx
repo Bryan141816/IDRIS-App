@@ -91,6 +91,7 @@ function PageLayout() {
     "/volunteer_management/ProgramsReports",
     "/lgu_profiling/shelter_report_dashboard",
     "/finance&admin/finance_management/budget_summary",
+    "/response_dashboard/emergency_report",
   ];
 
   const shouldHideHeaderFooter = hideHeaderFooterRoutes.includes(

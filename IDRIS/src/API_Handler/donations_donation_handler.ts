@@ -10,6 +10,30 @@ export async function createDonation(data: any): Promise<any> {
   });
 }
 
+export async function completeDonation(donationId: string): Promise<any> {
+  return await API.put("/donations/completed", { donation_id: donationId }, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+export async function cancelDonation(donationId: string): Promise<any> {
+  return await API.put("/donations/cancel", { donation_id: donationId }, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+export async function failDonation(donationId: string): Promise<any> {
+  return await API.put("/donations/failed", { donation_id: donationId }, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 export async function getPayMongoSession(sessionId: string): Promise<any> {
   return await API.get(`donations/paymongo/session/${sessionId}`);
 }

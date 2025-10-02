@@ -35,7 +35,7 @@ from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURe
 
 from routers.role_checker import RoleChecker
 import math
-from typing import Union, Dict,List
+from typing import Union, Dict, List, Optional, Any
 from datetime import datetime
 router = APIRouter(
     tags=["manage_lgu"],
@@ -721,6 +721,15 @@ def update_barangay(
     if payload.risk_level is not None:
         record.risk_level = payload.risk_level
 
+    # ✅ NEW: allow changing picture / desc / resources
+    if getattr(payload, "baranggay_pic", None) is not None:
+        # send "" from client to clear it
+        record.baranggay_pic = payload.baranggay_pic or None
+    if getattr(payload, "baranggay_desc", None) is not None:
+        record.baranggay_desc = payload.baranggay_desc
+    if getattr(payload, "resources", None) is not None:
+        record.resources = payload.resources
+
     # 2) LGU — resolve only if provided
     if payload.LGU is not None:
         lgu = find_lgu(q=payload.LGU, sim_threshold=0.96, db=db)
@@ -732,7 +741,6 @@ def update_barangay(
     if payload.evacuation is not None:
         ev = (payload.evacuation or "").strip()
         if ev == "":
-            # DETACH
             record.evacucation_center_id = None
         else:
             evacuation = find_evacuation(q=ev, sim_threshold=0.96, db=db)

@@ -512,16 +512,24 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     risk_level: string;
   };
 
+  // ---- Get the full record from backend ----
+  const details = (selectedData as any)?.fullRecord || {};
+
   const [form, setForm] = useState<BarangayForm>({
-    name: selectedData.data[1].text,
-    lat: parseFloat(selectedData.data[2].text),
-    lng: parseFloat(selectedData.data[3].text),
-    LGU: selectedData.data[4].text,
-    evacuation: selectedData.data[5].text,
-    population: parseInt(selectedData.data[6].text),
-    contact_info: selectedData.data[7].text,
-    risk_level: selectedData.data[8].text,
+    name: details?.name ?? "",
+    lat: details?.lat ? parseFloat(details.lat) : 0,
+    lng: details?.lng ? parseFloat(details.lng) : 0,
+    LGU: details?.LGU ?? "",
+    evacuation: details?.evacuation ?? "",
+    population: details?.population ? parseInt(details.population) : 0,
+    contact_info: details?.contact_info ?? "",
+    risk_level: details?.risk_level ?? "",
   });
+
+  const [barangayPicFile, setBarangayPicFile] = useState<File | null>(null);
+  const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
+    details?.baranggay_pic ?? null
+  );
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
@@ -531,9 +539,29 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
   };
 
+  const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setBarangayPicFile(file);
+    setBarangayPicPreview(file ? URL.createObjectURL(file) : details?.baranggay_pic ?? null);
+  };
+
+  const uploadBarangayPic = async (file: File): Promise<string | null> => {
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await API.post("/api/files/barangay_pictures", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data?.url ?? null;
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      return null;
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    const nextVal = type === "number" && value !== "" ? Number(value) : (value as any);
+    const { name, value, type } = e.target;
+    const nextVal = type === "number" && value !== "" ? Number(value) : value;
     setForm((prev) => ({ ...prev, [name]: nextVal }));
   };
 
@@ -556,6 +584,35 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     }));
   };
 
+  const submitEdit = async () => {
+    let picUrl: string | null = null;
+    if (barangayPicFile) {
+      picUrl = await uploadBarangayPic(barangayPicFile);
+      if (!picUrl) {
+        setMessageBox((prev) => ({
+          ...prev,
+          isOpen: true,
+          type: "message",
+          message: "Image upload failed. Please try again.",
+        }));
+        return;
+      }
+    }
+
+    const payload = {
+      ...form,
+      ...(picUrl ? { baranggay_pic: picUrl } : {}),
+    };
+
+    setMessageBox((prev) => ({
+      ...prev,
+      isOpen: true,
+      type: "confirm",
+      message: "Are you sure you want to update this record?",
+      onSubmit: () => handleEditRecord(selectedData?.data[0]?.text, payload),
+    }));
+  };
+
   return (
     <>
       {locationPickerIsOpen && (
@@ -574,11 +631,13 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
             <span className="details-title">Edit Barangay</span>
           </div>
 
+          {/* Name */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
             <input type="text" name="name" value={form.name} onChange={handleChange} />
           </div>
 
+          {/* Location */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div style={{ display: "flex", width: "100%", gap: "5px" }}>
@@ -592,11 +651,13 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
             </div>
           </div>
 
+          {/* LGU */}
           <div className="horizontal-container">
             <span className="item-details-identifier">LGU:</span>
             <FuzzySeachElement value={form.LGU ?? ""} name="LGU" setLGUID={handleSearchChange} searchURL="/lgu_profiling/manage_lgu/search_lgu" />
           </div>
 
+          {/* Evacuation Center */}
           <div className="horizontal-container" style={{ alignItems: "center" }}>
             <span className="item-details-identifier">Evacuation Center:</span>
             <div style={{ display: "flex", width: "100%", gap: "8px" }}>
@@ -614,16 +675,19 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
             </div>
           </div>
 
+          {/* Population */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
             <input type="number" name="population" value={form.population} onChange={handleChange} min={0} />
           </div>
 
+          {/* Contact Info */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
             <input type="text" name="contact_info" value={form.contact_info} onChange={handleChange} />
           </div>
 
+          {/* Risk Level */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Risk Level:</span>
             <select id="risk_level" name="risk_level" required value={form.risk_level} onChange={handleChange}>
@@ -634,18 +698,25 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
             </select>
           </div>
 
+          {/* Picture */}
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Picture:</span>
+            <div style={{ width: "100%" }}>
+              <input type="file" accept="image/*" onChange={onPicChange} />
+              {barangayPicPreview && (
+                <img
+                  src={barangayPicPreview}
+                  alt="Preview"
+                  style={{ marginTop: 8, maxWidth: "100%", maxHeight: 160, borderRadius: 6 }}
+                />
+              )}
+            </div>
+          </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6" }}
-              onClick={() => {
-                setMessageBox((prev) => ({
-                  ...prev,
-                  isOpen: true,
-                  type: "confirm",
-                  message: "Are you sure you want to update this record?",
-                  onSubmit: () => handleEditRecord(selectedData.data[0].text, form),
-                }));
-              }}
+              onClick={submitEdit}
             >
               Confirm
             </button>

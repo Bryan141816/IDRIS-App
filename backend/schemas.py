@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict,Field
-from typing import List, Optional
+from typing import List, Optional, Union
+
 
 
 class ErrorResponse(BaseModel):
@@ -135,20 +136,30 @@ class BaranggayRecordsCreate(BaseModel):
     lng: float
     LGU: str
     evacuation: Optional[str] = None   # ✅ allow None
-    population: int
-    contact_info: str
-    risk_level: str
+    population: Union[int, dict, list] # ✅ JSON in DB, flexible input
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None
+    resources: Optional[dict] = None
+
 
 class BaranggayRecordsUpdate(BaseModel):
     name: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
     LGU: Optional[str] = None
-    evacuation: Optional[str] = None   # <- None or "" means DETACH
-    population: Optional[int] = None
+    evacuation: Optional[str] = None   # None or "" means DETACH
+    population: Optional[Union[int, dict, list]] = None
     contact_info: Optional[str] = None
     risk_level: Optional[str] = None
-    
+
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None
+    resources: Optional[dict] = None
+
+
 class BaranggayRecordsOut(BaseModel):
     id: int
     name: str
@@ -156,10 +167,13 @@ class BaranggayRecordsOut(BaseModel):
     lng: float
     lgu_id: int
     evacucation_center_id: Optional[int] = None  # ✅ allow None
-    population: int
-    contact_info: str
-    risk_level: str
+    population: Union[int, dict, list]
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
 
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None
+    resources: Optional[dict] = None
 class RafiInfrastructureCreate(BaseModel):
     rafi_name: str
     lat: float

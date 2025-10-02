@@ -58,6 +58,8 @@ class DonationCreate(BaseModel):
             raise ValueError("amount must be a positive number for cash donations.")
         return v
 
+class DonationUpdate(BaseModel):
+    donation_id: str
 
 class RecurringDonationCreate(BaseModel):
     """

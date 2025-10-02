@@ -3,23 +3,23 @@ import {
   InventoryModal,
   InventoryItemsProps,
 } from "../ModalDefault";
-
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
-export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
+interface EditInventoryModalProp extends DefaultInventoryModalProps {
+  selectedData: InventoryItemsProps | null;
+}
+
+export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
   onClose,
   refreshData,
+  selectedData,
 }) => {
+  if (!selectedData) {
+    return <></>;
+  }
   type InventoryItemForm = Omit<InventoryItemsProps, "inventory_id">;
-  const [addForm, setAddForm] = useState<InventoryItemForm>({
-    item_name: "",
-    quantity: 0,
-    category: "",
-    batch: "",
-    expiry: "",
-    status: "in stock",
-  });
+  const [addForm, setAddForm] = useState<InventoryItemForm>(selectedData);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -34,7 +34,7 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
   const handleRequest = async () => {
     try {
       const response = await API.post(
-        "/procurement_inventory/add_inventory_item",
+        "/procurement_inventory/update_inventory_item",
         addForm,
       );
       return response.data;
@@ -52,7 +52,6 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
     };
     _submit();
   };
-
   return (
     <>
       <InventoryModal

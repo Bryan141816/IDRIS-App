@@ -197,35 +197,36 @@ class LGURecords(Base):
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
 
-# models.py
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
 
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
     name = Column(String(255), nullable=False)
+
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
 
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
+    baranggay_pic = Column(String, nullable=True)  
+    baranggay_desc = Column(Text, nullable=True)           
+    resources = Column(JSON, nullable=True)               
+    contact_info = Column(String(255), nullable=True)  
+    population = Column(JSON, nullable=True)
 
-    # ⬇️ change: allow NULL + set-null on parent delete
+    risk_level = Column(String(50), nullable=True)   # ✅ added back
+
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
         Integer,
         ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
-        nullable=True,  # ⬅️ important
+        nullable=True,
     )
-
-    population = Column(Integer, nullable=False)
-    contact_info = Column(String(255), nullable=False)
-    risk_level = Column(String(50), nullable=False)
 
     lgu = relationship("LGURecords", back_populates="baranggays")
     evacucation_center = relationship(
         "EvacuationCenter",
         back_populates="barangay",
-        passive_deletes=True,  # ok to keep
+        passive_deletes=True,
     )
-
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"

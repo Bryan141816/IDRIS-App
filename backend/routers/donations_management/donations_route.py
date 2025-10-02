@@ -7,7 +7,8 @@ from numbers import Number
 from database import get_db
 from data_schemas.donation_schema import ( 
                                           DonationCreate, DonationResponse, RecurringDonationCreate, 
-                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest
+                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest,
+                                          DonationUpdate,
                                         )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date
@@ -90,24 +91,25 @@ def create_inkind_donation_route(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_admin.post("/cancel", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/cancel", response_model=DonationResponse)
+def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.cancel_donation_status(db, donation_id)
+        return CRUD.cancel_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router_admin.post("/completed", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/completed", response_model=DonationResponse)
+def complete_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.completed_donation_status(db, donation_id)
+        print(request.donation_id)
+        return CRUD.completed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_admin.post("/failed", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/failed", response_model=DonationResponse)
+def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.failed_donation_status(db, donation_id)
+        return CRUD.failed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

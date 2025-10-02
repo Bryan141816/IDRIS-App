@@ -3,12 +3,19 @@ import { useLocation } from 'react-router-dom';
 import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
 import './fundingDonation.scss';
+import { normalizeDonationFrequency, normalizeDonationType } from '../helpers';
 import MessagePic from '../../../media/Message_from_the_heart.png';
 import { getDonorIdByLoggedUser } from '../../../API_Handler/donations_donors_handler';
-import { createDonation, createPayMongoCheckout } from '../../../API_Handler/donations_donation_handler';
+import {
+  createDonation,
+  createPayMongoCheckout,
+  cancelDonation,
+  completeDonation,
+  failDonation
+} from '../../../API_Handler/donations_donation_handler';
 import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
 import { formatCurrency, computePercentage } from '../helpers';
-import DonationStatus from '../donations/DonationStatus';
+import DonationStatus from './DonationStatus';
 
 import Swal from 'sweetalert2';
 
@@ -20,6 +27,8 @@ const DonationPage: React.FC = () => {
   const [fundingProposal, setFundingProposal] = useState<any>(null);
   const [isDonationPending, setIsDonationPending] = useState<boolean>(false);
   const [donorId, setDonorId] = useState<number | null>(null);
+  const [donationId, setDonationId] = useState<string>(); // Track donation ID
+  const [showDonationStatus, setShowDonationStatus] = useState<boolean>(false); // New state to control when to show DonationStatus
 
   const [donationKind, setDonationKind] = useState('In-Kind');
   const [donationFrequency, setDonationFrequency] = useState('One-time');
@@ -91,7 +100,6 @@ const DonationPage: React.FC = () => {
     setPaymentMethod('paymongo');
   };
 
-
   const validate = () => {
     const newErrors: any = {};
     if (!donationFormData.description) {
@@ -112,16 +120,34 @@ const DonationPage: React.FC = () => {
   };
 
   const handlePayMongoCheckout = async () => {
+    const formData = {
+      donor_id: donorId,
+      frequency: normalizeDonationFrequency(donationFrequency),
+      amount: donationFormData.amount ? parseFloat(donationFormData.amount) : null,
+      description: donationFormData.description,
+      funding_id: fundingId,
+      donation_type: normalizeDonationType(donationKind),
+      payment_method: paymentMethod
+    }
+
+    console.log(formData);
     try {
+      const donationResponse = await createDonation(formData);
+      console.log("Donation Created:", donationResponse.data);
+      if (!donationResponse || !donationResponse.data) {
+        throw new Error('Failed to create donation record');
+      }
+
+      // Store the donation ID for potential failure handling
+      console.log("donation id from rsepones:", donationResponse.data.donation_id);
+      const createdDonationId = donationResponse.data.donation_id;
+      setDonationId(createdDonationId);
+      console.log("donation id on setDonation:", donationId);
       const baseUrl = `${window.location.protocol}//${window.location.host}`;
-      // const successUrl = `${baseUrl}/donations_management/payment_verify`;
-      // const cancelUrl = `${baseUrl}/donations_management/payment_verify`;
 
       const data = {
         amount: parseFloat(donationFormData.amount),
         description: donationFormData.description,
-        // success_url: successUrl,
-        // cancel_url: cancelUrl,
       };
 
       const response = await createPayMongoCheckout(data);
@@ -129,16 +155,34 @@ const DonationPage: React.FC = () => {
       const checkoutUrl = response.data?.data?.attributes?.checkout_url;
       const sessionId = response.data?.data?.id;
 
-      if (checkoutUrl && sessionId) {
+      if (checkoutUrl && sessionId && donationId) {
         localStorage.setItem("paymongo_session_id", sessionId);
+
+        // Only show DonationStatus after donationId is set
+        setShowDonationStatus(true);
+
+        // Open PayMongo checkout in new window
         window.open(
           checkoutUrl,
           "_blank",
           "noopener,noreferrer,width=800,height=600"
         );
+      } else {
+        // If checkout URL is not available, mark donation as failed
+        if (createdDonationId) {
+          await failDonation(createdDonationId);
+        }
+        throw new Error('Failed to get checkout URL from PayMongo');
       }
     } catch (error) {
       console.error("PayMongo checkout error:", error);
+      if (donationId) {
+        try {
+          await failDonation(donationId);
+        } catch (failError) {
+          console.error("Failed to mark donation as failed:", failError);
+        }
+      }
       Swal.fire({
         icon: 'error',
         title: 'Checkout Error',
@@ -162,19 +206,6 @@ const DonationPage: React.FC = () => {
   const handleOtherPayments = async () => {
     try {
       // build FormData to send donation
-      const normalizeDonationFrequency = (type: string | null) => {
-        if (type === "One-time") return "ONE_TIME";
-        if (type === "Monthly") return "MONTHLY";
-        if (type === "Quarterly") return "QUARTERLY"; 2
-        if (type === "Yearly") return "YEARLY";
-        return "ONE_TIME"; // fallback
-      };
-
-      const normalizeDonationType = (type: string | null) => {
-        if (type == "In-Kind") return "INKIND";
-        if (type == "Cash") return "CASH";
-        return type?.toUpperCase();
-      }
       console.log(donationFrequency);
       console.log(normalizeDonationFrequency(donationFrequency));
       console.log("donorId:", donorId, typeof donorId);
@@ -190,16 +221,23 @@ const DonationPage: React.FC = () => {
         donation_type: normalizeDonationType(donationKind),
         payment_method: paymentMethod
       }
+
       const donationResponse = await createDonation(formData);
       console.log("create donation response: ", donationResponse.data);
-      Swal.fire({
-        title: 'Success!',
-        text: 'Your donation has been created successfully.',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-      await fetchAndSetUserId(); // refresh donor-related data
-      resetForms();
+
+      // If donation was created successfully, show success message
+      if (donationResponse && donationResponse.data) {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Your donation has been created successfully.',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        });
+        await fetchAndSetUserId(); // refresh donor-related data
+        resetForms();
+      } else {
+        throw new Error('Donation creation failed');
+      }
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -209,14 +247,11 @@ const DonationPage: React.FC = () => {
         confirmButtonText: 'OK'
       });
     }
-
   };
-
-
 
   return (
     <div className="donation-page">
-      {isDonationPending && <DonationStatus />}
+      {showDonationStatus && <DonationStatus _donationId={donationId} />}
       <div className="donation-page__container">
         <div className="donation-page__grid">
           {/* Left Side - Donor Info & Donation Details */}

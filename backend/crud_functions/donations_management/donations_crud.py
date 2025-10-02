@@ -259,9 +259,9 @@ class DonationCRUD:
         return donation
 
     @staticmethod
-    def cancel_donation_status(db: Session, donation_id: int) -> Donation:
+    def cancel_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
             donation.status = DonationStatus.CANCELLED
             db.commit()
             db.refresh(donation)
@@ -270,9 +270,9 @@ class DonationCRUD:
             raise ValueError("Donation record does not exist")
 
     @staticmethod
-    def completed_donation_status(db: Session, donation_id: int) -> Donation:
+    def completed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
             donation.status = DonationStatus.COMPLETED
             db.commit()
             db.refresh(donation)
@@ -281,9 +281,9 @@ class DonationCRUD:
             raise ValueError("Donation record does not exist")
 
     @staticmethod
-    def failed_donation_status(db: Session, donation_id: int) -> Donation:
+    def failed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
             donation.status = DonationStatus.FAILED
             db.commit()
             db.refresh(donation)

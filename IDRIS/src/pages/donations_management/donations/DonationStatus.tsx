@@ -1,12 +1,21 @@
 import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { getPayMongoSession } from "../../../API_Handler/donations_donation_handler";
+import { 
+  getPayMongoSession, 
+  completeDonation, 
+  failDonation, 
+  cancelDonation 
+} from "../../../API_Handler/donations_donation_handler";
 
-export const DonationStatus: React.FC = () => {
+interface DonationStatusProps {
+  _donationId?: string;
+}
+
+export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  console.log("received donation id:", _donationId);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const status = params.get("status");
@@ -17,13 +26,23 @@ export const DonationStatus: React.FC = () => {
         icon: "success",
         title: "Donation Successful!",
         text: "Thank you for your generous donation.",
+      }).then(() => {
+        console.log("Updating success donation id: ", _donationId);
+        if (_donationId) {
+          completeDonation(_donationId).catch(console.error);
+        }
       });
       return;
     } else if (status === "failed") {
+      console.log("Updating failed donation id: ", _donationId);
       Swal.fire({
         icon: "error",
         title: "Donation Failed",
         text: "Something went wrong with your donation. Please try again.",
+      }).then(() => {
+        if (_donationId) {
+          failDonation(_donationId).catch(console.error);
+        }
       });
       return;
     }
@@ -139,6 +158,17 @@ export const DonationStatus: React.FC = () => {
             showConfirmButton: true,
             allowOutsideClick: true,
           });
+          
+          // Update donation status to completed
+          if (_donationId) {
+            try {
+              console.log(_donationId);
+              await completeDonation(_donationId);
+            } catch (error) {
+              console.error("Failed to update donation status to completed:", error);
+            }
+          }
+          
           navigate("/donations_management/funding_proposals", { replace: true });
         } else if (finalResult === "pending") {
           Swal.hideLoading();
@@ -158,6 +188,15 @@ export const DonationStatus: React.FC = () => {
             showConfirmButton: true,
             allowOutsideClick: true,
           });
+          
+          // Update donation status to failed
+          if (_donationId) {
+            try {
+              await failDonation(_donationId);
+            } catch (error) {
+              console.error("Failed to update donation status to failed:", error);
+            }
+          }
         } else {
           Swal.hideLoading();
           Swal.update({
@@ -187,7 +226,7 @@ export const DonationStatus: React.FC = () => {
       mounted = false;
       clearTimeout(timer);
     };
-  }, [location]);
+  }, [location, _donationId]);
 
   return <></>;
 };

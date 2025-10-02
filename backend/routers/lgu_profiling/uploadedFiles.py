@@ -10,14 +10,16 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 MEDIA_DIR = Path("media")
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 
-# Subfolders
-HAZARDS_DIR = MEDIA_DIR / "hazards"
-LGU_DIR     = MEDIA_DIR / "lgu_pictures"
-RAFIS_DIR   = MEDIA_DIR / "rafi_pictures"
-for d in (HAZARDS_DIR, LGU_DIR, RAFIS_DIR):
+# Subfolders (✅ fixed spelling to "barangay_pictures")
+HAZARDS_DIR   = MEDIA_DIR / "hazards"
+LGU_DIR       = MEDIA_DIR / "lgu_pictures"
+BARANGAY_DIR  = MEDIA_DIR / "barangay_pictures"
+RAFIS_DIR     = MEDIA_DIR / "rafi_pictures"
+
+for d in (HAZARDS_DIR, LGU_DIR, BARANGAY_DIR, RAFIS_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
-# imghdr returns: 'jpeg', 'png', 'gif', 'bmp', 'webp', (sometimes 'tiff')
+# Allowed image formats
 ALLOWED_TYPES = {"jpeg", "png", "gif", "bmp", "webp", "tiff"}
 
 def _save_image_or_400(dest_dir: Path, request: Request, file: UploadFile) -> JSONResponse:
@@ -54,13 +56,17 @@ def _save_image_or_400(dest_dir: Path, request: Request, file: UploadFile) -> JS
         public_url = f"{base}/media/hazards/{filename}"
     elif dest_dir == LGU_DIR:
         public_url = f"{base}/media/lgu_pictures/{filename}"
+    elif dest_dir == BARANGAY_DIR:
+        public_url = f"{base}/media/barangay_pictures/{filename}"  # ✅ fixed spelling
     elif dest_dir == RAFIS_DIR:
         public_url = f"{base}/media/rafi_pictures/{filename}"
     else:
-        # Fallback (shouldn't hit if you pass a known dir)
         public_url = f"{base}/media/{filename}"
 
     return JSONResponse({"url": public_url})
+
+
+# ----------- Upload Routes -----------
 
 @router.post("/hazards")
 async def upload_hazard(request: Request, file: UploadFile = File(...)):
@@ -69,6 +75,10 @@ async def upload_hazard(request: Request, file: UploadFile = File(...)):
 @router.post("/lgu_pictures")
 async def upload_lgu_picture(request: Request, file: UploadFile = File(...)):
     return _save_image_or_400(LGU_DIR, request, file)
+
+@router.post("/barangay_pictures")   # ✅ fixed spelling
+async def upload_barangay_picture(request: Request, file: UploadFile = File(...)):
+    return _save_image_or_400(BARANGAY_DIR, request, file)
 
 @router.post("/rafi_pictures")
 async def upload_rafi_picture(request: Request, file: UploadFile = File(...)):

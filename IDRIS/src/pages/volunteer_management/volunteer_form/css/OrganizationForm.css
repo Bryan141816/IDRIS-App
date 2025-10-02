@@ -250,8 +250,7 @@
 }
 
   .custom-height-modal {
-    height: 350px; /* You can change this to any value that fits your needs */
-    max-height: 90vh; /* Optional: This ensures the modal doesn't exceed the viewport height */
+    height: 75%; 
 }
 
   /* Responsive Design */

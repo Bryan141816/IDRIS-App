@@ -106,7 +106,6 @@ export default function IDRISDashboard() {
       .toLowerCase();
 
   const statusOf = (row: any): string => String(row?.status ?? "").trim().toLowerCase();
-
   const fullName = (v: IndividualVolunteerRead) =>
     [v.first_name, v.middle_name, v.last_name].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
@@ -352,7 +351,7 @@ export default function IDRISDashboard() {
       }
     };
 
-    // try fetch "my" individual/org volunteer profiles (requires auth)
+    // try fetch "my"  individual/org volunteer profiles (requires auth)
     const fetchMyProfiles = async () => {
       try {
         const iv = await fetch(`${API_BASE}/volunteer/my_profile`, { credentials: "include" });

@@ -340,6 +340,54 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   const toggleMoreOptionVisible = () => setIsMoreOptionVisible(!isMoreOptionVisible);
   useEffect(() => { if (!isModalOpen) setIsMoreOptionVisible(false); }, [isModalOpen]);
 
+  // ---- prefer full record from backend; fallback to table row cells ----
+  const details = (selectedData as any)?.fullRecord || {};
+
+  const id =
+    details.id ??
+    selectedData?.data?.[0]?.text;
+
+  const name =
+    details.name ??
+    selectedData?.data?.[1]?.text ??
+    "-";
+
+  // Table currently shows LGU at index 2 and Evac Center at index 3
+  const lguDisplay =
+    details.lgu_name ??
+    details.lgu?.name ??
+    selectedData?.data?.[2]?.text ??
+    "—";
+
+  const evacDisplay =
+    details.evacuation_center_name ??
+    details.evacucation_center?.name ??
+    selectedData?.data?.[3]?.text ??
+    "—";
+
+  const contactInfo =
+    details.contact_info ??
+    selectedData?.data?.[4]?.text ??
+    "-";
+
+  const population =
+    details.population ??
+    selectedData?.data?.[5]?.text ??
+    0;
+
+  const riskLevel =
+    details.risk_level ??
+    // (old table had risk at index 8; keep as last-resort fallback)
+    selectedData?.data?.[8]?.text ??
+    "-";
+
+  const lat = Number(details.lat);
+  const lng = Number(details.lng);
+  const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lng);
+
+  const barangayPic: string | undefined =
+    details.baranggay_pic || undefined;
+
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
       <div className="modal-container" style={{ paddingTop: "30px" }}>
@@ -352,7 +400,9 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
-                  <button onClick={openEditModal}><FontAwesomeIcon icon={faPen} /> Edit Record</button>
+                  <button onClick={openEditModal}>
+                    <FontAwesomeIcon icon={faPen} /> Edit Record
+                  </button>
                   <button
                     style={{ color: "red" }}
                     onClick={() => {
@@ -361,7 +411,7 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
                         isOpen: true,
                         type: "confirm",
                         message: "Are you sure you want to delete this record?",
-                        onSubmit: () => handleDeleteRecord(selectedData.data[0].text),
+                        onSubmit: () => handleDeleteRecord(String(id)),
                       }));
                     }}
                   >
@@ -374,39 +424,66 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
         </div>
 
         <div className="horizontal-container"><span className="details-title">Details</span></div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Name:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[1].text}</span>
-        </div>
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Location: (Latitude, Longitude)</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[2].text}, {selectedData.data[3].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{name}</span>
         </div>
 
-        <div style={{ display: "flex", width: "100%", height: "50vh", borderRadius: "10px", overflow: "hidden" }}>
-          <MapWithPin lat={parseFloat(selectedData.data[2].text)} lng={parseFloat(selectedData.data[3].text)} />
-        </div>
+        {/* Picture (optional) */}
+        {barangayPic && (
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Picture:</span>
+            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <img
+                src={barangayPic}
+                alt="Barangay"
+                style={{ marginTop: 8, maxWidth: "100%", maxHeight: 220, borderRadius: 6 }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="horizontal-container">
           <span className="item-details-identifier">LGU:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[4].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{lguDisplay}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Evacuation Center:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[5].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{evacDisplay}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Population:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[6].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {typeof population === "number" ? population.toLocaleString() : population}
+          </span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Contact Info:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[7].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{contactInfo}</span>
         </div>
+
         <div className="horizontal-container">
           <span className="item-details-identifier">Risk Level:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{selectedData.data[8].text}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{riskLevel}</span>
         </div>
+
+        {/* Location / Map */}
+        <div className="horizontal-container">
+          <span className="item-details-identifier">Location (Lat, Lng):</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {hasValidCoords ? `${lat}, ${lng}` : "—"}
+          </span>
+        </div>
+
+        {hasValidCoords && (
+          <div style={{ display: "flex", width: "100%", height: "50vh", borderRadius: "10px", overflow: "hidden" }}>
+            <MapWithPin lat={lat} lng={lng} />
+          </div>
+        )}
 
         <div className="action-button">
           <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>Close</button>

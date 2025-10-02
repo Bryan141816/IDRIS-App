@@ -206,11 +206,27 @@ const MapOfCebu = () => {
     setAddModalState((prev) => ({ ...prev, [activeTab]: false }));
   };
 
-  // One-click open: accept the row, set data, then open for current tab
-  const openViewModal = (row?: TableRowShape) => {
-    if (row) setSelectedViewData(row);
-    setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
-  };
+// replace your current openViewModal with this
+const openViewModal = async (row?: TableRowShape) => {
+  if (row) {
+    const id = row.data?.[0]?.text; // hidden ID from table row
+
+    if (activeTab === "barangay" && id) {
+      try {
+        const { data } = await API.get(`/lgu_profiling/manage_lgu/barangay/${id}`);
+        // Attach the full record to the row
+        (row as any).fullRecord = data;
+      } catch (e) {
+        console.error("❌ Failed to fetch barangay detail", e);
+      }
+    }
+
+    setSelectedViewData(row);
+  }
+
+  setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
+};
+
 
   // Hide only (keep selection when switching to edit)
   const hideViewModal = () => {

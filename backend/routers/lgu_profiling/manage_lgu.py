@@ -155,7 +155,49 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
 
 
 PER_PAGE = 10
+@router.get("/lgu_profiling/manage_lgu/barangay/{record_id}")
+def get_barangay_detail(
+    record_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    rec = (
+        db.query(BaranggayRecords)
+          .options(
+              joinedload(BaranggayRecords.lgu),
+              joinedload(BaranggayRecords.evacucation_center),
+          )
+          .get(record_id)
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="Barangay not found")
 
+    # If baranggay_pic is a relative path, return an absolute URL
+    def _abs(p: str | None) -> str | None:
+        if not p: return None
+        p = p.strip()
+        if p.lower().startswith(("http://", "https://")):
+            return p
+        base = str(request.base_url).rstrip("/")
+        return f"{base}{p if p.startswith('/') else '/' + p}"
+
+    return {
+        "id": rec.id,
+        "name": rec.name,
+        "lat": rec.lat,
+        "lng": rec.lng,
+        "population": rec.population,
+        "contact_info": rec.contact_info,
+        "risk_level": rec.risk_level,
+        "baranggay_pic": _abs(rec.baranggay_pic),
+        "baranggay_desc": rec.baranggay_desc,
+        "resources": rec.resources,
+        "lgu_id": rec.lgu_id,
+        "evacucation_center_id": rec.evacucation_center_id,
+        # handy display names for the modal
+        "lgu_name": rec.lgu.name if rec.lgu else None,
+        "evacuation_center_name": rec.evacucation_center.name if rec.evacucation_center else None,
+    }
 @router.get("/lgu_profiling/manage_lgu/get_barangay", response_model=TableResponse)
 def get_barangay(
     db: Session = Depends(get_db),
@@ -605,7 +647,7 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
                 "success": False,
                 "error": f"{record.evacuation} doesn't exist in Evacuation Center records",
             }
-        evac_id = evac_matches[0].id  # ORM attr is `id`, DB column is evacuation_id
+        evac_id = evac_matches[0].id  # ORM attr is `id`, DB column is evacuation_ida
 
     # 3) Create DB row
     try:

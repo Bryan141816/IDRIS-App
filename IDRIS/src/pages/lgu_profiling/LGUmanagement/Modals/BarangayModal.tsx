@@ -515,16 +515,17 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
   // ---- Get the full record from backend ----
   const details = (selectedData as any)?.fullRecord || {};
 
-  const [form, setForm] = useState<BarangayForm>({
-    name: details?.name ?? "",
-    lat: details?.lat ? parseFloat(details.lat) : 0,
-    lng: details?.lng ? parseFloat(details.lng) : 0,
-    LGU: details?.LGU ?? "",
-    evacuation: details?.evacuation ?? "",
-    population: details?.population ? parseInt(details.population) : 0,
-    contact_info: details?.contact_info ?? "",
-    risk_level: details?.risk_level ?? "",
-  });
+const [form, setForm] = useState<BarangayForm>({
+  name: details?.name ?? "",
+  lat: details?.lat ? parseFloat(details.lat) : 0,
+  lng: details?.lng ? parseFloat(details.lng) : 0,
+  LGU: details?.lgu_name ?? details?.lgu?.name ?? "", // Make sure this is set correctly
+  evacuation: details?.evacuation_center_name ?? details?.evacucation_center?.name ?? "", // Set evacuation center correctly
+  population: details?.population ? parseInt(details.population) : 0,
+  contact_info: details?.contact_info ?? "",
+  risk_level: details?.risk_level ?? "",
+});
+
 
   const [barangayPicFile, setBarangayPicFile] = useState<File | null>(null);
   const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(

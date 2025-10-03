@@ -206,7 +206,11 @@ body {
   align-items: center;
   margin-bottom: 16px;
 }
-
+.initial-avatar{
+    display: inline-block;  /* or block */
+  margin-left: 14px;
+  margin-top: 10px;
+}
 .volunteer-avatar {
   width: 40px;
   height: 40px;

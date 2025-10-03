@@ -213,7 +213,7 @@ const IndividualForm: React.FC = () => {
             {/* Main Content */}
             <div className="application-form-container">
                 <div className="form-card">
-                    <h2 className="form-title">Disaster Relief Volunteer Form</h2>
+                    <h2 className="form-title">Volunteer Form</h2>
                     <Form<IndividualFormValues>
                         form={form}
                         name="volunteerApplication"

@@ -15,6 +15,7 @@ import {
     createAssignment as apiCreateAssignment,
 } from "../../../API_Handler/assignment_handler";
 import { API } from "../../../API_Handler/Axio_API_Handler";
+import Swal from "sweetalert2";
 
 interface IndividualVolunteerRead {
     volunteer_id: number;
@@ -35,6 +36,7 @@ interface IndividualVolunteerRead {
     skills?: string[] | null;
     created_at: string;
     status: string;
+    availability_status?: string;
 
     // computed counters
     tasks_joined?: number;
@@ -602,10 +604,10 @@ export default function IDRISDashboard() {
     const canJoin = (n: NewsAnnouncement) =>
         n.lifecycle !== "finished" && n.currentVolunteers < n.maxVolunteers;
 
+
     const joinProgram = async (n: NewsAnnouncement) => {
         if (!canJoin(n)) return;
 
-        // prefer individual volunteer if approved; else try org volunteer if approved
         const iv =
             myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
         const ov =
@@ -632,7 +634,14 @@ export default function IDRISDashboard() {
                 });
             }
 
-            message.success(`You joined "${n.title}"`);
+            // ✅ Success message
+            Swal.fire({
+                title: "Joined Program",
+                text: `You have successfully joined the program "${n.title}". Thank you for volunteering!`,
+                icon: "success",
+                confirmButtonText: "OK",
+            });
+
             // update local counters
             setNewsAnnouncements((prev) =>
                 prev.map((x) =>
@@ -641,24 +650,36 @@ export default function IDRISDashboard() {
                             ...x,
                             currentVolunteers: Math.min(
                                 x.currentVolunteers + 1,
-                                x.maxVolunteers,
+                                x.maxVolunteers
                             ),
                             volunteersNeeded: Math.max(x.volunteersNeeded - 1, 0),
                         }
-                        : x,
-                ),
+                        : x
+                )
             );
         } catch (e: any) {
             const detail =
                 e?.response?.data?.detail || e?.message || "Failed to join this event";
-            // Handle duplicate join (409) gracefully if your backend returns it
+
             if (
                 String(detail).toLowerCase().includes("already") ||
                 e?.response?.status === 409
             ) {
-                message.info("You already joined this event.");
+                // ✅ Info message
+                Swal.fire({
+                    title: "Already Joined",
+                    text: "You are already part of this program.",
+                    icon: "info",
+                    confirmButtonText: "Got it",
+                });
             } else {
-                message.error(detail);
+                // ✅ Error message
+                Swal.fire({
+                    title: "Error",
+                    text: detail,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
             }
         } finally {
             setJoining((prev) => ({ ...prev, [n.id]: false }));
@@ -706,7 +727,7 @@ export default function IDRISDashboard() {
                                     <button
                                         className="manage-btn"
                                         style={{ fontSize: "90%" }}
-                                        onClick={() => navigate("/volunteer_management/volunteer_profile")}
+                                        onClick={() => navigate("/volunteer_management/volunteer_profiles")}
                                     >
                                         Volunteer Profile
                                     </button>
@@ -792,7 +813,7 @@ export default function IDRISDashboard() {
                                                                 className="volunteer-avatar placeholder"
                                                                 aria-label={`${name} placeholder`}
                                                             >
-                                                                {getInitial(name)}
+                                                                <span className="initial-avatar">{getInitial(name)}</span>
                                                             </div>
                                                         )}
 
@@ -1141,23 +1162,25 @@ export default function IDRISDashboard() {
                                                         </div>
 
                                                         {/* JOIN BUTTON */}
-                                                        {!isOpsAdmin && (
-                                                            <button
-                                                                onClick={() => joinProgram(item)}
-                                                                disabled={disabled}
-                                                                className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
-                                                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                                    : "bg-blue-600 text-white hover:bg-blue-700"
-                                                                    }`}
-                                                                title={
-                                                                    disabled
-                                                                        ? "You can't join this event now"
-                                                                        : "Join this event"
-                                                                }
-                                                            >
-                                                                {buttonLabel}
-                                                            </button>
-                                                        )}
+                                                        {!isOpsAdmin &&
+                                                            myVolunteer?.availability_status !== "assigned" &&
+                                                            myOrgVolunteer?.availability_status !== "assigned" && (
+                                                                <button
+                                                                    onClick={() => joinProgram(item)}
+                                                                    disabled={disabled}
+                                                                    className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
+                                                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                                            : "bg-blue-600 text-white hover:bg-blue-700"
+                                                                        }`}
+                                                                    title={
+                                                                        disabled
+                                                                            ? "You can't join this event now"
+                                                                            : "Join this event"
+                                                                    }
+                                                                >
+                                                                    {buttonLabel}
+                                                                </button>
+                                                            )}
                                                     </div>
 
                                                     {/* Assigned / Capacity + progress + Needed */}

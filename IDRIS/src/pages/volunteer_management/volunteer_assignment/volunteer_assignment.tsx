@@ -192,7 +192,7 @@ const VolunteerAssignmentPage: React.FC = () => {
     );
 
     // ✅ Show only AVAILABLE volunteers (by availability_status)
-    const availableVolunteers = filteredVolunteers.filter((v) => v.availability_status === 'available');
+    const availableVolunteers = filteredVolunteers.filter((v) => v.availability_status === 'available' && v.status === 'approved');
 
     // ✅ Only show incoming + ongoing areas (and sort by soonest start)
     const activeAreas = useMemo(() => {

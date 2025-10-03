@@ -430,34 +430,36 @@ export default function IDRISDashboard() {
     }, [myVolunteer, myOrgVolunteer, selectedVolunteer]);
     console.log("volunteer status:", myVolunteer?.status)
     // Fetch volunteers + my profiles
+
+    // Move fetchVolunteers to component scope so it can be reused
+    const fetchVolunteers = async () => {
+        try {
+            setLoading(true);
+
+            const data = await getAllVolunteers();
+            const orgData = await getAllOrganizationVolunteers();
+
+            const list = Array.isArray(data)
+                ? data.map((v) => ({ ...v, status: normalizeStatus(v) }))
+                : [];
+
+            const orgList = Array.isArray(orgData)
+                ? orgData.map((o) => ({ ...o, status: normalizeStatus(o) }))
+                : [];
+
+            setVolunteers(list);
+            setOrganizationVolunteers(orgList);
+
+            if (list.length > 0) setSelectedVolunteer(list[0]);
+        } catch (error) {
+            console.error("Error fetching volunteers:", error);
+            message.error("Failed to load volunteers data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchVolunteers = async () => {
-            try {
-                setLoading(true);
-
-                const data = await getAllVolunteers();
-                const orgData = await getAllOrganizationVolunteers();
-
-                const list = Array.isArray(data)
-                    ? data.map((v) => ({ ...v, status: normalizeStatus(v) }))
-                    : [];
-
-                const orgList = Array.isArray(orgData)
-                    ? orgData.map((o) => ({ ...o, status: normalizeStatus(o) }))
-                    : [];
-
-                setVolunteers(list);
-                setOrganizationVolunteers(orgList);
-
-                if (list.length > 0) setSelectedVolunteer(list[0]);
-            } catch (error) {
-                console.error("Error fetching volunteers:", error);
-                message.error("Failed to load volunteers data");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         // try fetch "my"  individual/org volunteer profiles (requires auth)
         const fetchMyProfiles = async () => {
             try {
@@ -472,7 +474,7 @@ export default function IDRISDashboard() {
             try {
                 const ov = await API.get("/organization_volunteer/my_profile");
                 if (ov.data) {
-                    setMyVolunteer(ov.data);
+                    setMyOrgVolunteer(ov.data);
                 }
             } catch {
                 /* ignore */
@@ -628,12 +630,21 @@ export default function IDRISDashboard() {
                 await apiCreateAssignment(n.id, {
                     individual_volunteer_id: iv.volunteer_id,
                 });
+
+                // 🔑 Update local state to reflect assigned status immediately
+                setMyVolunteer((prev) =>
+                    prev ? { ...prev, availability_status: "assigned" } : prev
+                );
             } else if (ov) {
                 await apiCreateAssignment(n.id, {
                     organization_volunteer_id: ov.volunteer_id,
                 });
-            }
 
+                setMyOrgVolunteer((prev: any) =>
+                    prev ? { ...prev, availability_status: "assigned" } : prev
+                );
+            }
+            await fetchVolunteers();
             // ✅ Success message
             Swal.fire({
                 title: "Joined Program",
@@ -1169,8 +1180,8 @@ export default function IDRISDashboard() {
                                                                     onClick={() => joinProgram(item)}
                                                                     disabled={disabled}
                                                                     className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
-                                                                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                                            : "bg-blue-600 text-white hover:bg-blue-700"
+                                                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                                        : "bg-blue-600 text-white hover:bg-blue-700"
                                                                         }`}
                                                                     title={
                                                                         disabled

@@ -626,11 +626,8 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
     Create a barangay record.
     - LGU is required and must exist (via find_lgu)
     - Evacuation center is optional; if provided, must exist (via find_evacuation)
-    - population is JSON-compatible (int/dict/list)
+    - Population is JSON-compatible (int/dict/list)
     """
-    # --- Helpers (assumes you already have these implemented elsewhere) ---
-    # from utils import find_lgu, find_evacuation
-
     # 1) Validate LGU
     lgu_matches = find_lgu(q=record.LGU, sim_threshold=0.96, db=db)
     if not lgu_matches:
@@ -657,12 +654,11 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
             lng=record.lng,
             lgu_id=lgu_id,
             evacucation_center_id=evac_id,
-            # JSON column in model; accept int/dict/list from schema
             population=record.population,
             contact_info=record.contact_info,
             risk_level=record.risk_level,
             baranggay_pic=record.baranggay_pic,
-            baranggay_desc=record.baranggay_desc,
+            baranggay_desc=record.baranggay_desc,  # Store the description here
             resources=record.resources,
         )
         db.add(db_row)
@@ -685,12 +681,10 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
         contact_info=db_row.contact_info,
         risk_level=db_row.risk_level,
         baranggay_pic=db_row.baranggay_pic,
-        baranggay_desc=db_row.baranggay_desc,
+        baranggay_desc=db_row.baranggay_desc,  # Include in the response
         resources=db_row.resources,
     )
-@router.delete(
-    "/lgu_profiling/manage_lgu/delete_barangay/{record_id}", response_model=dict
-)
+
 def delete_barangay(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, BaranggayRecords, record_id)
     if not deleted_report:

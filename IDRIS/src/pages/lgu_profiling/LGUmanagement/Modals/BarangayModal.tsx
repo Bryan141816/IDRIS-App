@@ -1,128 +1,128 @@
-import { BaseModalProps } from "../ModalProps";
-import { useState, useEffect, useRef } from "react";
-import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
-import { Modal } from "../../../../components/Page_Furniture/Modals";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapMarkerAlt, faEllipsisVertical, faTrash, faPen } from "@fortawesome/free-solid-svg-icons";
-import { MapWithPin } from "../ModalProps";
-import { API } from "../../../../API_Handler/Axio_API_Handler";
+  import { BaseModalProps } from "../ModalProps";
+  import { useState, useEffect, useRef } from "react";
+  import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
+  import { Modal } from "../../../../components/Page_Furniture/Modals";
+  import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+  import { faMapMarkerAlt, faEllipsisVertical, faTrash, faPen } from "@fortawesome/free-solid-svg-icons";
+  import { MapWithPin } from "../ModalProps";
+  import { API } from "../../../../API_Handler/Axio_API_Handler";
 
-/* -------------------- Fuzzy Search -------------------- */
-type FuzzySeachElementProps = {
-  value: string | null;
-  setLGUID: (idOrName: string, name: string) => void;
-  name: string;
-  searchURL: string;
-};
-
-const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
-  value,
-  name,
-  searchURL,
-  setLGUID,
-}) => {
-  type LGURecord = { id: number | string; name: string; lat?: number; lng?: number; contact_info?: string };
-
-  const [results, setResults] = useState<LGURecord[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsSearching(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === "Tab" || event.key === "Escape") setIsSearching(false); };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  async function searchLGU(q: string, sim_threshold: number = 0.2) {
-    try {
-      const res = await API.get(`${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`);
-      const data = res.data;
-      return Array.isArray(data) ? data : (data ? [data] : []);
-    } catch (e) {
-      console.error("Search failed:", e);
-      return [];
-    }
-  }
-
-  useEffect(() => {
-    if (!value || value.trim() === "") {
-      setIsSearching(false);
-      setResults([]);
-    }
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value;
-    setLGUID(q, name);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const trimmed = q.trim();
-      if (!trimmed) {
-        setResults([]);
-        setIsSearching(false);
-        return;
-      }
-      const res = await searchLGU(trimmed);
-      setResults(res);
-      setIsSearching(true);
-    }, 500);
+  /* -------------------- Fuzzy Search -------------------- */
+  type FuzzySeachElementProps = {
+    value: string | null;
+    setLGUID: (idOrName: string, name: string) => void;
+    name: string;
+    searchURL: string;
   };
 
-  return (
-    <div ref={wrapperRef} style={{ display: "flex", width: "100%", gap: "5px", position: "relative" }}>
-      <input value={value ?? ""} onChange={handleChange} onFocus={() => { if ((value ?? "").length > 0 && results.length > 0) setIsSearching(true); }} placeholder="Type to search…" />
-      {isSearching && (
-        <div
-          style={{
-            display: "flex",
-            border: "1px solid #ddd",
-            width: "100%",
-            maxHeight: "200px",
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            borderRadius: "5px",
-            backgroundColor: "white",
-            overflowY: "auto",
-            zIndex: 10000,
-          }}
-        >
-          {results.length > 0 ? (
-            <div style={{ width: "100%" }}>
-              {results.map((val, i) => (
-                <button
-                  key={`${val.id ?? val.name}-${i}`}
-                  style={{ padding: "5px", width: "100%", textAlign: "start", background: "white", border: "none", borderBottom: "1px solid #eee", cursor: "pointer" }}
-                  onClick={() => {
-                    setLGUID(String(val.name), name);
-                    setIsSearching(false);
-                  }}
-                >
-                  {val.name}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div style={{ padding: "8px" }}>No results found…</div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+  const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
+    value,
+    name,
+    searchURL,
+    setLGUID,
+  }) => {
+    type LGURecord = { id: number | string; name: string; lat?: number; lng?: number; contact_info?: string };
 
-/* -------------------- Types -------------------- */
-type addLGUModalProps = BaseModalProps & { handleAddRecord: (payload: any) => void };
-type viewEvecuationModalProp = BaseModalProps & { selectedData: any; handleDeleteRecord: (id: string) => void; openEditModal: () => void };
-type editEvacuationModalProp = BaseModalProps & { selectedData: any; handleEditRecord: (id: string, payload: any) => void };
+    const [results, setResults] = useState<LGURecord[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsSearching(false);
+      };
+      const handleKeyDown = (event: KeyboardEvent) => { if (event.key === "Tab" || event.key === "Escape") setIsSearching(false); };
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      };
+    }, []);
+
+    async function searchLGU(q: string, sim_threshold: number = 0.2) {
+      try {
+        const res = await API.get(`${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`);
+        const data = res.data;
+        return Array.isArray(data) ? data : (data ? [data] : []);
+      } catch (e) {
+        console.error("Search failed:", e);
+        return [];
+      }
+    }
+
+    useEffect(() => {
+      if (!value || value.trim() === "") {
+        setIsSearching(false);
+        setResults([]);
+      }
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const q = e.target.value;
+      setLGUID(q, name);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(async () => {
+        const trimmed = q.trim();
+        if (!trimmed) {
+          setResults([]);
+          setIsSearching(false);
+          return;
+        }
+        const res = await searchLGU(trimmed);
+        setResults(res);
+        setIsSearching(true);
+      }, 500);
+    };
+
+    return (
+      <div ref={wrapperRef} style={{ display: "flex", width: "100%", gap: "5px", position: "relative" }}>
+        <input value={value ?? ""} onChange={handleChange} onFocus={() => { if ((value ?? "").length > 0 && results.length > 0) setIsSearching(true); }} placeholder="Type to search…" />
+        {isSearching && (
+          <div
+            style={{
+              display: "flex",
+              border: "1px solid #ddd",
+              width: "100%",
+              maxHeight: "200px",
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              borderRadius: "5px",
+              backgroundColor: "white",
+              overflowY: "auto",
+              zIndex: 10000,
+            }}
+          >
+            {results.length > 0 ? (
+              <div style={{ width: "100%" }}>
+                {results.map((val, i) => (
+                  <button
+                    key={`${val.id ?? val.name}-${i}`}
+                    style={{ padding: "5px", width: "100%", textAlign: "start", background: "white", border: "none", borderBottom: "1px solid #eee", cursor: "pointer" }}
+                    onClick={() => {
+                      setLGUID(String(val.name), name);
+                      setIsSearching(false);
+                    }}
+                  >
+                    {val.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: "8px" }}>No results found…</div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /* -------------------- Types -------------------- */
+  type addLGUModalProps = BaseModalProps & { handleAddRecord: (payload: any) => void };
+  type viewEvecuationModalProp = BaseModalProps & { selectedData: any; handleDeleteRecord: (id: string) => void; openEditModal: () => void };
+  type editEvacuationModalProp = BaseModalProps & { selectedData: any; handleEditRecord: (id: string, payload: any) => void };
 
 /* -------------------- Add Barangay -------------------- */
 export const AddBarangayModal: React.FC<addLGUModalProps> = ({
@@ -140,6 +140,7 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     population: number;
     contact_info: string;
     risk_level: string;
+    baranggay_desc: string; // Added baranggay_desc to form state
   };
 
   const [form, setForm] = useState<BarangayForm>({
@@ -151,9 +152,10 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     population: 0,
     contact_info: "",
     risk_level: "",
+    baranggay_desc: "", // Initialize description state
   });
 
-  // barangay picture
+  // Barangay picture state
   const [barangayPic, setBarangayPic] = useState<File | null>(null);
   const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(null);
   const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,8 +171,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
     setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
     const nextVal = type === "number" && value !== "" ? Number(value) : value;
     setForm((prev) => ({ ...prev, [name]: nextVal }));
   };
@@ -219,8 +221,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
       contact_info: form.contact_info,
       risk_level: form.risk_level,
       baranggay_pic: picUrl,
-      baranggay_desc: null,
-      resources: null,
+      baranggay_desc: form.baranggay_desc || null, // Ensure description is included in the payload
+      resources: null, // Placeholder for resources if needed
     };
 
     handleAddRecord(payload);
@@ -254,7 +256,11 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
             <div style={{ width: "100%" }}>
               <input type="file" accept="image/*" onChange={onPicChange} />
               {barangayPicPreview && (
-                <img src={barangayPicPreview} alt="Preview" style={{ marginTop: 8, maxWidth: "100%", maxHeight: 160, borderRadius: 6 }} />
+                <img
+                  src={barangayPicPreview}
+                  alt="Preview"
+                  style={{ marginTop: 8, maxWidth: "100%", maxHeight: 160, borderRadius: 6 }}
+                />
               )}
             </div>
           </div>
@@ -302,6 +308,19 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
             </select>
           </div>
 
+          {/* Barangay Description */}
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Barangay Description:</span>
+            <textarea
+              name="baranggay_desc"
+              value={form.baranggay_desc}
+              onChange={handleChange}
+              placeholder="Enter a description for the barangay"
+              rows={4}
+              style={{ width: "100%", borderRadius: "5px", padding: "8px" }}
+            />
+          </div>
+
           <div className="action-button">
             <button
               style={{ backgroundColor: "#749AB6", color: "#ffff" }}
@@ -327,8 +346,8 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
   );
 };
 
-/* -------------------- View Barangay -------------------- */
-export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
+  /* -------------------- View Barangay -------------------- */
+ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   isModalOpen,
   closeModal,
   setMessageBox,
@@ -338,55 +357,28 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
 }) => {
   const [isMoreOptionVisible, setIsMoreOptionVisible] = useState(false);
   const toggleMoreOptionVisible = () => setIsMoreOptionVisible(!isMoreOptionVisible);
-  useEffect(() => { if (!isModalOpen) setIsMoreOptionVisible(false); }, [isModalOpen]);
+
+  useEffect(() => {
+    if (!isModalOpen) setIsMoreOptionVisible(false);
+  }, [isModalOpen]);
 
   // ---- prefer full record from backend; fallback to table row cells ----
   const details = (selectedData as any)?.fullRecord || {};
 
-  const id =
-    details.id ??
-    selectedData?.data?.[0]?.text;
-
-  const name =
-    details.name ??
-    selectedData?.data?.[1]?.text ??
-    "-";
-
-  // Table currently shows LGU at index 2 and Evac Center at index 3
-  const lguDisplay =
-    details.lgu_name ??
-    details.lgu?.name ??
-    selectedData?.data?.[2]?.text ??
-    "—";
-
-  const evacDisplay =
-    details.evacuation_center_name ??
-    details.evacucation_center?.name ??
-    selectedData?.data?.[3]?.text ??
-    "—";
-
-  const contactInfo =
-    details.contact_info ??
-    selectedData?.data?.[4]?.text ??
-    "-";
-
-  const population =
-    details.population ??
-    selectedData?.data?.[5]?.text ??
-    0;
-
-  const riskLevel =
-    details.risk_level ??
-    // (old table had risk at index 8; keep as last-resort fallback)
-    selectedData?.data?.[8]?.text ??
-    "-";
+  const id = details.id ?? selectedData?.data?.[0]?.text;
+  const name = details.name ?? selectedData?.data?.[1]?.text ?? "-";
+  const lguDisplay = details.lgu_name ?? details.lgu?.name ?? selectedData?.data?.[2]?.text ?? "—";
+  const evacDisplay = details.evacuation_center_name ?? details.evacucation_center?.name ?? selectedData?.data?.[3]?.text ?? "—";
+  const contactInfo = details.contact_info ?? selectedData?.data?.[4]?.text ?? "-";
+  const population = details.population ?? selectedData?.data?.[5]?.text ?? 0;
+  const riskLevel = details.risk_level ?? selectedData?.data?.[8]?.text ?? "-";
 
   const lat = Number(details.lat);
   const lng = Number(details.lng);
   const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lng);
 
-  const barangayPic: string | undefined =
-    details.baranggay_pic || undefined;
+  const barangayPic: string | undefined = details.baranggay_pic || undefined;
+  const baranggayDesc: string | undefined = details.baranggay_desc || undefined; // Get description
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
@@ -444,6 +436,16 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
           </div>
         )}
 
+        {/* Barangay Description */}
+        {baranggayDesc && (
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Barangay Description:</span>
+            <div style={{ width: "100%", textAlign: "center" }}>
+              <p>{baranggayDesc}</p> {/* Display description */}
+            </div>
+          </div>
+        )}
+
         <div className="horizontal-container">
           <span className="item-details-identifier">LGU:</span>
           <span style={{ width: "100%", textAlign: "center" }}>{lguDisplay}</span>
@@ -493,6 +495,7 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   );
 };
 
+
 /* -------------------- Edit Barangay -------------------- */
 export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
   isModalOpen,
@@ -510,22 +513,23 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     population: number;
     contact_info: string;
     risk_level: string;
+    baranggay_desc: string;  // Add baranggay_desc to form state
   };
 
   // ---- Get the full record from backend ----
   const details = (selectedData as any)?.fullRecord || {};
 
-const [form, setForm] = useState<BarangayForm>({
-  name: details?.name ?? "",
-  lat: details?.lat ? parseFloat(details.lat) : 0,
-  lng: details?.lng ? parseFloat(details.lng) : 0,
-  LGU: details?.lgu_name ?? details?.lgu?.name ?? "", // Make sure this is set correctly
-  evacuation: details?.evacuation_center_name ?? details?.evacucation_center?.name ?? "", // Set evacuation center correctly
-  population: details?.population ? parseInt(details.population) : 0,
-  contact_info: details?.contact_info ?? "",
-  risk_level: details?.risk_level ?? "",
-});
-
+  const [form, setForm] = useState<BarangayForm>({
+    name: details?.name ?? "",
+    lat: details?.lat ? parseFloat(details.lat) : 0,
+    lng: details?.lng ? parseFloat(details.lng) : 0,
+    LGU: details?.lgu_name ?? details?.lgu?.name ?? "", // Make sure this is set correctly
+    evacuation: details?.evacuation_center_name ?? details?.evacucation_center?.name ?? "", // Set evacuation center correctly
+    population: details?.population ? parseInt(details.population) : 0,
+    contact_info: details?.contact_info ?? "",
+    risk_level: details?.risk_level ?? "",
+    baranggay_desc: details?.baranggay_desc ?? "", // Initialize description field
+  });
 
   const [barangayPicFile, setBarangayPicFile] = useState<File | null>(null);
   const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
@@ -560,7 +564,7 @@ const [form, setForm] = useState<BarangayForm>({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     const nextVal = type === "number" && value !== "" ? Number(value) : value;
     setForm((prev) => ({ ...prev, [name]: nextVal }));
@@ -697,6 +701,19 @@ const [form, setForm] = useState<BarangayForm>({
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
+          </div>
+
+          {/* Barangay Description */}
+          <div className="horizontal-container">
+            <span className="item-details-identifier">Barangay Description:</span>
+            <textarea
+              name="baranggay_desc"
+              value={form.baranggay_desc}
+              onChange={handleChange}
+              placeholder="Edit description here"
+              rows={4}
+              style={{ width: "100%", borderRadius: "5px", padding: "8px" }}
+            />
           </div>
 
           {/* Picture */}

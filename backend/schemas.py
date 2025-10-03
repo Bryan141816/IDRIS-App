@@ -128,20 +128,18 @@ class LGURecordsOut(BaseModel):
     class Config:
         from_attributes = True 
 
-
-
-class BaranggayRecordsCreate(BaseModel):
+class   nggayRecordsCreate(BaseModel):
     name: str
     lat: float
     lng: float
     LGU: str
-    evacuation: Optional[str] = None   # ✅ allow None
-    population: Union[int, dict, list] # ✅ JSON in DB, flexible input
+    evacuation: Optional[str] = None  # ✅ allow None
+    population: Union[int, dict, list]  # ✅ JSON in DB, flexible input
     contact_info: Optional[str] = None
     risk_level: Optional[str] = None
 
     baranggay_pic: Optional[str] = None
-    baranggay_desc: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Ensure it's included for creation
     resources: Optional[dict] = None
 
 
@@ -156,7 +154,7 @@ class BaranggayRecordsUpdate(BaseModel):
     risk_level: Optional[str] = None
 
     baranggay_pic: Optional[str] = None
-    baranggay_desc: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Ensure it's included for updates
     resources: Optional[dict] = None
 
 
@@ -172,8 +170,9 @@ class BaranggayRecordsOut(BaseModel):
     risk_level: Optional[str] = None
 
     baranggay_pic: Optional[str] = None
-    baranggay_desc: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Include in the output model
     resources: Optional[dict] = None
+
 class RafiInfrastructureCreate(BaseModel):
     rafi_name: str
     lat: float

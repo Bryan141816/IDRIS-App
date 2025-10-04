@@ -190,7 +190,7 @@ const DonationsReport = () =>
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
-  import("./pages/donations_management/donations/FundingDonation").then(
+  import("./pages/donations_management/donate/FundingDonation").then(
     (module) => ({ Component: module.default }),
   );
 
@@ -200,7 +200,7 @@ const DonorProfile = () =>
   }));
 
 const DonationStatus = () =>
-  import("./pages/donations_management/donations/DonationStatus").then(
+  import("./pages/donations_management/donate/DonationStatus").then(
     (module) => ({ Component: module.default }),
   );
 

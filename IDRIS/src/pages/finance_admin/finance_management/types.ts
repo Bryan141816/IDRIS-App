@@ -33,25 +33,33 @@ export type Finance = {
   transaction_type: string;
 };
 
-export interface InflowItem {
-  id: number;
-  source: string;
+export type InflowItem = {
+  finance_id: string;
+  counterparty: string;
   amount: number;
-  category: string;
+  budget_for: string;
   date: string;
-  status: string;
+  status: 'PENDING' | 'RECEIVED' | 'PROCESSING';
   description: string;
-}
+};
 
-export interface OutflowItem {
-  id: number;
-  category: string;
+export type OutflowItem = {
+  finance_id: string;
+  counterparty: string;
   amount: number;
+  budget_for: string;
   date: string;
-  vendor: string;
-  status: string;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED';
   description: string;
-}
+};
+
+export type BudgetItem = {
+  budget_for: string;
+  inflow_total: number;
+  outflow_total: number;
+  net_total: number;
+  percentage_spent: number;
+};
 
 export interface ReportItem {
   id: number;
@@ -62,13 +70,13 @@ export interface ReportItem {
   status: 'Generated' | 'Draft';
 }
 
-export interface BudgetItem {
-  category: string;
-  allocated: number;
-  spent: number;
-  remaining: number;
-  percentage: number;
-}
+// export interface BudgetItem {
+//   category: string;
+//   allocated: number;
+//   spent: number;
+//   remaining: number;
+//   percentage: number;
+// }
 
 export interface CompanyInfo {
   name: string;

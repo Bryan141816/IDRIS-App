@@ -1,5 +1,5 @@
 import React from 'react';
-import { InflowItem, OutflowItem, BudgetItem } from './FinanceManagement';
+import { InflowItem, OutflowItem, BudgetItem } from './types';
 import { formatCurrency } from '../../helpers';
 import { totalIn, totalOut, toDecimal2 } from './helpers';
 

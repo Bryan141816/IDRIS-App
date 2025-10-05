@@ -150,12 +150,19 @@ const DonationPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
 
   const handlePayMongoCheckout = async () => {
-    // Guard: prevent double-submission / double-click
     if ((window as any).__paymongoCheckoutSubmitting) return;
     (window as any).__paymongoCheckoutSubmitting = true;
-    setIsSubmitting?.(true);
+    setIsSubmitting(true);
 
-    // Build donation payload
+    Swal.fire({
+      title: 'Creating Checkout Request',
+      text: 'Please wait while we prepare your secure checkout...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     const formData = {
       donor_id: donorId,
       frequency: normalizeDonationFrequency(donationFrequency),
@@ -166,144 +173,106 @@ const DonationPage: React.FC = () => {
       payment_method: paymentMethod,
     };
 
-    let checkoutWindow: Window | null = null; // Use a single variable for the checkout window
+    let checkoutWindow: Window | null = null;
     let createdDonationId: string | null = null;
 
     try {
-      // 1. Create donation record first
-      console.log('Creating donation record', formData);
       const donationResponse = await createDonation(formData);
       if (!donationResponse || !donationResponse.data) {
         throw new Error('Failed to create donation record (no response)');
       }
 
       createdDonationId = donationResponse.data.donation_id ?? null;
-      console.log('Donation created (id):', createdDonationId);
-      if (createdDonationId) setDonationId?.(createdDonationId);
+      if (createdDonationId) setDonationId(createdDonationId);
 
-      // Prepare payload for PayMongo
       const paymongoPayload = {
         amount: donationFormData.amount ? parseFloat(donationFormData.amount) : 0,
         description: donationFormData.description ?? '',
       };
 
-      // Retry helper with exponential backoff (same as before)
       const createPayMongoCheckoutWithRetry = async (payload: any, maxRetries = 4, initialDelayMs = 1000) => {
         let lastError: any = null;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          console.log(`PayMongo attempt ${attempt}/${maxRetries}`);
           try {
+            if (attempt > 1) {
+              Swal.update({
+                text: `Connection unstable. Retrying... (Attempt ${attempt} of ${maxRetries})`,
+              });
+            }
             const resp = await createPayMongoCheckout(payload);
-            console.log('PayMongo response:', resp?.status, resp?.data);
             const checkoutUrl = resp?.data?.data?.attributes?.checkout_url;
-            if (checkoutUrl) return resp;
-            // no checkout_url => treat as failure to trigger retry
+            if (checkoutUrl) {
+              Swal.close(); // Close loading Swal on success
+              return resp;
+            }
             lastError = new Error('No checkout_url in PayMongo response');
           } catch (err) {
-            console.log('createPayMongoCheckout error:', err);
             lastError = err;
           }
 
           if (attempt < maxRetries) {
-            const delay = initialDelayMs * Math.pow(2, attempt - 1); // 1s, 2s, 4s...
-            console.log(`Waiting ${delay}ms before next attempt`);
+            const delay = initialDelayMs * Math.pow(2, attempt - 1);
             await new Promise((r) => setTimeout(r, delay));
           }
         }
         throw lastError;
       };
 
-      // Call PayMongo with retry
       const pmResponse = await createPayMongoCheckoutWithRetry(paymongoPayload, 4, 1000);
+
       if (!pmResponse || !pmResponse.data) {
-        throw new Error('No response from PayMongo');
+        throw new Error('No response from PayMongo after retries.');
       }
 
       const checkoutUrl = pmResponse.data?.data?.attributes?.checkout_url;
       const sessionId = pmResponse.data?.data?.id;
       if (!checkoutUrl || !sessionId) {
-        throw new Error('Missing checkoutUrl or sessionId in PayMongo response');
+        throw new Error('Missing checkoutUrl or sessionId in PayMongo response.');
       }
 
-      // Persist session id for status checks (optional)
-      try {
-        localStorage.setItem('paymongo_session_id', sessionId);
-      } catch (e) {
-        console.warn('Could not set localStorage paymongo_session_id', e);
-      }
+      localStorage.setItem('paymongo_session_id', sessionId);
+      setShowDonationStatus(true);
+      setIsDonationPending(true);
 
-      // 2. Update UI state *before* opening window
-      setShowDonationStatus?.(true);
-      setIsDonationPending?.(true);
-
-      // 3. Attempt to open the checkout window *only once*
-      //    Use the URL directly, do not rely on a pre-opened placeholder that needs navigation.
       checkoutWindow = window.open(checkoutUrl, '_blank', 'noopener,noreferrer,width=900,height=700');
 
-      if (!checkoutWindow) {
-        // Browser blocked it — inform user to enable popups
-        console.warn('Checkout window was blocked by the browser.');
-        // IMPORTANT: Mark donation as failed here as checkout cannot proceed.
-        if (createdDonationId) {
-          try {
-            await failDonation(createdDonationId); // Use createdDonationId, not stale state
-          } catch (failErr) {
-            console.error('Failed to mark donation as failed after popup block:', failErr);
-          }
-        }
-        throw new Error('Your browser blocked the checkout window. Please allow popups for this site and try again.');
-      } else {
-        console.log('Checkout window opened successfully.');
-        try {
-          checkoutWindow.focus(); // Attempt to bring it to front
-        } catch (e) {
-          console.warn('Could not focus checkout window:', e);
-          // Focus failure usually isn't critical, continue.
-        }
-      }
+      // if (!checkoutWindow) {
+      //   if (createdDonationId) {
+      //     await failDonation(createdDonationId);
+      //   }
+      //   throw new Error('Your browser blocked the checkout window. Please allow popups for this site and try again.');
+      // } else {
+      //   checkoutWindow.focus();
+      // }
 
     } catch (err) {
-      console.error('handlePayMongoCheckout error:', err);
-
-      // Attempt to mark donation as failed using the ID we captured *during this specific attempt*
       const idToFail = createdDonationId ?? donationId ?? null;
       if (idToFail) {
         try {
           await failDonation(idToFail);
-          console.log(`Donation ${idToFail} marked as failed due to checkout error.`);
         } catch (failErr) {
           console.error('Failed to mark donation as failed:', failErr);
         }
       }
 
-      // Show error message to the user
       Swal.fire({
         icon: 'error',
         title: 'Checkout Error',
-        text: (err as Error)?.message ?? 'Something went wrong during checkout.',
+        text: (err as Error)?.message ?? 'A connection problem occurred. Please try again.',
       });
 
-      // Close the checkout window if it was opened but an error occurred *after* opening
-      // This handles scenarios where PayMongo fails *after* the window is opened.
-      // In the popup blocked case, checkoutWindow is null, so close() is safe (no-op).
-      try {
-        if (checkoutWindow && !checkoutWindow.closed) {
-          checkoutWindow.close();
-        }
-      } catch (e) {
-        console.warn('Error closing checkout window:', e);
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.close();
       }
 
-      // Reset UI state to allow retry
-      setShowDonationStatus?.(false);
-      setIsDonationPending?.(false);
+      setShowDonationStatus(false);
+      setIsDonationPending(false);
 
     } finally {
-      // Release global guard and local submitting flag
       (window as any).__paymongoCheckoutSubmitting = false;
-      setIsSubmitting?.(false);
+      setIsSubmitting(false);
     }
-  }; // End of handlePayMongoCheckout
+  };
 
 
 
@@ -386,14 +355,26 @@ const DonationPage: React.FC = () => {
 
                   <div className="progress-container">
                     <div className="progress-info">
-                      <span className="progress-label">Raised: {formatCurrency(fundingProposal.total_donated)}</span>
-                      <span className="progress-percentage">{computePercentage(
-                        Number(fundingProposal.total_donated),
-                        Number(fundingProposal.budget_required)
-                      )}%</span>
+                      <span className="progress-label">
+                        Raised: {formatCurrency(fundingProposal.total_donated)}
+                      </span>
+                      <span className="progress-percentage">
+                        {computePercentage(
+                          Number(fundingProposal.total_donated),
+                          Number(fundingProposal.budget_required)
+                        )}%
+                      </span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill"></div>
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${computePercentage(
+                            Number(fundingProposal.total_donated),
+                            Number(fundingProposal.budget_required)
+                          )}%`,
+                        }}
+                      ></div>
                     </div>
                   </div>
                 </div>

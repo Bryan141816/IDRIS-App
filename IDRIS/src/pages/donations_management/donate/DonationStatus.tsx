@@ -49,7 +49,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
 
     let mounted = true;
     const POLL_INTERVAL_MS = 2000; // 2 seconds between attempts
-    const MAX_ATTEMPTS = 90; // 90 * 2s = 180s = 3 minutes
+    const VERIFICATION_DURATION_MS = 180000; // 3 minutes
 
     function sleep(ms: number) {
       return new Promise((res) => setTimeout(res, ms));
@@ -77,16 +77,12 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
       }
 
       try {
-        let attempt = 0;
+        const startTime = Date.now();
         let finalResult: "success" | "pending" | "failed" | "unknown" = "unknown";
 
-        while (mounted && attempt < MAX_ATTEMPTS) {
-          attempt += 1;
-
-          // Calculate and display time remaining
-          const totalMs = MAX_ATTEMPTS * POLL_INTERVAL_MS;
-          const elapsedMs = attempt * POLL_INTERVAL_MS;
-          const remainingMs = Math.max(0, totalMs - elapsedMs);
+        while (mounted && Date.now() - startTime < VERIFICATION_DURATION_MS) {
+          const elapsedTime = Date.now() - startTime;
+          const remainingMs = Math.max(0, VERIFICATION_DURATION_MS - elapsedTime);
           const remainingSeconds = Math.ceil(remainingMs / 1000);
           const mins = Math.floor(remainingSeconds / 60);
           const secs = remainingSeconds % 60;
@@ -96,24 +92,20 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
             text: `Checking payment status... (${timeRemaining} remaining)`,
           });
           Swal.showLoading();
+
           let resp;
           try {
             resp = await getPayMongoSession(sessionId);
           } catch (err) {
-            if (attempt < MAX_ATTEMPTS) await sleep(POLL_INTERVAL_MS);
+            console.warn("getPayMongoSession failed, will retry:", err);
+            await sleep(POLL_INTERVAL_MS);
             continue;
           }
 
           const session = resp?.data?.data?.attributes;
-
           if (!session) {
-            if (attempt < MAX_ATTEMPTS) {
-              await sleep(POLL_INTERVAL_MS);
-              continue;
-            } else {
-              finalResult = "unknown";
-              break;
-            }
+            await sleep(POLL_INTERVAL_MS);
+            continue;
           }
 
           const sessionStatus = session.status;
@@ -121,30 +113,18 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
 
           if (sessionStatus === "succeeded" || paymentStatus === "paid") {
             finalResult = "success";
-            break;
+            break; 
           }
-
-          if (paymentStatus === "pending" || sessionStatus === "pending" || sessionStatus === "processing") {
-            finalResult = "pending";
-            if (attempt < MAX_ATTEMPTS) {
-              await sleep(POLL_INTERVAL_MS);
-              continue;
-            } else {
-              break;
-            }
-          }
-
-          if (
-            ["failed", "expired", "canceled", "cancelled"].includes(sessionStatus) ||
-            ["failed", "canceled", "cancelled", "expired"].includes(paymentStatus)
-          ) {
+          
+          if (["failed", "expired", "canceled", "cancelled"].includes(sessionStatus) ||
+              ["failed", "canceled", "cancelled", "expired"].includes(paymentStatus)) {
             finalResult = "failed";
             break;
           }
 
-          if (attempt < MAX_ATTEMPTS) {
-            await sleep(POLL_INTERVAL_MS);
-          }
+          // Otherwise, it's still pending, so we wait and loop again
+          finalResult = "pending";
+          await sleep(POLL_INTERVAL_MS);
         }
 
         localStorage.removeItem("paymongo_session_id");

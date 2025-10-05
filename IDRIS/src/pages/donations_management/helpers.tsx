@@ -12,7 +12,8 @@ export const formatCurrency = (value: string | number | null | undefined) => {
 
 export const computePercentage = (part: number, whole: number): string => {
   if (!whole || whole === 0) return "0.00";
-  return ((part / whole) * 100).toFixed(2); // returns string
+  console.log("Percentage: ", ((part / whole) * 100).toFixed(2));
+  return ((part / whole) * 100).toFixed(2);
 }
 
 export const normalizeDonationFrequency = (type: string | null) => {

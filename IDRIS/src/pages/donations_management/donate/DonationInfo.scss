@@ -90,7 +90,7 @@
 .selectable-amount-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, auto);  
+  grid-template-rows: repeat(2, auto);
   gap: 10px;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .selectable-amount-item.active {
-  background-color: #007bff; 
+  background-color: #007bff;
   color: #fff;
   border-color: #007bff;
 }
@@ -236,29 +236,54 @@
   margin-top: 0.5rem;
 }
 
+/* Base style for each checkbox item */
 .checkbox-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
 
-  input[type="checkbox"] {
-    width: 1.15rem;
-    height: 1.15rem;
-    border-radius: 4px;
-    border: 1px solid #d1d5db;
-    cursor: pointer;
+/* Style when the checkbox is checked */
+.checkbox-item.checked {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.15);
+}
 
-    &:checked {
-      background-color: #166534;
-      border-color: #166534;
-    }
-  }
+/* Optional: Style the checkbox itself */
+.checkbox-item input[type="checkbox"] {
+  margin-right: 12px;
+  width: auto;
+  transform: scale(1.2);
+  display: flex;
+  flex-direction: column;
+}
 
-  label {
-    font-size: 0.875rem;
-    color: #374151;
-    cursor: pointer;
-  }
+/* Optional: Style the quantity input */
+.quantity-input {
+  margin-left: 16px;
+  padding: 6px 10px;
+  width: 80px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;  
+}
+
+// .quantity-input::-webkit-outer-spin-button,
+// .quantity-input::-webkit-inner-spin-button {
+//   -webkit-appearance: none;
+//   margin: 0;
+// }
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #f0fdf4;
+  box-shadow: 0 0 0 2px #00c950;
 }
 
 // Responsive design

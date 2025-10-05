@@ -93,6 +93,15 @@
         transform: translateY(-1px);
       }
     }
+
+    &--delivery{
+      background: #1976D2;
+    }
+
+    &--pickup{
+      background: #388E3C;  
+    }
+
   }
 
   &__label {

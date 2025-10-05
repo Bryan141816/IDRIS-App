@@ -100,6 +100,14 @@ const DonationPage: React.FC = () => {
     }
   }, [fundingId]);
 
+  useEffect(() => {
+    if (donationKind === 'In-Kind (Goods or Services)') {
+      setPaymentMethod('delivery'); // Default to delivery for in-kind
+    } else {
+      setPaymentMethod('paymongo'); // Default to paymongo for cash
+    }
+  }, [donationKind]);
+
   const handlePaymentInputChange = (field: string, value: string) => {
     setPaymentFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -411,6 +419,7 @@ const DonationPage: React.FC = () => {
 
             {/* Right Side - Payment Method */}
             <PaymentForm
+              donationKind={donationKind}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
               formData={paymentFormData}

@@ -133,11 +133,14 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
           <div className="form-group">
             <label className="form-group__label">What are you donating?</label>
             <small className="form-group__helper-text">
-              Select all items that apply. Selections will be combined into the donation description sent to the organization.
+              Select all items that apply. Quantity
             </small>
             <div className="checkbox-group">
               {['Clothing', 'Food', 'School supplies', 'Electronics', 'Furniture', 'Volunteer time / Services', 'Other'].map((item) => (
-                <div key={item} className="checkbox-item">
+                <div
+                  key={item}
+                  className={`checkbox-item ${item in selectedItems ? 'checked' : ''}`}
+                >
                   <input
                     type="checkbox"
                     id={item}
@@ -155,8 +158,7 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
                       className="quantity-input"
                     />
                   )}
-                </div>
-              ))}
+                </div>))}
             </div>
             {showOtherInput && (
               <div className="form-group">

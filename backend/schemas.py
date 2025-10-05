@@ -128,7 +128,7 @@ class LGURecordsOut(BaseModel):
     class Config:
         from_attributes = True 
 
-class   nggayRecordsCreate(BaseModel):
+class BaranggayRecordsCreate(BaseModel):
     name: str
     lat: float
     lng: float

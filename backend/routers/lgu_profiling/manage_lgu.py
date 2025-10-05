@@ -25,7 +25,7 @@ from schemas import (
     HazardCreate,
     HazardOut
 )
-from fastapi import UploadFile, File, Form
+from fastapi import UploadFile, File, Form,Response
 from pathlib import Path
 import imghdr
 
@@ -685,12 +685,13 @@ def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
         resources=db_row.resources,
     )
 
+
+@router.delete("/lgu_profiling/manage_lgu/delete_barangay/{record_id}", response_model=dict)
 def delete_barangay(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, BaranggayRecords, record_id)
     if not deleted_report:
-        raise HTTPException(status_code=400, detail="Record not found.")
-    return {"message": f"Record with ID {record_id} deleted successfully."}
-
+        raise HTTPException(status_code=404, detail="Record not found.")
+    return {"message": f"Barangay with ID {record_id} deleted successfully."}
 @router.put("/lgu_profiling/manage_lgu/update_barangay/{record_id}")
 def update_barangay(
     record_id: int,

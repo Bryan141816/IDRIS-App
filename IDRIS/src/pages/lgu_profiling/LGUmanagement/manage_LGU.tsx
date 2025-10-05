@@ -73,12 +73,18 @@ export async function deleteRecord(
     const response = await API.delete(
       `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`
     );
-    return response;
+
+    // ✅ Option A: FastAPI returns JSON with { message: "..." }
+    if (response?.data?.message) {
+      console.log(response.data.message);
+    }
+
+    return response.data; // return only JSON payload, easier to use later
   } catch (error: any) {
     if (error.response) {
-      console.error("Error: ", error.response.data.detail);
+      console.error("Error:", error.response.data.detail || error.response.data);
     } else {
-      console.error("Request error: ", error.message);
+      console.error("Request error:", error.message);
     }
     throw error;
   }

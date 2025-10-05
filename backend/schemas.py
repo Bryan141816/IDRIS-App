@@ -38,6 +38,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: Optional[str]
+    user_type: Optional[str] = "user"      # ✅ Added
+    user_role: Optional[str] = "generic"   # ✅ Added
+
 
 
 # required on creation
@@ -126,7 +129,7 @@ class LGURecordsOut(BaseModel):
     local_suppliers: Optional[List[str]] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
 
 
 
@@ -188,7 +191,7 @@ class RafiInfrastructureUpdate(BaseModel):
     lng: Optional[float] = None
     rafi_desc: Optional[str] = None
     rafi_pic: Optional[str] = None
-    
+
 class RafiInfrastructureOut(BaseModel):
     rafi_id: int
     rafi_name: str
@@ -214,7 +217,7 @@ class EvacuationCenterOut(BaseModel):
     lat: float
     lng: float
     capacity: int
-    occupied: int  
+    occupied: int
 
 
 class HazardBase(BaseModel):
@@ -232,7 +235,7 @@ class HazardOut(HazardBase):
 
     class Config:
         from_attributes = True
-        
+
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

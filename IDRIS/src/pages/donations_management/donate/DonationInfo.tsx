@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PhilippinePesoIcon, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PhilippinePesoIcon } from 'lucide-react';
 import './DonationInfo.scss';
 import { formatCurrency } from '../helpers';
 
@@ -14,6 +14,10 @@ interface DonorDonationFormProps {
   };
   handleInputChange: (field: string, value: string) => void;
   errors: any;
+  selectedItems: { [key: string]: number };
+  setSelectedItems: (items: { [key: string]: number }) => void;
+  otherDescription: string;
+  setOtherDescription: (description: string) => void;
 }
 
 const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
@@ -23,23 +27,64 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
   setDonationFrequency,
   formData,
   handleInputChange,
-  errors
+  errors,
+  selectedItems,
+  setSelectedItems,
+  otherDescription,
+  setOtherDescription,
 }) => {
-
   const [activeAmount, setActiveAmount] = useState<string>("0");
-
   const [isCustom, setIsCustom] = useState<boolean>(true);
+  const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    const newSelectedItems = { ...selectedItems };
+
+    if (checked) {
+      newSelectedItems[name] = 1;
+    } else {
+      delete newSelectedItems[name];
+    }
+    setSelectedItems(newSelectedItems);
+
+    if (name === 'Other') {
+      setShowOtherInput(checked);
+      if (!checked) {
+        setOtherDescription('');
+      }
+    }
+  };
+
+  const handleQuantityChange = (item: string, quantity: string) => {
+    const numQuantity = parseInt(quantity, 10);
+    if (!isNaN(numQuantity) && numQuantity > 0) {
+      setSelectedItems({
+        ...selectedItems,
+        [item]: numQuantity,
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Reset selections when switching away from in-kind
+    if (donationKind !== 'In-Kind (Goods or Services)') {
+      setSelectedItems({});
+      setOtherDescription('');
+      setShowOtherInput(false);
+    }
+  }, [donationKind, setSelectedItems, setOtherDescription]);
 
   const handleCustomAmount = (_iscustom: boolean, amount: string = "0") => {
     if (_iscustom) {
       handleInputChange('amount', '');
       setIsCustom(true);
     } else {
-      handleInputChange('amount', amount)
+      handleInputChange('amount', amount);
       setIsCustom(false);
     }
     setActiveAmount(amount);
-  }
+  };
 
   const formatAmount = (value: number | string) => {
     if (!value) return "";
@@ -70,7 +115,7 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
         <div className="form-group">
           <label className="form-group__label">Donation Type:</label>
           <div className="button-group">
-            {['In-Kind', 'Cash', 'Volunteer Time'].map((kind) => (
+            {['Cash', 'In-Kind (Goods or Services)'].map((kind) => (
               <button
                 key={kind}
                 onClick={() => setDonationKind(kind)}
@@ -84,49 +129,98 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
         </div>
 
         {/* Description */}
-        <div className="form-group">
-          <label className="form-group__label">Message:</label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => handleInputChange('description', e.target.value)}
-            className={`form-group__textarea ${errors.description ? 'input-error' : ''}`}
-            rows={4}
-            placeholder="Enter donation description..."
-          />
-          {errors.description && <p className="error-message">{errors.description}</p>}
-        </div>
+        {donationKind === 'In-Kind (Goods or Services)' ? (
+          <div className="form-group">
+            <label className="form-group__label">What are you donating?</label>
+            <small className="form-group__helper-text">
+              Select all items that apply. Selections will be combined into the donation description sent to the organization.
+            </small>
+            <div className="checkbox-group">
+              {['Clothing', 'Food', 'School supplies', 'Electronics', 'Furniture', 'Volunteer time / Services', 'Other'].map((item) => (
+                <div key={item} className="checkbox-item">
+                  <input
+                    type="checkbox"
+                    id={item}
+                    name={item}
+                    checked={item in selectedItems}
+                    onChange={handleCheckboxChange}
+                  />
+                  <label htmlFor={item}>{item}</label>
+                  {item in selectedItems && (
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedItems[item]}
+                      onChange={(e) => handleQuantityChange(item, e.target.value)}
+                      className="quantity-input"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {showOtherInput && (
+              <div className="form-group">
+                <label htmlFor="other-description" className="form-group__label">Other — describe</label>
+                <input
+                  type="text"
+                  id="other-description"
+                  value={otherDescription}
+                  onChange={(e) => setOtherDescription(e.target.value)}
+                  className={`form-group__input ${errors.otherDescription ? 'input-error' : ''}`}
+                  placeholder="Describe other item(s) (this will be added to the description)"
+                />
+                <small className="form-group__helper-text">This text is appended to the selected items and sent as the donation description.</small>
+                {errors.otherDescription && <p className="error-message">{errors.otherDescription}</p>}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="form-group">
+            <label className="form-group__label">Message:</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              className={`form-group__textarea ${errors.description ? 'input-error' : ''}`}
+              rows={4}
+              placeholder="Enter donation description..."
+            />
+            {errors.description && <p className="error-message">{errors.description}</p>}
+          </div>
+        )}
 
         {/* Amount */}
         <div className="form-group">
-          <label className="form-group__label">Amount:</label>
-          <div className='selectable-amount-container'>
-            <button
-              className={`selectable-amount-item ${activeAmount === '1000' ? "active" : ""}`}
-              value={1000}
-              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
-            >{formatCurrency(1000)}
-            </button>
+          <label className="form-group__label">Amount / Estimated value:</label>
+          {donationKind === 'Cash' && (
+            <div className='selectable-amount-container'>
+              <button
+                className={`selectable-amount-item ${activeAmount === '1000' ? "active" : ""}`}
+                value={1000}
+                onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+              >{formatCurrency(1000)}
+              </button>
 
-            <button
-              className={`selectable-amount-item ${activeAmount === '5000' ? "active" : ""}`}
-              value={5000}
-              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
-            >{formatCurrency(5000)}
-            </button>
+              <button
+                className={`selectable-amount-item ${activeAmount === '5000' ? "active" : ""}`}
+                value={5000}
+                onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+              >{formatCurrency(5000)}
+              </button>
 
-            <button
-              className={`selectable-amount-item ${activeAmount === '10000' ? "active" : ""}`}
-              value={10000}
-              onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
-            >{formatCurrency(10000)}
-            </button>
+              <button
+                className={`selectable-amount-item ${activeAmount === '10000' ? "active" : ""}`}
+                value={10000}
+                onClick={(e) => handleCustomAmount(false, e.currentTarget.value)}
+              >{formatCurrency(10000)}
+              </button>
 
-            <button
-              className={`selectable-amount-item ${activeAmount === '0' ? "active" : ""}`}
-              onClick={() => handleCustomAmount(true)}
-            >Custom
-            </button>
-          </div>
+              <button
+                className={`selectable-amount-item ${activeAmount === '0' ? "active" : ""}`}
+                onClick={() => handleCustomAmount(true)}
+              >Custom
+              </button>
+            </div>
+          )}
           <div className="input-with-icon">
             <PhilippinePesoIcon className="input-with-icon__icon" />
             <input
@@ -135,10 +229,15 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
               value={formatAmount(formData.amount)}
               onChange={(e) => handleInputChange('amount', e.target.value)}
               className={`input-with-icon__input ${errors.amount ? 'input-error' : ''}`}
-              placeholder="0.00"
-              disabled={!isCustom}
+              placeholder={donationKind === 'Cash' ? "Enter amount (PHP)" : "Enter estimated value (PHP)"}
+              disabled={donationKind === 'Cash' && !isCustom}
             />
           </div>
+          {donationKind === 'In-Kind (Goods or Services)' && (
+            <small className="form-group__helper-text" style={{ fontStyle: "italic", marginTop: "5px", display: "block" }}>
+              For in-kind donations, enter the estimated monetary value. This helps with reporting — actual items are described below.
+            </small>
+          )}
           {errors.amount && <p className="error-message">{errors.amount}</p>}
         </div>
       </div>

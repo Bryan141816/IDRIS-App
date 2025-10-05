@@ -24,7 +24,7 @@ export const normalizeDonationFrequency = (type: string | null) => {
 };
 
 export const normalizeDonationType = (type: string | null) => {
-  if (type == "In-Kind") return "INKIND";
+  if (type == "In-Kind" || type?.includes("In-Kind")) return "INKIND";
   if (type == "Cash") return "CASH";
   return type?.toUpperCase();
 }

@@ -190,7 +190,7 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
 
         {/* Amount */}
         <div className="form-group">
-          <label className="form-group__label">Amount / Estimated value:</label>
+          <label className="form-group__label">{donationKind === 'Cash' ? "Amount:" : "Estimated value:"}</label>
           {donationKind === 'Cash' && (
             <div className='selectable-amount-container'>
               <button

@@ -10,6 +10,26 @@ export async function createDonation(data: any): Promise<any> {
   });
 }
 
+export async function getAllDonations(
+  from?: string,
+  to?: string,
+  limit?: number,
+  page?: number,
+  sort_by?: string,
+  order?: string,
+): Promise<any> {
+  const params: Record<string, any> = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  if (limit) params.limit = limit;
+  if (page) params.page = page;
+  if (sort_by) params.sort_by = sort_by;
+  if (order) params.order = order;
+
+  const { data } = await API.get("/donations/all", { params });
+  return data;
+}
+
 export async function completeDonation(donationId: string): Promise<any> {
   return await API.put("/donations/completed", { donation_id: donationId }, {
     headers: {

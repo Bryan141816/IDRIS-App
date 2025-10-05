@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
-import { InflowItem } from './FinanceManagement';
 import { FilterModal } from './FilterModal';
 import Swal from "sweetalert2";
 import { formatCurrency } from '../../helpers';
+import {
+  type InflowItem
+} from './types';
 import {
   toDateInput,
   normalizeTransactionType,
   normalizeBudgetAllocationName,
   validate,
+  budgetOptions,
 } from './helpers';
 
 import {
@@ -47,10 +50,16 @@ const InflowModal: React.FC<{
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
   const readOnly = mode === 'view';
 
+  console.log("received inflow: ", form?.budget_for)
+
   useEffect(() => {
     if (open) {
       setForm({
         ...initial,
+        budget_for:
+          initial?.budget_for == null
+            ? undefined
+            : String((initial as any).budget_for),
         date: toDateInput(initial?.date as any),
       });
     }
@@ -61,13 +70,13 @@ const InflowModal: React.FC<{
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readOnly) return;
-  
+
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
-  
+
     const fd = buildFormData(form);
     console.log(fd);
     try {
@@ -83,15 +92,15 @@ const InflowModal: React.FC<{
 
   const submitUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
-  
+    console.log(form);
     const fd = buildFormData(form, true);
-  
+
     try {
       const updated = await withSwal('Updating inflow…', () => UpdateReportData(fd));
       onSave?.(updated);
@@ -116,25 +125,30 @@ const InflowModal: React.FC<{
               {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
             </h3>
 
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Budget For</label>
-                <select
-                  disabled={readOnly}
-                  value={form.budget_for || ""}
-                  onChange={e => setForm({ ...form, budget_for: e.target.value })}
-                >
-                  <option value="" disabled>Select category</option>
-                  <option>Emergency Supplies</option>
-                  <option>Food & Water</option>
-                  <option>Transportation</option>
-                  <option>Equipment</option>
-                  <option>Administrative</option>
-                  <option>Donations</option>
-                  <option>General Expenses</option>
-                </select>
-              </div>
-            }
+            {/* {mode != "edit" && */}
+            <div className="form-group">
+              <label>Budget For</label>
+              <select
+                disabled={readOnly}
+                value={String(form.budget_for ?? "")}
+                onChange={e =>
+                  setForm({
+                    ...form,
+                    budget_for: e.target.value as InflowItem["budget_for"],
+                  })
+                }
+              >
+                <option value="" disabled>
+                  Select category
+                </option>
+                {budgetOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* } */}
 
             {mode != "edit" &&
               <div className="form-group">
@@ -228,7 +242,9 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
 
   const open = (mode: 'add' | 'edit' | 'view', row?: InflowItem) => {
     setModalMode(mode);
+    console.log("row: ", row);
     setSelected(row);
+    console.log("after row:", selected?.budget_for);
     setModalOpen(true);
   };
 

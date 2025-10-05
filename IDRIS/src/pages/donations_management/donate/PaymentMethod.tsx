@@ -3,6 +3,7 @@ import { CreditCard } from 'lucide-react';
 import './PaymentMethod.scss';
 
 interface PaymentFormProps {
+  donationKind: string;
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   formData: {
@@ -18,6 +19,7 @@ interface PaymentFormProps {
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({
+  donationKind,
   paymentMethod,
   setPaymentMethod,
   formData,
@@ -26,65 +28,94 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onNext,
   errors
 }) => {
+  const isCashDonation = donationKind !== 'In-Kind (Goods or Services)';
+
   return (
     <div className="payment-form">
       <div className="payment-form__content">
-
-        <h2 className="payment-form__title">Payment</h2>
+        <h2 className="payment-form__title">{isCashDonation ? 'Payment' : 'Delivery Method'}</h2>
 
         {/* Payment Method Selection */}
         <div className="payment-methods">
-          <label className="payment-methods__label">Choose Payment Method</label>
+          <label className="payment-methods__label">
+            {isCashDonation ? 'Choose Payment Method' : 'Choose Delivery Option'}
+          </label>
           <div className="payment-methods__grid">
-            
-            {/* PayMongo */}
-            <button
-              onClick={() => setPaymentMethod('paymongo')}
-              className={`payment-method ${paymentMethod === 'paymongo' ? 'payment-method--active' : ''
-                }`}
-            >
-              <div className="payment-method__card payment-method__card--paymongo">
-                <span>PayMongo</span>
-              </div>
-              <p className="payment-method__label">PayMongo</p>
-            </button>
+            {isCashDonation ? (
+              <>
+                {/* PayMongo */}
+                <button
+                  onClick={() => setPaymentMethod('paymongo')}
+                  className={`payment-method ${paymentMethod === 'paymongo' ? 'payment-method--active' : ''
+                    }`}
+                >
+                  <div className="payment-method__card payment-method__card--paymongo">
+                    <span>PayMongo</span>
+                  </div>
+                  <p className="payment-method__label">PayMongo</p>
+                </button>
 
-            {/* Visa */}
-            <button
-              onClick={() => setPaymentMethod('visa')}
-              className={`payment-method ${paymentMethod === 'visa' ? 'payment-method--active' : ''
-                }`}
-            >
-              <div className="payment-method__card payment-method__card--visa">
-                VISA
-              </div>
-              <p className="payment-method__label">VISA</p>
-            </button>
+                {/* Visa */}
+                <button
+                  onClick={() => setPaymentMethod('visa')}
+                  className={`payment-method ${paymentMethod === 'visa' ? 'payment-method--active' : ''
+                    }`}
+                >
+                  <div className="payment-method__card payment-method__card--visa">
+                    VISA
+                  </div>
+                  <p className="payment-method__label">VISA</p>
+                </button>
 
-            {/* PayPal */}
-            <button
-              onClick={() => setPaymentMethod('paypal')}
-              className={`payment-method ${paymentMethod === 'paypal' ? 'payment-method--active' : ''
-                }`}
-            >
-              <div className="payment-method__card payment-method__card--paypal">
-                PayPal
-              </div>
-              <p className="payment-method__label">PayPal</p>
-            </button>
+                {/* PayPal */}
+                <button
+                  onClick={() => setPaymentMethod('paypal')}
+                  className={`payment-method ${paymentMethod === 'paypal' ? 'payment-method--active' : ''
+                    }`}
+                >
+                  <div className="payment-method__card payment-method__card--paypal">
+                    PayPal
+                  </div>
+                  <p className="payment-method__label">PayPal</p>
+                </button>
 
-            {/* GCash */}
-            <button
-              onClick={() => setPaymentMethod('gcash')}
-              className={`payment-method ${paymentMethod === 'gcash' ? 'payment-method--active' : ''
-                }`}
-            >
-              <div className="payment-method__card payment-method__card--gcash">
-                <span>G</span>
-              </div>
-              <p className="payment-method__label">GCash</p>
-            </button>
+                {/* GCash */}
+                <button
+                  onClick={() => setPaymentMethod('gcash')}
+                  className={`payment-method ${paymentMethod === 'gcash' ? 'payment-method--active' : ''
+                    }`}
+                >
+                  <div className="payment-method__card payment-method__card--gcash">
+                    <span>G</span>
+                  </div>
+                  <p className="payment-method__label">GCash</p>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Delivery */}
+                <button
+                  onClick={() => setPaymentMethod('delivery')}
+                  className={`payment-method ${paymentMethod === 'delivery' ? 'payment-method--active' : ''}`}
+                >
+                  <div className="payment-method__card payment-method__card--delivery">
+                    <span>Delivery</span>
+                  </div>
+                  <p className="payment-method__label">Delivery</p>
+                </button>
 
+                {/* Pickup */}
+                <button
+                  onClick={() => setPaymentMethod('pickup')}
+                  className={`payment-method ${paymentMethod === 'pickup' ? 'payment-method--active' : ''}`}
+                >
+                  <div className="payment-method__card payment-method__card--pickup">
+                    <span>Pickup</span>
+                  </div>
+                  <p className="payment-method__label">Pickup</p>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

@@ -5,6 +5,11 @@ import DashboardSection from './DashboardSection';
 import InflowsSection from './InflowsSection';
 import OutflowsSection from './OutflowsSection';
 import ReportsExportSection from './ReportsExportSection';
+import {
+  type InflowItem,
+  type OutflowItem,
+  type BudgetItem
+} from './types';
 import { 
   getInflowFinanceRecords, 
   getOutflowFinanceRecords, 
@@ -12,33 +17,6 @@ import {
 } from '../../../API_Handler/finance_management_handler';
 
 type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'reports' | 'exports';
-export type InflowItem = {
-  finance_id: string;
-  counterparty: string;
-  amount: number;
-  budget_for: string;
-  date: string;
-  status: 'PENDING' | 'RECEIVED' | 'PROCESSING';
-  description: string;
-};
-
-export type OutflowItem = {
-  finance_id: string;
-  counterparty: string;
-  amount: number;
-  budget_for: string;
-  date: string;
-  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED';
-  description: string;
-};
-
-export type BudgetItem = {
-  budget_for: string;
-  inflow_total: number;
-  outflow_total: number;
-  net_total: number;
-  percentage_spent: number;
-};
 
 const FinanceAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');

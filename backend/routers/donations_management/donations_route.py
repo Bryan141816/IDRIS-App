@@ -8,7 +8,7 @@ from database import get_db
 from data_schemas.donation_schema import ( 
                                           DonationCreate, DonationResponse, RecurringDonationCreate, 
                                           InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest,
-                                          DonationUpdate,
+                                          DonationUpdate, PaginatedDonationHistoryResponse
                                         )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date
@@ -40,7 +40,6 @@ router_admin_or_donor = APIRouter(
 
 @router.post("/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print(donation)
     try:
         return CRUD.create_donation(db, donation)
     except HTTPException:
@@ -56,7 +55,6 @@ def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get
 
 @router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print(donation)
     try:
         return CRUD.create_one_time_pending_donation(db, donation)
     except HTTPException:
@@ -75,7 +73,6 @@ def create_recurring_donation_route(
     donation_data: RecurringDonationCreate,
     db: Session = Depends(get_db)
 ):
-    print(donation_data)
     try:
         return CRUD.create_recurring_donation(db, donation_data)
     except Exception as e:
@@ -101,7 +98,6 @@ def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
 @router_donor.put("/completed", response_model=DonationResponse)
 def complete_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        print(request.donation_id)
         return CRUD.completed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -195,10 +191,6 @@ def get_my_donations(
     first_profile = donor_profiles[0]
     
     donor_id = first_profile.donor_id
-    print(f"Successfully retrieved donor_id: {donor_id}")
-    
-    print("From: ", from_)
-    print("To: ", to)
     donations = CRUD.get_donations_by_donor_id(
         db,
         donor_id=donor_id,
@@ -209,7 +201,6 @@ def get_my_donations(
         limit=limit,
         page=page,
     )
-    print(donations)
     return donations
     
 
@@ -240,7 +231,6 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
             }
         }
     }
-    print(payload)
 
     async with httpx.AsyncClient() as client:
         try:
@@ -279,6 +269,27 @@ async def get_session_status(session_id: str):
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+@router_admin.get("/all", response_model=PaginatedDonationHistoryResponse)
+def get_all_donations(
+    db: Session = Depends(get_db),
+    from_: Optional[date] = Query(None, alias="from"),
+    to: Optional[date] = Query(None, alias="to"),
+    limit: int = 10,
+    page: int = 1,
+    sort_by: str = "donation_date",
+    order: str = "desc",
+):
+    donations = CRUD.get_all_donations(
+        db,
+        date_from=from_,
+        date_to=to,
+        limit=limit,
+        page=page,
+        sort_by=sort_by,
+        order=order,
+    )
+    return donations
         
 
 router.include_router(router_admin)

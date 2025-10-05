@@ -1,4 +1,4 @@
-import { InflowItem, OutflowItem } from './FinanceManagement';
+import { InflowItem, OutflowItem } from './types';
 import { FinanceRecordType } from "./types";
 import { formatCurrency } from '../../helpers';
 
@@ -68,6 +68,16 @@ export const urlToDataUrl = async (url: string): Promise<string | null> => {
 
 export const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
 
+export const budgetOptions = [
+  { value: "EMERGENCY", label: "Emergency Supplies" },
+  { value: "FOOD_WATER", label: "Food & Water" },
+  { value: "TRANSPORT", label: "Transportation" },
+  { value: "EQUIPMENT", label: "Equipment" },
+  { value: "ADMIN", label: "Administrative" },
+  { value: "DONATIONS", label: "Donations" },
+  { value: "GENERAL", label: "General Expenses" },
+];
+
 export const normalizeBudgetAllocationName = (input: string | null | undefined) => {
   if (!input) return "GENERAL";
   const s = input.trim().toUpperCase().replace(/&/g, "AND");
@@ -76,6 +86,7 @@ export const normalizeBudgetAllocationName = (input: string | null | undefined) 
   if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
   if (s.startsWith("EQUIP")) return "EQUIPMENT";
   if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
+  if (s.startsWith("DONATIONS") || s.includes("DONATION")) return "DONATIONS";
   if (s === "GENERAL") return "GENERAL";
   return "GENERAL";
 };

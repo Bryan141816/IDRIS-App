@@ -122,8 +122,7 @@ const DonationsDashboard = () => {
 
   // =======================================> DONATIONS RECORDS
   const donationsRecordsLimit = 5;
-  const [donationRecords, setDonationRecords] = useState<DonationRecordItem[]>([]); // always an array
-
+  const [donationRecords, setDonationRecords] = useState<DonationRecordItem[]>([]); 
   useEffect(() => {
     const fetchDonationRecords = async () => {
       try {

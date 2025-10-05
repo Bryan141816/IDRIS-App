@@ -96,7 +96,7 @@ class IndividualVolunteerCRUD:
             certification=None,  # will set to first file path below (legacy)
             skills=skills_str,
             status=volunteer_data.status or VolunteerStatus.submitted,
-            # availability_status left to model default (unavailable)
+            availability_status=VolunteerStatus.unavailable
         )
 
         try:

@@ -1045,6 +1045,7 @@ class TransactionType(enum.Enum):
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid
     RECEIVED = "RECEIVED"  # for inflows
+    
     PAID = "PAID"  # for outflows
     APPROVED = "APPROVED"  # approver ok (often outflow)
     DENIED = "DENIED"  # rejected

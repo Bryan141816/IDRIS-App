@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from datetime import datetime
 from enum import Enum
 from decimal import Decimal
@@ -174,6 +174,14 @@ class DonationInKindResponse(BaseModel):
     class Config:
         from_attributes = True
         
+class DonorResponse(BaseModel):
+    """Schema for nested donor details."""
+    donor_id: str
+    donor_name: str
+
+    class Config:
+        from_attributes = True
+        
 class DonationHistoryResponse(BaseModel):
     """Main response model for a single donation."""
     donation_id: str
@@ -192,13 +200,16 @@ class DonationHistoryResponse(BaseModel):
     # Missing nested objects
     cash: Optional[DonationCashResponse] = None
     inkind: Optional[DonationInKindResponse] = None
-
+    donor: Optional[DonorResponse] = None   
+    
     class Config:
         from_attributes = True
         populate_by_name = True
         
+class PaginatedDonationHistoryResponse(BaseModel):
+    donations: List[DonationHistoryResponse]
+    total: int
+
 class PayMongoCheckoutRequest(BaseModel):
     amount: float
     description: str
-    # success_url: str
-    # cancel_url: str

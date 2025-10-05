@@ -90,7 +90,7 @@
 .selectable-amount-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(2, auto);  
+  grid-template-rows: repeat(2, auto);
   gap: 10px;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .selectable-amount-item.active {
-  background-color: #007bff; 
+  background-color: #007bff;
   color: #fff;
   border-color: #007bff;
 }
@@ -204,6 +204,86 @@
   color: #ef4444;
   font-size: 0.75rem;
   margin-top: 0.25rem;
+}
+
+.form-group__helper-text {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.form-group__input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-family: inherit;
+  transition: all 0.15s ease-in-out;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+/* Base style for each checkbox item */
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #fafafa;
+  transition: all 0.2s ease;
+}
+
+/* Style when the checkbox is checked */
+.checkbox-item.checked {
+  border-color: #4caf50;
+  background-color: #f1f8e9;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.15);
+}
+
+/* Optional: Style the checkbox itself */
+.checkbox-item input[type="checkbox"] {
+  margin-right: 12px;
+  width: auto;
+  transform: scale(1.2);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Optional: Style the quantity input */
+.quantity-input {
+  margin-left: 16px;
+  padding: 6px 10px;
+  width: 80px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;  
+}
+
+// .quantity-input::-webkit-outer-spin-button,
+// .quantity-input::-webkit-inner-spin-button {
+//   -webkit-appearance: none;
+//   margin: 0;
+// }
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #f0fdf4;
+  box-shadow: 0 0 0 2px #00c950;
 }
 
 // Responsive design

@@ -122,8 +122,7 @@ const DonationsDashboard = () => {
 
   // =======================================> DONATIONS RECORDS
   const donationsRecordsLimit = 5;
-  const [donationRecords, setDonationRecords] = useState<DonationRecordItem[]>([]); // always an array
-
+  const [donationRecords, setDonationRecords] = useState<DonationRecordItem[]>([]); 
   useEffect(() => {
     const fetchDonationRecords = async () => {
       try {
@@ -187,6 +186,12 @@ const DonationsDashboard = () => {
     const parsed = typeof d === "string" ? new Date(d) : d;
     return isNaN(parsed.getTime()) ? undefined : parsed;
   };
+
+  // // Handler for View All button
+  // const handleViewAllDonations = () => {
+  //   // Update this path to match your donations list/history route
+  //   navigate("/donations_management/donation_records");
+  // };
 
   if (loading) return <p>Loading...</p>;
 
@@ -265,9 +270,38 @@ const DonationsDashboard = () => {
           </div>
 
           <div className="donation-record-container">
-            {/* =============== Donation Record (always renders; dummy if empty) =============== */}
-            <div id="donation-record-list">
+            {/* =============== Donation Record Header with View All button =============== */}
+            <div className="donation-record-header">
               <h3 className="public-feed-title funding-proposal-titles">Recent Donations</h3>
+              {isAdmin && (
+                <Link to="/donations_management/donation_records">
+              <button 
+                className="view-all-btn"
+                // onClick={handleViewAllDonations}
+                aria-label="View all donations"
+              >
+                <span>View All</span>
+                <svg 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 16 16" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="arrow-icon"
+                >
+                  <path 
+                    d="M6 12L10 8L6 4" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button> </Link>)}
+            </div>
+
+            {/* =============== Donation Record List =============== */}
+            <div id="donation-record-list">
               {donationRecords.map((donation, index) => (
                 <DonationRecordCard
                   key={index}

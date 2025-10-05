@@ -95,7 +95,6 @@ class EventRead(EventBase):
 
 # ---------- ASSIGNMENT ----------
 class AssignmentBase(BaseModel):
-    task_id: int
     individual_volunteer_id: Optional[int] = None
     organization_volunteer_id: Optional[int] = None
     status: AssignmentStatusLiteral = "accepted"

@@ -4,7 +4,7 @@ import {
   createOutflowFinanceRecord,
   UpdateReportData, // make sure this exists in your API handler
 } from '../../../API_Handler/finance_management_handler';
-import { OutflowItem } from './FinanceManagement';
+import { OutflowItem } from './types';
 import { FilterModal } from './FilterModal';
 import { formatCurrency } from '../../helpers';
 import {
@@ -54,7 +54,7 @@ const OutflowModal: React.FC<{
     if (open) {
       setForm({
         ...initial,
-        finance_id: (initial as any)?.finance_id,     // keep id for update
+        finance_id: (initial as any)?.finance_id,
         date: toDateInput(initial?.date as any),
       });
     }
@@ -71,6 +71,7 @@ const OutflowModal: React.FC<{
       return;
     }
     const fd = buildFormData(form);
+    console.log("fd: ", fd);
     const created = await withSwal('Saving expense…', () => createOutflowFinanceRecord(fd));
     onSave?.(created);
     onClose();

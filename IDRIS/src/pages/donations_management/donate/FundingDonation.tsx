@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
@@ -47,6 +47,8 @@ const DonationPage: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<any>({});
+  const [selectedItems, setSelectedItems] = useState<{ [key: string]: number }>({});
+  const [otherDescription, setOtherDescription] = useState('');
 
   const fetchAndSetUserId = async () => {
     try {
@@ -56,6 +58,31 @@ const DonationPage: React.FC = () => {
       console.error('Failed to fetch donor id', error);
     }
   };
+
+  const handleDonationInputChange = useCallback((field: string, value: string) => {
+    if (field === 'amount') {
+      const numericValue = value.replace(/[^0-9.]/g, '');
+      if (/^\d*\.?\d*$/.test(numericValue)) {
+        setDonationFormData(prev => ({ ...prev, [field]: numericValue }));
+      }
+    } else {
+      setDonationFormData(prev => ({ ...prev, [field]: value }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (donationKind === 'In-Kind (Goods or Services)') {
+      const description = Object.entries(selectedItems)
+        .map(([item, quantity]) => {
+          if (item === 'Other') {
+            return otherDescription ? `${quantity}x Other: ${otherDescription}` : `${quantity}x Other`;
+          }
+          return `${quantity}x ${item}`;
+        })
+        .join(', ');
+      handleDonationInputChange('description', description);
+    }
+  }, [selectedItems, otherDescription, donationKind, handleDonationInputChange]);
 
   useEffect(() => {
     fetchAndSetUserId();
@@ -73,16 +100,13 @@ const DonationPage: React.FC = () => {
     }
   }, [fundingId]);
 
-  const handleDonationInputChange = (field: string, value: string) => {
-    if (field === 'amount') {
-      const numericValue = value.replace(/[^0-9.]/g, '');
-      if (/^\d*\.?\d*$/.test(numericValue)) {
-        setDonationFormData(prev => ({ ...prev, [field]: numericValue }));
-      }
+  useEffect(() => {
+    if (donationKind === 'In-Kind (Goods or Services)') {
+      setPaymentMethod('delivery'); // Default to delivery for in-kind
     } else {
-      setDonationFormData(prev => ({ ...prev, [field]: value }));
+      setPaymentMethod('paymongo'); // Default to paymongo for cash
     }
-  };
+  }, [donationKind]);
 
   const handlePaymentInputChange = (field: string, value: string) => {
     setPaymentFormData(prev => ({ ...prev, [field]: value }));
@@ -98,15 +122,27 @@ const DonationPage: React.FC = () => {
     setDonationFrequency('One-time');
     setDonationKind('In-Kind');
     setPaymentMethod('paymongo');
+    setSelectedItems({});
+    setOtherDescription('');
   };
 
   const validate = () => {
     const newErrors: any = {};
-    if (!donationFormData.description) {
-      newErrors.description = 'Description is required.';
+    if (donationKind === 'In-Kind (Goods or Services)') {
+      if (Object.keys(selectedItems).length === 0) {
+        newErrors.description = 'Please select at least one item.';
+      }
+      if ('Other' in selectedItems && !otherDescription) {
+        newErrors.otherDescription = 'Please describe the other item(s).';
+      }
+    } else {
+      if (!donationFormData.description) {
+        newErrors.description = 'Description is required.';
+      }
     }
+
     if (!donationFormData.amount) {
-      newErrors.amount = 'Amount is required for cash donations.';
+      newErrors.amount = 'Amount / Estimated value is required.';
     }
 
     if (paymentMethod === 'visa' || paymentMethod === 'add') {
@@ -119,7 +155,22 @@ const DonationPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+
   const handlePayMongoCheckout = async () => {
+    if ((window as any).__paymongoCheckoutSubmitting) return;
+    (window as any).__paymongoCheckoutSubmitting = true;
+    setIsSubmitting(true);
+
+    Swal.fire({
+      title: 'Creating Checkout Request',
+      text: 'Please wait while we prepare your secure checkout...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     const formData = {
       donor_id: donorId,
       frequency: normalizeDonationFrequency(donationFrequency),
@@ -127,69 +178,111 @@ const DonationPage: React.FC = () => {
       description: donationFormData.description,
       funding_id: fundingId,
       donation_type: normalizeDonationType(donationKind),
-      payment_method: paymentMethod
-    }
+      payment_method: paymentMethod,
+    };
 
-    console.log(formData);
+    let checkoutWindow: Window | null = null;
+    let createdDonationId: string | null = null;
+
     try {
       const donationResponse = await createDonation(formData);
-      console.log("Donation Created:", donationResponse.data);
       if (!donationResponse || !donationResponse.data) {
-        throw new Error('Failed to create donation record');
+        throw new Error('Failed to create donation record (no response)');
       }
 
-      // Store the donation ID for potential failure handling
-      console.log("donation id from rsepones:", donationResponse.data.donation_id);
-      const createdDonationId = donationResponse.data.donation_id;
-      setDonationId(createdDonationId);
-      console.log("donation id on setDonation:", donationId);
-      const baseUrl = `${window.location.protocol}//${window.location.host}`;
+      createdDonationId = donationResponse.data.donation_id ?? null;
+      if (createdDonationId) setDonationId(createdDonationId);
 
-      const data = {
-        amount: parseFloat(donationFormData.amount),
-        description: donationFormData.description,
+      const paymongoPayload = {
+        amount: donationFormData.amount ? parseFloat(donationFormData.amount) : 0,
+        description: donationFormData.description ?? '',
       };
 
-      const response = await createPayMongoCheckout(data);
+      const createPayMongoCheckoutWithRetry = async (payload: any, maxRetries = 4, initialDelayMs = 1000) => {
+        let lastError: any = null;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            if (attempt > 1) {
+              Swal.update({
+                text: `Connection unstable. Retrying... (Attempt ${attempt} of ${maxRetries})`,
+              });
+            }
+            const resp = await createPayMongoCheckout(payload);
+            const checkoutUrl = resp?.data?.data?.attributes?.checkout_url;
+            if (checkoutUrl) {
+              Swal.close(); // Close loading Swal on success
+              return resp;
+            }
+            lastError = new Error('No checkout_url in PayMongo response');
+          } catch (err) {
+            lastError = err;
+          }
+
+          if (attempt < maxRetries) {
+            const delay = initialDelayMs * Math.pow(2, attempt - 1);
+            await new Promise((r) => setTimeout(r, delay));
+          }
+        }
+        throw lastError;
+      };
+
+      const pmResponse = await createPayMongoCheckoutWithRetry(paymongoPayload, 4, 1000);
+
+      if (!pmResponse || !pmResponse.data) {
+        throw new Error('No response from PayMongo after retries.');
+      }
+
+      const checkoutUrl = pmResponse.data?.data?.attributes?.checkout_url;
+      const sessionId = pmResponse.data?.data?.id;
+      if (!checkoutUrl || !sessionId) {
+        throw new Error('Missing checkoutUrl or sessionId in PayMongo response.');
+      }
+
+      localStorage.setItem('paymongo_session_id', sessionId);
+      setShowDonationStatus(true);
       setIsDonationPending(true);
-      const checkoutUrl = response.data?.data?.attributes?.checkout_url;
-      const sessionId = response.data?.data?.id;
 
-      if (checkoutUrl && sessionId && donationId) {
-        localStorage.setItem("paymongo_session_id", sessionId);
+      checkoutWindow = window.open(checkoutUrl, '_blank', 'noopener,noreferrer,width=900,height=700');
 
-        // Only show DonationStatus after donationId is set
-        setShowDonationStatus(true);
+      // if (!checkoutWindow) {
+      //   if (createdDonationId) {
+      //     await failDonation(createdDonationId);
+      //   }
+      //   throw new Error('Your browser blocked the checkout window. Please allow popups for this site and try again.');
+      // } else {
+      //   checkoutWindow.focus();
+      // }
 
-        // Open PayMongo checkout in new window
-        window.open(
-          checkoutUrl,
-          "_blank",
-          "noopener,noreferrer,width=800,height=600"
-        );
-      } else {
-        // If checkout URL is not available, mark donation as failed
-        if (createdDonationId) {
-          await failDonation(createdDonationId);
-        }
-        throw new Error('Failed to get checkout URL from PayMongo');
-      }
-    } catch (error) {
-      console.error("PayMongo checkout error:", error);
-      if (donationId) {
+    } catch (err) {
+      const idToFail = createdDonationId ?? donationId ?? null;
+      if (idToFail) {
         try {
-          await failDonation(donationId);
-        } catch (failError) {
-          console.error("Failed to mark donation as failed:", failError);
+          await failDonation(idToFail);
+        } catch (failErr) {
+          console.error('Failed to mark donation as failed:', failErr);
         }
       }
+
       Swal.fire({
         icon: 'error',
         title: 'Checkout Error',
-        text: 'Something went wrong during the PayMongo checkout process.',
+        text: (err as Error)?.message ?? 'A connection problem occurred. Please try again.',
       });
+
+      if (checkoutWindow && !checkoutWindow.closed) {
+        checkoutWindow.close();
+      }
+
+      setShowDonationStatus(false);
+      setIsDonationPending(false);
+
+    } finally {
+      (window as any).__paymongoCheckoutSubmitting = false;
+      setIsSubmitting(false);
     }
   };
+
+
 
   const handleNext = async () => {
     if (!validate()) {
@@ -270,14 +363,26 @@ const DonationPage: React.FC = () => {
 
                   <div className="progress-container">
                     <div className="progress-info">
-                      <span className="progress-label">Raised: {formatCurrency(fundingProposal.total_donated)}</span>
-                      <span className="progress-percentage">{computePercentage(
-                        Number(fundingProposal.total_donated),
-                        Number(fundingProposal.budget_required)
-                      )}%</span>
+                      <span className="progress-label">
+                        Raised: {formatCurrency(fundingProposal.total_donated)}
+                      </span>
+                      <span className="progress-percentage">
+                        {computePercentage(
+                          Number(fundingProposal.total_donated),
+                          Number(fundingProposal.budget_required)
+                        )}%
+                      </span>
                     </div>
                     <div className="progress-bar">
-                      <div className="progress-fill"></div>
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${computePercentage(
+                            Number(fundingProposal.total_donated),
+                            Number(fundingProposal.budget_required)
+                          )}%`,
+                        }}
+                      ></div>
                     </div>
                   </div>
                 </div>
@@ -306,10 +411,15 @@ const DonationPage: React.FC = () => {
               formData={donationFormData}
               handleInputChange={handleDonationInputChange}
               errors={errors}
+              selectedItems={selectedItems}
+              setSelectedItems={setSelectedItems}
+              otherDescription={otherDescription}
+              setOtherDescription={setOtherDescription}
             />
 
             {/* Right Side - Payment Method */}
             <PaymentForm
+              donationKind={donationKind}
               paymentMethod={paymentMethod}
               setPaymentMethod={setPaymentMethod}
               formData={paymentFormData}

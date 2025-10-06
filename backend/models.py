@@ -450,6 +450,7 @@ class Donation(Base):
         nullable=False,
         server_default=DonationStatus.PENDING.value,
     )
+    checkout_id = Column(String(255), nullable=True, index=True)
     # Additional fields
     funding_id = Column(
         String, ForeignKey("funding_proposals.funding_id"), nullable=True
@@ -478,6 +479,8 @@ class Donation(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+
+    finance_record = relationship("FinanceRecord", back_populates="donation", uselist=False, cascade="all, delete-orphan")
     inkind = relationship(
         "Donation_InKind",
         back_populates="donation",
@@ -1073,6 +1076,9 @@ class FinanceRecord(Base):
     budget_for = Column(
         SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
     )
+
+    donation_id = Column(String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True)
+    donation = relationship("Donation", back_populates="finance_record", uselist=False)
 
     audits = relationship(
         "FinanceAudit", back_populates="record", cascade="all, delete-orphan"

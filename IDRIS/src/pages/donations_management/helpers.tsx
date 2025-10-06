@@ -29,3 +29,4 @@ export const normalizeDonationType = (type: string | null) => {
   if (type == "Cash") return "CASH";
   return type?.toUpperCase();
 }
+

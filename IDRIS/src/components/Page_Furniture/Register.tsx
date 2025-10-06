@@ -82,9 +82,14 @@ const Register: React.FC = () => {
     };
 
     // Step 2: Admin/User fork
-    const selectUserType = (type: "admin" | "user") => {
+    const selectUserType = async (type: "admin" | "user") => {
         setUserType(type);
-        setActiveModal(type === "admin" ? "admin-role" : "user-role");
+        if (type === "user") {
+            setActiveModal("");
+            await doRegister("generic", type);
+        } else {
+            setActiveModal("admin-role");
+        }
     };
 
     // Step 3: Pick role -> call registration API
@@ -95,9 +100,17 @@ const Register: React.FC = () => {
     };
 
     // Actual registration call (unchanged, safe)
-    const doRegister = async (roleParam?: string) => {
+    const doRegister = async (roleParam?: string, userTypeParam?: "admin" | "user") => {
         const roleToSend = roleParam || selectedRole; // ✅ use immediate value
-
+        const userTypeToSend = userTypeParam || userType;
+        Swal.fire({
+            title: "Registering...",
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+        });
         try {
             const response = await fetch("http://localhost:8000/register", {
                 method: "POST",
@@ -108,30 +121,32 @@ const Register: React.FC = () => {
                     email,
                     username,
                     password,
-                    user_type: userType,
+                    user_type: userTypeToSend,
                     user_role: roleToSend, // ✅ ensures "generic" or admin roles are included
                 }),
             });
 
             if (!response.ok) {
                 const err = await response.json();
-                Swal.fire({
+                Swal.hideLoading();
+                Swal.update({
                     icon: "error",
                     title: "Failed to register",
                     text: `Registration failed: ${err.detail || "Unknown error"}`,
                 });
-                return;
             }
 
             await response.json();
-            Swal.fire({
+            Swal.hideLoading();
+            Swal.update({
                 icon: "success",
                 title: "Registration successful",
             });
             navigate("/login");
         } catch (error) {
             console.error("Registration error:", error);
-            Swal.fire({
+            Swal.hideLoading();
+            Swal.update({
                 icon: "error",
                 title: "Network Error",
                 text: "Check your network or server",
@@ -274,20 +289,6 @@ const Register: React.FC = () => {
                     </button>
                     <button id="user" onClick={() => selectUserType("user")}>
                         User
-                    </button>
-                </div>
-            </Modal>
-
-            {/* Modal 2: Roles for regular users */}
-            <Modal
-                isOpen={activeModal === "user-role"}
-                onClose={() => setActiveModal("")}
-            >
-                <h3 id="login-user-role">Select User Role</h3>
-                <hr />
-                <div id="select-userRole" style={{ display: "flex", gap: 12 }}>
-                    <button id="generic" onClick={() => handleRoleSelect("generic")}>
-                        Generic User
                     </button>
                 </div>
             </Modal>

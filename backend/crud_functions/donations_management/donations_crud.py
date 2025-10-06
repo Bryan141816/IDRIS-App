@@ -261,8 +261,16 @@ class DonationCRUD:
     @staticmethod
     def cancel_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.CANCELLED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.DENIED
+
             db.commit()
             db.refresh(donation)
             return donation
@@ -272,24 +280,80 @@ class DonationCRUD:
     @staticmethod
     def completed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.COMPLETED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.RECEIVED
+            
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
             raise ValueError("Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
 
     @staticmethod
     def failed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.donation_id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.FAILED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.DENIED
+
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
             raise ValueError("Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
+
+    @staticmethod
+    def get_donation_by_checkout_id(db: Session, checkout_id: str) -> Optional[Donation]:
+        """
+        Retrieves a donation record based on the PayMongo checkout session ID.
+        """
+        try:
+            return db.query(Donation).filter(Donation.checkout_id == checkout_id).one_or_none()
+        except SQLAlchemyError as e:
+            # Log the error for debugging
+            # logger.error(f"Database error fetching donation by checkout_id {checkout_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error while fetching donation.")
+
+    @staticmethod
+    def get_donation_with_details_by_id(db: Session, donation_id: str) -> Optional[Donation]:
+        """
+        Retrieves a single donation with all its details, including donor and
+        cash/inkind information, by its ID.
+        """
+        try:
+            return (
+                db.query(Donation)
+                .options(
+                    joinedload(Donation.donor).joinedload(Donor.user),
+                    joinedload(Donation.cash),
+                    joinedload(Donation.inkind),
+                    joinedload(Donation.proposal),
+                )
+                .filter(Donation.donation_id == donation_id)
+                .one_or_none()
+            )
+        except SQLAlchemyError as e:
+            # logger.error(f"Database error fetching donation by id {donation_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error while fetching donation.")
 
     # --- AGGREGATIONS / REPORTS ---
     @staticmethod

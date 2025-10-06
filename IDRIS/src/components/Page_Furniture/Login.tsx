@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
 import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
 import { useUserRoleContext } from "../../UserRoleContext";
@@ -22,11 +23,24 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    Swal.fire({
+      title: "Logging in...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
     try {
       await loginUser(email, password);
       const userData = await fetchCurrentUser();
 
       if (userData) {
+        Swal.hideLoading();
+        Swal.update({
+          icon: "success",
+          title: "Logged in successfully!",
+        });
         setUserType(userData["user_type"]);
         setUserRoles(userData["roles"]);
         setEmail(userData["email"]);
@@ -39,6 +53,12 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login failed: ", error);
+      Swal.hideLoading();
+      Swal.update({
+        icon: "error",
+        title: "Login Failed",
+        text: "Incorrect email or password. Please try again.",
+      });
       setErrorMessage("Incorrect email or password. Please try again.");
     }
   };

@@ -300,9 +300,6 @@ const Register: React.FC = () => {
                 <h3 id="admin-user-role">Select Admin Role</h3>
                 <hr />
                 <div id="select-adminRole" style={{ display: "grid", gap: 8 }}>
-                    <button onClick={() => handleRoleSelect("disaster response admin")}>
-                        Disaster Response Admin
-                    </button>
                     <button onClick={() => handleRoleSelect("logistics admin")}>
                         Logistics Admin
                     </button>

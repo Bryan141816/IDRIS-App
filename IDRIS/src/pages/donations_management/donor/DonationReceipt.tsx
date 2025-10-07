@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getDonationById } from '../../../API_Handler/donations_donation_handler';
-import { getDonorDetailsById } from '../../../API_Handler/donations_donors_handler';
+import { getDonationReceipt } from '../../../API_Handler/donation_receipt_handler';
 import { DonationRow } from './DonorDashboard';
 import './DonationReceipt.scss';
 import html2canvas from 'html2canvas';
@@ -9,13 +8,22 @@ import jsPDF from 'jspdf';
 import logo from '../../../media/RAFI_Shield.png';
 
 interface DonorDetails {
-  donor_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
+}
+
+interface DonationDetails {
+  donation_id: number;
+  amount: number;
+  donation_type: string;
+  status: string;
+  created_at: string;
 }
 
 const DonationReceipt: React.FC = () => {
   const { donationId } = useParams<{ donationId: string }>();
-  const [donation, setDonation] = useState<DonationRow | null>(null);
+  const [donation, setDonation] = useState<DonationDetails | null>(null);
   const [donor, setDonor] = useState<DonorDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,15 +31,10 @@ const DonationReceipt: React.FC = () => {
 
   useEffect(() => {
     if (donationId) {
-      getDonationById(donationId)
-        .then(donationData => {
-          setDonation(donationData);
-          return getDonorDetailsById(donationData.donor_id);
-        })
-        .then(donorData => {
-          setDonor(donorData);
-          console.log(donation);
-          console.log(donorData);
+      getDonationReceipt(donationId)
+        .then(receiptData => {
+          setDonation(receiptData.donation);
+          setDonor(receiptData.donor);
         })
         .catch(err => {
           console.error(err);
@@ -80,25 +83,20 @@ const DonationReceipt: React.FC = () => {
           <div className="receipt-section">
             <h2>Donation Details</h2>
             <p><strong>Donation ID:</strong> {donation.donation_id}</p>
-            <p><strong>Donation Date:</strong> {new Date(donation.donation_date).toLocaleDateString()}</p>
+            <p><strong>Donation Date:</strong> {new Date(donation.created_at).toLocaleDateString()}</p>
             <p><strong>Status:</strong> {donation.status}</p>
             <p><strong>Type:</strong> {donation.donation_type}</p>
           </div>
           <div className="receipt-section">
             <h2>Donor Information</h2>
-            <p><strong>Name:</strong> {donor.donor_name}</p>
+            <p><strong>Name:</strong> {`${donor.first_name} ${donor.last_name}`}</p>
             <p><strong>Email:</strong> {donor.email}</p>
           </div>
           <div className="receipt-section">
             <h2>Amount</h2>
             <p className="amount">
-              {donation.donation_type === 'CASH'
-                ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(donation.cash?.amount))
-                : `(In-Kind) ${donation.inkind?.item_description}`}
+              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(donation.amount)}
             </p>
-            {donation.donation_type === 'INKIND' && (
-              <p><strong>Estimated Value:</strong> {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'PHP' }).format(Number(donation.inkind?.estimated_value))}</p>
-            )}
           </div>
         </div>
         <div className="receipt-footer">

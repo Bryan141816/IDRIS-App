@@ -22,6 +22,9 @@ from routers.auth.authentication import get_current_user_from_access_token
 from settings import settings
 from .helper import to_centavos, generate_donation_receipt
 
+from crud_functions.donations_management.donation_receipt_crud import get_donation_receipt_data
+from data_schemas.donation_receipt_schema import DonationReceiptSchema
+
 router = APIRouter()
 
 router_admin = APIRouter(
@@ -378,50 +381,12 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
 
     return Response(status_code=200, content="Webhook processed successfully.")
         
-@router_admin_or_donor.get("/{donation_id}/receipt")
-def get_donation_receipt(
-    donation_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_access_token),
-):
-    """
-    Generates and streams a PDF receipt for a specific donation.
-    Accessible by the donor who made the donation or an admin.
-    """
-    try:
-        # Fetch the donation with donor and cash/inkind details
-        donation = CRUD.get_donation_with_details_by_id(db, donation_id)
-        if not donation:
-            raise HTTPException(status_code=404, detail="Donation not found")
-
-        # Authorization check
-        is_admin = any(
-            role in current_user.roles 
-            for role in ["finance admin", "operations admin", "superuser"]
-        )
-        
-        # Check if the current user is the donor
-        is_owner = donation.donor.user_id == current_user.user_id
-
-        if not is_admin and not is_owner:
-            raise HTTPException(status_code=403, detail="Not authorized to view this receipt")
-
-        # Generate the PDF
-        pdf_buffer = generate_donation_receipt(donation)
-        
-        filename = f"Donation_Receipt_{donation.donation_id}.pdf"
-        headers = {
-            "Content-Disposition": f'inline; filename="{filename}"'
-        }
-
-        return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
-
-    except SQLAlchemyError as e:
-        logging.exception("Database error fetching donation for receipt")
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
-    except Exception as e:
-        logging.exception(f"Error generating receipt for donation {donation_id}")
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+@router.get("/receipt/{donation_id}", response_model=DonationReceiptSchema)
+def get_donation_receipt(donation_id: str, db: Session = Depends(get_db)):
+    receipt_data = get_donation_receipt_data(db, donation_id=donation_id)
+    if not receipt_data:
+        raise HTTPException(status_code=404, detail="Donation not found")
+    return receipt_data
 
 @router_admin_or_donor.get("/{donation_id}", response_model=DonationHistoryResponse)
 def get_donation_by_id(

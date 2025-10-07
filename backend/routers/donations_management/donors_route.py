@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Form, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from typing import Optional, List
-from database import get_db  # Adjust import path
+from database import get_db
 from models import Donor, User
 from schemas import Number
 from routers.role_checker import RoleChecker
@@ -17,7 +17,6 @@ from data_schemas.donors_schema import (
     ListOfDonorsResponse,
     DonorAllAttributes,
     IndividualDonorProfile,
-    DonorDetailsSchema,
 )
 
 from crud_functions.donations_management.donors import donor_crud
@@ -111,21 +110,6 @@ def get_donor_endpoint(
 ):
     """Get a donor by their DONOR ID."""
     donor = donor_crud.get_donor_by_id(db, donor_id)
-    if not donor:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Donor not found"
-        )
-    return donor
-
-@router_donor.get("/{donor_id}", response_model=DonorDetailsSchema) 
-def get_donor_endpoint(
-    donor_id: str,
-    db: Session = Depends(get_db)
-):
-    donor = donor_crud.get_donor_user_by_id(db, donor_id)
-    print(donor)
-    print(donor)
     if not donor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

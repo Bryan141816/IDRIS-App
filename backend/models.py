@@ -109,7 +109,7 @@ class UserProfile(Base):
     # Relationship
     user = relationship("User", back_populates="user_profile")
 
-    user = relationship("User", back_populates="user_profile")
+    # user = relationship("User", back_populates="user_profile")
 
 
 class Notifications(Base):

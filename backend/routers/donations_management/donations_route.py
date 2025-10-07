@@ -423,6 +423,19 @@ def get_donation_receipt(
         logging.exception(f"Error generating receipt for donation {donation_id}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
 
+@router_admin_or_donor.get("/{donation_id}", response_model=DonationHistoryResponse)
+def get_donation_by_id(
+    donation_id: str,
+    db: Session = Depends(get_db),
+):
+    try:
+        donation = CRUD.get_donation_by_id(db, donation_id)
+        return donation
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
 
 router.include_router(router_admin)
 router.include_router(router_donor)

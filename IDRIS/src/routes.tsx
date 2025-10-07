@@ -209,6 +209,11 @@ const DonationRecords = () =>
     (module) => ({ Component: module.default }),
   )
 
+const DonationReceipt = () =>
+  import("./pages/donations_management/donor/DonationReceipt").then(
+    (module) => ({ Component: module.default }),
+  );
+
 // const Donor_Dashboard = () =>
 //   import("./pages/donations_management/donor/DonorDashboard").then(
 //     (module) => ({ Component: module.default }),
@@ -568,6 +573,10 @@ export const router = createBrowserRouter([
       }
     ],
   },
+  {
+    path: "/donation/receipt/:donationId",
+    lazy: DonationReceipt,
+  }
 ]);
 export const prefetchMap: Record<string, () => Promise<any>> = {
   "/login": Login,

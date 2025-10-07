@@ -67,24 +67,6 @@ const typeColor: Record<DonationType, string> = {
   INKIND: "#fcb814",
 };
 
-async function downloadDonationReceipt(donationId: number) {
-  try {
-    const url = `/api/donations/${donationId}/receipt`;
-    const res = await fetch(url, { credentials: "include" });
-    if (!res.ok) throw new Error("Could not fetch receipt");
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `donation-${donationId}-receipt.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
-  } catch (error) {
-    console.error("Download failed:", error);
-    alert("Unable to download receipt");
-  }
-}
 
 export const DonorDashboard: React.FC = () => {
   const toISODate = (d?: string | Date | null): string | undefined => {
@@ -411,14 +393,9 @@ export const DonorDashboard: React.FC = () => {
                         <button
                           className="download-btn"
                           disabled={row.status !== "COMPLETED"}
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            try {
-                              await downloadDonationReceipt(row.donation_id);
-                            } catch (err: any) {
-                              console.error(err);
-                              alert("Unable to download receipt");
-                            }
+                            window.open(`/donation/receipt/${row.donation_id}`, '_blank');
                           }}
                           title="Download receipt"
                         >

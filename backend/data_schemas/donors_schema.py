@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Literal, Union
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, ConfigDict
+from models import DonationType
 
 # === Enums aligned to model ===
 class DonorType(str, Enum):
@@ -79,7 +79,7 @@ class DonorStatsResponse(BaseModel):
 
 class IndividualDonorProfile(BaseModel):
     donorId: str = Field(..., alias="donor_id")
-    donor_name: str  # comes from Donor.donor_name @property
+    donor_name: str 
     donor_type: DonorType
     is_verified: bool
     date_joined: datetime
@@ -102,3 +102,50 @@ class DonorAllAttributes(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+        
+        
+# ============================= DONOR RECEIPT SCHEMA ======================
+class DonationBaseSchema(BaseModel):
+    donation_id: str
+    status: str
+    donation_date: datetime # CORRECT: This field is a datetime
+
+# 2. Schema for CASH donations
+class DonationCashSchema(DonationBaseSchema):
+    # CORRECT: The 'donation_type' field must be a Literal string, NOT datetime.
+    # This is the line you need to fix.
+    donation_type: Literal[DonationType.CASH.value] = Field(
+        DonationType.CASH.value, const=True
+    )
+    amount: Decimal | None = None
+    payment_method: str | None = None
+
+# 3. Schema for INKIND donations
+class DonationInKindSchema(DonationBaseSchema):
+    # CORRECT: The 'donation_type' field must be a Literal string, NOT datetime.
+    # This is the line you need to fix.
+    donation_type: Literal[DonationType.INKIND.value] = Field(
+        DonationType.INKIND.value, const=True
+    )
+    estimated_value: Decimal | None = None
+    item_description: str | None = None
+    quantity: str | None = None
+
+# 4. The final Union model
+DonationDetailSchema = Union[DonationCashSchema, DonationInKindSchema]
+
+class UserSchema(BaseModel):
+    user_id: Optional[str]
+    email: Optional[str]
+    username: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+class DonorDetailsSchema(BaseModel):
+    donor_id: str
+    user: UserSchema
+    donations: List[DonationDetailSchema]
+
+    class Config:
+        orm_mode = True

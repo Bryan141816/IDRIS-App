@@ -1,5 +1,5 @@
 import React, { act, useEffect, useState } from "react";
-import "./procurement_inventory.scss";
+import "./procurement_inventory.module.scss";
 import WarehouseZone from "./Tabs/Warehousezones";
 import InventoryItems from "./Tabs/InventoryItems";
 import { API } from "../../../API_Handler/Axio_API_Handler";

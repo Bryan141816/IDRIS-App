@@ -1,23 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faSearch, 
-  faFilter, 
-  faExclamationTriangle, 
-  faUsers, 
-  faMapMarkerAlt, 
+import {
+  faSearch,
+  faFilter,
+  faExclamationTriangle,
+  faUsers,
+  faMapMarkerAlt,
   faClock,
   faPlus,
   faEdit,
-  faTrash
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import { fetchData } from "../../API_Handler/response_dashboard";
+import { fetchData } from "../../../API_Handler/response_dashboard";
 import "./ReportList.scss";
 
 interface ReportEntry {
   id: string;
   timestamp: string;
-  report_type: "incident_report" | "supply_request" | "team_deployment" | "status_update";
+  report_type:
+    | "incident_report"
+    | "supply_request"
+    | "team_deployment"
+    | "status_update";
   location: {
     name: string;
     address: string;
@@ -53,7 +57,10 @@ const ReportList: React.FC = () => {
   const loadReports = async () => {
     setIsLoading(true);
     try {
-      await fetchData<ReportEntry[]>("/response_dashboard/reports/all", setReports);
+      await fetchData<ReportEntry[]>(
+        "/response_dashboard/reports/all",
+        setReports,
+      );
     } catch (error) {
       console.error("Failed to load reports:", error);
     } finally {
@@ -66,27 +73,32 @@ const ReportList: React.FC = () => {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(report =>
-        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.created_by.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (report) =>
+          report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          report.location.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          report.created_by.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
     // Type filter
     if (filterType !== "all") {
-      filtered = filtered.filter(report => report.report_type === filterType);
+      filtered = filtered.filter((report) => report.report_type === filterType);
     }
 
     // Status filter
     if (filterStatus !== "all") {
-      filtered = filtered.filter(report => report.status === filterStatus);
+      filtered = filtered.filter((report) => report.status === filterStatus);
     }
 
     // Priority filter
     if (filterPriority !== "all") {
-      filtered = filtered.filter(report => report.priority === filterPriority);
+      filtered = filtered.filter(
+        (report) => report.priority === filterPriority,
+      );
     }
 
     setFilteredReports(filtered);
@@ -94,12 +106,34 @@ const ReportList: React.FC = () => {
 
   const getReportTypeStyle = (type: string) => {
     const styles = {
-      incident_report: { color: "#dc3545", icon: faExclamationTriangle, label: "Incident Report" },
-      supply_request: { color: "#28a745", icon: faMapMarkerAlt, label: "Supply Request" },
-      team_deployment: { color: "#007bff", icon: faUsers, label: "Team Deployment" },
-      status_update: { color: "#ffc107", icon: faClock, label: "Status Update" }
+      incident_report: {
+        color: "#dc3545",
+        icon: faExclamationTriangle,
+        label: "Incident Report",
+      },
+      supply_request: {
+        color: "#28a745",
+        icon: faMapMarkerAlt,
+        label: "Supply Request",
+      },
+      team_deployment: {
+        color: "#007bff",
+        icon: faUsers,
+        label: "Team Deployment",
+      },
+      status_update: {
+        color: "#ffc107",
+        icon: faClock,
+        label: "Status Update",
+      },
     };
-    return styles[type as keyof typeof styles] || { color: "#6c757d", icon: faMapMarkerAlt, label: "Report" };
+    return (
+      styles[type as keyof typeof styles] || {
+        color: "#6c757d",
+        icon: faMapMarkerAlt,
+        label: "Report",
+      }
+    );
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -107,9 +141,14 @@ const ReportList: React.FC = () => {
       urgent: { color: "#dc3545", bg: "#fff5f5" },
       high: { color: "#fd7e14", bg: "#fff8f0" },
       medium: { color: "#ffc107", bg: "#fffbf0" },
-      low: { color: "#28a745", bg: "#f0fff4" }
+      low: { color: "#28a745", bg: "#f0fff4" },
     };
-    return styles[priority as keyof typeof styles] || { color: "#6c757d", bg: "#f8f9fa" };
+    return (
+      styles[priority as keyof typeof styles] || {
+        color: "#6c757d",
+        bg: "#f8f9fa",
+      }
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -117,9 +156,14 @@ const ReportList: React.FC = () => {
       pending: { color: "#6c757d", bg: "#f8f9fa" },
       in_progress: { color: "#007bff", bg: "#e3f2fd" },
       completed: { color: "#28a745", bg: "#e8f5e8" },
-      cancelled: { color: "#dc3545", bg: "#ffebee" }
+      cancelled: { color: "#dc3545", bg: "#ffebee" },
     };
-    return styles[status as keyof typeof styles] || { color: "#6c757d", bg: "#f8f9fa" };
+    return (
+      styles[status as keyof typeof styles] || {
+        color: "#6c757d",
+        bg: "#f8f9fa",
+      }
+    );
   };
 
   const formatDateTime = (timestamp: string) => {
@@ -130,7 +174,7 @@ const ReportList: React.FC = () => {
     if (window.confirm("Are you sure you want to delete this report?")) {
       try {
         // Add delete API call here
-        setReports(reports.filter(report => report.id !== reportId));
+        setReports(reports.filter((report) => report.id !== reportId));
       } catch (error) {
         console.error("Failed to delete report:", error);
       }
@@ -203,15 +247,21 @@ const ReportList: React.FC = () => {
           <div className="stat-label">Total Reports</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{reports.filter(r => r.status === 'pending').length}</div>
+          <div className="stat-value">
+            {reports.filter((r) => r.status === "pending").length}
+          </div>
           <div className="stat-label">Pending</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{reports.filter(r => r.status === 'in_progress').length}</div>
+          <div className="stat-value">
+            {reports.filter((r) => r.status === "in_progress").length}
+          </div>
           <div className="stat-label">In Progress</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{reports.filter(r => r.status === 'completed').length}</div>
+          <div className="stat-value">
+            {reports.filter((r) => r.status === "completed").length}
+          </div>
           <div className="stat-label">Completed</div>
         </div>
       </div>
@@ -245,8 +295,8 @@ const ReportList: React.FC = () => {
                     <td>{formatDateTime(report.timestamp)}</td>
                     <td>
                       <div className="report-type">
-                        <FontAwesomeIcon 
-                          icon={typeStyle.icon} 
+                        <FontAwesomeIcon
+                          icon={typeStyle.icon}
                           style={{ color: typeStyle.color, marginRight: "8px" }}
                         />
                         <span style={{ fontSize: "0.85rem" }}>
@@ -257,16 +307,18 @@ const ReportList: React.FC = () => {
                     <td className="title-cell">
                       <div className="title-content">
                         <span className="report-title">{report.title}</span>
-                        <span className="report-description">{report.description}</span>
+                        <span className="report-description">
+                          {report.description}
+                        </span>
                       </div>
                     </td>
                     <td>
-                      <span 
+                      <span
                         className="priority-badge"
                         style={{
                           backgroundColor: priorityStyle.bg,
                           color: priorityStyle.color,
-                          border: `1px solid ${priorityStyle.color}40`
+                          border: `1px solid ${priorityStyle.color}40`,
                         }}
                       >
                         {report.priority.toUpperCase()}
@@ -274,15 +326,15 @@ const ReportList: React.FC = () => {
                     </td>
                     <td>{report.location.name}</td>
                     <td>
-                      <span 
+                      <span
                         className="status-badge"
                         style={{
                           backgroundColor: statusStyle.bg,
                           color: statusStyle.color,
-                          border: `1px solid ${statusStyle.color}40`
+                          border: `1px solid ${statusStyle.color}40`,
                         }}
                       >
-                        {report.status.replace('_', ' ')}
+                        {report.status.replace("_", " ")}
                       </span>
                     </td>
                     <td>{report.created_by}</td>
@@ -294,8 +346,8 @@ const ReportList: React.FC = () => {
                         <button className="btn-icon edit" title="Edit Report">
                           <FontAwesomeIcon icon={faEdit} />
                         </button>
-                        <button 
-                          className="btn-icon delete" 
+                        <button
+                          className="btn-icon delete"
                           title="Delete Report"
                           onClick={() => handleDeleteReport(report.id)}
                         >

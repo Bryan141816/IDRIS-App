@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import WarehouseZones
 from data_schemas.procurement_inventory import (
+    InventoryItemUpdate,
     WarehouseZoneCreate,
     WarehouseZoneOut,
     InventoryItemCreate,
@@ -51,3 +52,8 @@ def add_inventory_item(payload: InventoryItemCreate, db: Session = Depends(get_d
 )
 def get_inventory_item(db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.get_all_inventory_item(db)
+
+
+@router.post("/procurement_inventory/update_inventory_item")
+def update_inventory_item(payload: InventoryItemUpdate, db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.update_inventory_item(db, payload)

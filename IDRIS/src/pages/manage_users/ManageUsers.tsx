@@ -1,18 +1,19 @@
 import { TableView, TableReponse } from "../../components/TableView/table_view";
 import { Modal } from "../../components/Page_Furniture/Modals";
 import React, { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
 import {
   faEllipsisVertical,
   faTrash,
   faPen,
+  faUserPlus,
+  faSearch,
+  faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { MessageBox } from "../../components/Page_Furniture/MessageBox";
-
 import { API } from "../../API_Handler/Axio_API_Handler";
-import "../response_dashboard/DefaultListViewStyle.scss";
+import "./ManageUsers.scss";
 
 async function getUserList(): Promise<any> {
   const response = await API.get("/user_list");
@@ -37,17 +38,17 @@ async function updateUser(user_id: String, role: String) {
     const response = await API.put(`/update_user/${user_id}`, {
       roles: role,
     });
-    return { sucess: true, data: response.data };
+    return { success: true, data: response.data };
   } catch (error: any) {
-    if (error.respose) {
+    if (error.response) {
       console.error("Error: ", error.response.data.detail);
       return {
-        sucess: false,
+        success: false,
         error: error.response?.data?.detail || error.message,
       };
     } else {
       console.error("Request error: ", error.message);
-      return { sucess: false, error: "An unexpected error occured." };
+      return { success: false, error: "An unexpected error occurred." };
     }
   }
 }
@@ -70,6 +71,7 @@ type EditReportModalProps = BaseModalProps & {
   handleEditReport: (role: string) => void;
   defaultRole: string;
 };
+
 type ViewReportModalProps = BaseModalProps & {
   handleDeleteReport: (report_id: string) => void;
   openEditModal: () => void;
@@ -85,58 +87,49 @@ const ViewReportModal = ({
   isViewModalSelected,
 }: ViewReportModalProps) => {
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
+  
   useEffect(() => {
     if (!isModalOpen) {
       setMoreOptionVisible(false);
     }
   }, [isModalOpen]);
+  
   const toggleMoreOptionVisible = () =>
     setMoreOptionVisible(!isMoreOptionVisible);
+    
   function toTitleCase(str: String) {
     return str
-      .toLowerCase() // make everything lowercase first
-      .split(" ") // split into words
+      .toLowerCase()
+      .split(" ")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" "); // join back into a sentence
+      .join(" ");
   }
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal}>
       <div className="modal-container">
         <div className="horizontal-container space-between-container">
-          <span className="title-modal-text">View Report</span>
-          <div
-            className="horizontal-container"
-            style={{ width: "auto", gap: "5px" }}
-          >
+          <span className="title-modal-text">View User</span>
+          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
             <div className="more-options-container">
-              <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon
-                  icon={faEllipsisVertical}
-                  style={{ height: "20px" }}
-                />
+              <button className="modal-more-btn" onClick={toggleMoreOptionVisible}>
+                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
-                  <button
-                    onClick={() => {
-                      closeModal();
-                      openEditModal();
-                    }}
-                  >
+                  <button onClick={() => { closeModal(); openEditModal(); }}>
                     <FontAwesomeIcon icon={faPen} />
                     Edit Record
                   </button>
                   <button
-                    style={{ color: "red" }}
+                    className="delete-option"
                     onClick={() => {
                       setMessageBox((prev) => ({
-                        ...prev, // preserves onClose and anything else
-                        isOpen: true, // your new values
+                        ...prev,
+                        isOpen: true,
                         type: "confirm",
-                        message: "Are you sure you want to delete this report?",
-                        onSubmit: () =>
-                          handleDeleteReport(isViewModalSelected.data[0].text),
+                        message: "Are you sure you want to delete this user?",
+                        onSubmit: () => handleDeleteReport(isViewModalSelected.data[0].text),
                       }));
                     }}
                   >
@@ -164,15 +157,14 @@ const ViewReportModal = ({
         </div>
         <div className="horizontal-container">
           <span className="item-details-identifier">Role:</span>
-          <span>{toTitleCase(isViewModalSelected.data[5].text)}</span>
+          <span className="role-badge">{toTitleCase(isViewModalSelected.data[5].text)}</span>
         </div>
         <div className="horizontal-container">
           <span className="item-details-identifier">Is Activated:</span>
           <span>{toTitleCase(isViewModalSelected.data[6].text)}</span>
         </div>
-
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+          <button className="close-btn" onClick={closeModal}>
             Close
           </button>
         </div>
@@ -180,6 +172,7 @@ const ViewReportModal = ({
     </Modal>
   );
 };
+
 const EditReportModal = ({
   isModalOpen,
   closeModal,
@@ -190,9 +183,7 @@ const EditReportModal = ({
   const [editRole, setEditRole] = useState(defaultRole);
   const { userRoles } = useUserRoleContext();
 
-  const handleEditReportTypeChange = (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
+  const handleEditReportTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setEditRole(event.target.value);
   };
 
@@ -200,53 +191,47 @@ const EditReportModal = ({
     <Modal isOpen={isModalOpen} onClose={closeModal}>
       <div className="modal-container">
         <div className="horizontal-container">
-          <span className="details-title">Edit Report</span>
+          <span className="details-title">Edit User</span>
         </div>
         <div className="horizontal-container">
           <span className="item-details-identifier">Role:</span>
           <select value={editRole} onChange={handleEditReportTypeChange}>
-            {userRoles.includes("super admin") ||
-              (userRoles.includes("operations admin") && (
-                <option value="lgu officer">LGU Officer (Moderator)</option>
-              ))}
-            {userRoles.includes("super admin") ||
-              (userRoles.includes("logistics admin") && (
-                <option value="disaster response admin officer">
-                  Disaster Response Admin Officer (Moderator)
-                </option>
-              ))}
-            {userRoles.includes("super admin") ||
-              (userRoles.includes("operations admin") && (
-                <option value="operations admin">Operations Admin</option>
-              ))}
-            {userRoles.includes("super admin") ||
-              (userRoles.includes("logistics admin") && (
-                <option value="logistics admin">Logistics Admin</option>
-              ))}
-            {userRoles.includes("super admin") ||
-              (userRoles.includes("finance admin") && (
-                <option value="finance admin">Finance Admin</option>
-              ))}
+            {(userRoles.includes("super admin") || userRoles.includes("operations admin")) && (
+              <option value="lgu officer">LGU Officer (Moderator)</option>
+            )}
+            {(userRoles.includes("super admin") || userRoles.includes("logistics admin")) && (
+              <option value="disaster response admin officer">
+                Disaster Response Admin Officer (Moderator)
+              </option>
+            )}
+            {(userRoles.includes("super admin") || userRoles.includes("operations admin")) && (
+              <option value="operations admin">Operations Admin</option>
+            )}
+            {(userRoles.includes("super admin") || userRoles.includes("logistics admin")) && (
+              <option value="logistics admin">Logistics Admin</option>
+            )}
+            {(userRoles.includes("super admin") || userRoles.includes("finance admin")) && (
+              <option value="finance admin">Finance Admin</option>
+            )}
             <option value="generic">Generic User</option>
           </select>
         </div>
-
         <div className="action-button">
           <button
+            className="submit-btn"
             onClick={() => {
               setMessageBox((prev) => ({
-                ...prev, // preserves onClose and anything else
-                isOpen: true, // your new values
+                ...prev,
+                isOpen: true,
                 type: "confirm",
-                message: "Are you sure you want to edit this report?",
+                message: "Are you sure you want to edit this user?",
                 onSubmit: () => handleEditReport(editRole),
               }));
             }}
-            style={{ backgroundColor: "rgba(0, 102, 255, 0.5)" }}
           >
             Submit
           </button>
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+          <button className="cancel-btn" onClick={closeModal}>
             Cancel
           </button>
         </div>
@@ -260,6 +245,7 @@ const UserList = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isViewModalSelected, setIsViewModalSelected] = useState<any>(null);
   const [isEditModeEnabled, setIsEditModeEnabled] = useState(false);
+  const [search, setSearch] = useState("");
 
   const refreshTable = useRef<() => void>(() => {});
 
@@ -279,10 +265,7 @@ const UserList = () => {
   });
 
   const openViewModal = () => setIsViewModalOpen(true);
-  const closeViewModal = () => {
-    setIsViewModalOpen(false);
-  };
-
+  const closeViewModal = () => setIsViewModalOpen(false);
   const openEditModal = () => setIsEditModeEnabled(true);
   const closeEditModal = () => setIsEditModeEnabled(false);
 
@@ -298,6 +281,7 @@ const UserList = () => {
   useEffect(() => {
     fetchData();
   }, []);
+  
   const handleRefreshTable = () => refreshTable.current?.();
 
   const handleDeleteReport = async (report_id: String) => {
@@ -305,47 +289,51 @@ const UserList = () => {
       await deleteUser(report_id);
       closeViewModal();
       setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
+        ...prev,
+        isOpen: true,
         type: "message",
-        message: "Report is successfuly deleted?",
+        message: "User successfully deleted.",
         onClose: closeMessageBox,
       }));
       handleRefreshTable();
     } catch (error) {
-      console.error("Failed to delete report: ", error);
+      console.error("Failed to delete user: ", error);
     }
   };
 
   const handleEditReport = async (role: string) => {
     const response = await updateUser(isViewModalSelected.data[0].text, role);
-    if (response.sucess) {
+    if (response.success) {
       closeEditModal();
       isViewModalSelected.data[4].text = response.data.user?.user_type;
       isViewModalSelected.data[5].text = response.data.user?.roles.join(", ");
       setMessageBox((prev) => ({
-        ...prev, // preserves onClose and anything else
-        isOpen: true, // your new values
+        ...prev,
+        isOpen: true,
         type: "message",
-        message: "Report is successfuly updated?",
+        message: "User successfully updated.",
         onClose: closeMessageBox,
       }));
       handleRefreshTable();
       openViewModal();
     } else {
-      console.error("Error updating report: " + response.error);
+      console.error("Error updating user: " + response.error);
     }
   };
 
+  const handleSearch = () => {
+    fetchData();
+  };
+
   return (
-    <div className="report-container">
+    <div className="user-mgmt-root">
       <MessageBox
         isOpen={messageBox.isOpen}
         onClose={messageBox.onClose}
         type={messageBox.type}
         message={messageBox.message}
         onSubmit={messageBox.onSubmit}
-      ></MessageBox>
+      />
 
       {isViewModalSelected && (
         <ViewReportModal
@@ -355,8 +343,9 @@ const UserList = () => {
           isViewModalSelected={isViewModalSelected}
           handleDeleteReport={handleDeleteReport}
           openEditModal={openEditModal}
-        ></ViewReportModal>
+        />
       )}
+      
       {isViewModalSelected && (
         <EditReportModal
           isModalOpen={isEditModeEnabled}
@@ -364,35 +353,54 @@ const UserList = () => {
           setMessageBox={setMessageBox}
           handleEditReport={handleEditReport}
           defaultRole={isViewModalSelected.data[5].text}
-        ></EditReportModal>
+        />
       )}
 
-      <div className="horizontal-container">
-        <div className="navigator-container">
-          <Link to="/response_dashboard">Response Dashboard</Link>
-          <h3>/Report List</h3>
-        </div>
-        <div className="table-actions">
-          <input type="text" placeholder="Search report"></input>
-          <button>Search</button>
+      <div className="user-mgmt-header">
+        <h2 className="section-title">Manage Users</h2>
+        <button className="primary-btn">
+          <FontAwesomeIcon icon={faUserPlus} />
+          Add User
+        </button>
+      </div>
+
+      <div className="user-mgmt-actions">
+        <div className="user-mgmt-searchbar">
+          <input
+            type="text"
+            placeholder="Search user by name, email, or role"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="styled-input"
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+          <button className="icon-btn" onClick={handleSearch}>
+            <FontAwesomeIcon icon={faSearch} />
+          </button>
         </div>
       </div>
 
-      {response_data ? (
-        <TableView
-          tableJSON={response_data}
-          onClickCallback={(row: any) => {
-            setIsViewModalSelected(row);
-            openViewModal();
-          }}
-          setCallbackTableData={true}
-          pageRequest="/user_list?page="
-          updateTable={(fn) => (refreshTable.current = fn)}
-        />
-      ) : (
-        <div>Loading data...</div>
-      )}
+      <div className="user-table-card">
+        {response_data ? (
+          <TableView
+            tableJSON={response_data}
+            onClickCallback={(row: any) => {
+              setIsViewModalSelected(row);
+              openViewModal();
+            }}
+            setCallbackTableData={true}
+            pageRequest="/user_list?page="
+            updateTable={(fn) => (refreshTable.current = fn)}
+          />
+        ) : (
+          <div className="loading-msg">
+            <div className="loading-spinner"></div>
+            Loading users...
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
 export default UserList;

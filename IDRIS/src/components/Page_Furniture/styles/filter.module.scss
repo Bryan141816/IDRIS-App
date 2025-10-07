@@ -3,13 +3,13 @@
   flex-direction: column;
   margin: 0 10px;
   gap: 12px;
-
+  padding: 0;
   // height: 100%;
 }
   
 .filterSelect {
   padding: 2px 8px;
-  border: 1px solid #000000;
+  border: 2px solid #ccc;
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;

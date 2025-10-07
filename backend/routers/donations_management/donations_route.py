@@ -1,13 +1,16 @@
 import logging, traceback
 import httpx
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from numbers import Number
+import hmac, hashlib, json
 from database import get_db
 from data_schemas.donation_schema import ( 
                                           DonationCreate, DonationResponse, RecurringDonationCreate, 
-                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest
+                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest,
+                                          DonationUpdate, PaginatedDonationHistoryResponse
                                         )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date
@@ -17,7 +20,7 @@ from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
 from settings import settings
-from .helper import to_centavos
+from .helper import to_centavos, generate_donation_receipt
 
 router = APIRouter()
 
@@ -39,7 +42,6 @@ router_admin_or_donor = APIRouter(
 
 @router.post("/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print(donation)
     try:
         return CRUD.create_donation(db, donation)
     except HTTPException:
@@ -55,7 +57,6 @@ def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get
 
 @router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
-    print(donation)
     try:
         return CRUD.create_one_time_pending_donation(db, donation)
     except HTTPException:
@@ -74,7 +75,6 @@ def create_recurring_donation_route(
     donation_data: RecurringDonationCreate,
     db: Session = Depends(get_db)
 ):
-    print(donation_data)
     try:
         return CRUD.create_recurring_donation(db, donation_data)
     except Exception as e:
@@ -90,24 +90,24 @@ def create_inkind_donation_route(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_admin.post("/cancel", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/cancel", response_model=DonationResponse)
+def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.cancel_donation_status(db, donation_id)
+        return CRUD.cancel_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router_admin.post("/completed", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/completed", response_model=DonationResponse)
+def complete_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.completed_donation_status(db, donation_id)
+        return CRUD.completed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_admin.post("/failed", response_model=DonationResponse)
-def cancel_donation(donation_id: int, db: Session = Depends(get_db)):
+@router_donor.put("/failed", response_model=DonationResponse)
+def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
-        return CRUD.failed_donation_status(db, donation_id)
+        return CRUD.failed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -193,10 +193,6 @@ def get_my_donations(
     first_profile = donor_profiles[0]
     
     donor_id = first_profile.donor_id
-    print(f"Successfully retrieved donor_id: {donor_id}")
-    
-    print("From: ", from_)
-    print("To: ", to)
     donations = CRUD.get_donations_by_donor_id(
         db,
         donor_id=donor_id,
@@ -207,7 +203,6 @@ def get_my_donations(
         limit=limit,
         page=page,
     )
-    print(donations)
     return donations
     
 
@@ -232,13 +227,12 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
                     }
                 ],
                 "payment_method_types": ["card", "gcash", "paymaya"],
-                "success_url": "http://localhost:5173/donations_management/funding_proposals?status=success",
-                "cancel_url": "http://localhost:5173/donations_management/funding_proposals?status=failed",
+                # "success_url": request.success_url,
+                # "cancel_url": request.cancel_url,
                 "description": request.description,
             }
         }
     }
-    print(payload)
 
     async with httpx.AsyncClient() as client:
         try:
@@ -256,7 +250,179 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
             raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/paymongo/session/{session_id}")
+async def get_session_status(session_id: str):
+    secret = settings.PAYMONGO_SECRET_KEY
+    if not secret:
+        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(
+                f"https://api.paymongo.com/v1/checkout_sessions/{session_id}",
+                auth=(secret, ""),
+                timeout=30.0,
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+@router_admin.get("/all", response_model=PaginatedDonationHistoryResponse)
+def get_all_donations(
+    db: Session = Depends(get_db),
+    from_: Optional[date] = Query(None, alias="from"),
+    to: Optional[date] = Query(None, alias="to"),
+    limit: int = 10,
+    page: int = 1,
+    sort_by: str = "donation_date",
+    order: str = "desc",
+):
+    donations = CRUD.get_all_donations(
+        db,
+        date_from=from_,
+        date_to=to,
+        limit=limit,
+        page=page,
+        sort_by=sort_by,
+        order=order,
+    )
+    return donations
+
+@router.post("/paymongo/webhook")
+async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
+    """Handles incoming webhooks from PayMongo."""
+    
+    # 1. Get signature from header
+    signature_header = request.headers.get("Paymongo-Signature")
+    if not signature_header:
+        raise HTTPException(status_code=400, detail="Missing PayMongo signature")
+
+    # 2. Get raw request body
+    payload = await request.body()
+    
+    # 3. Get webhook secret from environment
+    # IMPORTANT: Use a dedicated webhook secret, not your main API secret key
+    webhook_secret = settings.PAYMONGO_WEBHOOK_SECRET
+    if not webhook_secret:
+        logging.error("PAYMONGO_WEBHOOK_SECRET is not set")
+        raise HTTPException(status_code=500, detail="Webhook secret is not configured")
+
+    # 4. Verify signature
+    # PayMongo's signature is a comma-separated string: "t=<timestamp>,v1=<signature>"
+    try:
+        # We only need the signature part (v1) for comparison
+        sig_parts = {
+            p.split("=")[0]: p.split("=")[1] for p in signature_header.split(",")
+        }
+        paymongo_signature = sig_parts.get("v1")
+
+        if not paymongo_signature:
+            raise ValueError("v1 signature not found in header")
+
+        # Create our expected signature
+        # The signature is based on: timestamp + "." + payload
+        timestamped_payload = f"{sig_parts.get('t')}.{payload.decode()}"
         
+        expected_signature = hmac.new(
+            webhook_secret.encode(),
+            msg=timestamped_payload.encode(),
+            digestmod=hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, paymongo_signature):
+            raise ValueError("Signatures do not match")
+
+    except (ValueError, KeyError) as e:
+        logging.warning(f"Webhook signature verification failed: {e}")
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    # 5. Process the event if signature is valid
+    try:
+        event_data = json.loads(payload)
+        event_type = event_data.get("data", {}).get("attributes", {}).get("type")
+        checkout_session = event_data.get("data", {}).get("attributes", {}).get("data", {})
+
+        # Extract checkout ID
+        checkout_id = checkout_session.get("id")
+        if not checkout_id:
+            return Response(status_code=200, content="Event ignored: No checkout ID found.")
+
+        # Find the corresponding donation
+        donation = CRUD.get_donation_by_checkout_id(db, checkout_id)
+        if not donation:
+            logging.warning(f"Webhook received for unknown checkout_id: {checkout_id}")
+            # Return 200 to acknowledge receipt and prevent retries from PayMongo
+            return Response(status_code=200, content="Donation for checkout ID not found.")
+
+        # Update status based on event type
+        if event_type == "checkout.session.payment.paid":
+            CRUD.completed_donation_status(db, donation.donation_id)
+            logging.info(f"Donation {donation.donation_id} marked as COMPLETED via webhook.")
+        
+        elif event_type == "checkout.session.payment.failed":
+            CRUD.failed_donation_status(db, donation.donation_id)
+            logging.info(f"Donation {donation.donation_id} marked as FAILED via webhook.")
+        
+        else:
+            logging.info(f"Ignored webhook event type: {event_type}")
+
+    except Exception as e:
+        logging.exception("Error processing PayMongo webhook payload")
+        # Still return 200 to avoid PayMongo retrying on a processing error
+        return Response(status_code=200, content="Webhook processed with an internal error.")
+
+    return Response(status_code=200, content="Webhook processed successfully.")
+        
+@router_admin_or_donor.get("/{donation_id}/receipt")
+def get_donation_receipt(
+    donation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_access_token),
+):
+    """
+    Generates and streams a PDF receipt for a specific donation.
+    Accessible by the donor who made the donation or an admin.
+    """
+    try:
+        # Fetch the donation with donor and cash/inkind details
+        donation = CRUD.get_donation_with_details_by_id(db, donation_id)
+        if not donation:
+            raise HTTPException(status_code=404, detail="Donation not found")
+
+        # Authorization check
+        is_admin = any(
+            role in current_user.roles 
+            for role in ["finance admin", "operations admin", "superuser"]
+        )
+        
+        # Check if the current user is the donor
+        is_owner = donation.donor.user_id == current_user.user_id
+
+        if not is_admin and not is_owner:
+            raise HTTPException(status_code=403, detail="Not authorized to view this receipt")
+
+        # Generate the PDF
+        pdf_buffer = generate_donation_receipt(donation)
+        
+        filename = f"Donation_Receipt_{donation.donation_id}.pdf"
+        headers = {
+            "Content-Disposition": f'inline; filename="{filename}"'
+        }
+
+        return StreamingResponse(pdf_buffer, media_type="application/pdf", headers=headers)
+
+    except SQLAlchemyError as e:
+        logging.exception("Database error fetching donation for receipt")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    except Exception as e:
+        logging.exception(f"Error generating receipt for donation {donation_id}")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
 
 router.include_router(router_admin)
 router.include_router(router_donor)

@@ -1,14 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./DefaultListViewStyle.scss";
 import { useUserRoleContext } from "../../UserRoleContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faListUl, 
-  faExclamationTriangle, 
-  faUsers, 
-  faChevronDown, 
-  faChevronUp, 
-  faMapMarkerAlt, 
+import {
+  faListUl,
+  faExclamationTriangle,
+  faUsers,
+  faChevronDown,
+  faChevronUp,
+  faMapMarkerAlt,
   faClock,
   faFileAlt,
   faPrint,
@@ -137,7 +137,7 @@ interface ReportData {
 const getIconByStatus = (status: DemandPin["status"]) => {
   let iconUrl = "";
   let iconColor = "#6c757d"; // Default gray
-  
+
   if (status === "no response") {
     iconColor = "#dc3545"; // Red for urgent/no response
   } else if (status === "responded") {
@@ -151,23 +151,23 @@ const getIconByStatus = (status: DemandPin["status"]) => {
     <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <!-- Pin shadow -->
       <ellipse cx="16" cy="37" rx="4" ry="2" fill="rgba(0,0,0,0.2)"/>
-      
+
       <!-- Pin body -->
-      <path d="M16 1C8.82 1 3 6.82 3 14C3 23 16 38 16 38S29 23 29 14C29 6.82 23.18 1 16 1Z" 
-            fill="${iconColor}" 
-            stroke="white" 
+      <path d="M16 1C8.82 1 3 6.82 3 14C3 23 16 38 16 38S29 23 29 14C29 6.82 23.18 1 16 1Z"
+            fill="${iconColor}"
+            stroke="white"
             stroke-width="2"/>
-      
+
       <!-- Inner circle -->
       <circle cx="16" cy="14" r="6" fill="white"/>
-      
+
       <!-- Status indicator dot -->
       <circle cx="16" cy="14" r="3" fill="${iconColor}"/>
-      
+
       <!-- Small status icon based on status -->
-      ${status === "no response" ? 
+      ${status === "no response" ?
         `<text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>` :
-        status === "responded" ? 
+        status === "responded" ?
         `<circle cx="16" cy="14" r="1.5" fill="white"/>` :
         `<path d="M13 14L15 16L19 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
       }
@@ -222,16 +222,16 @@ const MapView: React.FC<{
             <div style={{ minWidth: '200px' }}>
               <h4 style={{ margin: '0 0 8px 0', color: '#495057' }}>{point.label}</h4>
               <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>
-                <strong>Status:</strong> <span style={{ 
-                  color: point.status === 'completed' ? '#28a745' : 
-                        point.status === 'responded' ? '#ffc107' : '#dc3545' 
+                <strong>Status:</strong> <span style={{
+                  color: point.status === 'completed' ? '#28a745' :
+                        point.status === 'responded' ? '#ffc107' : '#dc3545'
                 }}>{point.status}</span>
               </p>
               <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>
-                <strong>Priority:</strong> <span style={{ 
-                  color: point.priority === 'urgent' ? '#dc3545' : 
-                        point.priority === 'high' ? '#fd7e14' : 
-                        point.priority === 'medium' ? '#ffc107' : '#28a745' 
+                <strong>Priority:</strong> <span style={{
+                  color: point.priority === 'urgent' ? '#dc3545' :
+                        point.priority === 'high' ? '#fd7e14' :
+                        point.priority === 'medium' ? '#ffc107' : '#28a745'
                 }}>{point.priority}</span>
               </p>
               <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>
@@ -256,11 +256,11 @@ const MapView: React.FC<{
         </Marker>
       ))}
     </MapContainer>
-    
+
     {/* Legend Overlay */}
     <div style={{
       position: 'absolute',
-      top: '10px',
+      bottom: '10px',
       right: '10px',
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       backdropFilter: 'blur(8px)',
@@ -284,7 +284,7 @@ const MapView: React.FC<{
         <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#6c757d' }} />
         Status Legend
       </div>
-      
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {/* No Response */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -299,7 +299,7 @@ const MapView: React.FC<{
           }}></div>
           <span style={{ color: '#495057', fontSize: '0.8rem' }}>No Response</span>
         </div>
-        
+
         {/* Responded */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
@@ -313,7 +313,7 @@ const MapView: React.FC<{
           }}></div>
           <span style={{ color: '#495057', fontSize: '0.8rem' }}>Responded</span>
         </div>
-        
+
         {/* Completed */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
@@ -328,14 +328,14 @@ const MapView: React.FC<{
           <span style={{ color: '#495057', fontSize: '0.8rem' }}>Completed</span>
         </div>
       </div>
-      
+
       {/* Separator line */}
       <div style={{
         height: '1px',
         backgroundColor: '#e9ecef',
         margin: '8px 0'
       }}></div>
-      
+
       {/* Summary stats */}
       <div style={{
         fontSize: '0.75rem',
@@ -444,13 +444,14 @@ type InKindMonitoring = {
 };
 
 const ResponseDashboard = () => {
+  const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
   const [recentMapActivity, setRecentMapActivity] = useState<RecentMapActivity[] | null>(null);
   const [reportSummary, setReportSummary] = useState<ReportSummary | null>(null);
   const [inKindMonitoring, setInKindMonitoring] = useState<InKindMonitoring | null>(null);
   const [demandMapPin, setDemandMapPin] = useState<MapPin[] | null>(null);
   const [isPageFullyLoaded, setIsPageFullyLoaded] = useState(false);
-  
+
   // State for expandable supply breakdown
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -632,7 +633,7 @@ const ResponseDashboard = () => {
         },
         {
           id: "pin5",
-          type: "demand", 
+          type: "demand",
           label: "Evacuation Center E",
           lat: 10.325000,
           lng: 123.880000,
@@ -706,7 +707,7 @@ const ResponseDashboard = () => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
-    
+
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h ago`;
     return `${Math.floor(diffMinutes / 1440)}d ago`;
@@ -769,7 +770,7 @@ const ResponseDashboard = () => {
       companyInfo,
       reportTitle,
       generatedDate,
-      
+
         summary: {
           totalIncidents: reportSummary?.total_reports || 15,
           activeIncidents: reportSummary?.active_incidents || 3,
@@ -810,14 +811,14 @@ const ResponseDashboard = () => {
           staffUtilization: 66.7
         }
 
-        
+
       };
 
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setReportData(mockReportData);
-      
+
       // Uncomment when API is ready:
       // const report = await fetchData<ReportData>(`/response_dashboard/generate_report?period=${reportPeriod}`, setReportData);
     } catch (error) {
@@ -832,33 +833,33 @@ const ResponseDashboard = () => {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         const reportContent = printRef.current.innerHTML;
-        
+
         printWindow.document.write(`
           <html>
             <head>
               <title>Emergency Response Report - ${reportData?.dateRange}</title>
               <style>
-                body { 
-                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                  margin: 20px; 
+                body {
+                  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                  margin: 20px;
                   color: #333;
                   line-height: 1.6;
                 }
-                .report-header { 
-                  text-align: center; 
-                  margin-bottom: 30px; 
-                  border-bottom: 3px solid #007bff; 
-                  padding-bottom: 20px; 
+                .report-header {
+                  text-align: center;
+                  margin-bottom: 30px;
+                  border-bottom: 3px solid #007bff;
+                  padding-bottom: 20px;
                 }
-                .company-name { 
-                  font-size: 28px; 
-                  font-weight: bold; 
-                  color: #007bff; 
-                  margin-bottom: 10px; 
+                .company-name {
+                  font-size: 28px;
+                  font-weight: bold;
+                  color: #007bff;
+                  margin-bottom: 10px;
                 }
-                .company-tagline { 
-                  font-size: 16px; 
-                  color: #6c757d; 
+                .company-tagline {
+                  font-size: 16px;
+                  color: #6c757d;
                   margin-bottom: 15px;
                   font-style: italic;
                 }
@@ -869,67 +870,67 @@ const ResponseDashboard = () => {
                   margin-bottom: 20px;
                   font-size: 14px;
                 }
-                .report-title { 
-                  font-size: 24px; 
-                  font-weight: bold; 
-                  color: #495057; 
-                  margin: 20px 0 10px 0; 
+                .report-title {
+                  font-size: 24px;
+                  font-weight: bold;
+                  color: #495057;
+                  margin: 20px 0 10px 0;
                 }
                 .report-meta {
                   font-size: 14px;
                   color: #6c757d;
                   margin-bottom: 20px;
                 }
-                .section { 
-                  margin-bottom: 25px; 
+                .section {
+                  margin-bottom: 25px;
                   page-break-inside: avoid;
                 }
-                .section-title { 
-                  font-size: 18px; 
-                  font-weight: bold; 
-                  margin-bottom: 15px; 
-                  color: #495057; 
-                  border-bottom: 2px solid #dee2e6; 
-                  padding-bottom: 5px; 
+                .section-title {
+                  font-size: 18px;
+                  font-weight: bold;
+                  margin-bottom: 15px;
+                  color: #495057;
+                  border-bottom: 2px solid #dee2e6;
+                  padding-bottom: 5px;
                 }
-                .metrics-grid { 
-                  display: grid; 
-                  grid-template-columns: repeat(3, 1fr); 
-                  gap: 15px; 
-                  margin-bottom: 20px; 
+                .metrics-grid {
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 15px;
+                  margin-bottom: 20px;
                 }
-                .metric-card { 
-                  padding: 15px; 
-                  border: 2px solid #dee2e6; 
-                  border-radius: 8px; 
-                  text-align: center; 
+                .metric-card {
+                  padding: 15px;
+                  border: 2px solid #dee2e6;
+                  border-radius: 8px;
+                  text-align: center;
                   background: #f8f9fa;
                 }
-                .metric-value { 
-                  font-size: 24px; 
-                  font-weight: bold; 
-                  color: #007bff; 
+                .metric-value {
+                  font-size: 24px;
+                  font-weight: bold;
+                  color: #007bff;
                   display: block;
                   margin-bottom: 5px;
                 }
-                .metric-label { 
-                  font-size: 12px; 
-                  color: #666; 
+                .metric-label {
+                  font-size: 12px;
+                  color: #666;
                   line-height: 1.4;
                 }
-                .table { 
-                  width: 100%; 
-                  border-collapse: collapse; 
-                  margin-bottom: 20px; 
+                .table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin-bottom: 20px;
                 }
-                .table th, .table td { 
-                  padding: 12px; 
-                  text-align: left; 
-                  border-bottom: 1px solid #dee2e6; 
+                .table th, .table td {
+                  padding: 12px;
+                  text-align: left;
+                  border-bottom: 1px solid #dee2e6;
                 }
-                .table th { 
-                  background-color: #f8f9fa; 
-                  font-weight: bold; 
+                .table th {
+                  background-color: #f8f9fa;
+                  font-weight: bold;
                   color: #495057;
                 }
                 .priority-urgent { color: #dc3545; font-weight: bold; }
@@ -939,15 +940,15 @@ const ResponseDashboard = () => {
                 .status-completed { color: #28a745; font-weight: 600; }
                 .status-responded { color: #ffc107; font-weight: 600; }
                 .status-no-response { color: #dc3545; font-weight: 600; }
-                @page { 
-                  margin: 1in; 
+                @page {
+                  margin: 1in;
                   @bottom-right {
                     content: "Page " counter(page) " of " counter(pages);
                   }
                 }
-                @media print { 
-                  body { margin: 0; } 
-                  .no-print { display: none; } 
+                @media print {
+                  body { margin: 0; }
+                  .no-print { display: none; }
                   .section { page-break-inside: avoid; }
                 }
               </style>
@@ -974,7 +975,7 @@ const ResponseDashboard = () => {
           </div>
           <div className="header-actions">
             <button
-              onClick={() => setShowReportModal(true)}
+              onClick={() => navigate("/response_dashboard/emergency_report")}
               className="btn-generate-report"
             >
               <FontAwesomeIcon icon={faFileAlt} />
@@ -1034,25 +1035,25 @@ const ResponseDashboard = () => {
 
             {/* Staff Status - Enhanced with better spacing */}
             <div className="sub-item-content-big-data-inverted">
-              <h1 style={{ 
+              <h1 style={{
                 fontSize: "clamp(0.85rem, 1.1vw, 0.95rem)",
-                fontWeight: "500", 
+                fontWeight: "500",
                 marginBottom: "12px",
                 lineHeight: "1.2"
               }}>
-                <FontAwesomeIcon 
-                  icon={faUsers} 
-                  style={{ 
+                <FontAwesomeIcon
+                  icon={faUsers}
+                  style={{
                     marginRight: "6px",
                     fontSize: "0.9em",
                     color: "#fff"
-                  }} 
+                  }}
                 />
                 Staff Status
               </h1>
-              <div style={{ 
-                display: "flex", 
-                flexDirection: "column", 
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
                 gap: "10px",
                 alignItems: "stretch",
                 padding: "0 4px"
@@ -1067,14 +1068,14 @@ const ResponseDashboard = () => {
                   borderRadius: "4px",
                   border: "1px solid rgba(255,255,255,0.2)"
                 }}>
-                  <span style={{ 
+                  <span style={{
                     fontSize: "clamp(0.8rem, 1vw, 0.85rem)",
                     fontWeight: "500",
                     color: "rgba(255,255,255,0.9)"
                   }}>
                     Available
                   </span>
-                  <span style={{ 
+                  <span style={{
                     fontSize: "clamp(1rem, 1.3vw, 1.1rem)",
                     fontWeight: "700",
                     color: "#fff"
@@ -1082,7 +1083,7 @@ const ResponseDashboard = () => {
                     {inKindMonitoring?.staff_available || 0}
                   </span>
                 </div>
-                
+
                 {/* Deployed Staff */}
                 <div style={{
                   display: "flex",
@@ -1093,14 +1094,14 @@ const ResponseDashboard = () => {
                   borderRadius: "4px",
                   border: "1px solid rgba(255,255,255,0.2)"
                 }}>
-                  <span style={{ 
+                  <span style={{
                     fontSize: "clamp(0.8rem, 1vw, 0.85rem)",
                     fontWeight: "500",
                     color: "rgba(255,255,255,0.9)"
                   }}>
                     Deployed
                   </span>
-                  <span style={{ 
+                  <span style={{
                     fontSize: "clamp(1rem, 1.3vw, 1.1rem)",
                     fontWeight: "700",
                     color: "#fff"
@@ -1117,8 +1118,8 @@ const ResponseDashboard = () => {
             <div className="horizontal-container">
               <h3>Recent Map Activity</h3>
             </div>
-            <div className="recent-activity" style={{ 
-              maxHeight: "300px", 
+            <div className="recent-activity" style={{
+              maxHeight: "300px",
               overflowY: "auto",
               backgroundColor: "#fff",
               border: "1px solid #e9ecef",
@@ -1131,7 +1132,7 @@ const ResponseDashboard = () => {
                     {recentMapActivity.slice(0, 5).map((activity) => {
                       const activityStyle = getActivityTypeStyle(activity.activity_type);
                       const priorityStyle = getPriorityStyle(activity.priority);
-                      
+
                       return (
                         <div
                           key={activity.id}
@@ -1145,12 +1146,12 @@ const ResponseDashboard = () => {
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                              <FontAwesomeIcon 
-                                icon={activityStyle.icon} 
+                              <FontAwesomeIcon
+                                icon={activityStyle.icon}
                                 style={{ color: activityStyle.color, fontSize: "0.9rem" }}
                               />
-                              <span style={{ 
-                                fontSize: "0.85rem", 
+                              <span style={{
+                                fontSize: "0.85rem",
                                 fontWeight: "600",
                                 color: activityStyle.color
                               }}>
@@ -1168,8 +1169,8 @@ const ResponseDashboard = () => {
                                 {activity.priority}
                               </span>
                             </div>
-                            <span style={{ 
-                              fontSize: "0.75rem", 
+                            <span style={{
+                              fontSize: "0.75rem",
                               color: "#6c757d",
                               display: "flex",
                               alignItems: "center",
@@ -1179,21 +1180,21 @@ const ResponseDashboard = () => {
                               {formatTimeAgo(activity.timestamp)}
                             </span>
                           </div>
-                          
+
                           <div style={{ marginBottom: "4px" }}>
-                            <span style={{ 
-                              fontSize: "0.8rem", 
+                            <span style={{
+                              fontSize: "0.8rem",
                               fontWeight: "500",
                               color: "#495057"
                             }}>
                               📍 {activity.location.name}
                             </span>
                           </div>
-                          
+
                           <div style={{ fontSize: "0.75rem", color: "#6c757d", marginBottom: "4px" }}>
                             {activity.description}
                           </div>
-                          
+
                           {activity.assigned_team && (
                             <div style={{ fontSize: "0.7rem", color: "#007bff" }}>
                               Team: {activity.assigned_team}
@@ -1204,9 +1205,9 @@ const ResponseDashboard = () => {
                     })}
                   </div>
                 ) : (
-                  <div style={{ 
-                    textAlign: "center", 
-                    color: "#6c757d", 
+                  <div style={{
+                    textAlign: "center",
+                    color: "#6c757d",
                     padding: "2rem",
                     fontSize: "0.9rem"
                   }}>
@@ -1214,9 +1215,9 @@ const ResponseDashboard = () => {
                   </div>
                 )
               ) : (
-                <div style={{ 
-                  textAlign: "center", 
-                  color: "#6c757d", 
+                <div style={{
+                  textAlign: "center",
+                  color: "#6c757d",
                   padding: "2rem",
                   fontSize: "0.9rem"
                 }}>
@@ -1314,19 +1315,19 @@ const ResponseDashboard = () => {
                 <h4 style={{ fontSize: "1rem", marginBottom: "10px", color: "#495057" }}>
                   Supply Categories
                 </h4>
-                
+
                 {/* Category Summary Grid - Updated categories */}
                 <div style={{ display: "grid", gap: "8px", marginBottom: "15px" }}>
                   {Object.entries(inKindMonitoring.category_summary).map(([category, data]) => {
                     const style = getCategoryStyle(category);
                     const categoryDisplayNames = {
                       food: "Food",
-                      medical: "Medical", 
+                      medical: "Medical",
                       clothing: "Clothing",
                       beverages: "Beverages",
                       hygiene: "Hygiene"
                     };
-                    
+
                     return (
                       <div
                         key={category}
@@ -1365,9 +1366,9 @@ const ResponseDashboard = () => {
                 {/* Detailed Item List for Selected Category */}
                 {selectedCategory && (
                   <div style={{ marginTop: "15px" }}>
-                    <h5 style={{ 
-                      fontSize: "0.95rem", 
-                      marginBottom: "10px", 
+                    <h5 style={{
+                      fontSize: "0.95rem",
+                      marginBottom: "10px",
                       color: "#495057",
                       display: "flex",
                       alignItems: "center",
@@ -1375,17 +1376,17 @@ const ResponseDashboard = () => {
                     }}>
                       {getCategoryStyle(selectedCategory).icon}
                       {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Items
-                      <span style={{ 
-                        fontSize: "0.75rem", 
+                      <span style={{
+                        fontSize: "0.75rem",
                         color: "#6c757d",
-                        fontWeight: "400" 
+                        fontWeight: "400"
                       }}>
                         ({inKindMonitoring.supply_items.filter(item => item.category === selectedCategory).length} items)
                       </span>
                     </h5>
-                    
-                    <div style={{ 
-                      maxHeight: "250px", 
+
+                    <div style={{
+                      maxHeight: "250px",
                       overflowY: "auto",
                       border: "1px solid #e9ecef",
                       borderRadius: "6px",
@@ -1400,26 +1401,26 @@ const ResponseDashboard = () => {
                               padding: "10px 12px",
                               backgroundColor: isLowStock(item) ? "#fff3cd" : "white",
                               border: isLowStock(item) ? "1px solid #ffc107" : "none",
-                              borderBottom: index < inKindMonitoring.supply_items.filter(i => i.category === selectedCategory).length - 1 
+                              borderBottom: index < inKindMonitoring.supply_items.filter(i => i.category === selectedCategory).length - 1
                                 ? "1px solid #e9ecef" : "none",
                               fontSize: "0.8rem"
                             }}
                           >
-                            <div style={{ 
-                              display: "flex", 
-                              justifyContent: "space-between", 
+                            <div style={{
+                              display: "flex",
+                              justifyContent: "space-between",
                               alignItems: "center",
                               marginBottom: "6px"
                             }}>
-                              <span style={{ 
+                              <span style={{
                                 fontWeight: "600",
                                 color: "#495057",
                                 fontSize: "0.85rem"
                               }}>
                                 {item.name}
                                 {isLowStock(item) && (
-                                  <span style={{ 
-                                    color: "#856404", 
+                                  <span style={{
+                                    color: "#856404",
                                     marginLeft: "6px",
                                     fontSize: "0.75rem",
                                     fontWeight: "500"
@@ -1429,9 +1430,9 @@ const ResponseDashboard = () => {
                                 )}
                               </span>
                             </div>
-                            
-                            <div style={{ 
-                              display: "grid", 
+
+                            <div style={{
+                              display: "grid",
                               gridTemplateColumns: "1fr 1fr 1fr",
                               gap: "8px",
                               fontSize: "0.75rem",
@@ -1448,7 +1449,7 @@ const ResponseDashboard = () => {
                                   {item.available} {item.unit}
                                 </div>
                               </div>
-                              
+
                               <div style={{
                                 padding: "4px 6px",
                                 backgroundColor: "#fff3e0",
@@ -1460,7 +1461,7 @@ const ResponseDashboard = () => {
                                   {item.in_transit} {item.unit}
                                 </div>
                               </div>
-                              
+
                               <div style={{
                                 padding: "4px 6px",
                                 backgroundColor: "#e8f5e8",
@@ -1482,229 +1483,6 @@ const ResponseDashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Report Generation Modal */}
-        {showReportModal && (
-          <div className="modal-overlay">
-            <div className="modal report-modal">
-              <div className="modal-header">
-                <h3>Generate Emergency Response Report</h3>
-                <button className="close-btn" onClick={() => setShowReportModal(false)}>
-                  <FontAwesomeIcon icon={faTimes} />
-                </button>
-              </div>
-
-              <div className="modal-content">
-                {!reportData ? (
-                  <div className="report-config">
-                    <div className="form-group">
-                      <label>Report Period</label>
-                      <div className="period-options">
-                        <button
-                          className={`period-btn ${reportPeriod === 'monthly' ? 'active' : ''}`}
-                          onClick={() => setReportPeriod('monthly')}
-                        >
-                          Monthly
-                        </button>
-                        <button
-                          className={`period-btn ${reportPeriod === 'quarterly' ? 'active' : ''}`}
-                          onClick={() => setReportPeriod('quarterly')}
-                        >
-                          Quarterly
-                        </button>
-                        <button
-                          className={`period-btn ${reportPeriod === 'yearly' ? 'active' : ''}`}
-                          onClick={() => setReportPeriod('yearly')}
-                        >
-                          Yearly
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="report-preview">
-                      <h4>Report Preview</h4>
-                      <p><strong>Period:</strong> {getDateRange(reportPeriod)}</p>
-                      <p><strong>Includes:</strong></p>
-                      <ul>
-                        <li>Incident summary and statistics</li>
-                        <li>Response time performance</li>
-                        <li>Resource distribution analysis</li>
-                        <li>Staff deployment metrics</li>
-                        <li>Location-based incident breakdown</li>
-                        <li>Performance indicators and trends</li>
-                      </ul>
-                    </div>
-
-                    <div className="modal-actions">
-                      <button 
-                        className="btn-secondary" 
-                        onClick={() => setShowReportModal(false)}
-                        disabled={isGeneratingReport}
-                      >
-                        Cancel
-                      </button>
-                      <button 
-                        className="btn-primary" 
-                        onClick={generateReport}
-                        disabled={isGeneratingReport}
-                      >
-                        {isGeneratingReport ? (
-                          <>
-                            <div className="spinner"></div>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <FontAwesomeIcon icon={faFileAlt} />
-                            Generate Report
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="report-display">
-                    <div className="report-actions">
-                      <button className="btn-secondary" onClick={handlePrint}>
-                        <FontAwesomeIcon icon={faPrint} />
-                        Print Report
-                      </button>
-                      <button 
-                        className="btn-secondary" 
-                        onClick={() => setReportData(null)}
-                      >
-                        Generate New Report
-                      </button>
-                    </div>
-
-                    <div ref={printRef} className="report-content">
-                      <ReportHeader
-    companyInfo={reportData.companyInfo}
-    reportTitle={reportData.reportTitle}
-    reportPeriod={reportData.dateRange}
-    generatedDate={reportData.generatedDate}
-    totalRecords={reportData.totalRecords}
-  />
-
-                      <div className="section">
-                        <div className="section-title">Executive Summary</div>
-                        <div className="metrics-grid">
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.totalIncidents}</div>
-                            <div className="metric-label">Total Relief Activities</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.activeIncidents}</div>
-                            <div className="metric-label">Active Relief Activities</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.completedIncidents}</div>
-                            <div className="metric-label">Completed</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.avgResponseTime}h</div>
-                            <div className="metric-label">Avg Response Time</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.totalStaffDeployed}</div>
-                            <div className="metric-label">Staff Deployed</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.summary.totalResourcesDistributed}</div>
-                            <div className="metric-label">Resources Distributed</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="section">
-                        <div className="section-title">Relief Activities by Priority</div>
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>Priority Level</th>
-                              <th>Count</th>
-                              <th>Percentage</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <td className="priority-urgent">Urgent</td>
-                              <td>{reportData.incidentsByPriority.urgent}</td>
-                              <td>{((reportData.incidentsByPriority.urgent / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
-                            </tr>
-                            <tr>
-                              <td className="priority-high">High</td>
-                              <td>{reportData.incidentsByPriority.high}</td>
-                              <td>{((reportData.incidentsByPriority.high / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
-                            </tr>
-                            <tr>
-                              <td className="priority-medium">Medium</td>
-                              <td>{reportData.incidentsByPriority.medium}</td>
-                              <td>{((reportData.incidentsByPriority.medium / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
-                            </tr>
-                            <tr>
-                              <td className="priority-low">Low</td>
-                              <td>{reportData.incidentsByPriority.low}</td>
-                              <td>{((reportData.incidentsByPriority.low / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="section">
-                        <div className="section-title">Resource Distribution</div>
-                        <table className="table">
-                          <thead>
-                            <tr>
-                              <th>Resource Type</th>
-                              <th>Distributed</th>
-                              <th>Percentage</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(reportData.resourceDistribution).map(([type, count]) => (
-                              <tr key={type}>
-                                <td style={{ textTransform: 'capitalize' }}>{type}</td>
-                                <td>{count}</td>
-                                <td>{((count / reportData.summary.totalResourcesDistributed) * 100).toFixed(1)}%</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="section">
-                        <div className="section-title">Performance Metrics</div>
-                        <div className="metrics-grid">
-                          <div className="metric-card">
-                            <div className="metric-value" style={{ 
-                              color: reportData.performanceMetrics.responseTimeAchieved <= reportData.performanceMetrics.responseTimeTarget ? '#28a745' : '#dc3545' 
-                            }}>
-                              {reportData.performanceMetrics.responseTimeAchieved}h
-                            </div>
-                            <div className="metric-label">Response Time (Target: {reportData.performanceMetrics.responseTimeTarget}h)</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value" style={{ 
-                              color: reportData.performanceMetrics.completionRate >= 80 ? '#28a745' : reportData.performanceMetrics.completionRate >= 60 ? '#ffc107' : '#dc3545' 
-                            }}>
-                              {reportData.performanceMetrics.completionRate}%
-                            </div>
-                            <div className="metric-label">Completion Rate</div>
-                          </div>
-                          <div className="metric-card">
-                            <div className="metric-value">{reportData.performanceMetrics.staffUtilization}%</div>
-                            <div className="metric-label">Staff Utilization</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

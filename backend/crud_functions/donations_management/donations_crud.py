@@ -259,10 +259,18 @@ class DonationCRUD:
         return donation
 
     @staticmethod
-    def cancel_donation_status(db: Session, donation_id: int) -> Donation:
+    def cancel_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.CANCELLED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.DENIED
+
             db.commit()
             db.refresh(donation)
             return donation
@@ -270,26 +278,82 @@ class DonationCRUD:
             raise ValueError("Donation record does not exist")
 
     @staticmethod
-    def completed_donation_status(db: Session, donation_id: int) -> Donation:
+    def completed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.COMPLETED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.RECEIVED
+            
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
             raise ValueError("Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
 
     @staticmethod
-    def failed_donation_status(db: Session, donation_id: int) -> Donation:
+    def failed_donation_status(db: Session, donation_id: str) -> Donation:
         try:
-            donation = db.query(Donation).filter(Donation.id == donation_id).one()
+            donation = (
+                db.query(Donation)
+                .options(joinedload(Donation.finance_record))
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
             donation.status = DonationStatus.FAILED
+            if donation.finance_record:
+                donation.finance_record.status = RecordStatus.DENIED
+
             db.commit()
             db.refresh(donation)
             return donation
         except NoResultFound:
             raise ValueError("Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
+
+    @staticmethod
+    def get_donation_by_checkout_id(db: Session, checkout_id: str) -> Optional[Donation]:
+        """
+        Retrieves a donation record based on the PayMongo checkout session ID.
+        """
+        try:
+            return db.query(Donation).filter(Donation.checkout_id == checkout_id).one_or_none()
+        except SQLAlchemyError as e:
+            # Log the error for debugging
+            # logger.error(f"Database error fetching donation by checkout_id {checkout_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error while fetching donation.")
+
+    @staticmethod
+    def get_donation_with_details_by_id(db: Session, donation_id: str) -> Optional[Donation]:
+        """
+        Retrieves a single donation with all its details, including donor and
+        cash/inkind information, by its ID.
+        """
+        try:
+            return (
+                db.query(Donation)
+                .options(
+                    joinedload(Donation.donor).joinedload(Donor.user),
+                    joinedload(Donation.cash),
+                    joinedload(Donation.inkind),
+                    joinedload(Donation.proposal),
+                )
+                .filter(Donation.donation_id == donation_id)
+                .one_or_none()
+            )
+        except SQLAlchemyError as e:
+            # logger.error(f"Database error fetching donation by id {donation_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error while fetching donation.")
 
     # --- AGGREGATIONS / REPORTS ---
     @staticmethod
@@ -572,7 +636,110 @@ class DonationCRUD:
             responses.append(resp)
 
         return responses
-    
+
+    @staticmethod
+    def get_all_donations(
+        db: Session,
+        limit: int = 100,
+        page: int = 1,
+        *,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        sort_by: str = "donation_date",
+        order: str = "desc",
+    ):
+        """
+        Donation history for all donors, with filters and pagination.
+        """
+        q = (
+            db.query(Donation)
+            .options(
+                joinedload(Donation.cash),
+                joinedload(Donation.inkind),
+                joinedload(Donation.proposal),
+                joinedload(Donation.donor),
+            )
+        )
+
+        if date_from:
+            q = q.filter(Donation.donation_date >= date_from)
+        if date_to:
+            adjusted_date_to = date_to + timedelta(days=1)
+            q = q.filter(Donation.donation_date < adjusted_date_to)
+
+        # Get total count before pagination
+        total_count = q.count()
+
+        # Sorting
+        sort_column = getattr(Donation, sort_by, Donation.donation_date)
+        if order == "asc":
+            q = q.order_by(sort_column.asc())
+        else:
+            q = q.order_by(sort_column.desc())
+
+        offset = (page - 1) * limit
+
+        db_donations = q.limit(limit).offset(offset).all()
+
+        responses = []
+
+        for db_donation in db_donations:
+            resp_dict = None
+
+            # Try pydantic v2 style
+            try:
+                resp_model = DonationHistoryResponse.model_validate(
+                    db_donation, from_attributes=True
+                )
+                resp_dict = resp_model.model_dump()
+            except Exception:
+                # Fallback to pydantic v1 / from_orm
+                try:
+                    resp_model = DonationHistoryResponse.from_orm(db_donation)
+                    resp_dict = resp_model.dict()
+                except Exception:
+                    # Ultimate manual fallback: build a plain dict (helpful for debugging)
+                    cash_obj = getattr(db_donation, "cash", None)
+                    donor_obj = getattr(db_donation, "donor", None)
+
+                    cash = None
+                    if cash_obj is not None:
+                        cash = {
+                            "cash_id": getattr(cash_obj, "cash_id", None),
+                            "amount": getattr(cash_obj, "amount", None),
+                            "payment_method": getattr(cash_obj, "payment_method", None),
+                        }
+
+                    donor = None
+                    if donor_obj is not None:
+                        donor = {
+                            "donor_id": getattr(donor_obj, "donor_id", None),
+                            "donor_name": getattr(donor_obj, "donor_name", None),
+                        }
+
+                    resp_dict = {
+                        "donation_id": getattr(db_donation, "donation_id", None),
+                        "donor_id": getattr(db_donation, "donor_id", None),
+                        "frequency": getattr(db_donation, "frequency", None),
+                        "status": getattr(db_donation, "status", None),
+                        "proposal_id": getattr(db_donation, "proposal_id", None),
+                        "donation_date": getattr(db_donation, "donation_date", None),
+                        "donation_type": getattr(db_donation, "donation_type", None),
+                        "next_donation_date": getattr(db_donation, "next_donation_date", None),
+                        "end_date": getattr(db_donation, "end_date", None),
+                        "is_active": getattr(db_donation, "is_active", None),
+                        "cash": cash,
+                        "inkind": getattr(db_donation, "inkind", None),
+                        "donor": donor,
+                    }
+
+            responses.append(resp_dict)
+
+        # debug: optional
+        print("Returning donation count:", len(responses), "total_count:", total_count)
+
+        return {"donations": responses, "total": total_count}
+
 
 def _add_months(orig: date, months: int) -> date:
     """Return date after adding `months` calendar months, clamping day to month length."""

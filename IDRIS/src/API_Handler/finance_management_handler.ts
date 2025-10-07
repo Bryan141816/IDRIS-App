@@ -5,14 +5,14 @@ export async function createInflowFinanceRecord(form: FormData): Promise<any> {
   const { data } = await API.post('/finance/inflow/create', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return data; // <-- return data, not the whole response
+  return data;
 }
 
 export async function createOutflowFinanceRecord(form: FormData): Promise<any> {
   const { data } = await API.post('/finance/outflow/create', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return data; // <-- return data, not the whole response
+  return data;
 }
 
 export async function getFinanceSummary(): Promise<any> {
@@ -43,7 +43,6 @@ export async function getBudgetAllocationSummary(options?: {
   const { data } = await API.get('/finance/summary/budget_allocation', {
     params: {
       ...options,
-      // let Axios expand array as ?statuses=RECEIVED&statuses=PAID
       statuses: options?.statuses,
     },
   });

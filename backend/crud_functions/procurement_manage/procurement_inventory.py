@@ -2,6 +2,7 @@ from data_schemas.procurement_inventory import (
     WarehouseZoneCreate,
     WarehouseZoneOut,
     InventoryItemCreate,
+    InventoryItemUpdate,
 )
 
 from sqlalchemy.orm import Session
@@ -76,3 +77,22 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def get_all_inventory_item(db: Session):
         return db.query(InventoryItems).order_by(InventoryItems.item_name.desc()).all()
+
+    @staticmethod
+    def update_inventory_item(db: Session, payload: InventoryItemUpdate):
+        inventory = (
+            db.query(InventoryItems)
+            .filter(InventoryItems.inventory_id == payload.inventory_id)
+            .first()
+        )
+        if not inventory:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Inventory with id {payload.warehouse_id} not found",
+            )
+        for key, value in payload.dict(exclude_unset=True).items():
+            setattr(inventory, key, value)
+
+        db.commit()
+        db.refresh(inventory)
+        return inventory

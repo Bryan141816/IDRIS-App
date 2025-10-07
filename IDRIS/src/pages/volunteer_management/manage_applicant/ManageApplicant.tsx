@@ -715,11 +715,7 @@ const ManageApplicant: React.FC = () => {
                         {/* TYPE BADGE */}
                         <div style={{ marginBottom: 12 }}>
                             {selectedVolunteer.organization_name ? <Tag color="blue">Organization</Tag> : <Tag color="green">Individual</Tag>}
-                            {selectedVolunteer.availability_status && (
-                                <Tag style={{ marginLeft: 8 }} color={selectedVolunteer.availability_status === 'available' ? 'green' : 'default'}>
-                                    {selectedVolunteer.availability_status}
-                                </Tag>
-                            )}
+
                         </div>
 
                         {/* ORG VIEW */}

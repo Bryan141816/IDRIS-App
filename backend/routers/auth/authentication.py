@@ -259,8 +259,8 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
             email=user.email,
             username=user.username,
             password=user.password,
-            user_type="user",
-            roles=["generic"],
+            user_type=user.user_type,  
+            roles=[user.user_role],
         )
         access_token = create_access_token(data={"sub": new_user.email})
         refresh_token = create_refresh_token(data={"sub": new_user.email})

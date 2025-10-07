@@ -197,35 +197,36 @@ class LGURecords(Base):
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
 
-# models.py
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
 
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
     name = Column(String(255), nullable=False)
+
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
 
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
+    baranggay_pic = Column(String, nullable=True)  
+    baranggay_desc = Column(Text, nullable=True)           
+    resources = Column(JSON, nullable=True)               
+    contact_info = Column(String(255), nullable=True)  
+    population = Column(JSON, nullable=True)
 
-    # ⬇️ change: allow NULL + set-null on parent delete
+    risk_level = Column(String(50), nullable=True)   # ✅ added back
+
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
         Integer,
         ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
-        nullable=True,  # ⬅️ important
+        nullable=True,
     )
-
-    population = Column(Integer, nullable=False)
-    contact_info = Column(String(255), nullable=False)
-    risk_level = Column(String(50), nullable=False)
 
     lgu = relationship("LGURecords", back_populates="baranggays")
     evacucation_center = relationship(
         "EvacuationCenter",
         back_populates="barangay",
-        passive_deletes=True,  # ok to keep
+        passive_deletes=True,
     )
-
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"
@@ -449,6 +450,7 @@ class Donation(Base):
         nullable=False,
         server_default=DonationStatus.PENDING.value,
     )
+    checkout_id = Column(String(255), nullable=True, index=True)
     # Additional fields
     funding_id = Column(
         String, ForeignKey("funding_proposals.funding_id"), nullable=True
@@ -477,6 +479,8 @@ class Donation(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+
+    finance_record = relationship("FinanceRecord", back_populates="donation", uselist=False, cascade="all, delete-orphan")
     inkind = relationship(
         "Donation_InKind",
         back_populates="donation",
@@ -1044,6 +1048,7 @@ class TransactionType(enum.Enum):
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid
     RECEIVED = "RECEIVED"  # for inflows
+    
     PAID = "PAID"  # for outflows
     APPROVED = "APPROVED"  # approver ok (often outflow)
     DENIED = "DENIED"  # rejected
@@ -1071,6 +1076,9 @@ class FinanceRecord(Base):
     budget_for = Column(
         SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
     )
+
+    donation_id = Column(String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True)
+    donation = relationship("Donation", back_populates="finance_record", uselist=False)
 
     audits = relationship(
         "FinanceAudit", back_populates="record", cascade="all, delete-orphan"

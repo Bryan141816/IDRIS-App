@@ -159,6 +159,8 @@
       }
      
       .header-actions {
+        flex-direction: column;
+        width: 100%;
         justify-content: center;
       }
     }

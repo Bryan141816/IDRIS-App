@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict,Field
-from typing import List, Optional
+from typing import List, Optional, Union
+
 
 
 class ErrorResponse(BaseModel):
@@ -37,6 +38,9 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: Optional[str]
+    user_type: Optional[str] = "user"      # ✅ Added
+    user_role: Optional[str] = "generic"   # ✅ Added
+
 
 
 # required on creation
@@ -125,30 +129,38 @@ class LGURecordsOut(BaseModel):
     local_suppliers: Optional[List[str]] = None
 
     class Config:
-        from_attributes = True 
-
-
+        from_attributes = True
 
 class BaranggayRecordsCreate(BaseModel):
     name: str
     lat: float
     lng: float
     LGU: str
-    evacuation: Optional[str] = None   # ✅ allow None
-    population: int
-    contact_info: str
-    risk_level: str
+    evacuation: Optional[str] = None  # ✅ allow None
+    population: Union[int, dict, list]  # ✅ JSON in DB, flexible input
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Ensure it's included for creation
+    resources: Optional[dict] = None
+
 
 class BaranggayRecordsUpdate(BaseModel):
     name: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
     LGU: Optional[str] = None
-    evacuation: Optional[str] = None   # <- None or "" means DETACH
-    population: Optional[int] = None
+    evacuation: Optional[str] = None   # None or "" means DETACH
+    population: Optional[Union[int, dict, list]] = None
     contact_info: Optional[str] = None
     risk_level: Optional[str] = None
-    
+
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Ensure it's included for updates
+    resources: Optional[dict] = None
+
+
 class BaranggayRecordsOut(BaseModel):
     id: int
     name: str
@@ -156,9 +168,13 @@ class BaranggayRecordsOut(BaseModel):
     lng: float
     lgu_id: int
     evacucation_center_id: Optional[int] = None  # ✅ allow None
-    population: int
-    contact_info: str
-    risk_level: str
+    population: Union[int, dict, list]
+    contact_info: Optional[str] = None
+    risk_level: Optional[str] = None
+
+    baranggay_pic: Optional[str] = None
+    baranggay_desc: Optional[str] = None  # ✅ Include in the output model
+    resources: Optional[dict] = None
 
 class RafiInfrastructureCreate(BaseModel):
     rafi_name: str
@@ -174,7 +190,7 @@ class RafiInfrastructureUpdate(BaseModel):
     lng: Optional[float] = None
     rafi_desc: Optional[str] = None
     rafi_pic: Optional[str] = None
-    
+
 class RafiInfrastructureOut(BaseModel):
     rafi_id: int
     rafi_name: str
@@ -200,7 +216,7 @@ class EvacuationCenterOut(BaseModel):
     lat: float
     lng: float
     capacity: int
-    occupied: int  
+    occupied: int
 
 
 class HazardBase(BaseModel):
@@ -218,7 +234,7 @@ class HazardOut(HazardBase):
 
     class Config:
         from_attributes = True
-        
+
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

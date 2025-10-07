@@ -93,7 +93,7 @@ const ShelterReportDashboard = () =>
   import(
     "./pages/lgu_profiling/evacuationandshelter/ShelterReportDashboard").then((module) => ({
       Component: module.default,
-  }));
+    }));
 const LGU = () =>
   import("./pages/lgu_profiling/map_of_cebu/lgu").then((module) => ({
     Component: module.default,
@@ -190,7 +190,7 @@ const DonationsReport = () =>
   ).then((module) => ({ Component: module.default }));
 
 const FundingDonation = () =>
-  import("./pages/donations_management/donations/FundingDonation").then(
+  import("./pages/donations_management/donate/FundingDonation").then(
     (module) => ({ Component: module.default }),
   );
 
@@ -200,9 +200,14 @@ const DonorProfile = () =>
   }));
 
 const DonationStatus = () =>
-  import("./pages/donations_management/funding_proposals/DonationStatus").then(
+  import("./pages/donations_management/donate/DonationStatus").then(
     (module) => ({ Component: module.default }),
   );
+
+const DonationRecords = () =>
+  import("./pages/donations_management/donation_records/Donation").then(
+    (module) => ({ Component: module.default }),
+  )
 
 // const Donor_Dashboard = () =>
 //   import("./pages/donations_management/donor/DonorDashboard").then(
@@ -214,6 +219,10 @@ const DonationStatus = () =>
 
 const ResponseDashboard = () =>
   import("./pages/response_dashboard/ResponseDashboard").then((module) => ({
+    Component: module.default,
+  }));
+const EmegencyReport = () =>
+  import("./pages/response_dashboard/EmergencyReponseReport").then((module) => ({
     Component: module.default,
   }));
 const ReportList = () =>
@@ -436,6 +445,11 @@ export const router = createBrowserRouter([
             path: "donation_status",
             lazy: DonationStatus,
           },
+          {
+            path: "donation_records",
+            lazy: DonationRecords,
+            handle: { allowedRoles: ["finance admin", "operations admin"] },
+          },
         ],
       },
       {
@@ -457,6 +471,10 @@ export const router = createBrowserRouter([
           {
             index: true,
             lazy: ResponseDashboard,
+          },
+          {
+            path: "emergency_report",
+            lazy: EmegencyReport,
           },
           {
             path: "report_list",
@@ -583,9 +601,11 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donation_report": DonationsReport,
   "/donor_profile": DonorProfile,
   "/donation_status": DonationStatus,
+  "/donations_management/donation_records": DonationRecords,
   // "/donor_dashboard": Donor_Dashboard,
 
   "/response_dashboard": ResponseDashboard,
+  "/response_dashboard/emergency_report": EmegencyReport,
   "/response_dashboard/report_list": ReportList,
   "/response_dashboard/demand_and_response_map": DemandAndResponseMap,
   "/response_dashboard/demand_and_response_map/list_view":

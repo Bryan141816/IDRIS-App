@@ -33,18 +33,18 @@ export async function fetchVolunteerStatus(): Promise<{
 } | null> {
   const results: Array<{ type: "individual" | "organization"; data: CommonRead }> = [];
 
-  try {
-    const { data } = await API.get<CommonRead>("/volunteer/get_by_user_id");
+   try {
+    const { data } = await API.get("/volunteer/my_profile");   // ✅ fixed
     results.push({ type: "individual", data });
   } catch (e: any) {
-    if (e?.response?.status !== 404) console.error("individual get_by_user_id error:", e);
+    if (e?.response?.status !== 404) console.error("individual profile error:", e);
   }
 
   try {
-    const { data } = await API.get<CommonRead>("/organization_volunteer/get_by_user_id");
+    const { data } = await API.get("/organization_volunteer/my_profile");  // ✅ fixed
     results.push({ type: "organization", data });
   } catch (e: any) {
-    if (e?.response?.status !== 404) console.error("org get_by_user_id error:", e);
+    if (e?.response?.status !== 404) console.error("org profile error:", e);
   }
 
   if (!results.length) return null;

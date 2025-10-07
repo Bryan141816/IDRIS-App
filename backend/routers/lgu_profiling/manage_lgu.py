@@ -25,7 +25,7 @@ from schemas import (
     HazardCreate,
     HazardOut
 )
-from fastapi import UploadFile, File, Form
+from fastapi import UploadFile, File, Form,Response
 from pathlib import Path
 import imghdr
 
@@ -35,7 +35,7 @@ from models import BaranggayRecords, EvacuationCenter, RAFIInfrastructure, LGURe
 
 from routers.role_checker import RoleChecker
 import math
-from typing import Union, Dict,List
+from typing import Union, Dict, List, Optional, Any
 from datetime import datetime
 router = APIRouter(
     tags=["manage_lgu"],
@@ -154,26 +154,72 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
+PER_PAGE = 10
+@router.get("/lgu_profiling/manage_lgu/barangay/{record_id}")
+def get_barangay_detail(
+    record_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    rec = (
+        db.query(BaranggayRecords)
+          .options(
+              joinedload(BaranggayRecords.lgu),
+              joinedload(BaranggayRecords.evacucation_center),
+          )
+          .get(record_id)
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="Barangay not found")
+
+    # If baranggay_pic is a relative path, return an absolute URL
+    def _abs(p: str | None) -> str | None:
+        if not p: return None
+        p = p.strip()
+        if p.lower().startswith(("http://", "https://")):
+            return p
+        base = str(request.base_url).rstrip("/")
+        return f"{base}{p if p.startswith('/') else '/' + p}"
+
+    return {
+        "id": rec.id,
+        "name": rec.name,
+        "lat": rec.lat,
+        "lng": rec.lng,
+        "population": rec.population,
+        "contact_info": rec.contact_info,
+        "risk_level": rec.risk_level,
+        "baranggay_pic": _abs(rec.baranggay_pic),
+        "baranggay_desc": rec.baranggay_desc,
+        "resources": rec.resources,
+        "lgu_id": rec.lgu_id,
+        "evacucation_center_id": rec.evacucation_center_id,
+        # handy display names for the modal
+        "lgu_name": rec.lgu.name if rec.lgu else None,
+        "evacuation_center_name": rec.evacucation_center.name if rec.evacucation_center else None,
+    }
 @router.get("/lgu_profiling/manage_lgu/get_barangay", response_model=TableResponse)
 def get_barangay(
-    db: Session = Depends(get_db), page: int = Query(1, ge=1), Name="desc"
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    Name: str = "desc"
 ):
     page = getDefaultPage(page)
-    offset = (page - 1) * 10
+    offset = (page - 1) * PER_PAGE
+
+    # ✅ Only the 6 columns you want (plus hidden id in the data rows)
     table_head = [
-        {"text": "Name", "width": "150px", "action": "Sort"},
-        {"text": "Lat", "width": "150px"},
-        {"text": "Lng", "width": "150px"},
-        {"text": "LGU", "width": "150px"},
-        {"text": "Evacuation Center", "width": "150px"},
-        {"text": "Population", "width": "150px"},
-        {"text": "Contact Info", "width": "150px"},
-        {"text": "Risk Level", "width": "150px"},
+        {"text": "Name", "width": "220px", "action": "Sort"},
+        {"text": "LGU", "width": "180px"},
+        {"text": "Evacuation Center", "width": "220px"},
+        {"text": "Contact Info", "width": "220px"},
+        {"text": "Population", "width": "140px"},
         {"text": "Action", "width": "150px"},
     ]
-    order = (
-        BaranggayRecords.name.desc() if Name == "desc" else BaranggayRecords.name.asc()
-    )
+
+    order = BaranggayRecords.name.desc() if Name == "desc" else BaranggayRecords.name.asc()
+
+    # Keep joins so we can show LGU/Evac Center names
     records = (
         db.query(BaranggayRecords)
         .options(
@@ -181,90 +227,33 @@ def get_barangay(
             joinedload(BaranggayRecords.evacucation_center),
         )
         .order_by(order)
-        .limit(100)
         .offset(offset)
+        .limit(PER_PAGE)
         .all()
     )
 
+    # Pre-compute display names
     for r in records:
         r.lgu_name = r.lgu.name if r.lgu else None
-        r.evacuation_center_name = (
-            r.evacucation_center.name if r.evacucation_center else None
-        )
+        r.evacuation_center_name = r.evacucation_center.name if r.evacucation_center else None
+
+    # Build rows (hidden id + 5 visible cols + actions)
     table_datas = []
     pageCount = page
     pages = {"page": pageCount, "row": []}
-    for result in records:
-        print(result)
-        if len(pages["row"]) == 10:
-            table_datas.append(pages)
-            pageCount += 100
-            pages = {"page": pageCount, "row": []}
 
+    for result in records:
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(result.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=result.name,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.lat),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.lng),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.lgu_name),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.evacuation_center_name),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.population),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.contact_info),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(result.risk_level),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
+            # hidden id (keep if your table component relies on this)
+            Cell(type="Hidden", text=str(result.id), font_weight=0, color="#000", width="0px"),
+
+            Cell(type="Text", text=result.name or "-", font_weight=500, color="#000", width="220px"),
+            Cell(type="Text", text=(result.lgu_name or "—"), font_weight=500, color="#000", width="180px"),
+            Cell(type="Text", text=(result.evacuation_center_name or "—"), font_weight=500, color="#000", width="220px"),
+            Cell(type="Text", text=(result.contact_info or "—"), font_weight=500, color="#000", width="220px"),
+            Cell(type="Text", text=f"{(result.population or 0):,}", font_weight=500, color="#000", width="140px"),
+
+            # Action cell – customize as your frontend expects (edit/delete/view)
             Cell(
                 type="Button",
                 text="View",
@@ -276,15 +265,13 @@ def get_barangay(
             ),
         ]
         pages["row"].append({"data": row_data})
+
     if pages["row"]:
         table_datas.append(pages)
+
     count = db.query(BaranggayRecords).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
-
-
-
-PER_PAGE = 10
 
 def _abs_media_url(request: Request, p: str | None) -> str:
     if not p or p.strip() == "-":
@@ -635,53 +622,76 @@ def search_evacuation(
     response_model=Union[BaranggayRecordsOut, ErrorResponse],
 )
 def add_barangay(record: BaranggayRecordsCreate, db: Session = Depends(get_db)):
-
-    lgu = find_lgu(q=record.LGU, sim_threshold=0.96, db=db)
-    print(lgu)
-    if len(lgu) <= 0:
+    """
+    Create a barangay record.
+    - LGU is required and must exist (via find_lgu)
+    - Evacuation center is optional; if provided, must exist (via find_evacuation)
+    - Population is JSON-compatible (int/dict/list)
+    """
+    # 1) Validate LGU
+    lgu_matches = find_lgu(q=record.LGU, sim_threshold=0.96, db=db)
+    if not lgu_matches:
         return {"success": False, "error": f"{record.LGU} doesn't exist in LGU records"}
+    lgu_id = lgu_matches[0].id  # ORM attr is `id`, DB column is lgu_id
 
-    evacuation = find_evacuation(q=record.evacuation, sim_threshold=0.96, db=db)
-    if len(evacuation) <= 0:
-        return {
-            "success": False,
-            "error": f"{record.evacuation} doesn't exist in Evacuation Center records",
-        }
-    db_record = BaranggayRecords(
-        name=record.name,
-        lat=record.lat,
-        lng=record.lng,
-        lgu_id=lgu[0].id,
-        evacucation_center_id=evacuation[0].id,
-        population=record.population,
-        contact_info=record.contact_info,
-        risk_level=record.risk_level,
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
+    # 2) Validate evacuation center (optional)
+    evac_id: Optional[int] = None
+    evac_query = (record.evacuation or "").strip()
+    if evac_query:
+        evac_matches = find_evacuation(q=evac_query, sim_threshold=0.96, db=db)
+        if not evac_matches:
+            return {
+                "success": False,
+                "error": f"{record.evacuation} doesn't exist in Evacuation Center records",
+            }
+        evac_id = evac_matches[0].id  # ORM attr is `id`, DB column is evacuation_ida
+
+    # 3) Create DB row
+    try:
+        db_row = BaranggayRecords(
+            name=record.name,
+            lat=record.lat,
+            lng=record.lng,
+            lgu_id=lgu_id,
+            evacucation_center_id=evac_id,
+            population=record.population,
+            contact_info=record.contact_info,
+            risk_level=record.risk_level,
+            baranggay_pic=record.baranggay_pic,
+            baranggay_desc=record.baranggay_desc,  # Store the description here
+            resources=record.resources,
+        )
+        db.add(db_row)
+        db.commit()
+        db.refresh(db_row)
+
+    except Exception as e:
+        db.rollback()
+        return {"success": False, "error": f"Failed to add barangay: {e}"}
+
+    # 4) Response
     return BaranggayRecordsOut(
-        id=db_record.id,
-        name=db_record.name,
-        lat=db_record.lat,
-        lng=db_record.lng,
-        lgu_id=db_record.lgu_id,
-        evacucation_center_id=db_record.evacucation_center_id,
-        population=db_record.population,
-        contact_info=db_record.contact_info,
-        risk_level=db_record.risk_level,
+        id=db_row.id,
+        name=db_row.name,
+        lat=db_row.lat,
+        lng=db_row.lng,
+        lgu_id=db_row.lgu_id,
+        evacucation_center_id=db_row.evacucation_center_id,
+        population=db_row.population,
+        contact_info=db_row.contact_info,
+        risk_level=db_row.risk_level,
+        baranggay_pic=db_row.baranggay_pic,
+        baranggay_desc=db_row.baranggay_desc,  # Include in the response
+        resources=db_row.resources,
     )
 
 
-@router.delete(
-    "/lgu_profiling/manage_lgu/delete_barangay/{record_id}", response_model=dict
-)
+@router.delete("/lgu_profiling/manage_lgu/delete_barangay/{record_id}", response_model=dict)
 def delete_barangay(record_id: int, db: Session = Depends(get_db)):
     deleted_report = delete(db, BaranggayRecords, record_id)
     if not deleted_report:
-        raise HTTPException(status_code=400, detail="Record not found.")
-    return {"message": f"Record with ID {record_id} deleted successfully."}
-
+        raise HTTPException(status_code=404, detail="Record not found.")
+    return {"message": f"Barangay with ID {record_id} deleted successfully."}
 @router.put("/lgu_profiling/manage_lgu/update_barangay/{record_id}")
 def update_barangay(
     record_id: int,
@@ -706,6 +716,15 @@ def update_barangay(
     if payload.risk_level is not None:
         record.risk_level = payload.risk_level
 
+    # ✅ NEW: allow changing picture / desc / resources
+    if getattr(payload, "baranggay_pic", None) is not None:
+        # send "" from client to clear it
+        record.baranggay_pic = payload.baranggay_pic or None
+    if getattr(payload, "baranggay_desc", None) is not None:
+        record.baranggay_desc = payload.baranggay_desc
+    if getattr(payload, "resources", None) is not None:
+        record.resources = payload.resources
+
     # 2) LGU — resolve only if provided
     if payload.LGU is not None:
         lgu = find_lgu(q=payload.LGU, sim_threshold=0.96, db=db)
@@ -717,7 +736,6 @@ def update_barangay(
     if payload.evacuation is not None:
         ev = (payload.evacuation or "").strip()
         if ev == "":
-            # DETACH
             record.evacucation_center_id = None
         else:
             evacuation = find_evacuation(q=ev, sim_threshold=0.96, db=db)

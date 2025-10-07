@@ -18,6 +18,7 @@
     "react-leaflet": "^5.0.0",
     "react-pdf": "^10.1.0",
     "react-router-dom": "^7.5.0",
+    "react-to-print": "^3.1.1",
     "sweetalert2": "^11.22.2"
   },
   "devDependencies": {

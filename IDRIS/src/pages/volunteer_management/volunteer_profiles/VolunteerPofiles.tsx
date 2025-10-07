@@ -169,11 +169,6 @@ const VolunteerProfile: React.FC = () => {
           </Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>
-          <Link to="/volunteer_management/manage_volunteers">
-            Volunteer
-          </Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
           <span>Volunteer Profile</span>
         </Breadcrumb.Item>
       </Breadcrumb>

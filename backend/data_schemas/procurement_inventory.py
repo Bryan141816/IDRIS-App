@@ -40,3 +40,13 @@ class InventoryItemsOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class InventoryItemUpdate(BaseModel):
+    inventory_id: int
+    item_name: str
+    quantity: int
+    category: str
+    batch: str
+    expiry: Optional[date] = None
+    status: str

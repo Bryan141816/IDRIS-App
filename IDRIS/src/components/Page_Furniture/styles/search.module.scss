@@ -5,30 +5,53 @@
   height: 100%;
   max-width: 100%;
   background-color: #fff;
-  border: 1px solid black;
+  border: 2px solid #ccc;
+  border-radius: 10px;
   padding: 0;
   margin: 0;
 
   display: flex;
   flex-direction: row;
+
+  input {
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    flex: 1;
+    padding: 0 8px;
+  }
+
+  // apply focus outline when input inside container is focused
+  &:focus-within {
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
 }
 
-.searchInput{
-  border: none;
-  padding: 0 12px;
-  &:focus{
-    border: none;
-    outline: none;
-  }
-  
-  color: black;
-  caret-color: black;
+.search-and-filter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-grow: 1; /* Allows it to take up available space */
+
+  // &:focus{
+  //   outline: none;
+  // }
 }
+
+// .search-input {
+//   padding: 8px 12px;
+//   border: 1px solid #ccc;
+//   border-radius: 6px;
+//   font-size: 14px;
+//   min-width: 250px; /* Adjust as needed */
+// }
 
 .searchBox {
   height: 100%;
   padding: 0 8px;
-  border-left: 2px solid black;
+  border-left: 2px solid #ccc;
 }
 
 .searchBox svg{

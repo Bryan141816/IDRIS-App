@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
+import { EditInventoryModal } from "./Modals/EditInventoryItemModal/EditInventoryItemModal";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 // interface InventoryItemProps {
 //   id: number | string;
@@ -95,11 +96,16 @@ const InventoryItems = () => {
   const [inventoryItems, setInventoryItems] = useState<InventoryItemsProps[]>(
     [],
   );
-  const openModal = (name: string, item: any | null = null) => {
+  const [selectedItem, setSelectedItem] = useState<InventoryItemsProps | null>(
+    null,
+  );
+  const openModal = (name: string, item: InventoryItemsProps | null = null) => {
     setActiveModal(name);
+    setSelectedItem(item);
   };
   const closeModal = () => {
     setActiveModal(null);
+    setSelectedItem(null);
   };
   const fetchData = async () => {
     try {
@@ -121,13 +127,30 @@ const InventoryItems = () => {
     };
     handleFetch();
   }, []);
+
+  const updateTable = () => {
+    const handleFetch = async () => {
+      const response = await fetchData();
+      console.log(response);
+
+      setInventoryItems(response);
+    };
+    handleFetch();
+  };
   return (
     <>
       {activeModal == "add-item" && (
         <AddInventoryItemTab
           onClose={closeModal}
-          refreshData={() => {}}
+          refreshData={updateTable}
         ></AddInventoryItemTab>
+      )}
+      {activeModal == "edit-item" && (
+        <EditInventoryModal
+          onClose={closeModal}
+          refreshData={updateTable}
+          selectedData={selectedItem}
+        ></EditInventoryModal>
       )}
       <div className="inventory-content">
         <div className="section-header">

@@ -1,6 +1,6 @@
-import { DefaultInventoryModalProps, InventoryModal } from "../ModalDefault";
+import { DefaultInventoryModalProps } from "../ModalDefault";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 interface WarehouseZone {
   warehouse_id: number;
@@ -23,6 +23,44 @@ interface InventoryItemsProps {
 }
 type AssignStorageProps = DefaultInventoryModalProps & {
   selectedData: WarehouseZone;
+};
+
+interface InventoryModalProps {
+  onClose: () => void;
+  onSubmit?: () => void | null;
+  children: ReactNode;
+  modalType: string;
+  zIndex?: number;
+}
+const InventoryModal: React.FC<InventoryModalProps> = ({
+  onClose,
+  onSubmit,
+  children,
+  modalType,
+  zIndex = 900,
+}) => {
+  return (
+    <div className="modal-overlay" style={{ zIndex }}>
+      <div className="modal fit-content-spreed">
+        <div className="modal-header">
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        {children}
+        <div className="modal-actions">
+          <button className="secondary-btn" onClick={onClose}>
+            {modalType === "view-item" ? "Close" : "Cancel"}
+          </button>
+          {modalType !== "view-item" && (
+            <button className="primary-btn" onClick={onSubmit}>
+              {modalType === "export" ? "Generate Report" : "Save"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export const AssignStorage: React.FC<AssignStorageProps> = ({
@@ -67,48 +105,43 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         modalType="add-warehouse"
         onSubmit={() => {}}
       >
-        <table>
-          <thead>
-            <tr>
-              <th>Item Name</th>
-              <th>Quantity</th>
-              <th>Category</th>
-              <th>Location</th>
-              <th>Batch</th>
-              <th>Expiry</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventoryItems.map((item) => (
-              <tr key={item.inventory_id}>
-                <td>{item.item_name}</td>
-                <td>{item.quantity}</td>
-                <td>{item.category}</td>
-                <td>
-                  {item.location
-                    ? typeof item.location === "string"
-                      ? item.location
-                      : item.location.zone_name
-                    : "No location assigned"}
-                </td>
-                <td>{item.batch}</td>
-                <td>
-                  {item.expiry
-                    ? new Date(item.expiry).toLocaleDateString()
-                    : "N/A"}
-                </td>
-                <td>
-                  <span
-                    className={`status-badge ${getStockStatus(item.quantity)}`}
-                  >
-                    {item.status}
-                  </span>
-                </td>
+        <div className="inventory-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Category</th>
+                <th>Batch</th>
+                <th>Expiry</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {inventoryItems.map((item) => (
+                <tr key={item.inventory_id}>
+                  <td>{item.item_name}</td>
+                  <td>{item.quantity}</td>
+                  <td>{item.category}</td>
+
+                  <td>{item.batch}</td>
+                  <td>
+                    {item.expiry
+                      ? new Date(item.expiry).toLocaleDateString()
+                      : "N/A"}
+                  </td>
+                  <td>
+                    <span
+                      className={`status-badge ${getStockStatus(item.quantity)}`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </InventoryModal>
     </>
   );

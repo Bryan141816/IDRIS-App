@@ -2,87 +2,193 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
   padding: 2rem;
-  background-color: #f9f9f9;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .receipt-container {
   width: 100%;
   max-width: 800px;
-  padding: 2rem;
+  padding: 2.5rem;
   background-color: #fff;
-  border: 1px solid #ddd;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  position: relative;
+
+  // Hide download button in print/PDF
+  @media print {
+    box-shadow: none;
+    border: none;
+    padding: 2rem;
+  }
 }
 
 .receipt-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  border-bottom: 2px solid #eee;
-  padding-bottom: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+  height: 25%;
 
-  .receipt-logo {
-    height: 50px;
+  .logo-section {
+    height: 100%;
+    flex: 0 0 auto;
   }
 
-  h1 {
-    font-size: 2rem;
-    color: #333;
+  .receipt-logo {
+    height: 100%;
+    width: auto;
+  }
+
+  .org-info {
+    text-align: right;
+    flex: 1;
+    margin-left: 1.5rem;
+
+    h1 {
+      font-size: 1.8rem;
+      color: #2c3e50;
+      margin: 0 0 0.4rem;
+      font-weight: 600;
+    }
+
+    .org-name {
+      font-weight: 600;
+      color: #34495e;
+      margin: 0.2rem 0;
+    }
+
+    .org-address,
+    .org-contact {
+      font-size: 0.95rem;
+      color: #7f8c8d;
+      margin: 0.15rem 0;
+    }
   }
 }
 
 .receipt-body {
   .receipt-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1.8rem;
 
     h2 {
-      font-size: 1.5rem;
-      color: #555;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 0.5rem;
-      margin-bottom: 1rem;
+      font-size: 1.25rem;
+      color: #2c3e50;
+      margin-bottom: 0.8rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #f1f1f1;
     }
 
     p {
+      margin: 0.4rem 0;
       font-size: 1rem;
-      line-height: 1.6;
-      color: #666;
+      color: #34495e;
+      line-height: 1.5;
     }
 
-    .amount {
-      font-size: 1.8rem;
-      font-weight: bold;
-      color: #000;
+    .status {
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+
+      &.completed {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+      }
+
+      &.pending {
+        background-color: #fff8e1;
+        color: #f57f17;
+      }
+
+      &.failed {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+    }
+  }
+
+  .amount-section {
+    text-align: center;
+    margin: 2rem 0 1.5rem;
+    padding: 1.2rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px dashed #ced4da;
+
+    .amount-label {
+      font-size: 1.1rem;
+      color: #6c757d;
+      margin-bottom: 0.5rem;
+    }
+
+    .amount-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #28a745;
+      margin: 0;
     }
   }
 }
 
 .receipt-footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eee;
   text-align: center;
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 2px solid #eee;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.6;
 
-  p {
+  .thank-you {
+    font-weight: 600;
+    color: #28a745;
+    margin: 0.8rem 0;
+  }
+
+  .signature-section {
+    margin-top: 1.5rem;
     font-size: 0.9rem;
-    color: #888;
+    color: #6c757d;
+
+    p {
+      margin: 0.2rem 0;
+    }
   }
 }
 
 .download-button {
-  margin-top: 2rem;
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
+  position: fixed;       // Fixes the button relative to the viewport
+  right: 50px;           // 50px from the right edge
+  bottom: 50px;  
+  padding: 0.85rem 1.8rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: #fff;
   background-color: #007bff;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.25s ease;
 
   &:hover {
-    background-color: #0056b3;
+    background-color: #0069d9;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  }
+}
+
+// Ensure PDF capture doesn't include button
+@media print {
+  .download-button {
+    display: none;
   }
 }

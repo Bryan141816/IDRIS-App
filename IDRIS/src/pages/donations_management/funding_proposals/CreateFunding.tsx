@@ -134,7 +134,7 @@ const CreateFunding: React.FC = () => {
     required
     autoComplete="off"
     inputMode="numeric"
-    pattern="\d*"
+    pattern="[\d,]+"
   />
 </div>
 

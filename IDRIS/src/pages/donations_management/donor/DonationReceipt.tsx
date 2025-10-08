@@ -11,7 +11,6 @@ interface DonorDetails {
   last_name: string;
   email: string;
 }
-
 interface DonationDetails {
   donation_id: number;
   amount: number;
@@ -56,36 +55,22 @@ const DonationReceipt: React.FC = () => {
         const imgHeight = canvas.height;
         const ratio = imgHeight / imgWidth;
         const pdfHeight = pdfWidth * ratio;
-
-        // If content is taller than A4, split into pages (optional enhancement)
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save(`donation-receipt-${donationId}.pdf`);
       });
     }
   };
 
-  if (loading) {
-    return <div className="receipt-page">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="receipt-page">{error}</div>;
-  }
-
-  if (!donation || !donor) {
-    return <div className="receipt-page">Donation not found.</div>;
-  }
+  if (loading) return <div className="receipt-page">Loading...</div>;
+  if (error) return <div className="receipt-page">{error}</div>;
+  if (!donation || !donor) return <div className="receipt-page">Donation not found.</div>;
 
   const formattedDate = new Date(donation.created_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    year: 'numeric', month: 'long', day: 'numeric',
   });
 
   const formattedAmount = new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    minimumFractionDigits: 2,
+    style: 'currency', currency: 'PHP', minimumFractionDigits: 2,
   }).format(donation.amount);
 
   return (
@@ -102,14 +87,12 @@ const DonationReceipt: React.FC = () => {
             <p className="org-contact">contact@rafi.org.ph | +63 2 1234 5678</p>
           </div>
         </div>
-
         <div className="receipt-body">
           <div className="receipt-section">
             <h2>Donor Information</h2>
             <p><strong>Name:</strong> {`${donor.first_name} ${donor.last_name}`}</p>
             <p><strong>Email:</strong> {donor.email}</p>
           </div>
-
           <div className="receipt-section">
             <h2>Donation Details</h2>
             <p><strong>Receipt No.:</strong> RAFI-DR-{String(donation.donation_id).padStart(6, '0')}</p>
@@ -117,13 +100,11 @@ const DonationReceipt: React.FC = () => {
             <p><strong>Type:</strong> {donation.donation_type}</p>
             <p><strong>Status:</strong> <span className={`status ${donation.status.toLowerCase()}`}>{donation.status}</span></p>
           </div>
-
           <div className="amount-section">
             <p className="amount-label">Donation Amount</p>
             <p className="amount-value">{formattedAmount}</p>
           </div>
         </div>
-
         <div className="receipt-footer">
           <p>
             This serves as an official acknowledgment of your tax-deductible contribution to RAFI Foundation, Inc., 
@@ -131,12 +112,15 @@ const DonationReceipt: React.FC = () => {
           </p>
           <p className="thank-you">Thank you for your generosity and support!</p>
         </div>
+        {/* New: Download button inside the receipt container */}
+        <button
+          onClick={handleDownloadPdf}
+          className="download-inside"
+          type="button"
+        >
+          Download as PDF
+        </button>
       </div>
-
-      {/* Button outside receipt-container so it doesn't appear in PDF */}
-      <button onClick={handleDownloadPdf} className="download-button">
-        Download as PDF
-      </button>
     </div>
   );
 };

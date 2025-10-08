@@ -27,10 +27,11 @@ type AssignStorageProps = DefaultInventoryModalProps & {
 
 interface InventoryModalProps {
   onClose: () => void;
-  onSubmit?: () => void | null;
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void | null;
   children: ReactNode;
   modalType: string;
   zIndex?: number;
+  isSubmitEnabled?: boolean | null;
 }
 const InventoryModal: React.FC<InventoryModalProps> = ({
   onClose,
@@ -38,10 +39,17 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
   children,
   modalType,
   zIndex = 900,
+  isSubmitEnabled,
 }) => {
+  console.log(isSubmitEnabled);
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div className="modal fit-content-spreed">
+      <form
+        className="modal fit-content-spreed"
+        onSubmit={(e) => {
+          if (onSubmit) onSubmit(e);
+        }}
+      >
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
             ×
@@ -53,12 +61,15 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
             {modalType === "view-item" ? "Close" : "Cancel"}
           </button>
           {modalType !== "view-item" && (
-            <button className="primary-btn" onClick={onSubmit}>
+            <button
+              className="primary-btn"
+              disabled={!(isSubmitEnabled ?? true)}
+            >
               {modalType === "export" ? "Generate Report" : "Save"}
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };
@@ -88,6 +99,11 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
     return "good";
   };
 
+  const [enabledInput, setEnabledInput] = useState<Record<number, boolean>>({});
+  const [unitsOcupancy, setUnitOcupancy] = useState<
+    Record<number, number | string>
+  >({});
+  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
   useEffect(() => {
     const handleFetch = async () => {
       const response = await fetchData();
@@ -97,13 +113,70 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
     };
     handleFetch();
   }, []);
+  useEffect(() => {
+    if (Object.keys(enabledInput).length === 0) {
+      setIsSubmitEnabled(false);
+    } else {
+      setIsSubmitEnabled(true);
+    }
+  }, [enabledInput]);
+  const submitData = async () => {
+    try {
+      const response = await API.post(
+        `/procurement_inventory/assign_storage?id=${selectedData.warehouse_id}`,
+        {
+          storage: unitsOcupancy,
+        },
+      );
+      return response.data;
+    } catch (e: any) {
+      console.error("Error assigning storage: " + e);
+    }
+  };
+  const handleIncludeItem = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    id: number,
+  ) => {
+    const checked = e.target.checked;
+
+    setEnabledInput((prev) => ({
+      ...prev,
+      [id]: checked, // true = enabled, false = disabled
+    }));
+    if (!checked) {
+      setUnitOcupancy((prev) => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
+    }
+  };
+  const handleUnitOcupancyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.name;
+    const value = parseFloat(e.target.value) ?? 0;
+
+    setUnitOcupancy((prev) => ({
+      ...prev,
+      [input]: value,
+    }));
+  };
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const submit = async () => {
+      const response = await submitData();
+    };
+    submit();
+  };
 
   return (
     <>
       <InventoryModal
         onClose={onClose}
         modalType="add-warehouse"
-        onSubmit={() => {}}
+        onSubmit={(e) => {
+          handleSubmit(e);
+        }}
+        isSubmitEnabled={isSubmitEnabled}
       >
         <div className="inventory-table">
           <table>
@@ -115,6 +188,8 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
                 <th>Batch</th>
                 <th>Expiry</th>
                 <th>Status</th>
+                <th>Include Item</th>
+                <th>Unit Occupancy</th>
               </tr>
             </thead>
             <tbody>
@@ -136,6 +211,24 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
                     >
                       {item.status}
                     </span>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      onChange={(e) => {
+                        handleIncludeItem(e, item.inventory_id);
+                      }}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      disabled={!enabledInput[item.inventory_id]}
+                      required={enabledInput[item.inventory_id]}
+                      value={unitsOcupancy[item.inventory_id] ?? ""}
+                      name={item.inventory_id.toString()}
+                      onChange={handleUnitOcupancyChange}
+                    />
                   </td>
                 </tr>
               ))}

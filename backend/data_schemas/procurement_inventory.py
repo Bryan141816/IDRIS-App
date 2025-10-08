@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel
 from datetime import date
 
@@ -33,7 +33,8 @@ class InventoryItemsOut(BaseModel):
     item_name: str
     quantity: int
     category: str
-    location: Optional[WarehouseZoneOut] = None
+    location: Optional[int] = None  # FK value
+    warehouse: Optional[WarehouseZoneOut] = None  # relationship
     batch: str
     expiry: Optional[date] = None
     status: str
@@ -50,3 +51,7 @@ class InventoryItemUpdate(BaseModel):
     batch: str
     expiry: Optional[date] = None
     status: str
+
+
+class AssignStorage(BaseModel):
+    storage: Dict[int, int]

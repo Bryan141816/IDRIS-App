@@ -10,6 +10,7 @@ from data_schemas.procurement_inventory import (
     WarehouseZoneOut,
     InventoryItemCreate,
     InventoryItemsOut,
+    AssignStorage,
 )
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
@@ -33,6 +34,11 @@ def add_warehouse_zone(request: WarehouseZoneCreate, db: Session = Depends(get_d
 )
 def get_warehouse_zone(db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.get_all_warehouse_zones(db)
+
+
+@router.post("/procurement_inventory/assign_storage")
+def assign_storage(id: int, payload: AssignStorage, db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.assign_storage(db, payload, id)
 
 
 @router.post(

@@ -29,6 +29,7 @@ import {
 
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
+
 /* ========================= API HELPERS ========================= */
 export async function getRecord(record_type: string): Promise<any> {
   const response = await API.get(
@@ -140,19 +141,20 @@ const MapOfCebu = () => {
     "lgu" | "barangay" | "rafi" | "hazard" | "evacuation"
   >("lgu");
 
-  const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
-  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(
-    null
-  );
-  const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
-  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(
-    null
-  );
-  const [evacuationResponse, setEvacuationResponse] =
-    useState<TableReponse | null>(null);
+  // 🔎 LGU search + sort
+  const [q, setQ] = useState("");
+  const [sort, setSort] = useState<"asc" | "desc">("desc");
 
-  const refreshTable = useRef<() => void>(() => {});
-  const handleRefreshTable = () => refreshTable.current?.();
+  // 📄 table data
+  const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
+  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(null);
+  const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
+  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
+  const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
+
+  // 🔁 TableView refresher (TableView gives us a function that accepts page?: number)
+  const refreshTable = useRef<null | ((page?: number) => void)>(null);
+  const handleRefreshTable = (page = 1) => refreshTable.current?.(page);
 
   const [selectedViewData, setSelectedViewData] =
     useState<TableRowShape | null>(null);
@@ -699,28 +701,71 @@ case "rafi": {
 
       {/* ---------- CONTENT ---------- */}
       <div>
-        {activeTab === "lgu" && (
-          <>
-            <div className="horizontal-container">
-              <div className="table-actions">
-                <input type="text" placeholder="Search report" />
-                <button>Search</button>
-                <button onClick={openAddModal}>+ Add LGU</button>
-              </div>
-            </div>
-            {lguResponse ? (
-              <TableView
-                tableJSON={lguResponse}
-                onClickCallback={(row: TableRowShape) => openViewModal(row)}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
-            ) : (
-              <div>Loading data...</div>
-            )}
-          </>
-        )}
+       
+{activeTab === "lgu" && (
+  <>
+    <div className="horizontal-container">
+      <div className="table-actions">
+        <input
+          type="text"
+          placeholder="Search LGU"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            // only search on Enter if at least 2 chars
+            if (e.key === "Enter" && q.trim().length >= 2) {
+              handleRefreshTable(1);
+            }
+          }}
+        />
+
+        <button
+          onClick={() => {
+            if (q.trim().length >= 2 || q.trim().length === 0) {
+              // allow empty -> show all; block 1-char searches
+              handleRefreshTable(1);
+            } else {
+              // optional UX: nudge the user
+              alert("Please type at least 2 letters to search.");
+            }
+          }}
+          // optional: disable visually when 1 char typed
+          disabled={q.trim().length === 1}
+          title={q.trim().length === 1 ? "Type at least 2 letters" : "Search"}
+        >
+          Search
+        </button>
+
+        <button
+          onClick={() => {
+            setSort((s) => (s === "desc" ? "asc" : "desc"));
+            setTimeout(() => handleRefreshTable(1), 0);
+          }}
+        >
+          Sort: {sort.toUpperCase()}
+        </button>
+
+        <button onClick={openAddModal}>+ Add LGU</button>
+      </div>
+    </div>
+
+    {lguResponse ? (
+      <TableView
+        tableJSON={lguResponse}
+        onClickCallback={(row: TableRowShape) => openViewModal(row)}
+        setCallbackTableData={true}
+        // ✅ never send a 1-char query; send "" to show all instead
+        pageRequest={`/lgu_profiling/manage_lgu/get_lgu?Name=${sort}&q=${encodeURIComponent(
+          q.trim().length === 1 ? "" : q.trim()
+        )}&page=`}
+        updateTable={(fn) => (refreshTable.current = fn)}
+      />
+    ) : (
+      <div>Loading data...</div>
+    )}
+  </>
+)}
+
 
         {activeTab === "barangay" && (
           <>

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query,FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from fastapi import Request
 from uuid import uuid4
 from data_schemas.report_schema import TableResponse, Cell
@@ -57,13 +57,95 @@ app.add_middleware(
 )
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
+from sqlalchemy import text, func
+# ...
+
+def _normalize(s: str | None) -> str:
+    return (s or "").strip()
+
+def _has_extension(db: Session, ext: str) -> bool:
+    """Safe check: never errors if extension is missing."""
+    try:
+        val = db.execute(
+            text("SELECT 1 FROM pg_extension WHERE extname = :ext LIMIT 1"),
+            {"ext": ext},
+        ).scalar()
+        return bool(val)
+    except Exception:
+        # ultra-safe: if anything odd happened, reset the session
+        try:
+            db.rollback()
+        except:
+            pass
+        return False
+
+def _supports_pg_trgm(db: Session) -> bool:
+    return _has_extension(db, "pg_trgm")
+
+def _supports_unaccent(db: Session) -> bool:
+    return _has_extension(db, "unaccent")
+
+# SEARCHING ON THE 1 LETTER------------------------------
+MIN_TRGM_CHARS = 3  # fuzzy search from 3+
+MIN_SEARCH_CHARS = 2  # require at least 2 letters for ILIKE
+
+def _lgu_base_query(db: Session, q: str | None, sim_threshold: float, order_col):
+    q = _normalize(q)
+    if not q:
+        return db.query(LGURecords).order_by(order_col)
+
+    # 🚫 too short (1 char): return empty query
+    if len(q) < MIN_SEARCH_CHARS:
+        return db.query(LGURecords).filter(False)  # always false → 0 records
+
+    # 🔍 for short queries (2 letters): use ILIKE
+    if len(q) < MIN_TRGM_CHARS:
+        like = f"%{q}%"
+        return (
+            db.query(LGURecords)
+              .filter(LGURecords.name.ilike(like))
+              .order_by(order_col)
+        )
+
+    # 🔎 for longer queries (3+ letters): fuzzy if extension exists
+    has_trgm = _supports_pg_trgm(db)
+    has_unaccent = _supports_unaccent(db)
+
+    if has_trgm:
+        name_expr = func.unaccent(LGURecords.name) if has_unaccent else LGURecords.name
+        q_expr    = func.unaccent(q)               if has_unaccent else q
+        sim = func.similarity(name_expr, q_expr).label("rank")
+        return (
+            db.query(LGURecords)
+              .filter(sim > sim_threshold)
+              .order_by(sim.desc(), order_col)
+        )
+
+    # fallback plain ILIKE
+    like = f"%{q}%"
+    return (
+        db.query(LGURecords)
+          .filter(LGURecords.name.ilike(like))
+          .order_by(order_col)
+    )
+
 @router.get("/lgu_profiling/manage_lgu/get_lgu", response_model=TableResponse)
-def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str = "desc"):
+def get_lgu(
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    Name: str = Query("desc", description="Sort by LGU name asc|desc"),
+    q: str = Query("", description="Search by LGU name (fuzzy if pg_trgm installed)"),
+    sim_threshold: float = Query(0.2, ge=0.0, le=1.0, description="Similarity threshold when fuzzy searching"),
+):
+    # clear any stuck transaction
+    try:
+        db.rollback()
+    except Exception:
+        pass
 
     page = getDefaultPage(page)
     offset = (page - 1) * 10
 
-    # ✅ Columns to display
     table_head = [
         {"text": "Name", "width": "220px", "action": "Sort"},
         {"text": "Lat", "width": "140px"},
@@ -72,15 +154,28 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
         {"text": "Action", "width": "120px"},
     ]
 
-    order = LGURecords.name.desc() if Name == "desc" else LGURecords.name.asc()
-    records = (
-        db.query(LGURecords)
-        .order_by(order)
-        .limit(100)
-        .offset(offset)
-        .all()
-    )
+    order_col = LGURecords.name.desc() if str(Name).lower() == "desc" else LGURecords.name.asc()
+    base_q = _lgu_base_query(db=db, q=q, sim_threshold=sim_threshold, order_col=order_col)
 
+    count = base_q.count()
+    records = base_q.limit(100).offset(offset).all()
+
+    # ✅ If no record found, show message in table
+    if not records:
+        no_data_row = [
+            Cell(type="Hidden", text="-", font_weight=0, color="#000", width="0px"),
+            Cell(
+                type="Text",
+                text="No record found.",
+                font_weight=500,
+                color="gray",
+                width="800px",
+            ),
+        ]
+        table_datas = [{"page": 1, "row": [{"data": no_data_row}]}]
+        return TableResponse(table_head=table_head, table_datas=table_datas, count=0)
+
+    # ✅ If records found, proceed normally
     table_datas: list[dict] = []
     pageCount = page
     pages = {"page": pageCount, "row": []}
@@ -92,16 +187,11 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
             pages = {"page": pageCount, "row": []}
 
         row_data = [
-            # hidden id (for internal use)
             Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
-
-            # visible columns
             Cell(type="Text", text=(record.name or "-"), font_weight=500, color="#000", width="220px"),
             Cell(type="Text", text=str(record.lat if record.lat is not None else "-"), font_weight=400, color="#000", width="140px"),
             Cell(type="Text", text=str(record.lng if record.lng is not None else "-"), font_weight=400, color="#000", width="140px"),
             Cell(type="Text", text=(record.classification or "-"), font_weight=400, color="#000", width="180px"),
-
-            # ✅ Action button
             Cell(
                 type="Button",
                 text="View",
@@ -112,15 +202,22 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
                 button_width="100px",
             ),
         ]
-
         pages["row"].append({"data": row_data})
 
     if pages["row"]:
         table_datas.append(pages)
 
-    count = db.query(LGURecords).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
+@router.get("/lgu_profiling/manage_lgu/search_lgu", response_model=TableResponse)
+def search_lgu(
+    db: Session = Depends(get_db),
+    q: str = Query(..., description="Search text"),
+    page: int = Query(1, ge=1),
+    Name: str = Query("desc"),
+    sim_threshold: float = Query(0.2, ge=0.0, le=1.0),
+):
+    # Just reuse get_lgu behaviour (keeps FE happy; both endpoints behave the same)
+    return get_lgu(db=db, page=page, Name=Name, q=q, sim_threshold=sim_threshold)
 @router.get("/lgu_profiling/manage_lgu/{lgu_id}")
 def get_lgu_one(lgu_id: int, db: Session = Depends(get_db)):
     r = db.query(LGURecords).get(lgu_id)

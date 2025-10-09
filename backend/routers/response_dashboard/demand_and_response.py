@@ -29,17 +29,21 @@ def get_markers(db: Session = Depends(get_db)):
     markers = []
     for record in records:
         marker = {
-            "demand_id": str(record.demand_id),
             "id": str(record.demand_id),
-            "title_label": record.title_label,
+            "type": "demand",  # Hardcoded as per frontend's MapPin type
+            "label": record.title_label,  # Renamed from title_label
             "lat": record.lat,
             "lng": record.lng,
             "address": record.address,
-            "priority": record.priority,
-            "status": record.status,
-            "needs": record.needs,
-            "submitted_at": record.submitted_at.isoformat(),
             "last_updated": record.last_updated.isoformat(),
+            "contact": {  # Added placeholder as it's not in the DB model
+                "name": "N/A",
+                "phone": "N/A",
+            },
+            "status": record.status,
+            "priority": record.priority,
+            "submitted_at": record.submitted_at.isoformat(),
+            "needs": record.needs,
         }
         markers.append(marker)
 

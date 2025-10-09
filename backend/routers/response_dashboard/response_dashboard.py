@@ -4,13 +4,26 @@ from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
 from data_schemas.in_kind_monitoring_schema import InKindMonitoringSummary
+from data_schemas.response_dashboard_schema import (
+    RecentMapActivity,
+    InKindMonitoringDetailed,
+    CategorySummary,
+    CategorySummaryData,
+    SupplyItem,
+)
+from typing import List
 from database import get_db
 from models import (
     ResponseReport,
     ModalityDistribution,
     ResponseReportBudget,
     InKindMonitoring,
-)  # no Role import
+    DemandAndResponse,
+    InventoryItems,
+    IndividualVolunteer,
+    OrganizationVolunteer,
+    VolunteerStatus,
+)
 from datetime import datetime, timezone
 from sqlalchemy import func, extract, Date, cast
 from sqlalchemy.orm import aliased
@@ -76,111 +89,64 @@ def get_recent_table(db: Session = Depends(get_db)):
 
 @router.get("/response_dashboard/report_summary")
 def get_report_summary(db: Session = Depends(get_db)):
-    now = datetime.now()
-    start_of_current_month = datetime(now.year, now.month, 1)
+    # Total incidents/reports
+    total_reports = db.query(func.count(DemandAndResponse.demand_id)).scalar()
 
-    # Next month
-    if now.month == 12:
-        start_of_next_month = datetime(now.year + 1, 1, 1)
-    else:
-        start_of_next_month = datetime(now.year, now.month + 1, 1)
-
-    # Previous month
-    if now.month == 1:
-        start_of_prev_month = datetime(now.year - 1, 12, 1)
-    else:
-        start_of_prev_month = datetime(now.year, now.month - 1, 1)
-
-    end_of_prev_month = start_of_current_month
-
-    # Get current month data
-    current_total = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-        )
+    # Completed incidents
+    completed = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) == "completed")
         .scalar()
     )
 
-    current_completed = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "completed",
-        )
+    # "Started" can be interpreted as "responded" but not yet completed
+    started = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) == "responded")
         .scalar()
     )
 
-    current_started = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "started",
-        )
+    # Active incidents are those not yet completed
+    active_incidents = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) != "completed")
         .scalar()
     )
 
-    # Get previous month data
-    prev_total = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-        )
+    # High priority incidents (urgent or high)
+    high_priority = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.priority).in_(["urgent", "high"]))
         .scalar()
     )
 
-    prev_completed = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-            func.lower(ResponseReport.status) == "completed",
+    # Average response time in hours for completed incidents
+    # Use func.extract('epoch', ...) for PostgreSQL to get seconds
+    avg_response_time_seconds = (
+        db.query(
+            func.avg(
+                func.extract("epoch", DemandAndResponse.last_updated)
+                - func.extract("epoch", DemandAndResponse.submitted_at)
+            )
         )
+        .filter(func.lower(DemandAndResponse.status) == "completed")
         .scalar()
     )
 
-    prev_started = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-            func.lower(ResponseReport.status) == "started",
-        )
-        .scalar()
+    # Convert average seconds to hours, handle case where there are no completed incidents
+    response_time_avg = (
+        round(avg_response_time_seconds / 3600, 1)
+        if avg_response_time_seconds is not None
+        else 0
     )
-
-    # Function to calculate change
-    def compare(current, previous):
-        if previous == 0:
-            if current == 0:
-                return {"diff": " ", "percent": "0%"}
-            else:
-                return {"diff": "+", "percent": "100%"}
-        change = current - previous
-        if change > 0:
-            sign = "+"
-        elif change < 0:
-            sign = "-"
-        else:
-            sign = " "
-        percent = abs(change) / previous * 100
-
-        return {"diff": sign, "percent": f"{percent:.1f}%"}
 
     return {
-        "month": now.strftime("%B %Y"),
-        "total_reports": current_total,
-        "completed": current_completed,
-        "started": current_started,
-        "comparison": {
-            "total_reports_change": compare(current_total, prev_total),
-            "completed_change": compare(current_completed, prev_completed),
-            "started_change": compare(current_started, prev_started),
-        },
+        "total_reports": total_reports or 0,
+        "completed": completed or 0,
+        "started": started or 0, # Note: This is now 'responded' count
+        "active_incidents": active_incidents or 0,
+        "high_priority": high_priority or 0,
+        "response_time_avg": response_time_avg,
     }
 
 
@@ -230,6 +196,52 @@ def get_modality_chart(db: Session = Depends(get_db)):
 
 
 @router.get(
+    "/response_dashboard/recent_map_activity", response_model=List[RecentMapActivity]
+)
+def get_recent_map_activity(db: Session = Depends(get_db)):
+    # Get the 5 most recently updated demand/response records
+    recent_activities = (
+        db.query(DemandAndResponse)
+        .order_by(DemandAndResponse.last_updated.desc())
+        .limit(5)
+        .all()
+    )
+
+    # Map status to activity type
+    def get_activity_type(status: str) -> str:
+        status = status.lower()
+        if status == "no response":
+            return "new_request"
+        elif status == "responded":
+            return "response_dispatched"
+        elif status == "completed":
+            return "completed"
+        return "status_update"  # Default for other statuses
+
+    # Format the data into the RecentMapActivity schema
+    formatted_activities = [
+        RecentMapActivity(
+            id=str(activity.demand_id),
+            timestamp=activity.last_updated,
+            activity_type=get_activity_type(activity.status),
+            location={
+                "name": activity.title_label,
+                "address": activity.address,
+                "lat": activity.lat,
+                "lng": activity.lng,
+            },
+            priority=activity.priority,
+            description=f"Request '{activity.title_label}' status changed to {activity.status}.",
+            assigned_team=None,  # This field is not in the model, so it's None
+            status=activity.status,
+        )
+        for activity in recent_activities
+    ]
+
+    return formatted_activities
+
+
+@router.get(
     "/response_dashboard/in_kind_monitoring", response_model=InKindMonitoringSummary
 )
 def get_in_kind_monitoring(db: Session = Depends(get_db)):
@@ -255,6 +267,75 @@ def get_in_kind_monitoring(db: Session = Depends(get_db)):
         "currently_in_transit": int(in_transit_sum),
         "already_distributed": int(delivered_sum),
     }
+
+
+@router.get(
+    "/response_dashboard/in_kind_monitoring_detailed",
+    response_model=InKindMonitoringDetailed,
+)
+def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
+    # 1. Get summary relief pack data (reusing existing logic)
+    in_kind_summary = get_in_kind_monitoring(db)
+
+    # 2. Get staff counts
+    staff_available = db.query(func.count(IndividualVolunteer.volunteer_id)).filter(
+        IndividualVolunteer.availability_status == VolunteerStatus.available
+    ).scalar() + db.query(func.count(OrganizationVolunteer.volunteer_id)).filter(
+        OrganizationVolunteer.availability_status == VolunteerStatus.available
+    ).scalar()
+
+    staff_deployed = db.query(func.count(IndividualVolunteer.volunteer_id)).filter(
+        IndividualVolunteer.status == VolunteerStatus.assigned
+    ).scalar() + db.query(func.count(OrganizationVolunteer.volunteer_id)).filter(
+        OrganizationVolunteer.status == VolunteerStatus.assigned
+    ).scalar()
+
+    # 3. Get supply items from inventory
+    inventory_items = db.query(InventoryItems).all()
+    supply_items = [
+        SupplyItem(
+            id=str(item.inventory_id),
+            name=item.item_name,
+            category=item.category.lower(),
+            unit="units",  # Default value
+            available=item.quantity,
+            in_transit=0,  # No data in model
+            distributed=0,  # No data in model
+            low_stock_threshold=10,  # Default value
+        )
+        for item in inventory_items
+    ]
+
+    # 4. Calculate category summary
+    categories = ["food", "medical", "clothing", "beverages", "hygiene"]
+    category_summary_data = {
+        cat: {"available": 0, "in_transit": 0, "distributed": 0} for cat in categories
+    }
+
+    for item in supply_items:
+        if item.category in category_summary_data:
+            category_summary_data[item.category]["available"] += item.available
+            # In a real scenario, you'd also sum in_transit and distributed
+            # category_summary_data[item.category]['in_transit'] += item.in_transit
+            # category_summary_data[item.category]['distributed'] += item.distributed
+
+    category_summary = CategorySummary(
+        food=CategorySummaryData(**category_summary_data["food"]),
+        medical=CategorySummaryData(**category_summary_data["medical"]),
+        clothing=CategorySummaryData(**category_summary_data["clothing"]),
+        beverages=CategorySummaryData(**category_summary_data["beverages"]),
+        hygiene=CategorySummaryData(**category_summary_data["hygiene"]),
+    )
+
+    return InKindMonitoringDetailed(
+        total_available_relief_packs=in_kind_summary["available_relief_packs"],
+        total_currently_in_transit=in_kind_summary["currently_in_transit"],
+        total_already_distributed=in_kind_summary["already_distributed"],
+        staff_available=staff_available,
+        staff_deployed=staff_deployed,
+        supply_items=supply_items,
+        category_summary=category_summary,
+    )
 
 
 @router.get("/response_dashboard/raised_budget", response_model=LineChartData)

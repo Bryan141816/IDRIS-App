@@ -27,18 +27,14 @@ def get_markers(db: Session = Depends(get_db)):
     records = db.query(DemandAndResponse).all()
 
     markers = []
-    for i, record in enumerate(records, 1):
+    for record in records:
         marker = {
-            "id": f"d{i}",
-            "type": "demand",
-            "label": record.title_lable,
+            "demand_id": str(record.demand_id),
+            "id": str(record.demand_id),
+            "title_label": record.title_label,
             "lat": record.lat,
             "lng": record.lng,
             "address": record.address,
-            "contact": {
-                "name": "Unknown",  # Replace if you have these fields
-                "phone": "N/A",  # Replace if available
-            },
             "priority": record.priority,
             "status": record.status,
             "needs": record.needs,
@@ -125,7 +121,7 @@ def get_table(
             ),
             Cell(
                 type="Text",
-                text=report.title_lable,
+                text=report.title_label,
                 font_weight=500,
                 color="#000",
                 width="250px",
@@ -218,8 +214,8 @@ def update_report(
 
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
-    if update.title_lable is not None:
-        record.title_lable = update.title_lable
+    if update.title_label is not None:
+        record.title_label = update.title_label
     if update.address is not None:
         record.address = update.address
     if update.lat is not None:

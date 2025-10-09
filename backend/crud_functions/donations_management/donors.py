@@ -17,7 +17,7 @@ class DonorCRUD:
     @staticmethod
     def create_donor(
         db: Session,
-        donor_id: int,
+        donor_id: str,
         user_id: int,
         donor_type: Optional[str] = "individual",
         organization_name: Optional[str] = None,

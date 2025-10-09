@@ -206,13 +206,13 @@ class BaranggayRecords(Base):
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
 
-    baranggay_pic = Column(String, nullable=True)  
-    baranggay_desc = Column(Text, nullable=True)           
-    resources = Column(JSON, nullable=True)               
-    contact_info = Column(String(255), nullable=True)  
+    baranggay_pic = Column(String, nullable=True)
+    baranggay_desc = Column(Text, nullable=True)
+    resources = Column(JSON, nullable=True)
+    contact_info = Column(String(255), nullable=True)
     population = Column(JSON, nullable=True)
 
-    risk_level = Column(String(50), nullable=True)   # ✅ added back
+    risk_level = Column(String(50), nullable=True)  # ✅ added back
 
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
@@ -227,6 +227,7 @@ class BaranggayRecords(Base):
         back_populates="barangay",
         passive_deletes=True,
     )
+
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"
@@ -480,7 +481,12 @@ class Donation(Base):
         cascade="all, delete-orphan",
     )
 
-    finance_record = relationship("FinanceRecord", back_populates="donation", uselist=False, cascade="all, delete-orphan")
+    finance_record = relationship(
+        "FinanceRecord",
+        back_populates="donation",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     inkind = relationship(
         "Donation_InKind",
         back_populates="donation",
@@ -1008,6 +1014,7 @@ class WarehouseZones(Base):
     manager = Column(String(255), nullable=False)
 
     inventory_items = relationship("InventoryItems", back_populates="warehouse")
+    assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
 
 
 class InventoryItems(Base):
@@ -1025,6 +1032,28 @@ class InventoryItems(Base):
     status = Column(String(255), nullable=False)
 
     warehouse = relationship("WarehouseZones", back_populates="inventory_items")
+    assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
+
+
+class AssignedStorage(Base):
+    __tablename__ = "assigned_storage"
+
+    assigned_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
+    # Foreign keys
+    warehouse_id = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    )
+    inventory_id = Column(
+        Integer, ForeignKey("inventory_items.inventory_id"), nullable=False
+    )
+
+    # Additional field
+    unit_occupancy = Column(Float, nullable=False)
+
+    # Relationships
+    warehouse = relationship("WarehouseZones", back_populates="assigned_storages")
+    inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
 
 
 # ================================== FINANCE MODELS =====================================
@@ -1048,7 +1077,7 @@ class TransactionType(enum.Enum):
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid
     RECEIVED = "RECEIVED"  # for inflows
-    
+
     PAID = "PAID"  # for outflows
     APPROVED = "APPROVED"  # approver ok (often outflow)
     DENIED = "DENIED"  # rejected
@@ -1077,7 +1106,9 @@ class FinanceRecord(Base):
         SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
     )
 
-    donation_id = Column(String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True)
+    donation_id = Column(
+        String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True
+    )
     donation = relationship("Donation", back_populates="finance_record", uselist=False)
 
     audits = relationship(

@@ -20,7 +20,7 @@ from schemas import (
     InKindMonitoringCreate,
     DemandAndResponseCreate,
 )
-
+from crud_functions.utils import uid_from_string
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -150,7 +150,7 @@ def create_demand_and_response_record(
 ) -> DemandAndResponse:
     json_needs = [need.dict() for need in demand_and_response.needs]
     db_record = DemandAndResponse(
-        title_lable=demand_and_response.title_lable,
+        title_label=demand_and_response.title_label,
         address=demand_and_response.address,
         lat=demand_and_response.lat,
         lng=demand_and_response.lng,

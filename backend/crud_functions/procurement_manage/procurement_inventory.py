@@ -3,10 +3,12 @@ from data_schemas.procurement_inventory import (
     WarehouseZoneOut,
     InventoryItemCreate,
     InventoryItemUpdate,
+    AssignStorage,
 )
 
 from sqlalchemy.orm import Session
-from models import WarehouseZones, InventoryItems
+from sqlalchemy.orm import joinedload
+from models import WarehouseZones, InventoryItems, AssignedStorage
 from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
@@ -76,7 +78,13 @@ class ProcurementInventoryCRUD:
 
     @staticmethod
     def get_all_inventory_item(db: Session):
-        return db.query(InventoryItems).order_by(InventoryItems.item_name.desc()).all()
+        items = (
+            db.query(InventoryItems)
+            .options(joinedload(InventoryItems.warehouse))  # ✅ eager load relation
+            .order_by(InventoryItems.item_name.desc())
+            .all()
+        )
+        return items
 
     @staticmethod
     def update_inventory_item(db: Session, payload: InventoryItemUpdate):
@@ -96,3 +104,17 @@ class ProcurementInventoryCRUD:
         db.commit()
         db.refresh(inventory)
         return inventory
+
+    @staticmethod
+    def assign_storage(db: Session, payload: AssignStorage, id: int):
+        assign = [
+            AssignedStorage(warehouse_id=id, inventory_id=key, unit_occupancy=value)
+            for key, value in payload.storage.items()
+        ]
+        db.bulk_save_objects(assign)
+        for key, value in payload.storage.items():
+            db.query(InventoryItems).filter(InventoryItems.inventory_id == key).update(
+                {"location": id}
+            )
+        db.commit()
+        return {"message": "All items inserted"}

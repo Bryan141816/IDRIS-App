@@ -272,7 +272,8 @@ class NeedItem(BaseModel):
 
 
 class DemandAndResponseCreate(BaseModel):
-    title_lable: str
+    
+    title_label: str
     address: str
     lat: float
     lng: float
@@ -283,7 +284,7 @@ class DemandAndResponseCreate(BaseModel):
 
 class DemandAndResponseOut(BaseModel):
     id: int
-    title_lable: str
+    title_label: str
     address: str
     lat: float
     lng: float

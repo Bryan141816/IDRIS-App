@@ -10,13 +10,18 @@ export async function getDemandList(): Promise<any> {
   const response = await API.get("/response_dashboard/demand_and_response/list_view");
   return response.data;
 }
+
+export async function getMapPins(): Promise<any> {
+  const response = await API.get("/response_dashboard/demand_and_response/get_map_pin");
+  return response.data;
+}
 type NeedItem = {
   id: number;
   need: string;
   amount: string;
 };
 type Demand = {
-  title_lable: string;
+  title_label: string;
   address: string;
   lat: number | null;
   lng: number | null;

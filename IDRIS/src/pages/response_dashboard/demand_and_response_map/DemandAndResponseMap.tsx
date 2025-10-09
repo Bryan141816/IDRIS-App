@@ -16,7 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { MapContainer, TileLayer, Marker, useMapEvents, Popup } from "react-leaflet";
 import L from "leaflet";
-import { fetchData } from "../../../API_Handler/response_dashboard";
+import { getMapPins, addRecord, updateRecord, deleteRecord } from "../../../API_Handler/response_dashboard_demand_and_response_list";
 import "./DemandAndResponseMap.scss";
 
 // Updated interface to match your database schema exactly
@@ -70,62 +70,8 @@ const DemandAndResponseMap: React.FC = () => {
   const loadDemandPins = async () => {
     setIsLoading(true);
     try {
-      // Mock data matching your database schema
-      const mockData: DemandPin[] = [
-        {
-          demand_id: "1",
-          id: "demand_001",
-          title_label: "Barangay Relief Center A",
-          address: "Barangay Hall, Main Street, District 1",
-          lat: 10.313924,
-          lng: 123.887082,
-          status: "no response",
-          priority: "urgent",
-          needs: [
-            { id: 1, need: "Rice", amount: 50, fulfilled: false },
-            { id: 2, need: "Water", amount: "critical", fulfilled: false },
-            { id: 3, need: "Medicine", amount: 25, fulfilled: false }
-          ],
-          submitted_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          last_updated: new Date().toISOString()
-        },
-        {
-          demand_id: "2",
-          id: "demand_002",
-          title_label: "Emergency Shelter B",
-          address: "Community Center, 2nd Street, District 2",
-          lat: 10.320000,
-          lng: 123.890000,
-          status: "responded",
-          priority: "high",
-          needs: [
-            { id: 1, need: "Blankets", amount: 100, fulfilled: true },
-            { id: 2, need: "Food Packs", amount: 75, fulfilled: false }
-          ],
-          submitted_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          last_updated: new Date(Date.now() - 1800000).toISOString() // 30 minutes ago
-        },
-        {
-          demand_id: "3",
-          id: "demand_003",
-          title_label: "School Evacuation Site",
-          address: "Elementary School, Education Ave, District 3",
-          lat: 10.315000,
-          lng: 123.885000,
-          status: "completed",
-          priority: "medium",
-          needs: [
-            { id: 1, need: "Temporary Shelter", amount: 200, fulfilled: true },
-            { id: 2, need: "Sanitation Kits", amount: 50, fulfilled: true }
-          ],
-          submitted_at: new Date(Date.now() - 14400000).toISOString(), // 4 hours ago
-          last_updated: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
-        }
-      ];
-      setDemandPins(mockData);
-      
-      // Uncomment when API is ready:
-      // await fetchData<DemandPin[]>("/response_dashboard/demand_pins", setDemandPins);
+      const data = await getMapPins();
+      setDemandPins(data);
     } catch (error) {
       console.error("Failed to load demand pins:", error);
       setDemandPins([]);
@@ -172,39 +118,42 @@ const DemandAndResponseMap: React.FC = () => {
   };
 
   const handleSavePin = async (formData: DemandFormData) => {
+    const apiNeeds = formData.needs.map(item => ({
+        id: item.id,
+        need: item.need,
+        amount: String(item.amount)
+    }));
+
+    const commonPayload = {
+        title_label: formData.title_label,
+        address: formData.address,
+        status: formData.status,
+        priority: formData.priority,
+        needs: apiNeeds,
+    };
+
     try {
       if (selectedPin) {
         // Update existing pin
-        const updatedPin: DemandPin = {
-          ...selectedPin,
-          title_label: formData.title_label,
-          address: formData.address,
-          status: formData.status,
-          priority: formData.priority,
-          needs: formData.needs,
-          last_updated: new Date().toISOString()
+        const payload = {
+            ...commonPayload,
+            lat: selectedPin.lat,
+            lng: selectedPin.lng
         };
-        setDemandPins(demandPins.map(pin => pin.demand_id === selectedPin.demand_id ? updatedPin : pin));
+        await updateRecord(selectedPin.demand_id, payload);
       } else {
         // Create new pin
-        const newPin: DemandPin = {
-          demand_id: Date.now().toString(),
-          id: `demand_${Date.now()}`,
-          title_label: formData.title_label,
-          address: formData.address,
-          lat: newPinLocation?.lat || 0,
-          lng: newPinLocation?.lng || 0,
-          status: formData.status,
-          priority: formData.priority,
-          needs: formData.needs,
-          submitted_at: new Date().toISOString(),
-          last_updated: new Date().toISOString()
+        const payload = {
+            ...commonPayload,
+            lat: newPinLocation?.lat || 0,
+            lng: newPinLocation?.lng || 0,
         };
-        setDemandPins([...demandPins, newPin]);
+        await addRecord(payload);
       }
       setShowAddModal(false);
       setSelectedPin(null);
       setNewPinLocation(null);
+      loadDemandPins(); // Reload pins to show changes
     } catch (error) {
       console.error("Failed to save pin:", error);
     }
@@ -213,8 +162,9 @@ const DemandAndResponseMap: React.FC = () => {
   const handleDeletePin = async (demandId: string) => {
     if (window.confirm("Are you sure you want to delete this demand point?")) {
       try {
-        setDemandPins(demandPins.filter(pin => pin.demand_id !== demandId));
+        await deleteRecord(demandId);
         setSelectedPin(null);
+        loadDemandPins(); // Reload pins to show changes
       } catch (error) {
         console.error("Failed to delete pin:", error);
       }

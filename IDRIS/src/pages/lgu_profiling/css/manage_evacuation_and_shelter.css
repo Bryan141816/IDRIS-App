@@ -24,7 +24,7 @@
 }
 /* Dashboard Container */
 .dashboard-container {
-  max-width: 1400px;
+width: 100%;
   margin: 2rem auto;
   padding: 0 2rem;
 }
@@ -155,18 +155,25 @@
   transform: translateY(-1px);
 }
 
+.location-picker-modal {
+  position: fixed;
+  z-index: 9999 !important;
+}
+
 /* Content Grid */
 .content-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  grid-template-columns: 2fr; /* Map (2/3) + Form (1/3) */
+  gap: 20px;
+  margin-bottom: 77px;
 }
 
 .left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  width: 100%;
+}
+
+.map-section {
+  width: 100%;
 }
 
 /* Map Section */
@@ -176,6 +183,7 @@
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
+
 }
 
 .section-header {
@@ -491,6 +499,74 @@
   background-color: #1d4ed8;
   transform: scale(1.1);
 }
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  width: 500px;
+  max-width: 90%;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  padding: 20px;
+  position: relative;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.modal-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal-btn.save {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal-btn.cancel {
+  background-color: #ccc;
+  color: black;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 
 /* Responsive Design */
 @media (max-width: 1024px) {
@@ -1003,6 +1079,8 @@ body.lgu-role .admin-only {
 body.lgu-role .role-indicator.admin {
   background-color: #facc15;
 }
+
+
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {

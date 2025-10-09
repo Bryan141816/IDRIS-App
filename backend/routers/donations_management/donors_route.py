@@ -11,8 +11,8 @@ from routers.role_checker import RoleChecker
 from routers.auth.authentication import get_current_user_from_access_token
 
 from data_schemas.donors_schema import (
-    DonorResponse, 
-    DonorListResponse, 
+    DonorResponse,
+    DonorListResponse,
     DonorStatsResponse,
     ListOfDonorsResponse,
     DonorAllAttributes,
@@ -25,7 +25,7 @@ from crud_functions.utils import uid_from_string
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","super admin"]))],
 )
 
 router_user = APIRouter(
@@ -37,7 +37,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","super admin"]))],
 )
 
 
@@ -54,9 +54,9 @@ def create_individual_donor_endpoint(
         user = db.query(User).filter(User.user_id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
+
         existing = db.query(Donor).filter(Donor.user_id == user_id).first()
-        
+
         if existing:
             if not user.roles:
                 user.roles = []
@@ -66,7 +66,7 @@ def create_individual_donor_endpoint(
                 db.commit()
                 db.refresh(user)
             return existing
- 
+
         if donor_type.lower() == "individual":
             organization_name = None
 
@@ -79,7 +79,7 @@ def create_individual_donor_endpoint(
             date_joined=date_joined,
             is_verified=is_verified
         )
-        
+
         db.refresh(user)  # ensure working with the latest row
         if not user.roles:
             user.roles = []
@@ -90,7 +90,7 @@ def create_individual_donor_endpoint(
             db.refresh(user)
 
         return new_donor
-    
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -103,7 +103,7 @@ def create_individual_donor_endpoint(
 # READ ENDPOINTS - SINGLE RECORDS
 # ============================================================================
 
-@router_admin.get("/get_by_id/{donor_id}", response_model=DonorResponse) 
+@router_admin.get("/get_by_id/{donor_id}", response_model=DonorResponse)
 def get_donor_endpoint(
     donor_id: int,
     db: Session = Depends(get_db)
@@ -117,7 +117,7 @@ def get_donor_endpoint(
         )
     return donor
 
-@router_admin.get("/user/{user_id}", response_model=DonorAllAttributes) 
+@router_admin.get("/user/{user_id}", response_model=DonorAllAttributes)
 def get_donor_by_user_endpoint(
     user_id: int,
     db: Session = Depends(get_db)
@@ -150,7 +150,7 @@ def get_donor_profile(
 
 @router.get("/get_all_as_lists", response_model=ListOfDonorsResponse) # mark used
 def get_donor_display_info_endpoint(
-    search: Optional[str] = Query(None),    
+    search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db)
@@ -164,11 +164,11 @@ def count_donors(
     donor_type: Optional[str] = Query(None, description="Filter by Organization or Individual"),
     db: Session = Depends(get_db)
 ):
-    count = donor_crud.count_donors(db, search=search, donor_type=donor_type)    
+    count = donor_crud.count_donors(db, search=search, donor_type=donor_type)
     return {"count": count}
 
 
-@router_admin_or_donor.get("/verified/list", response_model=DonorListResponse) 
+@router_admin_or_donor.get("/verified/list", response_model=DonorListResponse)
 def get_verified_donors_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -178,7 +178,7 @@ def get_verified_donors_endpoint(
     donors = donor_crud.get_verified_donors(db, skip=skip, limit=limit)
     # Count verified donors
     total = sum(1 for d in donor_crud.get_all_donors(db, skip=0, limit=10000) if d.is_verified)
-    
+
     return DonorListResponse(
         donors=donors,
         total=total,
@@ -218,13 +218,13 @@ def verify_donor_endpoint(
     db: Session = Depends(get_db)
 ):
     """Mark a donor as verified."""
-    
+
     if not donor_crud.donor_exists(db, donor_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Donor not found"
         )
-    
+
     try:
         verified_donor = donor_crud.verify_donor(db, donor_id)
         return verified_donor
@@ -241,13 +241,13 @@ def unverify_donor_endpoint(
     db: Session = Depends(get_db)
 ):
     """Mark a donor as unverified."""
-    
+
     if not donor_crud.donor_exists(db, donor_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Donor not found"
         )
-    
+
     try:
         unverified_donor = donor_crud.unverify_donor(db, donor_id)
         return unverified_donor
@@ -267,13 +267,13 @@ def delete_donor_endpoint(
     db: Session = Depends(get_db)
 ):
     """Delete a donor (hard delete)."""
-    
+
     if not donor_crud.donor_exists(db, donor_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Donor not found"
         )
-    
+
     try:
         success = donor_crud.delete_donor(db, donor_id)
         if success:

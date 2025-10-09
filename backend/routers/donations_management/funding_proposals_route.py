@@ -7,18 +7,18 @@ from routers.role_checker import RoleChecker
 from datetime import date
 from math import ceil
 from models import FundingProposal
-from schemas import Number  
+from schemas import Number
 from crud_functions.donations_management.funding_proposals import FundingProposalCRUD  as CRUD
 from crud_functions.utils import uid_from_string
-from data_schemas.funding_proposal_schema import ( 
-    FundingProposalCreate, FundingProposalUpdate, FundingProposalGet, 
+from data_schemas.funding_proposal_schema import (
+    FundingProposalCreate, FundingProposalUpdate, FundingProposalGet,
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
     )
 
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","super admin"]))],
 )
 
 router_user = APIRouter(
@@ -30,7 +30,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","super admin"]))],
 )
 
 UPLOAD_DIR = Path("media/fundingproposals")
@@ -73,9 +73,9 @@ def read_one_proposal(funding_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"Error fetching proposal: {e}")
         raise HTTPException(status_code=500, detail="Error fetching proposal")
-    
+
 @router_admin.post("/proposals/create", response_model=FundingProposalResponse)
-def create_proposal_endpoint(    
+def create_proposal_endpoint(
     title: str = Form(...),
     description: str = Form(...),
     budgetRequired: int = Form(...),
@@ -112,7 +112,7 @@ def update_proposal_endpoint(
         status=status,
         image=image
     )
-    
+
 @router_admin.delete("/proposals/delete_proposal/{funding_id}")
 def delete_proposal_endpoint(funding_id: int, db: Session = Depends(get_db)):
     try:

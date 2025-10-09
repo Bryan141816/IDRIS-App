@@ -11,7 +11,7 @@ from data_schemas.assignment_schema import (
 from crud_functions.volunteer_management.assignment_crud import AssignmentCRUD as CRUD
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "admin", "generic"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "admin", "generic","super admin"]))],
 )
 
 @router_admin.post("/programs", tags=["Programs/Events"], response_model=TaskReadWithStats)

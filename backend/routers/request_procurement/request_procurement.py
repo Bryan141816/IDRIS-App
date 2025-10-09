@@ -32,7 +32,7 @@ import asyncio
 
 router = APIRouter(
     tags=["request_procurement"],
-    dependencies=[Depends(RoleChecker(["lgu officer"]))],
+    dependencies=[Depends(RoleChecker(["lgu officer"])), Depends(RoleChecker(["super admin"]))],
 )
 
 

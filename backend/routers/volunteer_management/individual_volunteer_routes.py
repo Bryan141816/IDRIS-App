@@ -23,16 +23,16 @@ from models import IndividualVolunteer, VolunteerStatus
 
 # Role-based routers
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "admin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "admin","super admin"]))],
 )
 router_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["volunteer","generic"]))],
 )
 router_admin_or_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "volunteer", "contributor", "generic"]))],
+    dependencies=[Depends(RoleChecker(["operations admin","volunteer", "generic","super admin"]))],
 )
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "contributor", "operations admin", "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "operations admin", "generic","super admin"]))],
 )
 
 UPLOAD_DIR = Path("media/certifications")

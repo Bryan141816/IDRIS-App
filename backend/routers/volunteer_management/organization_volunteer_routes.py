@@ -23,16 +23,16 @@ from models import OrganizationVolunteer, VolunteerStatus
 
 # Role-based routers
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superuser","super admin"]))],
 )
 router_organization_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["organization volunteer","generic"]))],
 )
 router_admin_or_organization_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superuser", "organization volunteer", "volunteer", "generic"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "organization volunteer", "volunteer", "generic","super admin"]))],
 )
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["organization volunteer", "superuser", "operations admin", "volunteer", "generic"]))],
+    dependencies=[Depends(RoleChecker(["organization volunteer", "operations admin", "volunteer", "generic","super admin"]))],
 )
 
 UPLOAD_DIR = Path("media/organization_files")

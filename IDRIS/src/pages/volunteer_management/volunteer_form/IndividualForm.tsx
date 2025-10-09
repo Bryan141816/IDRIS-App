@@ -59,6 +59,7 @@ const skillsOptions: CheckboxOptionType[] = [
     { label: "Radio Comms", value: "Radio Comms" },
     { label: "Logistics", value: "Logistics" },
     { label: "Counseling/Psych First Aid", value: "PFA" },
+    { label: "Driving", value: "Driving" },
 ];
 
 const IndividualForm: React.FC = () => {

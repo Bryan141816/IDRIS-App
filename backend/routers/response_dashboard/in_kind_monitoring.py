@@ -13,7 +13,7 @@ import math
 
 router = APIRouter(
     tags=["in_kind_monitoring"],
-    dependencies=[Depends(RoleChecker(["operations admin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin"])), Depends(RoleChecker(["super admin"]))],
 )
 
 

@@ -16,7 +16,7 @@ from data_schemas.finance_record_schema import (
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","super admin"]))],
 )
 
 router_user = APIRouter(
@@ -28,7 +28,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","super admin"]))],
 )
 
 @router_admin.post("/inflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)

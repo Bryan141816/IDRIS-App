@@ -517,104 +517,175 @@ export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
   handleDeleteRecord,
   openEditModal,
 }) => {
+  const id = String(selectedData?.data?.[0]?.text ?? "");
+
+  const [detail, setDetail] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  // ▼ 3-dots menu state + outside-click close
   const [isMoreOptionVisible, setIsMoreOptionVisible] = useState(false);
-  const toggleMoreOptionVisible = () => setIsMoreOptionVisible((v) => !v);
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!moreRef.current) return;
+      if (!moreRef.current.contains(e.target as Node)) setIsMoreOptionVisible(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
   useEffect(() => {
     if (!isModalOpen) setIsMoreOptionVisible(false);
   }, [isModalOpen]);
 
-  const cell = (i: number) => selectedData?.data?.[i]?.text ?? "";
-  const lat = Number.parseFloat(String(cell(2))) || 0;
-  const lng = Number.parseFloat(String(cell(3))) || 0;
+  useEffect(() => {
+    if (!isModalOpen || !id) return;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await API.get(`/lgu_profiling/manage_lgu/${id}`);
+        setDetail(res.data);
+      } catch (e: any) {
+        setDetail(null);
+        setMessageBox((prev) => ({
+          ...prev,
+          isOpen: true,
+          type: "message",
+          message: e?.response?.data?.detail || "Failed to load LGU details",
+        }));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isModalOpen, id, setMessageBox]);
 
   if (!isModalOpen) return null;
+
+  const lat = Number(detail?.lat ?? 0);
+  const lng = Number(detail?.lng ?? 0);
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View LGU Details</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
-            <div className="more-options-container">
-              <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
-              </button>
-              {isMoreOptionVisible && (
-                <div className="more-options-viewer">
-                  <button onClick={openEditModal}>
-                    <FontAwesomeIcon icon={faPen} /> Edit Record
-                  </button>
-                  <button
-                    style={{ color: "red" }}
-                    onClick={() => {
-                      setMessageBox((prev) => ({
-                        ...prev,
-                        isOpen: true,
-                        type: "confirm",
-                        message: "Are you sure you want to delete this record?",
-                        onSubmit: () => handleDeleteRecord(String(cell(0))),
-                      }));
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faTrash} /> Delete Record
-                  </button>
-                </div>
-              )}
-            </div>
+
+          {/* ▼ Three-dots menu */}
+          <div className="more-options-container" ref={moreRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMoreOptionVisible((v) => !v);
+              }}
+              aria-haspopup="menu"
+              aria-expanded={isMoreOptionVisible}
+              title="More actions"
+            >
+              <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: 20 }} />
+            </button>
+
+            {isMoreOptionVisible && (
+              <div
+                className="more-options-viewer"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  boxShadow: "0 8px 16px rgba(0,0,0,0.08)",
+                  padding: 6,
+                  zIndex: 9999,
+                  minWidth: 160,
+                }}
+                role="menu"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    openEditModal();
+                    setIsMoreOptionVisible(false);
+                  }}
+                  role="menuitem"
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px" }}
+                >
+                  <FontAwesomeIcon icon={faPen} /> Edit Record
+                </button>
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", color: "red" }}
+                  onClick={() => {
+                    setMessageBox((prev) => ({
+                      ...prev,
+                      isOpen: true,
+                      type: "confirm",
+                      message: "Are you sure you want to delete this record?",
+                      onSubmit: () => handleDeleteRecord(id),
+                    }));
+                    setIsMoreOptionVisible(false);
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTrash} /> Delete Record
+                </button>
+              </div>
+            )}
           </div>
+          {/* ▲ End three-dots menu */}
         </div>
 
-        {/* FIELDS */}
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Name:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{cell(1)}</span>
-        </div>
+        {loading && <div style={{ padding: 8 }}>Loading…</div>}
+        {!loading && detail && (
+          <>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Name:</span>
+              <span style={{ width: "100%", textAlign: "center" }}>{detail.name}</span>
+            </div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Location:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {lat || ""}{lat ? ", " : ""}{lng || ""}
-          </span>
-        </div>
+            <div className="horizontal-container">
+              <span className="item-details-identifier">Location:</span>
+              <span style={{ width: "100%", textAlign: "center" }}>
+                {lat}
+                {lat ? ", " : ""}
+                {lng}
+              </span>
+            </div>
 
-        <div style={{ width: "100%", height: "40vh", borderRadius: "10px", overflow: "hidden" }}>
-          <MapWithPin lat={lat} lng={lng} />
-        </div>
+            <div style={{ width: "100%", height: "40vh", borderRadius: "10px", overflow: "hidden" }}>
+              <MapWithPin lat={lat} lng={lng} />
+            </div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Classification:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{cell(4)}</span>
-        </div>
+            <div className="horizontal-container"><span className="item-details-identifier">Classification:</span><span style={{ width: "100%", textAlign: "center" }}>{detail.classification || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Population:</span><span style={{ width: "100%", textAlign: "center" }}>{detail.population ?? "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Contact Info:</span><span style={{ width: "100%", textAlign: "center" }}>{detail.contact_info || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Risk Level:</span><span style={{ width: "100%", textAlign: "center" }}>{detail.risk_level || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Description:</span><span style={{ width: "100%", textAlign: "center" }}>{detail.description || "-"}</span></div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Population:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{cell(5)}</span>
-        </div>
+            <div className="horizontal-container"><span className="item-details-identifier">Resources:</span><span style={{ width: "100%", textAlign: "center" }}>{(detail.resources || []).join(", ") || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Players:</span><span style={{ width: "100%", textAlign: "center" }}>{(detail.players || []).join(", ") || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Schools:</span><span style={{ width: "100%", textAlign: "center" }}>{(detail.schools || []).join(", ") || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Gyms:</span><span style={{ width: "100%", textAlign: "center" }}>{(detail.gyms || []).join(", ") || "-"}</span></div>
+            <div className="horizontal-container"><span className="item-details-identifier">Suppliers:</span><span style={{ width: "100%", textAlign: "center" }}>{(detail.local_suppliers || []).join(", ") || "-"}</span></div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Contact Info:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{cell(6)}</span>
-        </div>
+            {detail.lgu_picture && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+                <img src={detail.lgu_picture} alt="LGU" style={{ maxHeight: 160, borderRadius: 8 }} />
+              </div>
+            )}
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Risk Level:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{cell(7)}</span>
-        </div>
-
-        <div className="horizontal-container"><span className="item-details-identifier">Description:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(8)}</span></div>
-        <div className="horizontal-container"><span className="item-details-identifier">Resources:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(9)}</span></div>
-        <div className="horizontal-container"><span className="item-details-identifier">Players:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(10)}</span></div>
-        <div className="horizontal-container"><span className="item-details-identifier">Schools:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(11)}</span></div>
-        <div className="horizontal-container"><span className="item-details-identifier">Gyms:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(12)}</span></div>
-        <div className="horizontal-container"><span className="item-details-identifier">Suppliers:</span><span style={{ width: "100%", textAlign: "center" }}>{cell(13)}</span></div>
-
-        <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>Close</button>
-        </div>
+            <div className="action-button">
+              <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>Close</button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );
 };
+
 
 /* ======================= EDIT LGU ======================= */
 export const EditLGUModal: React.FC<editLGUModalProp> = ({

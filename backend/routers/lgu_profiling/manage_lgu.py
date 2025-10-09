@@ -60,39 +60,15 @@ def getDefaultPage(page):
 @router.get("/lgu_profiling/manage_lgu/get_lgu", response_model=TableResponse)
 def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str = "desc"):
 
-    def _summ(v: list | None, _label: str = "") -> str:
-        """Summarize arrays; return '-' if empty; return str(v) if not a list."""
-        if not v:
-            return "-"
-        if isinstance(v, list):
-            shown = [str(x) for x in v[:3]]
-            more = max(len(v) - len(shown), 0)
-            return ", ".join(shown) + (f" (+{more})" if more > 0 else "")
-        return str(v)
-
-    def _desc(txt: str | None, limit: int = 80) -> str:
-        if not txt:
-            return "-"
-        return txt if len(txt) <= limit else txt[:limit - 1] + "…"
-
     page = getDefaultPage(page)
     offset = (page - 1) * 10
 
+    # ✅ Columns to display
     table_head = [
-        {"text": "Name", "width": "150px", "action": "Sort"},
-        {"text": "Lat", "width": "100px"},
-        {"text": "Lng", "width": "100px"},
-        {"text": "Classification", "width": "140px"},
-        {"text": "Population", "width": "120px"},
-        {"text": "Contact Info", "width": "160px"},
-        {"text": "Risk Level", "width": "110px"},
-        {"text": "Description", "width": "220px"},
-        {"text": "Resources", "width": "180px"},
-        {"text": "Players", "width": "160px"},
-        {"text": "Schools", "width": "160px"},
-        {"text": "Gyms", "width": "120px"},
-        {"text": "Suppliers", "width": "180px"},
-        {"text": "Picture", "width": "220px"},   # ✅ show if there is an uploaded picture
+        {"text": "Name", "width": "220px", "action": "Sort"},
+        {"text": "Lat", "width": "140px"},
+        {"text": "Lng", "width": "140px"},
+        {"text": "Classification", "width": "180px"},
         {"text": "Action", "width": "120px"},
     ]
 
@@ -116,25 +92,16 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
             pages = {"page": pageCount, "row": []}
 
         row_data = [
-            # hidden id
+            # hidden id (for internal use)
             Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
 
-            # visible cols (align exactly with table_head)
-            Cell(type="Text", text=(record.name or "-"), font_weight=500, color="#000", width="150px"),
-            Cell(type="Text", text=str(record.lat if record.lat is not None else "-"), font_weight=500, color="#000", width="100px"),
-            Cell(type="Text", text=str(record.lng if record.lng is not None else "-"), font_weight=500, color="#000", width="100px"),
-            Cell(type="Text", text=(record.classification or "-"), font_weight=500, color="#000", width="140px"),
-            Cell(type="Text", text=str(record.population if record.population is not None else "-"), font_weight=500, color="#000", width="120px"),
-            Cell(type="Text", text=(record.contact_info or "-"), font_weight=500, color="#000", width="160px"),
-            Cell(type="Text", text=(record.risk_level or "-"), font_weight=500, color="#000", width="110px"),  # ✅ fixed position
-            Cell(type="Text", text=_desc(record.description), font_weight=400, color="#000", width="220px"),
-            Cell(type="Text", text=_summ(record.resources, "Resources"), font_weight=400, color="#000", width="180px"),
-            Cell(type="Text", text=_summ(record.players, "Players"), font_weight=400, color="#000", width="160px"),
-            Cell(type="Text", text=_summ(record.schools, "Schools"), font_weight=400, color="#000", width="160px"),
-            Cell(type="Text", text=_summ(record.gyms, "Gyms"), font_weight=400, color="#000", width="120px"),
-            Cell(type="Text", text=_summ(record.local_suppliers, "Suppliers"), font_weight=400, color="#000", width="180px"),
-            Cell(type="Text",text=(record.lgu_picture or "-"),font_weight=400,color="#000",width="180px",),
+            # visible columns
+            Cell(type="Text", text=(record.name or "-"), font_weight=500, color="#000", width="220px"),
+            Cell(type="Text", text=str(record.lat if record.lat is not None else "-"), font_weight=400, color="#000", width="140px"),
+            Cell(type="Text", text=str(record.lng if record.lng is not None else "-"), font_weight=400, color="#000", width="140px"),
+            Cell(type="Text", text=(record.classification or "-"), font_weight=400, color="#000", width="180px"),
 
+            # ✅ Action button
             Cell(
                 type="Button",
                 text="View",
@@ -145,6 +112,7 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
                 button_width="100px",
             ),
         ]
+
         pages["row"].append({"data": row_data})
 
     if pages["row"]:
@@ -153,6 +121,28 @@ def get_lgu(db: Session = Depends(get_db), page: int = Query(1, ge=1), Name: str
     count = db.query(LGURecords).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
+@router.get("/lgu_profiling/manage_lgu/{lgu_id}")
+def get_lgu_one(lgu_id: int, db: Session = Depends(get_db)):
+    r = db.query(LGURecords).get(lgu_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="LGU not found")
+    return {
+        "id": r.id,
+        "name": r.name,
+        "lat": r.lat,
+        "lng": r.lng,
+        "classification": r.classification,
+        "population": r.population,
+        "contact_info": r.contact_info,
+        "risk_level": r.risk_level,
+        "description": r.description,
+        "lgu_picture": r.lgu_picture,
+        "resources": r.resources or [],
+        "players": r.players or [],
+        "schools": r.schools or [],
+        "gyms": r.gyms or [],
+        "local_suppliers": r.local_suppliers or [],
+    }
 
 PER_PAGE = 10
 @router.get("/lgu_profiling/manage_lgu/barangay/{record_id}")

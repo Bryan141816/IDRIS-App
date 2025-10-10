@@ -141,6 +141,7 @@ const Register: React.FC = () => {
             Swal.update({
                 icon: "success",
                 title: "Registration successful",
+                text: "Please check your email to activate your account.",
             });
             navigate("/login");
         } catch (error) {

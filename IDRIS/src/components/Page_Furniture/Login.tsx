@@ -22,46 +22,57 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    Swal.fire({
-      title: "Logging in...",
-      didOpen: () => {
-        Swal.showLoading();
-      },
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-    });
-    try {
-      await loginUser(email, password);
-      const userData = await fetchCurrentUser();
+    e.preventDefault();
+    Swal.fire({
+      title: "Logging in...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+    try {
+      await loginUser(email, password);
+      const userData = await fetchCurrentUser();
 
-      if (userData) {
-        Swal.hideLoading();
-        Swal.update({
-          icon: "success",
-          title: "Logged in successfully!",
-        });
-        setUserType(userData["user_type"]);
-        setUserRoles(userData["roles"]);
-        setEmail(userData["email"]);
-        setUserId(userData["user_id"]);
-        setUsername(userData["username"]);
-        setUserReady(true);
-        handleRoleBasedRedirect(userData["roles"], navigate);
-      } else {
-        throw new Error("Invalid user data received.");
-      }
-    } catch (error) {
-      console.error("Login failed: ", error);
-      Swal.hideLoading();
-      Swal.update({
-        icon: "error",
-        title: "Login Failed",
-        text: "Incorrect email or password. Please try again.",
-      });
-      setErrorMessage("Incorrect email or password. Please try again.");
-    }
-  };
+      if (userData) {
+//         if (!userData["is_activated"]) {
+//           Swal.hideLoading();
+//           Swal.update({
+//             icon: "warning",
+//             title: "Account Not Activated",
+//             text: "Your account is not yet activated. Please contact the administrator or check your email for the activation link.",
+//           });
+//           setErrorMessage("Account is not yet activated.");
+//           return;
+//         }
+        Swal.hideLoading();
+        Swal.update({
+          icon: "success",
+          title: "Logged in successfully!",
+        });
+        setUserType(userData["user_type"]);
+        setUserRoles(userData["roles"]);
+        setEmail(userData["email"]);
+        setUserId(userData["user_id"]);
+        setUsername(userData["username"]);
+        setUserReady(true);
+        handleRoleBasedRedirect(userData["roles"], navigate);
+      } else {
+        throw new Error("Invalid user data received.");
+      }
+    } catch (error) {
+      console.error("Login failed: ", error);
+      Swal.hideLoading();
+      Swal.update({
+        icon: "error",
+        title: "Login Failed",
+        text: "Incorrect email or password. Please try again.",
+      });
+      setErrorMessage("Incorrect email or password. Please try again.");
+    }
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/login";
   };

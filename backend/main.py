@@ -17,6 +17,7 @@ from routers.response_dashboard import (
     budget,
     demand_and_response,
 )
+from routers.response_dashboard import emergency_response
 from routers.donations_management import (
     funding_proposals_route,
     donors_route,
@@ -95,6 +96,7 @@ app.include_router(demand_and_response.router)
 app.include_router(modality_distribution.router)
 app.include_router(budget.router)
 app.include_router(in_kind_monitoring.router)
+app.include_router(emergency_response.router)
 
 app.include_router(procurement_inventory.router)
 app.include_router(procurement_management.router)

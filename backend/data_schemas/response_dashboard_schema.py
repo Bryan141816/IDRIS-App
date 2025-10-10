@@ -58,3 +58,36 @@ class InKindMonitoringDetailed(BaseModel):
 
     class Config:
         orm_mode = True
+        
+# Emergency Response Report Schemas
+class EmergencyReportSummary(BaseModel):
+    totalIncidents: int
+    activeIncidents: int
+    completedIncidents: int
+    avgResponseTime: float
+    totalStaffDeployed: int
+    totalResourcesDistributed: int
+
+
+class EmergencyReportIncidentsByPriority(BaseModel):
+    urgent: int
+    high: int
+    medium: int
+    low: int
+
+
+class EmergencyReportPerformanceMetrics(BaseModel):
+    responseTimeAchieved: float
+    responseTimeTarget: float
+    completionRate: float
+    staffUtilization: float
+
+class EmergencyReportResponse(BaseModel):
+    reportTitle: str
+    dateRange: str
+    generatedDate: str
+    totalRecords: int
+    summary: EmergencyReportSummary
+    incidentsByPriority: EmergencyReportIncidentsByPriority
+    resourceDistribution: dict[str, int]
+    performanceMetrics: EmergencyReportPerformanceMetrics

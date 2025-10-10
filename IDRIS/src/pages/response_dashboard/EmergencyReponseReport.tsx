@@ -1,24 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Breadcrumb } from 'antd';
 import { Link } from 'react-router-dom';
 import RAFI_Shield from "../../media/RAFI_Shield.png";
 import "./EmergencyReportResponse.css";
+import axios from 'axios';
 
 type ReportData = {
-  companyInfo: {
-    name: string;
-    tagline: string;
-    address: {
-      street: string;
-      city: string;
-      state: string;
-      zip: string;
-    };
-    contact: {
-      phone: string;
-      email: string;
-    };
-  };
   reportTitle: string;
   dateRange: string;
   generatedDate: string;
@@ -48,80 +35,61 @@ type ReportData = {
   };
 };
 
+const companyInfo = {
+  name: 'RAFI Inc.',
+  tagline: 'The Ramon Aboitiz Foundation Inc.',
+  address: {
+    street: '35 Eduardo Aboitiz St',
+    city: 'Cebu City',
+    state: 'Philippines',
+    zip: '6000'
+  },
+  contact: {
+    phone: '(09) 000-000-0000',
+    email: 'sampleemail@gmail.com'
+  }
+};
+
+
 const EmergencyReportResponse = () => {
   const [filterPeriod, setFilterPeriod] = useState('monthly');
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const reportData: ReportData = useMemo(() => {
-    const now = new Date();
-    let dateRange = '';
-
-    switch (filterPeriod) {
-      case 'monthly':
-        dateRange = `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`;
-        break;
-      case 'quarterly':
-        const quarter = Math.floor(now.getMonth() / 3) + 1;
-        dateRange = `Q${quarter} ${now.getFullYear()}`;
-        break;
-      case 'yearly':
-        dateRange = `Year ${now.getFullYear()}`;
-        break;
-      default:
-        dateRange = now.toLocaleDateString();
-    }
-
-    return {
-      companyInfo: {
-        name: 'RAFI Inc.',
-        tagline: 'The Ramon Aboitiz Foundation Inc.',
-        address: {
-          street: '35 Eduardo Aboitiz St',
-          city: 'Cebu City',
-          state: 'Philippines',
-          zip: '6000'
-        },
-        contact: {
-          phone: '(09) 000-000-0000',
-          email: 'sampleemail@gmail.com'
-        }
-      },
-      reportTitle: 'Emergency Response Report',
-      dateRange: dateRange,
-      generatedDate: now.toLocaleDateString(),
-      totalRecords: 48,
-      summary: {
-        totalIncidents: 48,
-        activeIncidents: 12,
-        completedIncidents: 36,
-        avgResponseTime: 2.5,
-        totalStaffDeployed: 145,
-        totalResourcesDistributed: 3250
-      },
-      incidentsByPriority: {
-        urgent: 8,
-        high: 15,
-        medium: 18,
-        low: 7
-      },
-      resourceDistribution: {
-        'Food Packs': 1200,
-        'Medical Supplies': 450,
-        'Water': 800,
-        'Shelter Materials': 500,
-        'Hygiene Kits': 300
-      },
-      performanceMetrics: {
-        responseTimeAchieved: 2.5,
-        responseTimeTarget: 3,
-        completionRate: 75,
-        staffUtilization: 85
+  useEffect(() => {
+    const fetchReportData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`http://localhost:8000/api/emergency-response/report?period=${filterPeriod}`);
+        setReportData(response.data);
+      } catch (err) {
+        setError("Failed to fetch report data.");
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
+
+    fetchReportData();
   }, [filterPeriod]);
 
   const handlePrint = () => {
     window.print();
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  if (!reportData) {
+    return <div>No data available.</div>;
+  }
 
   return (
     <div className="erc-report-container">
@@ -131,26 +99,26 @@ const EmergencyReportResponse = () => {
           <div className="erc-company-branding">
             <img src={RAFI_Shield} alt="rafi-shield" className="erc-company-logo" />
             <div className="erc-company-title">
-              <h1 className="erc-company-name">{reportData.companyInfo.name}</h1>
-              <p className="erc-company-tagline">{reportData.companyInfo.tagline}</p>
+              <h1 className="erc-company-name">{companyInfo.name}</h1>
+              <p className="erc-company-tagline">{companyInfo.tagline}</p>
             </div>
           </div>
 
           <div className="erc-company-info">
-            <p className="erc-company-legal-name">{reportData.companyInfo.name}</p>
-            <p className="erc-company-address">{reportData.companyInfo.address.street}</p>
+            <p className="erc-company-legal-name">{companyInfo.name}</p>
+            <p className="erc-company-address">{companyInfo.address.street}</p>
             <p className="erc-company-address">
-              {reportData.companyInfo.address.city}, {reportData.companyInfo.address.state} {reportData.companyInfo.address.zip}
+              {companyInfo.address.city}, {companyInfo.address.state} {companyInfo.address.zip}
             </p>
-            <p className="erc-company-contact">Phone: {reportData.companyInfo.contact.phone}</p>
-            <p className="erc-company-contact">Email: {reportData.companyInfo.contact.email}</p>
+            <p className="erc-company-contact">Phone: {companyInfo.contact.phone}</p>
+            <p className="erc-company-contact">Email: {companyInfo.contact.email}</p>
           </div>
         </div>
 
         <div className="erc-report-info">
           <h2 className="erc-report-title">{reportData.reportTitle}</h2>
           <div className="erc-report-metadata">
-            <span>Generated on: {reportData.generatedDate}</span>
+            <span>Generated on: {new Date(reportData.generatedDate).toLocaleDateString()}</span>
 
             {/* Period filters + actions */}
             <div className="print-section">
@@ -318,7 +286,7 @@ const EmergencyReportResponse = () => {
           This report was generated on {reportData.generatedDate} at {new Date().toLocaleTimeString()}
         </p>
         <p>
-          {reportData.companyInfo.name} - Confidential Document
+          {companyInfo.name} - Confidential Document
         </p>
       </div>
     </div>

@@ -10,6 +10,8 @@ def RoleChecker(required_roles: List[str]):
     def checker(
         current_user: User = Depends(get_current_user_from_access_token),
     ):
+        print(current_user.roles)
+        print(required_roles)
         if "super admin" in current_user.roles:
             return current_user
 

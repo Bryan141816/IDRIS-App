@@ -24,7 +24,7 @@ from create_notification import send_notification
 
 router = APIRouter(
     tags=["procurement_management"],
-    dependencies=[Depends(RoleChecker(["logistics admin"])), Depends(RoleChecker(["super admin"]))],
+    dependencies=[Depends(RoleChecker(["logistics admin", "super admin"]))],
 )
 
 # Dashboard Function
@@ -142,7 +142,7 @@ async def update_request(
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    updated_request =  await ProcurementRequestCRUD.update_procurement_request(
+    updated_request = await ProcurementRequestCRUD.update_procurement_request(
         db, request, user_id
     )
 

@@ -17,7 +17,8 @@ import {
 import "./distribution_palling.scss";
 import { useState } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
-
+import { VolunteerAssignmentTab } from "./Tabs/VolunteerAssignmentTab";
+import { MovementLogsTab } from "./Tabs/MovementLogs";
 const FinanceAdmin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedRoute, setSelectedRoute] = useState("");
@@ -247,175 +248,10 @@ const FinanceAdmin = () => {
         {activeTab == "routes" && <RoutesAndPlanning></RoutesAndPlanning>}
 
         {activeTab == "assignment" && (
-          <div className="assignment-content">
-            <div className="section-header">
-              <h2>Volunteer Assignment</h2>
-              <button
-                className="primary-btn"
-                onClick={() => setAssignmentModalOpen(true)}
-              >
-                + Assign Volunteer
-              </button>
-            </div>
-
-            <div className="volunteers-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Area</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {volunteers.map((volunteer) => (
-                    <tr key={volunteer.id}>
-                      <td>{volunteer.name}</td>
-                      <td>{volunteer.role}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${volunteer.status.toLowerCase()}`}
-                        >
-                          {volunteer.status}
-                        </span>
-                      </td>
-                      <td>{volunteer.area}</td>
-                      <td>
-                        <button className="action-btn">Reassign</button>
-                        <button className="action-btn">Contact</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {assignmentModalOpen && (
-              <div className="modal-overlay">
-                <div className="modal">
-                  <div className="modal-header">
-                    <h3>Assign Volunteer to Deployment Area</h3>
-                    <button
-                      className="close-btn"
-                      onClick={() => setAssignmentModalOpen(false)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="modal-content">
-                    <div className="form-group">
-                      <label>Select Volunteer</label>
-                      <select>
-                        <option>Choose volunteer...</option>
-                        {volunteers
-                          .filter((v) => v.status === "Available")
-                          .map((v) => (
-                            <option key={v.id} value={v.id}>
-                              {v.name} - {v.role}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Deployment Area</label>
-                      <select>
-                        <option>Select area...</option>
-                        <option>Cebu City North</option>
-                        <option>Mandaue Central</option>
-                        <option>Lapu-Lapu East</option>
-                        <option>Talisay West</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Assignment Duration</label>
-                      <input type="date" />
-                    </div>
-                  </div>
-                  <div className="modal-actions">
-                    <button
-                      className="secondary-btn"
-                      onClick={() => setAssignmentModalOpen(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button className="primary-btn">Assign</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <VolunteerAssignmentTab></VolunteerAssignmentTab>
         )}
 
-        {activeTab == "movements" && (
-          <div className="movements-content">
-            <div className="section-header">
-              <h2>Movement Logs</h2>
-              <button className="primary-btn">Export Logs</button>
-            </div>
-
-            <div className="movements-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Quantity</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Status</th>
-                    <th>Time</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {movements.map((movement) => (
-                    <tr key={movement.id}>
-                      <td>{movement.item}</td>
-                      <td>{movement.quantity}</td>
-                      <td>{movement.from}</td>
-                      <td>{movement.to}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${movement.status.toLowerCase().replace(" ", "-")}`}
-                        >
-                          {movement.status}
-                        </span>
-                      </td>
-                      <td>{movement.time}</td>
-                      <td>
-                        <button className="action-btn">Track</button>
-                        <button className="action-btn">Update</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="status-update-section">
-              <h3>Update Delivery Status</h3>
-              <div className="update-form">
-                <select>
-                  <option>Select movement to update...</option>
-                  {movements.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.item} - {m.to}
-                    </option>
-                  ))}
-                </select>
-                <select>
-                  <option>New Status</option>
-                  <option>Preparing</option>
-                  <option>In Transit</option>
-                  <option>Delivered</option>
-                  <option>Delayed</option>
-                </select>
-                <button className="primary-btn">Update Status</button>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab == "movements" && <MovementLogsTab></MovementLogsTab>}
       </div>
     </div>
   );

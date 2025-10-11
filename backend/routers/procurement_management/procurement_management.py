@@ -24,7 +24,7 @@ from create_notification import send_notification
 
 router = APIRouter(
     tags=["procurement_management"],
-    dependencies=[Depends(RoleChecker(["logistics admin", "super admin"]))],
+    dependencies=[Depends(RoleChecker(["logistics admin"])), Depends(RoleChecker(["superadmin"]))],
 )
 
 # Dashboard Function

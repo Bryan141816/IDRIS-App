@@ -28,7 +28,7 @@ from data_schemas.donation_receipt_schema import DonationReceiptSchema
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","super admin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","superadmin"]))],
 )
 
 router_user = APIRouter(
@@ -40,7 +40,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","super admin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
 )
 
 @router.post("/create", response_model=DonationResponse)

@@ -14,7 +14,7 @@ from crud_functions.finance_management.finance_report_crud import FinanceReport
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","super admin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","superadmin"]))],
 )
 
 router_user = APIRouter(
@@ -26,7 +26,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","super admin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
 )
 
 @router.get("/get-report/all", response_model=List[dict])

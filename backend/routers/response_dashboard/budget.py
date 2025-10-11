@@ -12,7 +12,7 @@ import math
 
 router = APIRouter(
     tags=["budget_record"],
-    dependencies=[Depends(RoleChecker(["operations admin", "super admin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin"])), Depends(RoleChecker(["superadmin"]))],
 )
 
 

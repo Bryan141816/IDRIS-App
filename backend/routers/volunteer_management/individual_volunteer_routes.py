@@ -29,10 +29,10 @@ router_volunteer = APIRouter(
     dependencies=[Depends(RoleChecker(["volunteer","generic"]))],
 )
 router_admin_or_volunteer = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin","volunteer", "generic","super admin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin","volunteer", "generic","superadmin"]))],
 )
 router_authenticated = APIRouter(
-    dependencies=[Depends(RoleChecker(["volunteer", "operations admin", "generic","super admin"]))],
+    dependencies=[Depends(RoleChecker(["volunteer", "operations admin", "generic","superadmin"]))],
 )
 
 UPLOAD_DIR = Path("media/certifications")

@@ -39,7 +39,7 @@ def get_table(
 
     query = db.query(User)
 
-    if "super admin" not in user_role:
+    if "superadmin" not in user_role:
         role = user_role[0].split()[0]  # first word of the role
 
         # Get moderator(s) from dictionary safely

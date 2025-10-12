@@ -273,6 +273,10 @@
       }
 
       .route-details {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+
         p {
           color: #6b7280;
           margin: 0 0 1rem 0;

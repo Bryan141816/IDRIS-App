@@ -1056,6 +1056,29 @@ class AssignedStorage(Base):
     inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
 
 
+class TeamMembers(Base):
+    __tablename__ = "team_members"
+    members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=False)
+    member = Column(
+        Integer, ForeignKey("individual_volunteer.volunteer_id"), nullable=False
+    )
+    role = Column(String(255), nullable=False)
+    team = relationship("DistributionTeam", back_populates="team_members")
+    volunteer = relationship("IndividualVolunteer")
+
+
+class DistributionTeam(Base):
+    __tablename__ = "distribution_team"
+    team_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_name = Column(String(255), nullable=False)
+    deployment_area = Column(String(255), nullable=False)
+    assignment_duration = Column(Integer, nullable=False)
+    starting_date = Column(Date)
+    isActive = Column(Boolean, default=True)
+    team_members = relationship("TeamMembers", back_populates="team")
+
+
 # ================================== FINANCE MODELS =====================================
 
 

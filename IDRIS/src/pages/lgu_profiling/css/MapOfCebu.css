@@ -1,214 +1,211 @@
-/* Main container setup */
 .main-container {
   position: relative;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
-  overflow: hidden; /* Prevents any overflow from the sidebar or buttons affecting layout */
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: linear-gradient(120deg, #eaf6ff 80%, #dde9fc 100%);
 }
 
-/* Map container with absolute positioning to keep it fixed */
+/* Map container */
 .map-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1; /* Keep the map under the buttons and sidebar */
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: transparent;
 }
 
-/* Styling for map buttons */
+/* Map buttons bar */
 .map-buttons {
-  position: fixed; /* Fixed positioning for buttons */
+  position: fixed;
   top: 60px;
-  right: 20px;
-  z-index: 1000; /* Ensure buttons stay above the map */
+  right: 30px;
+  z-index: 1001;
   display: flex;
-  gap: 10px;
-  transition: right 0.3s ease; /* Transition for right property */
+  gap: 13px;
+  border-radius: 16px;
+  padding: 6px;
+  background: rgba(255,255,255,0.80);
+  box-shadow: 0 2px 10px rgba(130,170,210,0.08);
+  transition: right 0.3s cubic-bezier(.43,.16,.54,1.17), box-shadow 0.21s;
 }
 
-/* When sidebar is open, shift buttons to the left */
+/* Shift when sidebar is open */
 .main-container.sidebar-open .map-buttons {
-  right: 480px; /* Move the buttons left to make space for the sidebar */
+  right: 430px;
+  box-shadow: 0 2px 10px rgba(70,130,180,.11);
 }
 
-/* Map button styling */
+/* Individual map button */
 .map-button {
-  padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 20px;
+  background: linear-gradient(120deg, #fafdff 80%, #d9edfd 100%);
+  color: #32577a;
+  border: none;
+  border-radius: 9px;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 640;
+  font-size: 1.03rem;
   cursor: pointer !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(100,130,160,0.06);
+  transition: all 0.16s cubic-bezier(.45,.13,.49,1.11);
+  outline: none;
+}
+.map-button:hover, .map-button:focus {
+  background: linear-gradient(125deg, #e3f0fa 50%, #c7e1f8 100%);
+  color: #235097;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 3.5px 16px rgba(90,144,210,0.13);
 }
 
-.map-button:hover {
-  background-color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
 
 /* Sidebar styling */
 .sidebar {
-  width: 0; /* Initially hidden */
-  color: black !important;
-  background: #f9f9f9 !important;
-  padding: 20px;
+  position: fixed;
+  top: 0; right: 0;
+  height: 100%;
+  background: rgba(248,251,255,0.98);
+  border-radius: 20px 0 0 20px;
+  box-shadow: -8px 0 28px rgba(90, 132, 182, 0.10), -2.5px 0 6px rgba(110,150,180,0.05);
+  padding: 32px 24px 24px 28px;
+  z-index: 999;
   overflow-y: auto;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100; /* Ensure sidebar is above the map but below the buttons */
-  transition: width 0.3s ease; /* Smooth transition for width */
+  width: 0;
+  min-width: 0;
+  max-width: 400px;
+  transition: width 0.34s cubic-bezier(.43,.16,.54,1.17);
+  border-left: 1.5px solid #dde7f1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-/* Sidebar image styling */
 .sidebar img {
   width: 100%;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  border-radius: 9px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 9px #dde9f0;
 }
 
-/* Sidebar small map */
 .small-map {
-  margin-top: 20px;
-  height: 200px;
+  margin-top: 24px;
+  height: 190px;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 0.5px 4px #e2eeff;
 }
 
 /* When sidebar is open, increase width */
 .main-container.sidebar-open .sidebar {
-  width: 450px !important; /* Set the desired width */
+  width: 400px !important;
+  min-width: 320px;
 }
 
-/* Ensure sidebar has proper styling */
-.sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 300px;
-  height: 100%;
-  background-color: white;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-  padding: 20px;
-  z-index: 9999; /* Ensure the sidebar is above other content */
-  overflow-y: auto; /* Allow scrolling if the content overflows */
-}
-
-/* Back button styling */
-.back-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-  cursor: pointer;
-  font-size: 16px;
-  border-radius: 5px;
-  display: block; /* Ensure the button takes up full width inside its container */
-  width: 100%; /* Optional: Make the button span across the sidebar */
-}
-
-.back-button:hover {
-  background-color: #0056b3;
-}
-
-/* Make sure the sidebar is visible */
-.sidebar-open .sidebar {
-  display: block; /* Ensure sidebar is shown when the marker is clicked */
-}
-
-/* Make sure the map has enough space when the sidebar is hidden */
-.main-container {
-  display: flex;
-  height: 100vh;
-}
-
-.main-container.sidebar-open .map-container {
-  width: 70%; /* Reduce map width when sidebar is open */
-}
-
-.main-container .map-container {
-  width: 100%; /* Default full-width map */
-}
+/* See More Link */
 .see-more-link {
-  color: #749ab6; /* Blue color for the link */
-  text-decoration: none; /* Remove the underline */
-  font-weight: 500; /* Optional: Make the text bold */
-  cursor: pointer; /* Pointer cursor on hover */
+  color: #3399cc;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 2px;
+  transition: color 0.17s, background 0.17s;
 }
 
 .see-more-link:hover {
-  text-decoration: underline; /* Underline the text when hovered */
+  color: #255d84;
+  background: #e8f4ff;
+  text-decoration: underline;
 }
 
 /* Modern Close Button Styling */
 .close-sidebar {
-  background-color: #e74c3c; /* Strong red for the button */
+  background: linear-gradient(120deg, #ef8686 50%, #ffcdc7 100%);
   color: white;
   border: none;
-  padding: 5px 10px; /* Increase padding for a more clickable button */
-  font-size: 12px; /* Larger font size for better visibility */
-  border-radius: 5px; /* Rounded corners */
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  font-weight: 800;
+  border-radius: 50%;
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 18px;
+  right: 18px;
   cursor: pointer;
-  z-index: 101;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
-  transition: all 0.3s ease; /* Smooth transition for hover effect */
+  z-index: 100;
+  box-shadow: 0 1px 8px #eedede;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
-
-/* Hover effect */
-.close-sidebar:hover {
-  background-color: #c0392b; /* Darker red for the hover effect */
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Increase shadow on hover */
-  transform: translateY(-2px); /* Slightly raise the button */
+.close-sidebar:hover, .close-sidebar:focus {
+  background: linear-gradient(120deg, #e74242 40%, #fac4c7 100%);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.19);
 }
-
-/* Focus effect for accessibility */
 .close-sidebar:focus {
-  outline: none; /* Remove default outline */
-  box-shadow: 0 0 5px rgba(255, 99, 71, 0.8); /* Focus highlight */
+  outline: none;
+  box-shadow: 0 0 6px #fed7d7;
 }
 
 /* =================== LEGEND ====================== */
 .legend-box {
   position: absolute;
-  bottom: 20px;
-  left: 10px;
-  background: white;
-  padding: 10px 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  bottom: 34px;
+  left: 28px;
+  background: rgba(255,255,255,0.83);
+  padding: 14px 20px;
+  border: 1.5px solid #e4ebf2;
+  border-radius: 12px;
   z-index: 999;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  font-size: 14px;
-  width: 180px;
+  box-shadow: 0 5px 18px rgba(80,120,180,0.11);
+  font-size: 15px;
+  width: 200px;
+  backdrop-filter: blur(2px);
 }
 
 .legend-box h4 {
-  margin: 0 0 8px;
-  font-size: 16px;
-  color: #333;
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #3e6b93;
+  font-weight: 760;
+  letter-spacing: 0.4px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .legend-color {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
   display: inline-block;
-  margin-right: 8px;
-  border: 1px solid #555;
+  margin-right: 10px;
+  border: 2px solid #bbd0e9;
+  background: #eaf6ff;
+  /* Default style, will be overridden below */
+}
+
+.legend-lgu {
+  background: #3184d6;       /* Blue for LGU */
+  border-color: #2767b2;
+}
+
+.legend-barangay {
+  background: #e43d3d;       /* Red for Barangay */
+  border-color: #b12a2a;
+}
+
+.legend-raffi {
+  background: #fee156;       /* Yellow for RAFI */
+  border-color: #d5b400;
 }

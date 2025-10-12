@@ -289,17 +289,18 @@
         </div>
 
         <div className="legend-box">
-          <h4>Legend</h4>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU
-          </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay
-          </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure
-          </div>
-        </div>
+  <h4>Legend</h4>
+  <div className="legend-item">
+    <span className="legend-color legend-lgu"></span> LGU
+  </div>
+  <div className="legend-item">
+    <span className="legend-color legend-barangay"></span> Barangay
+  </div>
+  <div className="legend-item">
+    <span className="legend-color legend-raffi"></span> RAFI Infrastructure
+  </div>
+</div>
+
 
         <div className="map-container">
           <MapView

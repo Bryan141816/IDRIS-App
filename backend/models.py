@@ -1015,6 +1015,10 @@ class WarehouseZones(Base):
 
     inventory_items = relationship("InventoryItems", back_populates="warehouse")
     assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
+    routes = relationship(
+        "DistributionRoute",
+        back_populates="start_zone",
+    )
 
 
 class InventoryItems(Base):
@@ -1033,6 +1037,7 @@ class InventoryItems(Base):
 
     warehouse = relationship("WarehouseZones", back_populates="inventory_items")
     assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
+    distributed_items = relationship("DistributedItems", back_populates="item_info")
 
 
 class AssignedStorage(Base):
@@ -1077,6 +1082,35 @@ class DistributionTeam(Base):
     starting_date = Column(Date)
     isActive = Column(Boolean, default=True)
     team_members = relationship("TeamMembers", back_populates="team")
+    routes = relationship("DistributionRoute", back_populates="assigned_team")
+
+
+class DistributionRoute(Base):
+    __tablename__ = "distribution_route"
+    route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_name = Column(String(255), nullable=False)
+    start_location = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    )
+    end_location = Column(String(255), nullable=False)
+    status = Column(String(255), default="Pending")
+    schedule = Column(DateTime)
+    team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
+
+    start_zone = relationship("WarehouseZones", back_populates="routes")
+    distributed_items = relationship("DistributedItems", back_populates="route_info")
+    assigned_team = relationship("DistributionTeam", back_populates="routes")
+
+
+class DistributedItems(Base):
+    __tablename__ = "distributed_items"
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item = Column(Integer, ForeignKey("inventory_items.inventory_id"), nullable=False)
+    route = Column(Integer, ForeignKey("distribution_route.route_id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+    item_info = relationship("InventoryItems", back_populates="distributed_items")
+    route_info = relationship("DistributionRoute", back_populates="distributed_items")
 
 
 # ================================== FINANCE MODELS =====================================

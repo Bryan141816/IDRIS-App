@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict
 from database import Base
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, datetime
 
 
 class VolunteerRecord(BaseModel):
@@ -37,3 +37,16 @@ class TeamDataOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class DistributedItems(BaseModel):
+    inventory_id: int
+    distributionQty: int
+
+
+class RouteCreate(BaseModel):
+    routeName: str
+    warehouse_id: int
+    items: List[DistributedItems]
+    endLocation: str
+    schedule: datetime

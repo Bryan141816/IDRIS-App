@@ -1,22 +1,12 @@
-from crud import delete
-from fastapi import APIRouter, Query
-from fastapi import Depends, Request
+from fastapi import APIRouter
+from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from models import WarehouseZones
-from data_schemas.procurement_inventory import (
-    InventoryItemUpdate,
-    WarehouseZoneCreate,
-    WarehouseZoneOut,
-    InventoryItemCreate,
-    InventoryItemsOut,
-    AssignStorage,
-)
-from crud_functions.procurement_manage.procurement_inventory import (
-    ProcurementInventoryCRUD,
+
+from crud_functions.distribution_planning.distribution_planning import (
+    DistributionAndPlanningCRUD,
 )
 from routers.role_checker import RoleChecker
-from typing import List
 
 router = APIRouter(
     tags=["distribution_planning"],
@@ -26,42 +16,6 @@ router = APIRouter(
 )
 
 
-@router.post("/procurement_inventory/add_warehouse_zone")
-def add_warehouse_zone(request: WarehouseZoneCreate, db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.create_warehouse_zone(db, request)
-
-
-@router.get(
-    "/procurement_inventory/get_warehouse_zone", response_model=List[WarehouseZoneOut]
-)
-def get_warehouse_zone(db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.get_all_warehouse_zones(db)
-
-
-@router.post("/procurement_inventory/assign_storage")
-def assign_storage(id: int, payload: AssignStorage, db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.assign_storage(db, payload, id)
-
-
-@router.post(
-    "/procurement_inventory/update_warehouse_zone", response_model=WarehouseZoneOut
-)
-def update_warehouse_zone(payload: WarehouseZoneOut, db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.update_warehouse_zone(db, payload)
-
-
-@router.post("/procurement_inventory/add_inventory_item")
-def add_inventory_item(payload: InventoryItemCreate, db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.create_inventory_item(db, payload)
-
-
-@router.get(
-    "/procurement_inventory/get_inventory_item", response_model=List[InventoryItemsOut]
-)
-def get_inventory_item(db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.get_all_inventory_item(db)
-
-
-@router.post("/procurement_inventory/update_inventory_item")
-def update_inventory_item(payload: InventoryItemUpdate, db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.update_inventory_item(db, payload)
+@router.get("/distribution_planning/get_volunteers")
+def add_warehouse_zone(db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.get_volunteers(db)

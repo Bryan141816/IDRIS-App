@@ -40,6 +40,7 @@ from routers.request_procurement import request_procurement
 from routers.notification import notification
 from routers.lgu_profiling.uploadedFiles import router as files_router
 from routers.volunteer_management.assignment_routes import router as assignment_router
+from routers.distributionAndplanning import distributionAndplanning
 import real_time_handler
 import models  # ✅ correct import path for User model
 
@@ -75,6 +76,7 @@ app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(real_time_handler.router)
 app.include_router(notification.router)
 app.include_router(ManageUsers.router)
+app.include_router(distributionAndplanning.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 app.include_router(

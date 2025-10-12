@@ -103,3 +103,53 @@ class DistributionAndPlanningCRUD:
         db.commit()
         db.refresh(route)
         return route
+
+    @staticmethod
+    def get_routes(db: Session):
+        routes = (
+            db.query(DistributionRoute)
+            .options(
+                joinedload(DistributionRoute.assigned_team),  # join team
+                joinedload(DistributionRoute.distributed_items).joinedload(
+                    DistributedItems.item_info
+                ),  # join inventory
+                joinedload(
+                    DistributionRoute.start_zone
+                ),  # optional: include warehouse start zone
+            )
+            .all()
+        )
+
+        # Example structure for returning data as dict
+        result = []
+        for route in routes:
+            route_data = {
+                "route_id": route.route_id,
+                "route_name": route.route_name,
+                "status": route.status,
+                "schedule": route.schedule,
+                "end_location": route.end_location,
+                "start_location": (
+                    route.start_zone.zone_name if route.start_zone else None
+                ),
+                "assigned_team": {
+                    "team_id": (
+                        route.assigned_team.team_id if route.assigned_team else None
+                    ),
+                    "team_name": (
+                        route.assigned_team.team_name if route.assigned_team else None
+                    ),
+                },
+                "distributed_items": [
+                    {
+                        "item_id": item.item_id,
+                        "inventory_id": item.item_info.inventory_id,
+                        "item_name": item.item_info.item_name,
+                        "quantity": item.quantity,
+                    }
+                    for item in route.distributed_items
+                ],
+            }
+            result.append(route_data)
+
+        return result

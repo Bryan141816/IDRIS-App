@@ -43,3 +43,8 @@ def get_warehouse_items(warehouse_id: int, db: Session = Depends(get_db)):
 @router.post("/distribution_planning/create_route")
 def create_route(payload: RouteCreate, db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.create_route(payload, db)
+
+
+@router.get("/distribution_planning/get_routes")
+def get_routes(db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.get_routes(db)

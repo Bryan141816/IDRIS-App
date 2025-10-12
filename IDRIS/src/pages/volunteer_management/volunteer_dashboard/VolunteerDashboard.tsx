@@ -512,7 +512,7 @@ export default function IDRISDashboard() {
     const openReportModal = (): void => setIsReportsModalOpen(true);
     const closeReportModal = (): void => setIsReportsModalOpen(false);
     const isOpsAdmin =
-        userType === "admin" && userRoles.includes("operations admin") || userRoles.includes("super admin");
+        userType === "admin" && userRoles.includes("operations admin") || userRoles.includes("superadmin");
 
     useEffect(() => {
         const savedDate = localStorage.getItem("viewDate");

@@ -44,7 +44,7 @@ export interface DonationRecordItem {
 const DonationsDashboard = () => {
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
-  const isAdmin = userRoles.includes("finance admin") || userRoles.includes("operations admin");
+  const isAdmin = userRoles.includes("finance admin") || userRoles.includes("operations admin") || userRoles.includes("superadmin");
 
   const [loading, setLoading] = useState(true);
 

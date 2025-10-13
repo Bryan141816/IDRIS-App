@@ -225,7 +225,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           </div>
         )}
 
-        {(userRoles.includes("lgu officer") || userRoles.includes("superadmin")) && (
+        {(userRoles.includes("lgu officer")) && (
           <div className="nav-items" id="procurement_request">
             <div
               className={`flex-control ${activeNav === "procurement_request" ? "active" : ""}`}

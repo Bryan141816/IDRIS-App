@@ -48,7 +48,7 @@ const EvacuationAndShelter = () => {
     type EditModalType = { id: string | number; occupied: number; capacity: number } | null;
     const [editModal, setEditModal] = useState<EditModalType>(null);
     const isLguAdmin =
-        userType === "admin" && userRoles.includes("lgu officer") || userRoles.includes("super admin");
+        userType === "admin" && userRoles.includes("lgu officer") || userRoles.includes("superadmin");
     const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => ref.current?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
 
     const handleFormChange = (e: { target: { name: any; value: any; type: any; }; }) => {

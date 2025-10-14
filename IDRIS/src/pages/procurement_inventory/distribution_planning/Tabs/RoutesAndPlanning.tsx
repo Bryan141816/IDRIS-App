@@ -92,7 +92,10 @@ export const RoutesAndPlanning = () => {
   return (
     <>
       {activeModal === "new" && (
-        <AddRouteModal onClose={closeModal}></AddRouteModal>
+        <AddRouteModal
+          onClose={closeModal}
+          refreshTable={fetchData}
+        ></AddRouteModal>
       )}
       <div className="routes-content">
         <div className="section-header">

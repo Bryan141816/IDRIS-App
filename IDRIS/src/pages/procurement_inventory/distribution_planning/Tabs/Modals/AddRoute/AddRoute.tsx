@@ -6,9 +6,13 @@ import {
 } from "../../../../procurement_inventory/Tabs/Modals/ModalDefault";
 interface AddRouteModalProp {
   onClose: () => void;
+  refreshTable: () => void;
 }
 
-export const AddRouteModal: React.FC<AddRouteModalProp> = ({ onClose }) => {
+export const AddRouteModal: React.FC<AddRouteModalProp> = ({
+  onClose,
+  refreshTable,
+}) => {
   const [wareHousePicker, setWareHousePicker] = useState(false);
   const [selectedWareHouseZone, setSelectedWareHouseZone] =
     useState<WarehouseZone | null>(null);
@@ -62,6 +66,7 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({ onClose }) => {
             "/distribution_planning/create_route",
             data,
           );
+          refreshTable();
           onClose();
         } catch (e: any) {
           console.error("Error creating route: " + e);

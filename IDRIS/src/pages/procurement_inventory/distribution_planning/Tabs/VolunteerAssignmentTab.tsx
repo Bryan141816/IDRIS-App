@@ -45,7 +45,10 @@ export const VolunteerAssignmentTab = () => {
   return (
     <>
       {activeModal === "assign" && (
-        <AssignVolunteerModal onClose={closeModal}></AssignVolunteerModal>
+        <AssignVolunteerModal
+          onClose={closeModal}
+          refreshTable={refreshTable}
+        ></AssignVolunteerModal>
       )}
       <div className="routes-content">
         <div className="section-header">
@@ -98,7 +101,9 @@ export const VolunteerAssignmentTab = () => {
                             {volunteer.volunteer.first_name}{" "}
                             {volunteer.volunteer.last_name}
                           </td>
-                          <td style={{ padding: "10px" }}>{volunteer.role}</td>
+                          <td style={{ padding: "10px" }}>
+                            {volunteer.role.toUpperCase()}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -118,10 +123,10 @@ export const VolunteerAssignmentTab = () => {
                   <b>Starting Date:</b>
                   {teamData.starting_date}
                 </span>
-                <div className="route-actions">
-                  <button className="secondary-btn">Edit Schedule</button>
-                  <button className="primary-btn">View Details</button>
-                </div>
+                {/* <div className="route-actions"> */}
+                {/*   <button className="secondary-btn">Edit Schedule</button> */}
+                {/*   <button className="primary-btn">View Details</button> */}
+                {/* </div> */}
               </div>
             </div>
           ))}

@@ -128,6 +128,8 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
           storage: unitsOcupancy,
         },
       );
+      refreshData();
+      onClose();
       return response.data;
     } catch (e: any) {
       console.error("Error assigning storage: " + e);

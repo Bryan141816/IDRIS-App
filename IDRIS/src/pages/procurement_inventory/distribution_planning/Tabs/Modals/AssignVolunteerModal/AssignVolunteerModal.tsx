@@ -2,6 +2,7 @@ import { useEffect, useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 interface AssignVolunteerModalProp {
   onClose: () => void;
+  refreshTable: () => void;
 }
 
 type Volunteer = {
@@ -23,6 +24,7 @@ type TeamData = {
 };
 export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
   onClose,
+  refreshTable,
 }) => {
   const [isEditMember, setIsEditMember] = useState(false);
 
@@ -65,6 +67,8 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
           "/distribution_planning/add_team",
           teamData,
         );
+        refreshTable();
+        onClose();
       } catch (e: any) {
         console.error("Error in adding team: " + e);
       }
@@ -149,7 +153,7 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
                         </td>
                         <td style={{ padding: "10px" }}>
                           <select
-                            value={volunteer.role || ""}
+                            value={volunteer.role?.toUpperCase() || ""}
                             onChange={(e) =>
                               handleRoleChange(
                                 volunteer.volunteer_id,

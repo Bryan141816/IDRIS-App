@@ -1081,6 +1081,7 @@ class DistributionTeam(Base):
     assignment_duration = Column(Integer, nullable=False)
     starting_date = Column(Date)
     isActive = Column(Boolean, default=True)
+    status = Column(String(255), default="unassigned")
     team_members = relationship("TeamMembers", back_populates="team")
     routes = relationship("DistributionRoute", back_populates="assigned_team")
 

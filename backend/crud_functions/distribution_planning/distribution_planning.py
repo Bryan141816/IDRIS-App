@@ -1,4 +1,4 @@
-from data_schemas.distribution_planning import TeamDataCreate, RouteCreate
+from data_schemas.distribution_planning import TeamDataCreate, RouteCreate, AssignTeam
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 from models import (
@@ -12,7 +12,7 @@ from models import (
 from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
-from typing import List
+from typing import List, Optional
 from fastapi import HTTPException, status
 
 
@@ -105,22 +105,30 @@ class DistributionAndPlanningCRUD:
         return route
 
     @staticmethod
-    def get_routes(db: Session):
-        routes = (
-            db.query(DistributionRoute)
-            .options(
-                joinedload(DistributionRoute.assigned_team),  # join team
-                joinedload(DistributionRoute.distributed_items).joinedload(
-                    DistributedItems.item_info
-                ),  # join inventory
-                joinedload(
-                    DistributionRoute.start_zone
-                ),  # optional: include warehouse start zone
-            )
-            .all()
+    def get_routes(db: Session, exclude: Optional[List[str]] = None):
+        query = db.query(DistributionRoute)
+
+        # Apply joined loads
+        query = query.options(
+            joinedload(DistributionRoute.assigned_team),
+            joinedload(DistributionRoute.distributed_items).joinedload(
+                DistributedItems.item_info
+            ),
+            joinedload(DistributionRoute.start_zone),
         )
 
-        # Example structure for returning data as dict
+        # Exclude rows based on the given dict
+        print(exclude)
+        if exclude:
+            for condition in exclude:
+                if ":" in condition:
+                    column_name, value = condition.split(":", 1)
+                    column = getattr(DistributionRoute, column_name, None)
+                    if column is not None:
+                        query = query.filter(column != value)
+
+        routes = query.all()
+
         result = []
         for route in routes:
             route_data = {
@@ -153,3 +161,46 @@ class DistributionAndPlanningCRUD:
             result.append(route_data)
 
         return result
+
+    @staticmethod
+    def assign_team(payload: AssignTeam, db: Session):
+        # Fetch the route
+        route = (
+            db.query(DistributionRoute)
+            .filter(DistributionRoute.route_id == payload.route_id)
+            .first()
+        )
+
+        if not route:
+            print(f"Route with ID {payload.route_id} not found.")
+            return None
+
+        # Fetch the team (if a team_id was provided)
+        team = (
+            db.query(DistributionTeam)
+            .filter(DistributionTeam.team_id == payload.team_id)
+            .first()
+            if payload.team_id
+            else None
+        )
+
+        # Update the route
+        route.team = payload.team_id
+
+        # If a team is assigned
+        if team:
+            route.status = "Assigned"
+            team.status = "assigned"
+        else:
+            # Unassign team if team_id is None
+            route.status = "Pending"
+            # Optional: mark previously assigned team as unassigned
+            if route.assigned_team:
+                route.assigned_team.status = "unassigned"
+
+        db.commit()
+        db.refresh(route)
+        if team:
+            db.refresh(team)
+
+        return route

@@ -17,33 +17,6 @@ type route = {
   schedule: string;
 };
 
-const routes = [
-  {
-    id: 1,
-    name: "Route A - Cebu City North",
-    status: "Active",
-    assigned: "Team Alpha",
-  },
-  {
-    id: 2,
-    name: "Route B - Mandaue Central",
-    status: "Active",
-    assigned: "Team Beta",
-  },
-  {
-    id: 3,
-    name: "Route C - Lapu-Lapu East",
-    status: "Pending",
-    assigned: "Unassigned",
-  },
-  {
-    id: 4,
-    name: "Route D - Talisay West",
-    status: "Completed",
-    assigned: "Team Gamma",
-  },
-];
-
 type DistributedItem = {
   item_id: number;
   inventory_id: number;

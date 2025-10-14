@@ -1,13 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from data_schemas.distribution_planning import TeamDataCreate, TeamDataOut, RouteCreate
+from data_schemas.distribution_planning import (
+    TeamDataCreate,
+    TeamDataOut,
+    RouteCreate,
+    AssignTeam,
+)
 from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
 )
 from routers.role_checker import RoleChecker
-from typing import List
+from typing import List, Optional
 
 
 router = APIRouter(
@@ -46,5 +51,15 @@ def create_route(payload: RouteCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/distribution_planning/get_routes")
-def get_routes(db: Session = Depends(get_db)):
-    return DistributionAndPlanningCRUD.get_routes(db)
+def get_routes(
+    db: Session = Depends(get_db),
+    exclude: Optional[List[str]] = Query(
+        None, description="Format: column:value"
+    ),  # Example: ?exclude=team
+):
+    return DistributionAndPlanningCRUD.get_routes(db, exclude)
+
+
+@router.post("/distribution_planning/assign_team")
+def assign_team(payload: AssignTeam, db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.assign_team(payload, db)

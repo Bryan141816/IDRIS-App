@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AssignVolunteerModal } from "./Modals/AssignVolunteerModal/AssignVolunteerModal";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
-
+import AssignRoute from "./Modals/AssignRoute/AssignRoute";
 type Volunteer = {
   last_name: string;
   first_name: string;
@@ -17,13 +17,18 @@ type TeamData = {
   deployment_area: string;
   assignment_duration: number;
   starting_date: string;
+  status: string;
 };
 
 export const VolunteerAssignmentTab = () => {
   const [activeModal, setActiveModal] = useState("");
   const [teamDatas, setTeamData] = useState<TeamData[]>([]);
-  const openModal = (type: string, selectedData: any = null) => {
+  const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
+  const openModal = (type: string, selectedData: TeamData | null = null) => {
     setActiveModal(type);
+    if (selectedData) {
+      setSelectedTeam(selectedData);
+    }
   };
   const closeModal = () => {
     setActiveModal("");
@@ -49,6 +54,13 @@ export const VolunteerAssignmentTab = () => {
           onClose={closeModal}
           refreshTable={refreshTable}
         ></AssignVolunteerModal>
+      )}
+      {activeModal === "setRoute" && selectedTeam && (
+        <AssignRoute
+          onClose={closeModal}
+          selectedTeam={selectedTeam}
+          refreshTable={refreshTable}
+        ></AssignRoute>
       )}
       <div className="routes-content">
         <div className="section-header">
@@ -123,10 +135,18 @@ export const VolunteerAssignmentTab = () => {
                   <b>Starting Date:</b>
                   {teamData.starting_date}
                 </span>
-                {/* <div className="route-actions"> */}
-                {/*   <button className="secondary-btn">Edit Schedule</button> */}
-                {/*   <button className="primary-btn">View Details</button> */}
-                {/* </div> */}
+                <div className="route-actions">
+                  <button className="secondary-btn">Edit Schedule</button>
+                  {teamData.status !== "assigned" && (
+                    <button
+                      className="secondary-btn"
+                      onClick={() => openModal("setRoute", teamData)}
+                    >
+                      Assign Team
+                    </button>
+                  )}
+                  <button className="primary-btn">View Details</button>
+                </div>
               </div>
             </div>
           ))}

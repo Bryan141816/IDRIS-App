@@ -34,6 +34,7 @@ class TeamDataOut(BaseModel):
     deployment_area: str
     assignment_duration: int
     starting_date: date
+    status: str
 
     class Config:
         orm_mode = True
@@ -50,3 +51,8 @@ class RouteCreate(BaseModel):
     items: List[DistributedItems]
     endLocation: str
     schedule: datetime
+
+
+class AssignTeam(BaseModel):
+    route_id: int
+    team_id: int

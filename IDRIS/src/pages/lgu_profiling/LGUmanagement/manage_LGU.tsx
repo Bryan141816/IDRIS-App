@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import "../css/LGUmanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
 import { TableView } from "../../../components/TableView/table_view";
@@ -6,6 +6,7 @@ import { API } from "../../../API_Handler/Axio_API_Handler";
 import { TableReponse } from "../../../components/TableView/table_view";
 
 import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
+
 import {
   AddEvacuationModal,
   ViewEvecuationModal,
@@ -26,15 +27,11 @@ import {
   ViewHazardModal,
   EditHazardModal,
 } from "./Modals/hazardModal";
-
 import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
-
 
 /* ========================= API HELPERS ========================= */
 export async function getRecord(record_type: string): Promise<any> {
-  const response = await API.get(
-    `/lgu_profiling/manage_lgu/get_${record_type}`
-  );
+  const response = await API.get(`/lgu_profiling/manage_lgu/get_${record_type}`);
   return response.data;
 }
 
@@ -47,12 +44,8 @@ export async function addRecord(
       `/lgu_profiling/manage_lgu/add_${record_type}`,
       payload
     );
-
     if (response.data?.success === false) {
-      return {
-        success: false,
-        error: response.data.error || "Unknown error from server",
-      };
+      return { success: false, error: response.data.error || "Unknown error from server" };
     }
     return response.data;
   } catch (error: any) {
@@ -74,13 +67,7 @@ export async function deleteRecord(
     const response = await API.delete(
       `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`
     );
-
-    // ✅ Option A: FastAPI returns JSON with { message: "..." }
-    if (response?.data?.message) {
-      console.log(response.data.message);
-    }
-
-    return response.data; // return only JSON payload, easier to use later
+    return response.data;
   } catch (error: any) {
     if (error.response) {
       console.error("Error:", error.response.data.detail || error.response.data);
@@ -101,12 +88,8 @@ export async function updateRecord(
       `/lgu_profiling/manage_lgu/update_${record_type}/${reportId}`,
       payload
     );
-
     if (response.data?.success === false) {
-      return {
-        success: false,
-        error: response.data.error || "Unknown error from server",
-      };
+      return { success: false, error: response.data.error || "Unknown error from server" };
     }
     return response.data;
   } catch (error: any) {
@@ -135,24 +118,30 @@ type TableRowShape = {
   [k: string]: any;
 };
 
+type Tabs =
+  | "all"
+  | "lgu"
+  | "barangay"
+  | "rafi"
+  | "hazard"
+  | "evacuation";
+
 /* ========================= COMPONENT ========================= */
 const MapOfCebu = () => {
-  const [activeTab, setActiveTab] = useState<
-    "lgu" | "barangay" | "rafi" | "hazard" | "evacuation"
-  >("lgu");
+  // Which dataset(s) to show — default to "all" so everything shows first
+  const [activeTab, setActiveTab] = useState<Tabs>("all");
 
-  // 🔎 LGU search + sort
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState<"asc" | "desc">("desc");
+  // When opening a row from "All", remember which section it came from
+  const [viewContextTab, setViewContextTab] = useState<Exclude<Tabs, "all"> | null>(null);
 
-  // 📄 table data
+  // table data
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
   const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(null);
   const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
   const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
   const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
 
-  // 🔁 TableView refresher (TableView gives us a function that accepts page?: number)
+  // TableView refresher (TableView gives us a function that accepts page?: number)
   const refreshTable = useRef<null | ((page?: number) => void)>(null);
   const handleRefreshTable = (page = 1) => refreshTable.current?.(page);
 
@@ -181,114 +170,157 @@ const MapOfCebu = () => {
     evacuation: false,
   });
 
-  const fetchData = async (name: string) => {
-    try {
-      const response = await getRecord(name);
-      switch (name) {
-        case "lgu":
-          setLguResponse(response);
-          break;
-        case "barangay":
-          setBarangayResponse(response);
-          break;
-        case "rafi":
-          setRafiResponse(response);
-          break;
-        case "hazard":
-          setHazardResponse(response);
-          break;
-        case "evacuation":
-          setEvacuationResponse(response);
-          break;
+  // Filter dropdown state + outside click
+  const [showFilter, setShowFilter] = useState(false);
+  const filterRef = useRef<HTMLDivElement | null>(null);
+
+  // Add Pin dropdown state + outside click
+  const [showAddPin, setShowAddPin] = useState(false);
+  const addPinRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setShowFilter(false);
       }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+      if (addPinRef.current && !addPinRef.current.contains(e.target as Node)) {
+        setShowAddPin(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const fetchDataOne = useCallback(
+    async (name: Exclude<Tabs, "all">) => {
+      try {
+        const response = await getRecord(name);
+        switch (name) {
+          case "lgu":
+            setLguResponse(response);
+            break;
+          case "barangay":
+            setBarangayResponse(response);
+            break;
+          case "rafi":
+            setRafiResponse(response);
+            break;
+          case "hazard":
+            setHazardResponse(response);
+            break;
+          case "evacuation":
+            setEvacuationResponse(response);
+            break;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    []
+  );
+
+  const fetchAll = useCallback(async () => {
+    await Promise.allSettled([
+      fetchDataOne("lgu"),
+      fetchDataOne("barangay"),
+      fetchDataOne("rafi"),
+      fetchDataOne("hazard"),
+      fetchDataOne("evacuation"),
+    ]);
+  }, [fetchDataOne]);
 
   /* ---------- modal helpers ---------- */
-  const openAddModal = () => {
-    setAddModalState((prev) => ({ ...prev, [activeTab]: true }));
+  const openAddModal = (tabOverride?: Exclude<Tabs, "all">) => {
+    const tab = tabOverride || activeTab;
+    if (tab === "all") return; // require explicit section from the Add Pin dropdown
+    setAddModalState((prev) => ({ ...prev, [tab]: true }));
   };
   const closeAddModal = () => {
-    setAddModalState((prev) => ({ ...prev, [activeTab]: false }));
+    setAddModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
   };
 
-// replace your current openViewModal with this
-const openViewModal = async (row?: TableRowShape) => {
-  if (row) {
-    const id = row.data?.[0]?.text; // hidden ID from table row
+  // NEW: allow overriding tab to avoid race condition from setActiveTab in "All" view
+  const openViewModal = async (row?: TableRowShape, tabOverride?: Exclude<Tabs, "all">) => {
+    const tabToUse = tabOverride || (activeTab === "all" ? viewContextTab || "lgu" : (activeTab as Exclude<Tabs, "all">));
 
-    if (activeTab === "barangay" && id) {
-      try {
-        const { data } = await API.get(`/lgu_profiling/manage_lgu/barangay/${id}`);
-        // Attach the full record to the row
-        (row as any).fullRecord = data;
-      } catch (e) {
-        console.error("❌ Failed to fetch barangay detail", e);
+    if (row) {
+      const id = row.data?.[0]?.text; // hidden ID from table row
+      if (tabToUse === "barangay" && id) {
+        try {
+          const { data } = await API.get(`/lgu_profiling/manage_lgu/barangay/${id}`);
+          (row as any).fullRecord = data;
+        } catch (e) {
+          console.error("❌ Failed to fetch barangay detail", e);
+        }
       }
+      setSelectedViewData(row);
+      setViewContextTab(tabToUse); // remember which section this view belongs to
     }
 
-    setSelectedViewData(row);
-  }
-
-  setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
-};
-
+    setViewModalState((prev) => ({ ...prev, [tabToUse]: true })) as any;
+  };
 
   // Hide only (keep selection when switching to edit)
   const hideViewModal = () => {
-    setViewModalState((prev) => ({ ...prev, [activeTab]: false }));
+    setViewModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
   };
 
   // Close and clear selection
   const closeViewModal = () => {
     hideViewModal();
     setSelectedViewData(null);
+    setViewContextTab(null);
   };
 
   const openEditModal = () => {
-    // don’t clear selectedViewData; we need it in the edit modal
     hideViewModal();
-    setEditModalState((prev) => ({ ...prev, [activeTab]: true }));
+    const tabForEdit = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
+    setEditModalState((prev) => ({ ...prev, [tabForEdit]: true })) as any;
   };
 
   const closeEditModal = () => {
-    setEditModalState((prev) => ({ ...prev, [activeTab]: false }));
+    const tabForView = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
+    setEditModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
     // After editing, reopen the view modal to show updated data
-    setViewModalState((prev) => ({ ...prev, [activeTab]: true }));
+    setViewModalState((prev) => ({ ...prev, [tabForView]: true })) as any;
   };
 
   /* ---------- CRUD handlers ---------- */
-const handleDeleteRecord = async (id: string) => {
-  try {
-    await deleteRecord(activeTab, id);
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: true,
-      type: "message",
-      message: "Record deleted successfully",
-    }));
-    closeViewModal();
-    handleRefreshTable();
-  } catch (err: any) {
-    const serverDetail =
-      err?.response?.data?.detail ||
-      err?.response?.data?.error ||
-      err?.message ||
-      "Delete failed. Please try again.";
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: true,
-      type: "message",
-      message: serverDetail, // 👈 will show: “Cannot delete: this evacuation center is linked…”
-    }));
-  }
-};
+  const resolveCurrentTab = (): Exclude<Tabs, "all"> =>
+    activeTab === "all" ? (viewContextTab || "lgu") : (activeTab as Exclude<Tabs, "all">);
 
+  const handleDeleteRecord = async (id: string) => {
+    try {
+      const targetTab = resolveCurrentTab();
+      await deleteRecord(targetTab, id);
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "Record deleted successfully",
+      }));
+      closeViewModal();
+      handleRefreshTable();
+      if (activeTab === "all") await fetchAll();
+      else await fetchDataOne(targetTab);
+    } catch (err: any) {
+      const serverDetail =
+        err?.response?.data?.detail ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Delete failed. Please try again.";
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: serverDetail,
+      }));
+    }
+  };
 
-  const handleAddRecord = async (payload: any) => {
-    const response = await addRecord(activeTab, payload);
+  const handleAddRecord = async (payload: any, tabOverride?: Exclude<Tabs, "all">) => {
+    const target = tabOverride || resolveCurrentTab();
+    const response = await addRecord(target, payload);
     if (!(response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -297,7 +329,8 @@ const handleDeleteRecord = async (id: string) => {
         message: "Record added successfully",
       }));
       closeAddModal();
-      handleRefreshTable();
+      if (activeTab === "all") await fetchAll();
+      else handleRefreshTable();
     } else {
       setMessageBox((prev) => ({
         ...prev,
@@ -323,7 +356,8 @@ const handleDeleteRecord = async (id: string) => {
   };
 
   const handleEditRecord = async (id: string, payload: any) => {
-    const response = await updateRecord(activeTab, id, payload);
+    const target = resolveCurrentTab();
+    const response = await updateRecord(target, id, payload);
     if ((response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -342,7 +376,7 @@ const handleDeleteRecord = async (id: string) => {
     }));
 
     try {
-      switch (activeTab) {
+      switch (target) {
         case "barangay":
           setSelectedViewData((prev) =>
             safeUpdateByIndex(prev, {
@@ -386,7 +420,6 @@ const handleDeleteRecord = async (id: string) => {
             })
           );
           break;
-
         case "evacuation":
           setSelectedViewData((prev) =>
             safeUpdateByIndex(prev, {
@@ -403,77 +436,67 @@ const handleDeleteRecord = async (id: string) => {
               2: payload.hazard_area,
               3: payload.image_url,
               4: payload.hazard_type,
-              // 1: optionally update last_updated if your API returns it; otherwise leave it
             })
           );
           break;
-case "rafi": {
-  // ----- read values whether payload is FormData or plain object -----
-  let rafi_name: string | null | undefined;
-  let latStr: string | null | undefined;
-  let lngStr: string | null | undefined;
-  let rafi_desc: string | null | undefined;
-  let userPickedNewFile = false;
+        case "rafi": {
+          let rafi_name: string | null | undefined;
+          let latStr: string | null | undefined;
+          let lngStr: string | null | undefined;
+          let rafi_desc: string | null | undefined;
 
-  if (payload instanceof FormData) {
-    rafi_name = payload.get("rafi_name") as string;
-    latStr    = payload.get("lat") as string;
-    lngStr    = payload.get("lng") as string;
-    rafi_desc = payload.get("rafi_desc") as string;
-    userPickedNewFile = payload.has("rafi_pic");
-  } else {
-    rafi_name = payload.rafi_name ?? payload.name;
-    latStr    = payload.lat != null ? String(payload.lat) : undefined;
-    lngStr    = payload.lng != null ? String(payload.lng) : undefined;
-    rafi_desc = payload.rafi_desc ?? payload.description;
-  }
+          if (payload instanceof FormData) {
+            rafi_name = payload.get("rafi_name") as string;
+            latStr = payload.get("lat") as string;
+            lngStr = payload.get("lng") as string;
+            rafi_desc = payload.get("rafi_desc") as string;
+          } else {
+            rafi_name = payload.rafi_name ?? payload.name;
+            latStr = payload.lat != null ? String(payload.lat) : undefined;
+            lngStr = payload.lng != null ? String(payload.lng) : undefined;
+            rafi_desc = payload.rafi_desc ?? payload.description;
+          }
 
-  const lat = latStr != null ? Number(latStr) : undefined;
-  const lng = lngStr != null ? Number(lngStr) : undefined;
+          const lat = latStr != null ? Number(latStr) : undefined;
+          const lng = lngStr != null ? Number(lngStr) : undefined;
 
-  // ✅ get correct pic URL from backend response
-  const newPicFromResp = (response as any)?.record?.rafi_pic as string | undefined;
-  const prevPic = (selectedViewData?.data?.[5]?.text as string) || undefined;
+          const newPicFromResp = (response as any)?.record?.rafi_pic as string | undefined;
+          const prevPic = (selectedViewData?.data?.[5]?.text as string) || undefined;
 
-  // add cache-buster
-  const cacheBust = (url?: string) =>
-    url ? `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}` : url;
+          const cacheBust = (url?: string) =>
+            url ? `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}` : url;
 
-  const picToUse =
-    newPicFromResp ? cacheBust(newPicFromResp)
-    : userPickedNewFile ? cacheBust(prevPic)
-    : prevPic;
+          const picToUse = newPicFromResp ? cacheBust(newPicFromResp) : cacheBust(prevPic);
 
-  // ✅ immediately tell View modal to reload
-  document.dispatchEvent(
-    new CustomEvent("rafi:updated", {
-      detail: { id, rafi_pic: newPicFromResp },
-    })
-  );
+          document.dispatchEvent(
+            new CustomEvent("rafi:updated", {
+              detail: { id, rafi_pic: newPicFromResp },
+            })
+          );
 
-  setSelectedViewData(prev =>
-    safeUpdateByIndex(prev, {
-      1: rafi_name ?? (prev?.data?.[1]?.text as string),
-      2: lat != null ? String(lat) : (prev?.data?.[2]?.text as string),
-      3: lng != null ? String(lng) : (prev?.data?.[3]?.text as string),
-      4: rafi_desc ?? (prev?.data?.[4]?.text as string),
-      5: picToUse as string, // 👈 update image immediately
-    })
-  );
-  break;
-}
-
- default:
+          setSelectedViewData((prev) =>
+            safeUpdateByIndex(prev, {
+              1: rafi_name ?? (prev?.data?.[1]?.text as string),
+              2: lat != null ? String(lat) : (prev?.data?.[2]?.text as string),
+              3: lng != null ? String(lng) : (prev?.data?.[3]?.text as string),
+              4: rafi_desc ?? (prev?.data?.[4]?.text as string),
+              5: picToUse as string,
+            })
+          );
+          break;
+        }
+        default:
           break;
       }
     } catch {
-      await fetchData(activeTab);
+      if (activeTab === "all") await fetchAll();
+      else await fetchDataOne(target);
     }
 
     closeEditModal();
-    // show updated view
-    openViewModal();
-    handleRefreshTable();
+    openViewModal(undefined, target);
+    if (activeTab === "all") await fetchAll();
+    else handleRefreshTable();
   };
 
   /* ---------- message box ---------- */
@@ -490,6 +513,7 @@ case "rafi": {
 
   /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
+    // reset modals
     setAddModalState({
       lgu: false,
       barangay: false,
@@ -512,7 +536,12 @@ case "rafi": {
       evacuation: false,
     });
     setSelectedViewData(null);
-    fetchData(activeTab);
+
+    if (activeTab === "all") {
+      fetchAll();
+    } else {
+      fetchDataOne(activeTab as Exclude<Tabs, "all">);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
@@ -531,36 +560,36 @@ case "rafi": {
         isModalOpen={addModalState.hazard}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddRecord={handleAddRecord}
+        handleAddRecord={(payload: any) => handleAddRecord(payload, "hazard")}
       />
       <AddEvacuationModal
         isModalOpen={addModalState.evacuation}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddEvacuation={handleAddRecord}
+        handleAddEvacuation={(payload: any) => handleAddRecord(payload, "evacuation")}
       />
       <AddRafiModal
         isModalOpen={addModalState.rafi}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddRecord={handleAddRecord}
+        handleAddRecord={(payload: any) => handleAddRecord(payload, "rafi")}
       />
       <AddLGUModal
         isModalOpen={addModalState.lgu}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddRecord={handleAddRecord}
+        handleAddRecord={(payload: any) => handleAddRecord(payload, "lgu")}
       />
       <AddBarangayModal
         isModalOpen={addModalState.barangay}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddRecord={handleAddRecord}
+        handleAddRecord={(payload: any) => handleAddRecord(payload, "barangay")}
       />
 
-      {/* ========== GATED VIEW / EDIT MODALS (MOUNT ONLY FOR ACTIVE TAB) ========== */}
+      {/* ========== GATED VIEW / EDIT MODALS ========== */}
       {/* LGU */}
-      {viewModalState.lgu && activeTab === "lgu" && selectedViewData && (
+      {viewModalState.lgu && selectedViewData && (
         <ViewLGUModal
           isModalOpen={viewModalState.lgu}
           closeModal={closeViewModal}
@@ -570,7 +599,7 @@ case "rafi": {
           openEditModal={openEditModal}
         />
       )}
-      {editModalState.lgu && activeTab === "lgu" && selectedViewData && (
+      {editModalState.lgu && selectedViewData && (
         <EditLGUModal
           isModalOpen={editModalState.lgu}
           closeModal={closeEditModal}
@@ -581,57 +610,49 @@ case "rafi": {
       )}
 
       {/* BARANGAY */}
-      {viewModalState.barangay &&
-        activeTab === "barangay" &&
-        selectedViewData && (
-          <ViewBarangayModal
-            isModalOpen={viewModalState.barangay}
-            closeModal={closeViewModal}
-            setMessageBox={setMessageBox}
-            selectedData={selectedViewData}
-            handleDeleteRecord={handleDeleteRecord}
-            openEditModal={openEditModal}
-          />
-        )}
-      {editModalState.barangay &&
-        activeTab === "barangay" &&
-        selectedViewData && (
-          <EditBarangayModal
-            isModalOpen={editModalState.barangay}
-            closeModal={closeEditModal}
-            setMessageBox={setMessageBox}
-            selectedData={selectedViewData}
-            handleEditRecord={handleEditRecord}
-          />
-        )}
+      {viewModalState.barangay && selectedViewData && (
+        <ViewBarangayModal
+          isModalOpen={viewModalState.barangay}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        />
+      )}
+      {editModalState.barangay && selectedViewData && (
+        <EditBarangayModal
+          isModalOpen={editModalState.barangay}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        />
+      )}
 
       {/* EVACUATION */}
-      {viewModalState.evacuation &&
-        activeTab === "evacuation" &&
-        selectedViewData && (
-          <ViewEvecuationModal
-            isModalOpen={viewModalState.evacuation}
-            closeModal={closeViewModal}
-            setMessageBox={setMessageBox}
-            selectedData={selectedViewData}
-            handleDeleteRecord={handleDeleteRecord}
-            openEditModal={openEditModal}
-          />
-        )}
-      {editModalState.evacuation &&
-        activeTab === "evacuation" &&
-        selectedViewData && (
-          <EditEvacuationModal
-            isModalOpen={editModalState.evacuation}
-            closeModal={closeEditModal}
-            setMessageBox={setMessageBox}
-            selectedData={selectedViewData}
-            handleEditRecord={handleEditRecord}
-          />
-        )}
+      {viewModalState.evacuation && selectedViewData && (
+        <ViewEvecuationModal
+          isModalOpen={viewModalState.evacuation}
+          closeModal={closeViewModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleDeleteRecord={handleDeleteRecord}
+          openEditModal={openEditModal}
+        />
+      )}
+      {editModalState.evacuation && selectedViewData && (
+        <EditEvacuationModal
+          isModalOpen={editModalState.evacuation}
+          closeModal={closeEditModal}
+          setMessageBox={setMessageBox}
+          selectedData={selectedViewData}
+          handleEditRecord={handleEditRecord}
+        />
+      )}
 
       {/* RAFI */}
-      {viewModalState.rafi && activeTab === "rafi" && selectedViewData && (
+      {viewModalState.rafi && selectedViewData && (
         <ViewRafiModalModal
           isModalOpen={viewModalState.rafi}
           closeModal={closeViewModal}
@@ -641,7 +662,7 @@ case "rafi": {
           openEditModal={openEditModal}
         />
       )}
-      {editModalState.rafi && activeTab === "rafi" && selectedViewData && (
+      {editModalState.rafi && selectedViewData && (
         <EditRafiModal
           isModalOpen={editModalState.rafi}
           closeModal={closeEditModal}
@@ -650,8 +671,9 @@ case "rafi": {
           handleEditRecord={handleEditRecord}
         />
       )}
+
       {/* HAZARD */}
-      {viewModalState.hazard && activeTab === "hazard" && selectedViewData && (
+      {viewModalState.hazard && selectedViewData && (
         <ViewHazardModal
           isModalOpen={viewModalState.hazard}
           closeModal={closeViewModal}
@@ -661,7 +683,7 @@ case "rafi": {
           openEditModal={openEditModal}
         />
       )}
-      {editModalState.hazard && activeTab === "hazard" && selectedViewData && (
+      {editModalState.hazard && selectedViewData && (
         <EditHazardModal
           isModalOpen={editModalState.hazard}
           closeModal={closeEditModal}
@@ -671,119 +693,218 @@ case "rafi": {
         />
       )}
 
-      {/* ---------- TABS ---------- */}
-      <div className="tabs">
-        <button
-          onClick={() => setActiveTab("lgu")}
-          className={activeTab === "lgu" ? "active-tab" : ""}
-        >
-          LGU
-        </button>
-        <button
-          onClick={() => setActiveTab("barangay")}
-          className={activeTab === "barangay" ? "active-tab" : ""}
-        >
-          Barangay
-        </button>
-        <button
-          onClick={() => setActiveTab("rafi")}
-          className={activeTab === "rafi" ? "active-tab" : ""}
-        >
-          RAFI Infrastructure
-        </button>
-        <button
-          onClick={() => setActiveTab("hazard")}
-          className={activeTab === "hazard" ? "active-tab" : ""}
-        >
-          Hazard Mapping
-        </button>
+      {/* ---------- TOP CONTROLS: FILTER + ADD PIN ---------- */}
+      <div className="top-controls">
+        {/* Filter (left) */}
+        <div className="filter-container" ref={filterRef}>
+          <div className="filter-dropdown">
+            <button
+              className="filter-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFilter((prev) => !prev);
+                setShowAddPin(false);
+              }}
+            >
+              Filter:&nbsp;
+              {activeTab === "all"
+                ? "All"
+                : activeTab === "lgu"
+                ? "LGU"
+                : activeTab === "barangay"
+                ? "Barangay"
+                : activeTab === "rafi"
+                ? "RAFI"
+                : activeTab === "hazard"
+                ? "Hazard"
+                : "Evacuation"}
+              <span className="arrow">▼</span>
+            </button>
+
+            {showFilter && (
+              <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => { setActiveTab("all"); setShowFilter(false); }}>All</button>
+                <button onClick={() => { setActiveTab("lgu"); setShowFilter(false); }}>LGU</button>
+                <button onClick={() => { setActiveTab("barangay"); setShowFilter(false); }}>Barangay</button>
+                <button onClick={() => { setActiveTab("rafi"); setShowFilter(false); }}>RAFI</button>
+                <button onClick={() => { setActiveTab("hazard"); setShowFilter(false); }}>Hazard</button>
+                {/* Intentionally no Evacuation in filter menu if you want to keep it hidden; add back if needed */}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add Pin (right) */}
+        <div className="addpin-container" ref={addPinRef}>
+          <button
+            className="addpin-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAddPin((p) => !p);
+              setShowFilter(false);
+            }}
+          >
+            + Add Pin <span className="arrow">▼</span>
+          </button>
+
+          {showAddPin && (
+            <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => { setShowAddPin(false); openAddModal("lgu"); }}>LGU</button>
+              <button onClick={() => { setShowAddPin(false); openAddModal("barangay"); }}>Barangay</button>
+              <button onClick={() => { setShowAddPin(false); openAddModal("rafi"); }}>RAFI</button>
+              <button onClick={() => { setShowAddPin(false); openAddModal("hazard"); }}>Hazard</button>
+              {/* No Evacuation here per request */}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ---------- CONTENT ---------- */}
       <div>
-       
-{activeTab === "lgu" && (
-  <>
-    <div className="horizontal-container">
-      <div className="table-actions">
-        <input
-          type="text"
-          placeholder="Search LGU"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            // only search on Enter if at least 2 chars
-            if (e.key === "Enter" && q.trim().length >= 2) {
-              handleRefreshTable(1);
-            }
-          }}
-        />
+        {/* ===== ALL VIEW: show every table stacked ===== */}
+        {activeTab === "all" && (
+          <>
+            {/* LGU Block */}
+            <section className="section-block">
+              <div className="horizontal-container">
+                <h2 className="section-title">LGU</h2>
+              </div>
 
-        <button
-          onClick={() => {
-            if (q.trim().length >= 2 || q.trim().length === 0) {
-              // allow empty -> show all; block 1-char searches
-              handleRefreshTable(1);
-            } else {
-              // optional UX: nudge the user
-              alert("Please type at least 2 letters to search.");
-            }
-          }}
-          // optional: disable visually when 1 char typed
-          disabled={q.trim().length === 1}
-          title={q.trim().length === 1 ? "Type at least 2 letters" : "Search"}
-        >
-          Search
-        </button>
+              {lguResponse ? (
+                <div className="table-scroll">
+                  <TableView
+                    tableJSON={lguResponse}
+                    onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
+                    setCallbackTableData={true}
+                    pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
+                    updateTable={(fn) => (refreshTable.current = fn)}
+                  />
+                </div>
+              ) : (
+                <div>Loading LGU data...</div>
+              )}
+            </section>
 
-        <button
-          onClick={() => {
-            setSort((s) => (s === "desc" ? "asc" : "desc"));
-            setTimeout(() => handleRefreshTable(1), 0);
-          }}
-        >
-          Sort: {sort.toUpperCase()}
-        </button>
+            {/* Barangay Block */}
+            <section className="section-block">
+              <div className="horizontal-container">
+                <h2 className="section-title">Barangay</h2>
+              </div>
+              {barangayResponse ? (
+                <div className="table-scroll">
+                  <TableView
+                    tableJSON={barangayResponse}
+                    onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
+                    setCallbackTableData={true}
+                    pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
+                    updateTable={() => {}}
+                  />
+                </div>
+              ) : (
+                <div>Loading Barangay data...</div>
+              )}
+            </section>
 
-        <button onClick={openAddModal}>+ Add LGU</button>
-      </div>
-    </div>
+            {/* RAFI Block */}
+            <section className="section-block">
+              <div className="horizontal-container">
+                <h2 className="section-title">RAFI Infrastructure</h2>
+              </div>
+              {rafiResponse ? (
+                <div className="table-scroll">
+                  <TableView
+                    tableJSON={rafiResponse}
+                    onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
+                    setCallbackTableData={true}
+                    pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
+                    updateTable={() => {}}
+                  />
+                </div>
+              ) : (
+                <div>Loading RAFI data...</div>
+              )}
+            </section>
 
-    {lguResponse ? (
-      <TableView
-        tableJSON={lguResponse}
-        onClickCallback={(row: TableRowShape) => openViewModal(row)}
-        setCallbackTableData={true}
-        // ✅ never send a 1-char query; send "" to show all instead
-        pageRequest={`/lgu_profiling/manage_lgu/get_lgu?Name=${sort}&q=${encodeURIComponent(
-          q.trim().length === 1 ? "" : q.trim()
-        )}&page=`}
-        updateTable={(fn) => (refreshTable.current = fn)}
-      />
-    ) : (
-      <div>Loading data...</div>
-    )}
-  </>
-)}
+            {/* Hazard Block */}
+            <section className="section-block">
+              <div className="horizontal-container">
+                <h2 className="section-title">Hazard Mapping</h2>
+              </div>
+              {hazardResponse ? (
+                <div className="table-scroll">
+                  <TableView
+                    tableJSON={hazardResponse}
+                    onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
+                    setCallbackTableData={true}
+                    pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
+                    updateTable={() => {}}
+                  />
+                </div>
+              ) : (
+                <div>Loading Hazard data...</div>
+              )}
+            </section>
 
+            {/* Evacuation center (still view-only, and excluded from Add Pin) */}
+            {/* <section className="section-block">
+              <div className="horizontal-container">
+                <h2 className="section-title">Evacuation Centers</h2>
+              </div>
+              {evacuationResponse ? (
+                <div className="table-scroll">
+                  <TableView
+                    tableJSON={evacuationResponse}
+                    onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
+                    setCallbackTableData={true}
+                    pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
+                    updateTable={() => {}}
+                  />
+                </div>
+              ) : (
+                <div>Loading Evacuation data...</div>
+              )}
+            </section> */}
+          </>
+        )}
+
+        {/* ===== SINGLE SECTION VIEWS ===== */}
+        {activeTab === "lgu" && (
+          <>
+            <div className="horizontal-container">
+              <h2 className="section-title">LGU</h2>
+            </div>
+
+            {lguResponse ? (
+              <div className="table-scroll">
+                <TableView
+                  tableJSON={lguResponse}
+                  onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
+                  setCallbackTableData={true}
+                  pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
+                  updateTable={(fn) => (refreshTable.current = fn)}
+                />
+              </div>
+            ) : (
+              <div>Loading data...</div>
+            )}
+          </>
+        )}
 
         {activeTab === "barangay" && (
           <>
             <div className="horizontal-container">
-              <div className="table-actions">
-                <input type="text" placeholder="Search report" />
-                <button>Search</button>
-                <button onClick={openAddModal}>+ Add Barangay</button>
-              </div>
+              <h2 className="section-title">Barangay</h2>
             </div>
             {barangayResponse ? (
-              <TableView
-                tableJSON={barangayResponse}
-                onClickCallback={(row: TableRowShape) => openViewModal(row)}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
+              <div className="table-scroll">
+                <TableView
+                  tableJSON={barangayResponse}
+                  onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
+                  setCallbackTableData={true}
+                  pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
+                  updateTable={() => {}}
+                />
+              </div>
             ) : (
               <div>Loading data...</div>
             )}
@@ -793,22 +914,18 @@ case "rafi": {
         {activeTab === "rafi" && (
           <>
             <div className="horizontal-container">
-              <div className="table-actions">
-                <input type="text" placeholder="Search report" />
-                <button>Search</button>
-                <button onClick={openAddModal}>
-                  + Add Rafi Infrastructure
-                </button>
-              </div>
+              <h2 className="section-title">RAFI Infrastructure</h2>
             </div>
             {rafiResponse ? (
-              <TableView
-                tableJSON={rafiResponse}
-                onClickCallback={(row: TableRowShape) => openViewModal(row)}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
+              <div className="table-scroll">
+                <TableView
+                  tableJSON={rafiResponse}
+                  onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
+                  setCallbackTableData={true}
+                  pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
+                  updateTable={() => {}}
+                />
+              </div>
             ) : (
               <div>Loading data...</div>
             )}
@@ -818,20 +935,18 @@ case "rafi": {
         {activeTab === "hazard" && (
           <>
             <div className="horizontal-container">
-              <div className="table-actions">
-                <input type="text" placeholder="Search report" />
-                <button>Search</button>
-                <button onClick={openAddModal}>+ Add Hazard</button>
-              </div>
+              <h2 className="section-title">Hazard Mapping</h2>
             </div>
             {hazardResponse ? (
-              <TableView
-                tableJSON={hazardResponse}
-                onClickCallback={(row: TableRowShape) => openViewModal(row)}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
+              <div className="table-scroll">
+                <TableView
+                  tableJSON={hazardResponse}
+                  onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
+                  setCallbackTableData={true}
+                  pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
+                  updateTable={() => {}}
+                />
+              </div>
             ) : (
               <div>Loading data...</div>
             )}
@@ -841,20 +956,18 @@ case "rafi": {
         {activeTab === "evacuation" && (
           <>
             <div className="horizontal-container">
-              <div className="table-actions">
-                <input type="text" placeholder="Search report" />
-                <button>Search</button>
-                <button onClick={openAddModal}>+ Add Evacuation Center</button>
-              </div>
+              <h2 className="section-title">Evacuation Centers</h2>
             </div>
             {evacuationResponse ? (
-              <TableView
-                tableJSON={evacuationResponse}
-                onClickCallback={(row: TableRowShape) => openViewModal(row)}
-                setCallbackTableData={true}
-                pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
-                updateTable={(fn) => (refreshTable.current = fn)}
-              />
+              <div className="table-scroll">
+                <TableView
+                  tableJSON={evacuationResponse}
+                  onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
+                  setCallbackTableData={true}
+                  pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
+                  updateTable={() => {}}
+                />
+              </div>
             ) : (
               <div>Loading data...</div>
             )}

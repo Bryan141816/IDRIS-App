@@ -868,7 +868,6 @@ def update_lgu(
     db.refresh(record)
     return {"detail": "Record updated succesfully", "record": record}
 
-    return the bais
 
 @router.delete("/lgu_profiling/manage_lgu/delete_lgu/{record_id}", response_model=dict)
 def delete_lgu(record_id: int, db: Session = Depends(get_db)):

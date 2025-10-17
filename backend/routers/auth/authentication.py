@@ -279,11 +279,11 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
             samesite="Lax",
             secure=False,  # Set to True in production with HTTPS
         )
-        token = create_token(uid_from_string(user.username), "activation")
-        if user.user_type == "admin":
-            await send_admin_activation_email(user.email, token)
-        else:
+        # For regular users, send activation email immediately
+        if user.user_type != "admin":
+            token = create_token(uid_from_string(user.username), "activation")
             await send_activation_email(user.email, token)
+        # For admins, the activation email will be sent after superadmin approval
         return {"access_token": access_token, "token_type": "bearer", "user": new_user}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -380,19 +380,33 @@ async def activate_account(
                 bundled_default = Path("media/defaultProfile.webp")
                 copyfile(bundled_default, default_image_path)
 
-        profile_db = UserProfile(
-            user_id=uid,
-            user_profile_id=uid_from_string(f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"),
-            first_name=profile_data.get("fname"),
-            last_name=profile_data.get("lname"),
-            profile_image=image_path,
-            phone_number=profile_data.get("contactInfo"),
-            bday=profile_data.get("birthday"),
-            gender=profile_data.get("gender"),
-            address=profile_data.get("address"),
-            bio=profile_data.get("bio"),
-        )
-        db.add(profile_db)
+        profile_db = db.query(UserProfile).filter(UserProfile.user_id == uid).first()
+        if profile_db:
+            # Update existing profile
+            profile_db.first_name = profile_data.get("fname")
+            profile_db.last_name = profile_data.get("lname")
+            profile_db.profile_image = image_path
+            profile_db.phone_number = profile_data.get("contactInfo")
+            profile_db.bday = profile_data.get("birthday")
+            profile_db.gender = profile_data.get("gender")
+            profile_db.address = profile_data.get("address")
+            profile_db.bio = profile_data.get("bio")
+        else:
+            # Create new profile
+            profile_db = UserProfile(
+                user_id=uid,
+                user_profile_id=uid_from_string(f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"),
+                first_name=profile_data.get("fname"),
+                last_name=profile_data.get("lname"),
+                profile_image=image_path,
+                phone_number=profile_data.get("contactInfo"),
+                bday=profile_data.get("birthday"),
+                gender=profile_data.get("gender"),
+                address=profile_data.get("address"),
+                bio=profile_data.get("bio"),
+            )
+            db.add(profile_db)
+        
         db.commit()
         db.refresh(profile_db)
 
@@ -401,8 +415,9 @@ async def activate_account(
             raise HTTPException(status_code=404, detail="User not found")
 
         if user.user_type == "admin":
+            user.is_activated = True
+            db.commit()
             await send_admin_profile_complete_email(user.email, user.user_id)
-            return {"status": "pending_activation", "profile": profile_db.user_profile_id}
         else:
             user.is_activated = True
             db.commit()

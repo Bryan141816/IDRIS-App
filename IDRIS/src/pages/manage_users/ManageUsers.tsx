@@ -33,6 +33,19 @@ async function deleteUser(user_id: String): Promise<any> {
   }
 }
 
+async function approveUser(user_id: String): Promise<any> {
+  try {
+    const response = await API.post(`/approve_admin/${user_id}`);
+    return response;
+  } catch (error: any) {
+    if (error.response) {
+      console.error("Error: ", error.response.data.detail);
+    } else {
+      console.error("Request error: ", error.message);
+    }
+  }
+}
+
 async function updateUser(user_id: String, role: String) {
   try {
     const response = await API.put(`/update_user/${user_id}`, {
@@ -74,6 +87,7 @@ type EditReportModalProps = BaseModalProps & {
 
 type ViewReportModalProps = BaseModalProps & {
   handleDeleteReport: (report_id: string) => void;
+  handleApproveAdmin: (user_id: string) => void;
   openEditModal: () => void;
   isViewModalSelected: any;
 };
@@ -83,6 +97,7 @@ const ViewReportModal = ({
   closeModal,
   setMessageBox,
   handleDeleteReport,
+  handleApproveAdmin,
   openEditModal,
   isViewModalSelected,
 }: ViewReportModalProps) => {
@@ -164,6 +179,24 @@ const ViewReportModal = ({
           <span>{toTitleCase(isViewModalSelected.data[6].text)}</span>
         </div>
         <div className="action-button">
+          {isViewModalSelected.data[4].text === "admin" &&
+            isViewModalSelected.data[6].text === "False" && (
+              <button
+                className="submit-btn"
+                onClick={() => {
+                  setMessageBox((prev) => ({
+                    ...prev,
+                    isOpen: true,
+                    type: "confirm",
+                    message: "Are you sure you want to approve this admin?",
+                    onSubmit: () =>
+                      handleApproveAdmin(isViewModalSelected.data[0].text),
+                  }));
+                }}
+              >
+                Approve
+              </button>
+            )}
           <button className="close-btn" onClick={closeModal}>
             Close
           </button>
@@ -321,6 +354,23 @@ const UserList = () => {
     }
   };
 
+  const handleApproveAdmin = async (user_id: String) => {
+    try {
+      await approveUser(user_id);
+      closeViewModal();
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "Admin successfully approved. Activation email sent.",
+        onClose: closeMessageBox,
+      }));
+      handleRefreshTable();
+    } catch (error) {
+      console.error("Failed to approve admin: ", error);
+    }
+  };
+
   const handleSearch = () => {
     fetchData();
   };
@@ -342,6 +392,7 @@ const UserList = () => {
           setMessageBox={setMessageBox}
           isViewModalSelected={isViewModalSelected}
           handleDeleteReport={handleDeleteReport}
+          handleApproveAdmin={handleApproveAdmin}
           openEditModal={openEditModal}
         />
       )}

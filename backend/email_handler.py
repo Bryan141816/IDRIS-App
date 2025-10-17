@@ -174,7 +174,7 @@ async def send_admin_activation_email(email: str, token: str) -> List[bool]:
     # Use SUPERADMIN_EMAIL env var if set, otherwise attempt to continue but log a warning
     if not SUPERADMIN_EMAIL:
         logger.warning("SUPERADMIN_EMAIL not set in environment; superadmin notifications will not be sent.")
-    admin_link = f"{APP_BASE_URL}/activate?token={token}"
+    admin_link = f"{APP_BASE_URL}/complete-admin-profile?token={token}"
     admin_html_content = build_admin_email_template("admin_activation", admin_link, email)
     admin_message = MessageSchema(
         subject="Complete your IDRIS Admin Profile",

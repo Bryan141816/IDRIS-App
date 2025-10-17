@@ -93,8 +93,7 @@ def verify_token(token: str, expected_type: str) -> int | None:
         if sub is None:
             print("Token missing subject")
             return None
-
-        return int(sub)
+        return sub
 
     except ExpiredSignatureError:
         print("Token has expired (auto check)")

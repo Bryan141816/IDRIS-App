@@ -291,14 +291,49 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
 
 @router.post("/login", response_model=TokenWithUserResponse)
 def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_db)):
-    user = authenticate_user(db, email=form_data.email, password=form_data.password)
+    """
+    Login endpoint that checks database and returns specific error codes
+    """
+    print(f"\n=== Login Attempt ===")
+    print(f"Email: {form_data.email}")
+    
+    # Step 1: Check if user exists in database
+    user = get_user_by_email(db, form_data.email)
+    
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    if not user.is_activated:
+        print("❌ User NOT FOUND in database")
         raise HTTPException(
-            status_code=401,
-            detail="Account not activated. Please check your email to complete your profile.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found"
         )
+    
+    print(f"✓ User found: ID={user.user_id}, Email={user.email}")
+    
+    # Step 2: Check if account is activated
+    if not user.is_activated:
+        print("❌ Account NOT ACTIVATED")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account not activated. Please check your email to complete your profile."
+        )
+    
+    print("✓ Account is activated")
+    
+    # Step 3: Verify password
+    print("Checking password...")
+    from auth import verify_password
+    is_password_correct = verify_password(form_data.password, user.hashed_password)
+    
+    if not is_password_correct:
+        print("❌ Password INCORRECT")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password"
+        )
+    
+    print("✓ Password correct!")
+    
+    # Step 4: Create tokens
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
 
@@ -311,7 +346,11 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
         secure=False,
     )
 
+    print("✓ Login successful - tokens created")
+    print("===================\n")
+
     return {"access_token": access_token, "token_type": "bearer", "user": user}
+
 
 
 @router.post("/refresh")

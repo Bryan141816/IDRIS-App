@@ -6,13 +6,16 @@ from data_schemas.report_schema import TableResponse, Cell
 from schemas import ResponseReportOut, ResponseReportCreate
 from database import get_db
 from crud import delete, create_response_report
-from models import User  # no Role import datetime
+from models import User
 from routers.role_checker import RoleChecker, GetUserRoles
 import math
 from sqlalchemy import or_
 from typing import List
 from pydantic import BaseModel
 from routers.GetUserId import GetUserId
+from auth import create_token
+from email_handler import send_admin_activation_email
+from crud_functions.utils import uid_from_string
 
 router = APIRouter(
     tags=["user_management"],
@@ -210,3 +213,34 @@ def update_report(user_id: int, payload: UpdateUserRole, db: Session = Depends(g
     db.refresh(report)
 
     return {"detail": "Report updated succesfully", "user": report}
+
+
+@router.post("/approve_admin/{user_id}", status_code=200)
+async def approve_admin(
+    user_id: str,
+    db: Session = Depends(get_db),
+    user_role: List[str] = Depends(GetUserRoles),
+):
+    if "superadmin" not in user_role:
+        raise HTTPException(
+            status_code=403, detail="Only superadmins can approve other admins."
+        )
+
+    user_to_approve = db.query(User).filter(User.user_id == user_id).first()
+
+    if not user_to_approve:
+        raise HTTPException(status_code=404, detail="User to approve not found.")
+
+    if user_to_approve.user_type != "admin":
+        raise HTTPException(status_code=400, detail="User is not an admin.")
+
+    if user_to_approve.is_activated:
+        raise HTTPException(
+            status_code=400, detail="Admin has already been activated."
+        )
+
+    # Send activation email
+    token = create_token(user_to_approve.user_id, "activation")
+    await send_admin_activation_email(user_to_approve.email, token)
+
+    return {"message": f"Activation email sent to admin {user_to_approve.username}."}

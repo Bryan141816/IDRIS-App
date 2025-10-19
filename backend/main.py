@@ -12,6 +12,7 @@ from passlib.context import CryptContext
 # Local imports
 from database import Base, engine, SessionLocal
 from routers.auth import authentication, users
+from routers import admin
 from routers.response_dashboard import (
     in_kind_monitoring,
     response_dashboard,
@@ -72,6 +73,7 @@ app.mount("/media", StaticFiles(directory="media"), name="media")
 
 # Include routers
 app.include_router(authentication.router)
+app.include_router(admin.router)
 app.include_router(users.router, prefix="/users", tags=["Utilities"])
 app.include_router(real_time_handler.router)
 app.include_router(notification.router)
@@ -115,7 +117,7 @@ app.include_router(files_router)
 # ✅ Superadmin Auto-Creation
 @app.on_event("startup")
 async def on_startup():
-    print("🚀 Application starting...")
+    print("Application starting...")
 
     db: Session = SessionLocal()
     try:
@@ -127,7 +129,7 @@ async def on_startup():
 
         existing_admin = db.query(models.User).filter(models.User.email == superadmin_email).first()
         if existing_admin:
-            print(f"ℹ️ Superadmin already exists: {superadmin_email}")
+            print(f"Superadmin already exists: {superadmin_email}")
         else:
             hashed_pw = pwd_context.hash(superadmin_password)
             new_admin = models.User(
@@ -142,19 +144,19 @@ async def on_startup():
             db.add(new_admin)
             db.commit()
             db.refresh(new_admin)
-            print(f"✅ Superadmin created: {superadmin_email}")
+            print(f"Superadmin created: {superadmin_email}")
     except SQLAlchemyError as e:
         db.rollback()
-        print(f"❌ Database error while creating superadmin: {e}")
+        print(f"Database error while creating superadmin: {e}")
     except Exception as e:
-        print(f"❌ Error creating superadmin: {e}")
+        print(f"Error creating superadmin: {e}")
     finally:
         db.close()
 
-    print("📍 Registered routes:")
+    print("Registered routes:")
     for route in app.routes:
-        print(f"➡️ {getattr(route, 'path', route)}")
+        print(f"{getattr(route, 'path', route)}")
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    print("🛑 Application shutting down...")
+    print("Application shutting down...")

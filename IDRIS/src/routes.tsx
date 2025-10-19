@@ -290,6 +290,10 @@ const RequestProcurement = () =>
 
 export const router = createBrowserRouter([
   {
+    path: "/complete-admin-profile",
+    lazy: Activate,
+  },
+  {
     path: "/",
     HydrateFallback: PageLoader,
     element: <PageLayout />,

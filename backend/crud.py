@@ -220,3 +220,6 @@ def create_response_dashboard_budget_create(
     db.add(db_record)
     db.commit()
     return db_record
+
+def get_superadmins(db: Session) -> List[User]:
+    return db.query(User).filter(User.roles.contains(["superadmin"])).all()

@@ -20,6 +20,9 @@ from crud_functions.volunteer_management.availability_crud import (
 )
 from routers.role_checker import RoleChecker
 from models import OrganizationVolunteer, VolunteerStatus
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from create_notification import send_notification
 
 # Role-based routers
 router_admin = APIRouter(
@@ -147,7 +150,7 @@ def get_organization_volunteer_by_id_endpoint(volunteer_id: int, db: Session = D
         raise HTTPException(status_code=500, detail="Database error occurred")
 
 @router_admin.patch("/{volunteer_id}/status", response_model=OrganizationVolunteerRead)
-def update_organization_volunteer_status(
+async def update_organization_volunteer_status(
     volunteer_id: int,
     payload: OrganizationVolunteerStatusUpdate,
     db: Session = Depends(get_db),
@@ -173,6 +176,20 @@ def update_organization_volunteer_status(
 
     db.commit()
     db.refresh(ov)
+     # Send approval notification
+    if payload.status == "approved":
+        ph_tz = ZoneInfo("Asia/Manila")
+        now_ph = datetime.now(ph_tz)
+        notif_payload = {
+            "to": str(ov.user_id),
+            "from_origin": "organization_volunteer",
+            "title": "Volunteer application approved",
+            "message": f"Hi {ov.first_name}, your organization volunteer application (ID {ov.volunteer_id}) is approved. You can now volunteer.",
+            "url_redirect": "/volunteer/my_profile",
+            "isRead": False,
+            "date": now_ph,
+        }
+        await send_notification(db, notif_payload)
     return ov
 
 # ---------------- READ CURRENT USER'S PROFILE ----------------

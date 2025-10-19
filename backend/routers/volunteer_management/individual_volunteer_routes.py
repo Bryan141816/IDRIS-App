@@ -20,10 +20,13 @@ from crud_functions.volunteer_management.availability_crud import (
 )
 from routers.role_checker import RoleChecker
 from models import IndividualVolunteer, VolunteerStatus
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from create_notification import send_notification
 
 # Role-based routers
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "admin","super admin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "admin","superadmin"]))],
 )
 router_volunteer = APIRouter(
     dependencies=[Depends(RoleChecker(["volunteer","generic"]))],
@@ -251,7 +254,7 @@ def delete_volunteer_endpoint(volunteer_id: int, db: Session = Depends(get_db)):
     return {"message": "Volunteer deleted successfully"}
 
 @router_admin.patch("/{volunteer_id}/status", response_model=IndividualVolunteerRead)
-def update_volunteer_status(
+async def update_volunteer_status(
     volunteer_id: int,
     payload: IndividualVolunteerStatusUpdate,
     db: Session = Depends(get_db),
@@ -277,6 +280,22 @@ def update_volunteer_status(
 
     db.commit()
     db.refresh(iv)
+
+    # Send approval notification
+    if payload.status == "approved":
+        ph_tz = ZoneInfo("Asia/Manila")
+        now_ph = datetime.now(ph_tz)
+        notif_payload = {
+            "to": str(iv.user_id),
+            "from_origin": "individual_volunteer",
+            "title": "Volunteer application approved",
+            "message": f"Hi {iv.first_name}, your volunteer application (ID {iv.volunteer_id}) is approved. You can now volunteer.",
+            "url_redirect": "/volunteer/my_profile",
+            "isRead": False,
+            "date": now_ph,
+        }
+        await send_notification(db, notif_payload)
+
     return iv
 
 # Final router to include in main.py

@@ -8,12 +8,14 @@ from models import (
     InventoryItems,
     DistributedItems,
     DistributionRoute,
+    DistributionRouteLogs,
 )
 from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
 from typing import List, Optional
 from fastapi import HTTPException, status
+from datetime import datetime
 
 
 class DistributionAndPlanningCRUD:
@@ -186,17 +188,26 @@ class DistributionAndPlanningCRUD:
 
         # Update the route
         route.team = payload.team_id
-
+        log_message = None
         # If a team is assigned
         if team:
             route.status = "Assigned"
             team.status = "assigned"
+            log_message = (
+                f"Team '{team.team_name}' assigned to route '{route.route_name}'."
+            )
         else:
             # Unassign team if team_id is None
             route.status = "Pending"
             # Optional: mark previously assigned team as unassigned
             if route.assigned_team:
                 route.assigned_team.status = "unassigned"
+
+        if log_message:
+            log_entry = DistributionRouteLogs(
+                route_id=route.route_id, log_message=log_message, date=datetime.now()
+            )
+            db.add(log_entry)
 
         db.commit()
         db.refresh(route)

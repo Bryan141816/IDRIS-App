@@ -1086,8 +1086,23 @@ class DistributionTeam(Base):
     routes = relationship("DistributionRoute", back_populates="assigned_team")
 
 
+class DistributionRouteLogs(Base):
+    __tablename__ = "distribution_route_log"
+
+    log_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_id = Column(
+        Integer, ForeignKey("distribution_route.route_id"), nullable=False
+    )
+    log_message = Column(String(255))
+    date = Column(DateTime)
+
+    # Relationship back to DistributionRoute
+    route = relationship("DistributionRoute", back_populates="logs")
+
+
 class DistributionRoute(Base):
     __tablename__ = "distribution_route"
+
     route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     route_name = Column(String(255), nullable=False)
     start_location = Column(
@@ -1101,6 +1116,9 @@ class DistributionRoute(Base):
     start_zone = relationship("WarehouseZones", back_populates="routes")
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")
+
+    # New relationship for logs
+    logs = relationship("DistributionRouteLogs", back_populates="route")
 
 
 class DistributedItems(Base):

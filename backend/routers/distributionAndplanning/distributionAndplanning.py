@@ -7,6 +7,7 @@ from data_schemas.distribution_planning import (
     TeamDataOut,
     RouteCreate,
     AssignTeam,
+    UpdateRoute,
 )
 from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
@@ -63,3 +64,13 @@ def get_routes(
 @router.post("/distribution_planning/assign_team")
 def assign_team(payload: AssignTeam, db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.assign_team(payload, db)
+
+
+@router.get("/distribution_planning/get_movement")
+def get_movement(db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.get_all_routes_with_latest_log(db)
+
+
+@router.post("/distribution_planning/update_route")
+def update_route(payload: UpdateRoute, db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.update_route(payload, db)

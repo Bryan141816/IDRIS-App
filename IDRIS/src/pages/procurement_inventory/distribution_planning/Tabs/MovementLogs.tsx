@@ -1,43 +1,38 @@
-const movements = [
-  {
-    id: 1,
-    item: "Rice Packs",
-    quantity: 500,
-    from: "Warehouse A",
-    to: "Cebu City",
-    status: "In Transit",
-    time: "2 hours ago",
-  },
-  {
-    id: 2,
-    item: "Water Bottles",
-    quantity: 1000,
-    from: "Storage B",
-    to: "Mandaue",
-    status: "Delivered",
-    time: "4 hours ago",
-  },
-  {
-    id: 3,
-    item: "Medical Supplies",
-    quantity: 200,
-    from: "Medical Center",
-    to: "Lapu-Lapu",
-    status: "Preparing",
-    time: "1 hour ago",
-  },
-  {
-    id: 4,
-    item: "Blankets",
-    quantity: 300,
-    from: "Warehouse C",
-    to: "Talisay",
-    status: "In Transit",
-    time: "30 minutes ago",
-  },
-];
+import { useEffect, useState } from "react";
+import { API } from "../../../../API_Handler/Axio_API_Handler";
+interface RouteLog {
+  log_id: number;
+  log_message: string;
+  date: string; // ISO timestamp (e.g., "2025-10-16T06:03:33.182538")
+}
+
+interface Route {
+  route_id: number;
+  route_name: string;
+  status: string; // e.g., "Assigned"
+  start_location: number | string; // can be number if ID or string if name
+  end_location: string;
+  schedule: string; // ISO timestamp
+  team: number;
+  latest_log?: RouteLog; // optional in case no log exists
+}
 
 export const MovementLogsTab = () => {
+  const [logs, setLogs] = useState<Route[]>([]);
+  const fetchData = () => {
+    const fetch = async () => {
+      try {
+        const response = await API.get("/distribution_planning/get_movement");
+        setLogs(response.data);
+      } catch (e: any) {
+        console.error("Error in fetcthing logs: " + e);
+      }
+    };
+    fetch();
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
   return (
     <>
       <div className="movements-content">
@@ -50,61 +45,78 @@ export const MovementLogsTab = () => {
           <table>
             <thead>
               <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>From</th>
-                <th>To</th>
+                <th>Route Name</th>
                 <th>Status</th>
-                <th>Time</th>
-                <th>Actions</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Schedule</th>
+                <th>Team</th>
+                <th>Latest Log</th>
+                <th>Log Date</th>
               </tr>
             </thead>
             <tbody>
-              {movements.map((movement) => (
-                <tr key={movement.id}>
-                  <td>{movement.item}</td>
-                  <td>{movement.quantity}</td>
-                  <td>{movement.from}</td>
-                  <td>{movement.to}</td>
-                  <td>
-                    <span
-                      className={`status-badge ${movement.status.toLowerCase().replace(" ", "-")}`}
-                    >
-                      {movement.status}
-                    </span>
-                  </td>
-                  <td>{movement.time}</td>
-                  <td>
-                    <button className="action-btn">Track</button>
-                    <button className="action-btn">Update</button>
+              {logs.length > 0 ? (
+                logs.map((route) => (
+                  <tr key={route.route_id}>
+                    <td>{route.route_name}</td>
+                    <td>
+                      <span
+                        className={`status-badge ${route.status
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")}`}
+                      >
+                        {route.status}
+                      </span>
+                    </td>
+                    <td>{route.start_location}</td>
+                    <td>{route.end_location}</td>
+                    <td>
+                      {route.schedule
+                        ? new Date(route.schedule).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td>{route.team ?? "Unassigned"}</td>
+                    <td>{route.latest_log?.log_message ?? "No logs"}</td>
+                    <td>
+                      {route.latest_log?.date
+                        ? new Date(route.latest_log.date).toLocaleString()
+                        : "—"}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="no-data">
+                    No routes found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
-          </table>
+          </table>{" "}
         </div>
-
-        <div className="status-update-section">
-          <h3>Update Delivery Status</h3>
-          <div className="update-form">
-            <select>
-              <option>Select movement to update...</option>
-              {movements.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.item} - {m.to}
-                </option>
-              ))}
-            </select>
-            <select>
-              <option>New Status</option>
-              <option>Preparing</option>
-              <option>In Transit</option>
-              <option>Delivered</option>
-              <option>Delayed</option>
-            </select>
-            <button className="primary-btn">Update Status</button>
-          </div>
-        </div>
+        {/**/}
+        {/* <div className="status-update-section"> */}
+        {/*   <h3>Update Delivery Status</h3> */}
+        {/*   <div className="update-form"> */}
+        {/*     <select> */}
+        {/*       <option>Select movement to update...</option> */}
+        {/*       {movements.map((m) => ( */}
+        {/*         <option key={m.id} value={m.id}> */}
+        {/*           {m.item} - {m.to} */}
+        {/*         </option> */}
+        {/*       ))} */}
+        {/*     </select> */}
+        {/*     <select> */}
+        {/*       <option>New Status</option> */}
+        {/*       <option>Preparing</option> */}
+        {/*       <option>In Transit</option> */}
+        {/*       <option>Delivered</option> */}
+        {/*       <option>Delayed</option> */}
+        {/*     </select> */}
+        {/*     <button className="primary-btn">Update Status</button> */}
+        {/*   </div> */}
+        {/* </div> */}
       </div>
     </>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { WarehouseZone } from "../../procurement_inventory/Tabs/Modals/ModalDefault";
 import { AddRouteModal } from "./Modals/AddRoute/AddRoute";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
+import { EditRoute } from "./Modals/EditRoute/EditRoute";
 type items = {
   item_id: number;
   item_name: string;
@@ -33,17 +34,39 @@ type DistributionRoute = {
   route_id: number;
   route_name: string;
   status: string;
-  schedule: string | null; // ISO datetime string
+  schedule: string | null;
   start_location: string | null;
   assigned_team: AssignedTeam;
   end_location: string;
   distributed_items: DistributedItem[];
 };
+function formatDateTime(dateString: string): string {
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
+
+  return date.toLocaleString("en-US", {
+    month: "long", // "October"
+    day: "numeric", // "16"
+    year: "numeric", // "2025"
+    hour: "numeric", // "2"
+    minute: "2-digit", // "03"
+    hour12: true, // 12-hour format
+  });
+}
+
 export const RoutesAndPlanning = () => {
   const [activeModal, setActiveModal] = useState("");
   const [routesData, setRoutes] = useState<DistributionRoute[]>([]);
-  const openModal = (type: string, selectedItem: route | null = null) => {
+  const [selectedRoute, setSelectedRoute] = useState<DistributionRoute | null>(
+    null,
+  );
+  const openModal = (
+    type: string,
+    selectedItem: DistributionRoute | null = null,
+  ) => {
     setActiveModal(type);
+    setSelectedRoute(selectedItem);
   };
   const closeModal = () => {
     setActiveModal("");
@@ -69,6 +92,13 @@ export const RoutesAndPlanning = () => {
           onClose={closeModal}
           refreshTable={fetchData}
         ></AddRouteModal>
+      )}
+      {activeModal === "update" && selectedRoute && (
+        <EditRoute
+          onClose={closeModal}
+          refreshData={fetchData}
+          selectedRoute={selectedRoute}
+        ></EditRoute>
       )}
       <div className="routes-content">
         <div className="section-header">
@@ -98,9 +128,20 @@ export const RoutesAndPlanning = () => {
                     ? route.assigned_team.team_name
                     : "Not yet assigned "}
                 </p>
+                <p>
+                  <strong>Schedule: </strong>
+                  {route.schedule
+                    ? formatDateTime(route.schedule)
+                    : "No Schedule Yet"}
+                </p>
                 <div className="route-actions">
-                  <button className="secondary-btn">Edit Schedule</button>
-                  <button className="primary-btn">View Details</button>
+                  <button
+                    className="secondary-btn"
+                    onClick={() => openModal("update", route)}
+                  >
+                    Update
+                  </button>
+                  <button className="primary-btn">View</button>
                 </div>
               </div>
             </div>

@@ -1,6 +1,12 @@
-from data_schemas.distribution_planning import TeamDataCreate, RouteCreate, AssignTeam
-from sqlalchemy.orm import Session
+from data_schemas.distribution_planning import (
+    TeamDataCreate,
+    RouteCreate,
+    AssignTeam,
+    UpdateRoute,
+)
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func, select
 from models import (
     IndividualVolunteer,
     DistributionTeam,
@@ -165,6 +171,40 @@ class DistributionAndPlanningCRUD:
         return result
 
     @staticmethod
+    def update_route(payload: UpdateRoute, db: Session):
+        route = (
+            db.query(DistributionRoute)
+            .filter(DistributionRoute.route_id == payload.route_id)
+            .first()
+        )
+
+        if not route:
+            print(f"Route with ID {payload.route_id} not found.")
+            return None
+
+        log_message = None
+        if route.status != payload.status and route.schedule != payload.schedule:
+            log_message = (
+                f"{route.route_name}'s status has been updated and rescheduled"
+            )
+        elif route.status != payload.status:
+            log_message = f"{route.route_name}'s status has been updated"
+        elif route.schedule != payload.schedule:
+            log_message = f"{route.route_name}'s has been rescheduled"
+        route.status = payload.status
+        route.schedule = payload.schedule
+        if log_message and route.status != "Pending":
+
+            log_entry = DistributionRouteLogs(
+                route_id=route.route_id, log_message=log_message, date=datetime.now()
+            )
+            db.add(log_entry)
+
+        db.commit()
+        db.refresh(route)
+        return route
+
+    @staticmethod
     def assign_team(payload: AssignTeam, db: Session):
         # Fetch the route
         route = (
@@ -215,3 +255,60 @@ class DistributionAndPlanningCRUD:
             db.refresh(team)
 
         return route
+
+    @staticmethod
+    def get_all_routes_with_latest_log(db: Session):
+        Log = aliased(DistributionRouteLogs)
+        Route = aliased(DistributionRoute)
+
+        # Subquery: get latest log date per route
+        latest_log_subquery = (
+            db.query(Log.route_id, func.max(Log.date).label("latest_date"))
+            .group_by(Log.route_id)
+            .subquery()
+        )
+
+        # Main query: only routes with logs (INNER JOIN ensures this)
+        results = (
+            db.query(Route, Log)
+            .join(
+                latest_log_subquery,
+                (latest_log_subquery.c.route_id == Route.route_id),
+            )
+            .join(
+                Log,
+                (Log.route_id == latest_log_subquery.c.route_id)
+                & (Log.date == latest_log_subquery.c.latest_date),
+            )
+            .options(
+                joinedload(Route.start_zone),
+                joinedload(Route.assigned_team),
+                joinedload(Route.distributed_items),
+            )
+            .all()
+        )
+
+        # Convert results to JSON-safe dicts
+        formatted = [
+            {
+                "route_id": route.route_id,
+                "route_name": route.route_name,
+                "status": route.status,
+                "start_location": route.start_location,
+                "end_location": route.end_location,
+                "schedule": route.schedule.isoformat() if route.schedule else None,
+                "team": route.team,
+                "latest_log": (
+                    {
+                        "log_id": log.log_id,
+                        "log_message": log.log_message,
+                        "date": log.date.isoformat() if log.date else None,
+                    }
+                    if log
+                    else None
+                ),
+            }
+            for route, log in results
+        ]
+
+        return formatted

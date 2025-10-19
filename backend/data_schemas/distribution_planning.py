@@ -56,3 +56,9 @@ class RouteCreate(BaseModel):
 class AssignTeam(BaseModel):
     route_id: int
     team_id: int
+
+
+class UpdateRoute(BaseModel):
+    route_id: int
+    status: str
+    schedule: datetime

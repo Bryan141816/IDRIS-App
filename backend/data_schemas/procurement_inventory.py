@@ -28,6 +28,11 @@ class InventoryItemCreate(BaseModel):
     expiry: Optional[str]
 
 
+class AddInventoryDonationCreate(BaseModel):
+    inkind_id: int
+    items: List[InventoryItemCreate]
+
+
 class InventoryItemsOut(BaseModel):
     inventory_id: int
     item_name: str

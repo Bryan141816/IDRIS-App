@@ -3,6 +3,7 @@ import "./procurement_inventory.scss";
 import WarehouseZone from "./Tabs/Warehousezones";
 import InventoryItems from "./Tabs/InventoryItems";
 import { API } from "../../../API_Handler/Axio_API_Handler";
+import Donations from "./Tabs/Donations";
 const FinanceAdmin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showModal, setShowModal] = useState(false);
@@ -792,67 +793,7 @@ const FinanceAdmin = () => {
         )}
         {activeTab == "inventory" && <InventoryItems></InventoryItems>}
         {activeTab == "warehouses" && <WarehouseZone></WarehouseZone>}
-        {activeTab == "donations" && (
-          <div className="donations-content">
-            <div className="section-header">
-              <h2>Update Inventory from Donations</h2>
-              <button
-                className="primary-btn"
-                onClick={() => openModal("add-donation")}
-              >
-                + Record Donation
-              </button>
-            </div>
-
-            <div className="donations-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Donor</th>
-                    <th>Items</th>
-                    <th>Quantity</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donations.map((donation) => (
-                    <tr key={donation.id}>
-                      <td>{donation.donor}</td>
-                      <td>{donation.items}</td>
-                      <td>{donation.quantity}</td>
-                      <td>{new Date(donation.date).toLocaleDateString()}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${donation.status.toLowerCase()}`}
-                        >
-                          {donation.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          className="action-btn"
-                          onClick={() =>
-                            openModal("process-donation", donation)
-                          }
-                        >
-                          Process
-                        </button>
-                        <button
-                          className="action-btn"
-                          onClick={() => openModal("view-donation", donation)}
-                        >
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        {activeTab == "donations" && <Donations></Donations>}
       </div>
 
       {renderModal()}

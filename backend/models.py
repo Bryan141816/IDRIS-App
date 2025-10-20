@@ -539,6 +539,13 @@ class Donation_InKind(Base):
     quantity = Column(String(50), nullable=True)  # Quantity/units of donated items
     donation = relationship("Donation", back_populates="inkind")
 
+    inventory_item = relationship(
+        "InKindInventoryItem",
+        back_populates="inkind",
+        uselist=False,  # one-to-one
+        cascade="all, delete-orphan",
+    )
+
 
 # imports (keep your own project Base import as-is)
 
@@ -1130,6 +1137,36 @@ class DistributedItems(Base):
 
     item_info = relationship("InventoryItems", back_populates="distributed_items")
     route_info = relationship("DistributionRoute", back_populates="distributed_items")
+
+
+class InKindInventoryItem(Base):
+    __tablename__ = "inkind_inventory_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(
+        String,
+        ForeignKey("donation_inkind.inkind_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    status = Column(String(50), nullable=False, default="available")
+
+    # Relationship back to Donation_InKind
+    inkind = relationship("Donation_InKind", back_populates="inventory_item")
+
+
+@event.listens_for(Donation_InKind, "after_insert")
+def create_inventory_item(mapper, connection, target):
+    """
+    Automatically creates an InKindInventoryItem
+    when a new Donation_InKind is inserted.
+    """
+    connection.execute(
+        InKindInventoryItem.__table__.insert().values(
+            item_id=target.inkind_id,
+            status="available",
+        )
+    )
 
 
 # ================================== FINANCE MODELS =====================================

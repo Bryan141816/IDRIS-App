@@ -171,18 +171,3 @@ const InventoryItems = () => {
   );
 };
 export default InventoryItems;
-
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-// Im going to kill myself if this shit isn't done in the end of the mont

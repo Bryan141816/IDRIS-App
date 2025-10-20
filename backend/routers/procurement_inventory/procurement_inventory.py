@@ -11,6 +11,7 @@ from data_schemas.procurement_inventory import (
     InventoryItemCreate,
     InventoryItemsOut,
     AssignStorage,
+    AddInventoryDonationCreate,
 )
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
@@ -53,6 +54,13 @@ def add_inventory_item(payload: InventoryItemCreate, db: Session = Depends(get_d
     return ProcurementInventoryCRUD.create_inventory_item(db, payload)
 
 
+@router.post("/procurement_inventory/add_inventory_item_bulk")
+def add_inventory_item_bulk(
+    payload: AddInventoryDonationCreate, db: Session = Depends(get_db)
+):
+    return ProcurementInventoryCRUD.create_inventory_items_bulk(db, payload)
+
+
 @router.get(
     "/procurement_inventory/get_inventory_item", response_model=List[InventoryItemsOut]
 )
@@ -63,3 +71,8 @@ def get_inventory_item(db: Session = Depends(get_db)):
 @router.post("/procurement_inventory/update_inventory_item")
 def update_inventory_item(payload: InventoryItemUpdate, db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.update_inventory_item(db, payload)
+
+
+@router.get("/procurement_inventory/get_all_inkind")
+def get_all_inkind(db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.get_all_inkind(db)

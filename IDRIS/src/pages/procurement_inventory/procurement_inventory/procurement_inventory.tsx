@@ -6,9 +6,32 @@ import { API } from "../../../API_Handler/Axio_API_Handler";
 import Donations from "./Tabs/Donations";
 const FinanceAdmin = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("");
-  const [selectedItem, setSelectedItem] = useState<ItemType>(null);
+
+  interface InventoryDashboard {
+    available_inventory_items: number;
+    active_zones: number;
+    available_inkind_items: number;
+    stock_level: StockLevel;
+    expiry_alert: ExpiryAlertItem[];
+  }
+
+  interface StockLevel {
+    clothing: number;
+    food: number;
+    medical: number;
+    beverages: number;
+  }
+
+  interface ExpiryAlertItem {
+    inventory_id: number;
+    quantity: number;
+    category: string;
+    expiry: string; // ISO date string
+    status: string;
+    item_name: string;
+    location: number | null;
+    batch: string;
+  }
 
   interface InventoryItemProps {
     id: number | string;
@@ -177,7 +200,6 @@ const FinanceAdmin = () => {
     return "good";
   };
 
-  type ModalType = "edit" | "delete" | "view" | string; // adjust as needed
   type ItemType =
     | string
     | InventoryItemProps
@@ -192,462 +214,29 @@ const FinanceAdmin = () => {
       }
     | null; // updated to include donation object
 
-  const openModal = (type: ModalType, item: ItemType = null): void => {
-    setModalType(type);
-    setSelectedItem(item);
-    setShowModal(true);
+  const [dashboardData, setDashboardData] = useState<InventoryDashboard | null>(
+    null,
+  );
+  const fetch = async () => {
+    try {
+      const response = await API.get("/procurement_inventory/get_dashboard");
+      setDashboardData(response.data);
+    } catch (e: any) {
+      console.error("Error fetching inventory dashboard: " + e);
+    }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setModalType("");
-    setSelectedItem(null);
-  };
-
-  const renderModal = () => {
-    if (!showModal) return null;
-
-    const getModalContent = () => {
-      switch (modalType) {
-        case "add-item":
-        case "edit-item":
-          return (
-            <div className="modal-content">
-              <h3>{modalType === "add-item" ? "Add New Item" : "Edit Item"}</h3>
-              <div className="form-group">
-                <label>Item Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter item name"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
-                      ? selectedItem.name
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Quantity</label>
-                <input
-                  type="number"
-                  placeholder="Enter quantity"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
-                      ? selectedItem.quantity
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "category" in selectedItem
-                      ? selectedItem.category
-                      : ""
-                  }
-                >
-                  <option>Select category</option>
-                  <option>Food</option>
-                  <option>Medical</option>
-                  <option>Clothing</option>
-                  <option>Beverages</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Batch Number</label>
-                <input
-                  type="text"
-                  placeholder="Enter batch number"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "batch" in selectedItem
-                      ? selectedItem.batch
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Expiry Date</label>
-                <input
-                  type="date"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "expiry" in selectedItem
-                      ? (selectedItem.expiry instanceof Date
-                          ? selectedItem.expiry.toISOString().split("T")[0]
-                          : selectedItem.expiry) || ""
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Location</label>
-                <select
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "location" in selectedItem
-                      ? selectedItem.location
-                      : ""
-                  }
-                >
-                  <option>Select location</option>
-                  {warehouseZones.map((zone) => (
-                    <option key={zone.id} value={zone.name}>
-                      {zone.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          );
-        case "create-zone":
-        case "edit-zone":
-          return (
-            <div className="modal-content">
-              <h3>
-                {modalType === "create-zone"
-                  ? "Create Warehouse Zone"
-                  : "Edit Warehouse Zone"}
-              </h3>
-              <div className="form-group">
-                <label>Zone Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter zone name"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
-                      ? selectedItem.name
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Zone Type</label>
-                <select
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "type" in selectedItem
-                      ? selectedItem.type
-                      : ""
-                  }
-                >
-                  <option>Select type</option>
-                  <option>Food Storage</option>
-                  <option>Medical Supplies</option>
-                  <option>General Storage</option>
-                  <option>Clothing & Textiles</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Capacity</label>
-                <input
-                  type="number"
-                  placeholder="Enter capacity"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "capacity" in selectedItem
-                      ? selectedItem.capacity
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Manager</label>
-                <input
-                  type="text"
-                  placeholder="Enter manager name"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "manager" in selectedItem
-                      ? selectedItem.manager
-                      : ""
-                  }
-                />
-              </div>
-            </div>
-          );
-        case "add-donation":
-        case "process-donation":
-          return (
-            <div className="modal-content">
-              <h3>
-                {modalType === "add-donation"
-                  ? "Record New Donation"
-                  : "Process Donation"}
-              </h3>
-              <div className="form-group">
-                <label>Donor Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter donor name"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "donor" in selectedItem
-                      ? selectedItem.donor
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Items Donated</label>
-                <input
-                  type="text"
-                  placeholder="Enter items"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "items" in selectedItem
-                      ? selectedItem.items
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Quantity</label>
-                <input
-                  type="number"
-                  placeholder="Enter quantity"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
-                      ? selectedItem.quantity
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Date Received</label>
-                <input
-                  type="date"
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "date" in selectedItem
-                      ? selectedItem.date
-                      : ""
-                  }
-                />
-              </div>
-              <div className="form-group">
-                <label>Status</label>
-                <select
-                  defaultValue={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "status" in selectedItem
-                      ? selectedItem.status
-                      : "Pending"
-                  }
-                >
-                  <option>Pending</option>
-                  <option>Processing</option>
-                  <option>Received</option>
-                </select>
-              </div>
-            </div>
-          );
-        case "view-item":
-          return (
-            <div className="modal-content">
-              <h3>Item Details</h3>
-              <div className="view-details">
-                <div className="detail-row">
-                  <strong>Item Name:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
-                      ? selectedItem.name
-                      : ""}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Quantity:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "quantity" in selectedItem
-                      ? selectedItem.quantity
-                      : ""}{" "}
-                    units
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Category:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "category" in selectedItem
-                      ? selectedItem.category
-                      : ""}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Location:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "location" in selectedItem
-                      ? selectedItem.location
-                      : ""}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Batch:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "batch" in selectedItem
-                      ? selectedItem.batch
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Expiry:</strong>
-                  <span>
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "expiry" in selectedItem &&
-                    selectedItem.expiry
-                      ? new Date(selectedItem.expiry).toLocaleDateString()
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="detail-row">
-                  <strong>Status:</strong>
-                  <span
-                    className={`status-badge ${selectedItem ? getStockStatus(typeof selectedItem === "object" && "quantity" in selectedItem ? selectedItem.quantity : 0) : ""}`}
-                  >
-                    {selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "status" in selectedItem
-                      ? selectedItem.status
-                      : ""}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        case "export":
-          return (
-            <div className="modal-content">
-              <h3>Export Inventory Report</h3>
-              <div className="form-group">
-                <label>Report Type</label>
-                <select>
-                  <option>Complete Inventory</option>
-                  <option>Low Stock Items</option>
-                  <option>Expiring Items</option>
-                  <option>By Category</option>
-                  <option>By Location</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Format</label>
-                <select>
-                  <option>PDF</option>
-                  <option>Excel</option>
-                  <option>CSV</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Date Range</label>
-                <div style={{ display: "flex", gap: "1rem" }}>
-                  <input type="date" placeholder="From" />
-                  <input type="date" placeholder="To" />
-                </div>
-              </div>
-            </div>
-          );
-        case "assign-storage":
-          return (
-            <div className="modal-content">
-              <h3>Assign Storage Area</h3>
-              <div className="form-group">
-                <label>Zone</label>
-                <input
-                  type="text"
-                  value={
-                    selectedItem &&
-                    typeof selectedItem === "object" &&
-                    "name" in selectedItem
-                      ? selectedItem.name
-                      : ""
-                  }
-                  disabled
-                />
-              </div>
-              <div className="form-group">
-                <label>Item Category</label>
-                <select>
-                  <option>Food Items</option>
-                  <option>Medical Supplies</option>
-                  <option>Clothing & Textiles</option>
-                  <option>General Items</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Allocated Space (units)</label>
-                <input type="number" placeholder="Enter space allocation" />
-              </div>
-              <div className="form-group">
-                <label>Priority Level</label>
-                <select>
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
-                </select>
-              </div>
-            </div>
-          );
-        default:
-          return (
-            <div className="modal-content">
-              <h3>Action: {modalType}</h3>
-              <p>This functionality is coming soon...</p>
-            </div>
-          );
-      }
-    };
-    return (
-      <div className="modal-overlay">
-        <div className="modal">
-          <div className="modal-header">
-            <button className="close-btn" onClick={closeModal}>
-              ×
-            </button>
-          </div>
-          {getModalContent()}
-          <div className="modal-actions">
-            <button className="secondary-btn" onClick={closeModal}>
-              {modalType === "view-item" ? "Close" : "Cancel"}
-            </button>
-            {modalType !== "view-item" && (
-              <button className="primary-btn">
-                {modalType === "export" ? "Generate Report" : "Save"}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+    fetch();
+  }, []);
+  useEffect(() => {
+    if (activeTab === "dashboard") {
+      fetch();
+    }
+  }, [activeTab]);
+  const toLetterCase = (text: string): string => {
+    if (!text) return "";
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
   };
 
   return (
@@ -688,31 +277,21 @@ const FinanceAdmin = () => {
               <div className="stat-card">
                 <div className="stat-icon">📦</div>
                 <div className="stat-info">
-                  <h3>{inventoryItems.length}</h3>
-                  <p>Total Items</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">⚠️</div>
-                <div className="stat-info">
                   <h3>
-                    {
-                      inventoryItems.filter(
-                        (item) => getStockStatus(item.quantity) === "critical",
-                      ).length
-                    }
+                    {dashboardData?.available_inventory_items
+                      ? dashboardData.available_inventory_items
+                      : "No Data"}
                   </h3>
-                  <p>Critical Stock</p>
+                  <p>Total Items</p>
                 </div>
               </div>
               <div className="stat-card">
                 <div className="stat-icon">🏢</div>
                 <div className="stat-info">
                   <h3>
-                    {
-                      warehouseZones.filter((zone) => zone.status === "Active")
-                        .length
-                    }
+                    {dashboardData?.active_zones
+                      ? dashboardData.active_zones
+                      : "No Data"}
                   </h3>
                   <p>Active Zones</p>
                 </div>
@@ -721,7 +300,9 @@ const FinanceAdmin = () => {
                 <div className="stat-icon">🎁</div>
                 <div className="stat-info">
                   <h3>
-                    {donations.filter((d) => d.status === "Received").length}
+                    {dashboardData?.available_inkind_items
+                      ? dashboardData.available_inkind_items
+                      : "No Data"}
                   </h3>
                   <p>Recent Donations</p>
                 </div>
@@ -731,61 +312,61 @@ const FinanceAdmin = () => {
             <div className="dashboard-grid">
               <div className="chart-container">
                 <h3>Stock Levels Overview</h3>
-                <div className="stock-overview">
-                  {inventoryItems.map((item) => (
-                    <div key={item.id} className="stock-item">
-                      <div className="item-info">
-                        <span className="item-name">{item.name}</span>
-                        <span className="item-quantity">
-                          {item.quantity} units
-                        </span>
-                      </div>
-                      <div className="stock-bar">
-                        <div
-                          className={`stock-fill ${getStockStatus(item.quantity)}`}
-                          style={{
-                            width: `${Math.min((item.quantity / 1000) * 100, 100)}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {dashboardData ? (
+                  <div className="stock-overview">
+                    {Object.entries(dashboardData?.stock_level ?? {}).map(
+                      ([category, quantity]) => (
+                        <div className="stock-item">
+                          <div className="item-info">
+                            <span className="item-name">
+                              {toLetterCase(category)}
+                            </span>
+                            <span className="item-quantity">{quantity}x</span>
+                          </div>
+                          <div className="stock-bar">
+                            <div
+                              className={`stock-fill ${getStockStatus(quantity)}`}
+                              style={{
+                                width: `${Math.min((quantity / dashboardData?.available_inventory_items) * 100, 100)}%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  "No Data"
+                )}
               </div>
 
               <div className="chart-container">
                 <h3>Expiry Alert Dashboard</h3>
                 <div className="expiry-alerts">
-                  {inventoryItems
-                    .filter((item) => item.expiry)
-                    .map((item) => (
-                      <div
-                        key={item.id}
-                        className={`expiry-item ${getExpiryStatus(item.expiry instanceof Date ? item.expiry.toISOString() : item.expiry)}`}
-                      >
-                        <div className="expiry-info">
-                          <strong>{item.name}</strong>
-                          <span>Batch: {item.batch}</span>
-                          <span>
-                            Expires:{" "}
-                            {item.expiry
-                              ? new Date(item.expiry).toLocaleDateString()
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div
-                          className={`expiry-status ${getExpiryStatus(item.expiry instanceof Date ? item.expiry.toISOString() : item.expiry)}`}
-                        >
-                          {getExpiryStatus(
-                            item.expiry instanceof Date
-                              ? item.expiry.toISOString()
-                              : item.expiry,
-                          )
-                            .replace("-", " ")
-                            .toUpperCase()}
-                        </div>
+                  {dashboardData?.expiry_alert.map((item) => (
+                    <div
+                      key={item.inventory_id}
+                      className={`expiry-item ${getExpiryStatus(item.expiry)}`}
+                    >
+                      <div className="expiry-info">
+                        <strong>{item.item_name}</strong>
+                        <span>Batch: {item.batch}</span>
+                        <span>
+                          Expires:{" "}
+                          {item.expiry
+                            ? new Date(item.expiry).toLocaleDateString()
+                            : "N/A"}
+                        </span>
                       </div>
-                    ))}
+                      <div
+                        className={`expiry-status ${getExpiryStatus(item.expiry)}`}
+                      >
+                        {getExpiryStatus(item.expiry)
+                          .replace("-", " ")
+                          .toUpperCase()}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -795,8 +376,6 @@ const FinanceAdmin = () => {
         {activeTab == "warehouses" && <WarehouseZone></WarehouseZone>}
         {activeTab == "donations" && <Donations></Donations>}
       </div>
-
-      {renderModal()}
     </div>
   );
 };

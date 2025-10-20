@@ -9,6 +9,7 @@ from data_schemas.procurement_inventory import (
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from models import (
     WarehouseZones,
     InventoryItems,
@@ -23,6 +24,8 @@ import asyncio
 from real_time_handler import send_real_time
 from typing import List
 from fastapi import HTTPException, status
+
+from datetime import date, datetime, timedelta
 
 
 class ProcurementInventoryCRUD:
@@ -198,3 +201,88 @@ class ProcurementInventoryCRUD:
             )
 
         return simplified
+
+    @staticmethod
+    def total_quantity_by_category(db: Session):
+        """Group and sum quantities > 0 by category."""
+        results = (
+            db.query(
+                InventoryItems.category,
+                func.sum(InventoryItems.quantity).label("total_quantity"),
+            )
+            .filter(InventoryItems.quantity > 0)
+            .filter(
+                InventoryItems.category.in_(
+                    ["food", "medical", "clothing", "beverages"]
+                )
+            )
+            .group_by(InventoryItems.category)
+            .all()
+        )
+
+        # Convert to dictionary for easier use
+        category_totals = {r.category: r.total_quantity for r in results}
+
+        # Ensure all categories exist in the output even if they have no entries
+        for category in ["food", "medical", "clothing", "beverages"]:
+            category_totals.setdefault(category, 0)
+
+        return category_totals
+
+    @staticmethod
+    def count_available_inventory_items(db: Session):
+        return (
+            db.query(func.sum(InventoryItems.quantity))
+            .filter(InventoryItems.quantity > 0)
+            .scalar()
+        ) or 0
+
+    @staticmethod
+    def get_items_expiring_within_5_days(db: Session):
+        """Return all items expiring within the next 5 days (from now to 5 days ahead)."""
+        now = datetime.now()
+        five_days_from_now = now + timedelta(days=5)
+
+        items = (
+            db.query(InventoryItems)
+            .filter(InventoryItems.expiry != None)  # ensure expiry exists
+            .filter(InventoryItems.expiry >= now.date())  # starting today
+            .filter(
+                InventoryItems.expiry <= five_days_from_now.date()
+            )  # up to 5 days ahead
+            .all()
+        )
+
+        return items
+
+    @staticmethod
+    def count_active_zones(db: Session):
+        return (
+            db.query(func.count(WarehouseZones.warehouse_id))
+            .filter(WarehouseZones.status == "active")
+            .scalar()
+        )
+
+    @staticmethod
+    def count_available_inkind_items(db: Session):
+        return (
+            db.query(func.count(InKindInventoryItem.id))
+            .filter(InKindInventoryItem.status == "available")
+            .scalar()
+        )
+
+    @staticmethod
+    def get_dashboard(db: Session):
+        return {
+            "available_inventory_items": ProcurementInventoryCRUD.count_available_inventory_items(
+                db
+            ),
+            "active_zones": ProcurementInventoryCRUD.count_active_zones(db),
+            "available_inkind_items": ProcurementInventoryCRUD.count_available_inkind_items(
+                db
+            ),
+            "stock_level": ProcurementInventoryCRUD.total_quantity_by_category(db),
+            "expiry_alert": ProcurementInventoryCRUD.get_items_expiring_within_5_days(
+                db
+            ),
+        }

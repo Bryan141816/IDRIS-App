@@ -25,6 +25,11 @@ router = APIRouter(
 )
 
 
+@router.get("/procurement_inventory/get_dashboard")
+def get_dashboard(db: Session = Depends(get_db)):
+    return ProcurementInventoryCRUD.get_dashboard(db)
+
+
 @router.post("/procurement_inventory/add_warehouse_zone")
 def add_warehouse_zone(request: WarehouseZoneCreate, db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.create_warehouse_zone(db, request)

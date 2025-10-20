@@ -437,12 +437,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 lazy: CreateFunding,
-                handle: { allowedRoles: ["finance admin", "operations admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
               },
               {
                 path: "update",
                 lazy: UpdateFunding,
-                handle: { allowedRoles: ["finance admin", "operations admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
               },
             ],
           },
@@ -457,14 +457,14 @@ export const router = createBrowserRouter([
           {
             path: "donation_records",
             lazy: DonationRecords,
-            handle: { allowedRoles: ["finance admin", "operations admin"] },
+            handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
           },
         ],
       },
       {
         path: "donation_report",
         lazy: DonationsReport,
-        handle: { allowedRoles: ["finance admin", "operations admin"] },
+        handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
       },
       {
         path: "donor_profile",
@@ -566,14 +566,17 @@ export const router = createBrowserRouter([
       {
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
+        handle: { allowedRoles: ["operations admin", "superadmin"] },
       },
       {
         path: "/finance_printable",
         lazy: FinancePrintPage,
+        handle: { allowedRoles: ["operations admin", "superadmin"] },
       },
       {
         path: "/finance&admin/finance_management/budget_summary",
         lazy: FinanceBudgetSummary,
+        handle: { allowedRoles: ["operations admin", "superadmin"] },
       }
     ],
   },

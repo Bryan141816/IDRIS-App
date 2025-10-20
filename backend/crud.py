@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 from typing import List, Optional
 from models import (
@@ -63,7 +63,12 @@ def delete(db: Session, model, id):
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    return (
+        db.query(User)
+        .options(joinedload(User.user_profile))
+        .filter(User.email == email)
+        .first()
+    )
 
 
 def get_user_by_username(db: Session, username: str):

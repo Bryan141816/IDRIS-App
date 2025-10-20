@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict,Field
+from pydantic import BaseModel, ConfigDict,Field, HttpUrl
 from typing import List, Optional, Union
 
 
@@ -46,11 +46,18 @@ class UserCreate(UserBase):
 # required on creation
 
 
+class UserProfileSchema(BaseModel):
+    profile_image: Optional[HttpUrl] = None
+    class Config:
+        from_attributes = True
+
+
 class UserSchema(UserBase):
     id: int
     user_id: str
     roles: List[str]
     user_type: Optional[str]
+    user_profile: Optional[UserProfileSchema]
 
     class Config:
         from_attributes = True

@@ -31,7 +31,12 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
     showUserSettings((prevState) => !prevState);
   };
 
-  const { email, username, userId } = useUserContext();
+  const { email, username, userId, userImage } = useUserContext();
+  const profileImage = userImage
+    ? `http://localhost:8000/${userImage}`
+    : userProfile;
+
+  console.log("User Image:", userImage);
   return (
     <header>
       <div id="left-items">
@@ -51,7 +56,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
           className="user-icon"
           onClick={() => toggleUserSettingsVisibility()}
         >
-          <img src={userProfile} alt="user-profile" />
+          <img src={profileImage} alt="user-profile" />
           <CircleDot width={16} height={16} />
         </div>
 
@@ -60,7 +65,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
             <div id="user-account-settings-container">
               <div className="user-icon">
                 <img
-                  src={userProfile}
+                  src={profileImage}
                   alt="user-profile"
                   style={{
                     height: "32px",

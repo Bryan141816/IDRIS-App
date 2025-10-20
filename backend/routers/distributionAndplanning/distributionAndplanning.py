@@ -24,6 +24,11 @@ router = APIRouter(
 )
 
 
+@router.get("/distribution_planning/get_dashboard")
+def get_dashboard(db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.get_dashboard(db)
+
+
 @router.get("/distribution_planning/get_volunteers")
 def get_volunteers(db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.get_volunteers(db)

@@ -6,7 +6,7 @@ from data_schemas.distribution_planning import (
 )
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm import joinedload
-from sqlalchemy import func, select
+from sqlalchemy import func, select, distinct, extract, case
 from models import (
     IndividualVolunteer,
     DistributionTeam,
@@ -21,6 +21,7 @@ from models import (
     Donation,
     Donor,
 )
+from calendar import month_abbr
 from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
@@ -326,3 +327,87 @@ class DistributionAndPlanningCRUD:
             .all()
         )
         return demands
+
+    @staticmethod
+    def count_assigned_routes(db: Session) -> int:
+        """Count all routes with status 'Assigned'."""
+        return (
+            db.query(func.count(DistributionRoute.route_id))
+            .filter(DistributionRoute.status == "Assigned")
+            .scalar()
+        )
+
+    @staticmethod
+    def count_unique_members(db: Session) -> int:
+        """Count all unique team members (no duplicate members)."""
+        return db.query(func.count(distinct(TeamMembers.member))).scalar()
+
+    @staticmethod
+    def count_items_with_completed_routes(db: Session) -> int:
+        """Count all distributed items where the route's status is 'Completed'."""
+        return (
+            db.query(func.count(DistributedItems.item_id))
+            .join(
+                DistributionRoute, DistributedItems.route == DistributionRoute.route_id
+            )
+            .filter(DistributionRoute.status == "Completed")
+            .scalar()
+        )
+
+    @staticmethod
+    def monthly_route_counts(db: Session):
+        results = (
+            db.query(
+                extract("month", DistributionRoute.date_added).label("month"),
+                func.count().label("total_routes"),
+                func.sum(
+                    case((DistributionRoute.status == "Completed", 1), else_=0)
+                ).label("completed_routes"),
+            )
+            .group_by("month")
+            .order_by("month")
+            .all()
+        )
+
+        return [
+            {
+                "month": month_abbr[int(r.month)],
+                "total_routes": r.total_routes,
+                "completed_routes": r.completed_routes,
+            }
+            for r in results
+        ]
+
+    @staticmethod
+    def count_routes_by_status(db: Session):
+        results = db.query(
+            func.sum(
+                case((DistributionRoute.status == "In Transit", 1), else_=0)
+            ).label("in_transit"),
+            func.sum(case((DistributionRoute.status == "Completed", 1), else_=0)).label(
+                "completed"
+            ),
+            func.sum(case((DistributionRoute.status == "Cancelled", 1), else_=0)).label(
+                "cancelled"
+            ),
+        ).one()
+
+        return {
+            "In Transit": results.in_transit,
+            "Completed": results.completed,
+            "Cancelled": results.cancelled,
+        }
+
+    @staticmethod
+    def get_dashboard(db: Session):
+        return {
+            "active_routes": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "deployed_volunteers": DistributionAndPlanningCRUD.count_unique_members(db),
+            "items_distributed": DistributionAndPlanningCRUD.count_items_with_completed_routes(
+                db
+            ),
+            "distribution_performance": DistributionAndPlanningCRUD.monthly_route_counts(
+                db
+            ),
+            "delivery_status": DistributionAndPlanningCRUD.count_routes_by_status(db),
+        }

@@ -1120,6 +1120,11 @@ class DistributionRoute(Base):
     schedule = Column(DateTime)
     team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
 
+    date_added = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
     start_zone = relationship("WarehouseZones", back_populates="routes")
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")

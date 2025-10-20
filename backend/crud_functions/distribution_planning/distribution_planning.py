@@ -15,6 +15,7 @@ from models import (
     DistributedItems,
     DistributionRoute,
     DistributionRouteLogs,
+    DemandAndResponse,
 )
 from zoneinfo import ZoneInfo
 import asyncio
@@ -312,3 +313,12 @@ class DistributionAndPlanningCRUD:
         ]
 
         return formatted
+
+    @staticmethod
+    def get_all_response(db: Session):
+        demands = (
+            db.query(DemandAndResponse)
+            .filter(DemandAndResponse.status == "no response")
+            .all()
+        )
+        return demands

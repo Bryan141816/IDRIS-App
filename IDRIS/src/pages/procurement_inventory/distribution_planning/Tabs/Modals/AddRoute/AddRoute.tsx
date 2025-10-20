@@ -9,26 +9,30 @@ interface AddRouteModalProp {
   refreshTable: () => void;
 }
 
+interface Need {
+  id: number;
+  need: string;
+  amount: string;
+}
+
+interface DemandAndResponse {
+  address: string;
+  title_label: string;
+  status: string; // e.g. "no response"
+  priority: string; // e.g. "medium"
+  submitted_at: string; // ISO timestamp
+  last_updated: string; // ISO timestamp
+  demand_id: number;
+  id: number;
+  lat: number;
+  lng: number;
+  needs: Need[];
+}
+
 export const AddRouteModal: React.FC<AddRouteModalProp> = ({
   onClose,
   refreshTable,
 }) => {
-  const [wareHousePicker, setWareHousePicker] = useState(false);
-  const [selectedWareHouseZone, setSelectedWareHouseZone] =
-    useState<WarehouseZone | null>(null);
-  const [itemsPicker, setItemsPicker] = useState(false);
-  const [selectedItems, setSelectedItem] = useState<
-    { item: InventoryItemsProps; distributionQty: number }[]
-  >([]);
-  const setZone = (zone: WarehouseZone | null) => {
-    setSelectedWareHouseZone(zone);
-  };
-  const setItem = (
-    items: { item: InventoryItemsProps; distributionQty: number }[],
-  ) => {
-    setSelectedItem(items);
-  };
-
   const [formData, setFormData] = useState<{
     routeName: string;
     endLocation: string;
@@ -38,6 +42,39 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
     endLocation: "",
     schedule: "",
   });
+
+  const [wareHousePicker, setWareHousePicker] = useState(false);
+  const [responsePicker, setResponsePicker] = useState(false);
+  const [selectedWareHouseZone, setSelectedWareHouseZone] =
+    useState<WarehouseZone | null>(null);
+  const [itemsPicker, setItemsPicker] = useState(false);
+  const [selectedItems, setSelectedItem] = useState<
+    { item: InventoryItemsProps; distributionQty: number }[]
+  >([]);
+  const [selectedResponse, setSelectedResponse] =
+    useState<DemandAndResponse | null>(null);
+  const setZone = (zone: WarehouseZone | null) => {
+    setSelectedWareHouseZone(zone);
+  };
+  const setResponse = (response: DemandAndResponse | null) => {
+    setSelectedResponse(response);
+    if (response) {
+      setFormData((prev) => ({
+        ...prev,
+        endLocation: response?.address,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        endLocation: "",
+      }));
+    }
+  };
+  const setItem = (
+    items: { item: InventoryItemsProps; distributionQty: number }[],
+  ) => {
+    setSelectedItem(items);
+  };
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
@@ -92,6 +129,13 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
           setItems={setItem}
         ></ItemsSelector>
       )}
+      {responsePicker && (
+        <ResponseModal
+          onClose={() => setResponsePicker(false)}
+          selectedResponse={selectedResponse}
+          setResponse={setResponse}
+        ></ResponseModal>
+      )}
       <div className="modal-overlay" style={{ zIndex: 900 }}>
         <div className="modal">
           <div className="modal-header">
@@ -143,13 +187,21 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
             </div>
             <div className="form-group">
               <label>End Location</label>
-              <input
-                type="text"
-                placeholder="Destination"
-                value={formData.endLocation}
-                name="endLocation"
-                onChange={handleChange}
-              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="End point"
+                  disabled
+                  value={selectedResponse ? selectedResponse.address : ""}
+                />
+                <button
+                  className="secondary-btn"
+                  style={{ width: "100%" }}
+                  onClick={() => setResponsePicker(true)}
+                >
+                  Select Location
+                </button>
+              </div>
             </div>
             <div className="form-group">
               <label>Schedule</label>
@@ -477,6 +529,133 @@ const ItemsSelector: React.FC<ItemsSelectorProps> = ({
                       <td style={{ padding: "10px" }}>{item.batch}</td>
                       <td style={{ padding: "10px" }}>{item.expiry}</td>
                       <td style={{ padding: "10px" }}>{item.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button className="secondary-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="primary-btn" onClick={handleSelect}>
+            Select
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface ResponseProp {
+  onClose: () => void;
+  selectedResponse: DemandAndResponse | null;
+  setResponse: (response: DemandAndResponse | null) => void;
+}
+
+const ResponseModal: React.FC<ResponseProp> = ({
+  onClose,
+  selectedResponse,
+  setResponse,
+}) => {
+  const [responseList, setResponseList] = useState<DemandAndResponse[]>([]);
+  const fetchData = async () => {
+    try {
+      const response = await API.get("/distribution_planning/get_all_response");
+      setResponseList(response.data);
+    } catch (e: any) {
+      console.error("error fetching volunteer: " + e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+  const [responseItem, setResponseItem] = useState<DemandAndResponse | null>(
+    selectedResponse,
+  );
+
+  const handleCheckboxChange = (response: DemandAndResponse) => {
+    // If the clicked row is already selected, deselect it
+    if (responseItem?.id === response.id) {
+      setResponseItem(null);
+    } else {
+      setResponseItem(response);
+    }
+  };
+  const handleSelect = () => {
+    setResponse(responseItem);
+    onClose();
+  };
+
+  return (
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+      <div
+        className="modal"
+        style={{
+          zIndex: 990,
+          width: "60%",
+          maxWidth: "1000px",
+        }}
+      >
+        <div className="modal-header">
+          <h3>Select Starting Location</h3>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
+        </div>
+
+        <div className="modal-content">
+          {responseList && (
+            <div style={{ width: "100%" }}>
+              <table style={{ width: "100%" }}>
+                <thead
+                  style={{
+                    textAlign: "start",
+                    padding: "10px",
+                    backgroundColor: "#749ab6",
+                    color: "white",
+                  }}
+                >
+                  <tr>
+                    <th>{"  "}</th>
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Title
+                    </th>
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Address
+                    </th>
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Priority
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {responseList.map((response) => (
+                    <tr
+                      key={response.id}
+                      style={{
+                        backgroundColor:
+                          responseItem?.id === response.id
+                            ? "#e3f2fd"
+                            : "transparent",
+                      }}
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={responseItem?.id === response.id}
+                          onChange={() => handleCheckboxChange(response)}
+                        />
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {response.title_label}
+                      </td>
+                      <td style={{ padding: "10px" }}>{response.address}</td>
+                      <td style={{ padding: "10px" }}>{response.priority}</td>
                     </tr>
                   ))}
                 </tbody>

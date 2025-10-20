@@ -74,3 +74,8 @@ def get_movement(db: Session = Depends(get_db)):
 @router.post("/distribution_planning/update_route")
 def update_route(payload: UpdateRoute, db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.update_route(payload, db)
+
+
+@router.get("/distribution_planning/get_all_response")
+def get_all_response(db: Session = Depends(get_db)):
+    return DistributionAndPlanningCRUD.get_all_response(db)

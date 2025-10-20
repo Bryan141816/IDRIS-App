@@ -15,7 +15,9 @@ import math
 
 router = APIRouter(
     tags=["demand_and_response"],
-    dependencies=[Depends(RoleChecker(["operations admin"])), Depends(RoleChecker(["superadmin"]))],
+    dependencies=[
+        Depends(RoleChecker(["operations admin", "super admin", "logistics admin"]))
+    ],
 )
 
 

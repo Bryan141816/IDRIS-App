@@ -16,7 +16,7 @@ from data_schemas.finance_record_schema import (
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","superadmin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
 )
 
 router_user = APIRouter(

@@ -25,13 +25,7 @@ from crud_functions.utils import uid_from_string
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[
-        Depends(
-            RoleChecker(
-                ["finance admin", "operations admin", "superuser", "superadmin"]
-            )
-        )
-    ],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))],
 )
 
 router_user = APIRouter(
@@ -43,20 +37,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[
-        Depends(
-            RoleChecker(
-                [
-                    "finance admin",
-                    "operations admin",
-                    "superuser",
-                    "generic",
-                    "superadmin",
-                    "donor",
-                ]
-            )
-        )
-    ],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "generic", "superadmin"]))],
 )
 
 

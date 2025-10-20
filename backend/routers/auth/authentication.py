@@ -381,26 +381,15 @@ async def activate_account(
     token: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    # Verify token and extract user_id
+    uid = verify_token(token, "activation")
+    if not uid:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
     try:
         profile_data = json.loads(profile_info)
-
-        # Verify token and extract user_id
-
-        payload = verify_token(token, "activation")
-
-        if payload is None:
-            raise HTTPException(status_code=400, detail="Invalid or expired token")
-
-        if isinstance(payload, dict):
-            uid = payload.get("user_id")
-        else:
-            # If for some reason it returns user_id directly (str/int)
-            uid = payload
-
-        if not uid:
-            raise HTTPException(status_code=400, detail="Token does not contain valid user ID")
-
-        # Rest of your logic remains the same...
+        
+        # Handle file upload
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         default_image_path = UPLOAD_DIR / "defaultProfile.webp"
 
@@ -419,6 +408,7 @@ async def activate_account(
                 bundled_default = Path("media/defaultProfile.webp")
                 copyfile(bundled_default, default_image_path)
 
+        # Find or create user profile
         profile_db = db.query(UserProfile).filter(UserProfile.user_id == uid).first()
         if profile_db:
             # Update existing profile
@@ -446,20 +436,24 @@ async def activate_account(
             )
             db.add(profile_db)
         
-        db.commit()
-        db.refresh(profile_db)
-
+        # Activate user
         user = db.query(User).filter(User.user_id == uid).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+        user.is_activated = True
+        
+        # Commit all changes as a single transaction
+        db.commit()
+        db.refresh(profile_db)
 
+        # After successful commit, attempt to send notification email
+        # This is non-critical, so we wrap it in its own try/except
         if user.user_type == "admin":
-            user.is_activated = True
-            db.commit()
-            await send_admin_profile_complete_email(user.email, user.user_id)
-        else:
-            user.is_activated = True
-            db.commit()
+            try:
+                await send_admin_profile_complete_email(user.email, user.user_id)
+            except Exception as email_error:
+                # Log the error but don't fail the request
+                print(f"WARNING: Failed to send admin profile completion email to {user.email}. Error: {email_error}")
 
         return {"status": "success", "profile": profile_db.user_profile_id}
 

@@ -409,7 +409,7 @@ const OrganizationForm: React.FC = () => {
                         </Modal>
 
                         {/* Certificate (PDF via custom component) */}
-                        <h3 className="section-title upload-title">Upload Files</h3>
+                        <h3 className="section-title upload-title">Upload Certificates</h3>
                         <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                             rules={[{ required: true, message: "Please upload your certificates/documents" }]}>

@@ -1,3 +1,4 @@
+from zoneinfo import available_timezones
 from fastapi import APIRouter, HTTPException
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -23,6 +24,12 @@ from models import (
     IndividualVolunteer,
     OrganizationVolunteer,
     VolunteerStatus,
+)
+from crud_functions.procurement_manage.procurement_inventory import (
+    ProcurementInventoryCRUD,
+)
+from crud_functions.distribution_planning.distribution_planning import (
+    DistributionAndPlanningCRUD,
 )
 from datetime import datetime, timezone
 from sqlalchemy import func, extract, Date, cast
@@ -143,7 +150,7 @@ def get_report_summary(db: Session = Depends(get_db)):
     return {
         "total_reports": total_reports or 0,
         "completed": completed or 0,
-        "started": started or 0, # Note: This is now 'responded' count
+        "started": started or 0,  # Note: This is now 'responded' count
         "active_incidents": active_incidents or 0,
         "high_priority": high_priority or 0,
         "response_time_avg": response_time_avg,
@@ -278,17 +285,23 @@ def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
     in_kind_summary = get_in_kind_monitoring(db)
 
     # 2. Get staff counts
-    staff_available = db.query(func.count(IndividualVolunteer.volunteer_id)).filter(
-        IndividualVolunteer.availability_status == VolunteerStatus.available
-    ).scalar() + db.query(func.count(OrganizationVolunteer.volunteer_id)).filter(
-        OrganizationVolunteer.availability_status == VolunteerStatus.available
-    ).scalar()
+    staff_available = (
+        db.query(func.count(IndividualVolunteer.volunteer_id))
+        .filter(IndividualVolunteer.availability_status == VolunteerStatus.available)
+        .scalar()
+        + db.query(func.count(OrganizationVolunteer.volunteer_id))
+        .filter(OrganizationVolunteer.availability_status == VolunteerStatus.available)
+        .scalar()
+    )
 
-    staff_deployed = db.query(func.count(IndividualVolunteer.volunteer_id)).filter(
-        IndividualVolunteer.status == VolunteerStatus.assigned
-    ).scalar() + db.query(func.count(OrganizationVolunteer.volunteer_id)).filter(
-        OrganizationVolunteer.status == VolunteerStatus.assigned
-    ).scalar()
+    staff_deployed = (
+        db.query(func.count(IndividualVolunteer.volunteer_id))
+        .filter(IndividualVolunteer.status == VolunteerStatus.assigned)
+        .scalar()
+        + db.query(func.count(OrganizationVolunteer.volunteer_id))
+        .filter(OrganizationVolunteer.status == VolunteerStatus.assigned)
+        .scalar()
+    )
 
     # 3. Get supply items from inventory
     inventory_items = db.query(InventoryItems).all()
@@ -417,4 +430,17 @@ def get_spending_breakdown(db: Session = Depends(get_db)):
                 "borderRadius": 5,
             }
         ],
+    }
+
+
+@router.get("/response_dashboard/get_resource_status")
+def get_resource_status(db: Session = Depends(get_db)):
+
+    available_item = ProcurementInventoryCRUD.count_available_inventory_items(db)
+    delivery_status = DistributionAndPlanningCRUD.count_routes_by_status(db)
+
+    return {
+        "available_relief_items": available_item,
+        "in_transit": delivery_status["In Transit"],
+        "total_distributed": delivery_status["Completed"],
     }

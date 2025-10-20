@@ -4,7 +4,14 @@ import RequestTab from "./Tabs/Request";
 import { formatCurrency } from "./Tabs/Modals/ProcurementDefaults";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import { useNavigate, useParams } from "react-router-dom";
-
+export function formatDatePretty(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long", // e.g. October
+    day: "numeric", // e.g. 20
+  });
+}
 const ProcurementManagement = () => {
   type RequestCounts = {
     total_requests: number;
@@ -15,6 +22,16 @@ const ProcurementManagement = () => {
       category: string;
       used: number;
       percentage: number;
+    }[];
+    recent_notification: {
+      notification_id: number;
+      from_origin: string;
+      title: string;
+      message: string;
+      url_redirect: string;
+      date: string; // ISO string
+      isRead: boolean;
+      to: string;
     }[];
   };
 
@@ -134,7 +151,17 @@ const ProcurementManagement = () => {
         <div className="chart-container">
           <h3>Recent Notifications</h3>
           <div className="notifications-list">
-            {/* Notifications will go here */}
+            <div className="expiry-alerts">
+              {requestCounterData?.recent_notification.map((item) => (
+                <div key={item.notification_id} className={`expiry-item good`}>
+                  <div className="expiry-info">
+                    <strong>{item.title}</strong>
+                    <span>Message: {item.message}</span>
+                    <span>Date: {formatDatePretty(item.date)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

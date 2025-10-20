@@ -1,14 +1,21 @@
+from crud_functions.procurement_manage.procurement_inventory import (
+    ProcurementInventoryCRUD,
+)
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from database import get_db
-from models import ProcurementRequest, ProcurementRequestItem  # no Role import datetime
+from models import (
+    ProcurementRequest,
+    ProcurementRequestItem,
+    Notifications,
+)  # no Role import datetime
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
 from fastapi import Request
-from sqlalchemy import func
+from sqlalchemy import func, desc
 from zoneinfo import ZoneInfo
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
@@ -84,6 +91,14 @@ def get_request_counts(db: Session = Depends(get_db)):
     # Convert to dictionary for easier lookup
     category_dict = {cat.category: float(cat.total) for cat in category_totals}
 
+    recent_notification = (
+        db.query(Notifications)
+        .filter(Notifications.from_origin == "procurement_management")
+        .order_by(desc(Notifications.date))
+        .limit(5)
+        .all()
+    )
+
     # Fixed category mapping (frontend label → db lowercase key)
     category_map = {
         "Medical Supplies": "medical supplies",
@@ -112,6 +127,7 @@ def get_request_counts(db: Session = Depends(get_db)):
         "total_approved": total_approved,
         "total_value": total_value,
         "resource_usage": resource_usage,
+        "recent_notification": recent_notification,
     }
 
 

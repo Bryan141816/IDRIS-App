@@ -4,7 +4,8 @@ from data_schemas.procurement_management_schema import (
 )
 from datetime import datetime
 from sqlalchemy.orm import Session
-from models import ProcurementRequest, ProcurementRequestItem, User
+from sqlalchemy import desc
+from models import ProcurementRequest, ProcurementRequestItem, User, Notifications
 from zoneinfo import ZoneInfo  # Python 3.9+ built-in
 import asyncio
 from real_time_handler import send_real_time

@@ -1,3 +1,4 @@
+import Swal from "sweetalert2";
 import { TableView, TableReponse } from "../../components/TableView/table_view";
 import { Modal } from "../../components/Page_Furniture/Modals";
 import React, { useEffect, useState, useRef } from "react";
@@ -355,19 +356,28 @@ const UserList = () => {
   };
 
   const handleApproveAdmin = async (user_id: String) => {
+    Swal.fire({
+      title: "Approving Admin",
+      text: "Please wait...",
+      showConfirmButton: false,
+      allowOutsideClick: false,
+    });
     try {
       await approveUser(user_id);
       closeViewModal();
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "message",
-        message: "Admin successfully approved. Activation email sent.",
-        onClose: closeMessageBox,
-      }));
+      Swal.fire({
+        icon: "success",
+        title: "Admin Approved",
+        text: "Activation email sent successfully.",
+      });
       handleRefreshTable();
     } catch (error) {
       console.error("Failed to approve admin: ", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to approve admin.",
+      });
     }
   };
 

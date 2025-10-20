@@ -121,6 +121,15 @@ const Activate = () => {
   const submitProfile = async () => {
     if (!token) return console.error("No token found in URL");
 
+    Swal.fire({
+      title: "Submitting...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
     const formData = new FormData();
 
     // Only append if the user uploaded an image
@@ -137,10 +146,16 @@ const Activate = () => {
       });
       console.log("Response:", response.data);
 
+      Swal.close();
       // ✅ Success state
       setIsSuccess(true);
     } catch (err) {
       console.error(err);
+      Swal.update({
+        icon: "error",
+        title: "Submission Failed",
+        text: "An error occurred while submitting your profile.",
+      });
     }
   };
 
@@ -151,7 +166,8 @@ const Activate = () => {
         icon: "success",
         title: "Account Activated!",
         text: "Your profile has been saved successfully.",
-        confirmButtonText: "Proceed to Login",
+        timer: 1500,
+        showConfirmButton: false,
       }).then(() => {
         navigate("/login");
       });

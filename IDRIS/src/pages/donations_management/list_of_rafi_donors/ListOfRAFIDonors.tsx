@@ -54,7 +54,7 @@ const ListOfRAFIDonors = () => {
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
   const adminRoleAccess =
-    userRoles.includes("finance admin") || userRoles.includes("operations admin");
+    userRoles.includes("finance admin") || userRoles.includes("operations admin") || userRoles.includes("superadmin");
   const donorSearchRef = useRef<HTMLDivElement>(null);
   const donorGiftRef = useRef<HTMLDivElement>(null);
 

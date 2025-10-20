@@ -18,7 +18,7 @@ from data_schemas.funding_proposal_schema import (
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser","superadmin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
 )
 
 router_user = APIRouter(

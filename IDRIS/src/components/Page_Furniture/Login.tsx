@@ -16,8 +16,14 @@ const Login = () => {
   const [erroMessage, setErrorMessage] = useState("");
 
   const { setUserRoles } = useUserRoleContext();
-  const { setUserType, setEmail, setUsername, setUserReady, setUserId } =
-    useUserContext();
+  const {
+    setUserType,
+    setEmail,
+    setUsername,
+    setUserReady,
+    setUserId,
+    setUserImage,
+  } = useUserContext();
 
   const navigate = useNavigate();
 
@@ -49,6 +55,7 @@ const Login = () => {
       setEmail(userData["email"]);
       setUserId(userData["user_id"]);
       setUsername(userData["username"]);
+      setUserImage(userData["user_profile"]?.profile_image || null);
       setUserReady(true);
       handleRoleBasedRedirect(userData["roles"], navigate);
     } else {

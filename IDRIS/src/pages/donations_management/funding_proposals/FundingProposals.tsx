@@ -24,6 +24,8 @@ const FundingProposals = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const filterItems = ["Ascending", "Descending"];
+  const adminRoleAccess =
+    userRoles.includes("finance admin") || userRoles.includes("operations admin") || userRoles.includes("superadmin");
 
   const [filtered, setFiltered] = useState<string>("");
   const [searched, setSearched] = useState<string>("");
@@ -117,7 +119,7 @@ const FundingProposals = () => {
 
         <FilterBar items={filterItems} value={filtered} onChange={setFiltered} />
 
-        {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) && (
+        { adminRoleAccess && (
           <button
             className="green-button"
             onClick={() => navigate("/donations_management/funding_proposals/create")}

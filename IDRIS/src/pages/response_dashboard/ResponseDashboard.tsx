@@ -1026,7 +1026,7 @@ const ResponseDashboard = () => {
             </div>
 
             {/* Response Time - Critical for Operations */}
-            <div className="sub-item-content-big-data-inverted">
+            {/* <div className="sub-item-content-big-data-inverted">
               <h1>Avg Response Time</h1>
               <div className="horizontal-container full-width space-between-container">
                 {reportSummary ? (
@@ -1052,7 +1052,7 @@ const ResponseDashboard = () => {
                   Target: ≤ 2h
                 </span>
               </div>
-            </div>
+            </div> */}
 
             {/* Staff Status - Enhanced with better spacing */}
             <div className="sub-item-content-big-data-inverted">

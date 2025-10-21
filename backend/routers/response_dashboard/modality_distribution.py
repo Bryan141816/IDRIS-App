@@ -10,23 +10,19 @@ from models import ModalityDistribution  # no Role import datetime
 from routers.role_checker import RoleChecker
 import math
 
-router = APIRouter()
-
-admin_router = APIRouter(
+router = APIRouter(
     tags=["modality_distribution"],
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "lgu officer"]))],
 )
 
-user_router = APIRouter(
-    tags=["modality_distribution"],
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "lgu officer"]))],
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
 )
 
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
 
-@router.get(
+@router_admin.get(
     "/response_dashboard/modality_distribution/record_list",
     response_model=TableResponse,
 )
@@ -107,7 +103,7 @@ def get_modality_table(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
-@router.post(
+@router_admin.post(
     "/response_dashboard/modality_distribution/add_record",
     response_model=ModalityDistributionOut,
 )
@@ -117,7 +113,7 @@ def add_modality_record(
     return create_modality_distribution_record(db, modality_report)
 
 
-@router.delete(
+@router_admin.delete(
     "/response_dashboard/modality_distribution/delete_record/{record_id}",
     response_model=dict,
 )
@@ -128,7 +124,7 @@ def delete_modality_report(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Modality Record with ID {record_id} deleted successfully."}
 
 
-@router.put("/response_dashboard/modality_distribution/update_record/{record_id}")
+@router_admin.put("/response_dashboard/modality_distribution/update_record/{record_id}")
 def update_modality_record(
     record_id: int, update: ModalityDistributionCreate, db: Session = Depends(get_db)
 ):
@@ -143,3 +139,5 @@ def update_modality_record(
     db.refresh(record)
 
     return {"detail": "Modality record updated succesfully", "report": record}
+
+router.include_router(router_admin)

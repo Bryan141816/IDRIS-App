@@ -11,13 +11,18 @@ from models import DemandAndResponse
 from database import get_db
 from typing import Optional
 from datetime import datetime, timedelta
+from routers.role_checker import RoleChecker
 
 router = APIRouter(
     prefix="/api/emergency-response",
     tags=["emergency-response"],
 )
 
-@router.get("/report", response_model=EmergencyReportResponse)
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+)
+
+@router_admin.get("/report", response_model=EmergencyReportResponse)
 def get_emergency_response_report(
     period: Optional[str] = "monthly", db: Session = Depends(get_db)
 ):
@@ -132,3 +137,5 @@ def get_emergency_response_report(
         resourceDistribution=resource_distribution,
         performanceMetrics=performance_metrics,
     )
+
+router.include_router(router_admin)

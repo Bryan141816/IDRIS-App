@@ -12,7 +12,10 @@ import math
 
 router = APIRouter(
     tags=["budget_record"],
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "lgu officer"]))],
+)
+
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
 )
 
 
@@ -20,7 +23,7 @@ def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
 
-@router.get("/response_dashboard/budget_record/get_list", response_model=TableResponse)
+@router_admin.get("/response_dashboard/budget_record/get_list", response_model=TableResponse)
 def get_budget_table(
     db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
 ):
@@ -110,7 +113,7 @@ def get_budget_table(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
-@router.post(
+@router_admin.post(
     "/response_dashboard/budget_record/add_record",
     response_model=ResponseDashboardBudgetOut,
 )
@@ -120,7 +123,7 @@ def add_budget_record(
     return create_response_dashboard_budget_create(db, record)
 
 
-@router.delete(
+@router_admin.delete(
     "/response_dashboard/budget_record/delete_record/{record_id}", response_model=dict
 )
 def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
@@ -130,7 +133,7 @@ def delete_budget_record(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
 
-@router.put("/response_dashboard/budget_record/update_record/{record_id}")
+@router_admin.put("/response_dashboard/budget_record/update_record/{record_id}")
 def update_budget_record(
     record_id: int, update: ResponseDashboardBudgetCreate, db: Session = Depends(get_db)
 ):
@@ -147,3 +150,5 @@ def update_budget_record(
     db.refresh(record)
 
     return {"detail": "Record updated succesfully", "record": record}
+
+router.include_router(router_admin)

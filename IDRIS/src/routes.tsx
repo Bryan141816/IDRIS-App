@@ -566,17 +566,17 @@ export const router = createBrowserRouter([
       {
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance_printable",
         lazy: FinancePrintPage,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance&admin/finance_management/budget_summary",
         lazy: FinanceBudgetSummary,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       }
     ],
   },

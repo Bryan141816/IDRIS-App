@@ -103,16 +103,16 @@ const ViewReportModal = ({
   isViewModalSelected,
 }: ViewReportModalProps) => {
   const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
-  
+
   useEffect(() => {
     if (!isModalOpen) {
       setMoreOptionVisible(false);
     }
   }, [isModalOpen]);
-  
+
   const toggleMoreOptionVisible = () =>
     setMoreOptionVisible(!isMoreOptionVisible);
-    
+
   function toTitleCase(str: String) {
     return str
       .toLowerCase()
@@ -126,14 +126,28 @@ const ViewReportModal = ({
       <div className="modal-container">
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View User</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
             <div className="more-options-container">
-              <button className="modal-more-btn" onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
+              <button
+                className="modal-more-btn"
+                onClick={toggleMoreOptionVisible}
+              >
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
-                  <button onClick={() => { closeModal(); openEditModal(); }}>
+                  <button
+                    onClick={() => {
+                      closeModal();
+                      openEditModal();
+                    }}
+                  >
                     <FontAwesomeIcon icon={faPen} />
                     Edit Record
                   </button>
@@ -145,7 +159,8 @@ const ViewReportModal = ({
                         isOpen: true,
                         type: "confirm",
                         message: "Are you sure you want to delete this user?",
-                        onSubmit: () => handleDeleteReport(isViewModalSelected.data[0].text),
+                        onSubmit: () =>
+                          handleDeleteReport(isViewModalSelected.data[0].text),
                       }));
                     }}
                   >
@@ -173,7 +188,9 @@ const ViewReportModal = ({
         </div>
         <div className="horizontal-container">
           <span className="item-details-identifier">Role:</span>
-          <span className="role-badge">{toTitleCase(isViewModalSelected.data[5].text)}</span>
+          <span className="role-badge">
+            {toTitleCase(isViewModalSelected.data[5].text)}
+          </span>
         </div>
         <div className="horizontal-container">
           <span className="item-details-identifier">Is Activated:</span>
@@ -217,7 +234,9 @@ const EditReportModal = ({
   const [editRole, setEditRole] = useState(defaultRole);
   const { userRoles } = useUserRoleContext();
 
-  const handleEditReportTypeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleEditReportTypeChange = (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     setEditRole(event.target.value);
   };
 
@@ -230,23 +249,10 @@ const EditReportModal = ({
         <div className="horizontal-container">
           <span className="item-details-identifier">Role:</span>
           <select value={editRole} onChange={handleEditReportTypeChange}>
-            {(userRoles.includes("super admin") || userRoles.includes("operations admin")) && (
-              <option value="lgu officer">LGU Officer (Moderator)</option>
-            )}
-            {(userRoles.includes("super admin") || userRoles.includes("logistics admin")) && (
-              <option value="disaster response admin officer">
-                Disaster Response Admin Officer (Moderator)
-              </option>
-            )}
-            {(userRoles.includes("super admin") || userRoles.includes("operations admin")) && (
-              <option value="operations admin">Operations Admin</option>
-            )}
-            {(userRoles.includes("super admin") || userRoles.includes("logistics admin")) && (
-              <option value="logistics admin">Logistics Admin</option>
-            )}
-            {(userRoles.includes("super admin") || userRoles.includes("finance admin")) && (
-              <option value="finance admin">Finance Admin</option>
-            )}
+            <option value="lgu officer">LGU Officer</option>
+            <option value="operations admin">Operations Admin</option>
+            <option value="logistics admin">Logistics Admin</option>
+            <option value="finance admin">Finance Admin</option>
             <option value="generic">Generic User</option>
           </select>
         </div>
@@ -315,7 +321,7 @@ const UserList = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   const handleRefreshTable = () => refreshTable.current?.();
 
   const handleDeleteReport = async (report_id: String) => {
@@ -406,7 +412,7 @@ const UserList = () => {
           openEditModal={openEditModal}
         />
       )}
-      
+
       {isViewModalSelected && (
         <EditReportModal
           isModalOpen={isEditModeEnabled}

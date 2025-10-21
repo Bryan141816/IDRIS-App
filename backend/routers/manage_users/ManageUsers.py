@@ -178,7 +178,7 @@ def get_table(
 #
 #
 @router.delete("/delete_user/{user_id}", response_model=dict)
-def delete_response_report(user_id: int, db: Session = Depends(get_db)):
+def delete_response_report(user_id: str, db: Session = Depends(get_db)):
     query = db.query(User).filter(User.user_id == user_id).first()
     if not query:
         raise HTTPException(status_code=400, detail="Response report not found.")
@@ -195,14 +195,19 @@ class UpdateUserRole(BaseModel):
 
 
 @router.put("/update_user/{user_id}")
-def update_report(user_id: int, payload: UpdateUserRole, db: Session = Depends(get_db)):
+def update_report(user_id: str, payload: UpdateUserRole, db: Session = Depends(get_db)):
     report = db.query(User).get(user_id)
-    user_type = "admin"
-    if (
-        payload.roles == "lgu officer"
-        or payload.roles == "disaster response admin officer"
-    ):
-        user_type = "moderator"
+
+    user_type = "user"
+    admin_roles = [
+        "logistics admin",
+        "operations admin",
+        "finance admin",
+        "lgu officer",
+    ]
+
+    if payload.roles in admin_roles:
+        user_type = "admin"
     if not report:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
     if payload.roles:
@@ -235,9 +240,7 @@ async def approve_admin(
         raise HTTPException(status_code=400, detail="User is not an admin.")
 
     if user_to_approve.is_activated:
-        raise HTTPException(
-            status_code=400, detail="Admin has already been activated."
-        )
+        raise HTTPException(status_code=400, detail="Admin has already been activated.")
 
     # Send activation email
     token = create_token(user_to_approve.user_id, "activation")

@@ -112,6 +112,20 @@
   justify-content: space-between;
   border-top: 1px solid #c5d7e5;
 
+  .progressBarContainer {
+    background-color: $ice-blue;
+    border: 2px solid #c5d7e5;
+    border-radius: 20px;
+    height: 20px;
+    margin: 8px;
+
+    .progressBar {
+      background-color: #22c55e;
+      height: 100%;
+      border-radius: 20px;
+    }
+  }
+
   .progressContainer {
     display: flex;
     flex-direction: row;
@@ -133,17 +147,9 @@
   }
 
   .percentage {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 1.5em;
-    padding: 6px 12px;
-    margin-right: 4px;
-    background-color: $ice-blue;
-    border: 2px solid #c5d7e5;
-    border-radius: 20px;
-    color: #fcb814;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0984e3;
   }
 
   .anchorButton{

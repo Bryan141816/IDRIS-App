@@ -425,13 +425,13 @@ const UserList = () => {
 
       <div className="user-mgmt-header">
         <h2 className="section-title">Manage Users</h2>
-        <button className="primary-btn">
+        {/* <button className="primary-btn">
           <FontAwesomeIcon icon={faUserPlus} />
           Add User
-        </button>
+        </button> */}
       </div>
 
-      <div className="user-mgmt-actions">
+      {/* <div className="user-mgmt-actions">
         <div className="user-mgmt-searchbar">
           <input
             type="text"
@@ -445,7 +445,7 @@ const UserList = () => {
             <FontAwesomeIcon icon={faSearch} />
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="user-table-card">
         {response_data ? (

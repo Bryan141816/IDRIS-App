@@ -140,7 +140,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
             </div>
             <div className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}>
               {(userRoles.includes("donor") || userRoles.includes("generic")) && (
-                <Link to="/donor_profile" prefetch-link="/donor_profile" className="nav-sub-item" onClick={onClose}>
+                <Link to="/donations_management/donor_profile" prefetch-link="/donations_management/donor_profile" className="nav-sub-item" onClick={onClose}>
                   Donor Profile
                 </Link>
               )}

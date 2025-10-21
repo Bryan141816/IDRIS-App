@@ -106,9 +106,14 @@ const FundingCard: React.FC<FundingProp> = ({
 
       {/* FOOTER */}
       <div className={styles.fundingFooter}>
+        <div className={styles.progressBarContainer}>
+          <div
+            className={styles.progressBar}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
         <div className={styles.progressContainer}>
           <p className={styles.progress}>
-            <CircleDot width={16} height={16} className={styles.circleDot} />
             {formatCurrency(donated)}
           </p>
           <p className={styles.percentage}>{percentage}%</p>

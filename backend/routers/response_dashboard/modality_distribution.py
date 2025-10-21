@@ -10,11 +10,17 @@ from models import ModalityDistribution  # no Role import datetime
 from routers.role_checker import RoleChecker
 import math
 
-router = APIRouter(
+router = APIRouter()
+
+admin_router = APIRouter(
     tags=["modality_distribution"],
-    dependencies=[Depends(RoleChecker(["operations admin"])), Depends(RoleChecker(["superadmin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "lgu officer"]))],
 )
 
+user_router = APIRouter(
+    tags=["modality_distribution"],
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "lgu officer"]))],
+)
 
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1

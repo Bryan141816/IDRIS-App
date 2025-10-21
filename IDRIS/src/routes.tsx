@@ -459,16 +459,16 @@ export const router = createBrowserRouter([
             lazy: DonationRecords,
             handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
           },
+          {
+            path: "donor_profile",
+            lazy: DonorProfile,
+          },
         ],
       },
       {
         path: "donation_report",
         lazy: DonationsReport,
         handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
-      },
-      {
-        path: "donor_profile",
-        lazy: DonorProfile,
       },
       // {
       //   path: "donor_dashboard",
@@ -566,17 +566,17 @@ export const router = createBrowserRouter([
       {
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance_printable",
         lazy: FinancePrintPage,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance&admin/finance_management/budget_summary",
         lazy: FinanceBudgetSummary,
-        handle: { allowedRoles: ["operations admin", "superadmin"] },
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       }
     ],
   },
@@ -615,7 +615,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/funding_proposals/update": UpdateFunding,
 
   "/donation_report": DonationsReport,
-  "/donor_profile": DonorProfile,
+  "/donations_management/donor_profile": DonorProfile,
   "/donation_status": DonationStatus,
   "/donations_management/donation_records": DonationRecords,
   // "/donor_dashboard": Donor_Dashboard,

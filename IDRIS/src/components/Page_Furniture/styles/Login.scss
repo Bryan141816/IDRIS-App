@@ -565,3 +565,48 @@ select {
     }
   }
 }
+
+.login-error-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fde5e5;
+  color: #c00;
+  border-radius: 8px;
+  border: 1px solid #f5c2c2;
+  padding: 0.8em 1.2em;
+  margin-bottom: 1em;
+  box-shadow: 0 3px 12px rgba(200, 0, 0, 0.05);
+  font-size: 1rem;
+  position: relative;
+
+  .login-error-message {
+    flex: 1 1 auto;
+    font-weight: 300;
+    padding-right: 1em;
+    word-break: break-word;
+    text-align: center;
+  }
+}
+
+.input-error-message {
+  color: #cc0000;
+  background: #fae3e3;
+  border-radius: 6px;
+  font-size: 0.97em;
+  font-weight: 500;
+  margin-top: 0.5em;
+  margin-bottom: 0.8em;
+  padding: 7px 12px 7px 12px;
+  text-align: left;
+  border: 1px solid #f6bcbc;
+  box-shadow: 0 2px 8px rgba(204, 0, 0, 0.04);
+}
+
+@media (max-width: 480px) {
+  .input-error-message {
+    font-size: 0.95em;
+    padding: 7px 8px 7px 8px;
+  }
+}
+

@@ -14,6 +14,8 @@ const Login = () => {
   const [email, setEmailEntry] = useState("");
   const [password, setPassword] = useState("");
   const [erroMessage, setErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
 
   const { setUserRoles } = useUserRoleContext();
   const {
@@ -28,117 +30,112 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setErrorMessage(""); // Clear previous error messages
-  
-  Swal.fire({
-    title: "Logging in...",
-    didOpen: () => {
-      Swal.showLoading();
-    },
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-  });
-  
-  try {
-    await loginUser(email, password);
-    const userData = await fetchCurrentUser();
+    e.preventDefault();
+    setErrorMessage(""); // Clear previous error messages
+    setShowError(false);
 
-    if (userData) {
-      Swal.hideLoading();
-      Swal.update({
-        icon: "success",
-        title: "Logged in successfully!",
-      });
-      setUserType(userData["user_type"]);
-      setUserRoles(userData["roles"]);
-      setEmail(userData["email"]);
-      setUserId(userData["user_id"]);
-      setUsername(userData["username"]);
-      setUserImage(userData["user_profile"]?.profile_image || null);
-      setUserReady(true);
-      handleRoleBasedRedirect(userData["roles"], navigate);
-    } else {
-      throw new Error("Invalid user data received.");
-    }
-  } catch (error: any) {
-    console.error("Login failed: ", error);
-    Swal.hideLoading();
-    
-    // Default error values
-    let errorTitle = "Login Failed";
-    let errorText = "An unexpected error occurred. Please try again.";
-    
-    // Check if error has response from backend
-    if (error.response) {
-      const status = error.response.status;
-      const detail = error.response.data?.detail || "";
-      
-      // Handle different HTTP status codes from backend database check
-      switch (status) {
-        case 404:
-          // Backend checked database - account doesn't exist
-          errorTitle = "Account Not Found";
-          errorText = "No account exists with this email address. Please check your email or create a new account by clicking 'Signup' below.";
-          break;
-          
-        case 401:
-          // Backend checked database - account exists but password is wrong
-          errorTitle = "Incorrect Password";
-          errorText = "The password you entered is incorrect. Please try again or click 'Forgot Password' to reset it.";
-          break;
-          
-        case 403:
-          // Backend checked database - account exists but not activated
-          errorTitle = "Account Not Activated";
-          errorText = "Your account has not been activated yet. Please check your email for the activation link or contact the administrator for assistance.";
-          break;
-          
-        case 400:
-          // Bad request - validation error
-          errorTitle = "Invalid Input";
-          errorText = detail || "Please check that your email and password are in the correct format.";
-          break;
-          
-        case 500:
-          // Internal server error
-          errorTitle = "Server Error";
-          errorText = "A server error occurred. Please try again later or contact support if the problem persists.";
-          break;
-          
-        default:
-          // Other backend errors
-          errorTitle = "Login Error";
-          errorText = detail || "Unable to log in at this time. Please try again.";
-      }
-    } else if (error.request) {
-      // Request was made but no response received - network/connection issue
-      errorTitle = "Connection Error";
-      errorText = "Unable to connect to the server. Please check your internet connection and try again.";
-    } else if (error.message) {
-      // Other types of errors
-      errorTitle = "Error";
-      errorText = error.message || "An unexpected error occurred.";
-    }
-    
-    // Display the error to user
-    Swal.update({
-      icon: "error",
-      title: errorTitle,
-      text: errorText,
+    Swal.fire({
+      title: "Logging in...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
     });
-    
-    setErrorMessage(errorText);
-  }
-};
 
+    try {
+      await loginUser(email, password);
+      const userData = await fetchCurrentUser();
+
+      if (userData) {
+        Swal.hideLoading();
+        Swal.update({
+          icon: "success",
+          title: "Logged in successfully!",
+        });
+        setUserType(userData["user_type"]);
+        setUserRoles(userData["roles"]);
+        setEmail(userData["email"]);
+        setUserId(userData["user_id"]);
+        setUsername(userData["username"]);
+        setUserImage(userData["user_profile"]?.profile_image || null); // ADDED missing setUserImage
+        setUserReady(true);
+        handleRoleBasedRedirect(userData["roles"], navigate);
+      } else {
+        throw new Error("Invalid user data received.");
+      }
+    } catch (error: any) {
+      console.error("Login failed: ", error);
+      Swal.hideLoading();
+
+      // Default error values
+      let backendErrorTitle = "Login Failed";
+      let backendErrorText = "An unexpected error occurred. Please try again.";
+
+      if (error.response) {
+        const status = error.response.status;
+        const detail = error.response.data?.detail || "";
+
+        switch (status) {
+          case 404:
+            backendErrorTitle = "Account Not Found";
+            backendErrorText =
+              "No account exists with this email address. Please check your email or create a new account by clicking 'Signup' below.";
+            break;
+          case 401:
+            backendErrorTitle = "Incorrect Password";
+            backendErrorText =
+              "The password you entered is incorrect. Please try again or click 'Forgot Password' to reset it.";
+            break;
+          case 403:
+            backendErrorTitle = "Account Not Activated";
+            backendErrorText =
+              "Your account has not been activated yet. Please check your email for the activation link or contact the administrator for assistance.";
+            break;
+          case 400:
+            backendErrorTitle = "Invalid Input";
+            backendErrorText =
+              detail ||
+              "Please check that your email and password are in the correct format.";
+            break;
+          case 500:
+            backendErrorTitle = "Server Error";
+            backendErrorText =
+              "A server error occurred. Please try again later or contact support if the problem persists.";
+            break;
+          default:
+            backendErrorTitle = "Login Error";
+            backendErrorText = detail || "Unable to log in at this time. Please try again.";
+        }
+      } else if (error.request) {
+        backendErrorTitle = "Connection Error";
+        backendErrorText =
+          "Unable to connect to the server. Please check your internet connection and try again.";
+      } else if (error.message) {
+        backendErrorTitle = "Error";
+        backendErrorText = error.message || "An unexpected error occurred.";
+      }
+
+      Swal.update({
+        icon: "error",
+        title: backendErrorTitle,
+        text: backendErrorText,
+      });
+
+      setErrorMessage(backendErrorText);
+      setErrorTitle(backendErrorTitle);
+      setShowError(true);
+    }
+  };
 
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/login";
   };
+
   const handleMicrosoftLogin = () => {
     window.location.href = "http://localhost:8000/auth/microsoft/login";
   };
+
   return (
     <section id="login-section">
       <LoginHeader />
@@ -152,8 +149,14 @@ const Login = () => {
         </p>
       </div>
       <div id="login-form">
-        <h1>login</h1>
+        <h1>Login</h1>
         <form onSubmit={handleLogin}>
+          {/* Error Box */}
+          {showError && errorTitle && (
+            <div className="login-error-container">
+              <span className="login-error-message">{errorTitle}</span>
+            </div>
+          )}
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -178,7 +181,7 @@ const Login = () => {
               required
             />
           </div>
-          <span id="log-in-error-message">{erroMessage}</span>
+          {/* Remove the old span for error message */}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Link to="/register">Signup</Link>
             <Link to="/forgot_password">Forgot Password</Link>
@@ -191,4 +194,5 @@ const Login = () => {
     </section>
   );
 };
+
 export default Login;

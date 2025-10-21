@@ -24,6 +24,8 @@ from models import (
     IndividualVolunteer,
     OrganizationVolunteer,
     VolunteerStatus,
+    DistributedItems,
+    DistributionRoute,
 )
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
@@ -278,77 +280,55 @@ def get_in_kind_monitoring(db: Session = Depends(get_db)):
 
 @router.get(
     "/response_dashboard/in_kind_monitoring_detailed",
-    response_model=InKindMonitoringDetailed,
 )
 def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
-    # 1. Get summary relief pack data (reusing existing logic)
-    in_kind_summary = get_in_kind_monitoring(db)
-
-    # 2. Get staff counts
-    staff_available = (
-        db.query(func.count(IndividualVolunteer.volunteer_id))
-        .filter(IndividualVolunteer.availability_status == VolunteerStatus.available)
-        .scalar()
-        + db.query(func.count(OrganizationVolunteer.volunteer_id))
-        .filter(OrganizationVolunteer.availability_status == VolunteerStatus.available)
-        .scalar()
-    )
-
-    staff_deployed = (
-        db.query(func.count(IndividualVolunteer.volunteer_id))
-        .filter(IndividualVolunteer.status == VolunteerStatus.assigned)
-        .scalar()
-        + db.query(func.count(OrganizationVolunteer.volunteer_id))
-        .filter(OrganizationVolunteer.status == VolunteerStatus.assigned)
-        .scalar()
-    )
-
-    # 3. Get supply items from inventory
-    inventory_items = db.query(InventoryItems).all()
-    supply_items = [
-        SupplyItem(
-            id=str(item.inventory_id),
-            name=item.item_name,
-            category=item.category.lower(),
-            unit="units",  # Default value
-            available=item.quantity,
-            in_transit=0,  # No data in model
-            distributed=0,  # No data in model
-            low_stock_threshold=10,  # Default value
-        )
-        for item in inventory_items
-    ]
-
-    # 4. Calculate category summary
     categories = ["food", "medical", "clothing", "beverages", "hygiene"]
-    category_summary_data = {
-        cat: {"available": 0, "in_transit": 0, "distributed": 0} for cat in categories
+
+    # Initialize the final result dictionary
+    result = {
+        cat: {"available": 0, "transit": 0, "distributed": 0, "details": []}
+        for cat in categories
     }
 
-    for item in supply_items:
-        if item.category in category_summary_data:
-            category_summary_data[item.category]["available"] += item.available
-            # In a real scenario, you'd also sum in_transit and distributed
-            # category_summary_data[item.category]['in_transit'] += item.in_transit
-            # category_summary_data[item.category]['distributed'] += item.distributed
-
-    category_summary = CategorySummary(
-        food=CategorySummaryData(**category_summary_data["food"]),
-        medical=CategorySummaryData(**category_summary_data["medical"]),
-        clothing=CategorySummaryData(**category_summary_data["clothing"]),
-        beverages=CategorySummaryData(**category_summary_data["beverages"]),
-        hygiene=CategorySummaryData(**category_summary_data["hygiene"]),
+    # Query all inventory items in these categories
+    inventory_items = (
+        db.query(InventoryItems).filter(InventoryItems.category.in_(categories)).all()
     )
 
-    return InKindMonitoringDetailed(
-        total_available_relief_packs=in_kind_summary["available_relief_packs"],
-        total_currently_in_transit=in_kind_summary["currently_in_transit"],
-        total_already_distributed=in_kind_summary["already_distributed"],
-        staff_available=staff_available,
-        staff_deployed=staff_deployed,
-        supply_items=supply_items,
-        category_summary=category_summary,
-    )
+    for item in inventory_items:
+        item_detail = {
+            "item_name": item.item_name,
+            "quantity": item.quantity,
+            "transit": 0,
+            "distributed": 0,
+        }
+
+        # Add item quantity to category available total
+        result[item.category]["available"] += item.quantity
+
+        # Get distributed info for this item
+        distributed = (
+            db.query(DistributedItems, DistributionRoute.status)
+            .join(
+                DistributionRoute, DistributedItems.route == DistributionRoute.route_id
+            )
+            .filter(DistributedItems.item == item.inventory_id)
+            .filter(DistributionRoute.status.in_(["In Transit", "Completed"]))
+            .all()
+        )
+
+        for dist_item, status in distributed:
+            if status == "In Transit":
+                item_detail["transit"] += dist_item.quantity
+                result[item.category]["transit"] += dist_item.quantity
+            elif status == "Completed":
+                item_detail["distributed"] += dist_item.quantity
+                result[item.category]["distributed"] += dist_item.quantity
+
+        # Append item detail to category
+        result[item.category]["details"].append(item_detail)
+
+    return result
 
 
 @router.get("/response_dashboard/raised_budget", response_model=LineChartData)

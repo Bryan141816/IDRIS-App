@@ -513,6 +513,29 @@ type InKindMonitoring = {
 };
 
 const ResponseDashboard = () => {
+  interface InventoryItemDetail {
+    item_name: string;
+    quantity: number;
+    transit: number;
+    distributed: number;
+  }
+
+  // Represents a category summary with details
+  interface CategorySummary {
+    available: number;
+    transit: number;
+    distributed: number;
+    details: InventoryItemDetail[];
+  }
+
+  // Represents the full structure for all categories
+  interface InventorySummary {
+    food: CategorySummary;
+    medical: CategorySummary;
+    clothing: CategorySummary;
+    beverages: CategorySummary;
+    hygiene: CategorySummary;
+  }
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
   const [recentMapActivity, setRecentMapActivity] = useState<
@@ -522,13 +545,17 @@ const ResponseDashboard = () => {
     null,
   );
   const [inKindMonitoring, setInKindMonitoring] =
-    useState<InKindMonitoring | null>(null);
+    useState<InventorySummary | null>(null);
   const [demandMapPin, setDemandMapPin] = useState<MapPin[] | null>(null);
   const [isPageFullyLoaded, setIsPageFullyLoaded] = useState(false);
 
   // State for expandable supply breakdown
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  type Category = "food" | "medical" | "clothing" | "beverages" | "hygiene";
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  );
 
   // Report generation states
   const [showReportModal, setShowReportModal] = useState(false);
@@ -579,7 +606,7 @@ const ResponseDashboard = () => {
       "/response_dashboard/recent_map_activity",
       setRecentMapActivity,
     );
-    fetchData<InKindMonitoring>(
+    fetchData<InventorySummary>(
       "/response_dashboard/in_kind_monitoring_detailed",
       setInKindMonitoring,
     );
@@ -744,8 +771,7 @@ const ResponseDashboard = () => {
           completedIncidents: reportSummary?.completed || 8,
           avgResponseTime: reportSummary?.response_time_avg || 1.5,
           totalStaffDeployed: inKindMonitoring?.staff_deployed || 8,
-          totalResourcesDistributed:
-            inKindMonitoring?.total_already_distributed || 75,
+          totalResourcesDistributed: resourceStatus?.total_distributed || 75,
         },
         incidentsByPriority: {
           urgent: 4,
@@ -759,13 +785,11 @@ const ResponseDashboard = () => {
           completed: 8,
         },
         resourceDistribution: {
-          food: inKindMonitoring?.category_summary.food.distributed || 50,
-          medical: inKindMonitoring?.category_summary.medical.distributed || 15,
-          clothing:
-            inKindMonitoring?.category_summary.clothing.distributed || 25,
-          beverages:
-            inKindMonitoring?.category_summary.beverages.distributed || 30,
-          hygiene: inKindMonitoring?.category_summary.hygiene.distributed || 20,
+          food: inKindMonitoring?.food.distributed || 50,
+          medical: inKindMonitoring?.medical.distributed || 15,
+          clothing: inKindMonitoring?.clothing.distributed || 25,
+          beverages: inKindMonitoring?.beverages || 30,
+          hygiene: inKindMonitoring?.hygiene.distributed || 20,
         },
         topIncidentLocations: [
           { location: "District 1", count: 5, avgResponseTime: 1.2 },
@@ -1408,87 +1432,88 @@ const ResponseDashboard = () => {
                 <div
                   style={{ display: "grid", gap: "8px", marginBottom: "15px" }}
                 >
-                  {Object.entries(inKindMonitoring.category_summary).map(
-                    ([category, data]) => {
-                      const style = getCategoryStyle(category);
-                      const categoryDisplayNames = {
-                        food: "Food",
-                        medical: "Medical",
-                        clothing: "Clothing",
-                        beverages: "Beverages",
-                        hygiene: "Hygiene",
-                      };
+                  {Object.entries(inKindMonitoring).map(([category, data]) => {
+                    <p>
+                      Category: {category}, data: {data}
+                    </p>;
+                    const style = getCategoryStyle(category);
+                    const categoryDisplayNames = {
+                      food: "Food",
+                      medical: "Medical",
+                      clothing: "Clothing",
+                      beverages: "Beverages",
+                      hygiene: "Hygiene",
+                    };
 
-                      return (
+                    return (
+                      <div
+                        key={category}
+                        onClick={() =>
+                          setSelectedCategory(
+                            selectedCategory === category ? null : category,
+                          )
+                        }
+                        style={{
+                          padding: "10px 12px",
+                          backgroundColor:
+                            selectedCategory === category
+                              ? `${style.color}15`
+                              : "white",
+                          border: `2px solid ${style.color}`,
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          fontSize: "0.85rem",
+                          boxShadow:
+                            selectedCategory === category
+                              ? `0 2px 8px ${style.color}25`
+                              : "none",
+                        }}
+                      >
                         <div
-                          key={category}
-                          onClick={() =>
-                            setSelectedCategory(
-                              selectedCategory === category ? null : category,
-                            )
-                          }
                           style={{
-                            padding: "10px 12px",
-                            backgroundColor:
-                              selectedCategory === category
-                                ? `${style.color}15`
-                                : "white",
-                            border: `2px solid ${style.color}`,
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                            fontSize: "0.85rem",
-                            boxShadow:
-                              selectedCategory === category
-                                ? `0 2px 8px ${style.color}25`
-                                : "none",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
                           }}
                         >
+                          <span
+                            style={{ fontWeight: "600", color: style.color }}
+                          >
+                            {style.icon}{" "}
+                            {
+                              categoryDisplayNames[
+                                category as keyof typeof categoryDisplayNames
+                              ]
+                            }
+                          </span>
                           <div
                             style={{
                               display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
+                              flexDirection: "column",
+                              alignItems: "flex-end",
+                              gap: "2px",
                             }}
                           >
                             <span
-                              style={{ fontWeight: "600", color: style.color }}
-                            >
-                              {style.icon}{" "}
-                              {
-                                categoryDisplayNames[
-                                  category as keyof typeof categoryDisplayNames
-                                ]
-                              }
-                            </span>
-                            <div
                               style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-end",
-                                gap: "2px",
+                                fontSize: "0.75rem",
+                                color: "#6c757d",
                               }}
                             >
-                              <span
-                                style={{
-                                  fontSize: "0.75rem",
-                                  color: "#6c757d",
-                                }}
-                              >
-                                Available: {data.available}
-                              </span>
-                              <span
-                                style={{ fontSize: "0.7rem", color: "#adb5bd" }}
-                              >
-                                Transit: {data.in_transit} | Distributed:{" "}
-                                {data.distributed}
-                              </span>
-                            </div>
+                              Available: {data.available}
+                            </span>
+                            <span
+                              style={{ fontSize: "0.7rem", color: "#adb5bd" }}
+                            >
+                              Transit: {data.transit} | Distributed:{" "}
+                              {data.distributed}
+                            </span>
                           </div>
                         </div>
-                      );
-                    },
-                  )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Detailed Item List for Selected Category */}
@@ -1504,7 +1529,8 @@ const ResponseDashboard = () => {
                         gap: "6px",
                       }}
                     >
-                      {getCategoryStyle(selectedCategory).icon}
+                      {/* Optional icon function */}
+                      {/* {getCategoryStyle(selectedCategory).icon} */}
                       {selectedCategory.charAt(0).toUpperCase() +
                         selectedCategory.slice(1)}{" "}
                       Items
@@ -1515,12 +1541,7 @@ const ResponseDashboard = () => {
                           fontWeight: "400",
                         }}
                       >
-                        (
-                        {
-                          inKindMonitoring.supply_items.filter(
-                            (item) => item.category === selectedCategory,
-                          ).length
-                        }{" "}
+                        ({inKindMonitoring[selectedCategory].details.length}{" "}
                         items)
                       </span>
                     </h5>
@@ -1534,24 +1555,22 @@ const ResponseDashboard = () => {
                         backgroundColor: "#f8f9fa",
                       }}
                     >
-                      {inKindMonitoring.supply_items
-                        .filter((item) => item.category === selectedCategory)
-                        .map((item, index) => (
+                      {inKindMonitoring[selectedCategory].details.map(
+                        (item, index) => (
                           <div
-                            key={item.id}
+                            key={index}
                             style={{
                               padding: "10px 12px",
-                              backgroundColor: isLowStock(item)
-                                ? "#fff3cd"
-                                : "white",
-                              border: isLowStock(item)
-                                ? "1px solid #ffc107"
-                                : "none",
+                              backgroundColor:
+                                item.quantity < 5 ? "#fff3cd" : "white", // example low stock
+                              border:
+                                item.quantity < 5
+                                  ? "1px solid #ffc107"
+                                  : "none",
                               borderBottom:
                                 index <
-                                inKindMonitoring.supply_items.filter(
-                                  (i) => i.category === selectedCategory,
-                                ).length -
+                                inKindMonitoring[selectedCategory].details
+                                  .length -
                                   1
                                   ? "1px solid #e9ecef"
                                   : "none",
@@ -1573,8 +1592,8 @@ const ResponseDashboard = () => {
                                   fontSize: "0.85rem",
                                 }}
                               >
-                                {item.name}
-                                {isLowStock(item) && (
+                                {item.item_name}
+                                {item.quantity < 5 && (
                                   <span
                                     style={{
                                       color: "#856404",
@@ -1620,7 +1639,7 @@ const ResponseDashboard = () => {
                                     color: "#0d47a1",
                                   }}
                                 >
-                                  {item.available} {item.unit}
+                                  {item.quantity} {item.unit || ""}
                                 </div>
                               </div>
 
@@ -1646,7 +1665,7 @@ const ResponseDashboard = () => {
                                     color: "#e65100",
                                   }}
                                 >
-                                  {item.in_transit} {item.unit}
+                                  {item.transit} {item.unit || ""}
                                 </div>
                               </div>
 
@@ -1672,12 +1691,13 @@ const ResponseDashboard = () => {
                                     color: "#1b5e20",
                                   }}
                                 >
-                                  {item.distributed} {item.unit}
+                                  {item.distributed} {item.unit || ""}
                                 </div>
                               </div>
                             </div>
                           </div>
-                        ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}

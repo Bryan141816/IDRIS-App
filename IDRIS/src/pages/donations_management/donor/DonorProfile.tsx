@@ -1,6 +1,7 @@
 import './DonorProfile.scss';
 import { useEffect, useState } from "react";
 import { getIndividualDonorProfile, getCurrentUserProfile } from '../../../API_Handler/donations_donors_handler';
+import { API } from '../../../API_Handler/Axio_API_Handler';
 import { useUserRoleContext } from "../../../UserRoleContext";
 import NoImage from "../../images/no-image.jpg";
 import { Modal } from "../../../components/Page_Furniture/Modals";
@@ -22,6 +23,7 @@ interface DonorProfile {
 interface CurrentUserProfile {
   first_name: string;
   last_name: string;
+  profile_image: string;
   phone_number: string;
   bday: string;
   gender: string;
@@ -38,8 +40,8 @@ const UserProfile = () => {
   const [error, setError] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
 
-  const [userProfilePicture] = useState<string | undefined>(undefined);
-  const [userBackgroundPicture] = useState<string | undefined>(undefined);
+  const [userProfilePicture, setUserProfilePicture] = useState<string | undefined>(undefined);
+  const [userBackgroundPicture, setUserBackgroundPicture] = useState<string | undefined>(undefined);
 
   const fetchProfile = async () => {
     try {
@@ -60,6 +62,10 @@ const UserProfile = () => {
     try {
       const response = await getCurrentUserProfile();
       setCurrentUserProfile(response);
+      console.log(response);
+      if (response && response.profile_image) {
+        setUserProfilePicture(`${API.defaults.baseURL}/${response.profile_image}`);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -203,8 +209,8 @@ const UserProfile = () => {
         }
 
         <div id="donor-main-info-container">
-          {userBackgroundPicture
-            ? <img src={userBackgroundPicture} alt="profile" className="profile-picture" />
+          {userProfilePicture
+            ? <img src={userProfilePicture} alt="profile" className="profile-picture" />
             : <img src={NoImage} alt="default" className="profile-picture" />
           }
 
@@ -281,7 +287,7 @@ const UserProfile = () => {
         </div>
       </div>
 
-      <DonorDashboard />
+      {isRegistered && <DonorDashboard />}
 
       {renderRegisterDonorModal()}
 

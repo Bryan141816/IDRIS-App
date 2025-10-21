@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Breadcrumb } from 'antd';
+import { Button, Breadcrumb, Spin } from 'antd';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { LatLngExpression } from 'leaflet';
+import { getUserProfileByUserId } from '../../../API_Handler/user_profile_handler';
+import { getVolunteerByUserId } from '../../../API_Handler/individual_volunter_handler';
+import { getOrganizationVolunteerByUserId } from '../../../API_Handler/organization_volunteer_handler';
+import { fetchCurrentUserId } from '../../../API_Handler/auth';
+import dayjs from 'dayjs';
+
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './css/VolunteerProfile.css';
@@ -40,6 +46,7 @@ interface VolunteerData {
   skillsAndInterest?: string[];
   availability?: string;
   credentials?: string[];
+  volunteerId?: string;
 }
 
 // Define tab types
@@ -47,27 +54,127 @@ type TabType = 'personalInfo' | 'description' | 'skillsAndInterest' | 'availabil
 
 const VolunteerProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('personalInfo');
+  const [volunteerData, setVolunteerData] = useState<VolunteerData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isIndividual, setIsIndividual] = useState(true); // Track volunteer type
 
-  // Sample volunteer data
-  const volunteerData: VolunteerData = {
-    name: "Volunteer name",
-    role: "Role Assigned (Volunteer ID)",
-    certified: true,
-    address: "Cebu City, Philippines",
-    personalInfo: {
-      age: 21,
-      dateOfBirth: "JULY 19, 2003",
-      phoneNumber: "09123456789",
-      address: "Address, address",
-      gender: "Male"
-    },
-    location: {
-      lat: 10.3157,
-      lng: 123.8854
+  // Calculate age from birthdate
+  const calculateAge = (birthDate: string): number => {
+    const birth = dayjs(birthDate);
+    const today = dayjs();
+    let age = today.year() - birth.year();
+    if (
+      today.month() < birth.month() ||
+      (today.month() === birth.month() && today.date() < birth.date())
+    ) {
+      age--;
     }
+    return age;
   };
 
+  useEffect(() => {
+    async function loadVolunteerProfile() {
+      try {
+        setLoading(true);
+
+        // 1️⃣ Get current user ID
+        const currentUser = await fetchCurrentUserId();
+        if (!currentUser?.id) {
+          console.warn("No user ID found.");
+          setLoading(false);
+          return;
+        }
+
+        // 2️⃣ Fetch user profile
+        const userProfile = await getUserProfileByUserId(currentUser.id);
+        if (!userProfile) {
+          console.warn("User profile not found.");
+          setLoading(false);
+          return;
+        }
+
+        // 3️⃣ Try to fetch individual volunteer data first
+        let volunteerInfo = null;
+        let isIndividualVolunteer = true;
+
+        try {
+          volunteerInfo = await getVolunteerByUserId(); // ✅ Removed currentUser.id parameter
+        } catch (error) {
+          console.log("Not an individual volunteer, checking organization...");
+          isIndividualVolunteer = false;
+        }
+
+        // 4️⃣ If not individual, try organization volunteer
+        if (!volunteerInfo) {
+          try {
+            volunteerInfo = await getOrganizationVolunteerByUserId(); // ✅ Removed currentUser.id parameter
+            isIndividualVolunteer = false;
+          } catch (error) {
+            console.warn("No volunteer record found.");
+            setLoading(false);
+            return;
+          }
+        }
+
+        setIsIndividual(isIndividualVolunteer);
+console.log("🔍 volunteerInfo.skills:", volunteerInfo?.skills);
+console.log("🔍 Type:", typeof volunteerInfo?.skills);
+console.log("🔍 Is Array?:", Array.isArray(volunteerInfo?.skills));
+        // 5️⃣ Format the data
+        const fullName = [userProfile.first_name, userProfile.last_name]
+          .filter(Boolean)
+          .join(" ");
+
+        const formattedData: VolunteerData = {
+          name: fullName || "Volunteer Name",
+          role: isIndividualVolunteer
+            ? `Individual Volunteer (ID: ${volunteerInfo?.volunteer_id || 'N/A'})`
+            : `Organization Volunteer (ID: ${volunteerInfo?.org_volunteer_id || 'N/A'})`,
+          certified: volunteerInfo?.status === 'approved' || false,
+          address: userProfile.address || "Address not available",
+          personalInfo: {
+            age: userProfile.bday ? calculateAge(userProfile.bday) : 0,
+            dateOfBirth: userProfile.bday
+              ? dayjs(userProfile.bday).format('MMMM DD, YYYY').toUpperCase()
+              : "N/A",
+            phoneNumber: userProfile.phone_number || "N/A",
+            address: userProfile.address || "N/A",
+            gender: userProfile.gender || "N/A"
+          },
+          location: {
+            lat: userProfile.latitude || 10.3157,
+            lng: userProfile.longitude || 123.8854
+          },
+          description: volunteerInfo?.bio || volunteerInfo?.description || "No description available.",
+          skillsAndInterest: (() => {
+            // Safe skills/services handler
+            const data = isIndividualVolunteer ? volunteerInfo?.skills : volunteerInfo?.services_offered;
+
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (typeof data === 'string') return data.split(',').map((s: string) => s.trim());
+            return [];
+          })(),
+          availability: volunteerInfo?.availability || "Not specified",
+          credentials: volunteerInfo?.certification_files || [],
+          volunteerId: volunteerInfo?.volunteer_id || volunteerInfo?.org_volunteer_id || 'N/A'
+        };
+
+        setVolunteerData(formattedData);
+
+      } catch (error) {
+        console.error("Error loading volunteer profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadVolunteerProfile();
+  }, []);
+
   const renderTabContent = (): React.ReactNode => {
+    if (!volunteerData) return <p>No data available</p>;
+
     switch(activeTab) {
       case 'personalInfo':
         return (
@@ -122,7 +229,7 @@ const VolunteerProfile: React.FC = () => {
                 ))}
               </ul>
             ) : (
-              <p>No skills and interests listed for this volunteer.</p>
+              <p>No {isIndividual ? 'skills and interests' : 'services'} listed for this volunteer.</p>
             )}
           </div>
         );
@@ -138,7 +245,11 @@ const VolunteerProfile: React.FC = () => {
             {volunteerData.credentials && volunteerData.credentials.length > 0 ? (
               <ul>
                 {volunteerData.credentials.map((credential, index) => (
-                  <li key={index}>{credential}</li>
+                  <li key={index}>
+                    <a href={credential} target="_blank" rel="noopener noreferrer">
+                      Certificate {index + 1}
+                    </a>
+                  </li>
                 ))}
               </ul>
             ) : (
@@ -154,6 +265,23 @@ const VolunteerProfile: React.FC = () => {
   const handleTabClick = (tab: TabType): void => {
     setActiveTab(tab);
   };
+
+  if (loading) {
+    return (
+      <div className="volunteer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" tip="Loading volunteer profile..." />
+      </div>
+    );
+  }
+
+  if (!volunteerData) {
+    return (
+      <div className="volunteer-container">
+        <h2 className="page-title">Volunteer Profile</h2>
+        <p>No volunteer data found. Please submit your volunteer application first.</p>
+      </div>
+    );
+  }
 
   const mapCenter: LatLngExpression = [volunteerData.location.lat, volunteerData.location.lng];
 
@@ -184,7 +312,7 @@ const VolunteerProfile: React.FC = () => {
             <div className="profile-info">
               <div className="profile-avatar">
                 <img
-                  src="https://ui-avatars.com/api/?name=Volunteer+Name&size=200"
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(volunteerData.name)}&size=200`}
                   alt="Volunteer"
                 />
               </div>
@@ -245,7 +373,7 @@ const VolunteerProfile: React.FC = () => {
                     className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
                     onClick={() => handleTabClick('skillsAndInterest')}
                   >
-                    Skills and Interest
+                    {isIndividual ? 'Skills and Interest' : 'Services Offered'}
                   </div>
                   <div
                     className={`sidebar-item ${activeTab === 'availability' ? 'active' : ''}`}

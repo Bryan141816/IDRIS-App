@@ -295,9 +295,9 @@ const IndividualForm: React.FC = () => {
                                     name="lastName"
                                     label="Last Name"
                                     className="form-item-third"
-                                    rules={[{message: "Please enter last name" }, { validator: validateName }]}
+                                    rules={[{ message: "Please enter last name" }, { validator: validateName }]}
                                 >
-                                    <Input placeholder="Last" readOnly/>
+                                    <Input placeholder="Last" readOnly />
                                 </Form.Item>
                             </div>
 
@@ -321,7 +321,7 @@ const IndividualForm: React.FC = () => {
                                     className="form-item-half"
                                     rules={[{ message: "Please enter phone number" }]}
                                 >
-                                    <Input placeholder="Enter your phone" readOnly />
+                                    <Input placeholder="Enter your phone" />
                                 </Form.Item>
 
                                 <Form.Item
@@ -339,9 +339,9 @@ const IndividualForm: React.FC = () => {
                                 <Form.Item
                                     name="birthDate"
                                     label="Birth Date"
-                                    rules={[{ message: "Please select birth date" }]}
+
                                 >
-                                    <DatePicker style={{ width: "100%" }} onChange={(date) => setBirthDate(date)} />
+                                    <DatePicker style={{ width: "100%" }} readOnly onChange={(date) => setBirthDate(date)} />
                                 </Form.Item>
 
                                 <Form.Item
@@ -358,7 +358,7 @@ const IndividualForm: React.FC = () => {
                                     name="age"
                                     label="Age"
                                     className="form-item-third"
-                                    rules={[{ message: "Please enter age" }]}
+
                                 >
                                     <Input type="number" readOnly value={age ?? ""} />
                                 </Form.Item>
@@ -420,7 +420,7 @@ const IndividualForm: React.FC = () => {
                         </div>
 
                         {/* Uploads */}
-                        <h3 className="section-title upload-title">Upload Certificates</h3>
+                        <h3 className="section-title upload-title">Upload Certificate/s</h3>
                         <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                         getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                         rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
@@ -435,7 +435,7 @@ const IndividualForm: React.FC = () => {
                                 <p className="ant-upload-drag-icon">
                                     <InboxOutlined />
                                 </p>
-                                <p className="upload-text">Drop certificates here</p>
+                                <p className="upload-text">Drop certificate/s here</p>
                                 <p className="upload-hint">or</p>
                                 <Button className="browse-button">Browse</Button>
                             </Upload.Dragger>

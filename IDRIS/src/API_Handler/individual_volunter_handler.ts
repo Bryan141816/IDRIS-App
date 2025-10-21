@@ -34,7 +34,7 @@ export async function getMyVolunteerProfile(): Promise<any> {
 
 // Read by current user id (auth-based; no params)
 export async function getVolunteerByUserId(): Promise<any> {
-    const res = await API.get('/volunteer/get_by_user_id');
+    const res = await API.get('/volunteer/my_profile'); // ✅ Changed from get_by_user_id
     return res.data;
 }
 

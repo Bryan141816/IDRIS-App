@@ -3,6 +3,8 @@ import { API } from './Axio_API_Handler';
 // ---------- TYPES ----------
 
 export interface UserProfileDTO {
+  longitude: number;
+  latitude: number;
   user_profile_id: string;
   first_name: string;
   last_name: string;

@@ -80,7 +80,7 @@ class User(Base):
 
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship("Donor", back_populates="user")
-    user_profile = relationship("UserProfile", back_populates="user")
+    user_profile = relationship("UserProfile", uselist=False, back_populates="user")
     volunteers = relationship("IndividualVolunteer", back_populates="user")
     OrganizationVolunteer = relationship("OrganizationVolunteer", back_populates="user")
 
@@ -1115,17 +1115,11 @@ class DistributionRoute(Base):
     start_location = Column(
         Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
     )
-    end_location_id = Column(Integer, nullable=False)
     end_location = Column(String(255), nullable=False)
     status = Column(String(255), default="Pending")
     schedule = Column(DateTime)
     team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
 
-    date_added = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        nullable=False,
-    )
     start_zone = relationship("WarehouseZones", back_populates="routes")
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")

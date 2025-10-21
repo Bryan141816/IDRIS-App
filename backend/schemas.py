@@ -47,7 +47,7 @@ class UserCreate(UserBase):
 
 
 class UserProfileSchema(BaseModel):
-    profile_image: Optional[HttpUrl] = None
+    profile_image: Optional[str] = None
     class Config:
         from_attributes = True
 

@@ -32,11 +32,11 @@ router_admin = APIRouter(
 )
 
 router_user = APIRouter(
-    dependencies=[Depends(RoleChecker(["generic"]))],
+    dependencies=[Depends(RoleChecker(["generic", "superadmin"]))],
 )
 
 router_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["donor"]))],
+    dependencies=[Depends(RoleChecker(["donor", "superadmin"]))],
 )
 
 router_admin_or_donor = APIRouter(
@@ -73,7 +73,7 @@ def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get
         # raise
         raise HTTPException(status_code=500, detail="Unexpected server error")
 
-@router_admin.post("/recurring/create")
+@router.post("/recurring/create")
 def create_recurring_donation_route(
     donation_data: RecurringDonationCreate,
     db: Session = Depends(get_db)
@@ -83,7 +83,7 @@ def create_recurring_donation_route(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_admin.post("/donations/inkind")
+@router.post("/donations/inkind")
 def create_inkind_donation_route(
     donation_data: InKindDonationCreate,
     db: Session = Depends(get_db)
@@ -93,21 +93,21 @@ def create_inkind_donation_route(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_donor.put("/cancel", response_model=DonationResponse)
+@router.put("/cancel", response_model=DonationResponse)
 def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
         return CRUD.cancel_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_donor.put("/completed", response_model=DonationResponse)
+@router.put("/completed", response_model=DonationResponse)
 def complete_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
         return CRUD.completed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router_donor.put("/failed", response_model=DonationResponse)
+@router.put("/failed", response_model=DonationResponse)
 def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
         return CRUD.failed_donation_status(db, request.donation_id)
@@ -115,7 +115,7 @@ def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router_admin_or_donor.get("/total_donations")
+@router.get("/total_donations")
 def total_donations(
     year: int = Query(..., description="Year to filter (required)"),
     month: int | None = Query(None, ge=1, le=12, description="Month to filter (optional)"),
@@ -126,12 +126,12 @@ def total_donations(
         "total_donations": total
     }
 
-@router_admin_or_donor.get("/donors/retention")
+@router.get("/donors/retention")
 def donor_retention(year: int = datetime.now(timezone.utc).year, db: Session = Depends(get_db)):
     result = CRUD.get_donor_retention_by_year(db, year)
     return result
 
-@router_admin_or_donor.get("/recent/details")
+@router.get("/recent/details")
 def recent_donations(limit: int = 10, db: Session = Depends(get_db)):
     return CRUD.get_donations_with_details(db, limit=limit)
 
@@ -146,7 +146,7 @@ def _parse_iso(dt: Optional[str]) -> Optional[datetime]:
     except Exception:
         raise HTTPException(status_code=400, detail=f"Invalid datetime: {dt}")
 
-@router_donor.get("/get/donor_aggregates")
+@router.get("/get/donor_aggregates")
 def recent_donations(
     current_user: User = Depends(get_current_user_from_access_token),
     db: Session = Depends(get_db),
@@ -275,7 +275,7 @@ async def get_session_status(session_id: str):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-@router_admin.get("/all", response_model=PaginatedDonationHistoryResponse)
+@router.get("/all", response_model=PaginatedDonationHistoryResponse)
 def get_all_donations(
     db: Session = Depends(get_db),
     from_: Optional[date] = Query(None, alias="from"),
@@ -388,7 +388,7 @@ def get_donation_receipt(donation_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Donation not found")
     return receipt_data
 
-@router_admin_or_donor.get("/{donation_id}", response_model=DonationHistoryResponse)
+@router.get("/{donation_id}", response_model=DonationHistoryResponse)
 def get_donation_by_id(
     donation_id: str,
     db: Session = Depends(get_db),

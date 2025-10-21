@@ -37,7 +37,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "generic", "superadmin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "generic", "superadmin", "donor"]))],
 )
 
 

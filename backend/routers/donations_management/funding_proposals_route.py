@@ -30,7 +30,7 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic", "donor", "superadmin"]))],
 )
 
 UPLOAD_DIR = Path("media/fundingproposals")
@@ -39,7 +39,7 @@ UPLOAD_DIR = Path("media/fundingproposals")
 def get_proposals_route():
     return {"message": "This is funding proposals"}
 
-@router_admin_or_donor.get("/proposals/all_proposals/", response_model=FundingProposalResponsePaginated)
+@router.get("/proposals/all_proposals/", response_model=FundingProposalResponsePaginated)
 def read_all_proposals(
     search: Optional[str] = Query(None),
     sort: str = Query("created_at", pattern="^(created_at|title)$"),
@@ -125,13 +125,13 @@ def delete_proposal_endpoint(funding_id: int, db: Session = Depends(get_db)):
         print(f"Delete error: {e}")
         raise HTTPException(status_code=500, detail="Error deleting proposal")
 
-@router_admin_or_donor.get("/proposals/get_limit", response_model=Number)
+@router.get("/proposals/get_limit", response_model=Number)
 def get_max_page_of_limit(limit: int, db: Session = Depends(get_db)) -> int:
     total_records = db.query(FundingProposal).count()
     pages = ceil(total_records / limit) if limit > 0 else 1
     return {"count": pages}
 
-@router_admin_or_donor.get("/total_holding", response_model=List[FundingPieChart])
+@router.get("/total_holding", response_model=List[FundingPieChart])
 def get_total_holding(
     date_since: date = Query(default=date.today().replace(year=date.today().year - 1), description="Start date (default: 1 year ago)"),
     date_to: date = Query(default=date.today(), description="End date (default: today)"),

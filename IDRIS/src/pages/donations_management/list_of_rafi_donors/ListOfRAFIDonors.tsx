@@ -385,22 +385,22 @@ const ListOfRAFIDonors = () => {
 
         {adminRoleAccess && (
           <>
-            <button
+            {/* <button
               type="button"
               className={"settings-button" + (userType === "admin" ? "" : " hidden")}
               onClick={() => toggleModal("new-donor-type-selection")}
             >
               Add Donor
               <PlusCircle width={24} height={24} className="add_donor" />
-            </button>
-            <button
+            </button> */}
+            {/* <button
               type="button"
               className={"settings-button" + (userType === "admin" ? "" : " hidden")}
               onClick={() => toggleModal("gift-donor")}
             >
               Gift Donor
               <Gift width={24} height={24} />
-            </button>
+            </button> */}
           </>
         )}
       </div>

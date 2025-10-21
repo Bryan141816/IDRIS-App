@@ -494,30 +494,13 @@ type SupplyItem = {
   low_stock_threshold: number;
 };
 
-type InKindMonitoring = {
-  total_available_relief_packs: number;
-  total_currently_in_transit: number;
-  total_already_distributed: number;
-  staff_available: number;
-  staff_deployed: number;
-  // Detailed supply breakdown
-  supply_items: SupplyItem[];
-  // Summary by category - Updated to match your categories
-  category_summary: {
-    food: { available: number; in_transit: number; distributed: number };
-    medical: { available: number; in_transit: number; distributed: number };
-    clothing: { available: number; in_transit: number; distributed: number };
-    beverages: { available: number; in_transit: number; distributed: number };
-    hygiene: { available: number; in_transit: number; distributed: number };
-  };
-};
-
 const ResponseDashboard = () => {
   interface InventoryItemDetail {
     item_name: string;
     quantity: number;
     transit: number;
     distributed: number;
+    unit: string;
   }
 
   // Represents a category summary with details
@@ -535,6 +518,9 @@ const ResponseDashboard = () => {
     clothing: CategorySummary;
     beverages: CategorySummary;
     hygiene: CategorySummary;
+    staff_available: number;
+    staff_deployed: number;
+    supply_items: SupplyItem[];
   }
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
@@ -788,7 +774,7 @@ const ResponseDashboard = () => {
           food: inKindMonitoring?.food.distributed || 50,
           medical: inKindMonitoring?.medical.distributed || 15,
           clothing: inKindMonitoring?.clothing.distributed || 25,
-          beverages: inKindMonitoring?.beverages || 30,
+          beverages: inKindMonitoring?.beverages.distributed || 30,
           hygiene: inKindMonitoring?.hygiene.distributed || 20,
         },
         topIncidentLocations: [
@@ -1026,7 +1012,7 @@ const ResponseDashboard = () => {
             </div>
 
             {/* Response Time - Critical for Operations */}
-            {/* <div className="sub-item-content-big-data-inverted">
+            <div className="sub-item-content-big-data-inverted">
               <h1>Avg Response Time</h1>
               <div className="horizontal-container full-width space-between-container">
                 {reportSummary ? (
@@ -1052,7 +1038,7 @@ const ResponseDashboard = () => {
                   Target: ≤ 2h
                 </span>
               </div>
-            </div> */}
+            </div>
 
             {/* Staff Status - Enhanced with better spacing */}
             <div className="sub-item-content-big-data-inverted">
@@ -1450,7 +1436,9 @@ const ResponseDashboard = () => {
                         key={category}
                         onClick={() =>
                           setSelectedCategory(
-                            selectedCategory === category ? null : category,
+                            selectedCategory === category
+                              ? null
+                              : (category as Category),
                           )
                         }
                         style={{

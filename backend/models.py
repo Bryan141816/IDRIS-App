@@ -1115,6 +1115,7 @@ class DistributionRoute(Base):
     start_location = Column(
         Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
     )
+    end_location_id = Column(Integer, nullable=False)
     end_location = Column(String(255), nullable=False)
     status = Column(String(255), default="Pending")
     schedule = Column(DateTime)

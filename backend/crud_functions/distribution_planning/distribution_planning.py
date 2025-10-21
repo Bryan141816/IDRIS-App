@@ -90,6 +90,7 @@ class DistributionAndPlanningCRUD:
         route = DistributionRoute(
             route_name=payload.routeName,
             start_location=payload.warehouse_id,
+            end_location_id=payload.endLocationId,
             end_location=payload.endLocation,
             schedule=payload.schedule,
         )
@@ -206,6 +207,22 @@ class DistributionAndPlanningCRUD:
             )
             db.add(log_entry)
 
+        demand_response = (
+            db.query(DemandAndResponse)
+            .filter(DemandAndResponse.id == route.end_location_id)
+            .first()
+        )
+
+        if demand_response:
+            demand_response.status = "responded"
+            demand_response.last_updated = datetime.now()
+        if route.status == "Completed":
+            demand_response.status = "completed"
+            demand_response.last_updated = datetime.now()
+        elif route.status == "Cancelled":
+            demand_response.status = "no response"
+            demand_response.last_updated = datetime.now()
+
         db.commit()
         db.refresh(route)
         return route
@@ -254,6 +271,17 @@ class DistributionAndPlanningCRUD:
                 route_id=route.route_id, log_message=log_message, date=datetime.now()
             )
             db.add(log_entry)
+
+        # --- Update DemandAndResponse for this route's end_location ---
+        demand_response = (
+            db.query(DemandAndResponse)
+            .filter(DemandAndResponse.id == route.end_location_id)
+            .first()
+        )
+
+        if demand_response:
+            demand_response.status = "responded"
+            demand_response.last_updated = datetime.now()
 
         db.commit()
         db.refresh(route)

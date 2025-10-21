@@ -35,10 +35,12 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
 }) => {
   const [formData, setFormData] = useState<{
     routeName: string;
+    endLocationId: number;
     endLocation: string;
     schedule: string;
   }>({
     routeName: "",
+    endLocationId: -1,
     endLocation: "",
     schedule: "",
   });
@@ -61,11 +63,13 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
     if (response) {
       setFormData((prev) => ({
         ...prev,
+        endLocationId: response.id,
         endLocation: response?.address,
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
+        endLocationId: -1,
         endLocation: "",
       }));
     }

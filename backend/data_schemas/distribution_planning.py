@@ -49,6 +49,7 @@ class RouteCreate(BaseModel):
     routeName: str
     warehouse_id: int
     items: List[DistributedItems]
+    endLocationId: int
     endLocation: str
     schedule: datetime
 

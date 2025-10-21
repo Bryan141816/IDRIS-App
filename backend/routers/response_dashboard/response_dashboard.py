@@ -41,8 +41,11 @@ from ..role_checker import RoleChecker
 router = APIRouter(tags=["response_dashboard"])
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))],
+    dependencies=[
+        Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))
+    ],
 )
+
 
 @router.get("/report_list/recent", response_model=TableResponse)
 def get_recent_table(db: Session = Depends(get_db)):
@@ -282,7 +285,7 @@ def get_in_kind_monitoring(db: Session = Depends(get_db)):
     }
 
 
-@router_admin.get(
+@router.get(
     "/response_dashboard/in_kind_monitoring_detailed",
 )
 def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
@@ -429,4 +432,6 @@ def get_resource_status(db: Session = Depends(get_db)):
         "total_distributed": delivery_status["Completed"],
     }
 
+
 router.include_router(router_admin)
+

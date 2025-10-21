@@ -1,6 +1,6 @@
 import './DonorProfile.scss';
 import { useEffect, useState } from "react";
-import { getIndividualDonorProfile } from '../../../API_Handler/donations_donors_handler';
+import { getIndividualDonorProfile, getCurrentUserProfile } from '../../../API_Handler/donations_donors_handler';
 import { useUserRoleContext } from "../../../UserRoleContext";
 import NoImage from "../../images/no-image.jpg";
 import { Modal } from "../../../components/Page_Furniture/Modals";
@@ -19,54 +19,20 @@ interface DonorProfile {
   last_updated: Date;
 }
 
-interface PersonalInfo {
-  age: number;
-  dateOfBirth: string;
-  phoneNumber: string;
-  address: string;
+interface CurrentUserProfile {
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  bday: string;
   gender: string;
-}
-
-interface DonorData {
-  donor_name: string;
-  role: string;
-  certified: boolean;
   address: string;
-  personalInfo: PersonalInfo;
-  location: Location;
-  description?: string;
-  skillsAndInterest?: string[];
-  availability?: string;
-  credentials?: string[];
+  bio: string;
 }
-
-interface Location {
-  lat: number;
-  lng: number;
-}
-
-// Sample Donor data (fallback)
-const donorData: DonorData = {
-  donor_name: "No Data Found",
-  role: "Role Assigned (Donor ID)",
-  certified: true,
-  address: "No Data Found",
-  personalInfo: {
-    age: 0,
-    dateOfBirth: "No Data Found",
-    phoneNumber: "No Data Found",
-    address: "No Data Found",
-    gender: "No Data Found"
-  },
-  location: {
-    lat: 0,
-    lng: 0
-  }
-};
 
 const UserProfile = () => {
   const { userRoles, setUserRoles } = useUserRoleContext();
   const [profile, setProfile] = useState<DonorProfile | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
   const [donorId, setDonorId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -90,8 +56,18 @@ const UserProfile = () => {
     }
   };
 
+  const fetchCurrentUserProfile = async () => {
+    try {
+      const response = await getCurrentUserProfile();
+      setCurrentUserProfile(response);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
+    fetchCurrentUserProfile();
   }, []);
 
   useEffect(() => {
@@ -106,87 +82,6 @@ const UserProfile = () => {
 
     fetchUserid();
   }, []);
-
-  type TabType = 'personalInfo' | 'description' | 'skillsAndInterest' | 'availability' | 'credentials';
-  const [activeTab, setActiveTab] = useState<TabType>('personalInfo');
-
-  const renderTabContent = (): React.ReactNode => {
-    switch (activeTab) {
-      case 'personalInfo':
-        return (
-          <table>
-            <tbody>
-              <tr>
-                <th>Age:</th>
-                <td>{donorData.personalInfo.age}</td>
-              </tr>
-              <tr>
-                <th>Date of Birth:</th>
-                <td>{donorData.personalInfo.dateOfBirth}</td>
-              </tr>
-              <tr>
-                <th>Phone Number:</th>
-                <td>{donorData.personalInfo.phoneNumber}</td>
-              </tr>
-              <tr>
-                <th>Address:</th>
-                <td>{donorData.personalInfo.address}</td>
-              </tr>
-              <tr>
-                <th>Gender:</th>
-                <td>{donorData.personalInfo.gender}</td>
-              </tr>
-            </tbody>
-          </table>
-        );
-      case 'description':
-        return (
-          <div className="info-content">
-            <p>{donorData.description || 'No description available for this Donor.'}</p>
-          </div>
-        );
-      case 'skillsAndInterest':
-        return (
-          <div className="info-content">
-            {donorData.skillsAndInterest && donorData.skillsAndInterest.length > 0 ? (
-              <ul>
-                {donorData.skillsAndInterest.map((skill, index) => (
-                  <li key={index}>{skill}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>No skills and interests listed for this Donor.</p>
-            )}
-          </div>
-        );
-      case 'availability':
-        return (
-          <div className="info-content">
-            <p>{donorData.availability || 'Availability schedule not set.'}</p>
-          </div>
-        );
-      case 'credentials':
-        return (
-          <div className="info-content">
-            {donorData.credentials && donorData.credentials.length > 0 ? (
-              <ul>
-                {donorData.credentials.map((credential, index) => (
-                  <li key={index}>{credential}</li>
-                ))}
-              </ul>
-            ) : (
-              <p>No credentials uploaded.</p>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const handleTabClick = (tab: TabType): void => {
-    setActiveTab(tab);
-  };
 
   // DONOR REGISTRATION MODAL
   const [organizationName, setOrganizationName] = useState<string | null>(null);
@@ -289,9 +184,9 @@ const UserProfile = () => {
   // Fallback Donor Data if profile not yet available
   const donorProfile = profile ?? {
     donorId: 0,
-    donor_name: donorData.donor_name,
+    donor_name: "No Data Found",
     donor_type: "Individual",
-    is_verified: donorData.certified,
+    is_verified: false,
     date_joined: new Date(),
     last_updated: new Date(),
   };
@@ -334,57 +229,44 @@ const UserProfile = () => {
         <hr />
 
         <div id="donor-sub-info-container">
-          {/* Donor Address (placeholder map) */}
-          <div className="map-container">
-            <p>( Donor Address )</p>
-            <div
-              className="map"
-              style={{
-                width: 200,
-                height: 200,
-                border: "2px solid red",
-              }}
-            ></div>
-            <p className="location-name">Nalhub, Dalaguete, Cebu</p>
-          </div>
-
           <div className="profile-right">
             <h2 className="about-title">About</h2>
             <div className="about-container">
-              <div className="about-sidebar">
-                <div
-                  className={`sidebar-item ${activeTab === 'personalInfo' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('personalInfo')}
-                >
-                  Personal Information
-                </div>
-                <div
-                  className={`sidebar-item ${activeTab === 'description' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('description')}
-                >
-                  Description
-                </div>
-                <div
-                  className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('skillsAndInterest')}
-                >
-                  Skills and Interest
-                </div>
-                <div
-                  className={`sidebar-item ${activeTab === 'availability' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('availability')}
-                >
-                  Availability
-                </div>
-                <div
-                  className={`sidebar-item ${activeTab === 'credentials' ? 'active' : ''}`}
-                  onClick={() => handleTabClick('credentials')}
-                >
-                  Credentials
-                </div>
-              </div>
               <div className="about-content">
-                {renderTabContent()}
+                {currentUserProfile && (
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th>First Name:</th>
+                        <td>{currentUserProfile.first_name}</td>
+                      </tr>
+                      <tr>
+                        <th>Last Name:</th>
+                        <td>{currentUserProfile.last_name}</td>
+                      </tr>
+                      <tr>
+                        <th>Phone Number:</th>
+                        <td>{currentUserProfile.phone_number}</td>
+                      </tr>
+                      <tr>
+                        <th>Birthday:</th>
+                        <td>{currentUserProfile.bday}</td>
+                      </tr>
+                      <tr>
+                        <th>Gender:</th>
+                        <td>{currentUserProfile.gender}</td>
+                      </tr>
+                      <tr>
+                        <th>Address:</th>
+                        <td>{currentUserProfile.address}</td>
+                      </tr>
+                      <tr>
+                        <th>Bio:</th>
+                        <td>{currentUserProfile.bio}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>

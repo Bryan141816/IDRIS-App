@@ -15,11 +15,13 @@ import math
 
 router = APIRouter(
     tags=["demand_and_response"],
-    dependencies=[
-        Depends(RoleChecker(["operations admin", "superadmin", "logistics admin", "lgu officer"]))
-    ],
 )
 
+router_admin = APIRouter(
+    dependencies=[
+        Depends(RoleChecker(["operations admin", "super admin", "logistics admin"]))
+    ],
+)
 
 @router.get(
     "/response_dashboard/demand_and_response/get_map_pin",
@@ -56,7 +58,7 @@ def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
 
-@router.get(
+@router_admin.get(
     "/response_dashboard/demand_and_response/list_view", response_model=TableResponse
 )
 def get_table(
@@ -193,7 +195,7 @@ def get_table(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
-@router.post(
+@router_admin.post(
     "/response_dashboard/demand_and_response/add_record",
     response_model=DemandAndResponseOut,
 )
@@ -201,7 +203,7 @@ def add_response_report(record: DemandAndResponseCreate, db: Session = Depends(g
     return create_demand_and_response_record(db, record)
 
 
-@router.delete(
+@router_admin.delete(
     "/response_dashboard/demand_and_response/delete_record/{record_id}",
     response_model=dict,
 )
@@ -212,7 +214,7 @@ def delete_response_report(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Response report with ID {record_id} deleted successfully."}
 
 
-@router.put("/response_dashboard/demand_and_response/update_record/{record_id}")
+@router_admin.put("/response_dashboard/demand_and_response/update_record/{record_id}")
 def update_report(
     record_id: int, update: DemandAndResponseCreate, db: Session = Depends(get_db)
 ):
@@ -244,3 +246,6 @@ def update_report(
     db.refresh(record)
 
     return {"detail": "Report updated succesfully", "report": record}
+
+
+router.include_router(router_admin)

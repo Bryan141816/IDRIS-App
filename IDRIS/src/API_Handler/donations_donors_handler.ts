@@ -37,3 +37,8 @@ export async function getDonorDetailsById(donorId: string): Promise<any> {
   const { data } = await API.get(`/donors/${donorId}`);
   return data;
 }
+
+export async function getCurrentUserProfile(): Promise<any> {
+  const response = await API.get('/user-profile/me');
+  return response.data;
+}

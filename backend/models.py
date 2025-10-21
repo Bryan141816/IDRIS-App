@@ -99,7 +99,7 @@ class User(Base):
         "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
     )
 
-
+#probably will add a email that is a foreign key to user table later
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"

@@ -608,20 +608,19 @@ export default function IDRISDashboard() {
 
 
     const joinProgram = async (n: NewsAnnouncement) => {
-        if (!canJoin(n)) return;
-
-        const iv =
-            myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
-        const ov =
-            myOrgVolunteer && statusOf(myOrgVolunteer) === "approved"
-                ? myOrgVolunteer
-                : null;
-
-        if (!iv && !ov) {
-            // Not a volunteer yet, or not approved → guide to Become a Volunteer
-            setIsVolunteerModalOpen(true);
-            return;
-        }
+  if (!canJoin(n)) return;
+  const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
+  const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
+  if (!iv && !ov) {
+    // Show required Swal message
+    Swal.fire({
+      icon: "warning",
+      title: "Volunteer Registration Required",
+      text: "You must be a registered volunteer to join programs. Please register as a volunteer first.",
+      confirmButtonText: "OK"
+    });
+    return;
+  }
 
         try {
             setJoining((prev) => ({ ...prev, [n.id]: true }));

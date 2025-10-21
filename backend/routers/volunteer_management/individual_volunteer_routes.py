@@ -298,6 +298,17 @@ async def update_volunteer_status(
 
     return iv
 
+# ---------------- READ BY USER_ID ----------------
+@router_admin_or_volunteer.get("/get_by_user_id/{user_id}", response_model=IndividualVolunteerRead)
+def get_volunteer_by_user_id_endpoint(user_id: int, db: Session = Depends(get_db)):
+    try:
+        volunteer = CRUD.get_volunteer_by_user_id(db, user_id)
+        if not volunteer:
+            raise HTTPException(status_code=404, detail="Volunteer not found for this user")
+        return volunteer
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Database error occurred")
+
 # Final router to include in main.py
 router = APIRouter()
 router.include_router(router_admin, prefix="/volunteer", tags=["Volunteer - Admin"])

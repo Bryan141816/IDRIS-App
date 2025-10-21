@@ -6,13 +6,14 @@ import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 import { formatCurrency } from "../helpers";
+import Swal from "sweetalert2";
 
 const backendUrl = "http://127.0.0.1:8000";
 
 type FundingProp = {
   proposalId?: number;
   title?: string;
-  image?: string; // absolute URL, relative backend path, or local asset path
+  image?: string;
   description?: string;
   donated?: number;
   target?: number;
@@ -28,7 +29,7 @@ const FundingCard: React.FC<FundingProp> = ({
 }) => {
   const fundingData = { proposalId, title, image, description, target };
 
-  const { userType } = useUserContext();
+  const { userType, user, donor } = useUserContext();
   const { userRoles } = useUserRoleContext();
   const navigate = useNavigate();
 
@@ -47,7 +48,7 @@ const FundingCard: React.FC<FundingProp> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Build a safe image URL; use default image when missing or on error
+  // Build a safe image URL
   const buildImageUrl = (img?: string) => {
     if (!img || img.trim() === "") return defaultFundingImage;
     const lower = img.toLowerCase();
@@ -58,7 +59,7 @@ const FundingCard: React.FC<FundingProp> = ({
       lower.startsWith("blob:")
     ) return img;
     if (lower.startsWith("/") || lower.startsWith(".")) return img; // local/static path
-    return `${backendUrl}/${img.replace(/^\/+/, "")}`; // backend-relative path
+    return `${backendUrl}/${img.replace(/^\/+/, "")}`;
   };
 
   const [imgSrc, setImgSrc] = useState<string>(() => buildImageUrl(image));
@@ -70,7 +71,17 @@ const FundingCard: React.FC<FundingProp> = ({
     navigate("/donations_management/funding_proposals/update", { state: fundingData });
   };
 
+  // --- ADDED LOGIC: BLOCK donation if user is not a donor!
   const handleDonateButton = (fundingId: number) => {
+    if (!donor || donor.status !== "approved") {
+      Swal.fire({
+        icon: "warning",
+        title: "Donor Registration Required",
+        text: "You must be a registered donor to donate. Please register as a donor first.",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
     navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
   };
 

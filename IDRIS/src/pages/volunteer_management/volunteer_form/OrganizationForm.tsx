@@ -1,5 +1,5 @@
 // src/pages/VolunteerManagement/OrganizationForm.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Button,
     Breadcrumb,
@@ -18,6 +18,8 @@ import type { UploadFile as AntdUploadFile, RcFile } from 'antd/es/upload/interf
 import { InboxOutlined, PlusOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import UploadFile from '../../../components/Page_Furniture/UploadFile';
+import { fetchCurrentUserId } from "../../../API_Handler/auth.ts";
+import { getUserProfileByUserId } from "../../../API_Handler/user_profile_handler.ts";
 import './css/OrganizationForm.css';
 
 // ✅ import the API handler
@@ -223,6 +225,39 @@ const OrganizationForm: React.FC = () => {
         return Promise.resolve();
     };
 
+    useEffect(() => {
+      async function loadUserProfile() {
+        try {
+          // 1️⃣ Get the currently logged-in user's ID
+          const currentUser = await fetchCurrentUserId();
+          if (!currentUser?.id) {
+            console.warn("No user ID found.");
+            return;
+          }
+
+          // 2️⃣ Fetch user profile details using their ID
+          const userProfile = await getUserProfileByUserId(currentUser.id);
+          console.log("Gender:", userProfile.gender);
+          if (!userProfile) {
+            console.warn("User profile not found.");
+            return;
+          }
+
+          // 3️⃣ Automatically populate the form fields
+          form.setFieldsValue({
+            repName: `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim(),
+            repPhone: userProfile.phone_number || "",
+
+          });
+
+        } catch (error) {
+          console.error("Error loading user profile:", error);
+        }
+      }
+
+      loadUserProfile();
+    }, [form]);
+
 
     return (
         <div className="application-form">
@@ -324,7 +359,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repName"
                                     label="Full Name"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter full name' }, { validator: validateName }]}
+                                    rules={[{ validator: validateName }]}
                                 >
                                     <Input placeholder="Enter representative's name" />
                                 </Form.Item>
@@ -344,7 +379,7 @@ const OrganizationForm: React.FC = () => {
                                     name="repPhone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: 'Please enter phone number' }, { validator: validatePhoneNumber }]}
+                                    rules={[{ validator: validatePhoneNumber }]}
                                 >
                                     <Input placeholder="Enter representative's phone" />
                                 </Form.Item>

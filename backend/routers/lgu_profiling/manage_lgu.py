@@ -853,7 +853,7 @@ def update_lgu(
     record = db.query(LGURecords).get(record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Response record doesn't exist")
-
+    
     updatable = [
         "name", "lat", "lng", "classification", "population",
         "contact_info", "risk_level", "lgu_picture", "description",

@@ -689,7 +689,7 @@ const res = await API.get(`/lgu_profiling/manage_lgu/lgu/${id}`);
 };
 
 
-/* ======================= EDIT LGU ======================= */
+/* ======================= EDIT LGU (revised) ======================= */
 export const EditLGUModal: React.FC<editLGUModalProp> = ({
   isModalOpen,
   closeModal,
@@ -697,28 +697,108 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
   handleEditRecord,
   selectedData,
 }) => {
+  // safe cell reader
   const cell = (i: number) => selectedData?.data?.[i]?.text ?? "";
+
+  // initial empty form — will be populated by backend on open
   const [form, setForm] = useState<LGUForm>({
-    name: String(cell(1)),
-    lat: Number.parseFloat(String(cell(2))) || 0,
-    lng: Number.parseFloat(String(cell(3))) || 0,
-    classification: String(cell(4)),
-    population: Number.parseInt(String(cell(5))) || 0,
-    contact_info: String(cell(6)),
-    risk_level: String(cell(7)),
-    description: String(cell(8) || ""),
+    name: "",
+    lat: 0,
+    lng: 0,
+    classification: "",
+    population: 0,
+    contact_info: "",
+    risk_level: "",
+    description: "",
     lgu_picture: "",
-    resources: String(cell(9) || ""),
-    players: String(cell(10) || ""),
-    schools: String(cell(11) || ""),
-    gyms: String(cell(12) || ""),
-    local_suppliers: String(cell(13) || ""),
+    resources: "",
+    players: "",
+    schools: "",
+    gyms: "",
+    local_suppliers: "",
   });
+
+  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
+
+  // populate form when modal opens / selectedData changes
+  useEffect(() => {
+    if (!isModalOpen || !selectedData) return;
+
+    const idRaw = selectedData?.data?.[0]?.text;
+    const id = idRaw ? Number(idRaw) : NaN;
+
+    // fallback function (use table cells)
+    const populateFromCells = () =>
+      setForm({
+        name: String(cell(1) || ""),
+        lat: Number.parseFloat(String(cell(2))) || 0,
+        lng: Number.parseFloat(String(cell(3))) || 0,
+        classification: String(cell(4) || ""),
+        population: Number.parseInt(String(cell(5))) || 0,
+        contact_info: String(cell(6) || ""),
+        risk_level: String(cell(7) || ""),
+        description: String(cell(8) || ""),
+        lgu_picture: "",
+        resources: String(cell(9) || ""),
+        players: String(cell(10) || ""),
+        schools: String(cell(11) || ""),
+        gyms: String(cell(12) || ""),
+        local_suppliers: String(cell(13) || ""),
+      });
+
+    if (!id || Number.isNaN(id)) {
+      populateFromCells();
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await API.get(`/lgu_profiling/manage_lgu/lgu/${id}`);
+        if (cancelled) return;
+        const data = res?.data || {};
+
+        setForm({
+          name: data.name ?? (cell(1) || ""),
+          lat: data.lat != null ? Number(data.lat) : Number.parseFloat(String(cell(2))) || 0,
+          lng: data.lng != null ? Number(data.lng) : Number.parseFloat(String(cell(3))) || 0,
+          classification: data.classification ?? (cell(4) || ""),
+          population: data.population != null ? Number(data.population) : Number.parseInt(String(cell(5))) || 0,
+          contact_info: data.contact_info ?? (cell(6) || ""),
+          risk_level: data.risk_level ?? (cell(7) || ""),
+          description: data.description ?? (cell(8) || ""),
+          lgu_picture: data.lgu_picture ?? "",
+          resources: Array.isArray(data.resources) ? data.resources.join(", ") : (data.resources ?? (cell(9) || "")),
+          players: Array.isArray(data.players) ? data.players.join(", ") : (data.players ?? (cell(10) || "")),
+          schools: Array.isArray(data.schools) ? data.schools.join(", ") : (data.schools ?? (cell(11) || "")),
+          gyms: Array.isArray(data.gyms) ? data.gyms.join(", ") : (data.gyms ?? (cell(12) || "")),
+          local_suppliers: Array.isArray(data.local_suppliers) ? data.local_suppliers.join(", ") : (data.local_suppliers ?? (cell(13) || "")),
+        });
+      } catch (err: any) {
+        // show friendly message and fallback to cells
+        setMessageBox((prev) => ({
+          ...prev,
+          isOpen: true,
+          type: "message",
+          message: err?.response?.data?.detail || err?.message || "Failed to load LGU details. Falling back to table values.",
+        }));
+        populateFromCells();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen, selectedData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -792,7 +872,6 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
                     lng,
                     classification: prev.classification || classificationGuess || "",
                   }));
-                  // setLocationPickerIsOpen(true); // optional
                 }}
               />
             </div>
@@ -811,12 +890,6 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
               </button>
             </div>
           </div>
-
-         {/* {form.lat !== 0 && form.lng !== 0 && (
-            <div style={{ width: "100%", height: "30vh", borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
-              <MapWithPin lat={form.lat} lng={form.lng} />
-            </div>
-          )}*/}
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>

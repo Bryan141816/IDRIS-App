@@ -257,7 +257,7 @@
     }
 
     return (
-      <div className={`main-container ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <div className={`map-of-cebu-container ${sidebarOpen ? "sidebar-open" : ""}`}>
         {error && (
           <div
             style={{

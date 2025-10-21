@@ -9,7 +9,6 @@ from routers.auth.authentication import get_current_user_from_access_token
 
 # 🔹 Main router for user access
 router = APIRouter(
-    prefix="/user-profile",
     tags=["User Profile"]
 )
 

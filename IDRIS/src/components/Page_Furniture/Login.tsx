@@ -9,11 +9,15 @@ import { Link } from "react-router-dom";
 import { loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
 import { useUserContext } from "../../UserContext";
 import { handleRoleBasedRedirect } from "../../utils/handleRoleBasedRedirect.ts";
+import { AlignCenter } from "lucide-react";
 
 const Login = () => {
   const [email, setEmailEntry] = useState("");
   const [password, setPassword] = useState("");
   const [erroMessage, setErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
+
 
   const { setUserRoles } = useUserRoleContext();
   const {
@@ -28,22 +32,102 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setErrorMessage(""); // Clear previous error messages
-  
-  Swal.fire({
-    title: "Logging in...",
-    didOpen: () => {
-      Swal.showLoading();
-    },
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-  });
-  
-  try {
-    await loginUser(email, password);
-    const userData = await fetchCurrentUser();
+    e.preventDefault();
+    setErrorMessage(""); // Clear previous error messages
+    setShowError(false);
 
+    Swal.fire({
+      title: "Logging in...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
+    try {
+      await loginUser(email, password);
+      const userData = await fetchCurrentUser();
+
+      if (userData) {
+        Swal.hideLoading();
+        Swal.update({
+          icon: "success",
+          title: "Logged in successfully!",
+        });
+        setUserType(userData["user_type"]);
+        setUserRoles(userData["roles"]);
+        setEmail(userData["email"]);
+        setUserId(userData["user_id"]);
+        setUsername(userData["username"]);
+        setUserReady(true);
+        handleRoleBasedRedirect(userData["roles"], navigate);
+      } else {
+        throw new Error("Invalid user data received.");
+      }
+    } catch (error: any) {
+      console.error("Login failed: ", error);
+      Swal.hideLoading();
+
+      // Default error values
+      let errorTitle = "Login Failed";
+      let errorText = "An unexpected error occurred. Please try again.";
+
+      if (error.response) {
+        const status = error.response.status;
+        const detail = error.response.data?.detail || "";
+
+        switch (status) {
+          case 404:
+            errorTitle = "Account Not Found";
+            errorText =
+              "No account exists with this email address. Please check your email or create a new account by clicking 'Signup' below.";
+            break;
+          case 401:
+            errorTitle = "Incorrect Password";
+            errorText =
+              "The password you entered is incorrect. Please try again or click 'Forgot Password' to reset it.";
+            break;
+          case 403:
+            errorTitle = "Account Not Activated";
+            errorText =
+              "Your account has not been activated yet. Please check your email for the activation link or contact the administrator for assistance.";
+            break;
+          case 400:
+            errorTitle = "Invalid Input";
+            errorText =
+              detail ||
+              "Please check that your email and password are in the correct format.";
+            break;
+          case 500:
+            errorTitle = "Server Error";
+            errorText =
+              "A server error occurred. Please try again later or contact support if the problem persists.";
+            break;
+          default:
+            errorTitle = "Login Error";
+            errorText = detail || "Unable to log in at this time. Please try again.";
+        }
+      } else if (error.request) {
+        errorTitle = "Connection Error";
+        errorText =
+          "Unable to connect to the server. Please check your internet connection and try again.";
+      } else if (error.message) {
+        errorTitle = "Error";
+        errorText = error.message || "An unexpected error occurred.";
+      }
+
+      Swal.update({
+        icon: "error",
+        title: errorTitle,
+        text: errorText,
+      });
+
+      setErrorMessage(errorText);
+      setErrorTitle(errorTitle);
+      setShowError(true);
+    }
+  };
     if (userData) {
       Swal.hideLoading();
       Swal.update({
@@ -152,8 +236,14 @@ const Login = () => {
         </p>
       </div>
       <div id="login-form">
-        <h1>login</h1>
+        <h1>Login</h1>
         <form onSubmit={handleLogin}>
+          {/* Error Box */}
+          {showError && errorTitle && (
+            <div className="login-error-container">
+              <span className="login-error-message">{errorTitle}</span>
+            </div>
+          )}
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -178,7 +268,7 @@ const Login = () => {
               required
             />
           </div>
-          <span id="log-in-error-message">{erroMessage}</span>
+          {/* Remove the old span for error message */}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Link to="/register">Signup</Link>
             <Link to="/forgot_password">Forgot Password</Link>

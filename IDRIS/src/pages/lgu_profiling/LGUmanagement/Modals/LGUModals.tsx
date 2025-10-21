@@ -542,7 +542,9 @@ export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
     (async () => {
       try {
         setLoading(true);
-        const res = await API.get(`/lgu_profiling/manage_lgu/${id}`);
+        // in ViewLGUModal useEffect
+const res = await API.get(`/lgu_profiling/manage_lgu/lgu/${id}`);
+
         setDetail(res.data);
       } catch (e: any) {
         setDetail(null);

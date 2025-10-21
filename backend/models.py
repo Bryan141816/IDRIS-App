@@ -99,7 +99,8 @@ class User(Base):
         "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
     )
 
-#probably will add a email that is a foreign key to user table later
+
+# probably will add a email that is a foreign key to user table later
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"
@@ -268,6 +269,7 @@ class DemandAndResponse(Base):
     status = Column(String(255), nullable=False)
     needs = Column(JSON, default=[])
     priority = Column(String(255), nullable=False)
+
     submitted_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -1132,7 +1134,7 @@ class DistributionRoute(Base):
     status = Column(String(255), default="Pending")
     schedule = Column(DateTime)
     team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
-
+    date_added = Column(Date)
     start_zone = relationship("WarehouseZones", back_populates="routes")
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")

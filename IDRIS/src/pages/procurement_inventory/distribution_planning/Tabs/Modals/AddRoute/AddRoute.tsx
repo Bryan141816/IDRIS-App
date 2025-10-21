@@ -77,6 +77,7 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
   const setItem = (
     items: { item: InventoryItemsProps; distributionQty: number }[],
   ) => {
+    console.log(items);
     setSelectedItem(items);
   };
   const handleChange = (
@@ -88,6 +89,16 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
       [name]: value,
     }));
   };
+  function formatSelectedItems(
+    data: { item: InventoryItemsProps; distributionQty: number }[],
+  ): string {
+    if (data.length <= 0) {
+      return "No Item is Selected";
+    }
+    return data
+      .map((d) => `${d.distributionQty}x ${d.item.item_name}`)
+      .join(", ");
+  }
   const handleSubmit = () => {
     if (selectedWareHouseZone && selectedItems.length > 0) {
       const simplifiedItems = selectedItems.map(
@@ -181,6 +192,12 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
             </div>
             <div className="form-group">
               <label>Distribution Items</label>
+              <input
+                type="text"
+                placeholder="Starting point"
+                disabled
+                value={formatSelectedItems(selectedItems)}
+              />
               <button
                 className="secondary-btn"
                 style={{ width: "100%" }}

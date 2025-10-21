@@ -39,6 +39,6 @@ export async function getDonorDetailsById(donorId: string): Promise<any> {
 }
 
 export async function getCurrentUserProfile(): Promise<any> {
-  const response = await API.get('/user-profile/me');
+  const response = await API.get('/user-profile/user-profile/me');
   return response.data;
 }

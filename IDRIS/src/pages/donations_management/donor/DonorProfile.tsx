@@ -220,10 +220,10 @@ const UserProfile = () => {
             </p>
           </div>
 
-            <button id="register-button" onClick={() => setActiveModal("registration-form")} disabled={isRegistered}>
-              { isRegistered ? "Registered" : "Register as Donor"}
-            </button>
-          
+          <button id="register-button" onClick={() => setActiveModal("registration-form")} disabled={isRegistered}>
+            {isRegistered ? "Registered" : "Register as Donor"}
+          </button>
+
         </div>
 
         <hr />
@@ -250,11 +250,19 @@ const UserProfile = () => {
                       </tr>
                       <tr>
                         <th>Birthday:</th>
-                        <td>{currentUserProfile.bday}</td>
+                        <td>
+                          {currentUserProfile.bday
+                            ? new Date(currentUserProfile.bday).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            }).replace(",", ",")
+                            : ""}
+                        </td>
                       </tr>
                       <tr>
                         <th>Gender:</th>
-                        <td>{currentUserProfile.gender}</td>
+                        <td>{currentUserProfile.gender.toLocaleUpperCase()}</td>
                       </tr>
                       <tr>
                         <th>Address:</th>

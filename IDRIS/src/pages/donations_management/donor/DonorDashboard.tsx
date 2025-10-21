@@ -409,7 +409,7 @@ export const DonorDashboard: React.FC = () => {
             </table>
             {sortedRows.length === 0 && (
               <div className="empty-state">
-                <p>No donations found matching your criteria.</p>
+                <p>No donations found.</p>
               </div>
             )}
           </div>

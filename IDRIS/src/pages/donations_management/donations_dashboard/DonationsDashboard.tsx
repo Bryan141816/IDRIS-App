@@ -315,7 +315,7 @@ const DonationsDashboard = () => {
                   />
                 ))
               ) : (
-                <p>No recent donations</p>
+                <p className="no-donations-message">No recent donations</p>
               )}
             </div>
           </div>

@@ -14,6 +14,9 @@ export const handleRoleBasedRedirect = (
   else if(roles.includes("logistics admin")) {
     navigate("/procurement_inventory/procurement_inventory");
   }
+  else if(roles.includes("superadmin")) {
+    navigate("/manage_users");
+  }
   else {
     navigate("/lgu_profiling/map_of_cebu");
   }

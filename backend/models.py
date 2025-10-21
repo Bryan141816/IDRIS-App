@@ -79,12 +79,25 @@ class User(Base):
     sub = Column(String, nullable=True)  # for oauth
 
     # Fixed relationship - should reference the correct foreign key
-    donor_profile = relationship("Donor", back_populates="user")
-    user_profile = relationship("UserProfile", uselist=False, back_populates="user")
-    volunteers = relationship("IndividualVolunteer", back_populates="user")
-    OrganizationVolunteer = relationship("OrganizationVolunteer", back_populates="user")
+    donor_profile = relationship(
+        "Donor", back_populates="user", cascade="all, delete-orphan"
+    )
+    user_profile = relationship(
+        "UserProfile",
+        uselist=False,
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    volunteers = relationship(
+        "IndividualVolunteer", back_populates="user", cascade="all, delete-orphan"
+    )
+    OrganizationVolunteer = relationship(
+        "OrganizationVolunteer", back_populates="user", cascade="all, delete-orphan"
+    )
 
-    procurement_request = relationship("ProcurementRequest", back_populates="requester")
+    procurement_request = relationship(
+        "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
+    )
 
 
 class UserProfile(Base):

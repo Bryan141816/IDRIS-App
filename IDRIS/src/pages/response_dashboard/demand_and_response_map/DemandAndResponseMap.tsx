@@ -670,7 +670,7 @@ const PinModal: React.FC<{
                   />
                 </div>
                 <div className="form-group">
-                  <label>Amount</label>
+                  <label>Quantity</label>
                   <input
                     type="number"
                     value={newNeed.amount}
@@ -700,7 +700,7 @@ const PinModal: React.FC<{
                   >
                     <div className="need-content">
                       <span className="need-name">{need.need}</span>
-                      <span className="need-amount">Amount: {need.amount}</span>
+                      <span className="need-amount">Quantity: {need.amount}</span>
                       <span
                         className={`need-status ${need.fulfilled ? "fulfilled" : "pending"}`}
                       >

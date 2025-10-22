@@ -227,13 +227,13 @@ const DemandAndResponseMap: React.FC = () => {
       <div className="page-header">
         <h2>Map Points Management</h2>
         <div className="header-actions">
-          <button
+          {/* <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="btn-secondary"
           >
             <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} />
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-          </button>
+          </button> */}
 
           <button className="btn-secondary" onClick={loadDemandPins}>
             <FontAwesomeIcon icon={faSync} />

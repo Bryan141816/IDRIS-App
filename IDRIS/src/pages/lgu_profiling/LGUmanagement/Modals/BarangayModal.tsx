@@ -3,7 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapMarkerAlt, faEllipsisVertical, faTrash, faPen } from "@fortawesome/free-solid-svg-icons";
+import {
+  faMapMarkerAlt,
+  faEllipsisVertical,
+  faTrash,
+  faPen,
+} from "@fortawesome/free-solid-svg-icons";
 import { MapWithPin } from "../ModalProps";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
@@ -21,7 +26,13 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   searchURL,
   setLGUID,
 }) => {
-  type LGURecord = { id: number | string; name: string; lat?: number; lng?: number; contact_info?: string };
+  type LGURecord = {
+    id: number | string;
+    name: string;
+    lat?: number;
+    lng?: number;
+    contact_info?: string;
+  };
 
   const [results, setResults] = useState<LGURecord[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -30,9 +41,15 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) setIsSearching(false);
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      )
+        setIsSearching(false);
     };
-    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === "Tab" || event.key === "Escape") setIsSearching(false); };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" || event.key === "Escape") setIsSearching(false);
+    };
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
@@ -43,9 +60,11 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
 
   async function searchLGU(q: string, sim_threshold: number = 0.2) {
     try {
-      const res = await API.get(`${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`);
+      const res = await API.get(
+        `${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`,
+      );
       const data = res.data;
-      return Array.isArray(data) ? data : (data ? [data] : []);
+      return Array.isArray(data) ? data : data ? [data] : [];
     } catch {
       return [];
     }
@@ -76,8 +95,24 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
   };
 
   return (
-    <div ref={wrapperRef} style={{ display: "flex", width: "100%", gap: "5px", position: "relative" }}>
-      <input value={value ?? ""} onChange={handleChange} onFocus={() => { if ((value ?? "").length > 0 && results.length > 0) setIsSearching(true); }} placeholder="Type to search…" />
+    <div
+      ref={wrapperRef}
+      style={{
+        display: "flex",
+        width: "100%",
+        gap: "5px",
+        position: "relative",
+      }}
+    >
+      <input
+        value={value ?? ""}
+        onChange={handleChange}
+        onFocus={() => {
+          if ((value ?? "").length > 0 && results.length > 0)
+            setIsSearching(true);
+        }}
+        placeholder="Type to search…"
+      />
       {isSearching && (
         <div
           style={{
@@ -99,7 +134,15 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
               {results.map((val, i) => (
                 <button
                   key={`${val.id ?? val.name}-${i}`}
-                  style={{ padding: "5px", width: "100%", textAlign: "start", background: "white", border: "none", borderBottom: "1px solid #eee", cursor: "pointer" }}
+                  style={{
+                    padding: "5px",
+                    width: "100%",
+                    textAlign: "start",
+                    background: "white",
+                    border: "none",
+                    borderBottom: "1px solid #eee",
+                    cursor: "pointer",
+                  }}
                   onClick={() => {
                     setLGUID(String(val.name), name);
                     setIsSearching(false);
@@ -119,9 +162,18 @@ const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
 };
 
 /* -------------------- Types -------------------- */
-type addLGUModalProps = BaseModalProps & { handleAddRecord: (payload: any) => void };
-type viewEvecuationModalProp = BaseModalProps & { selectedData: any; handleDeleteRecord: (id: number) => void; openEditModal: () => void };
-type editEvacuationModalProp = BaseModalProps & { selectedData: any; handleEditRecord: (id: number, payload: any) => void };
+type addLGUModalProps = BaseModalProps & {
+  handleAddRecord: (payload: any) => void;
+};
+type viewEvecuationModalProp = BaseModalProps & {
+  selectedData: any;
+  handleDeleteRecord: (id: string) => void;
+  openEditModal: () => void;
+};
+type editEvacuationModalProp = BaseModalProps & {
+  selectedData: any;
+  handleEditRecord: (id: string, payload: any) => void;
+};
 
 /* -------------------- Add Barangay -------------------- */
 export const AddBarangayModal: React.FC<addLGUModalProps> = ({
@@ -155,7 +207,9 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
   });
 
   const [barangayPic, setBarangayPic] = useState<File | null>(null);
-  const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(null);
+  const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
+    null,
+  );
   const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setBarangayPic(file);
@@ -165,11 +219,18 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
     setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
     const nextVal = type === "number" && value !== "" ? Number(value) : value;
     setForm((prev) => ({ ...prev, [name]: nextVal }));
@@ -243,7 +304,12 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
-            <input type="text" name="name" value={form.name} onChange={handleChange} />
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="horizontal-container">
@@ -254,7 +320,12 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
                 <img
                   src={barangayPicPreview}
                   alt="Preview"
-                  style={{ marginTop: 8, maxWidth: "100%", maxHeight: 160, borderRadius: 6 }}
+                  style={{
+                    marginTop: 8,
+                    maxWidth: "100%",
+                    maxHeight: 160,
+                    borderRadius: 6,
+                  }}
                 />
               )}
             </div>
@@ -263,40 +334,83 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div style={{ display: "flex", width: "100%", gap: "5px" }}>
-              <input type="text" readOnly placeholder="Select a location" value={form.lat ? `${form.lat} , ${form.lng}` : ""} />
+              <input
+                type="text"
+                readOnly
+                placeholder="Select a location"
+                value={form.lat ? `${form.lat} , ${form.lng}` : ""}
+              />
               <button
-                style={{ backgroundColor: "transparent", border: "1px solid #ddd", outline: "none", color: "#3b82f6", width: "35px", borderRadius: "5px" }}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #ddd",
+                  outline: "none",
+                  color: "#3b82f6",
+                  width: "35px",
+                  borderRadius: "5px",
+                }}
                 onClick={openLocationPicker}
               >
-                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
               </button>
             </div>
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">LGU:</span>
-            <FuzzySeachElement value={form.LGU} name="LGU" setLGUID={handleSearchChange} searchURL="/lgu_profiling/manage_lgu/search_lgu" />
+            <FuzzySeachElement
+              value={form.LGU}
+              name="LGU"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_lgu"
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Evacuation Center:</span>
-            <FuzzySeachElement value={form.evacuation} name="evacuation" setLGUID={handleSearchChange} searchURL="/lgu_profiling/manage_lgu/search_evacuation" />
+            <FuzzySeachElement
+              value={form.evacuation}
+              name="evacuation"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_evacuation"
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
-            <input type="number" name="population" value={form.population} onChange={handleChange} />
+            <input
+              type="number"
+              name="population"
+              value={form.population}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
-            <input type="text" name="contact_info" value={form.contact_info} onChange={handleChange} />
+            <input
+              type="text"
+              name="contact_info"
+              value={form.contact_info}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Risk Level:</span>
-            <select id="risk_level" name="risk_level" required value={form.risk_level} onChange={handleChange}>
-              <option value="" disabled>Select Risk Level</option>
+            <select
+              id="risk_level"
+              name="risk_level"
+              required
+              value={form.risk_level}
+              onChange={handleChange}
+            >
+              <option value="" disabled>
+                Select Risk Level
+              </option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -304,7 +418,9 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
           </div>
 
           <div className="horizontal-container">
-            <span className="item-details-identifier">Barangay Description:</span>
+            <span className="item-details-identifier">
+              Barangay Description:
+            </span>
             <textarea
               name="baranggay_desc"
               value={form.baranggay_desc}
@@ -330,7 +446,10 @@ export const AddBarangayModal: React.FC<addLGUModalProps> = ({
             >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D", color: "#ffff" }} onClick={closeModal}>
+            <button
+              style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
+              onClick={closeModal}
+            >
               Cancel
             </button>
           </div>
@@ -350,7 +469,8 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   openEditModal,
 }) => {
   const [isMoreOptionVisible, setIsMoreOptionVisible] = useState(false);
-  const toggleMoreOptionVisible = () => setIsMoreOptionVisible(!isMoreOptionVisible);
+  const toggleMoreOptionVisible = () =>
+    setIsMoreOptionVisible(!isMoreOptionVisible);
 
   useEffect(() => {
     if (!isModalOpen) setIsMoreOptionVisible(false);
@@ -361,9 +481,18 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   const safeId = Number(rawId);
 
   const name = details.name ?? selectedData?.data?.[1]?.text ?? "-";
-  const lguDisplay = details.lgu_name ?? details.lgu?.name ?? selectedData?.data?.[2]?.text ?? "—";
-  const evacDisplay = details.evacuation_center_name ?? details.evacucation_center?.name ?? selectedData?.data?.[3]?.text ?? "—";
-  const contactInfo = details.contact_info ?? selectedData?.data?.[4]?.text ?? "-";
+  const lguDisplay =
+    details.lgu_name ??
+    details.lgu?.name ??
+    selectedData?.data?.[2]?.text ??
+    "—";
+  const evacDisplay =
+    details.evacuation_center_name ??
+    details.evacucation_center?.name ??
+    selectedData?.data?.[3]?.text ??
+    "—";
+  const contactInfo =
+    details.contact_info ?? selectedData?.data?.[4]?.text ?? "-";
   const population = details.population ?? selectedData?.data?.[5]?.text ?? 0;
   const riskLevel = details.risk_level ?? selectedData?.data?.[8]?.text ?? "-";
 
@@ -379,10 +508,16 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View Details</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
             <div className="more-options-container">
               <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
@@ -399,10 +534,15 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
                         message: "Are you sure you want to delete this record?",
                         onSubmit: () => {
                           if (!Number.isFinite(safeId)) {
-                            setMessageBox((p) => ({ ...p, isOpen: true, type: "message", message: "Delete failed: invalid ID." }));
+                            setMessageBox((p) => ({
+                              ...p,
+                              isOpen: true,
+                              type: "message",
+                              message: "Delete failed: invalid ID.",
+                            }));
                             return;
                           }
-                          handleDeleteRecord(safeId);
+                          handleDeleteRecord(safeId.toString());
                         },
                       }));
                     }}
@@ -415,7 +555,9 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
           </div>
         </div>
 
-        <div className="horizontal-container"><span className="details-title">Details</span></div>
+        <div className="horizontal-container">
+          <span className="details-title">Details</span>
+        </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Name:</span>
@@ -425,11 +567,22 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
         {barangayPic && (
           <div className="horizontal-container">
             <span className="item-details-identifier">Picture:</span>
-            <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
               <img
                 src={barangayPic}
                 alt="Barangay"
-                style={{ marginTop: 8, maxWidth: "100%", maxHeight: 220, borderRadius: 6 }}
+                style={{
+                  marginTop: 8,
+                  maxWidth: "100%",
+                  maxHeight: 220,
+                  borderRadius: 6,
+                }}
               />
             </div>
           </div>
@@ -437,7 +590,9 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
 
         {baranggayDesc && (
           <div className="horizontal-container">
-            <span className="item-details-identifier">Barangay Description:</span>
+            <span className="item-details-identifier">
+              Barangay Description:
+            </span>
             <div style={{ width: "100%", textAlign: "center" }}>
               <p>{baranggayDesc}</p>
             </div>
@@ -446,29 +601,39 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
 
         <div className="horizontal-container">
           <span className="item-details-identifier">LGU:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{lguDisplay}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {lguDisplay}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Evacuation Center:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{evacDisplay}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {evacDisplay}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Population:</span>
           <span style={{ width: "100%", textAlign: "center" }}>
-            {typeof population === "number" ? population.toLocaleString() : population}
+            {typeof population === "number"
+              ? population.toLocaleString()
+              : population}
           </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Contact Info:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{contactInfo}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {contactInfo}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Risk Level:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{riskLevel}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {riskLevel}
+          </span>
         </div>
 
         <div className="horizontal-container">
@@ -479,13 +644,23 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
         </div>
 
         {hasValidCoords && (
-          <div style={{ display: "flex", width: "100%", height: "50vh", borderRadius: "10px", overflow: "hidden" }}>
+          <div
+            style={{
+              display: "flex",
+              width: "100%",
+              height: "50vh",
+              borderRadius: "10px",
+              overflow: "hidden",
+            }}
+          >
             <MapWithPin lat={lat} lng={lng} />
           </div>
         )}
 
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>Close</button>
+          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+            Close
+          </button>
         </div>
       </div>
     </Modal>
@@ -521,7 +696,10 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     lat: details?.lat ? parseFloat(details.lat) : 0,
     lng: details?.lng ? parseFloat(details.lng) : 0,
     LGU: details?.lgu_name ?? details?.lgu?.name ?? "",
-    evacuation: details?.evacuation_center_name ?? details?.evacucation_center?.name ?? "",
+    evacuation:
+      details?.evacuation_center_name ??
+      details?.evacucation_center?.name ??
+      "",
     population: details?.population ? parseInt(details.population) : 0,
     contact_info: details?.contact_info ?? "",
     risk_level: details?.risk_level ?? "",
@@ -530,21 +708,26 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
 
   const [barangayPicFile, setBarangayPicFile] = useState<File | null>(null);
   const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
-    details?.baranggay_pic ?? null
+    details?.baranggay_pic ?? null,
   );
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
 
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
     setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
   };
 
   const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
     setBarangayPicFile(file);
-    setBarangayPicPreview(file ? URL.createObjectURL(file) : details?.baranggay_pic ?? null);
+    setBarangayPicPreview(
+      file ? URL.createObjectURL(file) : (details?.baranggay_pic ?? null),
+    );
   };
 
   const uploadBarangayPic = async (file: File): Promise<string | null> => {
@@ -560,7 +743,11 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value, type } = e.target;
     const nextVal = type === "number" && value !== "" ? Number(value) : value;
     setForm((prev) => ({ ...prev, [name]: nextVal }));
@@ -573,7 +760,12 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
   const confirmDetachEvacuation = () => {
     const current = (form.evacuation || "").trim();
     if (current === "") {
-      setMessageBox((prev) => ({ ...prev, isOpen: true, type: "message", message: "No evacuation center is currently set." }));
+      setMessageBox((prev) => ({
+        ...prev,
+        isOpen: true,
+        type: "message",
+        message: "No evacuation center is currently set.",
+      }));
       return;
     }
     setMessageBox((prev) => ({
@@ -587,7 +779,12 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
 
   const submitEdit = async () => {
     if (!Number.isFinite(safeId)) {
-      setMessageBox((p) => ({ ...p, isOpen: true, type: "message", message: "Update failed: invalid ID." }));
+      setMessageBox((p) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Update failed: invalid ID.",
+      }));
       return;
     }
 
@@ -615,7 +812,7 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
       isOpen: true,
       type: "confirm",
       message: "Are you sure you want to update this record?",
-      onSubmit: () => handleEditRecord(safeId, payload),
+      onSubmit: () => handleEditRecord(safeId.toString(), payload),
     }));
   };
 
@@ -639,37 +836,80 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Name:</span>
-            <input type="text" name="name" value={form.name} onChange={handleChange} />
+            <input
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Location:</span>
             <div style={{ display: "flex", width: "100%", gap: "5px" }}>
-              <input type="text" readOnly placeholder="Select a location" value={form.lat ? `${form.lat} , ${form.lng}` : ""} />
+              <input
+                type="text"
+                readOnly
+                placeholder="Select a location"
+                value={form.lat ? `${form.lat} , ${form.lng}` : ""}
+              />
               <button
-                style={{ backgroundColor: "transparent", border: "1px solid #ddd", outline: "none", color: "#3b82f6", width: "35px", borderRadius: "5px" }}
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #ddd",
+                  outline: "none",
+                  color: "#3b82f6",
+                  width: "35px",
+                  borderRadius: "5px",
+                }}
                 onClick={openLocationPicker}
               >
-                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
               </button>
             </div>
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">LGU:</span>
-            <FuzzySeachElement value={form.LGU ?? ""} name="LGU" setLGUID={handleSearchChange} searchURL="/lgu_profiling/manage_lgu/search_lgu" />
+            <FuzzySeachElement
+              value={form.LGU ?? ""}
+              name="LGU"
+              setLGUID={handleSearchChange}
+              searchURL="/lgu_profiling/manage_lgu/search_lgu"
+            />
           </div>
 
-          <div className="horizontal-container" style={{ alignItems: "center" }}>
+          <div
+            className="horizontal-container"
+            style={{ alignItems: "center" }}
+          >
             <span className="item-details-identifier">Evacuation Center:</span>
             <div style={{ display: "flex", width: "100%", gap: "8px" }}>
               <div style={{ flex: 1 }}>
-                <FuzzySeachElement value={form.evacuation ?? ""} name="evacuation" setLGUID={handleSearchChange} searchURL="/lgu_profiling/manage_lgu/search_evacuation" />
+                <FuzzySeachElement
+                  value={form.evacuation ?? ""}
+                  name="evacuation"
+                  setLGUID={handleSearchChange}
+                  searchURL="/lgu_profiling/manage_lgu/search_evacuation"
+                />
               </div>
               <button
                 type="button"
                 title="Detach evacuation center"
-                style={{ padding: "6px 10px", backgroundColor: "#f87171", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", whiteSpace: "nowrap", height: "32px", alignSelf: "center" }}
+                style={{
+                  padding: "6px 10px",
+                  backgroundColor: "#f87171",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  height: "32px",
+                  alignSelf: "center",
+                }}
                 onClick={confirmDetachEvacuation}
               >
                 Detach
@@ -679,18 +919,37 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Population:</span>
-            <input type="number" name="population" value={form.population} onChange={handleChange} min={0} />
+            <input
+              type="number"
+              name="population"
+              value={form.population}
+              onChange={handleChange}
+              min={0}
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Contact Info:</span>
-            <input type="text" name="contact_info" value={form.contact_info} onChange={handleChange} />
+            <input
+              type="text"
+              name="contact_info"
+              value={form.contact_info}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="horizontal-container">
             <span className="item-details-identifier">Risk Level:</span>
-            <select id="risk_level" name="risk_level" required value={form.risk_level} onChange={handleChange}>
-              <option value="" disabled>Select Risk Level</option>
+            <select
+              id="risk_level"
+              name="risk_level"
+              required
+              value={form.risk_level}
+              onChange={handleChange}
+            >
+              <option value="" disabled>
+                Select Risk Level
+              </option>
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -698,7 +957,9 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
           </div>
 
           <div className="horizontal-container">
-            <span className="item-details-identifier">Barangay Description:</span>
+            <span className="item-details-identifier">
+              Barangay Description:
+            </span>
             <textarea
               name="baranggay_desc"
               value={form.baranggay_desc}
@@ -717,20 +978,24 @@ export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
                 <img
                   src={barangayPicPreview}
                   alt="Preview"
-                  style={{ marginTop: 8, maxWidth: "100%", maxHeight: 160, borderRadius: 6 }}
+                  style={{
+                    marginTop: 8,
+                    maxWidth: "100%",
+                    maxHeight: 160,
+                    borderRadius: 6,
+                  }}
                 />
               )}
             </div>
           </div>
 
           <div className="action-button">
-            <button
-              style={{ backgroundColor: "#749AB6" }}
-              onClick={submitEdit}
-            >
+            <button style={{ backgroundColor: "#749AB6" }} onClick={submitEdit}>
               Confirm
             </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>Cancel</button>
+            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
+              Cancel
+            </button>
           </div>
         </div>
       </Modal>

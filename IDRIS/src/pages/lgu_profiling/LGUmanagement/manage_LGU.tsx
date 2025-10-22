@@ -31,21 +31,33 @@ import { AddLGUModal, ViewLGUModal, EditLGUModal } from "./Modals/LGUModals";
 
 /* ========================= API HELPERS ========================= */
 export async function getRecord(record_type: string): Promise<any> {
-  const response = await API.get(`/lgu_profiling/manage_lgu/get_${record_type}`);
+  const response = await API.get(
+    `/lgu_profiling/manage_lgu/get_${record_type}`,
+  );
   return response.data;
 }
+type MessageBoxState = {
+  isOpen: boolean;
+  onClose: () => void;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+};
 
 export async function addRecord(
   record_type: string,
-  payload: any
+  payload: any,
 ): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.post(
       `/lgu_profiling/manage_lgu/add_${record_type}`,
-      payload
+      payload,
     );
     if (response.data?.success === false) {
-      return { success: false, error: response.data.error || "Unknown error from server" };
+      return {
+        success: false,
+        error: response.data.error || "Unknown error from server",
+      };
     }
     return response.data;
   } catch (error: any) {
@@ -61,16 +73,19 @@ export async function addRecord(
 
 export async function deleteRecord(
   record_type: string,
-  reportId: string
+  reportId: string,
 ): Promise<any> {
   try {
     const response = await API.delete(
-      `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`
+      `/lgu_profiling/manage_lgu/delete_${record_type}/${reportId}`,
     );
     return response.data;
   } catch (error: any) {
     if (error.response) {
-      console.error("Error:", error.response.data.detail || error.response.data);
+      console.error(
+        "Error:",
+        error.response.data.detail || error.response.data,
+      );
     } else {
       console.error("Request error:", error.message);
     }
@@ -81,15 +96,18 @@ export async function deleteRecord(
 export async function updateRecord(
   record_type: string,
   reportId: string,
-  payload: any
+  payload: any,
 ): Promise<any | { success: boolean; error: string }> {
   try {
     const response = await API.put(
       `/lgu_profiling/manage_lgu/update_${record_type}/${reportId}`,
-      payload
+      payload,
     );
     if (response.data?.success === false) {
-      return { success: false, error: response.data.error || "Unknown error from server" };
+      return {
+        success: false,
+        error: response.data.error || "Unknown error from server",
+      };
     }
     return response.data;
   } catch (error: any) {
@@ -103,28 +121,13 @@ export async function updateRecord(
   }
 }
 
-/* ========================= TYPES ========================= */
-type MessageBoxState = {
-  isOpen: boolean;
-  type: "message" | "confirm";
-  message: string;
-  onSubmit?: () => void;
-  onClose: () => void;
-};
-
 type TableRowShape = {
   id?: string | number;
   data?: Array<{ text?: any; [k: string]: any }>;
   [k: string]: any;
 };
 
-type Tabs =
-  | "all"
-  | "lgu"
-  | "barangay"
-  | "rafi"
-  | "hazard"
-  | "evacuation";
+type Tabs = "all" | "lgu" | "barangay" | "rafi" | "hazard" | "evacuation";
 
 /* ========================= COMPONENT ========================= */
 const MapOfCebu = () => {
@@ -132,14 +135,22 @@ const MapOfCebu = () => {
   const [activeTab, setActiveTab] = useState<Tabs>("all");
 
   // When opening a row from "All", remember which section it came from
-  const [viewContextTab, setViewContextTab] = useState<Exclude<Tabs, "all"> | null>(null);
+  const [viewContextTab, setViewContextTab] = useState<Exclude<
+    Tabs,
+    "all"
+  > | null>(null);
 
   // table data
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
-  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(null);
+  const [barangayResponse, setBarangayResponse] = useState<TableReponse | null>(
+    null,
+  );
   const [rafiResponse, setRafiResponse] = useState<TableReponse | null>(null);
-  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
-  const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
+  const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(
+    null,
+  );
+  const [evacuationResponse, setEvacuationResponse] =
+    useState<TableReponse | null>(null);
 
   // TableView refresher (TableView gives us a function that accepts page?: number)
   const refreshTable = useRef<null | ((page?: number) => void)>(null);
@@ -191,33 +202,30 @@ const MapOfCebu = () => {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const fetchDataOne = useCallback(
-    async (name: Exclude<Tabs, "all">) => {
-      try {
-        const response = await getRecord(name);
-        switch (name) {
-          case "lgu":
-            setLguResponse(response);
-            break;
-          case "barangay":
-            setBarangayResponse(response);
-            break;
-          case "rafi":
-            setRafiResponse(response);
-            break;
-          case "hazard":
-            setHazardResponse(response);
-            break;
-          case "evacuation":
-            setEvacuationResponse(response);
-            break;
-        }
-      } catch (error) {
-        console.error(error);
+  const fetchDataOne = useCallback(async (name: Exclude<Tabs, "all">) => {
+    try {
+      const response = await getRecord(name);
+      switch (name) {
+        case "lgu":
+          setLguResponse(response);
+          break;
+        case "barangay":
+          setBarangayResponse(response);
+          break;
+        case "rafi":
+          setRafiResponse(response);
+          break;
+        case "hazard":
+          setHazardResponse(response);
+          break;
+        case "evacuation":
+          setEvacuationResponse(response);
+          break;
       }
-    },
-    []
-  );
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
 
   const fetchAll = useCallback(async () => {
     await Promise.allSettled([
@@ -236,18 +244,34 @@ const MapOfCebu = () => {
     setAddModalState((prev) => ({ ...prev, [tab]: true }));
   };
   const closeAddModal = () => {
-    setAddModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
+    setAddModalState((prev) => ({
+      ...prev,
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    }));
   };
 
   // NEW: allow overriding tab to avoid race condition from setActiveTab in "All" view
-  const openViewModal = async (row?: TableRowShape, tabOverride?: Exclude<Tabs, "all">) => {
-    const tabToUse = tabOverride || (activeTab === "all" ? viewContextTab || "lgu" : (activeTab as Exclude<Tabs, "all">));
+  const openViewModal = async (
+    row?: TableRowShape,
+    tabOverride?: Exclude<Tabs, "all">,
+  ) => {
+    const tabToUse =
+      tabOverride ||
+      (activeTab === "all"
+        ? viewContextTab || "lgu"
+        : (activeTab as Exclude<Tabs, "all">));
 
     if (row) {
       const id = row.data?.[0]?.text; // hidden ID from table row
       if (tabToUse === "barangay" && id) {
         try {
-          const { data } = await API.get(`/lgu_profiling/manage_lgu/barangay/${id}`);
+          const { data } = await API.get(
+            `/lgu_profiling/manage_lgu/barangay/${id}`,
+          );
           (row as any).fullRecord = data;
         } catch (e) {
           console.error("❌ Failed to fetch barangay detail", e);
@@ -262,7 +286,14 @@ const MapOfCebu = () => {
 
   // Hide only (keep selection when switching to edit)
   const hideViewModal = () => {
-    setViewModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
+    setViewModalState((prev) => ({
+      ...prev,
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    }));
   };
 
   // Close and clear selection
@@ -274,20 +305,35 @@ const MapOfCebu = () => {
 
   const openEditModal = () => {
     hideViewModal();
-    const tabForEdit = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
+    const tabForEdit =
+      activeTab === "all"
+        ? (viewContextTab as Exclude<Tabs, "all">)
+        : (activeTab as Exclude<Tabs, "all">);
     setEditModalState((prev) => ({ ...prev, [tabForEdit]: true })) as any;
   };
 
   const closeEditModal = () => {
-    const tabForView = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
-    setEditModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
+    const tabForView =
+      activeTab === "all"
+        ? (viewContextTab as Exclude<Tabs, "all">)
+        : (activeTab as Exclude<Tabs, "all">);
+    setEditModalState((prev) => ({
+      ...prev,
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    }));
     // After editing, reopen the view modal to show updated data
     setViewModalState((prev) => ({ ...prev, [tabForView]: true })) as any;
   };
 
   /* ---------- CRUD handlers ---------- */
   const resolveCurrentTab = (): Exclude<Tabs, "all"> =>
-    activeTab === "all" ? (viewContextTab || "lgu") : (activeTab as Exclude<Tabs, "all">);
+    activeTab === "all"
+      ? viewContextTab || "lgu"
+      : (activeTab as Exclude<Tabs, "all">);
 
   const handleDeleteRecord = async (id: string) => {
     try {
@@ -318,7 +364,10 @@ const MapOfCebu = () => {
     }
   };
 
-  const handleAddRecord = async (payload: any, tabOverride?: Exclude<Tabs, "all">) => {
+  const handleAddRecord = async (
+    payload: any,
+    tabOverride?: Exclude<Tabs, "all">,
+  ) => {
     const target = tabOverride || resolveCurrentTab();
     const response = await addRecord(target, payload);
     if (!(response as any)?.error) {
@@ -343,7 +392,7 @@ const MapOfCebu = () => {
 
   const safeUpdateByIndex = (
     prev: TableRowShape | null,
-    mapping: Record<number, any>
+    mapping: Record<number, any>,
   ): TableRowShape | null => {
     if (!prev?.data || !Array.isArray(prev.data)) return prev;
     const newData = prev.data.map((cell, idx) => {
@@ -388,7 +437,7 @@ const MapOfCebu = () => {
               6: payload.population,
               7: payload.contact_info,
               8: payload.risk_level,
-            })
+            }),
           );
           break;
         case "lgu":
@@ -417,7 +466,7 @@ const MapOfCebu = () => {
               13: Array.isArray(payload.local_suppliers)
                 ? payload.local_suppliers.join(", ")
                 : payload.local_suppliers,
-            })
+            }),
           );
           break;
         case "evacuation":
@@ -427,7 +476,7 @@ const MapOfCebu = () => {
               2: payload.lat,
               3: payload.lng,
               4: payload.capacity,
-            })
+            }),
           );
           break;
         case "hazard":
@@ -436,7 +485,7 @@ const MapOfCebu = () => {
               2: payload.hazard_area,
               3: payload.image_url,
               4: payload.hazard_type,
-            })
+            }),
           );
           break;
         case "rafi": {
@@ -460,18 +509,23 @@ const MapOfCebu = () => {
           const lat = latStr != null ? Number(latStr) : undefined;
           const lng = lngStr != null ? Number(lngStr) : undefined;
 
-          const newPicFromResp = (response as any)?.record?.rafi_pic as string | undefined;
-          const prevPic = (selectedViewData?.data?.[5]?.text as string) || undefined;
+          const newPicFromResp = (response as any)?.record?.rafi_pic as
+            | string
+            | undefined;
+          const prevPic =
+            (selectedViewData?.data?.[5]?.text as string) || undefined;
 
           const cacheBust = (url?: string) =>
             url ? `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}` : url;
 
-          const picToUse = newPicFromResp ? cacheBust(newPicFromResp) : cacheBust(prevPic);
+          const picToUse = newPicFromResp
+            ? cacheBust(newPicFromResp)
+            : cacheBust(prevPic);
 
           document.dispatchEvent(
             new CustomEvent("rafi:updated", {
               detail: { id, rafi_pic: newPicFromResp },
-            })
+            }),
           );
 
           setSelectedViewData((prev) =>
@@ -481,7 +535,7 @@ const MapOfCebu = () => {
               3: lng != null ? String(lng) : (prev?.data?.[3]?.text as string),
               4: rafi_desc ?? (prev?.data?.[4]?.text as string),
               5: picToUse as string,
-            })
+            }),
           );
           break;
         }
@@ -566,7 +620,9 @@ const MapOfCebu = () => {
         isModalOpen={addModalState.evacuation}
         closeModal={closeAddModal}
         setMessageBox={setMessageBox}
-        handleAddEvacuation={(payload: any) => handleAddRecord(payload, "evacuation")}
+        handleAddEvacuation={(payload: any) =>
+          handleAddRecord(payload, "evacuation")
+        }
       />
       <AddRafiModal
         isModalOpen={addModalState.rafi}
@@ -710,24 +766,62 @@ const MapOfCebu = () => {
               {activeTab === "all"
                 ? "All"
                 : activeTab === "lgu"
-                ? "LGU"
-                : activeTab === "barangay"
-                ? "Barangay"
-                : activeTab === "rafi"
-                ? "RAFI"
-                : activeTab === "hazard"
-                ? "Hazard"
-                : "Evacuation"}
+                  ? "LGU"
+                  : activeTab === "barangay"
+                    ? "Barangay"
+                    : activeTab === "rafi"
+                      ? "RAFI"
+                      : activeTab === "hazard"
+                        ? "Hazard"
+                        : "Evacuation"}
               <span className="arrow">▼</span>
             </button>
 
             {showFilter && (
-              <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-                <button onClick={() => { setActiveTab("all"); setShowFilter(false); }}>All</button>
-                <button onClick={() => { setActiveTab("lgu"); setShowFilter(false); }}>LGU</button>
-                <button onClick={() => { setActiveTab("barangay"); setShowFilter(false); }}>Barangay</button>
-                <button onClick={() => { setActiveTab("rafi"); setShowFilter(false); }}>RAFI</button>
-                <button onClick={() => { setActiveTab("hazard"); setShowFilter(false); }}>Hazard</button>
+              <div
+                className="dropdown-menu"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => {
+                    setActiveTab("all");
+                    setShowFilter(false);
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("lgu");
+                    setShowFilter(false);
+                  }}
+                >
+                  LGU
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("barangay");
+                    setShowFilter(false);
+                  }}
+                >
+                  Barangay
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("rafi");
+                    setShowFilter(false);
+                  }}
+                >
+                  RAFI
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("hazard");
+                    setShowFilter(false);
+                  }}
+                >
+                  Hazard
+                </button>
                 {/* Intentionally no Evacuation in filter menu if you want to keep it hidden; add back if needed */}
               </div>
             )}
@@ -749,10 +843,38 @@ const MapOfCebu = () => {
 
           {showAddPin && (
             <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => { setShowAddPin(false); openAddModal("lgu"); }}>LGU</button>
-              <button onClick={() => { setShowAddPin(false); openAddModal("barangay"); }}>Barangay</button>
-              <button onClick={() => { setShowAddPin(false); openAddModal("rafi"); }}>RAFI</button>
-              <button onClick={() => { setShowAddPin(false); openAddModal("hazard"); }}>Hazard</button>
+              <button
+                onClick={() => {
+                  setShowAddPin(false);
+                  openAddModal("lgu");
+                }}
+              >
+                LGU
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddPin(false);
+                  openAddModal("barangay");
+                }}
+              >
+                Barangay
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddPin(false);
+                  openAddModal("rafi");
+                }}
+              >
+                RAFI
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddPin(false);
+                  openAddModal("hazard");
+                }}
+              >
+                Hazard
+              </button>
               {/* No Evacuation here per request */}
             </div>
           )}
@@ -774,7 +896,9 @@ const MapOfCebu = () => {
                 <div className="table-scroll">
                   <TableView
                     tableJSON={lguResponse}
-                    onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
+                    onClickCallback={(row: TableRowShape) =>
+                      openViewModal(row, "lgu")
+                    }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
                     updateTable={(fn) => (refreshTable.current = fn)}
@@ -794,7 +918,9 @@ const MapOfCebu = () => {
                 <div className="table-scroll">
                   <TableView
                     tableJSON={barangayResponse}
-                    onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
+                    onClickCallback={(row: TableRowShape) =>
+                      openViewModal(row, "barangay")
+                    }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
                     updateTable={() => {}}
@@ -814,7 +940,9 @@ const MapOfCebu = () => {
                 <div className="table-scroll">
                   <TableView
                     tableJSON={rafiResponse}
-                    onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
+                    onClickCallback={(row: TableRowShape) =>
+                      openViewModal(row, "rafi")
+                    }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
                     updateTable={() => {}}
@@ -834,7 +962,9 @@ const MapOfCebu = () => {
                 <div className="table-scroll">
                   <TableView
                     tableJSON={hazardResponse}
-                    onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
+                    onClickCallback={(row: TableRowShape) =>
+                      openViewModal(row, "hazard")
+                    }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
                     updateTable={() => {}}
@@ -878,7 +1008,9 @@ const MapOfCebu = () => {
               <div className="table-scroll">
                 <TableView
                   tableJSON={lguResponse}
-                  onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
+                  onClickCallback={(row: TableRowShape) =>
+                    openViewModal(row, "lgu")
+                  }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
                   updateTable={(fn) => (refreshTable.current = fn)}
@@ -899,7 +1031,9 @@ const MapOfCebu = () => {
               <div className="table-scroll">
                 <TableView
                   tableJSON={barangayResponse}
-                  onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
+                  onClickCallback={(row: TableRowShape) =>
+                    openViewModal(row, "barangay")
+                  }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
                   updateTable={() => {}}
@@ -920,7 +1054,9 @@ const MapOfCebu = () => {
               <div className="table-scroll">
                 <TableView
                   tableJSON={rafiResponse}
-                  onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
+                  onClickCallback={(row: TableRowShape) =>
+                    openViewModal(row, "rafi")
+                  }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
                   updateTable={() => {}}
@@ -941,7 +1077,9 @@ const MapOfCebu = () => {
               <div className="table-scroll">
                 <TableView
                   tableJSON={hazardResponse}
-                  onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
+                  onClickCallback={(row: TableRowShape) =>
+                    openViewModal(row, "hazard")
+                  }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
                   updateTable={() => {}}
@@ -962,7 +1100,9 @@ const MapOfCebu = () => {
               <div className="table-scroll">
                 <TableView
                   tableJSON={evacuationResponse}
-                  onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
+                  onClickCallback={(row: TableRowShape) =>
+                    openViewModal(row, "evacuation")
+                  }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
                   updateTable={() => {}}

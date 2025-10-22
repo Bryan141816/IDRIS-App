@@ -7,7 +7,7 @@ type MessageBoxState = {
   type: "message" | "confirm";
   message: string;
   onSubmit?: () => void;
-  onClose: () => void;_modalOverlay_1povi_1
+  onClose: () => void;
 };
 
 export type BaseModalProps = {

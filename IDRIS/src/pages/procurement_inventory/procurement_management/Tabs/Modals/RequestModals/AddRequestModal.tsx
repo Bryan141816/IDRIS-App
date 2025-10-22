@@ -59,7 +59,7 @@ export const SubmitProcurementRequest: React.FC<
       },
     ]);
   };
-  const deleteItem = (id: number) => {
+  const deleteItem = (id: string) => {
     setRequestItems((prev) => prev.filter((item) => item.item_id !== id));
   };
   return (

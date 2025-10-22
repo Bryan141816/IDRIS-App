@@ -21,7 +21,7 @@ from typing import List
 
 router = APIRouter(
     tags=["procurement_inventory"],
-    dependencies=[Depends(RoleChecker(["logistics admin"]))],
+    dependencies=[Depends(RoleChecker(["logistics admin", "superadmin"]))],
 )
 
 

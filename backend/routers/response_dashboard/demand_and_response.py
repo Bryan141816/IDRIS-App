@@ -19,9 +19,10 @@ router = APIRouter(
 
 router_admin = APIRouter(
     dependencies=[
-        Depends(RoleChecker(["lgu officer", "super admin", "logistics admin"]))
+        Depends(RoleChecker(["lgu officer", "superadmin", "logistics admin"]))
     ],
 )
+
 
 @router.get(
     "/response_dashboard/demand_and_response/get_map_pin",

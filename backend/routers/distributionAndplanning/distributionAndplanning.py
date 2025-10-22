@@ -19,7 +19,7 @@ from typing import List, Optional
 router = APIRouter(
     tags=["distribution_planning"],
     dependencies=[
-        Depends(RoleChecker(["logistics admin", "super admin"])),
+        Depends(RoleChecker(["logistics admin", "superadmin"])),
     ],
 )
 

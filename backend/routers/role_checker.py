@@ -12,7 +12,7 @@ def RoleChecker(required_roles: List[str]):
     ):
         print(current_user.roles)
         print(required_roles)
-        if "super admin" in current_user.roles:
+        if "superadmin" in current_user.roles:
             return current_user
 
         if not any(role in current_user.roles for role in required_roles):

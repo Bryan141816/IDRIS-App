@@ -29,7 +29,7 @@ const OauthCallback = () => {
           setEmail(userData["email"]);
           setUsername(userData["username"]);
           setUserReady(true);
-          if (userData["roles"].includes("super admin")) {
+          if (userData["roles"].includes("superadmin")) {
             navigate("/volunteer_management/volunteer_dashboard");
           } else if (userData["roles"].includes("volunteer")) {
             navigate("/volunteer_management/volunteer_dashboard");

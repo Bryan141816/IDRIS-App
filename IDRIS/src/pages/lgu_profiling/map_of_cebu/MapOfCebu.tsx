@@ -117,6 +117,10 @@ const MapOfCebu = () => {
   const [pathCoordinates, setPathCoordinates] = useState<[number, number][] | null>(null);
   const [evacuationCenter, setEvacuationCenter] = useState<MarkerType | null>(null);
 
+  // per-LGU hazards cache & loading flags
+  const [hazardsByLGU, setHazardsByLGU] = useState<Record<number, HazardPhoto[]>>({});
+  const [hazardLoading, setHazardLoading] = useState<Record<number, boolean>>({});
+
   /* ---------- Helpers ---------- */
   const distKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
     const toRad = (d: number) => (d * Math.PI) / 180;
@@ -127,6 +131,27 @@ const MapOfCebu = () => {
     const s2 = Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
     return 2 * R * Math.asin(Math.sqrt(s1 + s2));
   };
+
+  // loader for LGU hazards (lazy-load & cache)
+  async function loadHazardsForLGU(lguId: number) {
+    if (hazardsByLGU[lguId]) return; // already loaded
+    setHazardLoading((m) => ({ ...m, [lguId]: true }));
+    try {
+      const res = await fetch(`${MANAGE_API}/lgu/${lguId}/hazards`, { mode: "cors" });
+      if (!res.ok) throw new Error(`GET hazards failed: HTTP ${res.status}`);
+      const data = await res.json();
+      const photos: HazardPhoto[] = (data.items || []).map((it: any) => ({
+        src: it.image_url,
+        label: `${it.type || "Hazard"}${it.area ? " • " + it.area : ""}`,
+      }));
+      setHazardsByLGU((m) => ({ ...m, [lguId]: photos }));
+    } catch (e: any) {
+      console.error("Hazards fetch error:", e);
+      // non-fatal; we simply show "No photos found."
+    } finally {
+      setHazardLoading((m) => ({ ...m, [lguId]: false }));
+    }
+  }
 
   /* ---------- Fetch LGU points ---------- */
   useEffect(() => {
@@ -246,6 +271,7 @@ const MapOfCebu = () => {
         console.error("Barangay fetch error:", e);
         setError((prev) => prev ?? (e?.message || "Failed to load Barangay points."));
       } finally {
+        setPending
         setPendingLoads((n) => Math.max(0, n - 1));
       }
     })();
@@ -255,7 +281,7 @@ const MapOfCebu = () => {
     };
   }, []);
 
-  /* ---------- Fetch Evacuation Centers (REAL data) ---------- */
+  /* ---------- Fetch Evacuation Centers ---------- */
   useEffect(() => {
     let cancelled = false;
 
@@ -276,18 +302,13 @@ const MapOfCebu = () => {
             lng: Number(e.lng) || 0,
             lguName: e.name,
             type: "evacuation",
-
             capacity: Number.isFinite(cap) ? cap : null,
             occupied: Number.isFinite(occ) ? occ : null,
             evacStatus: (e.status ?? "Unknown") || "Unknown",
-            // address: (e as any).address ?? null, // if you add it later
-
-            // Useful text for default popup (we’ll override in sidebar anyway)
             description: `Status: ${e.status ?? "Unknown"}`,
             resources: `Capacity: ${Number.isFinite(cap) ? cap : "Unknown"} | Occupied: ${
               Number.isFinite(occ) ? occ : "Unknown"
             }`,
-
             hazardAreas: [],
           };
         });
@@ -312,7 +333,17 @@ const MapOfCebu = () => {
     setSidebarOpen(true);
     setPathCoordinates(null);
     setEvacuationCenter(null);
+
+    if (marker.type === "lgu" && typeof marker.lguId === "number") {
+      loadHazardsForLGU(marker.lguId);
+    }
   };
+
+  useEffect(() => {
+    if (selectedMarker?.type === "lgu" && typeof selectedMarker.lguId === "number") {
+      loadHazardsForLGU(selectedMarker.lguId);
+    }
+  }, [selectedMarker?.lguId]);
 
   const handleCloseSidebar = () => {
     setSidebarOpen(false);
@@ -328,6 +359,7 @@ const MapOfCebu = () => {
       setError((prev) => prev ?? "No evacuation centers found.");
       return;
     }
+
     const nearest = evacMarkers
       .map((e) => ({
         m: e,
@@ -347,7 +379,7 @@ const MapOfCebu = () => {
     ]);
   };
 
-  /* ---------- Combine markers (with filtering) ---------- */
+  /* ---------- Combine markers ---------- */
   const combinedMarkers = useMemo(() => {
     let base: MarkerWithPhotos[] = [
       ...lguMarkers,
@@ -359,12 +391,7 @@ const MapOfCebu = () => {
     return evacuationCenter ? [...base, evacuationCenter] : base;
   }, [lguMarkers, raffiMarkers, barangayMarkers, evacMarkers, selectedType, evacuationCenter]);
 
-  /* ---------- Render ---------- */
-  if (loading) {
-    return <div style={{ padding: 16 }}>Loading markers…</div>;
-  }
-
-  // Inline styles for the evacuation card
+  /* ---------- Styles ---------- */
   const card = {
     border: "1px solid #e5e7eb",
     borderRadius: 12,
@@ -413,9 +440,7 @@ const MapOfCebu = () => {
           <span style={statusPill(m.evacStatus)}>{m.evacStatus ?? "Unknown"}</span>
         </div>
 
-        {m.address && (
-          <div style={{ ...small, marginBottom: 8 }}>{m.address}</div>
-        )}
+        {m.address && <div style={{ ...small, marginBottom: 8 }}>{m.address}</div>}
 
         <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
           <span style={label}>Capacity:</span>
@@ -443,6 +468,47 @@ const MapOfCebu = () => {
     );
   };
 
+  /* ---------- Hazard Image Styles ---------- */
+  const headerImg: React.CSSProperties = {
+    width: "100%",
+    height: "auto",
+    display: "block",
+    borderRadius: 8,
+    objectFit: "cover",
+    maxHeight: 320,
+  };
+
+  const hazardsList: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  };
+  const hazardItem: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    border: "1px solid #e5e7eb",
+    borderRadius: 10,
+    overflow: "hidden",
+    background: "#fff",
+  };
+  const hazardImg: React.CSSProperties = {
+    width: "100%",
+    height: "auto",
+    maxHeight: 360,
+    objectFit: "cover",
+    display: "block",
+  };
+  const hazardCaption: React.CSSProperties = {
+    padding: "8px 10px",
+    fontSize: 13,
+    color: "#374151",
+    lineHeight: 1.35,
+    wordBreak: "break-word",
+  };
+
+  /* ---------- Render ---------- */
+  if (loading) return <div style={{ padding: 16 }}>Loading markers…</div>;
+
   return (
     <div className={`map-of-cebu-container ${sidebarOpen ? "sidebar-open" : ""}`}>
       {error && (
@@ -461,64 +527,41 @@ const MapOfCebu = () => {
       )}
 
       <div className="map-buttons">
-        <button className="map-button" onClick={() => setSelectedType(null)}>
-          Show All
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("lgu")}>
-          LGU
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("barangay")}>
-          Barangay
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("raffi")}>
-          RAFI Infrastructure
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("evacuation")}>
-          Evacuation Centers
-        </button>
+        <button className="map-button" onClick={() => setSelectedType(null)}>Show All</button>
+        <button className="map-button" onClick={() => setSelectedType("lgu")}>LGU</button>
+        <button className="map-button" onClick={() => setSelectedType("barangay")}>Barangay</button>
+        <button className="map-button" onClick={() => setSelectedType("raffi")}>RAFI Infrastructure</button>
+        <button className="map-button" onClick={() => setSelectedType("evacuation")}>Evacuation Centers</button>
       </div>
 
       <div className="legend-box">
         <h4>Legend</h4>
-        <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure
-        </div>
-        <div className="legend-item">
-          <span className="legend-color" style={{ backgroundColor: "green" }} /> Evacuation Center
-        </div>
+        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "blue" }} /> LGU</div>
+        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "red" }} /> Barangay</div>
+        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "yellow" }} /> RAFI Infrastructure</div>
+        <div className="legend-item"><span className="legend-color" style={{ backgroundColor: "green" }} /> Evacuation Center</div>
       </div>
 
       <div className="map-container">
-  <MapView
-    center={[10.313924, 123.887082]} // Cebu City (centered between north & south Cebu)
-    markers={combinedMarkers as MarkerType[]}
-    onMarkerClick={handleMarkerClick as unknown as (m: MarkerType) => void}
-    pathCoordinates={pathCoordinates}
-    fitBounds={false} // we keep manual zoom
-  />
-</div>
-
+        <MapView
+          center={[10.313924, 123.887082]}
+          markers={combinedMarkers as MarkerType[]}
+          onMarkerClick={handleMarkerClick as unknown as (m: MarkerType) => void}
+          pathCoordinates={pathCoordinates}
+          fitBounds={false}
+        />
+      </div>
 
       {sidebarOpen && selectedMarker && (
         <div className="sidebar">
-          <button className="close-sidebar" onClick={handleCloseSidebar}>
-            x
-          </button>
+          <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
 
-          {/* Evacuation: custom stats card */}
           {selectedMarker.type === "evacuation" && renderEvacCard(selectedMarker)}
 
-          {/* Others: keep your old layout */}
           {selectedMarker.type !== "evacuation" && (
             <>
               {selectedMarker.image && (
-                <img src={selectedMarker.image} alt={selectedMarker.lguName} />
+                <img src={selectedMarker.image} alt={selectedMarker.lguName} style={headerImg} />
               )}
 
               <h2>{selectedMarker.lguName}</h2>
@@ -528,23 +571,48 @@ const MapOfCebu = () => {
 
               {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
                 <>
-                  <p>
-                    <strong>Population:</strong> {selectedMarker.population}
-                  </p>
-                  <p>
-                    <strong>Available Resources:</strong> {selectedMarker.resources || "-"}
-                  </p>
-                  <p>
-                    <strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}
-                  </p>
+                  <p><strong>Population:</strong> {selectedMarker.population}</p>
+                  <p><strong>Available Resources:</strong> {selectedMarker.resources || "-"}</p>
+                  <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
 
                   {selectedMarker.type === "lgu" && selectedMarker.lguId != null && (
-                    <Link
-                      to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
-                      className="see-more-link"
-                    >
-                      See More
-                    </Link>
+                    <>
+                      <Link
+                        to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
+                        className="see-more-link"
+                      >
+                        See More
+                      </Link>
+
+                      <div style={{ marginTop: 12 }}>
+                        <h4 style={{ margin: "8px 0" }}>Hazard Photos</h4>
+
+                        {hazardLoading[selectedMarker.lguId] && (
+                          <div style={{ fontSize: 13, color: "#6b7280" }}>Loading photos…</div>
+                        )}
+
+                        {!hazardLoading[selectedMarker.lguId] &&
+                          (hazardsByLGU[selectedMarker.lguId]?.length ? (
+                            <div style={hazardsList}>
+                              {hazardsByLGU[selectedMarker.lguId].map((p, idx) => (
+                                <a
+                                  href={p.src}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  key={idx}
+                                  title={p.label}
+                                  style={hazardItem}
+                                >
+                                  <img src={p.src} alt={p.label} style={hazardImg} />
+                                  <div style={hazardCaption}>{p.label}</div>
+                                </a>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 13, color: "#6b7280" }}>No photos found.</div>
+                          ))}
+                      </div>
+                    </>
                   )}
 
                   {selectedMarker.type === "barangay" && (

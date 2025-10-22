@@ -1088,6 +1088,35 @@ def get_hazard(
 
     count = db.query(Hazard).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
+@router.get("/lgu_profiling/manage_lgu/lgu/{lgu_id}/hazards", response_model=dict)
+def get_hazards_for_lgu(
+    lgu_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    rows = (
+        db.query(Hazard)
+        .filter(Hazard.lgu_id == lgu_id)
+        .order_by(Hazard.last_updated.desc().nulls_last())
+        .all()
+    )
+
+    items = []
+    for h in rows:
+        # only send if there's an image
+        if not h.image_url:
+            continue
+        items.append(
+            {
+                "id": h.id,
+                "type": h.hazard_type or "",
+                "area": h.hazard_area or "",
+                "image_url": _abs_media_url(request, h.image_url),
+                "last_updated": _fmt_dt(h.last_updated),
+            }
+        )
+
+    return {"count": len(items), "items": items}
 
 
 @router.post("/lgu_profiling/manage_lgu/add_hazard", response_model=HazardOut)

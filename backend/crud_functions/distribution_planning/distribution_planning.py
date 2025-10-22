@@ -421,9 +421,9 @@ class DistributionAndPlanningCRUD:
         ).one()
 
         return {
-            "In Transit": results.in_transit,
-            "Completed": results.completed,
-            "Cancelled": results.cancelled,
+            "In Transit": results.in_transit or 0,
+            "Completed": results.completed or 0,
+            "Cancelled": results.cancelled or 0,
         }
 
     @staticmethod

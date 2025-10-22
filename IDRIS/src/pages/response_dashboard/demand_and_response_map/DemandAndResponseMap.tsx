@@ -39,7 +39,7 @@ interface DemandPin {
   address: string;
   lat: number;
   lng: number;
-  status: string;
+  status: "no response" | "responded" | "completed";
   needs: any; // JSON field for storing needs data
   priority: string;
   submitted_at: string;
@@ -95,20 +95,52 @@ const DemandAndResponseMap: React.FC = () => {
     }
   };
 
-  const getIconByStatus = (status: string) => {
-    let iconUrl = "/images/icons/gray.png";
-
-    if (status === "no response") iconUrl = "/images/icons/demand-urgent.png";
-    else if (status === "responded")
-      iconUrl = "/images/icons/demand-responded.png";
-    else if (status === "completed")
-      iconUrl = "/images/icons/demand-completed.png";
-
-    return L.icon({
-      iconUrl,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
+  const getIconByStatus = (status: DemandPin["status"]) => {
+    let iconUrl = "";
+    let iconColor = "#6c757d"; // Default gray
+  
+    if (status === "no response") {
+      iconColor = "#dc3545"; // Red for urgent/no response
+    } else if (status === "responded") {
+      iconColor = "#ffc107"; // Yellow for responded
+    } else if (status === "completed") {
+      iconColor = "#28a745"; // Green for completed
+    }
+  
+    // Create a custom pin-shaped marker
+    const svgIcon = `
+      <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pin shadow -->
+        <ellipse cx="16" cy="37" rx="4" ry="2" fill="rgba(0,0,0,0.2)"/>
+  
+        <!-- Pin body -->
+        <path d="M16 1C8.82 1 3 6.82 3 14C3 23 16 38 16 38S29 23 29 14C29 6.82 23.18 1 16 1Z"
+              fill="${iconColor}"
+              stroke="white"
+              stroke-width="2"/>
+  
+        <!-- Inner circle -->
+        <circle cx="16" cy="14" r="6" fill="white"/>
+  
+        <!-- Status indicator dot -->
+        <circle cx="16" cy="14" r="3" fill="${iconColor}"/>
+  
+        <!-- Small status icon based on status -->
+        ${status === "no response"
+        ? `<text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>`
+        : status === "responded"
+          ? `<circle cx="16" cy="14" r="1.5" fill="white"/>`
+          : `<path d="M13 14L15 16L19 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      }
+      </svg>
+    `;
+  
+    return L.divIcon({
+      html: svgIcon,
+      className: "custom-pin-marker",
+      iconSize: [32, 40],
+      iconAnchor: [16, 38], // Point of the pin
+      popupAnchor: [0, -38], // Popup appears above the pin
     });
   };
 

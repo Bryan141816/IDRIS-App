@@ -50,10 +50,10 @@ export default function DonationReport({
 
   // ------- Helpers -------
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount || 0);
+    new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount || 0);
 
   const formatDate = (isoLike: string) =>
-    new Date(isoLike).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    new Date(isoLike).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
 
   const totalDonations = rows.reduce((sum, d) => sum + (Number.isFinite(d.amount) ? d.amount : 0), 0);
 

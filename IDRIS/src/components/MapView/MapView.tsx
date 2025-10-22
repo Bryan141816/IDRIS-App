@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect } from "react";
@@ -27,6 +27,7 @@ interface MapViewProps {
   customIcon?: L.Icon;
 }
 
+/* ---------- ICONS BY TYPE ---------- */
 const getIconByType = (type?: string) => {
   let iconUrl = "/images/default.png";
 
@@ -34,7 +35,8 @@ const getIconByType = (type?: string) => {
   else if (type === "barangay") iconUrl = "/images/icons/baranggay.png";
   else if (type === "raffi") iconUrl = "/images/icons/raffi.png";
   else if (type === "hazard") iconUrl = "/images/icons/hazard.png";
-  else if (type === "evacuation") iconUrl = "/images/icons/evacuation.png";
+  // ✅ Use your green evac pin here
+  else if (type === "evacuation") iconUrl = "/images/icons/evac.png";
 
   return L.icon({
     iconUrl,
@@ -44,6 +46,7 @@ const getIconByType = (type?: string) => {
   });
 };
 
+/* ---------- FIT TO BOUNDS WHEN ENABLED ---------- */
 const FitBounds: React.FC<{ markers: MarkerType[] }> = ({ markers }) => {
   const map = useMap();
 
@@ -56,6 +59,7 @@ const FitBounds: React.FC<{ markers: MarkerType[] }> = ({ markers }) => {
   return null;
 };
 
+/* ---------- MAIN MAP COMPONENT ---------- */
 const MapView: React.FC<MapViewProps> = ({
   center = [0, 0],
   markers,
@@ -68,17 +72,22 @@ const MapView: React.FC<MapViewProps> = ({
     <MapContainer
       center={center}
       zoom={9}
-      zoomControl={false}
+      zoomControl={false} // disable default top-left zoom control
       style={{ height: "100%", width: "100%" }}
       attributionControl={false}
     >
+      {/* ✅ Add Zoom Buttons to bottom-right */}
+      <ZoomControl position="bottomright" />
+
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
       />
 
+      {/* Auto-fit map if enabled */}
       {fitBounds && <FitBounds markers={markers} />}
 
+      {/* Render markers */}
       {markers.map((point, index) => (
         <Marker
           key={index}
@@ -91,7 +100,7 @@ const MapView: React.FC<MapViewProps> = ({
           <Popup>
             <div>
               <strong>{point.lguName || point.name || "Unnamed Location"}</strong>
-              {/* ✅ Show capacity only if evacuation type */}
+              {/* ✅ Show capacity only for evacuation centers */}
               {point.type === "evacuation" && (
                 <>
                   <br />
@@ -103,7 +112,7 @@ const MapView: React.FC<MapViewProps> = ({
         </Marker>
       ))}
 
-      {/* Draw polyline from barangay to nearest evacuation center */}
+      {/* ✅ Draw connecting line from barangay to nearest evacuation center */}
       {pathCoordinates && <Polyline positions={pathCoordinates} color="red" />}
     </MapContainer>
   );

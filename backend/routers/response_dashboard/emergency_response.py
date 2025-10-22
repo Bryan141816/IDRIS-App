@@ -19,8 +19,9 @@ router = APIRouter(
 )
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+    dependencies=[Depends(RoleChecker(["logistics admin", "superadmin"]))],
 )
+
 
 @router_admin.get("/report", response_model=EmergencyReportResponse)
 def get_emergency_response_report(
@@ -37,12 +38,15 @@ def get_emergency_response_report(
         start_date = datetime(now.year, 3 * current_quarter - 2, 1)
         date_range = f"Q{current_quarter} {now.year}"
     elif period == "yearly":
-        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = now.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         date_range = f"Year {now.year}"
     else:
-        start_date = now - timedelta(days=30) # Default to last 30 days if period is invalid
+        start_date = now - timedelta(
+            days=30
+        )  # Default to last 30 days if period is invalid
         date_range = f"Last 30 Days"
-
 
     query = db.query(DemandAndResponse).filter(
         DemandAndResponse.submitted_at >= start_date
@@ -59,26 +63,34 @@ def get_emergency_response_report(
             generatedDate=now.isoformat(),
             totalRecords=0,
             summary=EmergencyReportSummary(
-                totalIncidents=0, activeIncidents=0, completedIncidents=0,
-                avgResponseTime=0, totalStaffDeployed=0, totalResourcesDistributed=0
+                totalIncidents=0,
+                activeIncidents=0,
+                completedIncidents=0,
+                avgResponseTime=0,
+                totalStaffDeployed=0,
+                totalResourcesDistributed=0,
             ),
             incidentsByPriority=EmergencyReportIncidentsByPriority(
                 urgent=0, high=0, medium=0, low=0
             ),
             resourceDistribution={},
             performanceMetrics=EmergencyReportPerformanceMetrics(
-                responseTimeAchieved=0, responseTimeTarget=3, completionRate=0, staffUtilization=0
-            )
+                responseTimeAchieved=0,
+                responseTimeTarget=3,
+                completionRate=0,
+                staffUtilization=0,
+            ),
         )
 
-
     # Executive Summary
-    active_incidents = query.filter(DemandAndResponse.status.in_(["active", "ongoing"])).count()
+    active_incidents = query.filter(
+        DemandAndResponse.status.in_(["active", "ongoing"])
+    ).count()
     completed_incidents = query.filter(DemandAndResponse.status == "completed").count()
-    
+
     # Placeholder for staff deployed and avg response time
-    total_staff_deployed = 145 # Placeholder
-    avg_response_time = 2.5 # Placeholder
+    total_staff_deployed = 145  # Placeholder
+    avg_response_time = 2.5  # Placeholder
 
     # Resource Distribution
     resource_distribution = {}
@@ -88,14 +100,17 @@ def get_emergency_response_report(
             for need in incident.needs:
                 item = need.get("need", "Unknown")
                 amount = int(need.get("amount", 0))
-                resource_distribution[item] = resource_distribution.get(item, 0) + amount
+                resource_distribution[item] = (
+                    resource_distribution.get(item, 0) + amount
+                )
                 total_resources_distributed += amount
-    
+
     # Relief Activities by Priority
-    priority_counts = query.group_by(DemandAndResponse.priority).with_entities(
-        DemandAndResponse.priority,
-        func.count(DemandAndResponse.id)
-    ).all()
+    priority_counts = (
+        query.group_by(DemandAndResponse.priority)
+        .with_entities(DemandAndResponse.priority, func.count(DemandAndResponse.id))
+        .all()
+    )
 
     incidents_by_priority = {
         "urgent": 0,
@@ -108,8 +123,10 @@ def get_emergency_response_report(
             incidents_by_priority[priority.lower()] = count
 
     # Performance Metrics
-    completion_rate = (completed_incidents / total_incidents) * 100 if total_incidents > 0 else 0
-    staff_utilization = 85 # Placeholder
+    completion_rate = (
+        (completed_incidents / total_incidents) * 100 if total_incidents > 0 else 0
+    )
+    staff_utilization = 85  # Placeholder
 
     summary = EmergencyReportSummary(
         totalIncidents=total_incidents,
@@ -122,7 +139,7 @@ def get_emergency_response_report(
 
     performance_metrics = EmergencyReportPerformanceMetrics(
         responseTimeAchieved=avg_response_time,
-        responseTimeTarget=3, # Placeholder
+        responseTimeTarget=3,  # Placeholder
         completionRate=completion_rate,
         staffUtilization=staff_utilization,
     )
@@ -138,4 +155,6 @@ def get_emergency_response_report(
         performanceMetrics=performance_metrics,
     )
 
+
 router.include_router(router_admin)
+

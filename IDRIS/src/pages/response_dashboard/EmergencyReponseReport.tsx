@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Breadcrumb } from 'antd';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Breadcrumb } from "antd";
+import { Link } from "react-router-dom";
 import RAFI_Shield from "../../media/RAFI_Shield.png";
 import "./EmergencyReportResponse.css";
-import axios from 'axios';
+import axios from "axios";
+import { API } from "../../API_Handler/Axio_API_Handler";
 
 type ReportData = {
   reportTitle: string;
@@ -36,23 +37,22 @@ type ReportData = {
 };
 
 const companyInfo = {
-  name: 'RAFI Inc.',
-  tagline: 'The Ramon Aboitiz Foundation Inc.',
+  name: "RAFI Inc.",
+  tagline: "The Ramon Aboitiz Foundation Inc.",
   address: {
-    street: '35 Eduardo Aboitiz St',
-    city: 'Cebu City',
-    state: 'Philippines',
-    zip: '6000'
+    street: "35 Eduardo Aboitiz St",
+    city: "Cebu City",
+    state: "Philippines",
+    zip: "6000",
   },
   contact: {
-    phone: '(09) 000-000-0000',
-    email: 'sampleemail@gmail.com'
-  }
+    phone: "(09) 000-000-0000",
+    email: "sampleemail@gmail.com",
+  },
 };
 
-
 const EmergencyReportResponse = () => {
-  const [filterPeriod, setFilterPeriod] = useState('monthly');
+  const [filterPeriod, setFilterPeriod] = useState("monthly");
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,9 @@ const EmergencyReportResponse = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get(`http://localhost:8000/api/emergency-response/report?period=${filterPeriod}`);
+        const response = await API.get(
+          `api/emergency-response/report?period=${filterPeriod}`,
+        );
         setReportData(response.data);
       } catch (err) {
         setError("Failed to fetch report data.");
@@ -97,7 +99,11 @@ const EmergencyReportResponse = () => {
       <div className="erc-report-header">
         <div className="erc-horizontal-flex">
           <div className="erc-company-branding">
-            <img src={RAFI_Shield} alt="rafi-shield" className="erc-company-logo" />
+            <img
+              src={RAFI_Shield}
+              alt="rafi-shield"
+              className="erc-company-logo"
+            />
             <div className="erc-company-title">
               <h1 className="erc-company-name">{companyInfo.name}</h1>
               <p className="erc-company-tagline">{companyInfo.tagline}</p>
@@ -108,21 +114,29 @@ const EmergencyReportResponse = () => {
             <p className="erc-company-legal-name">{companyInfo.name}</p>
             <p className="erc-company-address">{companyInfo.address.street}</p>
             <p className="erc-company-address">
-              {companyInfo.address.city}, {companyInfo.address.state} {companyInfo.address.zip}
+              {companyInfo.address.city}, {companyInfo.address.state}{" "}
+              {companyInfo.address.zip}
             </p>
-            <p className="erc-company-contact">Phone: {companyInfo.contact.phone}</p>
-            <p className="erc-company-contact">Email: {companyInfo.contact.email}</p>
+            <p className="erc-company-contact">
+              Phone: {companyInfo.contact.phone}
+            </p>
+            <p className="erc-company-contact">
+              Email: {companyInfo.contact.email}
+            </p>
           </div>
         </div>
 
         <div className="erc-report-info">
           <h2 className="erc-report-title">{reportData.reportTitle}</h2>
           <div className="erc-report-metadata">
-            <span>Generated on: {new Date(reportData.generatedDate).toLocaleDateString()}</span>
+            <span>
+              Generated on:{" "}
+              {new Date(reportData.generatedDate).toLocaleDateString()}
+            </span>
 
             {/* Period filters + actions */}
             <div className="print-section">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <span>Period:</span>
                 <select
                   value={filterPeriod}
@@ -140,7 +154,10 @@ const EmergencyReportResponse = () => {
               </button>
             </div>
 
-            <span>Reporting Period: {reportData.dateRange} • Records: {reportData.totalRecords}</span>
+            <span>
+              Reporting Period: {reportData.dateRange} • Records:{" "}
+              {reportData.totalRecords}
+            </span>
           </div>
         </div>
       </div>
@@ -152,27 +169,39 @@ const EmergencyReportResponse = () => {
           <h3 className="erc-section-title">Executive Summary</h3>
           <div className="erc-metrics-grid">
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.totalIncidents}</p>
+              <p className="erc-metric-value">
+                {reportData.summary.totalIncidents}
+              </p>
               <p className="erc-metric-label">Total Relief Activities</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.activeIncidents}</p>
+              <p className="erc-metric-value">
+                {reportData.summary.activeIncidents}
+              </p>
               <p className="erc-metric-label">Active Relief Activities</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.completedIncidents}</p>
+              <p className="erc-metric-value">
+                {reportData.summary.completedIncidents}
+              </p>
               <p className="erc-metric-label">Completed</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.avgResponseTime}h</p>
+              <p className="erc-metric-value">
+                {reportData.summary.avgResponseTime}h
+              </p>
               <p className="erc-metric-label">Avg Response Time</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.totalStaffDeployed}</p>
+              <p className="erc-metric-value">
+                {reportData.summary.totalStaffDeployed}
+              </p>
               <p className="erc-metric-label">Staff Deployed</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">{reportData.summary.totalResourcesDistributed}</p>
+              <p className="erc-metric-value">
+                {reportData.summary.totalResourcesDistributed}
+              </p>
               <p className="erc-metric-label">Resources Distributed</p>
             </div>
           </div>
@@ -193,22 +222,50 @@ const EmergencyReportResponse = () => {
               <tr>
                 <td className="priority-urgent">Urgent</td>
                 <td>{reportData.incidentsByPriority.urgent}</td>
-                <td>{((reportData.incidentsByPriority.urgent / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
+                <td>
+                  {(
+                    (reportData.incidentsByPriority.urgent /
+                      reportData.summary.totalIncidents) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </td>
               </tr>
               <tr>
                 <td className="priority-high">High</td>
                 <td>{reportData.incidentsByPriority.high}</td>
-                <td>{((reportData.incidentsByPriority.high / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
+                <td>
+                  {(
+                    (reportData.incidentsByPriority.high /
+                      reportData.summary.totalIncidents) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </td>
               </tr>
               <tr>
                 <td className="priority-medium">Medium</td>
                 <td>{reportData.incidentsByPriority.medium}</td>
-                <td>{((reportData.incidentsByPriority.medium / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
+                <td>
+                  {(
+                    (reportData.incidentsByPriority.medium /
+                      reportData.summary.totalIncidents) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </td>
               </tr>
               <tr>
                 <td className="priority-low">Low</td>
                 <td>{reportData.incidentsByPriority.low}</td>
-                <td>{((reportData.incidentsByPriority.low / reportData.summary.totalIncidents) * 100).toFixed(1)}%</td>
+                <td>
+                  {(
+                    (reportData.incidentsByPriority.low /
+                      reportData.summary.totalIncidents) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </td>
               </tr>
             </tbody>
           </table>
@@ -226,13 +283,21 @@ const EmergencyReportResponse = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(reportData.resourceDistribution).map(([type, count]) => (
-                <tr key={type}>
-                  <td style={{ textTransform: 'capitalize' }}>{type}</td>
-                  <td>{count}</td>
-                  <td>{((count / reportData.summary.totalResourcesDistributed) * 100).toFixed(1)}%</td>
-                </tr>
-              ))}
+              {Object.entries(reportData.resourceDistribution).map(
+                ([type, count]) => (
+                  <tr key={type}>
+                    <td style={{ textTransform: "capitalize" }}>{type}</td>
+                    <td>{count}</td>
+                    <td>
+                      {(
+                        (count / reportData.summary.totalResourcesDistributed) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </td>
+                  </tr>
+                ),
+              )}
             </tbody>
           </table>
         </div>
@@ -247,13 +312,17 @@ const EmergencyReportResponse = () => {
                 className="erc-summary-value"
                 style={{
                   color:
-                    reportData.performanceMetrics.responseTimeAchieved <= reportData.performanceMetrics.responseTimeTarget
-                      ? '#28a745'
-                      : '#dc3545'
+                    reportData.performanceMetrics.responseTimeAchieved <=
+                    reportData.performanceMetrics.responseTimeTarget
+                      ? "#28a745"
+                      : "#dc3545",
                 }}
               >
                 {reportData.performanceMetrics.responseTimeAchieved}h
-                <span className="erc-target-text"> (Target: {reportData.performanceMetrics.responseTimeTarget}h)</span>
+                <span className="erc-target-text">
+                  {" "}
+                  (Target: {reportData.performanceMetrics.responseTimeTarget}h)
+                </span>
               </p>
             </div>
             <div className="erc-summary-item">
@@ -263,10 +332,10 @@ const EmergencyReportResponse = () => {
                 style={{
                   color:
                     reportData.performanceMetrics.completionRate >= 80
-                      ? '#28a745'
+                      ? "#28a745"
                       : reportData.performanceMetrics.completionRate >= 60
-                      ? '#ffc107'
-                      : '#dc3545'
+                        ? "#ffc107"
+                        : "#dc3545",
                 }}
               >
                 {reportData.performanceMetrics.completionRate}%
@@ -274,7 +343,9 @@ const EmergencyReportResponse = () => {
             </div>
             <div className="erc-summary-item">
               <p className="erc-summary-label">Staff Utilization:</p>
-              <p className="erc-summary-value">{reportData.performanceMetrics.staffUtilization}%</p>
+              <p className="erc-summary-value">
+                {reportData.performanceMetrics.staffUtilization}%
+              </p>
             </div>
           </div>
         </div>
@@ -283,11 +354,10 @@ const EmergencyReportResponse = () => {
       {/* Print Footer */}
       <div className="erc-print-footer">
         <p>
-          This report was generated on {reportData.generatedDate} at {new Date().toLocaleTimeString()}
+          This report was generated on {reportData.generatedDate} at{" "}
+          {new Date().toLocaleTimeString()}
         </p>
-        <p>
-          {companyInfo.name} - Confidential Document
-        </p>
+        <p>{companyInfo.name} - Confidential Document</p>
       </div>
     </div>
   );

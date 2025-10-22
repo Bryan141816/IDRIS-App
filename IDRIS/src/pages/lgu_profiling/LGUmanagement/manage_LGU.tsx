@@ -129,6 +129,8 @@ type TableRowShape = {
 
 type Tabs = "all" | "lgu" | "barangay" | "rafi" | "hazard" | "evacuation";
 
+type SectionTab = Exclude<Tabs, "all">;
+
 /* ========================= COMPONENT ========================= */
 const MapOfCebu = () => {
   // Which dataset(s) to show — default to "all" so everything shows first
@@ -152,9 +154,16 @@ const MapOfCebu = () => {
   const [evacuationResponse, setEvacuationResponse] =
     useState<TableReponse | null>(null);
 
-  // TableView refresher (TableView gives us a function that accepts page?: number)
-  const refreshTable = useRef<null | ((page?: number) => void)>(null);
-  const handleRefreshTable = (page = 1) => refreshTable.current?.(page);
+  // Separate refreshers per table (critical fix)
+  const tableRefreshers = useRef<Partial<Record<SectionTab, (page?: number) => void>>>({});
+
+  const setTableRef = (tab: SectionTab, fn: (page?: number) => void) => {
+    tableRefreshers.current[tab] = fn;
+  };
+
+  const refreshTableFor = (tab: SectionTab, page = 1) => {
+    tableRefreshers.current[tab]?.(page);
+  };
 
   const [selectedViewData, setSelectedViewData] =
     useState<TableRowShape | null>(null);
@@ -238,9 +247,9 @@ const MapOfCebu = () => {
   }, [fetchDataOne]);
 
   /* ---------- modal helpers ---------- */
-  const openAddModal = (tabOverride?: Exclude<Tabs, "all">) => {
-    const tab = tabOverride || activeTab;
-    if (tab === "all") return; // require explicit section from the Add Pin dropdown
+  const openAddModal = (tabOverride?: SectionTab) => {
+    const tab = tabOverride || (activeTab === "all" ? undefined : (activeTab as SectionTab));
+    if (!tab) return; // require explicit section in "All"
     setAddModalState((prev) => ({ ...prev, [tab]: true }));
   };
   const closeAddModal = () => {
@@ -278,13 +287,12 @@ const MapOfCebu = () => {
         }
       }
       setSelectedViewData(row);
-      setViewContextTab(tabToUse); // remember which section this view belongs to
+      setViewContextTab(tabToUse);
     }
 
-    setViewModalState((prev) => ({ ...prev, [tabToUse]: true })) as any;
+    setViewModalState((prev) => ({ ...prev, [tabToUse]: true }));
   };
 
-  // Hide only (keep selection when switching to edit)
   const hideViewModal = () => {
     setViewModalState((prev) => ({
       ...prev,
@@ -296,7 +304,6 @@ const MapOfCebu = () => {
     }));
   };
 
-  // Close and clear selection
   const closeViewModal = () => {
     hideViewModal();
     setSelectedViewData(null);
@@ -339,16 +346,16 @@ const MapOfCebu = () => {
     try {
       const targetTab = resolveCurrentTab();
       await deleteRecord(targetTab, id);
+
       setMessageBox((prev) => ({
         ...prev,
         isOpen: true,
         type: "message",
         message: "Record deleted successfully",
       }));
+
       closeViewModal();
-      handleRefreshTable();
-      if (activeTab === "all") await fetchAll();
-      else await fetchDataOne(targetTab);
+      await afterMutateRefresh(targetTab);
     } catch (err: any) {
       const serverDetail =
         err?.response?.data?.detail ||
@@ -370,6 +377,7 @@ const MapOfCebu = () => {
   ) => {
     const target = tabOverride || resolveCurrentTab();
     const response = await addRecord(target, payload);
+
     if (!(response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -378,8 +386,7 @@ const MapOfCebu = () => {
         message: "Record added successfully",
       }));
       closeAddModal();
-      if (activeTab === "all") await fetchAll();
-      else handleRefreshTable();
+      await afterMutateRefresh(target);
     } else {
       setMessageBox((prev) => ({
         ...prev,
@@ -407,6 +414,7 @@ const MapOfCebu = () => {
   const handleEditRecord = async (id: string, payload: any) => {
     const target = resolveCurrentTab();
     const response = await updateRecord(target, id, payload);
+
     if ((response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -539,18 +547,15 @@ const MapOfCebu = () => {
           );
           break;
         }
-        default:
-          break;
       }
     } catch {
-      if (activeTab === "all") await fetchAll();
-      else await fetchDataOne(target);
+      // As a fallback, re-fetch that section
+      await fetchDataOne(target);
     }
 
     closeEditModal();
     openViewModal(undefined, target);
-    if (activeTab === "all") await fetchAll();
-    else handleRefreshTable();
+    await afterMutateRefresh(target);
   };
 
   /* ---------- message box ---------- */
@@ -568,33 +573,15 @@ const MapOfCebu = () => {
   /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
     // reset modals
-    setAddModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
-    setViewModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
-    setEditModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
+    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
     setSelectedViewData(null);
 
     if (activeTab === "all") {
       fetchAll();
     } else {
-      fetchDataOne(activeTab as Exclude<Tabs, "all">);
+      fetchDataOne(activeTab as SectionTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -901,7 +888,7 @@ const MapOfCebu = () => {
                     }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
-                    updateTable={(fn) => (refreshTable.current = fn)}
+                    updateTable={(fn) => setTableRef("lgu", fn)}
                   />
                 </div>
               ) : (
@@ -923,7 +910,7 @@ const MapOfCebu = () => {
                     }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("barangay", fn)}
                   />
                 </div>
               ) : (
@@ -945,7 +932,7 @@ const MapOfCebu = () => {
                     }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("rafi", fn)}
                   />
                 </div>
               ) : (
@@ -967,7 +954,7 @@ const MapOfCebu = () => {
                     }
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("hazard", fn)}
                   />
                 </div>
               ) : (
@@ -975,7 +962,7 @@ const MapOfCebu = () => {
               )}
             </section>
 
-            {/* Evacuation center (still view-only, and excluded from Add Pin) */}
+            {/* Evacuation center (optional to show in All) */}
             {/* <section className="section-block">
               <div className="horizontal-container">
                 <h2 className="section-title">Evacuation Centers</h2>
@@ -987,7 +974,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("evacuation", fn)}
                   />
                 </div>
               ) : (
@@ -1013,7 +1000,7 @@ const MapOfCebu = () => {
                   }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
-                  updateTable={(fn) => (refreshTable.current = fn)}
+                  updateTable={(fn) => setTableRef("lgu", fn)}
                 />
               </div>
             ) : (
@@ -1036,7 +1023,7 @@ const MapOfCebu = () => {
                   }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("barangay", fn)}
                 />
               </div>
             ) : (
@@ -1059,7 +1046,7 @@ const MapOfCebu = () => {
                   }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("rafi", fn)}
                 />
               </div>
             ) : (
@@ -1082,7 +1069,7 @@ const MapOfCebu = () => {
                   }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("hazard", fn)}
                 />
               </div>
             ) : (
@@ -1105,7 +1092,7 @@ const MapOfCebu = () => {
                   }
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("evacuation", fn)}
                 />
               </div>
             ) : (

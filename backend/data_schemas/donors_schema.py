@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Literal, Union
 
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, ConfigDict
+from models import DonationType
 
 # === Enums aligned to model ===
 class DonorType(str, Enum):
@@ -79,7 +79,7 @@ class DonorStatsResponse(BaseModel):
 
 class IndividualDonorProfile(BaseModel):
     donorId: str = Field(..., alias="donor_id")
-    donor_name: str  # comes from Donor.donor_name @property
+    donor_name: str 
     donor_type: DonorType
     is_verified: bool
     date_joined: datetime
@@ -102,3 +102,4 @@ class DonorAllAttributes(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
+        

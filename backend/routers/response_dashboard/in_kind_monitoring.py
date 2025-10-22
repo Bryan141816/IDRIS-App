@@ -13,15 +13,17 @@ import math
 
 router = APIRouter(
     tags=["in_kind_monitoring"],
-    dependencies=[Depends(RoleChecker(["operations admin"]))],
 )
 
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+)
 
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
 
-@router.get(
+@router_admin.get(
     "/response_dashboard/in_kind_monitoring/record_list", response_model=TableResponse
 )
 def get_modality_table(
@@ -103,7 +105,7 @@ def get_modality_table(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
-@router.post(
+@router_admin.post(
     "/response_dashboard/in_kind_monitoring/add_record",
     response_model=InKindMonitoringOut,
 )
@@ -113,7 +115,7 @@ def add_modality_record(
     return create_in_kind_monitoring_record(db, modality_report)
 
 
-@router.delete(
+@router_admin.delete(
     "/response_dashboard/in_kind_monitoring/delete_record/{record_id}",
     response_model=dict,
 )
@@ -124,7 +126,7 @@ def delete_modality_report(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Modality Record with ID {record_id} deleted successfully."}
 
 
-@router.put("/response_dashboard/in_kind_monitoring/update_record/{record_id}")
+@router_admin.put("/response_dashboard/in_kind_monitoring/update_record/{record_id}")
 def update_modality_record(
     record_id: int, update: InKindMonitoringCreate, db: Session = Depends(get_db)
 ):
@@ -141,7 +143,7 @@ def update_modality_record(
     return {"detail": "Modality record updated succesfully", "report": record}
 
 
-@router.put("/response_dashboard/in_kind_monitoring/mark_as_delivered/{record_id}")
+@router_admin.put("/response_dashboard/in_kind_monitoring/mark_as_delivered/{record_id}")
 def delivered_record(record_id: int, db: Session = Depends(get_db)):
     record = db.query(InKindMonitoring).get(record_id)
     if not record:
@@ -152,3 +154,5 @@ def delivered_record(record_id: int, db: Session = Depends(get_db)):
     db.refresh(record)
 
     return {"detail": "Modality record updated succesfully", "report": record}
+
+router.include_router(router_admin)

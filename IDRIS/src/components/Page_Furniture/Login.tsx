@@ -14,15 +14,26 @@ const Login = () => {
   const [email, setEmailEntry] = useState("");
   const [password, setPassword] = useState("");
   const [erroMessage, setErrorMessage] = useState("");
+  const [showError, setShowError] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
 
   const { setUserRoles } = useUserRoleContext();
-  const { setUserType, setEmail, setUsername, setUserReady, setUserId } =
-    useUserContext();
+  const {
+    setUserType,
+    setEmail,
+    setUsername,
+    setUserReady,
+    setUserId,
+    setUserImage,
+  } = useUserContext();
 
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrorMessage(""); // Clear previous error messages
+    setShowError(false);
+
     Swal.fire({
       title: "Logging in...",
       didOpen: () => {
@@ -31,6 +42,7 @@ const Login = () => {
       allowOutsideClick: false,
       allowEscapeKey: false,
     });
+
     try {
       await loginUser(email, password);
       const userData = await fetchCurrentUser();
@@ -46,28 +58,84 @@ const Login = () => {
         setEmail(userData["email"]);
         setUserId(userData["user_id"]);
         setUsername(userData["username"]);
+        setUserImage(userData["user_profile"]?.profile_image || null); // ADDED missing setUserImage
         setUserReady(true);
         handleRoleBasedRedirect(userData["roles"], navigate);
       } else {
         throw new Error("Invalid user data received.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed: ", error);
       Swal.hideLoading();
+
+      // Default error values
+      let backendErrorTitle = "Login Failed";
+      let backendErrorText = "An unexpected error occurred. Please try again.";
+
+      if (error.response) {
+        const status = error.response.status;
+        const detail = error.response.data?.detail || "";
+
+        switch (status) {
+          case 404:
+            backendErrorTitle = "Account Not Found";
+            backendErrorText =
+              "No account exists with this email address. Please check your email or create a new account by clicking 'Signup' below.";
+            break;
+          case 401:
+            backendErrorTitle = "Incorrect Password";
+            backendErrorText =
+              "The password you entered is incorrect. Please try again or click 'Forgot Password' to reset it.";
+            break;
+          case 403:
+            backendErrorTitle = "Account Not Activated";
+            backendErrorText =
+              "Your account has not been activated yet. Please check your email for the activation link or contact the administrator for assistance.";
+            break;
+          case 400:
+            backendErrorTitle = "Invalid Input";
+            backendErrorText =
+              detail ||
+              "Please check that your email and password are in the correct format.";
+            break;
+          case 500:
+            backendErrorTitle = "Server Error";
+            backendErrorText =
+              "A server error occurred. Please try again later or contact support if the problem persists.";
+            break;
+          default:
+            backendErrorTitle = "Login Error";
+            backendErrorText = detail || "Unable to log in at this time. Please try again.";
+        }
+      } else if (error.request) {
+        backendErrorTitle = "Connection Error";
+        backendErrorText =
+          "Unable to connect to the server. Please check your internet connection and try again.";
+      } else if (error.message) {
+        backendErrorTitle = "Error";
+        backendErrorText = error.message || "An unexpected error occurred.";
+      }
+
       Swal.update({
         icon: "error",
-        title: "Login Failed",
-        text: "Incorrect email or password. Please try again.",
+        title: backendErrorTitle,
+        text: backendErrorText,
       });
-      setErrorMessage("Incorrect email or password. Please try again.");
+
+      setErrorMessage(backendErrorText);
+      setErrorTitle(backendErrorTitle);
+      setShowError(true);
     }
   };
+
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:8000/auth/login";
   };
+
   const handleMicrosoftLogin = () => {
     window.location.href = "http://localhost:8000/auth/microsoft/login";
   };
+
   return (
     <section id="login-section">
       <LoginHeader />
@@ -81,8 +149,14 @@ const Login = () => {
         </p>
       </div>
       <div id="login-form">
-        <h1>login</h1>
+        <h1>Login</h1>
         <form onSubmit={handleLogin}>
+          {/* Error Box */}
+          {showError && errorTitle && (
+            <div className="login-error-container">
+              <span className="login-error-message">{errorTitle}</span>
+            </div>
+          )}
           <div className="input-group">
             <i className="fas fa-envelope input-icon"></i>
             <input
@@ -107,7 +181,7 @@ const Login = () => {
               required
             />
           </div>
-          <span id="log-in-error-message">{erroMessage}</span>
+          {/* Remove the old span for error message */}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <Link to="/register">Signup</Link>
             <Link to="/forgot_password">Forgot Password</Link>
@@ -120,4 +194,5 @@ const Login = () => {
     </section>
   );
 };
+
 export default Login;

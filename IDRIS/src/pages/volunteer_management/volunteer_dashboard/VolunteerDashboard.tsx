@@ -512,7 +512,7 @@ export default function IDRISDashboard() {
     const openReportModal = (): void => setIsReportsModalOpen(true);
     const closeReportModal = (): void => setIsReportsModalOpen(false);
     const isOpsAdmin =
-        userType === "admin" && userRoles.includes("operations admin");
+        userType === "admin" && userRoles.includes("operations admin") || userRoles.includes("superadmin");
 
     useEffect(() => {
         const savedDate = localStorage.getItem("viewDate");
@@ -608,20 +608,19 @@ export default function IDRISDashboard() {
 
 
     const joinProgram = async (n: NewsAnnouncement) => {
-        if (!canJoin(n)) return;
-
-        const iv =
-            myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
-        const ov =
-            myOrgVolunteer && statusOf(myOrgVolunteer) === "approved"
-                ? myOrgVolunteer
-                : null;
-
-        if (!iv && !ov) {
-            // Not a volunteer yet, or not approved → guide to Become a Volunteer
-            setIsVolunteerModalOpen(true);
-            return;
-        }
+  if (!canJoin(n)) return;
+  const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
+  const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
+  if (!iv && !ov) {
+    // Show required Swal message
+    Swal.fire({
+      icon: "warning",
+      title: "Volunteer Registration Required",
+      text: "You must be a registered volunteer to join programs. Please register as a volunteer first.",
+      confirmButtonText: "OK"
+    });
+    return;
+  }
 
         try {
             setJoining((prev) => ({ ...prev, [n.id]: true }));
@@ -761,8 +760,7 @@ export default function IDRISDashboard() {
                                     <div className="card-title-white">Total Volunteers</div>
                                     <div className="card-number">{totalVolunteers}</div>
                                 </div>
-                                {userType === "admin" &&
-                                    userRoles.includes("operations admin") ? (
+                                {isOpsAdmin ? (
                                     <>
                                         <button
                                             className="manage-btn"

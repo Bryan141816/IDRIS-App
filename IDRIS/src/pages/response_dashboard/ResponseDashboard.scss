@@ -94,7 +94,7 @@ $gray-800: #1f2937;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 12px;
     min-width: 0;
-    
+
     h3 {
       grid-column: 1 / -1;
       margin-bottom: 1rem;
@@ -139,7 +139,7 @@ $gray-800: #1f2937;
       &::-webkit-scrollbar-thumb {
         background: #c1c8cd;
         border-radius: 3px;
-        
+
         &:hover {
           background: #a8b3ba;
         }
@@ -161,7 +161,7 @@ $gray-800: #1f2937;
     display: flex;
     flex-direction: column;
     gap: 12px;
-    
+
     h3 {
       margin-bottom: 0.75rem;
       font-size: 1.1rem;
@@ -181,7 +181,7 @@ $gray-800: #1f2937;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     transition: box-shadow 0.3s ease;
-    
+
     &:hover {
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
@@ -210,7 +210,8 @@ $gray-800: #1f2937;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 140px;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -230,7 +231,7 @@ $gray-800: #1f2937;
     &.full-width {
       width: 100%;
     }
-    
+
     &.space-between-container {
       display: flex;
       justify-content: space-between;
@@ -319,15 +320,15 @@ $gray-800: #1f2937;
 .custom-pin-marker {
   background: none !important;
   border: none !important;
-  
+
   svg {
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
     transition: all 0.2s ease;
   }
 
   &:hover svg {
     transform: scale(1.1);
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
   }
 }
 
@@ -471,7 +472,8 @@ $gray-800: #1f2937;
           margin-bottom: 1rem;
           border: 1px solid $gray-300;
 
-          th, td {
+          th,
+          td {
             padding: 0.75rem;
             text-align: left;
             border: 1px solid $gray-300;
@@ -483,10 +485,25 @@ $gray-800: #1f2937;
             color: $gray-800;
           }
 
-          .priority-urgent { color: $error-color; font-weight: 600; }
-          .priority-high { color: #fd7e14; font-weight: 600; }
-          .priority-medium { color: $warning-color; font-weight: 600; }
-          .priority-low { color: $success-color; font-weight: 600; }
+          .priority-urgent {
+            color: $error-color;
+            font-weight: 600;
+          }
+
+          .priority-high {
+            color: #fd7e14;
+            font-weight: 600;
+          }
+
+          .priority-medium {
+            color: $warning-color;
+            font-weight: 600;
+          }
+
+          .priority-low {
+            color: $success-color;
+            font-weight: 600;
+          }
         }
       }
     }
@@ -612,7 +629,7 @@ $gray-800: #1f2937;
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -620,8 +637,13 @@ $gray-800: #1f2937;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 // Button styles
@@ -760,7 +782,9 @@ $gray-800: #1f2937;
         font-size: 0.9rem;
       }
 
-      input, select, textarea {
+      input,
+      select,
+      textarea {
         width: 100%;
         padding: 0.75rem;
         border: 1px solid $gray-300;
@@ -810,6 +834,7 @@ $gray-800: #1f2937;
     opacity: 0;
     transform: translateY(-50px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -917,7 +942,8 @@ $gray-800: #1f2937;
         width: auto !important;
       }
 
-      th, td {
+      th,
+      td {
         padding: 5px;
         font-size: 0.875rem;
       }
@@ -1182,8 +1208,13 @@ $gray-800: #1f2937;
 }
 
 @keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 // Dark mode support

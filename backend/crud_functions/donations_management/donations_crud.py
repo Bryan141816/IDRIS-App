@@ -740,6 +740,26 @@ class DonationCRUD:
 
         return {"donations": responses, "total": total_count}
 
+    @staticmethod
+    def get_donation_by_id(db: Session, donation_id: str):
+        """
+        Get a single donation by its ID, with related details.
+        """
+        try:
+            donation = (
+                db.query(Donation)
+                .options(
+                    joinedload(Donation.cash),
+                    joinedload(Donation.inkind),
+                    joinedload(Donation.proposal),
+                    joinedload(Donation.donor),
+                )
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
+            return donation
+        except NoResultFound:
+            raise HTTPException(status_code=404, detail="Donation not found")
 
 def _add_months(orig: date, months: int) -> date:
     """Return date after adding `months` calendar months, clamping day to month length."""

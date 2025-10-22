@@ -40,7 +40,7 @@ const DashboardPieChart = () => {
 
   const hasData = chartLabels.length > 0 && chartData.some((val) => val > 0);
 
-  const fallbackLabels = ["No Donor"];
+  const fallbackLabels = ["No Donations"];
   const fallbackData = [1]; // Just one slice
   const fallbackColors = ["#d3d3d3"]; // Grey slice for fallback
 

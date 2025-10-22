@@ -14,7 +14,7 @@ from crud_functions.finance_management.finance_report_crud import FinanceReport
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superuser"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
 )
 
 router_user = APIRouter(
@@ -26,10 +26,10 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
 )
 
-@router.get("/get-report/all", response_model=List[dict]) 
+@router.get("/get-report/all", response_model=List[dict])
 def list_records_all(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
     to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
@@ -48,7 +48,7 @@ def list_records_all(
     """
     allocation_type = (allocation_type_a or []) + (allocation_type_b or [])
     statuses = (statuses_a or []) + (statuses_b or [])
-        
+
     records = FinanceReport.get_all(
         db=db,
         from_date=from_date,
@@ -119,7 +119,7 @@ def list_inflows(
         }
         for rec in (inflows or [])
     ]
-    
+
 @router.get("/get_report/outflows", response_model=List[dict])
 def list_outflows(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
@@ -165,8 +165,8 @@ def list_outflows(
         }
         for rec in (outflows or [])
     ]
-    
-        
+
+
 @router.get("/get/budget_summary", name="budget_summary")
 def budget_summary(
     from_date: Optional[date] = Query(None, description="YYYY-MM-DD"),
@@ -188,8 +188,8 @@ def budget_summary(
     except Exception as e:
         # Surface database/logic errors as 500 (adjust for prod)
         raise HTTPException(status_code=500, detail=str(e))
-    return result        
-        
+    return result
+
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)

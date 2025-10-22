@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { 
-  faPlus, 
-  faEdit, 
-  faTrash, 
+import {
+  faPlus,
+  faEdit,
+  faTrash,
   faMapMarkerAlt,
   faSync,
   faExclamationTriangle,
@@ -12,12 +12,25 @@ import {
   faExpand,
   faCompress,
   faHome,
-  faChevronRight
+  faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
-import { MapContainer, TileLayer, Marker, useMapEvents, Popup } from "react-leaflet";
+import Swal from "sweetalert2";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  Popup,
+} from "react-leaflet";
 import L from "leaflet";
-import { fetchData } from "../../../API_Handler/response_dashboard";
+import {
+  getMapPins,
+  addRecord,
+  updateRecord,
+  deleteRecord,
+} from "../../../API_Handler/response_dashboard_demand_and_response_list";
 import "./DemandAndResponseMap.scss";
+import axios from "axios";
 
 // Updated interface to match your database schema exactly
 interface DemandPin {
@@ -27,7 +40,7 @@ interface DemandPin {
   address: string;
   lat: number;
   lng: number;
-  status: string;
+  status: "no response" | "responded" | "completed";
   needs: any; // JSON field for storing needs data
   priority: string;
   submitted_at: string;
@@ -56,7 +69,10 @@ const DemandAndResponseMap: React.FC = () => {
   const [demandPins, setDemandPins] = useState<DemandPin[]>([]);
   const [selectedPin, setSelectedPin] = useState<DemandPin | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newPinLocation, setNewPinLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [newPinLocation, setNewPinLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,62 +86,8 @@ const DemandAndResponseMap: React.FC = () => {
   const loadDemandPins = async () => {
     setIsLoading(true);
     try {
-      // Mock data matching your database schema
-      const mockData: DemandPin[] = [
-        {
-          demand_id: "1",
-          id: "demand_001",
-          title_label: "Barangay Relief Center A",
-          address: "Barangay Hall, Main Street, District 1",
-          lat: 10.313924,
-          lng: 123.887082,
-          status: "no response",
-          priority: "urgent",
-          needs: [
-            { id: 1, need: "Rice", amount: 50, fulfilled: false },
-            { id: 2, need: "Water", amount: "critical", fulfilled: false },
-            { id: 3, need: "Medicine", amount: 25, fulfilled: false }
-          ],
-          submitted_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          last_updated: new Date().toISOString()
-        },
-        {
-          demand_id: "2",
-          id: "demand_002",
-          title_label: "Emergency Shelter B",
-          address: "Community Center, 2nd Street, District 2",
-          lat: 10.320000,
-          lng: 123.890000,
-          status: "responded",
-          priority: "high",
-          needs: [
-            { id: 1, need: "Blankets", amount: 100, fulfilled: true },
-            { id: 2, need: "Food Packs", amount: 75, fulfilled: false }
-          ],
-          submitted_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          last_updated: new Date(Date.now() - 1800000).toISOString() // 30 minutes ago
-        },
-        {
-          demand_id: "3",
-          id: "demand_003",
-          title_label: "School Evacuation Site",
-          address: "Elementary School, Education Ave, District 3",
-          lat: 10.315000,
-          lng: 123.885000,
-          status: "completed",
-          priority: "medium",
-          needs: [
-            { id: 1, need: "Temporary Shelter", amount: 200, fulfilled: true },
-            { id: 2, need: "Sanitation Kits", amount: 50, fulfilled: true }
-          ],
-          submitted_at: new Date(Date.now() - 14400000).toISOString(), // 4 hours ago
-          last_updated: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
-        }
-      ];
-      setDemandPins(mockData);
-      
-      // Uncomment when API is ready:
-      // await fetchData<DemandPin[]>("/response_dashboard/demand_pins", setDemandPins);
+      const data = await getMapPins();
+      setDemandPins(data);
     } catch (error) {
       console.error("Failed to load demand pins:", error);
       setDemandPins([]);
@@ -134,29 +96,65 @@ const DemandAndResponseMap: React.FC = () => {
     }
   };
 
-  const getIconByStatus = (status: string) => {
-    let iconUrl = "/images/icons/gray.png";
-    
-    if (status === "no response") iconUrl = "/images/icons/demand-urgent.png";
-    else if (status === "responded") iconUrl = "/images/icons/demand-responded.png";
-    else if (status === "completed") iconUrl = "/images/icons/demand-completed.png";
+  const getIconByStatus = (status: DemandPin["status"]) => {
+    let iconUrl = "";
+    let iconColor = "#6c757d"; // Default gray
 
-    return L.icon({
-      iconUrl,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
+    if (status === "no response") {
+      iconColor = "#dc3545"; // Red for urgent/no response
+    } else if (status === "responded") {
+      iconColor = "#ffc107"; // Yellow for responded
+    } else if (status === "completed") {
+      iconColor = "#28a745"; // Green for completed
+    }
+
+    // Create a custom pin-shaped marker
+    const svgIcon = `
+      <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pin shadow -->
+        <ellipse cx="16" cy="37" rx="4" ry="2" fill="rgba(0,0,0,0.2)"/>
+  
+        <!-- Pin body -->
+        <path d="M16 1C8.82 1 3 6.82 3 14C3 23 16 38 16 38S29 23 29 14C29 6.82 23.18 1 16 1Z"
+              fill="${iconColor}"
+              stroke="white"
+              stroke-width="2"/>
+  
+        <!-- Inner circle -->
+        <circle cx="16" cy="14" r="6" fill="white"/>
+  
+        <!-- Status indicator dot -->
+        <circle cx="16" cy="14" r="3" fill="${iconColor}"/>
+  
+        <!-- Small status icon based on status -->
+        ${status === "no response"
+        ? `<text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>`
+        : status === "responded"
+          ? `<circle cx="16" cy="14" r="1.5" fill="white"/>`
+          : `<path d="M13 14L15 16L19 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+      }
+      </svg>
+    `;
+
+    return L.divIcon({
+      html: svgIcon,
+      className: "custom-pin-marker",
+      iconSize: [32, 40],
+      iconAnchor: [16, 38], // Point of the pin
+      popupAnchor: [0, -38], // Popup appears above the pin
     });
   };
 
-  const filteredPins = demandPins.filter(pin => {
+  const filteredPins = demandPins.filter((pin) => {
     const matchesStatus = filterStatus === "all" || pin.status === filterStatus;
-    const matchesPriority = filterPriority === "all" || pin.priority === filterPriority;
-    const matchesSearch = searchTerm === "" || 
+    const matchesPriority =
+      filterPriority === "all" || pin.priority === filterPriority;
+    const matchesSearch =
+      searchTerm === "" ||
       pin.title_label.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pin.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pin.id.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     return matchesStatus && matchesPriority && matchesSearch;
   });
 
@@ -166,57 +164,107 @@ const DemandAndResponseMap: React.FC = () => {
         setNewPinLocation({ lat: e.latlng.lat, lng: e.latlng.lng });
         setSelectedPin(null);
         setShowAddModal(true);
-      }
+      },
     });
     return null;
   };
 
   const handleSavePin = async (formData: DemandFormData) => {
+    const apiNeeds = formData.needs.map((item) => ({
+      id: item.id,
+      need: item.need,
+      amount: String(item.amount),
+    }));
+
+    const commonPayload = {
+      title_label: formData.title_label,
+      address: formData.address,
+      status: formData.status,
+      priority: formData.priority,
+      needs: apiNeeds,
+    };
+
     try {
       if (selectedPin) {
         // Update existing pin
-        const updatedPin: DemandPin = {
-          ...selectedPin,
-          title_label: formData.title_label,
-          address: formData.address,
-          status: formData.status,
-          priority: formData.priority,
-          needs: formData.needs,
-          last_updated: new Date().toISOString()
+        const payload = {
+          ...commonPayload,
+          lat: selectedPin.lat,
+          lng: selectedPin.lng,
         };
-        setDemandPins(demandPins.map(pin => pin.demand_id === selectedPin.demand_id ? updatedPin : pin));
+        Swal.fire({
+          title: selectedPin ? "Updating..." : "Saving...",
+          text: "Please wait.",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+        await updateRecord(selectedPin.demand_id, payload);
+        Swal.fire(
+          "Updated!",
+          "The demand point has been updated successfully.",
+          "success",
+        );
       } else {
         // Create new pin
-        const newPin: DemandPin = {
-          demand_id: Date.now().toString(),
-          id: `demand_${Date.now()}`,
-          title_label: formData.title_label,
-          address: formData.address,
+        const payload = {
+          ...commonPayload,
           lat: newPinLocation?.lat || 0,
           lng: newPinLocation?.lng || 0,
-          status: formData.status,
-          priority: formData.priority,
-          needs: formData.needs,
-          submitted_at: new Date().toISOString(),
-          last_updated: new Date().toISOString()
         };
-        setDemandPins([...demandPins, newPin]);
+        await addRecord(payload);
+        Swal.fire(
+          "Saved!",
+          "The new demand point has been added successfully.",
+          "success",
+        );
       }
       setShowAddModal(false);
       setSelectedPin(null);
       setNewPinLocation(null);
+      loadDemandPins(); // Reload pins to show changes
     } catch (error) {
       console.error("Failed to save pin:", error);
+      Swal.fire(
+        "Failed!",
+        "There was an error saving the demand point.",
+        "error",
+      );
     }
   };
 
   const handleDeletePin = async (demandId: string) => {
-    if (window.confirm("Are you sure you want to delete this demand point?")) {
-      try {
-        setDemandPins(demandPins.filter(pin => pin.demand_id !== demandId));
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Deleting...",
+        text: "Please wait while the demand point is being deleted.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      }); try {
+        await deleteRecord(demandId);
+        Swal.fire("Deleted!", "The demand point has been deleted.", "success");
         setSelectedPin(null);
+        loadDemandPins();
       } catch (error) {
         console.error("Failed to delete pin:", error);
+        Swal.fire(
+          "Failed!",
+          "There was an error deleting the demand point.",
+          "error",
+        );
       }
     }
   };
@@ -224,18 +272,19 @@ const DemandAndResponseMap: React.FC = () => {
   const getDemandStats = () => {
     return {
       total: filteredPins.length,
-      no_response: filteredPins.filter(p => p.status === "no response").length,
-      responded: filteredPins.filter(p => p.status === "responded").length,
-      completed: filteredPins.filter(p => p.status === "completed").length,
-      urgent: filteredPins.filter(p => p.priority === "urgent").length,
-      high: filteredPins.filter(p => p.priority === "high").length
+      no_response: filteredPins.filter((p) => p.status === "no response")
+        .length,
+      responded: filteredPins.filter((p) => p.status === "responded").length,
+      completed: filteredPins.filter((p) => p.status === "completed").length,
+      urgent: filteredPins.filter((p) => p.priority === "urgent").length,
+      high: filteredPins.filter((p) => p.priority === "high").length,
     };
   };
 
   const stats = getDemandStats();
 
   return (
-    <div className={`demand-response-map ${isFullscreen ? 'fullscreen' : ''}`}>
+    <div className={`demand-response-map ${isFullscreen ? "fullscreen" : ""}`}>
       {/* Breadcrumb Navigation */}
       <nav className="breadcrumb-nav" aria-label="breadcrumb">
         <ol className="breadcrumb">
@@ -257,14 +306,14 @@ const DemandAndResponseMap: React.FC = () => {
       <div className="page-header">
         <h2>Map Points Management</h2>
         <div className="header-actions">
-          <button
+          {/* <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="btn-secondary"
           >
             <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} />
-            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          </button>
-          
+            {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          </button> */}
+
           <button className="btn-secondary" onClick={loadDemandPins}>
             <FontAwesomeIcon icon={faSync} />
             Refresh
@@ -299,7 +348,7 @@ const DemandAndResponseMap: React.FC = () => {
           <div className="map-header">
             <h3>Interactive Map</h3>
             <div className="map-controls">
-              <div className="search-box">
+              {/* <div className="search-box">
                 <FontAwesomeIcon icon={faSearch} />
                 <input
                   type="text"
@@ -307,7 +356,7 @@ const DemandAndResponseMap: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -319,10 +368,10 @@ const DemandAndResponseMap: React.FC = () => {
             >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; OpenStreetMap contributors'
+                attribution="&copy; OpenStreetMap contributors"
               />
               <MapClickHandler />
-              
+
               {filteredPins.map((pin) => (
                 <Marker
                   key={pin.demand_id}
@@ -331,23 +380,34 @@ const DemandAndResponseMap: React.FC = () => {
                   eventHandlers={{
                     click: () => {
                       setSelectedPin(pin);
-                    }
+                    },
                   }}
                 >
                   <Popup>
                     <div className="pin-popup">
                       <h4>{pin.title_label}</h4>
-                      <p><strong>ID:</strong> {pin.id}</p>
-                      <p><strong>Status:</strong> {pin.status}</p>
-                      <p><strong>Priority:</strong> {pin.priority}</p>
-                      <p><strong>Address:</strong> {pin.address}</p>
-                      <p><strong>Submitted:</strong> {new Date(pin.submitted_at).toLocaleDateString()}</p>
+                      <p>
+                        <strong>ID:</strong> {pin.id}
+                      </p>
+                      <p>
+                        <strong>Status:</strong> {pin.status}
+                      </p>
+                      <p>
+                        <strong>Priority:</strong> {pin.priority}
+                      </p>
+                      <p>
+                        <strong>Address:</strong> {pin.address}
+                      </p>
+                      <p>
+                        <strong>Submitted:</strong>{" "}
+                        {new Date(pin.submitted_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </Popup>
                 </Marker>
               ))}
             </MapContainer>
-            
+
             <div className="map-instructions">
               <FontAwesomeIcon icon={faMapMarkerAlt} />
               <span>Click anywhere on the map to add a new demand point</span>
@@ -396,7 +456,7 @@ const DemandAndResponseMap: React.FC = () => {
               filteredPins.map((pin) => (
                 <div
                   key={pin.demand_id}
-                  className={`pin-card ${selectedPin?.demand_id === pin.demand_id ? 'selected' : ''}`}
+                  className={`pin-card ${selectedPin?.demand_id === pin.demand_id ? "selected" : ""}`}
                   onClick={() => setSelectedPin(pin)}
                 >
                   <div className="pin-header">
@@ -404,7 +464,9 @@ const DemandAndResponseMap: React.FC = () => {
                       <h4>{pin.title_label}</h4>
                       <div className="pin-id">ID: {pin.id}</div>
                       <div className="pin-badges">
-                        <span className={`status-badge ${pin.status.replace(' ', '-')}`}>
+                        <span
+                          className={`status-badge ${pin.status.replace(" ", "-")}`}
+                        >
                           {pin.status}
                         </span>
                         <span className={`priority-badge ${pin.priority}`}>
@@ -413,8 +475,8 @@ const DemandAndResponseMap: React.FC = () => {
                       </div>
                     </div>
                     <div className="pin-actions">
-                      <button 
-                        className="btn-icon edit" 
+                      <button
+                        className="btn-icon edit"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedPin(pin);
@@ -423,7 +485,7 @@ const DemandAndResponseMap: React.FC = () => {
                       >
                         <FontAwesomeIcon icon={faEdit} />
                       </button>
-                      <button 
+                      <button
                         className="btn-icon delete"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -437,27 +499,37 @@ const DemandAndResponseMap: React.FC = () => {
 
                   <div className="pin-details">
                     <p className="address">📍 {pin.address}</p>
-                    
-                    {pin.needs && Array.isArray(pin.needs) && pin.needs.length > 0 && (
-                      <div className="needs-summary">
-                        <strong>Needs ({pin.needs.length}):</strong>
-                        <div className="needs-list-small">
-                          {pin.needs.slice(0, 3).map((need: NeedItem) => (
-                            <span key={need.id} className={`need-tag ${need.fulfilled ? 'fulfilled' : 'pending'}`}>
-                              {need.need}: {need.amount}
-                            </span>
-                          ))}
-                          {pin.needs.length > 3 && <span className="more-needs">+{pin.needs.length - 3} more</span>}
+
+                    {pin.needs &&
+                      Array.isArray(pin.needs) &&
+                      pin.needs.length > 0 && (
+                        <div className="needs-summary">
+                          <strong>Needs ({pin.needs.length}):</strong>
+                          <div className="needs-list-small">
+                            {pin.needs.slice(0, 3).map((need: NeedItem) => (
+                              <span
+                                key={need.id}
+                                className={`need-tag ${need.fulfilled ? "fulfilled" : "pending"}`}
+                              >
+                                {need.need}: {need.amount}
+                              </span>
+                            ))}
+                            {pin.needs.length > 3 && (
+                              <span className="more-needs">
+                                +{pin.needs.length - 3} more
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     <div className="timestamps">
                       <p className="submitted-at">
                         Submitted: {new Date(pin.submitted_at).toLocaleString()}
                       </p>
                       <p className="last-updated">
-                        Last updated: {new Date(pin.last_updated).toLocaleString()}
+                        Last updated:{" "}
+                        {new Date(pin.last_updated).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -488,7 +560,7 @@ const DemandAndResponseMap: React.FC = () => {
 // Pin Modal Component (Add/Edit) - Same as before
 const PinModal: React.FC<{
   pin: DemandPin | null;
-  location: {lat: number, lng: number} | null;
+  location: { lat: number; lng: number } | null;
   onSave: (data: DemandFormData) => void;
   onClose: () => void;
 }> = ({ pin, location, onSave, onClose }) => {
@@ -497,8 +569,57 @@ const PinModal: React.FC<{
     address: pin?.address || "",
     status: pin?.status || "no response",
     priority: pin?.priority || "medium",
-    needs: pin?.needs || []
+    needs: pin?.needs || [],
   });
+  const [addressPlaceholder, setAddressPlaceholder] = useState(
+    "Full address of the demand point",
+  );
+  const [isSearching, setIsSearching] = useState(false);
+  async function reverseGeocode(location: { lat: number; lng: number } | null) {
+    if (!location) {
+      return null;
+    }
+    try {
+      const response = await axios.get(
+        "https://nominatim.openstreetmap.org/reverse",
+        {
+          params: {
+            lat: location.lat,
+            lon: location.lng,
+            format: "json",
+          },
+        },
+      );
+
+      console.log("Address:", response.data.display_name);
+      return response.data;
+    } catch (error) {
+      console.error("Reverse geocoding failed:", error);
+      return null;
+    }
+  }
+  useEffect(() => {
+    // Only fetch address if it's a new pin (no existing pin data)
+    if (!pin && location) {
+      const fetchAddress = async () => {
+        setIsSearching(true);
+        setAddressPlaceholder("Searching Address...");
+        const address = await reverseGeocode(location);
+        if (address && address.display_name) {
+          setFormData((prev) => ({
+            ...prev,
+            address: address.display_name,
+          }));
+        } else {
+          setAddressPlaceholder(
+            "Failed to search address please manually enter the address",
+          );
+        }
+        setIsSearching(false);
+      };
+      fetchAddress();
+    }
+  }, [pin, location]);
 
   const [newNeed, setNewNeed] = useState({ need: "", amount: 0 });
 
@@ -513,11 +634,11 @@ const PinModal: React.FC<{
         id: Date.now(),
         need: newNeed.need,
         amount: newNeed.amount,
-        fulfilled: false
+        fulfilled: false,
       };
       setFormData({
         ...formData,
-        needs: [...formData.needs, need]
+        needs: [...formData.needs, need],
       });
       setNewNeed({ need: "", amount: 0 });
     }
@@ -526,16 +647,16 @@ const PinModal: React.FC<{
   const removeNeed = (id: number) => {
     setFormData({
       ...formData,
-      needs: formData.needs.filter(need => need.id !== id)
+      needs: formData.needs.filter((need) => need.id !== id),
     });
   };
 
   const toggleNeedFulfilled = (id: number) => {
     setFormData({
       ...formData,
-      needs: formData.needs.map(need => 
-        need.id === id ? { ...need, fulfilled: !need.fulfilled } : need
-      )
+      needs: formData.needs.map((need) =>
+        need.id === id ? { ...need, fulfilled: !need.fulfilled } : need,
+      ),
     });
   };
 
@@ -549,7 +670,9 @@ const PinModal: React.FC<{
               Coordinates: {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
             </p>
           )}
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
@@ -560,7 +683,9 @@ const PinModal: React.FC<{
                 type="text"
                 required
                 value={formData.title_label}
-                onChange={(e) => setFormData({...formData, title_label: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, title_label: e.target.value })
+                }
                 placeholder="e.g., Barangay Relief Center"
               />
             </div>
@@ -569,7 +694,9 @@ const PinModal: React.FC<{
               <label>Priority</label>
               <select
                 value={formData.priority}
-                onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                onChange={(e) =>
+                  setFormData({ ...formData, priority: e.target.value })
+                }
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -581,12 +708,16 @@ const PinModal: React.FC<{
 
           <div className="form-group">
             <label>Address *</label>
+
             <input
               type="text"
               required
               value={formData.address}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
-              placeholder="Full address of the demand point"
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+              placeholder={addressPlaceholder}
+              disabled={isSearching}
             />
           </div>
 
@@ -594,7 +725,9 @@ const PinModal: React.FC<{
             <label>Status</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value })
+              }
             >
               <option value="no response">No Response</option>
               <option value="responded">Responded</option>
@@ -605,7 +738,7 @@ const PinModal: React.FC<{
           {/* Needs Management Section */}
           <div className="form-section">
             <h4>Needs Management</h4>
-            
+
             {/* Add New Need */}
             <div className="add-need">
               <div className="form-row">
@@ -614,16 +747,23 @@ const PinModal: React.FC<{
                   <input
                     type="text"
                     value={newNeed.need}
-                    onChange={(e) => setNewNeed({...newNeed, need: e.target.value})}
+                    onChange={(e) =>
+                      setNewNeed({ ...newNeed, need: e.target.value })
+                    }
                     placeholder="e.g., Rice, Water, Medicine"
                   />
                 </div>
                 <div className="form-group">
-                  <label>Amount</label>
+                  <label>Quantity</label>
                   <input
                     type="number"
                     value={newNeed.amount}
-                    onChange={(e) => setNewNeed({...newNeed, amount: parseInt(e.target.value) || 0})}
+                    onChange={(e) =>
+                      setNewNeed({
+                        ...newNeed,
+                        amount: parseInt(e.target.value) || 0,
+                      })
+                    }
                     placeholder="Quantity needed"
                   />
                 </div>
@@ -638,24 +778,29 @@ const PinModal: React.FC<{
               <div className="needs-list">
                 <h5>Current Needs:</h5>
                 {formData.needs.map((need) => (
-                  <div key={need.id} className={`need-item ${need.fulfilled ? 'fulfilled' : 'pending'}`}>
+                  <div
+                    key={need.id}
+                    className={`need-item ${need.fulfilled ? "fulfilled" : "pending"}`}
+                  >
                     <div className="need-content">
                       <span className="need-name">{need.need}</span>
-                      <span className="need-amount">Amount: {need.amount}</span>
-                      <span className={`need-status ${need.fulfilled ? 'fulfilled' : 'pending'}`}>
-                        {need.fulfilled ? '✓ Fulfilled' : '⏳ Pending'}
+                      <span className="need-amount">Quantity: {need.amount}</span>
+                      <span
+                        className={`need-status ${need.fulfilled ? "fulfilled" : "pending"}`}
+                      >
+                        {need.fulfilled ? "✓ Fulfilled" : "⏳ Pending"}
                       </span>
                     </div>
                     <div className="need-actions">
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="btn-toggle-status"
                         onClick={() => toggleNeedFulfilled(need.id)}
                       >
-                        {need.fulfilled ? 'Mark Pending' : 'Mark Fulfilled'}
+                        {need.fulfilled ? "Mark Pending" : "Mark Fulfilled"}
                       </button>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="btn-remove"
                         onClick={() => removeNeed(need.id)}
                       >

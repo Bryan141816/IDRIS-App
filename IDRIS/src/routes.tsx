@@ -209,6 +209,11 @@ const DonationRecords = () =>
     (module) => ({ Component: module.default }),
   )
 
+const DonationReceipt = () =>
+  import("./pages/donations_management/donor/DonationReceipt").then(
+    (module) => ({ Component: module.default }),
+  );
+
 // const Donor_Dashboard = () =>
 //   import("./pages/donations_management/donor/DonorDashboard").then(
 //     (module) => ({ Component: module.default }),
@@ -284,6 +289,10 @@ const RequestProcurement = () =>
   ).then((module) => ({ Component: module.default }));
 
 export const router = createBrowserRouter([
+  {
+    path: "/complete-admin-profile",
+    lazy: Activate,
+  },
   {
     path: "/",
     HydrateFallback: PageLoader,
@@ -428,12 +437,12 @@ export const router = createBrowserRouter([
               {
                 path: "create",
                 lazy: CreateFunding,
-                handle: { allowedRoles: ["finance admin", "operations admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
               },
               {
                 path: "update",
                 lazy: UpdateFunding,
-                handle: { allowedRoles: ["finance admin", "operations admin"] },
+                handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
               },
             ],
           },
@@ -448,18 +457,18 @@ export const router = createBrowserRouter([
           {
             path: "donation_records",
             lazy: DonationRecords,
-            handle: { allowedRoles: ["finance admin", "operations admin"] },
+            handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
+          },
+          {
+            path: "donor_profile",
+            lazy: DonorProfile,
           },
         ],
       },
       {
         path: "donation_report",
         lazy: DonationsReport,
-        handle: { allowedRoles: ["finance admin", "operations admin"] },
-      },
-      {
-        path: "donor_profile",
-        lazy: DonorProfile,
+        handle: { allowedRoles: ["finance admin", "operations admin", "superadmin"] },
       },
       // {
       //   path: "donor_dashboard",
@@ -479,7 +488,7 @@ export const router = createBrowserRouter([
           {
             path: "report_list",
             lazy: ReportList,
-            handle: { allowedRoles: ["operations admin"] },
+            handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
           },
           {
             path: "demand_and_response_map",
@@ -487,12 +496,12 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 lazy: DemandAndResponseMap,
-                handle: { allowedRoles: ["operations admin"] },
+                handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
               },
               {
                 path: "list_view",
                 lazy: DemandAndResponseList,
-                handle: { allowedRoles: ["operations admin"] },
+                handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
               },
             ],
           },
@@ -557,17 +566,24 @@ export const router = createBrowserRouter([
       {
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance_printable",
         lazy: FinancePrintPage,
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       },
       {
         path: "/finance&admin/finance_management/budget_summary",
         lazy: FinanceBudgetSummary,
+        handle: { allowedRoles: ["operations admin", "superadmin", "finance admin"] },
       }
     ],
   },
+  {
+    path: "/donation/receipt/:donationId",
+    lazy: DonationReceipt,
+  }
 ]);
 export const prefetchMap: Record<string, () => Promise<any>> = {
   "/login": Login,
@@ -599,7 +615,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/funding_proposals/update": UpdateFunding,
 
   "/donation_report": DonationsReport,
-  "/donor_profile": DonorProfile,
+  "/donations_management/donor_profile": DonorProfile,
   "/donation_status": DonationStatus,
   "/donations_management/donation_records": DonationRecords,
   // "/donor_dashboard": Donor_Dashboard,

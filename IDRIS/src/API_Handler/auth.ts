@@ -22,8 +22,24 @@ export async function loginUser(email: string, password: string): Promise<void> 
 
 export async function fetchCurrentUser(): Promise<any | null> {
   try {
-    const response = await API.get('/users/me');
-    return response.data;
+    const userResponse = await API.get("/users/me");
+    if (userResponse.data) {
+      try {
+        const profileResponse = await API.get("/user-profile/me");
+        userResponse.data.user_profile = profileResponse.data;
+      } catch (profileError: any) {
+        if (
+          profileError.response &&
+          (profileError.response.status === 404 ||
+            profileError.response.status === 401)
+        ) {
+          userResponse.data.user_profile = null;
+        } else {
+          throw profileError;
+        }
+      }
+    }
+    return userResponse.data;
   } catch (error: any) {
     if (error.response && error.response.status === 401) {
       return null;

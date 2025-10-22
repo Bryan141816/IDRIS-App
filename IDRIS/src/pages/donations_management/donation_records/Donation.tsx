@@ -114,14 +114,19 @@ const DonationsRecord: React.FC = () => {
                             All
                         </button>
                         <button
+                            className={`filter-btn ${statusFilter === 'Completed' ? 'active' : ''}`}
+                            onClick={() => setStatusFilter('Completed')}>
+                            Completed
+                        </button>                        
+                        <button
                             className={`filter-btn ${statusFilter === 'Pending' ? 'active' : ''}`}
                             onClick={() => setStatusFilter('Pending')}>
                             Pending
                         </button>
                         <button
-                            className={`filter-btn ${statusFilter === 'Completed' ? 'active' : ''}`}
-                            onClick={() => setStatusFilter('Completed')}>
-                            Completed
+                            className={`filter-btn ${statusFilter === 'Failed' ? 'active' : ''}`}
+                            onClick={() => setStatusFilter('Failed')}>
+                            Failed
                         </button>
                     </div>
                 </div>

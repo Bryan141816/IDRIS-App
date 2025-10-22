@@ -181,7 +181,7 @@ class FundingProposalCRUD:
         total_amount = (
             db.query(func.coalesce(func.sum(Donation_Cash.amount), 0))
             .join(Donation, Donation.donation_id == Donation_Cash.donation_id)
-            .filter(Donation.funding_id == funding_id)
+            .filter(Donation.funding_id == funding_id, Donation.status == DonationStatus.COMPLETED)
             .scalar()
         )
 

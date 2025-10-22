@@ -10,6 +10,11 @@ export async function createDonation(data: any): Promise<any> {
   });
 }
 
+export async function getDonationById(donationId: string): Promise<any> {
+  const { data } = await API.get(`/donations/${donationId}`);
+  return data;
+}
+
 export async function getAllDonations(
   from?: string,
   to?: string,

@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict,Field
+from pydantic import BaseModel, ConfigDict,Field, HttpUrl
 from typing import List, Optional, Union
 
 
@@ -46,14 +46,55 @@ class UserCreate(UserBase):
 # required on creation
 
 
+class UserProfileSchema(BaseModel):
+    profile_image: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+
 class UserSchema(UserBase):
     id: int
     user_id: str
     roles: List[str]
     user_type: Optional[str]
+    user_profile: Optional[UserProfileSchema]
 
     class Config:
         from_attributes = True
+
+
+# Emergency Response Report Schemas
+class EmergencyReportSummary(BaseModel):
+    totalIncidents: int
+    activeIncidents: int
+    completedIncidents: int
+    avgResponseTime: float
+    totalStaffDeployed: int
+    totalResourcesDistributed: int
+
+
+class EmergencyReportIncidentsByPriority(BaseModel):
+    urgent: int
+    high: int
+    medium: int
+    low: int
+
+
+class EmergencyReportPerformanceMetrics(BaseModel):
+    responseTimeAchieved: float
+    responseTimeTarget: float
+    completionRate: float
+    staffUtilization: float
+
+class EmergencyReportResponse(BaseModel):
+    reportTitle: str
+    dateRange: str
+    generatedDate: str
+    totalRecords: int
+    summary: EmergencyReportSummary
+    incidentsByPriority: EmergencyReportIncidentsByPriority
+    resourceDistribution: dict[str, int]
+    performanceMetrics: EmergencyReportPerformanceMetrics
 
 
 class TokenWithUserResponse(BaseModel):
@@ -272,7 +313,8 @@ class NeedItem(BaseModel):
 
 
 class DemandAndResponseCreate(BaseModel):
-    title_lable: str
+    
+    title_label: str
     address: str
     lat: float
     lng: float
@@ -283,7 +325,7 @@ class DemandAndResponseCreate(BaseModel):
 
 class DemandAndResponseOut(BaseModel):
     id: int
-    title_lable: str
+    title_label: str
     address: str
     lat: float
     lng: float

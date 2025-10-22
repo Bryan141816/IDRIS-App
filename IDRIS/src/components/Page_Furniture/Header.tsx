@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDown, MenuDots, CircleDot } from "./Icons";
+import { MenuDots, CircleDot } from "./Icons";
 import "./styles/header.scss";
 import userProfile from "../../media/account-profile.png";
 import { useUserContext } from "../../UserContext";
@@ -8,6 +8,7 @@ import { LogoutIcon } from "./Icons";
 import { useLogout } from "../../utils/useLogout.ts";
 import React from "react";
 import { NotificationsButton } from "./Notifications.tsx";
+import { API } from "../../API_Handler/Axio_API_Handler.ts";
 interface FooterProps {
   onIconClick: () => void;
 }
@@ -31,27 +32,31 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
     showUserSettings((prevState) => !prevState);
   };
 
-  const { email, username, userId } = useUserContext();
+  const { email, username, userId, userImage } = useUserContext();
+  const profileImage = userImage
+    ? `${API.defaults.baseURL}/${userImage}`
+    : userProfile;
+
+  console.log("User Image:", userImage);
   return (
     <header>
       <div id="left-items">
         <button onClick={onIconClick}>
           <MenuDots width={24} height={22} className="header-icon" />
         </button>
-        <p id="user_role">{`${highestRole?.toUpperCase()} (${userType.toUpperCase()})`}</p>
       </div>
 
       <div id="right-items">
         <NotificationsButton userId={userId}></NotificationsButton>
         <p id="rafi_btn">
-          RAFI <ArrowDown width={16} height={20} />
+          {`${highestRole?.toUpperCase()}`}
         </p>
 
         <div
           className="user-icon"
           onClick={() => toggleUserSettingsVisibility()}
         >
-          <img src={userProfile} alt="user-profile" />
+          <img src={profileImage} alt="user-profile" style={{ borderRadius: "50%" }}/>
           <CircleDot width={16} height={16} />
         </div>
 
@@ -60,11 +65,12 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
             <div id="user-account-settings-container">
               <div className="user-icon">
                 <img
-                  src={userProfile}
+                  src={profileImage}
                   alt="user-profile"
                   style={{
                     height: "32px",
                     width: "32px",
+                    borderRadius: "50%",
                   }}
                 />
                 <CircleDot width={16} height={16} />

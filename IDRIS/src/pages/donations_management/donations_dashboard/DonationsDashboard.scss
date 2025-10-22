@@ -150,6 +150,14 @@
     }
   }
 
+  .no-donations-message {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: #6b7280;
+    padding: 2rem;
+  }
+
   // Donations Container (Charts & Records)
   .donations-container {
     display: grid;

@@ -31,3 +31,4 @@ def get_user_by_type(
     if not users:
         raise HTTPException(status_code=404, detail="No users found with given names")
     return users
+

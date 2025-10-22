@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from "react-router-dom";
-import { Users, MapPin, Calendar, Search, Plus, Trash2, CheckCircle, Clock} from 'lucide-react';
+import { Users, MapPin, Calendar, Search, Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
 import {
     createProgram,
     listPrograms,
@@ -785,8 +785,8 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                     }}
                                                     disabled={area.currentVolunteers >= area.maxVolunteers}
                                                     className={`px-3 py-1 rounded-md text-sm transition-colors flex items-center gap-1 ${area.currentVolunteers >= area.maxVolunteers
-                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                        : 'bg-blue-600 text-white hover:bg-blue-700'
                                                         }`}
                                                     title={
                                                         area.currentVolunteers >= area.maxVolunteers
@@ -972,9 +972,10 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     <Empty description="No volunteers to assign" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                                 ) : (
                                     availableVolunteers.map((volunteer) => (
-                                        <label key={volunteer.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer gap-3">
+                                        <label key={volunteer.id} className="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer gap-3">
                                             <input
                                                 type="checkbox"
+                                                className="w-4 h-4 mt-1 flex-shrink-0"
                                                 checked={selectedVolunteers.includes(volunteer.id)}
                                                 onChange={(e) => {
                                                     if (e.target.checked) {
@@ -989,6 +990,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                 <p className="text-sm text-gray-600">{volunteer.skills.join(', ')}</p>
                                             </div>
                                         </label>
+
                                     ))
                                 )}
                             </div>

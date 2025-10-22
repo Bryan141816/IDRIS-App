@@ -1,175 +1,206 @@
-  .activateFormContainer {
+.activateFormContainer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: linear-gradient(120deg, #eaf6ff 40%, #c3e0fc 100%);
+  justify-content: center;
+  align-items: center;
+  padding: 60px;
+  &::-webkit-scrollbar {
+    display: none;}
+}
+
+// CARD remains same size
+.profileForm {
+  display: flex;
+  width: 50%;
+  max-width: 480px;
+  min-width: 310px;
+  height: fit-content;
+  max-height: 100%;
+  background: white;
+  border-radius: 20px;
+  padding: 32px 28px 28px 28px;
+  flex-direction: column;
+  overflow: auto;
+  box-shadow: 0 8px 24px rgba(70, 130, 180, 0.13);
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #4682b4;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 22px;
+    margin-top: 0;
+    letter-spacing: 1.3px;
+    background: linear-gradient(135deg, #5177ad 20%, #87bbe5 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  form {
     display: flex;
     width: 100%;
-    height: 100%;
-    padding: 60px;
-    justify-content: center;
+    align-items: center;
+    padding: 0;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .profileForm {
+  .profileImage {
     display: flex;
-    width: 50%;
-    height: fit-content;
-    max-height: 100%;
-    background-color: white;
-    border-radius: 20px;
-    padding: 20px;
-    flex-direction: column;
-    overflow: auto;
+    height: 138px;
+    width: 138px;
+    margin: 0 auto 18px auto;
+    flex-shrink: 0;
+    border-radius: 100%;
+    overflow: hidden;
+    border: 1.5px solid #b3d6ec;
+    position: relative;
+    background: #f6faff;
+    box-shadow: 0 1px 7px #e0ecf6;
 
-    h2 {
-      font-size: 1.8rem;
-      font-weight: 600;
-      color: #749AB6;
-      text-align: center;
-      width: 100%;
-    }
-
-
-
-    form {
-      display: flex;
-      height: 100%;
-      width: 100%;
-      align-items: center;
-      padding: 20px;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .profileImage {
-      display: flex;
-      height: 200px;
-      width: 200px;
-      flex-shrink: 0;
-      border-radius: 100%;
-      overflow: hidden;
-      border: 1px solid #000;
-      position: relative;
-
-      span {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 100%;
-
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 1.4rem;
-        font-weight: 600;
-        z-index: 800;
-        color: white;
-        opacity: 0;
-        background-color: rgba($color: #000000, $alpha: 0.3);
-        transition: opacity 0.2s ease;
-      }
-
-      img {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        width: 100%;
-        object-fit: cover;
-      }
-    }
-
-    input[type="file"]::file-selector-button {
+    span {
       position: absolute;
-      height: 100%;
-      width: 100%;
-      margin: 0;
       top: 0;
       left: 0;
-    }
-
-
-    .profileImage input[type="file"]:hover~.selectProfile {
-      opacity: 1;
-
-    }
-
-
-    input[type="file"] {
-      opacity: 0;
-      z-index: 801;
-
-    }
-
-    .columnContainer {
+      height: 100%;
+      width: 100%;
       display: flex;
-      width: 100%;
-      gap: 30px;
-    }
-
-    .inputContainers {
-      display: flex;
-      width: 100%;
-      flex-direction: column;
-      gap: 5px;
-
-      label {
-        font-weight: 600;
-        white-space: nowrap;
-      }
-
-      input {
-        width: 100% !important;
-      }
-
-      textarea {
-        resize: none;
-        min-height: 120px;
-      }
-    }
-
-    button {
-      width: 100%;
-      padding: 0.9rem 1.5rem;
-      background: linear-gradient(135deg, #749AB6 0%, rgb(149.4386792453, 178.2971698113, 199.5613207547) 100%);
+      justify-content: center;
+      align-items: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+      z-index: 800;
       color: #ffffff;
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      outline: none;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(70, 130, 180, 0.3);
-      margin-top: 10px;
-      margin-bottom: 10px;
-
+      opacity: 0;
+      background-color: rgba(70,130,180, .19);
+      transition: opacity 0.2s ease;
     }
 
-
+    img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      background: #f6faff;
+    }
   }
 
-  .modalOverlay {
-    position: fixed;
+  input[type="file"]::file-selector-button {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    margin: 0;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  }
+  .profileImage input[type="file"]:hover~.selectProfile {
+    opacity: 1;
+  }
+  input[type="file"] {
+    opacity: 0;
+    z-index: 801;
   }
 
-  .modalContent {
-    background: #fff;
-    padding: 20px;
-    border-radius: 12px;
+  .columnContainer {
     display: flex;
+    width: 100%;
+    gap: 30px;
+  }
+
+  .inputContainers {
+    display: flex;
+    width: 100%;
     flex-direction: column;
-    align-items: center;
+    gap: 7px;
+
+    label {
+      font-weight: 750;
+      font-size: 1.08rem;
+      color: #5a87c2;
+      margin-bottom: 2px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    input, select, textarea {
+      width: 100% !important;
+      padding: 8px 13px;
+      font-size: 1.08rem;
+      border-radius: 9px;
+      border: 1.5px solid #90b9db;
+      background: #f6fafc;
+      box-shadow: 0 1px 5px rgba(130,170,210,0.08);
+      font-weight: 550;
+      transition: border-color 0.21s, box-shadow 0.21s;
+      outline: none;
+      color: black;
+      &:focus {
+        border-color: #5177ad;
+        box-shadow: 0 0 8px #b7e0fa;
+        background: #eff6fc;
+      }
+    }
+    textarea {
+      resize: none;
+      min-height: 110px;
+    }
   }
 
-  .modalActions {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
+  button {
+    width: 100%;
+    padding: 0.95rem 1.5rem;
+    background: linear-gradient(100deg, #629bca 0%, #b7daf3 100%);
+    color: #ffffff;
+    font-size: 1.11rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.18s, box-shadow 0.21s;
+    box-shadow: 0 4px 15px rgba(70, 130, 180, 0.17);
+    margin-top: 12px;
+    margin-bottom: 10px;
+    &:hover, &:focus {
+      background: linear-gradient(140deg, #3478b8 0%, #a4cded 100%);
+      color: #e3f2fd;
+      transform: scale(1.02);
+      box-shadow: 0 6px 24px rgba(70,130,180,0.21);
+    }
   }
+}
+
+// Modal styling unchanged
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modalActions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}

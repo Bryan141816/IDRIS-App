@@ -1,21 +1,52 @@
+from zoneinfo import available_timezones
 from fastapi import APIRouter, HTTPException
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from data_schemas.report_schema import TableResponse, Cell
 from data_schemas.charts_schema import PieChartData, LineChartData, BarChartData
 from data_schemas.in_kind_monitoring_schema import InKindMonitoringSummary
+from data_schemas.response_dashboard_schema import (
+    RecentMapActivity,
+    InKindMonitoringDetailed,
+    CategorySummary,
+    CategorySummaryData,
+    SupplyItem,
+)
+from typing import List
 from database import get_db
 from models import (
     ResponseReport,
     ModalityDistribution,
     ResponseReportBudget,
     InKindMonitoring,
-)  # no Role import
+    DemandAndResponse,
+    InventoryItems,
+    IndividualVolunteer,
+    OrganizationVolunteer,
+    VolunteerStatus,
+    DistributedItems,
+    DistributionRoute,
+    TeamMembers,
+    DistributionTeam,
+)
+from crud_functions.procurement_manage.procurement_inventory import (
+    ProcurementInventoryCRUD,
+)
+from crud_functions.distribution_planning.distribution_planning import (
+    DistributionAndPlanningCRUD,
+)
 from datetime import datetime, timezone
-from sqlalchemy import func, extract, Date, cast
+from sqlalchemy import func, extract, Date, cast, case
 from sqlalchemy.orm import aliased
+from ..role_checker import RoleChecker
 
 router = APIRouter(tags=["response_dashboard"])
+
+router_admin = APIRouter(
+    dependencies=[
+        Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))
+    ],
+)
 
 
 @router.get("/report_list/recent", response_model=TableResponse)
@@ -76,115 +107,68 @@ def get_recent_table(db: Session = Depends(get_db)):
 
 @router.get("/response_dashboard/report_summary")
 def get_report_summary(db: Session = Depends(get_db)):
-    now = datetime.now()
-    start_of_current_month = datetime(now.year, now.month, 1)
+    # Total incidents/reports
+    total_reports = db.query(func.count(DemandAndResponse.demand_id)).scalar()
 
-    # Next month
-    if now.month == 12:
-        start_of_next_month = datetime(now.year + 1, 1, 1)
-    else:
-        start_of_next_month = datetime(now.year, now.month + 1, 1)
-
-    # Previous month
-    if now.month == 1:
-        start_of_prev_month = datetime(now.year - 1, 12, 1)
-    else:
-        start_of_prev_month = datetime(now.year, now.month - 1, 1)
-
-    end_of_prev_month = start_of_current_month
-
-    # Get current month data
-    current_total = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-        )
+    # Completed incidents
+    completed = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) == "completed")
         .scalar()
     )
 
-    current_completed = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "completed",
-        )
+    # "Started" can be interpreted as "responded" but not yet completed
+    started = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) == "responded")
         .scalar()
     )
 
-    current_started = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_current_month,
-            ResponseReport.date_time < start_of_next_month,
-            func.lower(ResponseReport.status) == "started",
-        )
+    # Active incidents are those not yet completed
+    active_incidents = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.status) != "completed")
         .scalar()
     )
 
-    # Get previous month data
-    prev_total = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-        )
+    # High priority incidents (urgent or high)
+    high_priority = (
+        db.query(func.count(DemandAndResponse.demand_id))
+        .filter(func.lower(DemandAndResponse.priority).in_(["urgent", "high"]))
         .scalar()
     )
 
-    prev_completed = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-            func.lower(ResponseReport.status) == "completed",
+    # Average response time in hours for completed incidents
+    # Use func.extract('epoch', ...) for PostgreSQL to get seconds
+    avg_response_time_seconds = (
+        db.query(
+            func.avg(
+                func.extract("epoch", DemandAndResponse.last_updated)
+                - func.extract("epoch", DemandAndResponse.submitted_at)
+            )
         )
+        .filter(func.lower(DemandAndResponse.status) == "completed")
         .scalar()
     )
 
-    prev_started = (
-        db.query(func.count(ResponseReport.id))
-        .filter(
-            ResponseReport.date_time >= start_of_prev_month,
-            ResponseReport.date_time < end_of_prev_month,
-            func.lower(ResponseReport.status) == "started",
-        )
-        .scalar()
+    # Convert average seconds to hours, handle case where there are no completed incidents
+    response_time_avg = (
+        round(avg_response_time_seconds / 3600, 1)
+        if avg_response_time_seconds is not None
+        else 0
     )
-
-    # Function to calculate change
-    def compare(current, previous):
-        if previous == 0:
-            if current == 0:
-                return {"diff": " ", "percent": "0%"}
-            else:
-                return {"diff": "+", "percent": "100%"}
-        change = current - previous
-        if change > 0:
-            sign = "+"
-        elif change < 0:
-            sign = "-"
-        else:
-            sign = " "
-        percent = abs(change) / previous * 100
-
-        return {"diff": sign, "percent": f"{percent:.1f}%"}
 
     return {
-        "month": now.strftime("%B %Y"),
-        "total_reports": current_total,
-        "completed": current_completed,
-        "started": current_started,
-        "comparison": {
-            "total_reports_change": compare(current_total, prev_total),
-            "completed_change": compare(current_completed, prev_completed),
-            "started_change": compare(current_started, prev_started),
-        },
+        "total_reports": total_reports or 0,
+        "completed": completed or 0,
+        "started": started or 0,  # Note: This is now 'responded' count
+        "active_incidents": active_incidents or 0,
+        "high_priority": high_priority or 0,
+        "response_time_avg": response_time_avg,
     }
 
 
-@router.get("/response_dashboard/modality_chart", response_model=dict)
+@router_admin.get("/response_dashboard/modality_chart", response_model=dict)
 def get_modality_chart(db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
     current_year = now.year
@@ -230,6 +214,52 @@ def get_modality_chart(db: Session = Depends(get_db)):
 
 
 @router.get(
+    "/response_dashboard/recent_map_activity", response_model=List[RecentMapActivity]
+)
+def get_recent_map_activity(db: Session = Depends(get_db)):
+    # Get the 5 most recently updated demand/response records
+    recent_activities = (
+        db.query(DemandAndResponse)
+        .order_by(DemandAndResponse.last_updated.desc())
+        .limit(5)
+        .all()
+    )
+
+    # Map status to activity type
+    def get_activity_type(status: str) -> str:
+        status = status.lower()
+        if status == "no response":
+            return "new_request"
+        elif status == "responded":
+            return "response_dispatched"
+        elif status == "completed":
+            return "completed"
+        return "status_update"  # Default for other statuses
+
+    # Format the data into the RecentMapActivity schema
+    formatted_activities = [
+        RecentMapActivity(
+            id=str(activity.demand_id),
+            timestamp=activity.last_updated,
+            activity_type=get_activity_type(activity.status),
+            location={
+                "name": activity.title_label,
+                "address": activity.address,
+                "lat": activity.lat,
+                "lng": activity.lng,
+            },
+            priority=activity.priority,
+            description=f"Request '{activity.title_label}' status changed to {activity.status}.",
+            assigned_team=None,  # This field is not in the model, so it's None
+            status=activity.status,
+        )
+        for activity in recent_activities
+    ]
+
+    return formatted_activities
+
+
+@router.get(
     "/response_dashboard/in_kind_monitoring", response_model=InKindMonitoringSummary
 )
 def get_in_kind_monitoring(db: Session = Depends(get_db)):
@@ -255,6 +285,78 @@ def get_in_kind_monitoring(db: Session = Depends(get_db)):
         "currently_in_transit": int(in_transit_sum),
         "already_distributed": int(delivered_sum),
     }
+
+
+@router.get(
+    "/response_dashboard/in_kind_monitoring_detailed",
+)
+def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
+    categories = ["food", "medical", "clothing", "beverages", "hygiene"]
+
+    # Initialize the final result dictionary
+    result = {
+        cat: {"available": 0, "transit": 0, "distributed": 0, "details": []}
+        for cat in categories
+    }
+
+    # Query all inventory items in these categories
+    inventory_items = (
+        db.query(InventoryItems).filter(InventoryItems.category.in_(categories)).all()
+    )
+
+    for item in inventory_items:
+        item_detail = {
+            "item_name": item.item_name,
+            "quantity": item.quantity,
+            "transit": 0,
+            "distributed": 0,
+        }
+
+        # Add item quantity to category available total
+        result[item.category]["available"] += item.quantity
+
+        # Get distributed info for this item
+        distributed = (
+            db.query(DistributedItems, DistributionRoute.status)
+            .join(
+                DistributionRoute, DistributedItems.route == DistributionRoute.route_id
+            )
+            .filter(DistributedItems.item == item.inventory_id)
+            .filter(DistributionRoute.status.in_(["In Transit", "Completed"]))
+            .all()
+        )
+
+        for dist_item, status in distributed:
+            if status == "In Transit":
+                item_detail["transit"] += dist_item.quantity
+                result[item.category]["transit"] += dist_item.quantity
+            elif status == "Completed":
+                item_detail["distributed"] += dist_item.quantity
+                result[item.category]["distributed"] += dist_item.quantity
+
+        # Append item detail to category
+        result[item.category]["details"].append(item_detail)
+
+    available_staff = (
+        db.query(func.count(IndividualVolunteer.volunteer_id))
+        .filter(
+            IndividualVolunteer.availability_status.in_(
+                [VolunteerStatus.available, VolunteerStatus.assigned]
+            )
+        )
+        .scalar()
+    )
+    deployed_staff = (
+        db.query(func.count(TeamMembers.members_id))
+        .join(DistributionTeam, TeamMembers.team_id == DistributionTeam.team_id)
+        .join(DistributionRoute, DistributionRoute.team == DistributionTeam.team_id)
+        .filter(DistributionRoute.status.in_(["In Transit", "Completed"]))
+        .scalar()
+    )
+    staff_status = {"available": available_staff, "deployed": deployed_staff}
+    result["staff_status"] = staff_status
+
+    return result
 
 
 @router.get("/response_dashboard/raised_budget", response_model=LineChartData)
@@ -337,3 +439,42 @@ def get_spending_breakdown(db: Session = Depends(get_db)):
             }
         ],
     }
+
+
+@router.get("/response_dashboard/get_resource_status")
+def get_resource_status(db: Session = Depends(get_db)):
+
+    available_item = ProcurementInventoryCRUD.count_available_inventory_items(db)
+    delivery_status = (
+        db.query(
+            func.sum(
+                case(
+                    (
+                        DistributionRoute.status == "In Transit",
+                        DistributedItems.quantity,
+                    ),
+                    else_=0,
+                )
+            ).label("in_transit_items"),
+            func.sum(
+                case(
+                    (
+                        DistributionRoute.status == "Completed",
+                        DistributedItems.quantity,
+                    ),
+                    else_=0,
+                )
+            ).label("completed_items"),
+        )
+        .join(DistributionRoute, DistributedItems.route == DistributionRoute.route_id)
+        .one()
+    )
+
+    return {
+        "available_relief_items": available_item,
+        "in_transit": delivery_status.in_transit_items or 0,
+        "total_distributed": delivery_status.completed_items or 0,
+    }
+
+
+router.include_router(router_admin)

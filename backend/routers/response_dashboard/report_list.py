@@ -12,15 +12,17 @@ import math
 
 router = APIRouter(
     tags=["report_list"],
-    dependencies=[Depends(RoleChecker(["operations admin"]))],
 )
 
+router_admin = APIRouter(
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+)
 
 def getDefaultPage(page):
     return math.floor((page - 1) / 100) * 100 + 1
 
 
-@router.get("/report_list", response_model=TableResponse)
+@router_admin.get("/report_list", response_model=TableResponse)
 def get_table(
     db: Session = Depends(get_db), page: int = Query(1, ge=1), Date: str = "desc"
 ):
@@ -118,14 +120,14 @@ def get_table(
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
 
-@router.post(
+@router_admin.post(
     "/response_dashboard/report_list/add_report", response_model=ResponseReportOut
 )
 def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
     return create_response_report(db, report)
 
 
-@router.delete(
+@router_admin.delete(
     "/response_dashboard/report_list/delete_report/{report_id}", response_model=dict
 )
 def delete_response_report(report_id: int, db: Session = Depends(get_db)):
@@ -135,7 +137,7 @@ def delete_response_report(report_id: int, db: Session = Depends(get_db)):
     return {"message": f"Response report with ID {report_id} deleted successfully."}
 
 
-@router.put("/response_dashboard/report_list/update_report/{report_id}")
+@router_admin.put("/response_dashboard/report_list/update_report/{report_id}")
 def update_report(
     report_id: int, update: ResponseReportCreate, db: Session = Depends(get_db)
 ):
@@ -152,3 +154,5 @@ def update_report(
     db.refresh(report)
 
     return {"detail": "Report updated succesfully", "report": report}
+
+router.include_router(router_admin)

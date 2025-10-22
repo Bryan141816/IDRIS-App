@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload, aliased
+from sqlalchemy.orm import Session, joinedload, aliased, selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import nulls_last
 from sqlalchemy import or_, asc, desc, func
@@ -17,7 +17,7 @@ class DonorCRUD:
     @staticmethod
     def create_donor(
         db: Session,
-        donor_id: int,
+        donor_id: str,
         user_id: int,
         donor_type: Optional[str] = "individual",
         organization_name: Optional[str] = None,
@@ -78,11 +78,66 @@ class DonorCRUD:
 
     # READ
     @staticmethod
-    def get_donor_by_id(db: Session, donor_id: int) -> Optional[Donor]:
+    def get_donor_by_id(db: Session, donor_id: str) -> Optional[Donor]:
         return db.query(Donor).filter(Donor.donor_id == donor_id).first()
 
     @staticmethod
-    def get_donor_by_user_id(db: Session, user_id: int) -> Optional[Donor]:
+    def get_donor_user_by_id(db: Session, donor_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetches a donor and their donations, correctly handling different donation types.
+        """
+        # KEY CHANGE 1: Eagerly load the nested 'cash' and 'inkind' relationships
+        # This prevents N+1 query problems inside the loop.
+        donor = (
+            db.query(Donor)
+            .options(
+                joinedload(Donor.user),
+                selectinload(Donor.donations).joinedload(Donation.cash),
+                selectinload(Donor.donations).joinedload(Donation.inkind),
+            )
+            .filter(Donor.donor_id == donor_id)
+            .first()
+        )
+
+        if not donor:
+            return None
+
+        # Manually construct the return dictionary
+        donor_details = {
+            "donor_id": donor.donor_id,
+            # ... other donor and user fields
+            "user": {
+                "user_id": donor.user.user_id if donor.user else None,
+                "email": donor.user.email if donor.user else None,
+                "username": donor.user.username if donor.user else None,
+            },
+            "donations": [], # Initialize an empty list for donations
+        }
+
+        # KEY CHANGE 2: Loop and use conditional logic for each donation
+        for donation in donor.donations:
+            donation_data = {
+                "donation_id": donation.donation_id,
+                "status": donation.status.value, # Access enum value
+                "donation_date": donation.donation_date,
+                "donation_type": donation.donation_type.value, # Access enum value
+            }
+
+            # Check the donation type and add specific fields accordingly
+            if donation.donation_type == DonationType.CASH and donation.cash:
+                donation_data["amount"] = donation.cash.amount
+                donation_data["payment_method"] = donation.cash.payment_method
+            elif donation.donation_type == DonationType.INKIND and donation.inkind:
+                donation_data["estimated_value"] = donation.inkind.estimated_value
+                donation_data["item_description"] = donation.inkind.item_description
+                donation_data["quantity"] = donation.inkind.quantity
+
+            donor_details["donations"].append(donation_data)
+
+        return donor_details
+
+    @staticmethod
+    def get_donor_by_user_id(db: Session, user_id: str) -> Optional[Donor]:
         return (
             db.query(Donor)
             .filter(Donor.user_id == user_id, Donor.donor_type == "individual")

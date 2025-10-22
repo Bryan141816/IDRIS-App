@@ -57,7 +57,7 @@ def insert_super_admin(email: str, username: str, hashed_password: str) -> bool:
                     "username": username,
                     "user_type": "admin",
                     "hashed_password": hashed_password,
-                    "roles": ["super admin"],
+                    "roles": ["superadmin"],
                 },
             )
         return True

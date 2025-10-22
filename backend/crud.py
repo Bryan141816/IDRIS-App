@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 from typing import List, Optional
 from models import (
@@ -20,7 +20,7 @@ from schemas import (
     InKindMonitoringCreate,
     DemandAndResponseCreate,
 )
-
+from crud_functions.utils import uid_from_string
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -63,7 +63,12 @@ def delete(db: Session, model, id):
 
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    return (
+        db.query(User)
+        .options(joinedload(User.user_profile))
+        .filter(User.email == email)
+        .first()
+    )
 
 
 def get_user_by_username(db: Session, username: str):
@@ -150,7 +155,7 @@ def create_demand_and_response_record(
 ) -> DemandAndResponse:
     json_needs = [need.dict() for need in demand_and_response.needs]
     db_record = DemandAndResponse(
-        title_lable=demand_and_response.title_lable,
+        title_label=demand_and_response.title_label,
         address=demand_and_response.address,
         lat=demand_and_response.lat,
         lng=demand_and_response.lng,
@@ -220,3 +225,6 @@ def create_response_dashboard_budget_create(
     db.add(db_record)
     db.commit()
     return db_record
+
+def get_superadmins(db: Session) -> List[User]:
+    return db.query(User).filter(User.roles.contains(["superadmin"])).all()

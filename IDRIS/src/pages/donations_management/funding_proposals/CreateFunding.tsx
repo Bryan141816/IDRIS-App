@@ -2,12 +2,19 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CreateFunding.scss";
 import Swal from "sweetalert2";
-import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
+
+// Format input as currency with commas
+function formatCurrencyInput(value: string): string {
+  const nums = value.replace(/[^\d]/g, "");
+  if (!nums) return "";
+  return parseInt(nums, 10).toLocaleString();
+}
 
 const CreateFunding: React.FC = () => {
   const Navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [budgetRequired, setBudgetRequired] = useState("");
@@ -16,21 +23,37 @@ const CreateFunding: React.FC = () => {
 
   const handleFileSelect = (file: File | null) => {
     setSelectedFile(file);
+    if (file) {
+      setPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setPreviewUrl(null);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileSelect(e.target.files[0]);
+    }
+  };
+
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
     if (fileInputRef.current) {
-      const dataTransfer = new DataTransfer();
-      if (file) dataTransfer.items.add(file);
-      fileInputRef.current.files = dataTransfer.files;
+      fileInputRef.current.value = "";
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // For API, send only digits
+    const plainBudget = budgetRequired.replace(/,/g, "");
 
     const formData = new FormData();
     formData.append("title", title);
     formData.append("description", description);
-    formData.append("budgetRequired", budgetRequired.toString());
-    formData.append("status", "pending"); // or whatever default status
+    formData.append("budgetRequired", plainBudget);
+    formData.append("status", "pending");
     if (selectedFile) {
       formData.append("image", selectedFile);
     }
@@ -67,89 +90,134 @@ const CreateFunding: React.FC = () => {
     if (document.referrer) {
       window.location.href = document.referrer;
     } else {
-      window.history.back(); // Fallback if no referrer
+      window.history.back();
     }
-  }
+  };
 
   return (
-    <>
-      <h1 className="public-feed-title">Create Funding Proposal</h1>
-      <form onSubmit={handleSubmit}>
-        <section id="create-funding" className="create-funding">
-          <div id="description-container">
-            <div className="text-input">
-              <label htmlFor="title">Project Title: </label>
-              <input
-                type="text"
-                name="title"
-                placeholder="Title here"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="description-input">
-              <label htmlFor="description">Description:</label>
-              <textarea
-                name="description"
-                cols={30}
-                rows={10}
-                placeholder="Description here"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-              ></textarea>
-            </div>
-
-            <div className="text-input amount-input">
-              <label htmlFor="targetAmount">Target Amount:</label>
-              <input
-                type="number"
-                name="targetAmount"
-                placeholder="Amount Here"
-                value={budgetRequired}
-                onChange={(e) => setBudgetRequired(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="text-input checkbox-input">
-              <input
-                type="checkbox"
-                name="notifyDonors"
-                id="notifyDonors"
-                checked={notifyDonors}
-                onChange={(e) => setNotifyDonors(e.target.checked)}
-              />
-              <label htmlFor="notifyDonors">Notify Donors?</label>
-            </div>
-
+    <div className="create-funding-wrapper">
+      <h1 className="create-funding-title">Create Funding Proposal</h1>
+      <form className="create-funding-card" onSubmit={handleSubmit}>
+        <section className="create-funding-form">
+          <div className="cf-field cf-input">
+            <label htmlFor="title">Project Title: </label>
             <input
-              className="submit-btn green-btn"
+              type="text"
+              name="title"
+              placeholder="Title here"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className="cf-field cf-textarea">
+            <label htmlFor="description">Description:</label>
+            <textarea
+              name="description"
+              cols={30}
+              rows={10}
+              placeholder="Description here"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            ></textarea>
+          </div>
+          <div className="cf-field cf-amount">
+  <label htmlFor="targetAmount">Target Amount:</label>
+  <span className="currency">₱</span>
+  <input
+    type="text"
+    name="targetAmount"
+    placeholder="Amount Here"
+    value={budgetRequired}
+    onChange={e => setBudgetRequired(formatCurrencyInput(e.target.value))}
+    required
+    autoComplete="off"
+    inputMode="numeric"
+    pattern="[\d,]+"
+  />
+</div>
+
+          <div className="cf-field cf-checkbox">
+            <input
+              type="checkbox"
+              name="notifyDonors"
+              id="notifyDonors"
+              checked={notifyDonors}
+              onChange={(e) => setNotifyDonors(e.target.checked)}
+            />
+            <label htmlFor="notifyDonors">Notify Donors?</label>
+          </div>
+          <div className="cf-button-group">
+            <input
+              className="cf-btn cf-btn--submit"
               type="submit"
               value="Submit"
             />
             <button
               type="button"
-              className="yellow-btn"
-              onClick={() => { handleCancelButton() }} >
+              className="cf-btn cf-btn--cancel"
+              onClick={handleCancelButton}>
               Cancel
             </button>
-
-          </div>
-
-          <div id="image-side">
-            <UploadFile
-              accept="image/*"
-              showName={true}
-              onFileSelect={handleFileSelect}
-              className="new-funding-image"
-            />
           </div>
         </section>
+        <aside className="create-funding-image-side">
+          <div className="cf-upload" tabIndex={0}>
+            {!selectedFile ? (
+              <>
+                <span className="upload-icon" aria-label="Upload">
+                  {/* Upload SVG */}
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 16V4M12 4L7 9M12 4L17 9"
+                      stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <rect x="3" y="17" width="18" height="3" rx="1.5" fill="#60a5fa" opacity="0.25"/>
+                  </svg>
+                </span>
+                <div className="upload-text">Browse or Drop a File Here</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  ref={fileInputRef}
+                  onChange={handleFileInputChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    marginTop: 8,
+                    background: "transparent",
+                    border: "none",
+                    color: "#2563eb",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                    fontSize: "1rem",
+                  }}
+                  tabIndex={-1}
+                >
+                  Choose File
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="remove-btn"
+                  onClick={removeSelectedFile}
+                  aria-label="Remove Image"
+                >
+                  {/* X icon, Unicode */}
+                  ×
+                </button>
+                {previewUrl && <img src={previewUrl} alt="Preview" />}
+                <div className="filename">{selectedFile.name}</div>
+              </>
+            )}
+          </div>
+        </aside>
       </form>
-    </>
+    </div>
   );
 };
 

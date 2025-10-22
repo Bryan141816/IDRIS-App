@@ -70,6 +70,74 @@
   }
 }
 
+/* Expiry Alerts */
+.expiry-alerts {
+  .expiry-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid;
+
+    &.good {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: #10b981;
+    }
+
+    &.expiring-soon {
+      background: rgba(252, 184, 20, 0.1);
+      border-color: #fcb814;
+    }
+
+    &.expired {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #ef4444;
+    }
+
+    .expiry-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      strong {
+        color: #374151;
+        font-weight: 600;
+      }
+
+      span {
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+    }
+
+    .expiry-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+
+      &.good {
+        background: #10b981;
+        color: #ffffff;
+      }
+
+      &.expiring-soon {
+        background: #fcb814;
+        color: #ffffff;
+      }
+
+      &.expired {
+        background: #ef4444;
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+
+
 /* Navigation Styles */
 .navigation {
   background: #ffffff;

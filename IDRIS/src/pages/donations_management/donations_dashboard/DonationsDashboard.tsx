@@ -44,7 +44,7 @@ export interface DonationRecordItem {
 const DonationsDashboard = () => {
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
-  const isAdmin = userRoles.includes("finance admin") || userRoles.includes("operations admin");
+  const isAdmin = userRoles.includes("finance admin") || userRoles.includes("operations admin") || userRoles.includes("superadmin");
 
   const [loading, setLoading] = useState(true);
 
@@ -128,11 +128,10 @@ const DonationsDashboard = () => {
       try {
         const response = await getDonationRecord(donationsRecordsLimit);
         const arr = Array.isArray(response) ? response : [];
-        // If no records, inject dummy
-        setDonationRecords(arr.length > 0 ? arr : sampleDonationRecord);
+        setDonationRecords(arr);
       } catch (error) {
         console.error("Failed to fetch donation records:", error);
-        setDonationRecords(sampleDonationRecord); // fallback to dummy on error
+        setDonationRecords([]);
       }
     };
 
@@ -302,18 +301,22 @@ const DonationsDashboard = () => {
 
             {/* =============== Donation Record List =============== */}
             <div id="donation-record-list">
-              {donationRecords.map((donation, index) => (
-                <DonationRecordCard
-                  key={index}
-                  donor_name={donation.donor_name}
-                  amount={donation.amount}
-                  funding_title={donation.funding_title}
-                  donation_date={safeParseDate(donation.donation_date)}
-                  donation_type={donation.donation_type}
-                  item_description={donation.item_description}
-                  className="donation-record"
-                />
-              ))}
+              {donationRecords.length > 0 ? (
+                donationRecords.map((donation, index) => (
+                  <DonationRecordCard
+                    key={index}
+                    donor_name={donation.donor_name}
+                    amount={donation.amount}
+                    funding_title={donation.funding_title}
+                    donation_date={safeParseDate(donation.donation_date)}
+                    donation_type={donation.donation_type}
+                    item_description={donation.item_description}
+                    className="donation-record"
+                  />
+                ))
+              ) : (
+                <p className="no-donations-message">No recent donations</p>
+              )}
             </div>
           </div>
         </div>

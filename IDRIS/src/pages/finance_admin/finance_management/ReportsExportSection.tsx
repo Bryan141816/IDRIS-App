@@ -37,7 +37,7 @@ const ReportsView: React.FC<{
           <button className="export-btn" onClick={() => {
             onInflowReportSelect(true);
             onOpenGenerateInflowsOrOutflows();
-          }}>Export Expenses</button>
+          }}>Export Inflows</button>
         </div>
 
         <div className="export-card">

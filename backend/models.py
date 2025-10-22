@@ -79,14 +79,28 @@ class User(Base):
     sub = Column(String, nullable=True)  # for oauth
 
     # Fixed relationship - should reference the correct foreign key
-    donor_profile = relationship("Donor", back_populates="user")
-    user_profile = relationship("UserProfile", back_populates="user")
-    volunteers = relationship("IndividualVolunteer", back_populates="user")
-    OrganizationVolunteer = relationship("OrganizationVolunteer", back_populates="user")
+    donor_profile = relationship(
+        "Donor", back_populates="user", cascade="all, delete-orphan"
+    )
+    user_profile = relationship(
+        "UserProfile",
+        uselist=False,
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    volunteers = relationship(
+        "IndividualVolunteer", back_populates="user", cascade="all, delete-orphan"
+    )
+    OrganizationVolunteer = relationship(
+        "OrganizationVolunteer", back_populates="user", cascade="all, delete-orphan"
+    )
 
-    procurement_request = relationship("ProcurementRequest", back_populates="requester")
+    procurement_request = relationship(
+        "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
+    )
 
 
+# probably will add a email that is a foreign key to user table later
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"
@@ -109,7 +123,7 @@ class UserProfile(Base):
     # Relationship
     user = relationship("User", back_populates="user_profile")
 
-    user = relationship("User", back_populates="user_profile")
+    # user = relationship("User", back_populates="user_profile")
 
 
 class Notifications(Base):
@@ -206,13 +220,13 @@ class BaranggayRecords(Base):
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
 
-    baranggay_pic = Column(String, nullable=True)  
-    baranggay_desc = Column(Text, nullable=True)           
-    resources = Column(JSON, nullable=True)               
-    contact_info = Column(String(255), nullable=True)  
+    baranggay_pic = Column(String, nullable=True)
+    baranggay_desc = Column(Text, nullable=True)
+    resources = Column(JSON, nullable=True)
+    contact_info = Column(String(255), nullable=True)
     population = Column(JSON, nullable=True)
 
-    risk_level = Column(String(50), nullable=True)   # ✅ added back
+    risk_level = Column(String(50), nullable=True)  # ✅ added back
 
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
@@ -227,6 +241,7 @@ class BaranggayRecords(Base):
         back_populates="barangay",
         passive_deletes=True,
     )
+
 
 class ResponseReport(Base):
     __tablename__ = "response_reports"
@@ -254,6 +269,7 @@ class DemandAndResponse(Base):
     status = Column(String(255), nullable=False)
     needs = Column(JSON, default=[])
     priority = Column(String(255), nullable=False)
+
     submitted_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -480,7 +496,12 @@ class Donation(Base):
         cascade="all, delete-orphan",
     )
 
-    finance_record = relationship("FinanceRecord", back_populates="donation", uselist=False, cascade="all, delete-orphan")
+    finance_record = relationship(
+        "FinanceRecord",
+        back_populates="donation",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     inkind = relationship(
         "Donation_InKind",
         back_populates="donation",
@@ -532,6 +553,13 @@ class Donation_InKind(Base):
 
     quantity = Column(String(50), nullable=True)  # Quantity/units of donated items
     donation = relationship("Donation", back_populates="inkind")
+
+    inventory_item = relationship(
+        "InKindInventoryItem",
+        back_populates="inkind",
+        uselist=False,  # one-to-one
+        cascade="all, delete-orphan",
+    )
 
 
 # imports (keep your own project Base import as-is)
@@ -1008,6 +1036,11 @@ class WarehouseZones(Base):
     manager = Column(String(255), nullable=False)
 
     inventory_items = relationship("InventoryItems", back_populates="warehouse")
+    assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
+    routes = relationship(
+        "DistributionRoute",
+        back_populates="start_zone",
+    )
 
 
 class InventoryItems(Base):
@@ -1025,6 +1058,131 @@ class InventoryItems(Base):
     status = Column(String(255), nullable=False)
 
     warehouse = relationship("WarehouseZones", back_populates="inventory_items")
+    assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
+    distributed_items = relationship("DistributedItems", back_populates="item_info")
+
+
+class AssignedStorage(Base):
+    __tablename__ = "assigned_storage"
+
+    assigned_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
+    # Foreign keys
+    warehouse_id = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    )
+    inventory_id = Column(
+        Integer, ForeignKey("inventory_items.inventory_id"), nullable=False
+    )
+
+    # Additional field
+    unit_occupancy = Column(Float, nullable=False)
+
+    # Relationships
+    warehouse = relationship("WarehouseZones", back_populates="assigned_storages")
+    inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
+
+
+class TeamMembers(Base):
+    __tablename__ = "team_members"
+    members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=False)
+    member = Column(
+        Integer, ForeignKey("individual_volunteer.volunteer_id"), nullable=False
+    )
+    role = Column(String(255), nullable=False)
+    team = relationship("DistributionTeam", back_populates="team_members")
+    volunteer = relationship("IndividualVolunteer")
+
+
+class DistributionTeam(Base):
+    __tablename__ = "distribution_team"
+    team_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_name = Column(String(255), nullable=False)
+    deployment_area = Column(String(255), nullable=False)
+    assignment_duration = Column(Integer, nullable=False)
+    starting_date = Column(Date)
+    isActive = Column(Boolean, default=True)
+    status = Column(String(255), default="unassigned")
+    team_members = relationship("TeamMembers", back_populates="team")
+    routes = relationship("DistributionRoute", back_populates="assigned_team")
+
+
+class DistributionRouteLogs(Base):
+    __tablename__ = "distribution_route_log"
+
+    log_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_id = Column(
+        Integer, ForeignKey("distribution_route.route_id"), nullable=False
+    )
+    log_message = Column(String(255))
+    date = Column(DateTime)
+
+    # Relationship back to DistributionRoute
+    route = relationship("DistributionRoute", back_populates="logs")
+
+
+class DistributionRoute(Base):
+    __tablename__ = "distribution_route"
+
+    route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_name = Column(String(255), nullable=False)
+    start_location = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    )
+    end_location_id = Column(Integer, nullable=False)
+    end_location = Column(String(255), nullable=False)
+    status = Column(String(255), default="Pending")
+    schedule = Column(DateTime)
+    team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
+    date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    start_zone = relationship("WarehouseZones", back_populates="routes")
+    distributed_items = relationship("DistributedItems", back_populates="route_info")
+    assigned_team = relationship("DistributionTeam", back_populates="routes")
+
+    # New relationship for logs
+    logs = relationship("DistributionRouteLogs", back_populates="route")
+
+
+class DistributedItems(Base):
+    __tablename__ = "distributed_items"
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    item = Column(Integer, ForeignKey("inventory_items.inventory_id"), nullable=False)
+    route = Column(Integer, ForeignKey("distribution_route.route_id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+    item_info = relationship("InventoryItems", back_populates="distributed_items")
+    route_info = relationship("DistributionRoute", back_populates="distributed_items")
+
+
+class InKindInventoryItem(Base):
+    __tablename__ = "inkind_inventory_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(
+        String,
+        ForeignKey("donation_inkind.inkind_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    status = Column(String(50), nullable=False, default="available")
+
+    # Relationship back to Donation_InKind
+    inkind = relationship("Donation_InKind", back_populates="inventory_item")
+
+
+@event.listens_for(Donation_InKind, "after_insert")
+def create_inventory_item(mapper, connection, target):
+    """
+    Automatically creates an InKindInventoryItem
+    when a new Donation_InKind is inserted.
+    """
+    connection.execute(
+        InKindInventoryItem.__table__.insert().values(
+            item_id=target.inkind_id,
+            status="available",
+        )
+    )
 
 
 # ================================== FINANCE MODELS =====================================
@@ -1048,7 +1206,7 @@ class TransactionType(enum.Enum):
 class RecordStatus(enum.Enum):
     PENDING = "PENDING"  # recorded but not yet received/paid
     RECEIVED = "RECEIVED"  # for inflows
-    
+
     PAID = "PAID"  # for outflows
     APPROVED = "APPROVED"  # approver ok (often outflow)
     DENIED = "DENIED"  # rejected
@@ -1077,7 +1235,9 @@ class FinanceRecord(Base):
         SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
     )
 
-    donation_id = Column(String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True)
+    donation_id = Column(
+        String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True
+    )
     donation = relationship("Donation", back_populates="finance_record", uselist=False)
 
     audits = relationship(

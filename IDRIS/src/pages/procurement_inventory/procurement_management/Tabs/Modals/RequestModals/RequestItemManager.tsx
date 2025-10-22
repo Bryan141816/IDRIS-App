@@ -60,42 +60,54 @@ export const RequestItemManager: React.FC<RequestItemManagerProp> = ({
           gap: "5px",
         }}
       >
-        <input
-          type="text"
-          placeholder="Enter item name"
-          name="item_name"
-          value={item.item_name}
-          onChange={handleChange}
-          required
-        />
-        <select
-          defaultValue=""
-          name="category"
-          value={item.category}
-          onChange={handleChange}
-        >
-          <option value="">Select Category</option>
-          <option value="medical supplies">Medical Supplies</option>
-          <option value="equipment">Equipment</option>
-          <option value="transportation">Transportation</option>
-          <option value="office supplies">Office Supplies</option>
-        </select>
-        <input
-          type="number"
-          placeholder="Enter quantity"
-          name="quantity"
-          value={item.quantity}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Enter item price"
-          name="price_p_each"
-          value={item.price_p_each}
-          onChange={handleChange}
-          required
-        />
+        <div>
+          <label>Item Name</label>
+          <input
+            type="text"
+            placeholder="Enter item name"
+            name="item_name"
+            value={item.item_name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Category</label>
+          <select
+            defaultValue=""
+            name="category"
+            value={item.category}
+            onChange={handleChange}
+          >
+            <option value="">Select Category</option>
+            <option value="medical supplies">Medical Supplies</option>
+            <option value="equipment">Equipment</option>
+            <option value="transportation">Transportation</option>
+            <option value="office supplies">Office Supplies</option>
+          </select>
+        </div>
+        <div>
+          <label>Quantity</label>
+          <input
+            type="number"
+            placeholder="Enter quantity"
+            name="quantity"
+            value={item.quantity}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Price per item</label>
+          <input
+            type="number"
+            placeholder="Enter item price"
+            name="price_p_each"
+            value={item.price_p_each}
+            onChange={handleChange}
+            required
+          />
+        </div>
         <button
           className="primary-btn"
           style={{

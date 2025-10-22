@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import styles from "./styles/ActivateAccount.module.scss";
 import DefaultProfile from "../../media/defaultProfile.webp";
 import { API } from "../../API_Handler/Axio_API_Handler";
 import { useLocation, useNavigate } from "react-router-dom";
+import Swal from "sweetalert2"; // Import Swal
 
 const Activate = () => {
   const location = useLocation();
@@ -120,6 +121,15 @@ const Activate = () => {
   const submitProfile = async () => {
     if (!token) return console.error("No token found in URL");
 
+    Swal.fire({
+      title: "Submitting...",
+      didOpen: () => {
+        Swal.showLoading();
+      },
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+
     const formData = new FormData();
 
     // Only append if the user uploaded an image
@@ -136,12 +146,33 @@ const Activate = () => {
       });
       console.log("Response:", response.data);
 
+      Swal.close();
       // ✅ Success state
       setIsSuccess(true);
     } catch (err) {
       console.error(err);
+      Swal.update({
+        icon: "error",
+        title: "Submission Failed",
+        text: "An error occurred while submitting your profile.",
+      });
     }
   };
+
+  // Show Swal alert when activation succeeds
+  useEffect(() => {
+    if (isSuccess) {
+      Swal.fire({
+        icon: "success",
+        title: "Account Activated!",
+        text: "Your profile has been saved successfully.",
+        timer: 1500,
+        showConfirmButton: false,
+      }).then(() => {
+        navigate("/login");
+      });
+    }
+  }, [isSuccess, navigate]);
 
   return (
     <div className={styles.activateFormContainer}>
@@ -290,16 +321,10 @@ const Activate = () => {
                 </div>
               </div>
 
-              <button type="submit">Submit</button>
+              <button type="submit" onClick={submitProfile}>Submit</button>
             </form>
           </>
-        ) : (
-          <div className={styles.successContainer}>
-            <h2>✅ Account Activated!</h2>
-            <p>Your profile has been saved successfully.</p>
-            <button onClick={() => navigate("/login")}>Login</button>
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

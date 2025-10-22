@@ -3,6 +3,7 @@ import { AddWarehouseZone } from "./Modals/AddWarehouseZone/AddWarehouseZone";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { WarehouseZone } from "./Modals/ModalDefault";
 import { EditWarehouseZone } from "./Modals/EditWarehouseZone/EditWarehouseZoneModal";
+import { AssignStorage } from "./Modals/AssignStorage/AssignStorageModal";
 interface WarehouseZoneProps {
   warehouse_id: number;
   status: string;
@@ -96,6 +97,13 @@ const WarehouseZoneComponent = () => {
           selectedData={selecteZone}
         ></EditWarehouseZone>
       )}
+      {activeModal === "assign-storage" && (
+        <AssignStorage
+          onClose={closeModal}
+          refreshData={handleFetch}
+          selectedData={selecteZone}
+        ></AssignStorage>
+      )}
       <div className="section-header">
         <h2>Warehouse Zones</h2>
         <button
@@ -150,7 +158,12 @@ const WarehouseZoneComponent = () => {
                 >
                   Edit Zone
                 </button>
-                <button className="action-btn">Assign Storage</button>
+                <button
+                  className="action-btn"
+                  onClick={() => openModal("assign-storage", zone)}
+                >
+                  Assign Storage
+                </button>
               </div>
             </div>
           </div>

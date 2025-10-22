@@ -15,9 +15,12 @@ import { InboxOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { Dayjs } from "dayjs";
+import { useUserContext } from "../../../UserContext";
 import dayjs from "dayjs";
 import "./css/IndividualForm.css";
 import { createIndividualVolunteer, getVolunteerByUserId } from "../../../API_Handler/individual_volunter_handler.ts";
+import { fetchCurrentUserId } from "../../../API_Handler/auth.ts";
+import { getUserProfileByUserId } from "../../../API_Handler/user_profile_handler.ts";
 import Swal from "sweetalert2";
 
 // ---------- Types ----------
@@ -28,7 +31,7 @@ interface IndividualFormValues {
     email: string;
     phone: string;
     address: string;
-    birthDate: Dayjs;
+    birthDate: Dayjs | null;
     gender: "male" | "female";
     age: number;
     availability: string[];          // stays array in UI (we join into string for backend)
@@ -53,12 +56,11 @@ const daysOfWeekOptions: CheckboxOptionType[] = [
 const skillsOptions: CheckboxOptionType[] = [
     { label: "CPR", value: "CPR" },
     { label: "First Aid", value: "First Aid" },
-    { label: "BLS", value: "BLS" },
     { label: "Search & Rescue", value: "Search & Rescue" },
     { label: "Fire Safety", value: "Fire Safety" },
     { label: "Radio Comms", value: "Radio Comms" },
     { label: "Logistics", value: "Logistics" },
-    { label: "Counseling/Psych First Aid", value: "PFA" },
+    { label: "Driving", value: "Driving" },
 ];
 
 const IndividualForm: React.FC = () => {
@@ -80,7 +82,7 @@ const IndividualForm: React.FC = () => {
             formData.append("email", values.email);
             formData.append("phone_number", values.phone);
             formData.append("address", values.address);
-            formData.append("birthday", values.birthDate.format("YYYY-MM-DD"));
+            formData.append("birthday", values.birthDate ? values.birthDate.format("YYYY-MM-DD") : "");
             formData.append("gender", values.gender);
             formData.append("age", String(values.age));
             formData.append("availability", values.availability.join(", "));
@@ -122,6 +124,7 @@ const IndividualForm: React.FC = () => {
             console.error("Error creating volunteer:", error);
         }
     };
+
 
     // Show success alert after form submission
     const showAlert = (): void => {
@@ -189,6 +192,51 @@ const IndividualForm: React.FC = () => {
             return false;
         }
     };
+const { email } = useUserContext();
+    useEffect(() => {
+  async function loadUserProfile() {
+    try {
+
+      // 1️⃣ Get the currently logged-in user's ID
+      const currentUser = await fetchCurrentUserId();
+      if (!currentUser?.id) {
+        console.warn("No user ID found.");
+        return;
+      }
+
+      // 2️⃣ Fetch user profile details using their ID
+      const userProfile = await getUserProfileByUserId(currentUser.id);
+      console.log("Gender:", userProfile.gender);
+      if (!userProfile) {
+        console.warn("User profile not found.");
+        return;
+      }
+
+      // 3️⃣ Automatically populate the form fields
+      form.setFieldsValue({
+        firstName: userProfile.first_name || "",
+        middleName: "", // Assuming no middle name field in profile
+        lastName: userProfile.last_name || "",
+        email: email || currentUser.email || "",
+        phone: userProfile.phone_number || "",
+        address: userProfile.address || "",
+        birthDate: userProfile.bday ? dayjs(userProfile.bday) : null,
+        gender: userProfile.gender?.toLowerCase() as "male" | "female" | undefined,
+        age: userProfile.bday ? calculateAge(dayjs(userProfile.bday)) : undefined,
+      });
+
+      // 4️⃣ Update the birthdate state for age calculation logic
+      if (userProfile.bday) {
+        setBirthDate(dayjs(userProfile.bday));
+      }
+
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    }
+  }
+
+  loadUserProfile();
+}, [form]);
 
     return (
         <div className="application-form">
@@ -231,9 +279,9 @@ const IndividualForm: React.FC = () => {
                                     name="firstName"
                                     label="First Name"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please enter first name" }, { validator: validateName }]}
+                                    rules={[{ message: "Please enter first name" }, { validator: validateName }]}
                                 >
-                                    <Input placeholder="First" />
+                                    <Input placeholder="First" readOnly />
                                 </Form.Item>
 
                                 <Form.Item
@@ -248,9 +296,9 @@ const IndividualForm: React.FC = () => {
                                     name="lastName"
                                     label="Last Name"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please enter last name" }, { validator: validateName }]}
+                                    rules={[{ message: "Please enter last name" }, { validator: validateName }]}
                                 >
-                                    <Input placeholder="Last" />
+                                    <Input placeholder="Last" readOnly />
                                 </Form.Item>
                             </div>
 
@@ -258,12 +306,8 @@ const IndividualForm: React.FC = () => {
                             <Form.Item
                                 name="email"
                                 label="Email Address"
-                                rules={[
-                                    { required: true, message: "Please enter email address" },
-                                    { type: "email", message: "Please enter a valid email" },
-                                ]}
                             >
-                                <Input placeholder="Enter your email" />
+                                <Input placeholder="Enter your email" readOnly />
                             </Form.Item>
 
                             {/* Phone and Address */}
@@ -272,7 +316,7 @@ const IndividualForm: React.FC = () => {
                                     name="phone"
                                     label="Phone Number"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: "Please enter phone number" }]}
+                                    rules={[{ message: "Please enter phone number" }]}
                                 >
                                     <Input placeholder="Enter your phone" />
                                 </Form.Item>
@@ -281,9 +325,9 @@ const IndividualForm: React.FC = () => {
                                     name="address"
                                     label="Address"
                                     className="form-item-half"
-                                    rules={[{ required: true, message: "Please enter address" }]}
+                                    rules={[{ message: "Please enter address" }]}
                                 >
-                                    <Input placeholder="Enter your address" />
+                                    <Input placeholder="Enter your address" readOnly />
                                 </Form.Item>
                             </div>
 
@@ -292,28 +336,26 @@ const IndividualForm: React.FC = () => {
                                 <Form.Item
                                     name="birthDate"
                                     label="Birth Date"
-                                    rules={[{ required: true, message: "Please select birth date" }]}
+
                                 >
-                                    <DatePicker style={{ width: "100%" }} onChange={(date) => setBirthDate(date)} />
+                                    <DatePicker style={{ width: "100%" }} readOnly onChange={(date) => setBirthDate(date)} />
                                 </Form.Item>
 
                                 <Form.Item
                                     name="gender"
                                     label="Gender"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please select gender" }]}
+                                    rules={[{ message: "Please select gender" }]}
                                 >
-                                    <Select placeholder="Select gender">
-                                        <Option value="male">Male</Option>
-                                        <Option value="female">Female</Option>
-                                    </Select>
+
+                                    <Input placeholder="Enter your gender" readOnly />
                                 </Form.Item>
 
                                 <Form.Item
                                     name="age"
                                     label="Age"
                                     className="form-item-third"
-                                    rules={[{ required: true, message: "Please enter age" }]}
+
                                 >
                                     <Input type="number" readOnly value={age ?? ""} />
                                 </Form.Item>
@@ -375,7 +417,7 @@ const IndividualForm: React.FC = () => {
                         </div>
 
                         {/* Uploads */}
-                        <h3 className="section-title upload-title">Upload Files</h3>
+                        <h3 className="section-title upload-title">Upload Certificate(s)</h3>
                         <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                         getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                         rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
@@ -390,7 +432,7 @@ const IndividualForm: React.FC = () => {
                                 <p className="ant-upload-drag-icon">
                                     <InboxOutlined />
                                 </p>
-                                <p className="upload-text">Drop files here</p>
+                                <p className="upload-text">Drop certificate(s) here</p>
                                 <p className="upload-hint">or</p>
                                 <Button className="browse-button">Browse</Button>
                             </Upload.Dragger>

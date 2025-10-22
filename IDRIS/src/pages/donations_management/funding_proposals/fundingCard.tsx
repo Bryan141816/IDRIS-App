@@ -6,13 +6,14 @@ import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 import { formatCurrency } from "../helpers";
+import Swal from "sweetalert2";
 
 const backendUrl = "http://127.0.0.1:8000";
 
 type FundingProp = {
   proposalId?: number;
   title?: string;
-  image?: string; // absolute URL, relative backend path, or local asset path
+  image?: string;
   description?: string;
   donated?: number;
   target?: number;
@@ -47,7 +48,7 @@ const FundingCard: React.FC<FundingProp> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Build a safe image URL; use default image when missing or on error
+  // Build a safe image URL
   const buildImageUrl = (img?: string) => {
     if (!img || img.trim() === "") return defaultFundingImage;
     const lower = img.toLowerCase();
@@ -58,7 +59,7 @@ const FundingCard: React.FC<FundingProp> = ({
       lower.startsWith("blob:")
     ) return img;
     if (lower.startsWith("/") || lower.startsWith(".")) return img; // local/static path
-    return `${backendUrl}/${img.replace(/^\/+/, "")}`; // backend-relative path
+    return `${backendUrl}/${img.replace(/^\/+/, "")}`;
   };
 
   const [imgSrc, setImgSrc] = useState<string>(() => buildImageUrl(image));
@@ -106,15 +107,20 @@ const FundingCard: React.FC<FundingProp> = ({
 
       {/* FOOTER */}
       <div className={styles.fundingFooter}>
+        <div className={styles.progressBarContainer}>
+          <div
+            className={styles.progressBar}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
         <div className={styles.progressContainer}>
           <p className={styles.progress}>
-            <CircleDot width={16} height={16} className={styles.circleDot} />
-            {formatCurrency(donated / target)}
+            {formatCurrency(donated)}
           </p>
           <p className={styles.percentage}>{percentage}%</p>
         </div>
 
-        {userType === "user" && proposalId != null && (
+        {userRoles.includes("donor") && proposalId != null && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate
           </button>

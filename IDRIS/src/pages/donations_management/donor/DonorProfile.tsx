@@ -15,7 +15,7 @@ interface DonorProfile {
   donorId: number;
   donor_name: string;
   donor_type: string;
-  is_verified: boolean;
+  is_activated: boolean;
   date_joined: Date;
   last_updated: Date;
 }
@@ -46,6 +46,7 @@ const UserProfile = () => {
   const fetchProfile = async () => {
     try {
       const response = await getIndividualDonorProfile();
+      console.log(response);
       setProfile(response);
       const newDonorId = (response as any)?.donor_id ?? (response as any)?.donorId ?? null;
       setDonorId(newDonorId);
@@ -192,7 +193,7 @@ const UserProfile = () => {
     donorId: 0,
     donor_name: "No Data Found",
     donor_type: "Individual",
-    is_verified: false,
+    is_activated: false,
     date_joined: new Date(),
     last_updated: new Date(),
   };
@@ -218,7 +219,7 @@ const UserProfile = () => {
             <p className="donor-name">
               <strong>{donorProfile.donor_name}</strong>
               <span className="user-status">
-                ({donorProfile.is_verified ? "Verified" : "Unverified"})
+                ({profile ? "Verified" : "Unverified"})
               </span>
             </p>
             <p className="role-assigned">

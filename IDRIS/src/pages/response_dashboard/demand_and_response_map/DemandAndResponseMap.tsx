@@ -269,7 +269,7 @@ const DemandAndResponseMap: React.FC = () => {
           <div className="map-header">
             <h3>Interactive Map</h3>
             <div className="map-controls">
-              <div className="search-box">
+              {/* <div className="search-box">
                 <FontAwesomeIcon icon={faSearch} />
                 <input
                   type="text"
@@ -277,7 +277,7 @@ const DemandAndResponseMap: React.FC = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 

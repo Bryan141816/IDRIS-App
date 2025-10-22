@@ -48,6 +48,35 @@ def get_lgu_pk(r: LGURecords) -> int:
     """Support either r.id or r.lgu_id as PK (depending on your model)."""
     return int(getattr(r, "id", getattr(r, "lgu_id", 0)))
 
+def safe_int(v: Optional[Union[int, float, str]], default: int = 0) -> int:
+    try:
+        if v is None:
+            return default
+        return int(float(v))
+    except Exception:
+        return default
+
+def derive_status(occupied: Optional[int], capacity: Optional[int]) -> str:
+    occ = safe_int(occupied, 0)
+    cap = safe_int(capacity, 0)
+    if cap <= 0:
+        return "Unknown"
+    if occ >= cap:
+        return "Full"
+    if occ <= 0:
+        return "Empty"
+    ratio = occ / cap
+    if ratio >= 0.8:
+        return "Near Full"
+    return "Available"
+
+def to_address(r: EvacuationCenter) -> Optional[str]:
+    """
+    If you add an address column later (e.g., r.address),
+    expose it here. For now we return None so the FE hides it.
+    """
+    return getattr(r, "address", None) or None
+
 # ---------- Schemas ----------
 
 class RafiPointOut(BaseModel):
@@ -89,7 +118,7 @@ class LGUDetailOut(BaseModel):
     class Config:
         orm_mode = True
 
-# ---- NEW: Barangay flattened output ----
+# ---- Barangay flattened output ----
 class BarangayPointOut(BaseModel):
     id: int
     name: str
@@ -105,7 +134,7 @@ class BarangayPointOut(BaseModel):
     baranggay_pic: Optional[str] = None
     baranggay_desc: Optional[str] = None
 
-    # misc JSON resources (stringified on FE if you want)
+    # misc JSON resources
     resources: List[str] = Field(default_factory=list)
 
     # flattened relations
@@ -113,6 +142,19 @@ class BarangayPointOut(BaseModel):
     lgu_name: Optional[str] = None
     evacuation_center_id: Optional[int] = None
     evacuation_center_name: Optional[str] = None
+
+# ---- Evacuation Center output (ENHANCED) ----
+class EvacuationCenterOut(BaseModel):
+    id: int                # maps from evacuation_id
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+    occupied: int
+    available: Optional[int]        # None if capacity <= 0
+    utilization_pct: Optional[float]  # 0-100; None if capacity <= 0
+    status: str            # Full | Near Full | Available | Empty | Unknown
+    address: Optional[str] = None   # if you add it later, FE will show it
 
 # ---------- Endpoints ----------
 
@@ -175,7 +217,6 @@ def get_lgu_legacy(id: int = Query(...), request: Request = None, db: Session = 
 @router.get("/rafi", response_model=List[RafiPointOut])
 def list_rafi_points(request: Request, db: Session = Depends(get_db)):
     rows = db.query(RAFIInfrastructure).all()
-
     return [
         RafiPointOut(
             id=int(r.rafi_id),
@@ -189,7 +230,7 @@ def list_rafi_points(request: Request, db: Session = Depends(get_db)):
         if has_coords(r)
     ]
 
-# ---- NEW: Barangays for MapOfCebu.tsx ----
+# ---- Barangays for MapOfCebu.tsx ----
 @router.get("/barangays", response_model=List[BarangayPointOut])
 def list_barangays(
     request: Request,
@@ -242,3 +283,77 @@ def list_barangays(
             )
         )
     return out
+
+# ---- Evacuation Centers (Enhanced for MapOfCebu sidebar) ----
+@router.get("/evacuation-centers", response_model=List[EvacuationCenterOut])
+def list_evacuation_centers(db: Session = Depends(get_db)):
+    rows = db.query(EvacuationCenter).order_by(EvacuationCenter.name.asc()).all()
+    rows = [r for r in rows if has_coords(r)]
+
+    out: List[EvacuationCenterOut] = []
+    for r in rows:
+        cap = safe_int(getattr(r, "capacity", 0), 0)
+        occ = safe_int(getattr(r, "occupied", 0), 0)
+        status = derive_status(occ, cap)
+
+        if cap > 0:
+            available = max(cap - occ, 0)
+            util_pct = round(min(max((occ / cap) * 100.0, 0.0), 100.0), 2)
+        else:
+            available = None
+            util_pct = None
+
+        out.append(
+            EvacuationCenterOut(
+                id=int(getattr(r, "evacuation_id", getattr(r, "id", 0))),
+                name=r.name,
+                lat=float(r.lat),
+                lng=float(r.lng),
+                capacity=cap,
+                occupied=occ,
+                available=available,
+                utilization_pct=util_pct,
+                status=status,
+                address=to_address(r),
+            )
+        )
+    return out
+
+# Optional: single evac by id
+@router.get("/evacuation-centers/{evac_id}", response_model=EvacuationCenterOut)
+def get_evacuation_center(evac_id: int, db: Session = Depends(get_db)):
+    r = (
+        db.query(EvacuationCenter)
+        .filter(
+            (getattr(EvacuationCenter, "evacuation_id", None) == evac_id)
+            if hasattr(EvacuationCenter, "evacuation_id")
+            else (getattr(EvacuationCenter, "id") == evac_id)
+        )
+        .first()
+    )
+    if not r:
+        raise HTTPException(status_code=404, detail="Evacuation Center not found")
+
+    cap = safe_int(getattr(r, "capacity", 0), 0)
+    occ = safe_int(getattr(r, "occupied", 0), 0)
+    status = derive_status(occ, cap)
+
+    if cap > 0:
+        available = max(cap - occ, 0)
+        util_pct = round(min(max((occ / cap) * 100.0, 0.0), 100.0), 2)
+    else:
+        available = None
+        util_pct = None
+
+    return EvacuationCenterOut(
+        id=int(getattr(r, "evacuation_id", getattr(r, "id", 0))),
+        name=r.name,
+        lat=float(r.lat),
+        lng=float(r.lng),
+        capacity=cap,
+        occupied=occ,
+        available=available,
+        utilization_pct=util_pct,
+        status=status,
+        address=to_address(r),
+    )

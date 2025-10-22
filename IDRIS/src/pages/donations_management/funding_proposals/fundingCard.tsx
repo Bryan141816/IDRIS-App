@@ -29,7 +29,7 @@ const FundingCard: React.FC<FundingProp> = ({
 }) => {
   const fundingData = { proposalId, title, image, description, target };
 
-  const { userType, user, donor } = useUserContext();
+  const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
   const navigate = useNavigate();
 
@@ -71,17 +71,7 @@ const FundingCard: React.FC<FundingProp> = ({
     navigate("/donations_management/funding_proposals/update", { state: fundingData });
   };
 
-  // --- ADDED LOGIC: BLOCK donation if user is not a donor!
   const handleDonateButton = (fundingId: number) => {
-    if (!donor || donor.status !== "approved") {
-      Swal.fire({
-        icon: "warning",
-        title: "Donor Registration Required",
-        text: "You must be a registered donor to donate. Please register as a donor first.",
-        confirmButtonText: "OK"
-      });
-      return;
-    }
     navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
   };
 
@@ -130,7 +120,7 @@ const FundingCard: React.FC<FundingProp> = ({
           <p className={styles.percentage}>{percentage}%</p>
         </div>
 
-        {userType === "user" && proposalId != null && (
+        {userRoles.includes("donor") && proposalId != null && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate
           </button>

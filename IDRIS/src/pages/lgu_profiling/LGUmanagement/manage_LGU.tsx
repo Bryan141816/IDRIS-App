@@ -36,13 +36,6 @@ export async function getRecord(record_type: string): Promise<any> {
   );
   return response.data;
 }
-type MessageBoxState = {
-  isOpen: boolean;
-  onClose: () => void;
-  type: "message" | "confirm";
-  message: string;
-  onSubmit?: () => void;
-};
 
 export async function addRecord(
   record_type: string,
@@ -121,6 +114,15 @@ export async function updateRecord(
   }
 }
 
+/* ========================= TYPES ========================= */
+type MessageBoxState = {
+  isOpen: boolean;
+  type: "message" | "confirm";
+  message: string;
+  onSubmit?: () => void;
+  onClose: () => void;
+};
+
 type TableRowShape = {
   id?: string | number;
   data?: Array<{ text?: any; [k: string]: any }>;
@@ -137,10 +139,7 @@ const MapOfCebu = () => {
   const [activeTab, setActiveTab] = useState<Tabs>("all");
 
   // When opening a row from "All", remember which section it came from
-  const [viewContextTab, setViewContextTab] = useState<Exclude<
-    Tabs,
-    "all"
-  > | null>(null);
+  const [viewContextTab, setViewContextTab] = useState<SectionTab | null>(null);
 
   // table data
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
@@ -155,7 +154,9 @@ const MapOfCebu = () => {
     useState<TableReponse | null>(null);
 
   // Separate refreshers per table (critical fix)
-  const tableRefreshers = useRef<Partial<Record<SectionTab, (page?: number) => void>>>({});
+  const tableRefreshers = useRef<
+    Partial<Record<SectionTab, (page?: number) => void>>
+  >({});
 
   const setTableRef = (tab: SectionTab, fn: (page?: number) => void) => {
     tableRefreshers.current[tab] = fn;
@@ -211,7 +212,7 @@ const MapOfCebu = () => {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
 
-  const fetchDataOne = useCallback(async (name: Exclude<Tabs, "all">) => {
+  const fetchDataOne = useCallback(async (name: SectionTab) => {
     try {
       const response = await getRecord(name);
       switch (name) {
@@ -248,31 +249,31 @@ const MapOfCebu = () => {
 
   /* ---------- modal helpers ---------- */
   const openAddModal = (tabOverride?: SectionTab) => {
-    const tab = tabOverride || (activeTab === "all" ? undefined : (activeTab as SectionTab));
+    const tab =
+      tabOverride ||
+      (activeTab === "all" ? undefined : (activeTab as SectionTab));
     if (!tab) return; // require explicit section in "All"
     setAddModalState((prev) => ({ ...prev, [tab]: true }));
   };
   const closeAddModal = () => {
-    setAddModalState((prev) => ({
-      ...prev,
+    setAddModalState({
       lgu: false,
       barangay: false,
       rafi: false,
       hazard: false,
       evacuation: false,
-    }));
+    });
   };
 
-  // NEW: allow overriding tab to avoid race condition from setActiveTab in "All" view
   const openViewModal = async (
     row?: TableRowShape,
-    tabOverride?: Exclude<Tabs, "all">,
+    tabOverride?: SectionTab,
   ) => {
-    const tabToUse =
+    const tabToUse: SectionTab =
       tabOverride ||
       (activeTab === "all"
         ? viewContextTab || "lgu"
-        : (activeTab as Exclude<Tabs, "all">));
+        : (activeTab as SectionTab));
 
     if (row) {
       const id = row.data?.[0]?.text; // hidden ID from table row
@@ -294,14 +295,13 @@ const MapOfCebu = () => {
   };
 
   const hideViewModal = () => {
-    setViewModalState((prev) => ({
-      ...prev,
+    setViewModalState({
       lgu: false,
       barangay: false,
       rafi: false,
       hazard: false,
       evacuation: false,
-    }));
+    });
   };
 
   const closeViewModal = () => {
@@ -314,34 +314,37 @@ const MapOfCebu = () => {
     hideViewModal();
     const tabForEdit =
       activeTab === "all"
-        ? (viewContextTab as Exclude<Tabs, "all">)
-        : (activeTab as Exclude<Tabs, "all">);
-    setEditModalState((prev) => ({ ...prev, [tabForEdit]: true })) as any;
+        ? (viewContextTab as SectionTab)
+        : (activeTab as SectionTab);
+    setEditModalState((prev) => ({ ...prev, [tabForEdit]: true }));
   };
 
   const closeEditModal = () => {
     const tabForView =
       activeTab === "all"
-        ? (viewContextTab as Exclude<Tabs, "all">)
-        : (activeTab as Exclude<Tabs, "all">);
-    setEditModalState((prev) => ({
-      ...prev,
+        ? (viewContextTab as SectionTab)
+        : (activeTab as SectionTab);
+    setEditModalState({
       lgu: false,
       barangay: false,
       rafi: false,
       hazard: false,
       evacuation: false,
-    }));
-    // After editing, reopen the view modal to show updated data
-    setViewModalState((prev) => ({ ...prev, [tabForView]: true })) as any;
+    });
+    setViewModalState((prev) => ({ ...prev, [tabForView]: true }));
+  };
+
+  /* ---------- CRUD helpers ---------- */
+  const resolveCurrentTab = (): SectionTab =>
+    activeTab === "all" ? viewContextTab || "lgu" : (activeTab as SectionTab);
+
+  const afterMutateRefresh = async (target: SectionTab) => {
+    // Refresh the table UI and its dataset without reloading entire page
+    refreshTableFor(target, 1);
+    await fetchDataOne(target);
   };
 
   /* ---------- CRUD handlers ---------- */
-  const resolveCurrentTab = (): Exclude<Tabs, "all"> =>
-    activeTab === "all"
-      ? viewContextTab || "lgu"
-      : (activeTab as Exclude<Tabs, "all">);
-
   const handleDeleteRecord = async (id: string) => {
     try {
       const targetTab = resolveCurrentTab();
@@ -371,10 +374,7 @@ const MapOfCebu = () => {
     }
   };
 
-  const handleAddRecord = async (
-    payload: any,
-    tabOverride?: Exclude<Tabs, "all">,
-  ) => {
+  const handleAddRecord = async (payload: any, tabOverride?: SectionTab) => {
     const target = tabOverride || resolveCurrentTab();
     const response = await addRecord(target, payload);
 
@@ -573,9 +573,27 @@ const MapOfCebu = () => {
   /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
     // reset modals
-    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
-    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
-    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setAddModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
+    setViewModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
+    setEditModalState({
+      lgu: false,
+      barangay: false,
+      rafi: false,
+      hazard: false,
+      evacuation: false,
+    });
     setSelectedViewData(null);
 
     if (activeTab === "all") {
@@ -809,7 +827,8 @@ const MapOfCebu = () => {
                 >
                   Hazard
                 </button>
-                {/* Intentionally no Evacuation in filter menu if you want to keep it hidden; add back if needed */}
+                {/* Add Evacuation here if you want to expose it */}
+                {/* <button onClick={() => { setActiveTab("evacuation"); setShowFilter(false); }}>Evacuation</button> */}
               </div>
             )}
           </div>
@@ -862,7 +881,7 @@ const MapOfCebu = () => {
               >
                 Hazard
               </button>
-              {/* No Evacuation here per request */}
+              {/* No Evacuation per request */}
             </div>
           )}
         </div>

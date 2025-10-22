@@ -29,16 +29,20 @@ function PageLayout() {
     isUserReady,
     setUserId,
     userId,
+    setUserImage,
   } = useUserContext();
   const { setUserRoles, userRoles } = useUserRoleContext();
   const navigate = useNavigate();
 
   const userData = useLoaderData() as {
-    user_id: number;
+    id: number;
     user_type: string;
     email: string;
     username: string;
     roles: string[];
+    user_profile: {
+      profile_image: string;
+    } | null;
   } | null;
 
   const location = useLocation();
@@ -58,18 +62,22 @@ function PageLayout() {
       }
       setUserType(userData.user_type);
       setEmail(userData.email);
-      setUserId(userData.user_id);
+      setUserId(userData.id);
       setUsername(userData.username);
       setUserRoles(userData.roles);
+      if (userData.user_profile) {
+        setUserImage(userData.user_profile.profile_image);
+      }
     } else {
       setUserType("");
       setEmail("");
       setUserId(null);
       setUsername("");
       setUserRoles([]);
+      setUserImage(null);
     }
-    const timeout = setTimeout(() => setUserReady(true), 0);
-    return () => clearTimeout(timeout);
+    // Set userReady after userData is processed
+    setUserReady(true);
   }, [
     userData,
     isAuthPage,
@@ -80,6 +88,7 @@ function PageLayout() {
     setUsername,
     setUserRoles,
     setUserReady,
+    setUserImage,
   ]);
 
   const navigation = useNavigation();

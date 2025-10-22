@@ -19,7 +19,7 @@ router = APIRouter(
 
 router_admin = APIRouter(
     dependencies=[
-        Depends(RoleChecker(["operations admin", "super admin", "logistics admin"]))
+        Depends(RoleChecker(["lgu officer", "super admin", "logistics admin"]))
     ],
 )
 

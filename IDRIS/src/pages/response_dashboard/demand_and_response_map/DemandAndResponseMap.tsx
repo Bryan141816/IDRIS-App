@@ -14,6 +14,7 @@ import {
   faHome,
   faChevronRight,
 } from "@fortawesome/free-solid-svg-icons";
+import Swal from "sweetalert2";
 import {
   MapContainer,
   TileLayer,
@@ -98,7 +99,7 @@ const DemandAndResponseMap: React.FC = () => {
   const getIconByStatus = (status: DemandPin["status"]) => {
     let iconUrl = "";
     let iconColor = "#6c757d"; // Default gray
-  
+
     if (status === "no response") {
       iconColor = "#dc3545"; // Red for urgent/no response
     } else if (status === "responded") {
@@ -106,7 +107,7 @@ const DemandAndResponseMap: React.FC = () => {
     } else if (status === "completed") {
       iconColor = "#28a745"; // Green for completed
     }
-  
+
     // Create a custom pin-shaped marker
     const svgIcon = `
       <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -134,7 +135,7 @@ const DemandAndResponseMap: React.FC = () => {
       }
       </svg>
     `;
-  
+
     return L.divIcon({
       html: svgIcon,
       className: "custom-pin-marker",
@@ -191,7 +192,20 @@ const DemandAndResponseMap: React.FC = () => {
           lat: selectedPin.lat,
           lng: selectedPin.lng,
         };
+        Swal.fire({
+          title: selectedPin ? "Updating..." : "Saving...",
+          text: "Please wait.",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
         await updateRecord(selectedPin.demand_id, payload);
+        Swal.fire(
+          "Updated!",
+          "The demand point has been updated successfully.",
+          "success",
+        );
       } else {
         // Create new pin
         const payload = {
@@ -200,6 +214,11 @@ const DemandAndResponseMap: React.FC = () => {
           lng: newPinLocation?.lng || 0,
         };
         await addRecord(payload);
+        Swal.fire(
+          "Saved!",
+          "The new demand point has been added successfully.",
+          "success",
+        );
       }
       setShowAddModal(false);
       setSelectedPin(null);
@@ -207,17 +226,45 @@ const DemandAndResponseMap: React.FC = () => {
       loadDemandPins(); // Reload pins to show changes
     } catch (error) {
       console.error("Failed to save pin:", error);
+      Swal.fire(
+        "Failed!",
+        "There was an error saving the demand point.",
+        "error",
+      );
     }
   };
 
   const handleDeletePin = async (demandId: string) => {
-    if (window.confirm("Are you sure you want to delete this demand point?")) {
-      try {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: "Deleting...",
+        text: "Please wait while the demand point is being deleted.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      }); try {
         await deleteRecord(demandId);
+        Swal.fire("Deleted!", "The demand point has been deleted.", "success");
         setSelectedPin(null);
-        loadDemandPins(); // Reload pins to show changes
+        loadDemandPins();
       } catch (error) {
         console.error("Failed to delete pin:", error);
+        Swal.fire(
+          "Failed!",
+          "There was an error deleting the demand point.",
+          "error",
+        );
       }
     }
   };

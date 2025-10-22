@@ -126,13 +126,15 @@ type Tabs =
   | "hazard"
   | "evacuation";
 
+type SectionTab = Exclude<Tabs, "all">;
+
 /* ========================= COMPONENT ========================= */
 const MapOfCebu = () => {
   // Which dataset(s) to show — default to "all" so everything shows first
   const [activeTab, setActiveTab] = useState<Tabs>("all");
 
   // When opening a row from "All", remember which section it came from
-  const [viewContextTab, setViewContextTab] = useState<Exclude<Tabs, "all"> | null>(null);
+  const [viewContextTab, setViewContextTab] = useState<SectionTab | null>(null);
 
   // table data
   const [lguResponse, setLguResponse] = useState<TableReponse | null>(null);
@@ -141,9 +143,16 @@ const MapOfCebu = () => {
   const [hazardResponse, setHazardResponse] = useState<TableReponse | null>(null);
   const [evacuationResponse, setEvacuationResponse] = useState<TableReponse | null>(null);
 
-  // TableView refresher (TableView gives us a function that accepts page?: number)
-  const refreshTable = useRef<null | ((page?: number) => void)>(null);
-  const handleRefreshTable = (page = 1) => refreshTable.current?.(page);
+  // Separate refreshers per table (critical fix)
+  const tableRefreshers = useRef<Partial<Record<SectionTab, (page?: number) => void>>>({});
+
+  const setTableRef = (tab: SectionTab, fn: (page?: number) => void) => {
+    tableRefreshers.current[tab] = fn;
+  };
+
+  const refreshTableFor = (tab: SectionTab, page = 1) => {
+    tableRefreshers.current[tab]?.(page);
+  };
 
   const [selectedViewData, setSelectedViewData] =
     useState<TableRowShape | null>(null);
@@ -192,7 +201,7 @@ const MapOfCebu = () => {
   }, []);
 
   const fetchDataOne = useCallback(
-    async (name: Exclude<Tabs, "all">) => {
+    async (name: SectionTab) => {
       try {
         const response = await getRecord(name);
         switch (name) {
@@ -230,18 +239,18 @@ const MapOfCebu = () => {
   }, [fetchDataOne]);
 
   /* ---------- modal helpers ---------- */
-  const openAddModal = (tabOverride?: Exclude<Tabs, "all">) => {
-    const tab = tabOverride || activeTab;
-    if (tab === "all") return; // require explicit section from the Add Pin dropdown
+  const openAddModal = (tabOverride?: SectionTab) => {
+    const tab = tabOverride || (activeTab === "all" ? undefined : (activeTab as SectionTab));
+    if (!tab) return; // require explicit section in "All"
     setAddModalState((prev) => ({ ...prev, [tab]: true }));
   };
   const closeAddModal = () => {
-    setAddModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
+    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
   };
 
-  // NEW: allow overriding tab to avoid race condition from setActiveTab in "All" view
-  const openViewModal = async (row?: TableRowShape, tabOverride?: Exclude<Tabs, "all">) => {
-    const tabToUse = tabOverride || (activeTab === "all" ? viewContextTab || "lgu" : (activeTab as Exclude<Tabs, "all">));
+  const openViewModal = async (row?: TableRowShape, tabOverride?: SectionTab) => {
+    const tabToUse: SectionTab =
+      tabOverride || (activeTab === "all" ? (viewContextTab || "lgu") : (activeTab as SectionTab));
 
     if (row) {
       const id = row.data?.[0]?.text; // hidden ID from table row
@@ -254,18 +263,16 @@ const MapOfCebu = () => {
         }
       }
       setSelectedViewData(row);
-      setViewContextTab(tabToUse); // remember which section this view belongs to
+      setViewContextTab(tabToUse);
     }
 
-    setViewModalState((prev) => ({ ...prev, [tabToUse]: true })) as any;
+    setViewModalState((prev) => ({ ...prev, [tabToUse]: true }));
   };
 
-  // Hide only (keep selection when switching to edit)
   const hideViewModal = () => {
-    setViewModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
+    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
   };
 
-  // Close and clear selection
   const closeViewModal = () => {
     hideViewModal();
     setSelectedViewData(null);
@@ -274,35 +281,41 @@ const MapOfCebu = () => {
 
   const openEditModal = () => {
     hideViewModal();
-    const tabForEdit = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
-    setEditModalState((prev) => ({ ...prev, [tabForEdit]: true })) as any;
+    const tabForEdit = activeTab === "all" ? (viewContextTab as SectionTab) : (activeTab as SectionTab);
+    setEditModalState((prev) => ({ ...prev, [tabForEdit]: true }));
   };
 
   const closeEditModal = () => {
-    const tabForView = activeTab === "all" ? (viewContextTab as Exclude<Tabs, "all">) : (activeTab as Exclude<Tabs, "all">);
-    setEditModalState((prev) => ({ ...prev, lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false }));
-    // After editing, reopen the view modal to show updated data
-    setViewModalState((prev) => ({ ...prev, [tabForView]: true })) as any;
+    const tabForView = activeTab === "all" ? (viewContextTab as SectionTab) : (activeTab as SectionTab);
+    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setViewModalState((prev) => ({ ...prev, [tabForView]: true }));
+  };
+
+  /* ---------- CRUD helpers ---------- */
+  const resolveCurrentTab = (): SectionTab =>
+    activeTab === "all" ? (viewContextTab || "lgu") : (activeTab as SectionTab);
+
+  const afterMutateRefresh = async (target: SectionTab) => {
+    // Refresh the table UI and its dataset without reloading entire page
+    refreshTableFor(target, 1);
+    await fetchDataOne(target);
   };
 
   /* ---------- CRUD handlers ---------- */
-  const resolveCurrentTab = (): Exclude<Tabs, "all"> =>
-    activeTab === "all" ? (viewContextTab || "lgu") : (activeTab as Exclude<Tabs, "all">);
-
   const handleDeleteRecord = async (id: string) => {
     try {
       const targetTab = resolveCurrentTab();
       await deleteRecord(targetTab, id);
+
       setMessageBox((prev) => ({
         ...prev,
         isOpen: true,
         type: "message",
         message: "Record deleted successfully",
       }));
+
       closeViewModal();
-      handleRefreshTable();
-      if (activeTab === "all") await fetchAll();
-      else await fetchDataOne(targetTab);
+      await afterMutateRefresh(targetTab);
     } catch (err: any) {
       const serverDetail =
         err?.response?.data?.detail ||
@@ -318,9 +331,10 @@ const MapOfCebu = () => {
     }
   };
 
-  const handleAddRecord = async (payload: any, tabOverride?: Exclude<Tabs, "all">) => {
+  const handleAddRecord = async (payload: any, tabOverride?: SectionTab) => {
     const target = tabOverride || resolveCurrentTab();
     const response = await addRecord(target, payload);
+
     if (!(response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -329,8 +343,7 @@ const MapOfCebu = () => {
         message: "Record added successfully",
       }));
       closeAddModal();
-      if (activeTab === "all") await fetchAll();
-      else handleRefreshTable();
+      await afterMutateRefresh(target);
     } else {
       setMessageBox((prev) => ({
         ...prev,
@@ -358,6 +371,7 @@ const MapOfCebu = () => {
   const handleEditRecord = async (id: string, payload: any) => {
     const target = resolveCurrentTab();
     const response = await updateRecord(target, id, payload);
+
     if ((response as any)?.error) {
       setMessageBox((prev) => ({
         ...prev,
@@ -485,18 +499,15 @@ const MapOfCebu = () => {
           );
           break;
         }
-        default:
-          break;
       }
     } catch {
-      if (activeTab === "all") await fetchAll();
-      else await fetchDataOne(target);
+      // As a fallback, re-fetch that section
+      await fetchDataOne(target);
     }
 
     closeEditModal();
     openViewModal(undefined, target);
-    if (activeTab === "all") await fetchAll();
-    else handleRefreshTable();
+    await afterMutateRefresh(target);
   };
 
   /* ---------- message box ---------- */
@@ -514,33 +525,15 @@ const MapOfCebu = () => {
   /* ---------- reset & fetch on tab change ---------- */
   useEffect(() => {
     // reset modals
-    setAddModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
-    setViewModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
-    setEditModalState({
-      lgu: false,
-      barangay: false,
-      rafi: false,
-      hazard: false,
-      evacuation: false,
-    });
+    setAddModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setViewModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
+    setEditModalState({ lgu: false, barangay: false, rafi: false, hazard: false, evacuation: false });
     setSelectedViewData(null);
 
     if (activeTab === "all") {
       fetchAll();
     } else {
-      fetchDataOne(activeTab as Exclude<Tabs, "all">);
+      fetchDataOne(activeTab as SectionTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
@@ -728,7 +721,8 @@ const MapOfCebu = () => {
                 <button onClick={() => { setActiveTab("barangay"); setShowFilter(false); }}>Barangay</button>
                 <button onClick={() => { setActiveTab("rafi"); setShowFilter(false); }}>RAFI</button>
                 <button onClick={() => { setActiveTab("hazard"); setShowFilter(false); }}>Hazard</button>
-                {/* Intentionally no Evacuation in filter menu if you want to keep it hidden; add back if needed */}
+                {/* Add Evacuation here if you want to expose it */}
+                {/* <button onClick={() => { setActiveTab("evacuation"); setShowFilter(false); }}>Evacuation</button> */}
               </div>
             )}
           </div>
@@ -753,7 +747,7 @@ const MapOfCebu = () => {
               <button onClick={() => { setShowAddPin(false); openAddModal("barangay"); }}>Barangay</button>
               <button onClick={() => { setShowAddPin(false); openAddModal("rafi"); }}>RAFI</button>
               <button onClick={() => { setShowAddPin(false); openAddModal("hazard"); }}>Hazard</button>
-              {/* No Evacuation here per request */}
+              {/* No Evacuation per request */}
             </div>
           )}
         </div>
@@ -777,7 +771,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
-                    updateTable={(fn) => (refreshTable.current = fn)}
+                    updateTable={(fn) => setTableRef("lgu", fn)}
                   />
                 </div>
               ) : (
@@ -797,7 +791,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("barangay", fn)}
                   />
                 </div>
               ) : (
@@ -817,7 +811,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("rafi", fn)}
                   />
                 </div>
               ) : (
@@ -837,7 +831,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("hazard", fn)}
                   />
                 </div>
               ) : (
@@ -845,7 +839,7 @@ const MapOfCebu = () => {
               )}
             </section>
 
-            {/* Evacuation center (still view-only, and excluded from Add Pin) */}
+            {/* Evacuation center (optional to show in All) */}
             {/* <section className="section-block">
               <div className="horizontal-container">
                 <h2 className="section-title">Evacuation Centers</h2>
@@ -857,7 +851,7 @@ const MapOfCebu = () => {
                     onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
                     setCallbackTableData={true}
                     pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
-                    updateTable={() => {}}
+                    updateTable={(fn) => setTableRef("evacuation", fn)}
                   />
                 </div>
               ) : (
@@ -881,7 +875,7 @@ const MapOfCebu = () => {
                   onClickCallback={(row: TableRowShape) => openViewModal(row, "lgu")}
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_lgu?page=`}
-                  updateTable={(fn) => (refreshTable.current = fn)}
+                  updateTable={(fn) => setTableRef("lgu", fn)}
                 />
               </div>
             ) : (
@@ -902,7 +896,7 @@ const MapOfCebu = () => {
                   onClickCallback={(row: TableRowShape) => openViewModal(row, "barangay")}
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_barangay?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("barangay", fn)}
                 />
               </div>
             ) : (
@@ -923,7 +917,7 @@ const MapOfCebu = () => {
                   onClickCallback={(row: TableRowShape) => openViewModal(row, "rafi")}
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_rafi?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("rafi", fn)}
                 />
               </div>
             ) : (
@@ -944,7 +938,7 @@ const MapOfCebu = () => {
                   onClickCallback={(row: TableRowShape) => openViewModal(row, "hazard")}
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_hazard?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("hazard", fn)}
                 />
               </div>
             ) : (
@@ -965,7 +959,7 @@ const MapOfCebu = () => {
                   onClickCallback={(row: TableRowShape) => openViewModal(row, "evacuation")}
                   setCallbackTableData={true}
                   pageRequest={`/lgu_profiling/manage_lgu/get_evacuation?page=`}
-                  updateTable={() => {}}
+                  updateTable={(fn) => setTableRef("evacuation", fn)}
                 />
               </div>
             ) : (

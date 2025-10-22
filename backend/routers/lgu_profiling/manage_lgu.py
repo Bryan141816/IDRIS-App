@@ -46,6 +46,7 @@ from schemas import (
     BaranggayRecordsUpdate,
     BaranggayRecordsOut,
     HazardCreate,
+    HazardUpdate,
     HazardOut,
 )
 
@@ -1003,11 +1004,33 @@ def delete_rafi(record_id: int, db: Session = Depends(get_db)):
     db.delete(record)
     db.commit()
     return {"message": f"RAFI Infrastructure with ID {record_id} deleted successfully."}
-
-
 # ---------------- Hazard ----------------
+from sqlalchemy.orm import joinedload  # you already import this above
+from fastapi import Request
+
+def _find_lgu_by_name(db: Session, name: str) -> Optional[LGURecords]:
+    n = (name or "").strip()
+    if not n:
+        return None
+    # case-insensitive exact match first
+    lgu = (
+        db.query(LGURecords)
+        .filter(func.lower(LGURecords.name) == n.lower())
+        .first()
+    )
+    if lgu:
+        return lgu
+    # fallback: simple ILIKE contains
+    return (
+        db.query(LGURecords)
+        .filter(LGURecords.name.ilike(f"%{n}%"))
+        .order_by(LGURecords.name.asc())
+        .first()
+    )
+
 @router.get("/lgu_profiling/manage_lgu/get_hazard", response_model=TableResponse)
 def get_hazard(
+    request: Request,
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     Name: str = Query("desc"),
@@ -1017,19 +1040,27 @@ def get_hazard(
 
     table_head = [
         {"text": "Last Updated", "width": "150px", "action": "Sort"},
-        {"text": "Hazard_area", "width": "150px"},
-        {"text": "image_url", "width": "150px"},
+        # LGU removed
+        {"text": "Hazard Area", "width": "220px"},
         {"text": "Hazard Type", "width": "150px"},
-        {"text": "Action", "width": "150px"},
+        {"text": "Image URL", "width": "260px"},
+        {"text": "Action", "width": "120px"},
     ]
 
     order = (
         Hazard.last_updated.desc().nulls_last()
-        if Name == "desc"
+        if str(Name).lower() == "desc"
         else Hazard.last_updated.asc().nulls_last()
     )
 
-    records = db.query(Hazard).order_by(order).limit(100).offset(offset).all()
+    records = (
+        db.query(Hazard)
+        # .options(joinedload(Hazard.lgu))  # optional now
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
+    )
 
     table_datas: List[dict] = []
     pageCount = page
@@ -1042,50 +1073,13 @@ def get_hazard(
             pages = {"page": pageCount, "row": []}
 
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=_fmt_dt(record.last_updated),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=record.hazard_area,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=(record.image_url or "-"),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=record.hazard_type,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Button",
-                text="View",
-                font_weight=500,
-                color="#fff",
-                background_color="#749AB6",
-                container_width="150px",
-                button_width="120px",
-            ),
+            Cell(type="Hidden", text=str(record.id), font_weight=0, color="#000", width="0px"),
+            Cell(type="Text", text=_fmt_dt(record.last_updated), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=(record.hazard_area or "—"), font_weight=500, color="#000", width="220px"),
+            Cell(type="Text", text=(record.hazard_type or "—"), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=_abs_media_url(request, record.image_url), font_weight=400, color="#000", width="260px"),
+            Cell(type="Button", text="View", font_weight=500, color="#fff",
+                 background_color="#749AB6", container_width="120px", button_width="100px"),
         ]
         pages["row"].append({"data": row_data})
 
@@ -1098,8 +1092,19 @@ def get_hazard(
 
 @router.post("/lgu_profiling/manage_lgu/add_hazard", response_model=HazardOut)
 def add_hazard(record: HazardCreate, db: Session = Depends(get_db)):
+    """
+    hazard_area is the LGU name. We resolve it and store lgu_id.
+    """
+    lgu = _find_lgu_by_name(db, record.hazard_area)
+    if not lgu:
+        raise HTTPException(
+            status_code=422,
+            detail=f"LGU named '{record.hazard_area}' was not found."
+        )
+
     db_record = Hazard(
-        hazard_area=record.hazard_area,
+        lgu_id=lgu.id,                   # <-- link to LGU
+        hazard_area=record.hazard_area,  # keep the text the user entered
         hazard_type=record.hazard_type,
         image_url=record.image_url,
         action=record.action,
@@ -1110,31 +1115,41 @@ def add_hazard(record: HazardCreate, db: Session = Depends(get_db)):
     return db_record
 
 
-@router.put(
-    "/lgu_profiling/manage_lgu/update_hazard/{record_id}", response_model=HazardOut
-)
-def update_hazard(record_id: int, payload: HazardCreate, db: Session = Depends(get_db)):
+@router.put("/lgu_profiling/manage_lgu/update_hazard/{record_id}", response_model=HazardOut)
+def update_hazard(record_id: int, payload: HazardUpdate, db: Session = Depends(get_db)):
     rec = db.get(Hazard, record_id)
     if not rec:
         raise HTTPException(status_code=404, detail="Hazard record doesn't exist")
-    rec.hazard_area = payload.hazard_area
-    rec.hazard_type = payload.hazard_type
-    rec.image_url = payload.image_url
-    rec.action = payload.action
+
+    # If hazard_area (LGU name) changes, resolve and update lgu_id too
+    if payload.hazard_area is not None:
+        lgu = _find_lgu_by_name(db, payload.hazard_area)
+        if not lgu:
+            raise HTTPException(
+                status_code=422,
+                detail=f"LGU named '{payload.hazard_area}' was not found."
+            )
+        rec.lgu_id = lgu.id
+        rec.hazard_area = payload.hazard_area
+
+    if payload.hazard_type is not None:
+        rec.hazard_type = payload.hazard_type
+    if payload.image_url is not None:
+        rec.image_url = payload.image_url
+    if payload.action is not None:
+        rec.action = payload.action
+
     db.commit()
     db.refresh(rec)
     return rec
 
 
-@router.delete(
-    "/lgu_profiling/manage_lgu/delete_hazard/{record_id}", response_model=dict
-)
+@router.delete("/lgu_profiling/manage_lgu/delete_hazard/{record_id}", response_model=dict)
 def delete_hazard(record_id: int, db: Session = Depends(get_db)):
     removed = delete(db, Hazard, record_id)
     if not removed:
         raise HTTPException(status_code=400, detail="Record not found.")
     return {"message": f"Hazard with ID {record_id} deleted successfully."}
-
 
 # ---------------- LGU CRUD (simple) ----------------
 @router.post("/lgu_profiling/manage_lgu/add_lgu", response_model=LGURecordsOut)

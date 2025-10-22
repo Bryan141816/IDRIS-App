@@ -1,6 +1,6 @@
 // HazardModals.tsx
 import { BaseModalProps } from "../ModalProps";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -30,10 +30,15 @@ type EditProps = BaseModalProps & {
 };
 
 /* =========================================================
-   Upload Helper (matches FastAPI: POST /api/files/hazards)
+   Constants
 ========================================================= */
-const UPLOAD_URL = "http://localhost:8000/api/files/hazards";
+const API_BASE = "http://localhost:8000";
+const UPLOAD_URL = `${API_BASE}/api/files/hazards`;
+const LGU_SEARCH_URL = `${API_BASE}/lgu_profiling/manage_lgu/get_lgu`;
 
+/* =========================================================
+   Helpers
+========================================================= */
 async function uploadHazardImage(file: File): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
@@ -48,8 +53,65 @@ async function uploadHazardImage(file: File): Promise<string> {
   return data.url as string;
 }
 
+/** Pull LGU names from the table-shaped response of /get_lgu?q=... */
+async function searchLGUNames(query: string): Promise<string[]> {
+  const url = new URL(LGU_SEARCH_URL);
+  url.searchParams.set("q", query);
+  url.searchParams.set("page", "1");
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return [];
+  const json = await res.json();
+  // rows look like: [Hidden(id), Text(name), Text(lat), Text(lng), Text(class), Button(View)]
+  const pages = json?.table_datas ?? [];
+  const names: string[] = [];
+  for (const pg of pages) {
+    for (const r of pg.row ?? []) {
+      const data = r?.data ?? [];
+      const nameCell = data[1];
+      if (nameCell?.text) names.push(nameCell.text);
+    }
+  }
+  return Array.from(new Set(names));
+}
+
+/** Debounce */
+function useDebounced<T>(value: T, delay = 300) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return v;
+}
+
+/** Heuristic: parse the row into fields without relying on fixed indexes */
+function parseHazardRow(selectedData: any) {
+  const cells = (selectedData?.data ?? []) as Array<{ type?: string; text?: string }>;
+
+  const id = cells[0]?.text ?? "";
+  const lastUpdated = cells[1]?.text ?? "-";
+
+  // ignore non-textual cells
+  const rest = cells.slice(2).filter((c) => c?.type !== "Button" && c?.type !== "Hidden");
+
+  const isUrl = (s?: string) => !!s && /^https?:\/\//i.test(s.trim());
+
+  // image url: first URL-like text
+  const imgCell = rest.find((c) => isUrl(c?.text));
+  const image_url = imgCell?.text ?? "";
+
+  // non-url text cells after the first two columns are hazard_area & hazard_type (order-agnostic)
+  const textCells = rest.filter((c) => !isUrl(c?.text) && (c?.text ?? "").trim() !== "");
+  const hazard_area = textCells[0]?.text ?? "—";
+  const hazard_type = textCells[1]?.text ?? "—";
+
+  return { id, lastUpdated, hazard_area, hazard_type, image_url };
+}
+
 /* =========================================================
    ADD Hazard
+   - LGU autocomplete fills hazard_area (LGU name)
 ========================================================= */
 export const AddHazardModal: React.FC<AddProps> = ({
   isModalOpen,
@@ -58,7 +120,7 @@ export const AddHazardModal: React.FC<AddProps> = ({
   handleAddRecord,
 }) => {
   const [form, setForm] = useState({
-    hazard_area: "",
+    lgu_name: "", // user picks LGU -> sent as hazard_area
     hazard_type: "",
     image_url: "",
   });
@@ -66,11 +128,54 @@ export const AddHazardModal: React.FC<AddProps> = ({
   const [preview, setPreview] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // LGU autocomplete state
+  const [lguQuery, setLguQuery] = useState("");
+  const debouncedLguQuery = useDebounced(lguQuery, 250);
+  const [lguOptions, setLguOptions] = useState<string[]>([]);
+  const [lguLoading, setLguLoading] = useState(false);
+  const [showLguList, setShowLguList] = useState(false);
+  const lguBoxRef = useRef<HTMLDivElement>(null);
+
+  // close list on outside click
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!lguBoxRef.current) return;
+      if (!lguBoxRef.current.contains(e.target as Node)) setShowLguList(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
+
+  // fetch LGUs when query changes
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      const q = debouncedLguQuery.trim();
+      if (!q || q.length < 2) {
+        if (!cancelled) setLguOptions([]);
+        return;
+      }
+      setLguLoading(true);
+      try {
+        const opts = await searchLGUNames(q);
+        if (!cancelled) setLguOptions(opts);
+      } catch {
+        if (!cancelled) setLguOptions([]);
+      } finally {
+        if (!cancelled) setLguLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedLguQuery]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target as HTMLInputElement;
@@ -101,8 +206,21 @@ export const AddHazardModal: React.FC<AddProps> = ({
   const actuallySubmit = async () => {
     try {
       setIsSubmitting(true);
-      let finalImageUrl = form.image_url?.trim() || "";
 
+      // Ensure LGU chosen
+      const lguName = (form.lgu_name || "").trim();
+      if (!lguName) {
+        setMessageBox((p: any) => ({
+          ...p,
+          isOpen: true,
+          type: "alert",
+          message: "Please select an LGU.",
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+
+      let finalImageUrl = form.image_url?.trim() || "";
       if (file) {
         try {
           finalImageUrl = await uploadHazardImage(file);
@@ -119,7 +237,7 @@ export const AddHazardModal: React.FC<AddProps> = ({
       }
 
       await handleAddRecord({
-        hazard_area: form.hazard_area,
+        hazard_area: lguName, // backend resolves to lgu_id
         hazard_type: form.hazard_type,
         image_url: finalImageUrl || null,
       });
@@ -131,19 +249,26 @@ export const AddHazardModal: React.FC<AddProps> = ({
         message: "Hazard added successfully.",
       }));
 
-      setForm({ hazard_area: "", hazard_type: "", image_url: "" });
+      setForm({ lgu_name: "", hazard_type: "", image_url: "" });
       setFile(null);
       if (preview) {
         URL.revokeObjectURL(preview);
         setPreview("");
       }
+      setLguQuery("");
+      setLguOptions([]);
       closeModal();
     } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to add hazard";
       setMessageBox((p: any) => ({
         ...p,
         isOpen: true,
         type: "alert",
-        message: `Failed to add hazard: ${err?.message || err}`,
+        message: msg,
       }));
     } finally {
       setIsSubmitting(false);
@@ -167,15 +292,59 @@ export const AddHazardModal: React.FC<AddProps> = ({
           <span className="details-title">Add Hazard</span>
         </div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Hazard Area:</span>
-          <input
-            type="text"
-            name="hazard_area"
-            value={form.hazard_area}
-            onChange={onChange}
-            disabled={isSubmitting}
-          />
+        {/* LGU (controls hazard_area) */}
+        <div className="horizontal-container" ref={lguBoxRef}>
+          <span className="item-details-identifier">LGU (Hazard Area):</span>
+          <div style={{ position: "relative", width: "100%" }}>
+            <input
+              type="text"
+              name="lgu_name"
+              placeholder="Search LGU..."
+              value={form.lgu_name}
+              onChange={(e) => {
+                setForm((p) => ({ ...p, lgu_name: e.target.value }));
+                setLguQuery(e.target.value);
+                setShowLguList(true);
+              }}
+              onFocus={() => setShowLguList(true)}
+              disabled={isSubmitting}
+              style={{ width: "100%" }}
+            />
+            {showLguList && (lguLoading || lguOptions.length > 0) && (
+              <div
+                style={{
+                  position: "absolute",
+                  zIndex: 10,
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  borderTop: "none",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                {lguLoading ? (
+                  <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>
+                ) : (
+                  lguOptions.map((opt) => (
+                    <div
+                      key={opt}
+                      onClick={() => {
+                        setForm((p) => ({ ...p, lgu_name: opt }));
+                        setLguQuery(opt);
+                        setShowLguList(false);
+                      }}
+                      style={{ padding: "8px 12px", cursor: "pointer" }}
+                    >
+                      {opt}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="horizontal-container">
@@ -229,14 +398,14 @@ export const AddHazardModal: React.FC<AddProps> = ({
 
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1 , color: "#ffff" }}
+            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1, color: "#ffff" }}
             onClick={onSubmit}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Saving..." : "Add"}
           </button>
           <button
-            style={{ backgroundColor: "#F84B4D", color: "#ffff"  }}
+            style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
             onClick={closeModal}
             disabled={isSubmitting}
           >
@@ -250,6 +419,7 @@ export const AddHazardModal: React.FC<AddProps> = ({
 
 /* =========================================================
    VIEW Hazard
+   Row mapping is discovered dynamically (no fixed indexes)
 ========================================================= */
 export const ViewHazardModal: React.FC<ViewProps> = ({
   isModalOpen,
@@ -265,12 +435,7 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
     if (!isModalOpen) setIsMore(false);
   }, [isModalOpen]);
 
-  // Corrected order: [id, lastUpdated, hazard_area, image_url, hazard_type]
-  const id = selectedData?.data?.[0]?.text ?? "";
-  const lastUpdated = selectedData?.data?.[1]?.text ?? "-";
-  const hazardArea = selectedData?.data?.[2]?.text ?? "-";
-  const imageUrl = selectedData?.data?.[3]?.text ?? "";
-  const hazardType = selectedData?.data?.[4]?.text ?? "-";
+  const { id, lastUpdated, hazard_area, hazard_type, image_url } = parseHazardRow(selectedData);
 
   if (!isModalOpen) return null;
 
@@ -320,19 +485,19 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Hazard Area:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{hazardArea}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{hazard_area}</span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Hazard Type:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{hazardType}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>{hazard_type}</span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Image:</span>
           <div style={{ width: "100%", textAlign: "center" }}>
-            {imageUrl ? (
-              <a href={imageUrl} target="_blank" rel="noreferrer" title="Open image">
+            {image_url ? (
+              <a href={image_url} target="_blank" rel="noreferrer" title="Open image">
                 <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
               </a>
             ) : (
@@ -354,9 +519,9 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
             background: "#f5f5f5",
           }}
         >
-          {imageUrl ? (
+          {image_url ? (
             <img
-              src={imageUrl}
+              src={image_url}
               alt="hazard"
               style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
               onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
@@ -379,7 +544,7 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
 };
 
 /* =========================================================
-   EDIT Hazard
+   EDIT Hazard (dynamic parsing too)
 ========================================================= */
 export const EditHazardModal: React.FC<EditProps> = ({
   isModalOpen,
@@ -388,32 +553,65 @@ export const EditHazardModal: React.FC<EditProps> = ({
   handleEditRecord,
   selectedData,
 }) => {
-  const id = selectedData?.data?.[0]?.text ?? "";
+  const parsed = parseHazardRow(selectedData);
+  const id = parsed.id;
 
   const [form, setForm] = useState({
-    hazard_area: "",
-    hazard_type: "",
-    image_url: "",
+    lgu_name: parsed.hazard_area, // controls hazard_area (LGU name)
+    hazard_type: parsed.hazard_type === "—" ? "" : parsed.hazard_type,
+    image_url: parsed.image_url || "",
   });
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>("");
+  const [preview, setPreview] = useState<string>(parsed.image_url || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // LGU autocomplete
+  const [lguQuery, setLguQuery] = useState(form.lgu_name || "");
+  const debouncedLguQuery = useDebounced(lguQuery, 250);
+  const [lguOptions, setLguOptions] = useState<string[]>([]);
+  const [lguLoading, setLguLoading] = useState(false);
+  const [showLguList, setShowLguList] = useState(false);
+  const lguBoxRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (!selectedData) return;
-    // Corrected mapping
-    const area = selectedData?.data?.[2]?.text ?? "";
-    const img = selectedData?.data?.[3]?.text ?? "";
-    const type = selectedData?.data?.[4]?.text ?? "";
-    setForm({ hazard_area: area, hazard_type: type, image_url: img });
-    setPreview(img || "");
-  }, [selectedData]);
+    function onDocClick(e: MouseEvent) {
+      if (!lguBoxRef.current) return;
+      if (!lguBoxRef.current.contains(e.target as Node)) setShowLguList(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
 
   useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
+
+  // fetch LGUs when query changes
+  useEffect(() => {
+    let cancelled = false;
+    async function run() {
+      const q = debouncedLguQuery.trim();
+      if (!q || q.length < 2) {
+        if (!cancelled) setLguOptions([]);
+        return;
+      }
+      setLguLoading(true);
+      try {
+        const opts = await searchLGUNames(q);
+        if (!cancelled) setLguOptions(opts);
+      } catch {
+        if (!cancelled) setLguOptions([]);
+      } finally {
+        if (!cancelled) setLguLoading(false);
+      }
+    }
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedLguQuery]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, files } = e.target as HTMLInputElement;
@@ -445,6 +643,18 @@ export const EditHazardModal: React.FC<EditProps> = ({
     try {
       setIsSubmitting(true);
 
+      const lguName = (form.lgu_name || "").trim();
+      if (!lguName) {
+        setMessageBox((p: any) => ({
+          ...p,
+          isOpen: true,
+          type: "alert",
+          message: "Please select an LGU.",
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+
       let finalImageUrl = form.image_url?.trim() || "";
       if (file) {
         try {
@@ -462,7 +672,7 @@ export const EditHazardModal: React.FC<EditProps> = ({
       }
 
       await handleEditRecord(id, {
-        hazard_area: form.hazard_area,
+        hazard_area: lguName,           // backend resolves to lgu_id
         hazard_type: form.hazard_type,
         image_url: finalImageUrl || null,
       });
@@ -476,11 +686,16 @@ export const EditHazardModal: React.FC<EditProps> = ({
 
       closeModal();
     } catch (err: any) {
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update hazard";
       setMessageBox((p: any) => ({
         ...p,
         isOpen: true,
         type: "alert",
-        message: `Failed to update hazard: ${err?.message || err}`,
+        message: msg,
       }));
     } finally {
       setIsSubmitting(false);
@@ -504,15 +719,59 @@ export const EditHazardModal: React.FC<EditProps> = ({
           <span className="details-title">Update Hazard</span>
         </div>
 
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Hazard Area:</span>
-          <input
-            type="text"
-            name="hazard_area"
-            value={form.hazard_area}
-            onChange={onChange}
-            disabled={isSubmitting}
-          />
+        {/* LGU picker */}
+        <div className="horizontal-container" ref={lguBoxRef}>
+          <span className="item-details-identifier">LGU (Hazard Area):</span>
+          <div style={{ position: "relative", width: "100%" }}>
+            <input
+              type="text"
+              name="lgu_name"
+              placeholder="Search LGU..."
+              value={form.lgu_name}
+              onChange={(e) => {
+                setForm((p) => ({ ...p, lgu_name: e.target.value }));
+                setLguQuery(e.target.value);
+                setShowLguList(true);
+              }}
+              onFocus={() => setShowLguList(true)}
+              disabled={isSubmitting}
+              style={{ width: "100%" }}
+            />
+            {showLguList && (lguLoading || lguOptions.length > 0) && (
+              <div
+                style={{
+                  position: "absolute",
+                  zIndex: 10,
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  background: "#fff",
+                  border: "1px solid #ddd",
+                  borderTop: "none",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                {lguLoading ? (
+                  <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>
+                ) : (
+                  lguOptions.map((opt) => (
+                    <div
+                      key={opt}
+                      onClick={() => {
+                        setForm((p) => ({ ...p, lgu_name: opt }));
+                        setLguQuery(opt);
+                        setShowLguList(false);
+                      }}
+                      style={{ padding: "8px 12px", cursor: "pointer" }}
+                    >
+                      {opt}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="horizontal-container">

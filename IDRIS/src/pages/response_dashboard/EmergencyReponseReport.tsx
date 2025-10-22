@@ -186,12 +186,7 @@ const EmergencyReportResponse = () => {
               </p>
               <p className="erc-metric-label">Completed</p>
             </div>
-            <div className="erc-metric-card">
-              <p className="erc-metric-value">
-                {reportData.summary.avgResponseTime}h
-              </p>
-              <p className="erc-metric-label">Avg Response Time</p>
-            </div>
+
             <div className="erc-metric-card">
               <p className="erc-metric-value">
                 {reportData.summary.totalStaffDeployed}
@@ -303,52 +298,52 @@ const EmergencyReportResponse = () => {
         </div>
 
         {/* Performance Metrics */}
-        <div className="erc-summary-section">
-          <h3 className="erc-summary-title">Performance Metrics</h3>
-          <div className="erc-summary-grid">
-            <div className="erc-summary-item">
-              <p className="erc-summary-label">Response Time:</p>
-              <p
-                className="erc-summary-value"
-                style={{
-                  color:
-                    reportData.performanceMetrics.responseTimeAchieved <=
-                    reportData.performanceMetrics.responseTimeTarget
-                      ? "#28a745"
-                      : "#dc3545",
-                }}
-              >
-                {reportData.performanceMetrics.responseTimeAchieved}h
-                <span className="erc-target-text">
-                  {" "}
-                  (Target: {reportData.performanceMetrics.responseTimeTarget}h)
-                </span>
-              </p>
-            </div>
-            <div className="erc-summary-item">
-              <p className="erc-summary-label">Completion Rate:</p>
-              <p
-                className="erc-summary-value"
-                style={{
-                  color:
-                    reportData.performanceMetrics.completionRate >= 80
-                      ? "#28a745"
-                      : reportData.performanceMetrics.completionRate >= 60
-                        ? "#ffc107"
-                        : "#dc3545",
-                }}
-              >
-                {reportData.performanceMetrics.completionRate}%
-              </p>
-            </div>
-            <div className="erc-summary-item">
-              <p className="erc-summary-label">Staff Utilization:</p>
-              <p className="erc-summary-value">
-                {reportData.performanceMetrics.staffUtilization}%
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* <div className="erc-summary-section"> */}
+        {/*   <h3 className="erc-summary-title">Performance Metrics</h3> */}
+        {/*   <div className="erc-summary-grid"> */}
+        {/*     <div className="erc-summary-item"> */}
+        {/*       <p className="erc-summary-label">Response Time:</p> */}
+        {/*       <p */}
+        {/*         className="erc-summary-value" */}
+        {/*         style={{ */}
+        {/*           color: */}
+        {/*             reportData.performanceMetrics.responseTimeAchieved <= */}
+        {/*             reportData.performanceMetrics.responseTimeTarget */}
+        {/*               ? "#28a745" */}
+        {/*               : "#dc3545", */}
+        {/*         }} */}
+        {/*       > */}
+        {/*         {reportData.performanceMetrics.responseTimeAchieved}h */}
+        {/*         <span className="erc-target-text"> */}
+        {/*           {" "} */}
+        {/*           (Target: {reportData.performanceMetrics.responseTimeTarget}h) */}
+        {/*         </span> */}
+        {/*       </p> */}
+        {/*     </div> */}
+        {/*     <div className="erc-summary-item"> */}
+        {/*       <p className="erc-summary-label">Completion Rate:</p> */}
+        {/*       <p */}
+        {/*         className="erc-summary-value" */}
+        {/*         style={{ */}
+        {/*           color: */}
+        {/*             reportData.performanceMetrics.completionRate >= 80 */}
+        {/*               ? "#28a745" */}
+        {/*               : reportData.performanceMetrics.completionRate >= 60 */}
+        {/*                 ? "#ffc107" */}
+        {/*                 : "#dc3545", */}
+        {/*         }} */}
+        {/*       > */}
+        {/*         {reportData.performanceMetrics.completionRate}% */}
+        {/*       </p> */}
+        {/*     </div> */}
+        {/*     <div className="erc-summary-item"> */}
+        {/*       <p className="erc-summary-label">Staff Utilization:</p> */}
+        {/*       <p className="erc-summary-value"> */}
+        {/*         {reportData.performanceMetrics.staffUtilization}% */}
+        {/*       </p> */}
+        {/*     </div> */}
+        {/*   </div> */}
+        {/* </div> */}
       </main>
 
       {/* Print Footer */}

@@ -350,7 +350,7 @@ def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
         db.query(func.count(TeamMembers.members_id))
         .join(DistributionTeam, TeamMembers.team_id == DistributionTeam.team_id)
         .join(DistributionRoute, DistributionRoute.team == DistributionTeam.team_id)
-        .filter(DistributionRoute.status == "In Transit")
+        .filter(DistributionRoute.status.in_(["In Transit", "Completed"]))
         .scalar()
     )
     staff_status = {"available": available_staff, "deployed": deployed_staff}

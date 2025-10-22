@@ -12,6 +12,7 @@ import {
     Modal,
     message,
 } from 'antd';
+import { useUserContext } from "../../../UserContext";
 import type { CheckboxOptionType } from 'antd';
 import type { CheckboxChangeEvent } from 'antd/es/checkbox';
 import type { UploadFile as AntdUploadFile, RcFile } from 'antd/es/upload/interface';
@@ -224,38 +225,38 @@ const OrganizationForm: React.FC = () => {
         }
         return Promise.resolve();
     };
-
+const { email } = useUserContext();
     useEffect(() => {
-      async function loadUserProfile() {
-        try {
-          // 1️⃣ Get the currently logged-in user's ID
-          const currentUser = await fetchCurrentUserId();
-          if (!currentUser?.id) {
-            console.warn("No user ID found.");
-            return;
-          }
+        async function loadUserProfile() {
+            try {
+                // 1️⃣ Get the currently logged-in user's ID
+                const currentUser = await fetchCurrentUserId();
+                if (!currentUser?.id) {
+                    console.warn("No user ID found.");
+                    return;
+                }
 
-          // 2️⃣ Fetch user profile details using their ID
-          const userProfile = await getUserProfileByUserId(currentUser.id);
-          console.log("Gender:", userProfile.gender);
-          if (!userProfile) {
-            console.warn("User profile not found.");
-            return;
-          }
+                // 2️⃣ Fetch user profile details using their ID
+                const userProfile = await getUserProfileByUserId(currentUser.id);
+                console.log("Gender:", userProfile.gender);
+                if (!userProfile) {
+                    console.warn("User profile not found.");
+                    return;
+                }
 
-          // 3️⃣ Automatically populate the form fields
-          form.setFieldsValue({
-            repName: `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim(),
-            repPhone: userProfile.phone_number || "",
+                // 3️⃣ Automatically populate the form fields
+                form.setFieldsValue({
+                    repName: `${userProfile.first_name || ""} ${userProfile.last_name || ""}`.trim(),
+                    repPhone: userProfile.phone_number || "",
+                    repEmail: email || currentUser.email || "",
+                });
 
-          });
-
-        } catch (error) {
-          console.error("Error loading user profile:", error);
+            } catch (error) {
+                console.error("Error loading user profile:", error);
+            }
         }
-      }
 
-      loadUserProfile();
+        loadUserProfile();
     }, [form]);
 
 
@@ -313,7 +314,6 @@ const OrganizationForm: React.FC = () => {
                                         <Option value="ngo">NGO</Option>
                                         <Option value="government">Government</Option>
                                         <Option value="educational">Educational Institution</Option>
-                                        <Option value="other">Other</Option>
                                     </Select>
                                 </Form.Item>
                             </div>
@@ -388,12 +388,8 @@ const OrganizationForm: React.FC = () => {
                                     name="repEmail"
                                     label="Email Address"
                                     className="form-item-half"
-                                    rules={[
-                                        { required: true, message: 'Please enter email address' },
-                                        { type: 'email', message: 'Please enter a valid email' },
-                                    ]}
                                 >
-                                    <Input placeholder="Enter representative's email" />
+                                    <Input placeholder="Enter representative's email" readOnly/>
                                 </Form.Item>
                             </div>
 
@@ -407,44 +403,92 @@ const OrganizationForm: React.FC = () => {
                         </div>
 
                         {/* Organization Picture (image) */}
-                        <Form.Item
-                            name="organizationPicture"
-                            label="Organizational Picture"
-                            className="center-upload"
-                            valuePropName="fileList"
-                            getValueFromEvent={normFile}
-                        // rules={[{ required: true, message: 'Please upload your organizational picture' }]}
-                        >
-                            <Upload
-                                className="custom-upload upload-lg"
-                                listType="picture-card"
-                                accept="image/png,image/jpeg,image/webp"
-                                maxCount={1}
-                                beforeUpload={beforeUpload}          // your validator (returns false or LIST_IGNORE)
-                                onPreview={handlePreview}
-                                onChange={({ fileList }) => {
-                                    // keep the form in sync explicitly (helps avoid edge cases)
-                                    form.setFieldsValue({ organizationPicture: fileList.slice(-1) });
-                                }}
-                                onRemove={() => {
-                                    form.setFieldsValue({ organizationPicture: [] });
-                                }}
+                        <div className="upload-section">
+                            <h3 className="section_title">Organization Logo</h3>
+
+                            <Form.Item
+                                name="organizationPicture"
+                                className="org-picture-upload-circular"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: 'Please upload organization logo' }]}
                             >
-                                {(pictureList?.length ?? 0) >= 1 ? null : (
-                                    <div>
-                                        <PlusOutlined />
-                                        <div style={{ marginTop: 8 }}>Upload</div>
+                                <div className="circular-upload-container">
+                                    {/* Circular Image Preview or Placeholder */}
+                                    <div className="circular-image-wrapper">
+                                        {pictureList && pictureList.length > 0 ? (
+                                            <img
+                                                src={
+                                                    pictureList[0].url ||
+                                                    (pictureList[0].originFileObj
+                                                        ? URL.createObjectURL(pictureList[0].originFileObj)
+                                                        : pictureList[0].preview)
+                                                }
+                                                alt="Organization"
+                                                className="circular-image"
+                                                onClick={() => handlePreview(pictureList[0])}
+                                            />
+                                        ) : (
+                                            <div className="circular-placeholder">
+
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </Upload>
-                        </Form.Item>
-                        {/* Image preview modal */}
-                        <Modal open={previewOpen} title={previewTitle} footer={null} onCancel={() => setPreviewOpen(false)}>
+
+                                    {/* Upload/Change Button */}
+                                    <Upload
+                                        listType="picture"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        maxCount={1}
+                                        beforeUpload={beforeUpload}
+                                        onPreview={handlePreview}
+                                        onChange={({ fileList }) => {
+                                            form.setFieldsValue({ organizationPicture: fileList.slice(-1) });
+                                        }}
+                                        onRemove={() => {
+                                            form.setFieldsValue({ organizationPicture: [] });
+                                        }}
+                                        showUploadList={false}
+                                    >
+                                        <Button
+                                            type="primary"
+                                            icon={<PlusOutlined />}
+                                            className="circular-upload-button"
+                                        >
+                                            {pictureList && pictureList.length > 0 ? 'Change Picture' : 'Upload Picture'}
+                                        </Button>
+                                    </Upload>
+
+                                    {/* Remove Button (only show if image exists) */}
+                                    {pictureList && pictureList.length > 0 && (
+                                        <Button
+                                            danger
+                                            type="text"
+                                            size="small"
+                                            onClick={() => {
+                                                form.setFieldsValue({ organizationPicture: [] });
+                                            }}
+                                            className="circular-remove-button"
+                                        >
+                                            Remove
+                                        </Button>
+                                    )}
+                                </div>
+                            </Form.Item>
+                        </div>
+
+                        {/* Modal for full image preview */}
+                        <Modal
+                            open={previewOpen}
+                            title={previewTitle}
+                            footer={null}
+                            onCancel={() => setPreviewOpen(false)}
+                        >
                             <img alt="Organization preview" style={{ width: '100%' }} src={previewImage} />
                         </Modal>
 
                         {/* Certificate (PDF via custom component) */}
-                        <h3 className="section-title upload-title">Upload Certificates</h3>
+                        <h1>Upload Certificate(s)</h1>
                         <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                             rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
@@ -459,7 +503,7 @@ const OrganizationForm: React.FC = () => {
                                 <p className="ant-upload-drag-icon">
                                     <InboxOutlined />
                                 </p>
-                                <p className="upload-text">Drop files here</p>
+                                <p className="upload-text">Drop your certificate(s) here</p>
                                 <p className="upload-hint">or</p>
                                 <Button className="browse-button">Browse</Button>
                             </Upload.Dragger>

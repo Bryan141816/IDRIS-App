@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
 import { Button, Breadcrumb, Spin } from 'antd';
 import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -8,8 +7,8 @@ import { getUserProfileByUserId } from '../../../API_Handler/user_profile_handle
 import { getVolunteerByUserId } from '../../../API_Handler/individual_volunter_handler';
 import { getOrganizationVolunteerByUserId } from '../../../API_Handler/organization_volunteer_handler';
 import { fetchCurrentUserId } from '../../../API_Handler/auth';
-import { useUserContext } from "../../../UserContext"
-import userProfile from "../../../media/account-profile.png";;
+import { useUserContext } from "../../../UserContext";
+import userProfile from "../../../media/account-profile.png";
 import dayjs from 'dayjs';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -33,6 +32,16 @@ interface PersonalInfo {
     gender: string;
 }
 
+interface OrganizationInfo {
+    organizationName: string;
+    organizationType: string;
+    phoneNumber: string;
+    address: string;
+    email: string;
+    website?: string;
+    establishedDate?: string;
+}
+
 interface Location {
     lat: number;
     lng: number;
@@ -43,13 +52,15 @@ interface VolunteerData {
     role: string;
     certified: boolean;
     address: string;
-    personalInfo: PersonalInfo;
+    personalInfo?: PersonalInfo;
+    organizationInfo?: OrganizationInfo;
     location: Location;
     description?: string;
     skillsAndInterest?: string[];
     availability?: string;
     credentials?: string[];
     volunteerId?: string;
+    profileImage?: string;
     statistics?: {
         totalPrograms: number;
         monthlyActivity: number;
@@ -60,13 +71,13 @@ interface VolunteerData {
 }
 
 // Define tab types
-type TabType = 'personalInfo' | 'description' | 'skillsAndInterest' | 'availability' | 'credentials';
+type TabType = 'personalInfo' | 'organizationInfo' | 'description' | 'skillsAndInterest' | 'availability' | 'credentials';
 
 const VolunteerProfile: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('personalInfo');
     const [volunteerData, setVolunteerData] = useState<VolunteerData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isIndividual, setIsIndividual] = useState(true); // Track volunteer type
+    const [isIndividual, setIsIndividual] = useState(true);
 
     // Calculate age from birthdate
     const calculateAge = (birthDate: string): number => {
@@ -81,13 +92,12 @@ const VolunteerProfile: React.FC = () => {
         }
         return age;
     };
+
     const { email, username, userId, userImage } = useUserContext();
-    const profileImage = userImage
+    const defaultProfileImage = userImage
         ? `${API.defaults.baseURL}/${userImage}`
         : userProfile;
 
-    console.log("User Image:", userImage);
-    // Add this function before the VolunteerProfile component
     const calculateMonthlyActivity = (joinDate?: string, lastActive?: string): number => {
         if (!joinDate) return 0;
 
@@ -98,33 +108,6 @@ const VolunteerProfile: React.FC = () => {
         return Math.max(months, 0);
     };
 
-    // Add this helper function at the top of your file, after the calculateAge function
-    const generateMonthlyProgramData = (joinDate: string, totalPrograms: number, lastActiveDate?: string) => {
-        const start = dayjs(joinDate);
-        const end = lastActiveDate ? dayjs(lastActiveDate) : dayjs();
-        const monthsDiff = end.diff(start, 'month') + 1;
-
-        if (monthsDiff <= 0) return [];
-
-        // Generate data for each month
-        const data = [];
-        const avgPerMonth = totalPrograms / monthsDiff;
-
-        for (let i = 0; i < Math.min(monthsDiff, 12); i++) {
-            const month = start.add(i, 'month');
-            // Add some variation to make the graph more realistic
-            const variance = (Math.random() - 0.5) * avgPerMonth * 0.4;
-            const programs = Math.max(0, Math.round(avgPerMonth + variance));
-
-            data.push({
-                month: month.format('MMM YYYY'),
-                programs: programs,
-                cumulative: Math.round(avgPerMonth * (i + 1))
-            });
-        }
-
-        return data;
-    };
     useEffect(() => {
         async function loadVolunteerProfile() {
             try {
@@ -132,6 +115,8 @@ const VolunteerProfile: React.FC = () => {
 
                 // 1️⃣ Get current user ID
                 const currentUser = await fetchCurrentUserId();
+                console.log("Current User:", currentUser);
+
                 if (!currentUser?.id) {
                     console.warn("No user ID found.");
                     setLoading(false);
@@ -139,8 +124,10 @@ const VolunteerProfile: React.FC = () => {
                 }
 
                 // 2️⃣ Fetch user profile
-                const userProfile = await getUserProfileByUserId(currentUser.id);
-                if (!userProfile) {
+                const userProfileData = await getUserProfileByUserId(currentUser.id);
+                console.log("User Profile Data:", userProfileData);
+
+                if (!userProfileData) {
                     console.warn("User profile not found.");
                     setLoading(false);
                     return;
@@ -151,88 +138,166 @@ const VolunteerProfile: React.FC = () => {
                 let isIndividualVolunteer = true;
 
                 try {
-                    volunteerInfo = await getVolunteerByUserId(); // ✅ Removed currentUser.id parameter
+                    volunteerInfo = await getVolunteerByUserId();
+                    console.log("Individual Volunteer Data:", volunteerInfo);
+
+                    if (volunteerInfo) {
+                        isIndividualVolunteer = true;
+                    }
                 } catch (error) {
-                    console.log("Not an individual volunteer, checking organization...");
-                    isIndividualVolunteer = false;
+                    console.log("Not an individual volunteer, checking organization...", error);
                 }
 
                 // 4️⃣ If not individual, try organization volunteer
                 if (!volunteerInfo) {
                     try {
-                        volunteerInfo = await getOrganizationVolunteerByUserId(); // ✅ Removed currentUser.id parameter
-                        isIndividualVolunteer = false;
+                        volunteerInfo = await getOrganizationVolunteerByUserId();
+                        console.log("Organization Volunteer Data:", volunteerInfo);
+
+                        if (volunteerInfo) {
+                            isIndividualVolunteer = false;
+                        }
                     } catch (error) {
-                        console.warn("No volunteer record found.");
+                        console.warn("No volunteer record found.", error);
                         setLoading(false);
                         return;
                     }
                 }
 
+                // ✅ Set volunteer type and initial tab BEFORE formatting data
                 setIsIndividual(isIndividualVolunteer);
+                setActiveTab(isIndividualVolunteer ? 'personalInfo' : 'organizationInfo');
 
                 // 5️⃣ Format the data
-                const fullName = [userProfile.first_name, userProfile.last_name]
-                    .filter(Boolean)
-                    .join(" ");
+                let formattedData: VolunteerData;
 
-                const formattedData: VolunteerData = {
-                    name: fullName || "Volunteer Name",
-                    role: isIndividualVolunteer
-                        ? `Individual Volunteer (ID: ${volunteerInfo?.volunteer_id || 'N/A'})`
-                        : `Organization Volunteer (ID: ${volunteerInfo?.org_volunteer_id || 'N/A'})`,
-                    certified: volunteerInfo?.status === 'approved' || false,
-                    address: userProfile.address || "Address not available",
-                    personalInfo: {
-                        age: userProfile.bday ? calculateAge(userProfile.bday) : 0,
-                        dateOfBirth: userProfile.bday
-                            ? dayjs(userProfile.bday).format('MMMM DD, YYYY').toUpperCase()
-                            : "N/A",
-                        phoneNumber: userProfile.phone_number || "N/A",
-                        address: userProfile.address || "N/A",
-                        gender: userProfile.gender || "N/A"
-                    },
-                    location: {
-                        lat: userProfile.latitude || 10.3157,
-                        lng: userProfile.longitude || 123.8854
-                    },
-                    description: userProfile?.bio || volunteerInfo?.description || "No description available.",
-                    skillsAndInterest: (() => {
-                        // Safe skills/services handler
-                        const data = isIndividualVolunteer ? volunteerInfo?.skills : volunteerInfo?.services_offered;
+                if (isIndividualVolunteer) {
+                    const fullName = [userProfileData.first_name, userProfileData.last_name]
+                        .filter(Boolean)
+                        .join(" ");
 
-                        if (!data) return [];
-                        if (Array.isArray(data)) return data;
-                        if (typeof data === 'string') return data.split(',').map((s: string) => s.trim());
-                        return [];
-                    })(),
-                    availability: volunteerInfo?.availability || "Not specified",
-                    credentials: (() => {
-                        const certs = volunteerInfo?.certifications || volunteerInfo?.certification;
-                        if (!certs) return [];
-                        if (Array.isArray(certs)) return certs;
-                        if (typeof certs === 'string') return certs.split(',').map((c: string) => c.trim());
-                        return [];
-                    })(),
-                    volunteerId: volunteerInfo?.volunteer_id || volunteerInfo?.org_volunteer_id || 'N/A',
+                    formattedData = {
+                        name: fullName || "Volunteer Name",
+                        role: `Individual Volunteer (ID: ${volunteerInfo?.volunteer_id || 'N/A'})`,
+                        certified: volunteerInfo?.status === 'approved' || false,
+                        address: userProfileData.address || "Address not available",
+                        personalInfo: {
+                            age: userProfileData.bday ? calculateAge(userProfileData.bday) : 0,
+                            dateOfBirth: userProfileData.bday
+                                ? dayjs(userProfileData.bday).format('MMMM DD, YYYY').toUpperCase()
+                                : "N/A",
+                            phoneNumber: userProfileData.phone_number || "N/A",
+                            address: userProfileData.address || "N/A",
+                            gender: userProfileData.gender || "N/A"
+                        },
+                        location: {
+                            lat: userProfileData.latitude || 10.3157,
+                            lng: userProfileData.longitude || 123.8854
+                        },
+                        profileImage: defaultProfileImage,
+                        description: userProfileData?.bio || volunteerInfo?.description || "No description available.",
+                        skillsAndInterest: (() => {
+                            const data = volunteerInfo?.skills;
+                            if (!data) return [];
+                            if (Array.isArray(data)) return data;
+                            if (typeof data === 'string') return data.split(',').map((s: string) => s.trim());
+                            return [];
+                        })(),
+                        availability: volunteerInfo?.availability || "Not specified",
+                        credentials: (() => {
+                            const certs = volunteerInfo?.certifications || volunteerInfo?.certification;
+                            if (!certs) return [];
+                            if (Array.isArray(certs)) return certs;
+                            if (typeof certs === 'string') return certs.split(',').map((c: string) => c.trim());
+                            return [];
+                        })(),
+                        volunteerId: volunteerInfo?.volunteer_id || 'N/A',
+                        statistics: {
+                            totalPrograms: Number(
+                                volunteerInfo?.events_joined ??
+                                volunteerInfo?.active_events_joined ??
+                                volunteerInfo?.tasks_joined ??
+                                volunteerInfo?.active_tasks_joined ?? 0
+                            ),
+                            monthlyActivity: calculateMonthlyActivity(
+                                volunteerInfo?.created_at ?? volunteerInfo?.join_date,
+                                volunteerInfo?.last_active_date
+                            ),
+                            joinDate: volunteerInfo?.created_at ?? volunteerInfo?.join_date ?? new Date().toISOString(),
+                            lastActiveDate: volunteerInfo?.last_active_date ?? volunteerInfo?.updated_at,
+                            status: volunteerInfo?.status || 'N/A'
+                        }
+                    };
+                } else {
+                    // ✅ Organization volunteer data with CORRECT field names from your API
+                    console.log("Formatting Organization Data...");
+                    console.log("Organization Name:", volunteerInfo?.organization_name);
+                    console.log("Organization Picture:", volunteerInfo?.organization_picture);
+                    console.log("Organization Type:", volunteerInfo?.organization_type);
+                    console.log("Phone Number:", volunteerInfo?.organization_phone_number);
+                    console.log("Organization Address:", volunteerInfo?.organization_address);
 
-                    statistics: {
-                        totalPrograms: Number(
-                            volunteerInfo?.events_joined ??
-                            volunteerInfo?.active_events_joined ??
-                            volunteerInfo?.tasks_joined ??
-                            volunteerInfo?.active_tasks_joined ?? 0
-                        ),
-                        monthlyActivity: calculateMonthlyActivity(
-                            volunteerInfo?.created_at ?? volunteerInfo?.join_date,
-                            volunteerInfo?.last_active_date
-                        ),
-                        joinDate: volunteerInfo?.created_at ?? volunteerInfo?.join_date ?? new Date().toISOString(),
-                        lastActiveDate: volunteerInfo?.last_active_date ?? volunteerInfo?.updated_at,
-                        status: volunteerInfo?.status || 'N/A'
-                    }
-                };
+                    formattedData = {
+                        name: volunteerInfo?.organization_name || "Organization Name",
+                        role: `Organization Volunteer`,
+                        certified: volunteerInfo?.status === 'approved' || false,
+                        address: volunteerInfo?.organization_address || "Address not available",
+                        organizationInfo: {
+                            organizationName: volunteerInfo?.organization_name || "N/A",
+                            organizationType: volunteerInfo?.organization_type || "N/A",
+                            phoneNumber: volunteerInfo?.organization_phone_number || "N/A",
+                            address: volunteerInfo?.organization_address || "N/A",
+                            email: volunteerInfo?.organization_email || "N/A",
+                            website: volunteerInfo?.website || undefined,
+                            establishedDate: volunteerInfo?.established_date
+                                ? dayjs(volunteerInfo.established_date).format('MMMM DD, YYYY')
+                                : undefined
+                        },
+                        location: {
+                            lat: volunteerInfo?.latitude || userProfileData?.latitude || 10.3157,
+                            lng: volunteerInfo?.longitude || userProfileData?.longitude || 123.8854
+                        },
+                        profileImage: volunteerInfo?.organization_picture
+                            ? `${API.defaults.baseURL}/${volunteerInfo.organization_picture}`
+                            : defaultProfileImage,
+                        description: volunteerInfo?.description || "No description available.",
+                        skillsAndInterest: (() => {
+                            const data = volunteerInfo?.services_offered;
+                            if (!data) return [];
+                            if (Array.isArray(data)) return data;
+                            if (typeof data === 'string') return data.split(',').map((s: string) => s.trim());
+                            return [];
+                        })(),
+                        availability: volunteerInfo?.availability || "Not specified",
+                        credentials: (() => {
+                            const certs = volunteerInfo?.organization_certificate ||
+                                volunteerInfo?.certifications ||
+                                volunteerInfo?.certification;
+                            if (!certs) return [];
+                            if (Array.isArray(certs)) return certs;
+                            if (typeof certs === 'string') return certs.split(',').map((c: string) => c.trim());
+                            return [];
+                        })(),
+                        volunteerId: volunteerInfo?.org_volunteer_id || 'N/A',
+                        statistics: {
+                            totalPrograms: Number(
+                                volunteerInfo?.active_events_joined ??
+                                volunteerInfo?.events_joined ??
+                                volunteerInfo?.active_tasks_joined ??
+                                volunteerInfo?.tasks_joined ?? 0
+                            ),
+                            monthlyActivity: calculateMonthlyActivity(
+                                volunteerInfo?.join_date || volunteerInfo?.created_at,
+                                volunteerInfo?.last_active_date
+                            ),
+                            joinDate: volunteerInfo?.join_date || volunteerInfo?.created_at || new Date().toISOString(),
+                            lastActiveDate: volunteerInfo?.last_active_date ?? volunteerInfo?.updated_at,
+                            status: volunteerInfo?.status || 'N/A'
+                        }
+                    };
+                }
 
+                console.log("Formatted Volunteer Data:", formattedData);
                 setVolunteerData(formattedData);
 
             } catch (error) {
@@ -248,50 +313,114 @@ const VolunteerProfile: React.FC = () => {
     const renderTabContent = (): React.ReactNode => {
         if (!volunteerData) return <p>No data available</p>;
 
+        console.log("Rendering Tab:", activeTab, "Is Individual:", isIndividual);
+
         switch (activeTab) {
             case 'personalInfo':
+                if (!isIndividual) return null;
                 return (
                     <div className="info-content">
                         <div className="info-grid">
                             <div className="info-item">
                                 <div className="info-label">Age</div>
                                 <div className="info-value">
-                                    <span className="info-icon"></span> {volunteerData.personalInfo.age}
+                                    <span className="info-icon">🎂</span> {volunteerData.personalInfo?.age}
                                 </div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Date of Birth</div>
                                 <div className="info-value">
-                                    <span className="info-icon"></span> {volunteerData.personalInfo.dateOfBirth}
+                                    <span className="info-icon">📅</span> {volunteerData.personalInfo?.dateOfBirth}
                                 </div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Phone Number</div>
                                 <div className="info-value">
-                                    <span className="info-icon"></span> {volunteerData.personalInfo.phoneNumber}
+                                    <span className="info-icon">📞</span> {volunteerData.personalInfo?.phoneNumber}
                                 </div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Address</div>
                                 <div className="info-value">
-                                    <span className="info-icon"></span> {volunteerData.personalInfo.address}
+                                    <span className="info-icon">📍</span> {volunteerData.personalInfo?.address}
                                 </div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Gender</div>
                                 <div className="info-value">
-                                    <span className="info-icon"></span> {volunteerData.personalInfo.gender}
+                                    <span className="info-icon">👤</span> {volunteerData.personalInfo?.gender}
                                 </div>
                             </div>
                         </div>
                     </div>
                 );
+
+            case 'organizationInfo':
+                if (isIndividual) return null;
+                console.log("Rendering Organization Info:", volunteerData.organizationInfo);
+                return (
+                    <div className="info-content">
+                        <div className="info-grid">
+                            <div className="info-item">
+                                <div className="info-label">Organization Name</div>
+                                <div className="info-value">
+                                    {volunteerData.organizationInfo?.organizationName}
+                                </div>
+                            </div>
+                            <div className="info-item">
+                                <div className="info-label">Organization Type</div>
+                                <div className="info-value">
+                                    {volunteerData.organizationInfo?.organizationType}
+                                </div>
+                            </div>
+                            <div className="info-item">
+                                <div className="info-label">Phone Number</div>
+                                <div className="info-value">
+                                    {volunteerData.organizationInfo?.phoneNumber}
+                                </div>
+                            </div>
+                            <div className="info-item">
+                                <div className="info-label">Email</div>
+                                <div className="info-value">
+                                    {volunteerData.organizationInfo?.email}
+                                </div>
+                            </div>
+                            <div className="info-item">
+                                <div className="info-label">Address</div>
+                                <div className="info-value">
+                                    {volunteerData.organizationInfo?.address}
+                                </div>
+                            </div>
+                            {volunteerData.organizationInfo?.website && (
+                                <div className="info-item">
+                                    <div className="info-label">Website</div>
+                                    <div className="info-value">
+                                        <span className="info-icon">🌐</span>
+                                        <a href={volunteerData.organizationInfo.website} target="_blank" rel="noopener noreferrer">
+                                            {volunteerData.organizationInfo.website}
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+                            {volunteerData.organizationInfo?.establishedDate && (
+                                <div className="info-item">
+                                    <div className="info-label">Established Date</div>
+                                    <div className="info-value">
+                                        <span className="info-icon">📅</span> {volunteerData.organizationInfo.establishedDate}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+
             case 'description':
                 return (
                     <div className="info-content">
                         <p>{volunteerData.description || 'No description available for this volunteer.'}</p>
                     </div>
                 );
+
             case 'skillsAndInterest':
                 return (
                     <div className="info-content">
@@ -306,30 +435,25 @@ const VolunteerProfile: React.FC = () => {
                         )}
                     </div>
                 );
+
             case 'availability':
                 return (
                     <div className="info-content">
                         <p>{volunteerData.availability || 'Availability schedule not set.'}</p>
                     </div>
                 );
+
             case 'credentials':
                 return (
                     <div className="info-content">
                         {volunteerData.credentials && volunteerData.credentials.length > 0 ? (
                             <div className="credentials-list">
                                 {volunteerData.credentials.map((credential, index) => {
-                                    // Handle if credential is a full URL or relative path
                                     const fileUrl = credential.startsWith('http')
                                         ? credential
                                         : `${API.defaults.baseURL}/${credential}`;
-
-                                    // Extract filename from path
                                     const fileName = credential.split('/').pop() || `Certificate_${index + 1}`;
-
-                                    // Get file extension
                                     const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE';
-
-                                    // Get file name without extension
                                     const fileNameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
 
                                     return (
@@ -347,7 +471,6 @@ const VolunteerProfile: React.FC = () => {
                                                 className="download-btn"
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    // Trigger download
                                                     fetch(fileUrl)
                                                         .then(response => response.blob())
                                                         .then(blob => {
@@ -362,7 +485,6 @@ const VolunteerProfile: React.FC = () => {
                                                         })
                                                         .catch(error => {
                                                             console.error('Download failed:', error);
-                                                            // Fallback: open in new tab
                                                             window.open(fileUrl, '_blank');
                                                         });
                                                 }}
@@ -378,6 +500,7 @@ const VolunteerProfile: React.FC = () => {
                         )}
                     </div>
                 );
+
             default:
                 return null;
         }
@@ -432,11 +555,10 @@ const VolunteerProfile: React.FC = () => {
                         </div>
                         <div className="profile-info">
                             <div className="profile-avatar">
-
                                 <img
-                                    src={profileImage}
-                                    alt="user-profile"
-                                    style={{ borderRadius: "50%" }}
+                                    src={volunteerData.profileImage || defaultProfileImage}
+                                    alt="profile"
+                                    style={{ borderRadius: "50%", width: "100%", height: "100%", objectFit: "cover" }}
                                 />
                             </div>
                             <div className="profile-details">
@@ -454,7 +576,9 @@ const VolunteerProfile: React.FC = () => {
                     {/* Profile Content */}
                     <div className="profile-content">
                         <div className="profile-left">
-                            <div className="address-label">( Volunteer Address )</div>
+                            <div className="address-label">
+                                ({isIndividual ? 'Volunteer Address' : 'Organization Address'})
+                            </div>
                             <div className="map-placeholder">
                                 <MapContainer
                                     center={mapCenter}
@@ -480,24 +604,39 @@ const VolunteerProfile: React.FC = () => {
                             <h2 className="about-title">About</h2>
                             <div className="about-container">
                                 <div className="about-sidebar">
-                                    <div
-                                        className={`sidebar-item ${activeTab === 'personalInfo' ? 'active' : ''}`}
-                                        onClick={() => handleTabClick('personalInfo')}
-                                    >
-                                        Personal Information
-                                    </div>
-                                    <div
-                                        className={`sidebar-item ${activeTab === 'description' ? 'active' : ''}`}
-                                        onClick={() => handleTabClick('description')}
-                                    >
-                                        Description
-                                    </div>
-                                    <div
-                                        className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
-                                        onClick={() => handleTabClick('skillsAndInterest')}
-                                    >
-                                        {isIndividual ? 'Skills and Interest' : 'Services Offered'}
-                                    </div>
+                                    {isIndividual ? (
+                                        <div
+                                            className={`sidebar-item ${activeTab === 'personalInfo' ? 'active' : ''}`}
+                                            onClick={() => handleTabClick('personalInfo')}
+                                        >
+                                            Personal Information
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`sidebar-item ${activeTab === 'organizationInfo' ? 'active' : ''}`}
+                                            onClick={() => handleTabClick('organizationInfo')}
+                                        >
+                                            Organization Information
+                                        </div>
+                                    )}
+                                    {/* Description - Only show for individual volunteers */}
+                                    {isIndividual && (
+                                        <div
+                                            className={`sidebar-item ${activeTab === 'description' ? 'active' : ''}`}
+                                            onClick={() => handleTabClick('description')}
+                                        >
+                                            Description
+                                        </div>
+                                    )}
+                                    {/* Skills/Services - Only show for individual volunteers */}
+                                    {isIndividual && (
+                                        <div
+                                            className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
+                                            onClick={() => handleTabClick('skillsAndInterest')}
+                                        >
+                                            Skills and Interest
+                                        </div>
+                                    )}
                                     <div
                                         className={`sidebar-item ${activeTab === 'availability' ? 'active' : ''}`}
                                         onClick={() => handleTabClick('availability')}
@@ -517,10 +656,13 @@ const VolunteerProfile: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
                     {/* Statistics Section */}
                     {volunteerData.statistics && (
                         <div className="statistics-section">
-                            <h2 className="statistics-title">Volunteer Statistics</h2>
+                            <h2 className="statistics-title">
+                                {isIndividual ? 'Volunteer Statistics' : 'Organization Statistics'}
+                            </h2>
                             <div className="statistics-grid">
                                 <div className="stat-card">
                                     <div className="stat-icon">📊</div>
@@ -537,6 +679,7 @@ const VolunteerProfile: React.FC = () => {
                                         <p className="stat-value">{volunteerData.statistics.monthlyActivity}</p>
                                     </div>
                                 </div>
+
                                 <div className="stat-card">
                                     <div className="stat-icon">📈</div>
                                     <div className="stat-content">
@@ -548,6 +691,7 @@ const VolunteerProfile: React.FC = () => {
                                         </p>
                                     </div>
                                 </div>
+
                                 <div className="stat-card">
                                     <div className="stat-icon">🎯</div>
                                     <div className="stat-content">
@@ -557,9 +701,6 @@ const VolunteerProfile: React.FC = () => {
                                         </p>
                                     </div>
                                 </div>
-
-
-
                             </div>
                         </div>
                     )}

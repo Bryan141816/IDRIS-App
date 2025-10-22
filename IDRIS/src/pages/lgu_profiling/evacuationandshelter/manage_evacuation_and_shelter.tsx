@@ -171,7 +171,6 @@ const EvacuationAndShelter = () => {
                         lng: parseFloat(cells[3].text),
                         capacity: parseInt(cells[4].text, 10),
                         occupied: parseInt(cells[5].text, 10),
-                        status: "Operational",
                     };
                 })
             );

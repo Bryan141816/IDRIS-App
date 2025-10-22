@@ -1042,7 +1042,7 @@ def get_hazard(
         {"text": "Last Updated", "width": "150px", "action": "Sort"},
         # LGU removed
         {"text": "Hazard Area", "width": "220px"},
-        {"text": "Hazard Type", "width": "150px"},
+        {"text": "Description", "width": "150px"},
         {"text": "Image URL", "width": "260px"},
         {"text": "Action", "width": "120px"},
     ]

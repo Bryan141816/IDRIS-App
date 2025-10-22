@@ -348,7 +348,7 @@ export const AddHazardModal: React.FC<AddProps> = ({
         </div>
 
         <div className="horizontal-container">
-          <span className="item-details-identifier">Hazard Type:</span>
+          <span className="item-details-identifier">Description:</span>
           <input
             type="text"
             name="hazard_type"
@@ -489,7 +489,7 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
         </div>
 
         <div className="horizontal-container">
-          <span className="item-details-identifier">Hazard Type:</span>
+          <span className="item-details-identifier">Description:</span>
           <span style={{ width: "100%", textAlign: "center" }}>{hazard_type}</span>
         </div>
 
@@ -775,7 +775,7 @@ export const EditHazardModal: React.FC<EditProps> = ({
         </div>
 
         <div className="horizontal-container">
-          <span className="item-details-identifier">Hazard Type:</span>
+          <span className="item-details-identifier">Description:</span>
           <input
             type="text"
             name="hazard_type"

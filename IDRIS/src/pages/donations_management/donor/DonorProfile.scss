@@ -4,9 +4,9 @@
 #donor-profile {
   padding: 24px;
   max-width: 1400px;
+  width: 100%;
   margin: 0 auto;
   background-color: #f8fafc;
-  min-height: 100vh;
 
   .public-feed-title {
     color: #749ab6;
@@ -134,6 +134,7 @@
   gap: 32px;
   padding: 24px;
   background: white;
+  place-items: center;
 
   .map-container {
     display: flex;
@@ -179,6 +180,8 @@
     border: 1px solid #e5e7eb;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    min-width: 300px;
+    width: 50%;
 
     .about-title {
       font-size: 1.3rem;

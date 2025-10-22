@@ -36,7 +36,7 @@ from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
 )
 from datetime import datetime, timezone
-from sqlalchemy import func, extract, Date, cast
+from sqlalchemy import func, extract, Date, cast, case
 from sqlalchemy.orm import aliased
 from ..role_checker import RoleChecker
 
@@ -445,12 +445,35 @@ def get_spending_breakdown(db: Session = Depends(get_db)):
 def get_resource_status(db: Session = Depends(get_db)):
 
     available_item = ProcurementInventoryCRUD.count_available_inventory_items(db)
-    delivery_status = DistributionAndPlanningCRUD.count_routes_by_status(db)
+    delivery_status = (
+        db.query(
+            func.sum(
+                case(
+                    (
+                        DistributionRoute.status == "In Transit",
+                        DistributedItems.quantity,
+                    ),
+                    else_=0,
+                )
+            ).label("in_transit_items"),
+            func.sum(
+                case(
+                    (
+                        DistributionRoute.status == "Completed",
+                        DistributedItems.quantity,
+                    ),
+                    else_=0,
+                )
+            ).label("completed_items"),
+        )
+        .join(DistributionRoute, DistributedItems.route == DistributionRoute.route_id)
+        .one()
+    )
 
     return {
         "available_relief_items": available_item,
-        "in_transit": delivery_status["In Transit"],
-        "total_distributed": delivery_status["Completed"],
+        "in_transit": delivery_status.in_transit_items or 0,
+        "total_distributed": delivery_status.completed_items or 0,
     }
 
 

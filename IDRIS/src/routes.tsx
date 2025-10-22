@@ -488,7 +488,7 @@ export const router = createBrowserRouter([
           {
             path: "report_list",
             lazy: ReportList,
-            handle: { allowedRoles: ["operations admin"] },
+            handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
           },
           {
             path: "demand_and_response_map",
@@ -496,12 +496,12 @@ export const router = createBrowserRouter([
               {
                 index: true,
                 lazy: DemandAndResponseMap,
-                handle: { allowedRoles: ["operations admin"] },
+                handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
               },
               {
                 path: "list_view",
                 lazy: DemandAndResponseList,
-                handle: { allowedRoles: ["operations admin"] },
+                handle: { allowedRoles: ["superadmin", "lgu officer", "logistics admin"] },
               },
             ],
           },

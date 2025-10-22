@@ -55,10 +55,10 @@ type RecentMapActivity = {
   id: string;
   timestamp: string;
   activity_type:
-    | "new_request"
-    | "response_dispatched"
-    | "completed"
-    | "status_update";
+  | "new_request"
+  | "response_dispatched"
+  | "completed"
+  | "status_update";
   location: {
     name: string;
     address: string;
@@ -164,13 +164,12 @@ const getIconByStatus = (status: DemandPin["status"]) => {
       <circle cx="16" cy="14" r="3" fill="${iconColor}"/>
 
       <!-- Small status icon based on status -->
-      ${
-        status === "no response"
-          ? `<text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>`
-          : status === "responded"
-            ? `<circle cx="16" cy="14" r="1.5" fill="white"/>`
-            : `<path d="M13 14L15 16L19 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
-      }
+      ${status === "no response"
+      ? `<text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>`
+      : status === "responded"
+        ? `<circle cx="16" cy="14" r="1.5" fill="white"/>`
+        : `<path d="M13 14L15 16L19 12" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+    }
     </svg>
   `;
 
@@ -428,49 +427,49 @@ const ReportHeader: React.FC<{
   generatedDate,
   totalRecords = 0,
 }) => {
-  return (
-    <div className="report-header-finance">
-      {/* Top section with logo/company on left, contact info on right */}
-      <div className="horizontal-flex">
-        <div className="company-branding">
-          <div className="company-logo">
-            🚨 {/* Replace with actual emergency services logo */}
+    return (
+      <div className="report-header-finance">
+        {/* Top section with logo/company on left, contact info on right */}
+        <div className="horizontal-flex">
+          <div className="company-branding">
+            <div className="company-logo">
+              🚨 {/* Replace with actual emergency services logo */}
+            </div>
+            <div className="company-title">
+              <h1 className="company-name">{companyInfo.name}</h1>
+              <p className="company-tagline">{companyInfo.tagline}</p>
+            </div>
           </div>
-          <div className="company-title">
-            <h1 className="company-name">{companyInfo.name}</h1>
-            <p className="company-tagline">{companyInfo.tagline}</p>
+
+          <div className="company-info">
+            <p className="company-legal-name">{companyInfo.name}</p>
+            <p>{companyInfo.address.street}</p>
+            <p>
+              {companyInfo.address.city}, {companyInfo.address.state}{" "}
+              {companyInfo.address.zip}
+            </p>
+            <p>Phone: {companyInfo.contact.phone}</p>
+            <p>Email: {companyInfo.contact.email}</p>
           </div>
         </div>
 
-        <div className="company-info">
-          <p className="company-legal-name">{companyInfo.name}</p>
-          <p>{companyInfo.address.street}</p>
-          <p>
-            {companyInfo.address.city}, {companyInfo.address.state}{" "}
-            {companyInfo.address.zip}
-          </p>
-          <p>Phone: {companyInfo.contact.phone}</p>
-          <p>Email: {companyInfo.contact.email}</p>
-        </div>
-      </div>
-
-      {/* Report info section */}
-      <div className="report-info">
-        <h2 className="report-title">{reportTitle}</h2>
-        <div className="report-metadata">
-          <span>Generated on: {generatedDate}</span>
-          <div className="print-section">
-            <button onClick={() => window.print()} className="print-button">
-              <FontAwesomeIcon icon={faPrint} />
-              Print Report
-            </button>
+        {/* Report info section */}
+        <div className="report-info">
+          <h2 className="report-title">{reportTitle}</h2>
+          <div className="report-metadata">
+            <span>Generated on: {generatedDate}</span>
+            <div className="print-section">
+              <button onClick={() => window.print()} className="print-button">
+                <FontAwesomeIcon icon={faPrint} />
+                Print Report
+              </button>
+            </div>
+            <span>Total Records: {totalRecords}</span>
           </div>
-          <span>Total Records: {totalRecords}</span>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 // Enhanced types for itemized relief goods tracking
 type ReportSummary = {
@@ -524,6 +523,7 @@ const ResponseDashboard = () => {
   }
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
+  const adminAccess = userRoles.includes("lgu officer") || userRoles.includes("superadmin") || userRoles.includes("logistics admin");
   const [recentMapActivity, setRecentMapActivity] = useState<
     RecentMapActivity[] | null
   >(null);
@@ -954,13 +954,14 @@ const ResponseDashboard = () => {
             </p>
           </div>
           <div className="header-actions">
-            <button
+            {adminAccess && <button
               onClick={() => navigate("/response_dashboard/emergency_report")}
               className="btn-generate-report"
             >
               <FontAwesomeIcon icon={faFileAlt} />
               Generate Report
             </button>
+            }
           </div>
         </div>
 
@@ -1308,7 +1309,7 @@ const ResponseDashboard = () => {
           >
             <div className="horizontal-container space-between-container">
               <h3>Relief Activity Map</h3>
-              {userRoles.includes("operations admin") && (
+              { adminAccess && (
                 <Link
                   to="/response_dashboard/demand_and_response_map"
                   className="manage-button"
@@ -1471,7 +1472,7 @@ const ResponseDashboard = () => {
                             {style.icon}{" "}
                             {
                               categoryDisplayNames[
-                                category as keyof typeof categoryDisplayNames
+                              category as keyof typeof categoryDisplayNames
                               ]
                             }
                           </span>
@@ -1557,8 +1558,8 @@ const ResponseDashboard = () => {
                                   : "none",
                               borderBottom:
                                 index <
-                                inKindMonitoring[selectedCategory].details
-                                  .length -
+                                  inKindMonitoring[selectedCategory].details
+                                    .length -
                                   1
                                   ? "1px solid #e9ecef"
                                   : "none",

@@ -487,12 +487,15 @@ const PinModal: React.FC<{
 }> = ({ pin, location, onSave, onClose }) => {
   const [formData, setFormData] = useState<DemandFormData>({
     title_label: pin?.title_label || "",
-    address: pin?.address || "Searching Address",
+    address: pin?.address || "",
     status: pin?.status || "no response",
     priority: pin?.priority || "medium",
     needs: pin?.needs || [],
   });
-
+  const [addressPlaceholder, setAddressPlaceholder] = useState(
+    "Full address of the demand point",
+  );
+  const [isSearching, setIsSearching] = useState(false);
   async function reverseGeocode(location: { lat: number; lng: number } | null) {
     if (!location) {
       return null;
@@ -517,25 +520,27 @@ const PinModal: React.FC<{
     }
   }
   useEffect(() => {
-    const fetchAddress = async () => {
-      const address = await reverseGeocode(location);
-      if (address) {
-        const display_name = address.display_name;
-        if (display_name || display_name.length > 0) {
+    // Only fetch address if it's a new pin (no existing pin data)
+    if (!pin && location) {
+      const fetchAddress = async () => {
+        setIsSearching(true);
+        setAddressPlaceholder("Searching Address...");
+        const address = await reverseGeocode(location);
+        if (address && address.display_name) {
           setFormData((prev) => ({
-            ...prev, // keep all existing values
-            address: display_name, // only update 'address'
+            ...prev,
+            address: address.display_name,
           }));
+        } else {
+          setAddressPlaceholder(
+            "Failed to search address please manually enter the address",
+          );
         }
-      } else {
-        setFormData((prev) => ({
-          ...prev, // keep all existing values
-          address: "Failed to search address please manually enter the address", // only update 'address'
-        }));
-      }
-    };
-    fetchAddress();
-  }, []);
+        setIsSearching(false);
+      };
+      fetchAddress();
+    }
+  }, [pin, location]);
 
   const [newNeed, setNewNeed] = useState({ need: "", amount: 0 });
 
@@ -632,8 +637,8 @@ const PinModal: React.FC<{
               onChange={(e) =>
                 setFormData({ ...formData, address: e.target.value })
               }
-              placeholder="Full address of the demand point"
-              disabled={formData.address === "Searching Address"} // 👈 disable when searching
+              placeholder={addressPlaceholder}
+              disabled={isSearching}
             />
           </div>
 

@@ -33,9 +33,9 @@ def get_markers(db: Session = Depends(get_db)):
     markers = []
     for record in records:
         marker = {
-            "id": str(record.demand_id),
+            "demand_id": str(record.demand_id),
             "type": "demand",  # Hardcoded as per frontend's MapPin type
-            "label": record.title_label,  # Renamed from title_label
+            "title_label": record.title_label,  # Renamed from title_label
             "lat": record.lat,
             "lng": record.lng,
             "address": record.address,

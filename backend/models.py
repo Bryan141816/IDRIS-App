@@ -80,7 +80,8 @@ class User(Base):
 
     # Fixed relationship - should reference the correct foreign key
     donor_profile = relationship(
-        "Donor", back_populates="user", cascade="all, delete-orphan"
+        "Donor",
+        back_populates="user",
     )
     user_profile = relationship(
         "UserProfile",

@@ -26,6 +26,8 @@ from models import (
     VolunteerStatus,
     DistributedItems,
     DistributionRoute,
+    TeamMembers,
+    DistributionTeam,
 )
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
@@ -335,6 +337,25 @@ def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
         # Append item detail to category
         result[item.category]["details"].append(item_detail)
 
+    available_staff = (
+        db.query(func.count(IndividualVolunteer.volunteer_id))
+        .filter(
+            IndividualVolunteer.availability_status.in_(
+                [VolunteerStatus.available, VolunteerStatus.assigned]
+            )
+        )
+        .scalar()
+    )
+    deployed_staff = (
+        db.query(func.count(TeamMembers.members_id))
+        .join(DistributionTeam, TeamMembers.team_id == DistributionTeam.team_id)
+        .join(DistributionRoute, DistributionRoute.team == DistributionTeam.team_id)
+        .filter(DistributionRoute.status == "In Transit")
+        .scalar()
+    )
+    staff_status = {"available": available_staff, "deployed": deployed_staff}
+    result["staff_status"] = staff_status
+
     return result
 
 
@@ -434,4 +455,3 @@ def get_resource_status(db: Session = Depends(get_db)):
 
 
 router.include_router(router_admin)
-

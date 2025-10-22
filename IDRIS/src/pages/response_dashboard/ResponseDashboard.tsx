@@ -510,6 +510,10 @@ const ResponseDashboard = () => {
     distributed: number;
     details: InventoryItemDetail[];
   }
+  interface StaffStatus {
+    available: number;
+    deployed: number;
+  }
 
   // Represents the full structure for all categories
   interface InventorySummary {
@@ -521,6 +525,7 @@ const ResponseDashboard = () => {
     staff_available: number;
     staff_deployed: number;
     supply_items: SupplyItem[];
+    staff_status: StaffStatus;
   }
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
@@ -1105,7 +1110,7 @@ const ResponseDashboard = () => {
                       color: "#fff",
                     }}
                   >
-                    {inKindMonitoring?.staff_available || 0}
+                    {inKindMonitoring?.staff_status.available || 0}
                   </span>
                 </div>
 
@@ -1137,7 +1142,7 @@ const ResponseDashboard = () => {
                       color: "#fff",
                     }}
                   >
-                    {inKindMonitoring?.staff_deployed || 0}
+                    {inKindMonitoring?.staff_status.deployed || 0}
                   </span>
                 </div>
               </div>

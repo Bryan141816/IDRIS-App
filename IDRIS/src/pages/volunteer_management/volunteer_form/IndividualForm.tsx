@@ -15,6 +15,7 @@ import { InboxOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { Dayjs } from "dayjs";
+import { useUserContext } from "../../../UserContext";
 import dayjs from "dayjs";
 import "./css/IndividualForm.css";
 import { createIndividualVolunteer, getVolunteerByUserId } from "../../../API_Handler/individual_volunter_handler.ts";
@@ -55,12 +56,10 @@ const daysOfWeekOptions: CheckboxOptionType[] = [
 const skillsOptions: CheckboxOptionType[] = [
     { label: "CPR", value: "CPR" },
     { label: "First Aid", value: "First Aid" },
-    { label: "BLS", value: "BLS" },
     { label: "Search & Rescue", value: "Search & Rescue" },
     { label: "Fire Safety", value: "Fire Safety" },
     { label: "Radio Comms", value: "Radio Comms" },
     { label: "Logistics", value: "Logistics" },
-    { label: "Counseling/Psych First Aid", value: "PFA" },
     { label: "Driving", value: "Driving" },
 ];
 
@@ -125,6 +124,7 @@ const IndividualForm: React.FC = () => {
             console.error("Error creating volunteer:", error);
         }
     };
+
 
     // Show success alert after form submission
     const showAlert = (): void => {
@@ -192,10 +192,11 @@ const IndividualForm: React.FC = () => {
             return false;
         }
     };
-
+const { email } = useUserContext();
     useEffect(() => {
   async function loadUserProfile() {
     try {
+
       // 1️⃣ Get the currently logged-in user's ID
       const currentUser = await fetchCurrentUserId();
       if (!currentUser?.id) {
@@ -216,7 +217,7 @@ const IndividualForm: React.FC = () => {
         firstName: userProfile.first_name || "",
         middleName: "", // Assuming no middle name field in profile
         lastName: userProfile.last_name || "",
-        email: currentUser.email || "",
+        email: email || currentUser.email || "",
         phone: userProfile.phone_number || "",
         address: userProfile.address || "",
         birthDate: userProfile.bday ? dayjs(userProfile.bday) : null,
@@ -305,12 +306,8 @@ const IndividualForm: React.FC = () => {
                             <Form.Item
                                 name="email"
                                 label="Email Address"
-                                rules={[
-                                    { required: true, message: "Please enter email address" },
-                                    { type: "email", message: "Please enter a valid email" },
-                                ]}
                             >
-                                <Input placeholder="Enter your email" />
+                                <Input placeholder="Enter your email" readOnly />
                             </Form.Item>
 
                             {/* Phone and Address */}
@@ -420,7 +417,7 @@ const IndividualForm: React.FC = () => {
                         </div>
 
                         {/* Uploads */}
-                        <h3 className="section-title upload-title">Upload Certificate/s</h3>
+                        <h3 className="section-title upload-title">Upload Certificate(s)</h3>
                         <Form.Item name="supportingFiles" className="upload-item" valuePropName="fileList"
                         getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
                         rules={[{ required: true, message: "Please upload your certificates/documents" }]}>
@@ -435,7 +432,7 @@ const IndividualForm: React.FC = () => {
                                 <p className="ant-upload-drag-icon">
                                     <InboxOutlined />
                                 </p>
-                                <p className="upload-text">Drop certificate/s here</p>
+                                <p className="upload-text">Drop certificate(s) here</p>
                                 <p className="upload-hint">or</p>
                                 <Button className="browse-button">Browse</Button>
                             </Upload.Dragger>

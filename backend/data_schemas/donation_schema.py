@@ -181,6 +181,13 @@ class DonorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class FundingProposalResponse(BaseModel):
+    """Schema for nested funding proposal details."""
+    title: str
+
+    class Config:
+        from_attributes = True
         
 class DonationHistoryResponse(BaseModel):
     """Main response model for a single donation."""
@@ -200,7 +207,8 @@ class DonationHistoryResponse(BaseModel):
     # Missing nested objects
     cash: Optional[DonationCashResponse] = None
     inkind: Optional[DonationInKindResponse] = None
-    donor: Optional[DonorResponse] = None   
+    donor: Optional[DonorResponse] = None
+    proposal: Optional[FundingProposalResponse] = None
     
     class Config:
         from_attributes = True

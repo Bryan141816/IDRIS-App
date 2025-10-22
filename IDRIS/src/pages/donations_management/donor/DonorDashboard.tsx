@@ -35,6 +35,9 @@ export interface DonationRow {
   cash?: DonationCash | null;
   inkind?: DonationInKind | null;
   proposal_id?: number | null;
+  proposal?: {
+    title: string;
+  } | null;
 }
 
 interface FetchParams {
@@ -352,7 +355,7 @@ export const DonorDashboard: React.FC = () => {
                     Status {sortField === 'status' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
                   <th>Frequency</th>
-                  <th>Proposal</th>
+                  <th>Proposal Title</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -375,9 +378,9 @@ export const DonorDashboard: React.FC = () => {
                     </td>
                     <td>{row.frequency === "ONE_TIME" ? "One-time" : row.frequency.charAt(0) + row.frequency.slice(1).toLowerCase()}</td>
                     <td>
-                      {row.proposal_id ? (
+                      {row.proposal ? (
                         <a href={`/proposals/${row.proposal_id}`} onClick={(e) => e.stopPropagation()}>
-                          FP-{row.proposal_id}
+                          {row.proposal.title}
                         </a>
                       ) : "—"}
                     </td>

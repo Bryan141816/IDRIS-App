@@ -1,8 +1,14 @@
 
 
 import { fetchCurrentUser } from "./API_Handler/auth";
+import type { LoaderFunctionArgs } from "react-router-dom";
 
-export async function authLoader() {
+export async function authLoader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const path = url.pathname;        // e.g. "/activate"
+  if (path == "/activate") {
+    return null
+  }
   try {
     const userData = await fetchCurrentUser();
     if (

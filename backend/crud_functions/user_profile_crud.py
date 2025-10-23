@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List, Optional
 
-from models import UserProfile
+from models import UserProfile, User
 
 
 class UserProfileCRUD:

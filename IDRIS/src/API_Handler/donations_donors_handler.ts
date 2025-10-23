@@ -42,3 +42,7 @@ export async function getCurrentUserProfile(): Promise<any> {
   const response = await API.get('/user-profile/me');
   return response.data;
 }
+
+export const getDonors = async () => {
+  return await API.get('/donors/all');
+};

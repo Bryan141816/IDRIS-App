@@ -43,6 +43,7 @@ from routers.lgu_profiling.uploadedFiles import router as files_router
 from routers.volunteer_management.assignment_routes import router as assignment_router
 from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
+from routers import notification_donors_route
 import real_time_handler
 import models  # ✅ correct import path for User model
 
@@ -115,6 +116,7 @@ app.include_router(individual_volunteer_routes.router, tags=["Volunteer Manageme
 app.include_router(assignment_router, tags=["Programs/Events"])
 app.include_router(files_router)
 app.include_router(user_profile_router, prefix="/user-profile", tags=["User Profile"])
+app.include_router(notification_donors_route.router)
 
 # ✅ Superadmin Auto-Creation
 @app.on_event("startup")

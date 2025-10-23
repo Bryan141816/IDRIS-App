@@ -5,6 +5,7 @@ from datetime import datetime
 
 from database import get_db
 from models import Notifications
+from crud_functions.user_profile_crud import UserProfileCRUD
 from routers.GetUserId import GetUserId
 from pydantic import BaseModel
 
@@ -71,3 +72,43 @@ def mark_as_read(
     db.commit()
     db.refresh(notification)
     return notification
+
+
+class NotificationCreateRequest(BaseModel):
+    title: str
+    message: str
+    url_redirect: str
+    donors: list[str]
+
+
+@router.post("/create_notification")
+def create_notification(
+    payload: NotificationCreateRequest,
+    user_id: str = Depends(GetUserId()),
+    db: Session = Depends(get_db),
+):
+    """Create a notification for a list of users."""
+    notifications = []
+
+    for donor_id in payload.donors:
+        user_profile = UserProfileCRUD.get_user_profile_by_user_id(db, donor_id)
+        if user_profile:
+            message = payload.message.replace("[donor_name]", user_profile.first_name)
+        else:
+            message = payload.message.replace("[donor_name]", "Donor")
+
+        notification = Notifications(
+            to=donor_id,
+            from_origin=user_id,
+            title=payload.title,
+            message=message,
+            url_redirect=payload.url_redirect,
+            date=datetime.now(),
+            isRead=False,
+        )
+        notifications.append(notification)
+
+    db.add_all(notifications)
+    db.commit()
+
+    return {"message": "Notifications created successfully"}

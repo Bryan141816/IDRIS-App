@@ -78,16 +78,19 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
         `https://photon.komoot.io/reverse?lat=${coordinates[0]}&lon=${coordinates[1]}`,
       );
       const { name, city, state } = response.data.features[0].properties;
-      console.log(response.data);
       setSearchValue(`${name}${city ? ", " + city : ""}, ${state}`);
     } catch (e: any) {
       setSearchValue("Locating Point");
-      console.log("Error search location: " + e.message);
+      console.error("Error search location: " + e.message);
     }
   };
   const ClickHandler: React.FC = () => {
     useMapEvent("click", (e) => {
-      setMarkerPosition([e.latlng.lat, e.latlng.lng]); // ✅ only use setter
+      const target = e.originalEvent.target as HTMLElement;
+      if (target.tagName.toLowerCase() === "button") {
+        return;
+      }
+      setMarkerPosition([e.latlng.lat, e.latlng.lng]);
       reverseGeo([e.latlng.lat, e.latlng.lng]);
       setSearchFound(false);
     });
@@ -109,6 +112,44 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
       return () => clearTimeout(timer);
     }
   }, [searchValue]);
+
+  const RecenterButton: React.FC<{ coordinate: [number, number] }> = ({
+    coordinate,
+  }) => {
+    const map = useMap();
+
+    const handleRecenter = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      e.preventDefault();
+
+      // ✅ animate to target
+      map.flyTo(coordinate, 17, {
+        animate: true,
+        duration: 1.5,
+      });
+    };
+
+    return (
+      <button
+        onClick={handleRecenter}
+        style={{
+          position: "absolute",
+          bottom: "10px",
+          left: "10px",
+          zIndex: 1000,
+          padding: "6px 10px",
+          background: "white",
+          border: "1px solid #ccc",
+          borderRadius: "6px",
+          cursor: "pointer",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+          fontSize: "13px",
+        }}
+      >
+        Recenter
+      </button>
+    );
+  };
 
   const ReCenter: React.FC<{ coordinates: [number, number]; zoom: number }> = ({
     coordinates,
@@ -138,11 +179,10 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
           setSearchFound(true);
           setRecommendedLocation(response.data.features);
         } catch (e: any) {
-          console.log("Error search location: " + e.message);
+          console.error("Error search location: " + e.message);
         }
       };
       search();
-      console.log("Searching for:", debouncedSearch);
       // Call your API or do something
     }
   }, [debouncedSearch]);
@@ -272,7 +312,7 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
               center={center}
               zoom={zoom}
               zoomControl={false} // disable default top-left zoom control
-              style={{ height: "100%", width: "100%" }}
+              style={{ height: "100%", width: "100%", zIndex: 900 }}
               attributionControl={false}
             >
               {/* ✅ Add Zoom Buttons to bottom-right */}
@@ -288,6 +328,7 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
                 <Marker position={markerPosition} icon={getIcon()} />
               )}
               {target && <ReCenter coordinates={target} zoom={17} />}
+              {markerPosition && <RecenterButton coordinate={markerPosition} />}
             </MapContainer>
           </div>
         </div>

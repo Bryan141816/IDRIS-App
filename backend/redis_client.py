@@ -1,7 +1,8 @@
 import os
 import redis.asyncio as redis
+from decouple import config
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+REDIS_URL = config("REDIS_URL")
 
 # keep your global instance
 r: redis.Redis = redis.from_url(REDIS_URL, decode_responses=True)

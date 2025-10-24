@@ -25,7 +25,6 @@ from routers.role_checker import RoleChecker
 from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
-from settings import settings
 from .helper import to_centavos, generate_donation_receipt
 
 from crud_functions.donations_management.donation_receipt_crud import (
@@ -340,7 +339,7 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
 
     # 3. Get webhook secret from environment
     # IMPORTANT: Use a dedicated webhook secret, not your main API secret key
-    webhook_secret = settings.PAYMONGO_WEBHOOK_SECRET
+    webhook_secret = config("PAYMONGO_WEBHOOK_SECRET")
     if not webhook_secret:
         logging.error("PAYMONGO_WEBHOOK_SECRET is not set")
         raise HTTPException(status_code=500, detail="Webhook secret is not configured")

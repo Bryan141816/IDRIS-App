@@ -65,6 +65,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://localhost:4173",
+        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -118,6 +119,7 @@ app.include_router(files_router)
 app.include_router(user_profile_router, prefix="/user-profile", tags=["User Profile"])
 app.include_router(notification_donors_route.router)
 
+
 # ✅ Superadmin Auto-Creation
 @app.on_event("startup")
 async def on_startup():
@@ -131,7 +133,9 @@ async def on_startup():
         superadmin_role = config("SUPERADMIN_ROLE", default="superadmin")
         superadmin_type = config("SUPERADMIN_TYPE", default="admin")
 
-        existing_admin = db.query(models.User).filter(models.User.email == superadmin_email).first()
+        existing_admin = (
+            db.query(models.User).filter(models.User.email == superadmin_email).first()
+        )
         if existing_admin:
             print(f"Superadmin already exists: {superadmin_email}")
         else:
@@ -160,6 +164,7 @@ async def on_startup():
     print("Registered routes:")
     for route in app.routes:
         print(f"{getattr(route, 'path', route)}")
+
 
 @app.on_event("shutdown")
 async def on_shutdown():

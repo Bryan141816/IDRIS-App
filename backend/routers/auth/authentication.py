@@ -216,7 +216,7 @@ async def auth_callback_login(
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="none",
+        samesite="None",
         secure=False,
     )
 

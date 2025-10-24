@@ -88,11 +88,14 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               name="category"
               onChange={handleChange}
             >
-              <option value="">Select category</option>
-              <option value="food">Food</option>
-              <option value="medical">Medical</option>
-              <option value="clothing">Clothing</option>
-              <option value="beverages">Beverages</option>
+              <option value="" disabled>
+                Select category
+              </option>
+              <option value="food item">Food Item</option>
+              <option value="hygiene & sanitation">Hygiene & Sanitation</option>
+              <option value="shelter materials">Shelter Materials</option>
+              <option value="medical supplies">Medical Supplies</option>
+              <option value="personal care items">Personal Care Items</option>
             </select>
           </div>
           <div className="form-group">

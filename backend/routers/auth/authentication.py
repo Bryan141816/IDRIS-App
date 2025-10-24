@@ -216,7 +216,7 @@ async def auth_callback_login(
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="None",
+        samesite="none",
         secure=False,
     )
 
@@ -276,7 +276,7 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
             value=refresh_token,
             httponly=True,
             max_age=60 * 60 * 24 * 7,  # 7 days
-            samesite="None",
+            samesite="none",
             secure=False,  # Set to True in production with HTTPS
         )
         # For regular users, send activation email immediately
@@ -341,7 +341,7 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="None",
+        samesite="none",
         secure=False,
     )
 

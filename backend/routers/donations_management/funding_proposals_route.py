@@ -81,6 +81,8 @@ def create_proposal_endpoint(
     budgetRequired: int = Form(...),
     status: str = Form(...),
     image: Optional[UploadFile] = File(None),
+    starting_date: date = Form(...),
+    end_date: date = Form(...),
     db: Session = Depends(get_db)
 ):
     proposal_data = FundingProposalCreate(
@@ -88,7 +90,9 @@ def create_proposal_endpoint(
         title=title,
         description=description,
         budgetRequired=budgetRequired,
-        status=status
+        status=status,
+        starting_date=starting_date,
+        end_date=end_date
     )
     return CRUD.create_funding_proposal(db=db, proposal_data=proposal_data, image=image)
 
@@ -100,6 +104,8 @@ def update_proposal_endpoint(
     budgetRequired: int = Form(...),
     status: str = Form("Active"),
     image: Optional[UploadFile] = File(None),
+    starting_date: Optional[date] = Form(None),
+    end_date: Optional[date] = Form(None),
     db: Session = Depends(get_db)
 ):
     print(f"funding id: ", funding_id)
@@ -110,7 +116,9 @@ def update_proposal_endpoint(
         description=description,
         budget_required=budgetRequired,
         status=status,
-        image=image
+        image=image,
+        starting_date=starting_date,
+        end_date=end_date
     )
 
 @router_admin.delete("/proposals/delete_proposal/{funding_id}")

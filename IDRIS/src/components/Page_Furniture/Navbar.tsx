@@ -42,9 +42,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
   const canSeeLGU =
     ((userType === "admin" &&
       (userRoles.includes("lgu officer") ||
-       userRoles.includes("disaster response admin") ||
-       userRoles.includes("superadmin"))) ||
-     userRoles.includes("generic"));
+        userRoles.includes("disaster response admin") ||
+        userRoles.includes("superadmin"))) ||
+      userRoles.includes("generic"));
 
   return (
     <nav
@@ -72,21 +72,21 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               </Link>
               {(
                 (userType === "admin" &&
-                 (userRoles.includes("lgu officer") || userRoles.includes("superadmin"))) ||
+                  (userRoles.includes("lgu officer") || userRoles.includes("superadmin"))) ||
                 (userType === "user" && userRoles.includes("generic"))
               ) && (
-                <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
-                  Evacuation and Shelter Management
-                </Link>
-              )}
+                  <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
+                    Evacuation and Shelter Management
+                  </Link>
+                )}
               {userType === "admin" &&
-               (userRoles.includes("lgu officer") ||
-                userRoles.includes("disaster response admin") ||
-                userRoles.includes("superadmin")) && (
-                <Link to="/lgu_profiling/LGUmanagement" className="nav-sub-item" onClick={onClose}>
-                  Pin Location Management
-                </Link>
-              )}
+                (userRoles.includes("lgu officer") ||
+                  userRoles.includes("disaster response admin") ||
+                  userRoles.includes("superadmin")) && (
+                  <Link to="/lgu_profiling/LGUmanagement" className="nav-sub-item" onClick={onClose}>
+                    Pin Location Management
+                  </Link>
+                )}
             </div>
           </div>
         )}
@@ -96,81 +96,83 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           userRoles.includes("donor") ||
           userRoles.includes("operations admin") ||
           userRoles.includes("superadmin")) && (
-          <div className="nav-items" id="volunteer">
-            <div
-              className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
-              onClick={() => toggleNav("volunteer")}
-            >
-              <Volunteer width={14} height={14} className="sidebar-icons" />
-              {!userRoles.includes("operations admin") ? (
-                <a href="#" className="non-redirect">VOLUNTEER</a>
-              ) : (
-                <a href="#" className="non-redirect">VOLUNTEER MANAGEMENT</a>
-              )}
-            </div>
-            <div className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}>
-              <Link
-                to="/volunteer_management/volunteer_dashboard"
-                prefetch-link="/volunteer_management/volunteer_dashboard"
-                className="nav-sub-item"
-                onClick={onClose}
+            <div className="nav-items" id="volunteer">
+              <div
+                className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
+                onClick={() => toggleNav("volunteer")}
               >
-                Volunteer Dashboard
-              </Link>
+                <Volunteer width={14} height={14} className="sidebar-icons" />
+                {!userRoles.includes("operations admin") ? (
+                  <a href="#" className="non-redirect">VOLUNTEER</a>
+                ) : (
+                  <a href="#" className="non-redirect">VOLUNTEER MANAGEMENT</a>
+                )}
+              </div>
+              <div className={`nav-sub-items ${activeNav === "volunteer" ? "active" : ""}`}>
+                <Link
+                  to="/volunteer_management/volunteer_dashboard"
+                  prefetch-link="/volunteer_management/volunteer_dashboard"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Volunteer Dashboard
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {(userRoles.includes("generic") ||
           userRoles.includes("volunteer") ||
           userRoles.includes("donor") ||
           userRoles.includes("operations admin") ||
           userRoles.includes("superadmin")) && (
-          <div className="nav-items" id="donations">
-            <div
-              className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
-              onClick={() => toggleNav("donations")}
-            >
-              <Donations width={14} height={14} className="sidebar-icons" />
-              {userType === "admin" ? (
-                <a href="#" className="non-redirect">DONATIONS MANAGEMENT</a>
-              ) : (
-                <a href="#" className="non-redirect">DONATIONS</a>
-              )}
-            </div>
-            <div className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}>
-              {(userRoles.includes("donor") || userRoles.includes("generic")) && (
-                <Link to="/donations_management/donor_profile" prefetch-link="/donations_management/donor_profile" className="nav-sub-item" onClick={onClose}>
-                  Donor Profile
+            <div className="nav-items" id="donations">
+              <div
+                className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
+                onClick={() => toggleNav("donations")}
+              >
+                <Donations width={14} height={14} className="sidebar-icons" />
+                {userType === "admin" ? (
+                  <a href="#" className="non-redirect">DONATIONS MANAGEMENT</a>
+                ) : (
+                  <a href="#" className="non-redirect">DONATIONS</a>
+                )}
+              </div>
+              <div className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}>
+                {(userRoles.includes("donor") || userRoles.includes("generic")) && (
+                  <Link to="/donations_management/donor_profile" prefetch-link="/donations_management/donor_profile" className="nav-sub-item" onClick={onClose}>
+                    Donor Profile
+                  </Link>
+                )}
+                <Link
+                  to="/donations_management/donations_dashboard"
+                  prefetch-link="/donations_management/donations_dashboard"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Donations Dashboard
                 </Link>
-              )}
-              <Link
-                to="/donations_management/donations_dashboard"
-                prefetch-link="/donations_management/donations_dashboard"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Donations Dashboard
-              </Link>
-              <Link
-                to="/donations_management/list_of_rafi_donors"
-                prefetch-link="/donations_management/list_of_rafi_donors"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                List of RAFI Donors
-              </Link>
-              <Link
-                to="/donations_management/funding_proposals"
-                prefetch-link="/donations_management/funding_proposals"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Funding Proposals
-              </Link>
+                { (userRoles.includes("operations admin") || userRoles.includes("superadmin")) && 
+                  <Link
+                    to="/donations_management/list_of_rafi_donors"
+                    prefetch-link="/donations_management/list_of_rafi_donors"
+                    className="nav-sub-item"
+                    onClick={onClose}
+                  >
+                    List of RAFI Donors
+                  </Link>
+                }
+                <Link
+                  to="/donations_management/funding_proposals"
+                  prefetch-link="/donations_management/funding_proposals"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Funding Proposals
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         <div className="nav-items" id="response">
           <div
@@ -187,43 +189,43 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
 
         {(userType === "admin" &&
           (userRoles.includes("logistics admin") || userRoles.includes("superadmin"))) && (
-          <div className="nav-items" id="procurement-inventory">
-            <div
-              className={`flex-control ${activeNav === "procurement" ? "active" : ""}`}
-              onClick={() => toggleNav("procurement")}
-            >
-              <Response width={14} height={14} className="sidebar-icons" />
-              <a href="#" className="non-redirect">PROCUREMENT &amp; INVENTORY</a>
-            </div>
-            <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
-              <Link
-                to="/procurement_inventory/procurement_inventory"
-                className="nav-sub-item"
-                onClick={onClose}
+            <div className="nav-items" id="procurement-inventory">
+              <div
+                className={`flex-control ${activeNav === "procurement" ? "active" : ""}`}
+                onClick={() => toggleNav("procurement")}
               >
-                Inventory and Warehousing
-              </Link>
+                <Response width={14} height={14} className="sidebar-icons" />
+                <a href="#" className="non-redirect">PROCUREMENT &amp; INVENTORY</a>
+              </div>
+              <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
+                <Link
+                  to="/procurement_inventory/procurement_inventory"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Inventory and Warehousing
+                </Link>
+              </div>
+              <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
+                <Link
+                  to="/procurement_inventory/procurement_management"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Procurement Management
+                </Link>
+              </div>
+              <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
+                <Link
+                  to="/procurement_inventory/distribution_planning"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Distribution Planning &amp; Monitoring
+                </Link>
+              </div>
             </div>
-            <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
-              <Link
-                to="/procurement_inventory/procurement_management"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Procurement Management
-              </Link>
-            </div>
-            <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
-              <Link
-                to="/procurement_inventory/distribution_planning"
-                className="nav-sub-item"
-                onClick={onClose}
-              >
-                Distribution Planning &amp; Monitoring
-              </Link>
-            </div>
-          </div>
-        )}
+          )}
 
         {(userRoles.includes("lgu officer")) && (
           <div className="nav-items" id="procurement_request">
@@ -242,25 +244,25 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
 
         {(userType === "admin" &&
           (userRoles.includes("finance admin") || userRoles.includes("superadmin"))) && (
-          <div className="nav-items" id="finance-admin">
-            <div
-              className={`flex-control ${activeNav === "finance" ? "active" : ""}`}
-              onClick={() => toggleNav("finance")}
-            >
-              <Response width={14} height={14} className="sidebar-icons" />
-              <a href="#" className="non-redirect">FINANCE &amp; ADMIN</a>
-            </div>
-            <div className={`nav-sub-items ${activeNav === "finance" ? "active" : ""}`}>
-              <Link
-                to="/finance&admin/finance_management"
-                className="nav-sub-item"
-                onClick={onClose}
+            <div className="nav-items" id="finance-admin">
+              <div
+                className={`flex-control ${activeNav === "finance" ? "active" : ""}`}
+                onClick={() => toggleNav("finance")}
               >
-                Finance Management
-              </Link>
+                <Response width={14} height={14} className="sidebar-icons" />
+                <a href="#" className="non-redirect">FINANCE &amp; ADMIN</a>
+              </div>
+              <div className={`nav-sub-items ${activeNav === "finance" ? "active" : ""}`}>
+                <Link
+                  to="/finance&admin/finance_management"
+                  className="nav-sub-item"
+                  onClick={onClose}
+                >
+                  Finance Management
+                </Link>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {(userType === "admin" && userRoles.includes("superadmin")) && (
           <div className="nav-items" id="user_management">

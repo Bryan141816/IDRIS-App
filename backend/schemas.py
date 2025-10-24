@@ -62,6 +62,85 @@ class UserSchema(UserBase):
     class Config:
         from_attributes = True
 
+# Admin User Schemas
+class AdminUserProfileCreate(BaseModel):
+    first_name: str
+    last_name: str
+    employee_idNumber: str
+    department: str
+    contact_number: Optional[str] = None
+    position: Optional[str] = None
+    employee_id: Optional[str] = None  # URL or path for ID image
+    lgu_location: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUserProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    employee_idNumber: Optional[str] = None
+    department: Optional[str] = None
+    contact_number: Optional[str] = None
+    position: Optional[str] = None
+    employee_id: Optional[str] = None
+    lgu_location: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUserProfileOut(BaseModel):
+    id: int
+    admin_user_profile_id: str
+    first_name: str
+    last_name: str
+    employee_idNumber: str
+    department: str
+    contact_number: Optional[str] = None
+    position: Optional[str] = None
+    employee_id: Optional[str] = None
+    lgu_location: Optional[str] = None
+    user_id: str
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUserCreate(UserBase):
+    password: str
+    user_type: str = "admin"
+    user_role: str = "admin"
+    admin_profile: AdminUserProfileCreate  # Nested profile creation
+
+
+class AdminUserSchema(UserBase):
+    id: int
+    user_id: str
+    roles: List[str]
+    user_type: Optional[str]
+    is_activated: bool
+    admin_user_profile: Optional[AdminUserProfileOut]
+
+    class Config:
+        from_attributes = True
+
+
+class AdminActivationRequest(BaseModel):
+    """Schema for admin account activation"""
+    admin_user_id: str
+    is_activated: bool
+    approved_by: Optional[str] = None  # user_id of superadmin who approved
+    activation_notes: Optional[str] = None
+
+
+class TokenWithAdminResponse(BaseModel):
+    """Response schema after admin login"""
+    access_token: str
+    token_type: str
+    user: AdminUserSchema
+
 
 # Emergency Response Report Schemas
 class EmergencyReportSummary(BaseModel):
@@ -326,7 +405,7 @@ class NeedItem(BaseModel):
 
 
 class DemandAndResponseCreate(BaseModel):
-    
+
     title_label: str
     address: str
     lat: float

@@ -48,6 +48,9 @@ export interface WarehouseZone {
   warehouse_id: number;
   status: string;
   zone_name: string;
+  address: string;
+  lat: number;
+  long: number;
   zone_type: string;
   capacity: number;
   manager: string;

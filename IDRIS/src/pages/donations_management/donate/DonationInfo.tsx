@@ -190,10 +190,9 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
           </div>
         )}
 
-        {/* Amount */}
-        <div className="form-group">
-          <label className="form-group__label">{donationKind === 'Cash' ? "Amount:" : "Estimated value:"}</label>
-          {donationKind === 'Cash' && (
+        {donationKind === 'Cash' && (
+          <div className="form-group">
+            <label className="form-group__label">Amount:</label>
             <div className='selectable-amount-container'>
               <button
                 className={`selectable-amount-item ${activeAmount === '1000' ? "active" : ""}`}
@@ -222,26 +221,21 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
               >Custom
               </button>
             </div>
-          )}
-          <div className="input-with-icon">
-            <PhilippinePesoIcon className="input-with-icon__icon" />
-            <input
-              type="decimal"
-              pattern="[0-9]*\.?[0-9]*"
-              value={formatAmount(formData.amount)}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
-              className={`input-with-icon__input ${errors.amount ? 'input-error' : ''}`}
-              placeholder={donationKind === 'Cash' ? "Enter amount (PHP)" : "Enter estimated value (PHP)"}
-              disabled={donationKind === 'Cash' && !isCustom}
-            />
+            <div className="input-with-icon">
+              <PhilippinePesoIcon className="input-with-icon__icon" />
+              <input
+                type="decimal"
+                pattern="[0-9]*\.?[0-9]*"
+                value={formatAmount(formData.amount)}
+                onChange={(e) => handleInputChange('amount', e.target.value)}
+                className={`input-with-icon__input ${errors.amount ? 'input-error' : ''}`}
+                placeholder={"Enter amount (PHP)"}
+                disabled={!isCustom}
+              />
+            </div>
+            {errors.amount && <p className="error-message">{errors.amount}</p>}
           </div>
-          {donationKind === 'In-Kind (Goods or Services)' && (
-            <small className="form-group__helper-text" style={{ fontStyle: "italic", marginTop: "5px", display: "block" }}>
-              For in-kind donations, enter the estimated monetary value. This helps with reporting — actual items are described below.
-            </small>
-          )}
-          {errors.amount && <p className="error-message">{errors.amount}</p>}
-        </div>
+        )}
       </div>
     </div>
   );

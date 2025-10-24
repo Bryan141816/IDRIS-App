@@ -155,7 +155,7 @@ const ListOfRAFIDonors = () => {
       { text: "Rank", width: "10%" },
       { text: "Avatar", width: "15%" },
       { text: "Name", width: "25%" },
-      { text: "Total Donation", width: "25%" },
+      { text: "Total Monetary Donation", width: "25%" },
       { text: "Date Joined", width: "25%" },
     ],
     table_datas: filteredDonors.map((donor, index) => ({

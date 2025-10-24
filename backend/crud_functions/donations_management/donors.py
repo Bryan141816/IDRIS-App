@@ -325,7 +325,7 @@ class DonorCRUD:
         base_q = (
             db.query(Donor)
             .outerjoin(UserAlias, Donor.user_id == UserAlias.user_id)
-            .options(joinedload(Donor.user))
+            .options(joinedload(Donor.user).joinedload(User.user_profile))
         )
 
         if search:

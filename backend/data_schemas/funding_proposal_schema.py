@@ -31,6 +31,8 @@ class FundingProposalCreate(BaseModel):
     budgetRequired: int = Field(..., alias="budget_required")
     status: Optional[str] = "Active"
     image: Optional[str] = None
+    starting_date: datetime
+    end_date: datetime
 
     class Config:
         from_attributes = True
@@ -43,6 +45,8 @@ class FundingProposalUpdate(BaseModel):
     budget_required: Optional[int] = Field(None, alias="budget_required")
     status: Optional[str] = None
     image: Optional[str] = None
+    starting_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
     donation_type: Optional[DonationType] = None  # Optional field for updates
 
     class Config:
@@ -93,6 +97,8 @@ class FundingProposalResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    starting_date: datetime
+    end_date: datetime
     image: Optional[str] = None
 
     class Config:

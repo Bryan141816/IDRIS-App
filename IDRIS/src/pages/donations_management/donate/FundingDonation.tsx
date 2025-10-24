@@ -141,8 +141,8 @@ const DonationPage: React.FC = () => {
       }
     }
 
-    if (!donationFormData.amount) {
-      newErrors.amount = 'Amount / Estimated value is required.';
+    if (donationKind !== 'In-Kind (Goods or Services)' && !donationFormData.amount) {
+      newErrors.amount = 'Amount is required.';
     }
 
     if (paymentMethod === 'visa' || paymentMethod === 'add') {

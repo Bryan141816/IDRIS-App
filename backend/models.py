@@ -89,6 +89,12 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    admin_user_profile = relationship(
+        "AdminUserProfile",
+        uselist=False,
+        back_populates="adminuser",
+        cascade="all, delete-orphan",
+    )   
     volunteers = relationship(
         "IndividualVolunteer", back_populates="user", cascade="all, delete-orphan"
     )
@@ -101,7 +107,7 @@ class User(Base):
     )
 
 
-# probably will add a email that is a foreign key to user table later
+
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"
@@ -126,6 +132,28 @@ class UserProfile(Base):
 
     # user = relationship("User", back_populates="user_profile")
 
+class AdminUserProfile(Base):
+    __tablename__ = "admin_user_profile"
+    __random_pk_field__ = "admin_user_profile_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    admin_user_profile_id = Column(String, primary_key=True)
+
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    employee_idNumber = Column(String(50), nullable=False, unique=True)
+    department = Column(String(100), nullable=False)
+    contact_number = Column(String(20), nullable=True)
+    position = Column(String(100), nullable=True)
+    employee_id = Column(String(300), nullable=True)  # URL or path
+    lgu_location = Column(String(255), nullable=True)
+
+    user_id = Column(
+        String, ForeignKey("users.user_id"), nullable=False, unique=True
+    )  # Foreign key to User
+
+    # Relationship
+    adminuser = relationship("User", back_populates="admin_user_profile")
 
 class Notifications(Base):
     __tablename__ = "notifications_table"
@@ -153,12 +181,15 @@ class RAFIInfrastructure(Base):
     rafi_desc = Column(String(255), nullable=True)
     rafi_pic = Column(String, nullable=True)  # URL or file path
 
+
 class Hazard(Base):
     __tablename__ = "hazards_record"
 
     id = Column(Integer, primary_key=True, index=True)
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)  # <-- add
-    lgu = relationship("LGURecords")                                           # <-- add
+    lgu_id = Column(
+        Integer, ForeignKey("lgu_records.lgu_id"), nullable=False
+    )  # <-- add
+    lgu = relationship("LGURecords")  # <-- add
 
     hazard_area = Column(String(255), nullable=False)  # LGU name text
     hazard_type = Column(String, nullable=False)
@@ -187,10 +218,13 @@ class EvacuationCenter(Base):
         passive_deletes=True,
     )
 
+
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
+    id = Column(
+        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
+    )
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -217,6 +251,7 @@ class LGURecords(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
 
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
@@ -349,6 +384,8 @@ class FundingProposal(Base):
     )
     status = Column(String(50), nullable=False)
     image = Column(String, nullable=True)
+    starting_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
 
     donations = relationship("Donation", back_populates="proposal")
 
@@ -386,24 +423,41 @@ class Donor(Base):
     def donor_name(self):
         if self.donor_type == "organization" and self.organization_name:
             return self.organization_name
+        elif self.user and self.user.user_profile:
+            return f"{self.user.user_profile.first_name} {self.user.user_profile.last_name}"
         elif self.user:
             return self.user.username
         return "Unknown Donor"
 
-    @donor_name.expression  # Queryable with donor_name
+    @donor_name.expression
     def donor_name(cls):
+        # Subquery to get the full name from UserProfile
+        fullname_sq = (
+            select(func.concat(UserProfile.first_name, " ", UserProfile.last_name))
+            .join(User, User.user_id == UserProfile.user_id)
+            .where(User.user_id == cls.user_id)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+
+        # Subquery to get the username as a fallback
         username_sq = (
             select(User.username)
             .where(User.user_id == cls.user_id)
             .correlate(cls)
             .scalar_subquery()
         )
-        return func.coalesce(
-            case(
-                (cls.donor_type == "organization", cls.organization_name),
-                else_=username_sq,
+
+        return case(
+            (
+                cls.donor_type == "organization",
+                func.coalesce(cls.organization_name, "Unknown Organization"),
             ),
-            literal("Unknown Donor"),
+            (
+                cls.donor_type == "individual",
+                func.coalesce(fullname_sq, username_sq, "Unknown Donor"),
+            ),
+            else_=literal("Unknown Donor"),
         )
 
 
@@ -1035,6 +1089,9 @@ class WarehouseZones(Base):
     __tablename__ = "warehouse_zones"
 
     warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    address = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    long = Column(Float, nullable=False)
     status = Column(String(255), nullable=False)
     zone_name = Column(String(255), nullable=False)
 

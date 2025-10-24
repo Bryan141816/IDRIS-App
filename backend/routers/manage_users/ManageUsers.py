@@ -1,7 +1,7 @@
 from crud import delete
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import ResponseReportOut, ResponseReportCreate
 from database import get_db
@@ -14,8 +14,9 @@ from typing import List
 from pydantic import BaseModel
 from routers.GetUserId import GetUserId
 from auth import create_token
-from email_handler import send_admin_activation_email
+from email_handler import send_admin_activated_email, send_admin_approved_email
 from crud_functions.utils import uid_from_string
+
 
 router = APIRouter(
     tags=["user_management"],
@@ -34,43 +35,37 @@ def get_table(
     page: int = Query(1, ge=1),
     UserName: str = "desc",
 ):
-    # Table header remains the same
     moderator_dict = {
         "operations": "lgu officer",
         "logistics": "disaster response admin officer",
     }
 
-    query = db.query(User)
+    query = db.query(User).options(
+        joinedload(User.admin_user_profile)  # ✅ Load admin profile data
+    )
 
     if "superadmin" not in user_role:
-        role = user_role[0].split()[0]  # first word of the role
-
-        # Get moderator(s) from dictionary safely
-        moderator = moderator_dict.get(role)  # returns None if key doesn't exist
-
-        # Build filter list
+        role = user_role[0].split()[0]
+        moderator = moderator_dict.get(role)
         filters = []
         filters.append(User.roles.any(f"{role} admin"))
-
         if moderator:
             filters.append(User.roles.any(moderator))
-
-        filters.append(User.roles.any("generic"))  # always include generic
-
-        # Apply query only with existing filters
-        query = db.query(User).filter(or_(*filters))
+        filters.append(User.roles.any("generic"))
+        query = query.filter(or_(*filters))
 
     page = getDefaultPage(page)
     offset = (page - 1) * 10
+
     table_head = [
-        {"text": "Email", "width": "250px"},
+        {"text": "Email", "width": "200px"},
         {"text": "UserName", "width": "150px", "action": "Sort"},
-        {"text": "UserType", "width": "150px"},
+        {"text": "UserType", "width": "120px"},
         {"text": "Roles", "width": "150px"},
-        {"text": "Is Activated", "width": "150px"},
-        {"text": "Action", "width": "150px"},
+        {"text": "Status", "width": "120px"},  # ✅ Changed from "Is Activated"
+        {"text": "Action", "width": "100px"},
     ]
-    # Query all reports (limit if needed)
+
     order = User.username.desc() if UserName == "desc" else User.username.asc()
     reports = query.order_by(order).limit(100).offset(offset).all()
     table_datas = []
@@ -79,96 +74,78 @@ def get_table(
     pages = {"page": pageCount, "row": []}
 
     for report in reports:
-
         if len(pages["row"]) == 10:
-            table_datas.append(pages)  # Save the full page
+            table_datas.append(pages)
             pageCount += 1
-            pages = {"page": pageCount, "row": []}  # New pages
+            pages = {"page": pageCount, "row": []}
 
-        last_row = (
-            Cell(
-                type="Button",
-                text="View",
-                font_weight=500,
-                color="#fff",
-                background_color="#749AB6",
-                container_width="150px",
-                button_width="120px",
-            ),
+        last_row = Cell(
+            type="Button",
+            text="View",
+            font_weight=500,
+            color="#fff",
+            background_color="#749AB6",
+            container_width="100px",
+            button_width="80px",
         )
 
         if user_id == report.user_id:
-            last_row = (
-                Cell(
-                    type="Text",
-                    text="Currrent Account",
-                    font_weight=700,
-                    color="#080",
-                    width="150px",
-                ),
+            last_row = Cell(
+                type="Text",
+                text="Current Account",
+                font_weight=700,
+                color="#080",
+                width="100px",
             )
 
+        # ✅ Determine status with better labels
+        if report.user_type == "admin":
+            if not report.admin_user_profile:
+                status = "Incomplete Profile"
+                status_color = "#f59e0b"  # Orange
+            elif not report.is_activated:
+                status = "Pending Approval"
+                status_color = "#ef4444"  # Red
+            else:
+                status = "Active"
+                status_color = "#10b981"  # Green
+        else:
+            status = "Active" if report.is_activated else "Inactive"
+            status_color = "#10b981" if report.is_activated else "#6b7280"
+
+        # ✅ Collect admin profile data if available
+        admin_profile_data = {}
+        if report.admin_user_profile:
+            admin_profile_data = {
+                "first_name": report.admin_user_profile.first_name,
+                "last_name": report.admin_user_profile.last_name,
+                "employee_id_number": report.admin_user_profile.employee_idNumber,
+                "department": report.admin_user_profile.department,
+                "position": report.admin_user_profile.position,
+                "contact_number": report.admin_user_profile.contact_number,
+                "lgu_location": report.admin_user_profile.lgu_location,
+                "employee_id": report.admin_user_profile.employee_id,
+            }
+
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(report.user_id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Hidden",
-                text=str(report.roles),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=report.email,
-                font_weight=500,
-                color="#000",
-                width="250px",
-            ),
-            Cell(
-                type="Text",
-                text=report.username,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=report.user_type,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=", ".join(report.roles),
-                font_weight=500,
-                color="#00",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text="True" if report.is_activated else "False",
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            last_row[0],
+            Cell(type="Hidden", text=str(report.user_id), font_weight=0, color="#000", width="0px"),
+            Cell(type="Hidden", text=str(report.roles), font_weight=0, color="#000", width="0px"),
+            # ✅ Store admin profile data as JSON string in hidden cell
+            Cell(type="Hidden", text=str(admin_profile_data), font_weight=0, color="#000", width="0px"),
+            Cell(type="Text", text=report.email, font_weight=500, color="#000", width="200px"),
+            Cell(type="Text", text=report.username, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=report.user_type, font_weight=500, color="#000", width="120px"),
+            Cell(type="Text", text=", ".join(report.roles), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=status, font_weight=600, color=status_color, width="120px"),  # ✅ Status with color
+            last_row,
         ]
         pages["row"].append({"data": row_data})
 
-        # ✅ Append last page if it has rows
     if pages["row"]:
         table_datas.append(pages)
 
     count = query.count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
 
 # @router.post(
 #     "/response_dashboard/report_list/add_report", response_model=ResponseReportOut
@@ -226,24 +203,36 @@ async def approve_admin(
     db: Session = Depends(get_db),
     user_role: List[str] = Depends(GetUserRoles),
 ):
+    """
+    Superadmin approves admin account after profile review
+    """
     if "superadmin" not in user_role:
         raise HTTPException(
-            status_code=403, detail="Only superadmins can approve other admins."
+            status_code=403, detail="Only superadmins can approve admins."
         )
 
     user_to_approve = db.query(User).filter(User.user_id == user_id).first()
 
     if not user_to_approve:
-        raise HTTPException(status_code=404, detail="User to approve not found.")
+        raise HTTPException(status_code=404, detail="User not found.")
 
     if user_to_approve.user_type != "admin":
         raise HTTPException(status_code=400, detail="User is not an admin.")
 
     if user_to_approve.is_activated:
-        raise HTTPException(status_code=400, detail="Admin has already been activated.")
+        raise HTTPException(status_code=400, detail="Admin already activated.")
 
-    # Send activation email
-    token = create_token(user_to_approve.user_id, "activation")
-    await send_admin_activation_email(user_to_approve.email, token)
+    # ✅ Activate the account
+    user_to_approve.is_activated = True
+    db.commit()
+    db.refresh(user_to_approve)
 
-    return {"message": f"Activation email sent to admin {user_to_approve.username}."}
+    # ✅ Send approval confirmation email
+    try:
+        await send_admin_approved_email(user_to_approve.email)
+    except Exception as e:
+        print(f"Warning: Failed to send approval email. Error: {e}")
+
+    return {
+        "message": f"Admin {user_to_approve.username} has been approved and activated."
+    }

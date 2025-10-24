@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { Users, MapPin, Calendar, Search, Plus, Trash2, CheckCircle, Clock } from 'lucide-react';
 import {
@@ -13,12 +13,13 @@ import { getAllVolunteers } from '../../../API_Handler/individual_volunter_handl
 import { getAllOrganizationVolunteers } from '../../../API_Handler/organization_volunteer_handler';
 import { Breadcrumb, Empty } from 'antd';
 import { VolunteerStatus } from '../../../API_Handler/volunteer_status_handler';
+import type { CheckboxOptionType } from "antd";
 
 type Availability = 'available' | 'unavailable' | 'assigned';
 type TaskLifecycle = 'incoming' | 'ongoing' | 'finished';
 
 interface Volunteer {
-    id: string; // "123" for individuals, "org-123" for orgs
+    id: string;
     name: string;
     email: string;
     phone: string;
@@ -36,22 +37,85 @@ interface VolunteerArea {
     maxVolunteers: number;
     currentVolunteers: number;
     location: string;
-    start_at: string; // ISO
-    end_at: string;   // ISO
+    start_at: string;
+    end_at: string;
     lifecycle: TaskLifecycle;
-    assignedVolunteers: string[]; // volunteer ids (string-ified)
+    assignedVolunteers: string[];
 }
 
 interface NewAreaForm {
     name: string;
     description: string;
     location: string;
-    start_at: string; // yyyy-MM-ddTHH:mm
-    end_at: string;   // yyyy-MM-ddTHH:mm
+    start_at: string;
+    end_at: string;
     maxVolunteers: number | '';
     requiredSkills: string[];
-    skillInput: string;
+
 }
+
+// ✅ Photon API TypeScript types
+interface PhotonProperties {
+    name?: string;
+    country?: string;
+    state?: string;
+    county?: string;
+    city?: string;
+    osm_value?: string;
+}
+
+interface PhotonFeature {
+    properties?: PhotonProperties;
+    geometry?: {
+        coordinates?: [number, number];
+    };
+}
+
+interface PhotonResp {
+    features?: PhotonFeature[];
+}
+
+const skillsOptions: CheckboxOptionType[] = [
+  { label: "CPR", value: "CPR" },
+  { label: "First Aid", value: "First Aid" },
+  { label: "Search & Rescue", value: "Search & Rescue" },
+  { label: "Fire Safety", value: "Fire Safety" },
+  { label: "Evacuation Assistance", value: "Evacuation Assistance" },
+  { label: "Crowd Control", value: "Crowd Control" },
+  { label: "Radio Communication", value: "Radio Communication" },
+  { label: "Disaster Assessment", value: "Disaster Assessment" },
+  { label: "Logistics Management", value: "Logistics Management" },
+  { label: "Driving (Emergency Vehicles)", value: "Driving (Emergency Vehicles)" },
+  { label: "Medical Assistance", value: "Medical Assistance" },
+  { label: "Shelter Management", value: "Shelter Management" },
+  { label: "Relief Goods Distribution", value: "Relief Goods Distribution" },
+  { label: "Counseling / Psychological First Aid", value: "Counseling / Psychological First Aid" },
+  { label: "Documentation / Reporting", value: "Documentation / Reporting" },
+];
+
+
+// ✅ Cebu coordinates for search bias
+const CEBU_LAT = 10.3157;
+const CEBU_LON = 123.8854;
+
+// ✅ Helper functions
+const formatDisplayName = (p: PhotonProperties): string => {
+    const parts = [];
+    if (p.name) parts.push(p.name);
+    if (p.city) parts.push(p.city);
+    if (p.county) parts.push(p.county);
+    if (p.state) parts.push(p.state);
+    return parts.join(", ");
+};
+
+const classifyFromPhoton = (osmValue?: string): string => {
+    if (!osmValue) return "";
+    const lower = osmValue.toLowerCase();
+    if (lower.includes("city")) return "City";
+    if (lower.includes("municipality")) return "Municipality";
+    if (lower.includes("barangay")) return "Barangay";
+    return "";
+};
 
 const isOrgId = (id: string) => id.startsWith('org-');
 const rawId = (id: string) => (isOrgId(id) ? id.replace(/^org-/, '') : id);
@@ -60,7 +124,6 @@ function toIsoOrNull(dtLocal: string) {
     if (!dtLocal) return null;
     const d = new Date(dtLocal);
     return isNaN(d.getTime()) ? null : d.toISOString();
-
 }
 
 function isoToDateOnly(iso: string) {
@@ -70,7 +133,6 @@ function isoToDateOnly(iso: string) {
     const m = String(d.getUTCMonth() + 1).padStart(2, '0');
     const day = String(d.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-
 }
 
 function fmtRange(startISO?: string, endISO?: string) {
@@ -88,35 +150,9 @@ function fmtRange(startISO?: string, endISO?: string) {
     return sameDay ? `${sDate} · ${sTime} – ${eTime}` : `${sDate} ${sTime} → ${eDate} ${eTime}`;
 }
 
-/**
- * Create an assignment on the backend.
- * POST /assignment/programs/{taskId}/assignments
- * Body:
- *  - { individual_volunteer_id: number } OR { organization_volunteer_id: number }
- *  - AND task_id (pydantic model requires this)
- */
 async function createAssignment(taskId: string | number, volunteerId: string) {
     const volunteerNumericId = Number(rawId(volunteerId));
     const taskIdNum = typeof taskId === 'string' ? Number(taskId) : taskId;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     if (!Number.isFinite(taskIdNum)) throw new Error('Invalid task id');
 
@@ -125,7 +161,7 @@ async function createAssignment(taskId: string | number, volunteerId: string) {
             ? { organization_volunteer_id: volunteerNumericId }
             : { individual_volunteer_id: volunteerNumericId };
 
-    const body = { ...base, task_id: taskIdNum }; // required by backend model
+    const body = { ...base, task_id: taskIdNum };
 
     try {
         return await apiCreateAssignment(taskIdNum, body);
@@ -134,15 +170,169 @@ async function createAssignment(taskId: string | number, volunteerId: string) {
         const msg = typeof raw === 'string' ? raw : JSON.stringify(raw);
         throw new Error(msg);
     }
-
-
-
-
-
-
-
-
 }
+
+// ✅ Autocomplete Address Component (Photon API only)
+const AutocompleteAddress: React.FC<{
+    value: string;
+    onPick: (payload: { name: string; lat: number; lng: number; classificationGuess: string }) => void;
+    onChange: (name: string) => void;
+}> = ({ value, onPick, onChange }) => {
+    const [q, setQ] = useState(value);
+    const [loading, setLoading] = useState(false);
+    const [items, setItems] = useState<PhotonFeature[]>([]);
+    const [open, setOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const boxRef = useRef<HTMLDivElement>(null);
+    const timerRef = useRef<number | null>(null);
+
+    useEffect(() => setQ(value), [value]);
+
+    useEffect(() => {
+        const onDoc = (e: MouseEvent) => {
+            if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", onDoc);
+        return () => document.removeEventListener("mousedown", onDoc);
+    }, []);
+
+    const doSearch = async (term: string) => {
+        if (!term || term.trim().length < 2) {
+            setItems([]);
+            return;
+        }
+        setLoading(true);
+        try {
+            const url = new URL("https://photon.komoot.io/api/");
+            url.searchParams.set("q", term);
+            url.searchParams.set("limit", "8");
+            url.searchParams.set("lang", "en");
+            url.searchParams.set("lat", String(CEBU_LAT));
+            url.searchParams.set("lon", String(CEBU_LON));
+
+            const resp = await fetch(url.toString());
+            const data: PhotonResp = await resp.json();
+
+            const filtered = (data.features || []).filter((f) => {
+                const p = f.properties || {};
+                const isPH = (p.country || "").toLowerCase().includes("philippines");
+                const isCebu =
+                    (p.state || "").toLowerCase().includes("cebu") ||
+                    (p.county || "").toLowerCase().includes("cebu") ||
+                    (p.city || "").toLowerCase().includes("cebu");
+                return isPH && isCebu;
+            });
+
+            setItems(filtered);
+            setActiveIndex(0);
+            setOpen(true);
+        } catch {
+            setItems([]);
+            setOpen(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onInputChange = (v: string) => {
+        setQ(v);
+        onChange(v);
+        if (timerRef.current) window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => doSearch(v), 250);
+    };
+
+    const commitPick = (f: PhotonFeature) => {
+        const p = f.properties || {};
+        const coords = f.geometry?.coordinates || [0, 0];
+        const lng = coords[0] || 0;
+        const lat = coords[1] || 0;
+        const classificationGuess = classifyFromPhoton(p.osm_value) || "";
+        const name = p.name || formatDisplayName(p) || "";
+        onPick({ name, lat, lng, classificationGuess });
+        setQ(name);
+        setOpen(false);
+    };
+
+    const onKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+        if (!open || items.length === 0) return;
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveIndex((i) => (i + 1) % items.length);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveIndex((i) => (i - 1 + items.length) % items.length);
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            commitPick(items[activeIndex]);
+        } else if (e.key === "Escape") {
+            setOpen(false);
+        }
+    };
+
+    return (
+        <div ref={boxRef} style={{ position: "relative", width: "100%" }}>
+            <input
+                type="text"
+                placeholder="Type program / event location…"
+                value={q}
+                onChange={(e) => onInputChange(e.target.value)}
+                onFocus={() => { if (items.length) setOpen(true); }}
+                onKeyDown={onKeyDown}
+            />
+            {open && (
+                <div
+                    style={{
+                        position: "absolute",
+                        zIndex: 9999,
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        background: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 6,
+                        boxShadow: "0 8px 16px rgba(0,0,0,0.08)",
+                        maxHeight: 240,
+                        overflowY: "auto",
+                    }}
+                >
+                    {loading && <div style={{ padding: 8, fontSize: 12 }}>Searching…</div>}
+                    {!loading && items.length === 0 && (
+                        <div style={{ padding: 8, fontSize: 12, color: "#6b7280" }}>No results in Cebu, Philippines</div>
+                    )}
+                    {!loading &&
+                        items.map((f, idx) => {
+                            const p = f.properties || {};
+                            const label = formatDisplayName(p);
+                            const isActive = idx === activeIndex;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => commitPick(f)}
+                                    style={{
+                                        display: "block",
+                                        width: "100%",
+                                        textAlign: "left",
+                                        padding: "8px 10px",
+                                        background: isActive ? "#f3f4f6" : "transparent",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: 14,
+                                    }}
+                                    onMouseEnter={() => setActiveIndex(idx)}
+                                >
+                                    <div style={{ fontWeight: 600 }}>{p.name || label}</div>
+                                    <div style={{ fontSize: 12, color: "#6b7280" }}>
+                                        {label}
+                                        {p.osm_value ? ` • ${p.osm_value}` : ""}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const VolunteerAssignmentPage: React.FC = () => {
     const [areas, setAreas] = useState<VolunteerArea[]>([]);
@@ -152,11 +342,7 @@ const VolunteerAssignmentPage: React.FC = () => {
     const [selectedVolunteers, setSelectedVolunteers] = useState<string[]>([]);
     const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
-
-    // areaId -> (volunteerId string -> assignmentId number)
     const [assignmentMap, setAssignmentMap] = useState<Record<string, Record<string, number>>>({});
-
-    // NEW: Add Program/Event modal state
     const [showAddModal, setShowAddModal] = useState(false);
     const [newArea, setNewArea] = useState<NewAreaForm>({
         name: '',
@@ -166,7 +352,6 @@ const VolunteerAssignmentPage: React.FC = () => {
         end_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16),
         maxVolunteers: '',
         requiredSkills: [],
-        skillInput: '',
     });
 
     const filteredVolunteers = volunteers.filter(
@@ -174,41 +359,23 @@ const VolunteerAssignmentPage: React.FC = () => {
             v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             v.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             v.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     );
 
-    // ✅ Show only AVAILABLE volunteers (by availability_status)
     const availableVolunteers = filteredVolunteers.filter((v) => v.availability_status === 'available' && v.status === 'approved');
 
-    // ✅ Only show incoming + ongoing areas (and sort by soonest start)
     const activeAreas = useMemo(() => {
         return areas
             .filter(a => a.lifecycle === 'incoming' || a.lifecycle === 'ongoing')
             .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
     }, [areas]);
 
-    // Assign volunteers and remember assignment IDs
     const handleAssignVolunteers = async () => {
         if (!selectedArea || selectedVolunteers.length === 0) return;
         const areaId = String(selectedArea);
 
         const results = await Promise.allSettled(
             selectedVolunteers.map(async (volId) => {
-                const assignment = await createAssignment(areaId, volId); // AssignmentDTO
+                const assignment = await createAssignment(areaId, volId);
                 return { volId, assignment };
             })
         );
@@ -219,13 +386,11 @@ const VolunteerAssignmentPage: React.FC = () => {
             if (r.status === 'fulfilled') {
                 const { volId, assignment } = r.value as { volId: string; assignment: AssignmentDTO };
 
-                // remember assignmentId for this volunteer in this area
                 setAssignmentMap((prev) => ({
                     ...prev,
                     [areaId]: { ...(prev[areaId] || {}), [volId]: assignment.id },
                 }));
 
-                // reflect in UI
                 setAreas((prev) =>
                     prev.map((a) => {
                         if (a.id !== areaId) return a;
@@ -256,12 +421,9 @@ const VolunteerAssignmentPage: React.FC = () => {
         setSelectedArea('');
     };
 
-    // Delete using real assignment id
     const handleRemoveVolunteer = async (areaId: string, volunteerId: string) => {
-        // 1) find assignment id from map
         let assignmentId = assignmentMap[areaId]?.[volunteerId];
 
-        // 2) if not cached (e.g., after reload), fetch for this area and rebuild map
         if (!assignmentId) {
             try {
                 const rows = await listTaskAssignments(Number(areaId));
@@ -285,7 +447,6 @@ const VolunteerAssignmentPage: React.FC = () => {
             return;
         }
 
-        // 3) call DELETE /assignment/assignments/{id}
         try {
             await apiDeleteAssignment(assignmentId);
         } catch (e: any) {
@@ -294,7 +455,6 @@ const VolunteerAssignmentPage: React.FC = () => {
             return;
         }
 
-        // 4) update local states
         setAssignmentMap((prev) => {
             const inner = { ...(prev[areaId] || {}) };
             delete inner[volunteerId];
@@ -320,7 +480,6 @@ const VolunteerAssignmentPage: React.FC = () => {
 
     const getVolunteerById = (id: string) => volunteers.find((v) => v.id === id);
 
-    // Fetch volunteers
     useEffect(() => {
         const fetchVolunteers = async () => {
             try {
@@ -395,18 +554,14 @@ const VolunteerAssignmentPage: React.FC = () => {
             }
         };
 
-
-
         fetchVolunteers();
     }, []);
 
-    // Fetch volunteer areas (programs/events) + build assignment map
     useEffect(() => {
         const fetchPrograms = async () => {
             try {
                 const data = await listPrograms();
 
-                // 1) Map raw programs to UI areas (assignedVolunteers empty for now)
                 const mappedAreas: VolunteerArea[] = (Array.isArray(data) ? data : []).map((area: any) => {
                     const reqSkills = Array.isArray(area.required_skills)
                         ? area.required_skills
@@ -440,20 +595,17 @@ const VolunteerAssignmentPage: React.FC = () => {
                         description: area.description ?? '',
                         requiredSkills: reqSkills,
                         maxVolunteers: Number(area.max_volunteers) || 0,
-                        currentVolunteers: 0,            // will fill after we fetch assignments
+                        currentVolunteers: 0,
                         location: area.location ?? '',
                         start_at: startISO,
                         end_at: endISO,
                         lifecycle,
-                        assignedVolunteers: [],          // will fill after we fetch assignments
+                        assignedVolunteers: [],
                     };
                 });
 
                 setAreas(mappedAreas);
 
-                // 2) For each area, fetch assignments and build:
-                //    - assignmentMap[areaId] = { "<id>" | "org-<id>": assignmentId }
-                //    - assignedKeys = ["<id>", "org-<id>", ...]
                 const perArea = await Promise.all(
                     mappedAreas.map(async (area) => {
                         try {
@@ -477,14 +629,12 @@ const VolunteerAssignmentPage: React.FC = () => {
                     })
                 );
 
-                // 3) Install assignmentMap for delete operations
                 const newAssignmentMap: Record<string, Record<string, number>> = {};
                 perArea.forEach(({ id, map }) => {
                     newAssignmentMap[id] = map;
                 });
                 setAssignmentMap(newAssignmentMap);
 
-                // 4) Update areas to show BOTH individuals and orgs as assigned
                 setAreas((prev) =>
                     prev.map((a) => {
                         const found = perArea.find((x) => x.id === a.id);
@@ -504,74 +654,9 @@ const VolunteerAssignmentPage: React.FC = () => {
         fetchPrograms();
     }, []);
 
-    // ---- Add Program/Event helpers ----
-    const addSkillChip = () => {
-        const raw = newArea.skillInput.trim();
-        if (!raw) return;
-        const parts = raw.split(',').map((s) => s.trim()).filter(Boolean);
-        const merged = Array.from(new Set([...newArea.requiredSkills, ...parts]));
-        setNewArea((prev) => ({ ...prev, requiredSkills: merged, skillInput: '' }));
-    };
 
     const removeSkillChip = (skill: string) => {
         setNewArea((prev) => ({ ...prev, requiredSkills: prev.requiredSkills.filter((s) => s !== skill) }));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     };
 
     const handleCreateArea = async () => {
@@ -592,7 +677,7 @@ const VolunteerAssignmentPage: React.FC = () => {
             location: newArea.location.trim(),
             start_at: startISO!,
             end_at: endISO!,
-            task_date: isoToDateOnly(startISO!), // harmless for backend that ignores it
+            task_date: isoToDateOnly(startISO!),
             max_volunteers: mv,
             required_skills: newArea.requiredSkills,
         };
@@ -643,7 +728,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                 end_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16),
                 maxVolunteers: '',
                 requiredSkills: [],
-                skillInput: '',
             });
         } catch (e: any) {
             alert(e?.response?.data?.detail || e?.message || 'Failed to create program');
@@ -653,7 +737,6 @@ const VolunteerAssignmentPage: React.FC = () => {
     return (
         <div className="h-[300vh] bg-gray-50 p-6">
             <div className="max-w-7xl mx-auto">
-                {/* Breadcrumb Navigation */}
                 <div className="breadcrumb-section" style={{ marginBottom: '16px' }}>
                     <h2 className="page-title">Volunteer Assignment</h2>
                     <Breadcrumb>
@@ -669,62 +752,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                     </Breadcrumb>
                 </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Volunteer Areas */}
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -733,7 +761,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     Volunteer Areas
                                 </h2>
 
-                                {/* NEW: Add Program/Event button */}
                                 <button
                                     onClick={() => setShowAddModal(true)}
                                     className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
@@ -858,7 +885,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Volunteer List */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                             <div className="p-6 border-b border-gray-200">
@@ -927,38 +953,10 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-
-
                         </div>
-
                     </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 </div>
 
-
-                {/* Assignment Modal */}
                 {showAssignModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -990,7 +988,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                 <p className="text-sm text-gray-600">{volunteer.skills.join(', ')}</p>
                                             </div>
                                         </label>
-
                                     ))
                                 )}
                             </div>
@@ -1017,95 +1014,11 @@ const VolunteerAssignmentPage: React.FC = () => {
                             </div>
                         </div>
                     </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 )}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                {/* NEW: Add Program/Event Modal */}
                 {showAddModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg w-full max-w-xl p-6">
+                        <div className="bg-white rounded-lg w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Program / Event</h3>
 
                             <div className="grid grid-cols-1 gap-4">
@@ -1131,17 +1044,18 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     />
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                                    <AutocompleteAddress
+                                        value={newArea.location}
+                                        onChange={(name) => setNewArea((prev) => ({ ...prev, location: name }))}
+                                        onPick={({ name }) => {
+                                            setNewArea((prev) => ({ ...prev, location: name }));
+                                        }}
+                                    />
+                                </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                        <input
-                                            type="text"
-                                            value={newArea.location}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, location: e.target.value }))}
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="e.g., Beach Park"
-                                        />
-                                    </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
                                         <input
@@ -1149,22 +1063,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                                             value={newArea.start_at}
                                             onChange={(e) => setNewArea((prev) => ({ ...prev, start_at: e.target.value }))}
                                             className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Max Volunteers</label>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            value={newArea.maxVolunteers}
-                                            onChange={(e) =>
-                                                setNewArea((prev) => ({ ...prev, maxVolunteers: e.target.value === '' ? '' : Number(e.target.value) }))
-                                            }
-                                            className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="e.g., 6"
                                         />
                                     </div>
                                     <div>
@@ -1176,43 +1074,76 @@ const VolunteerAssignmentPage: React.FC = () => {
                                             className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         />
                                     </div>
-
                                 </div>
 
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Volunteers</label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={newArea.maxVolunteers}
+                                        onChange={(e) =>
+                                            setNewArea((prev) => ({ ...prev, maxVolunteers: e.target.value === '' ? '' : Number(e.target.value) }))
+                                        }
+                                        className="w-full border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        placeholder="e.g., 6"
+                                    />
+                                </div>
+
+                                {/* ✅ UPDATED: Checkbox-based skill selection */}
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Required Skills</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={newArea.skillInput}
-                                            onChange={(e) => setNewArea((prev) => ({ ...prev, skillInput: e.target.value }))}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' || e.key === ',') {
-                                                    e.preventDefault();
-                                                    addSkillChip();
-                                                }
-                                            }}
-                                            className="flex-1 border border-gray-200 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Type a skill and press Enter"
-                                        />
-                                        <button
-                                            onClick={addSkillChip}
-                                            className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md hover:bg-gray-200"
-                                            type="button"
-                                        >
-                                            Add
-                                        </button>
+
+                                    {/* Checkbox grid */}
+                                    <div className="border border-gray-200 rounded-md p-3 bg-gray-50">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {skillsOptions.map((option) => (
+                                                <label
+                                                    key={option.value}
+                                                    className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded transition-colors"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        value={option.value}
+                                                        checked={newArea.requiredSkills.includes(String(option.value))}
+                                                        onChange={(e) => {
+                                                            const skillValue = String(option.value);
+                                                            if (e.target.checked) {
+                                                                setNewArea((prev) => ({
+                                                                    ...prev,
+                                                                    requiredSkills: [...prev.requiredSkills, skillValue]
+                                                                }));
+                                                            } else {
+                                                                setNewArea((prev) => ({
+                                                                    ...prev,
+                                                                    requiredSkills: prev.requiredSkills.filter(s => s !== skillValue)
+                                                                }));
+                                                            }
+                                                        }}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                    />
+                                                    <span className="text-sm text-gray-700">{option.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
 
+                                    {/* Selected skills display */}
                                     {newArea.requiredSkills.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mt-2">
+                                        <div className="flex flex-wrap gap-2 mt-3">
                                             {newArea.requiredSkills.map((skill) => (
                                                 <span key={skill} className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs">
                                                     {skill}
                                                     <button
                                                         className="text-blue-800/70 hover:text-blue-900"
-                                                        onClick={() => removeSkillChip(skill)}
+                                                        onClick={() => {
+                                                            setNewArea((prev) => ({
+                                                                ...prev,
+                                                                requiredSkills: prev.requiredSkills.filter((s) => s !== skill)
+                                                            }));
+                                                        }}
                                                         title="Remove"
+                                                        type="button"
                                                     >
                                                         ×
                                                     </button>
@@ -1239,26 +1170,9 @@ const VolunteerAssignmentPage: React.FC = () => {
                     </div>
                 )}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             </div>
         </div>
     );
-
-
-
 };
 
 export default VolunteerAssignmentPage;

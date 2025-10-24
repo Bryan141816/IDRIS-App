@@ -54,14 +54,19 @@ const daysOfWeekOptions: CheckboxOptionType[] = [
 ];
 
 const skillsOptions: CheckboxOptionType[] = [
-    { label: "CPR", value: "CPR" },
-    { label: "First Aid", value: "First Aid" },
-    { label: "Search & Rescue", value: "Search & Rescue" },
-    { label: "Fire Safety", value: "Fire Safety" },
-    { label: "Radio Comms", value: "Radio Comms" },
-    { label: "Logistics", value: "Logistics" },
-    { label: "Driving", value: "Driving" },
+  { label: "CPR", value: "CPR" },
+  { label: "First Aid", value: "First Aid" },
+  { label: "Search & Rescue", value: "Search & Rescue" },
+  { label: "Fire Safety", value: "Fire Safety" },
+  { label: "Evacuation Assistance", value: "Evacuation Assistance" },
+  { label: "Crowd Control", value: "Crowd Control" },
+  { label: "Logistics Management", value: "Logistics Management" },
+  { label: "Driving (Emergency Vehicles)", value: "Driving (Emergency Vehicles)" },
+  { label: "Medical Assistance", value: "Medical Assistance" },
+  { label: "Shelter Management", value: "Shelter Management" },
+  { label: "Counseling / Psychological First Aid", value: "Counseling / Psychological First Aid" },
 ];
+
 
 const IndividualForm: React.FC = () => {
     const navigate = useNavigate();

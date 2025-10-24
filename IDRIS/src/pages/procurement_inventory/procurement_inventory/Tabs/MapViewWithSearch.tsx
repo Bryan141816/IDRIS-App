@@ -70,21 +70,30 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   );
   const [recommendedLocation, setRecommendedLocation] = useState<Feature[]>([]);
   const [searchFound, setSearchFound] = useState(false);
-
+  const [typing, setTyping] = useState(false);
+  const reverseGeo = async (coordinates: [number, number]) => {
+    try {
+      setSearchValue("Locating Point");
+      const response = await axios.get(
+        `https://photon.komoot.io/reverse?lat=${coordinates[0]}&lon=${coordinates[1]}`,
+      );
+      const { name, city, state } = response.data.features[0].properties;
+      console.log(response.data);
+      setSearchValue(`${name}${city ? ", " + city : ""}, ${state}`);
+    } catch (e: any) {
+      setSearchValue("Locating Point");
+      console.log("Error search location: " + e.message);
+    }
+  };
   const ClickHandler: React.FC = () => {
     useMapEvent("click", (e) => {
       setMarkerPosition([e.latlng.lat, e.latlng.lng]); // ✅ only use setter
+      reverseGeo([e.latlng.lat, e.latlng.lng]);
       setSearchFound(false);
     });
     return null;
   };
   const [target, setTarget] = useState<[number, number] | null>(null);
-
-  const ReCenterMap = (center: [number, number]) => {
-    console.log(center);
-    setCenter(center);
-    setZoom(15);
-  };
 
   useEffect(() => {
     if (!initialized) {
@@ -92,8 +101,9 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
       return; // skip first render
     }
 
-    if (!target) {
+    if (!target && typing) {
       const timer = setTimeout(() => {
+        setTyping(false);
         setDebouncedSearch(searchValue);
       }, 1000);
       return () => clearTimeout(timer);
@@ -119,7 +129,7 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
       const search = async () => {
         try {
           const response = await axios.get(
-            `https://photon.komoot.io/api/?q=${debouncedSearch}&lat=${center[0]}&lon=${center[1]}`,
+            `https://photon.komoot.io/api/?q=${debouncedSearch}&lat=${10.359353}&lon=${123.868891}`,
           );
           setSearchFound(true);
           setRecommendedLocation(response.data.features);
@@ -142,22 +152,31 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
+    setTyping(true);
     setSearchValue(value);
     if (value.length === 0) {
       setSearchFound(false);
     }
   };
   const handleSubmit = () => {
-    if (markerPosition) {
-      onSubmit(searchValue, markerPosition);
-      onClose();
-    } else {
+    if (searchValue.trim() === "" || searchValue.trim() === "Locating Point") {
+      Swal.fire({
+        icon: "error",
+        title: "Opps",
+        text: "Please Input an Addres",
+      });
+      return;
+    }
+    if (!markerPosition) {
       Swal.fire({
         icon: "error",
         title: "Opps",
         text: "Please mark the location properly",
       });
+      return;
     }
+    onSubmit(searchValue, markerPosition);
+    onClose();
   };
   return (
     <div className="modal-overlay" style={{ zIndex: 1000 }}>

@@ -79,7 +79,7 @@ const UpdatePassword = () => {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:8000/reset_password", {
+      const res = await fetch("https://idris-app.onrender.com/reset_password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

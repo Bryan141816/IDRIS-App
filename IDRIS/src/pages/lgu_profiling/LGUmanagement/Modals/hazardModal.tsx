@@ -32,7 +32,7 @@ type EditProps = BaseModalProps & {
 /* =========================================================
    Constants
 ========================================================= */
-const API_BASE = "http://localhost:8000";
+const API_BASE = "https://idris-app.onrender.com";
 const UPLOAD_URL = `${API_BASE}/api/files/hazards`;
 const LGU_SEARCH_URL = `${API_BASE}/lgu_profiling/manage_lgu/get_lgu`;
 
@@ -49,7 +49,8 @@ async function uploadHazardImage(file: File): Promise<string> {
     throw new Error(`Upload failed (${res.status}): ${txt || res.statusText}`);
   }
   const data = await res.json().catch(() => ({}));
-  if (!data?.url) throw new Error("Upload succeeded but no URL returned by server.");
+  if (!data?.url)
+    throw new Error("Upload succeeded but no URL returned by server.");
   return data.url as string;
 }
 
@@ -87,13 +88,18 @@ function useDebounced<T>(value: T, delay = 300) {
 
 /** Heuristic: parse the row into fields without relying on fixed indexes */
 function parseHazardRow(selectedData: any) {
-  const cells = (selectedData?.data ?? []) as Array<{ type?: string; text?: string }>;
+  const cells = (selectedData?.data ?? []) as Array<{
+    type?: string;
+    text?: string;
+  }>;
 
   const id = cells[0]?.text ?? "";
   const lastUpdated = cells[1]?.text ?? "-";
 
   // ignore non-textual cells
-  const rest = cells.slice(2).filter((c) => c?.type !== "Button" && c?.type !== "Hidden");
+  const rest = cells
+    .slice(2)
+    .filter((c) => c?.type !== "Button" && c?.type !== "Hidden");
 
   const isUrl = (s?: string) => !!s && /^https?:\/\//i.test(s.trim());
 
@@ -102,7 +108,9 @@ function parseHazardRow(selectedData: any) {
   const image_url = imgCell?.text ?? "";
 
   // non-url text cells after the first two columns are hazard_area & hazard_type (order-agnostic)
-  const textCells = rest.filter((c) => !isUrl(c?.text) && (c?.text ?? "").trim() !== "");
+  const textCells = rest.filter(
+    (c) => !isUrl(c?.text) && (c?.text ?? "").trim() !== "",
+  );
   const hazard_area = textCells[0]?.text ?? "—";
   const hazard_type = textCells[1]?.text ?? "—";
 
@@ -226,7 +234,7 @@ export const AddHazardModal: React.FC<AddProps> = ({
           finalImageUrl = await uploadHazardImage(file);
         } catch (err: any) {
           const proceed = confirm(
-            `Image upload failed.\n\n${err?.message || err}\n\nDo you want to save the record without the image?`
+            `Image upload failed.\n\n${err?.message || err}\n\nDo you want to save the record without the image?`,
           );
           if (!proceed) {
             setIsSubmitting(false);
@@ -286,7 +294,11 @@ export const AddHazardModal: React.FC<AddProps> = ({
   };
 
   return (
-    <Modal isOpen={isModalOpen} onClose={isSubmitting ? () => {} : closeModal} zIndex={998}>
+    <Modal
+      isOpen={isModalOpen}
+      onClose={isSubmitting ? () => {} : closeModal}
+      zIndex={998}
+    >
       <div className="modal-container" aria-busy={isSubmitting}>
         <div className="horizontal-container">
           <span className="details-title">Add Hazard</span>
@@ -326,7 +338,9 @@ export const AddHazardModal: React.FC<AddProps> = ({
                 }}
               >
                 {lguLoading ? (
-                  <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>
+                  <div style={{ padding: "8px 12px", color: "#888" }}>
+                    Searching…
+                  </div>
                 ) : (
                   lguOptions.map((opt) => (
                     <div
@@ -387,7 +401,11 @@ export const AddHazardModal: React.FC<AddProps> = ({
             <img
               src={preview}
               alt="preview"
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
             />
           ) : (
             <div style={{ color: "#888" }}>
@@ -398,7 +416,11 @@ export const AddHazardModal: React.FC<AddProps> = ({
 
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1, color: "#ffff" }}
+            style={{
+              backgroundColor: "#749AB6",
+              opacity: isSubmitting ? 0.6 : 1,
+              color: "#ffff",
+            }}
             onClick={onSubmit}
             disabled={isSubmitting}
           >
@@ -435,7 +457,8 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
     if (!isModalOpen) setIsMore(false);
   }, [isModalOpen]);
 
-  const { id, lastUpdated, hazard_area, hazard_type, image_url } = parseHazardRow(selectedData);
+  const { id, lastUpdated, hazard_area, hazard_type, image_url } =
+    parseHazardRow(selectedData);
 
   if (!isModalOpen) return null;
 
@@ -444,10 +467,16 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View Hazard</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
             <div className="more-options-container">
               <button onClick={() => setIsMore((v) => !v)}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
               </button>
               {isMore && (
                 <div className="more-options-viewer">
@@ -480,24 +509,35 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Last Updated:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{lastUpdated}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {lastUpdated}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Hazard Area:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{hazard_area}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {hazard_area}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Description:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{hazard_type}</span>
+          <span style={{ width: "100%", textAlign: "center" }}>
+            {hazard_type}
+          </span>
         </div>
 
         <div className="horizontal-container">
           <span className="item-details-identifier">Image:</span>
           <div style={{ width: "100%", textAlign: "center" }}>
             {image_url ? (
-              <a href={image_url} target="_blank" rel="noreferrer" title="Open image">
+              <a
+                href={image_url}
+                target="_blank"
+                rel="noreferrer"
+                title="Open image"
+              >
                 <FontAwesomeIcon icon={faUpRightFromSquare} /> Open
               </a>
             ) : (
@@ -523,8 +563,14 @@ export const ViewHazardModal: React.FC<ViewProps> = ({
             <img
               src={image_url}
               alt="hazard"
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-              onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
+              onError={(e) =>
+                ((e.target as HTMLImageElement).style.display = "none")
+              }
             />
           ) : (
             <div style={{ color: "#888" }}>
@@ -661,7 +707,7 @@ export const EditHazardModal: React.FC<EditProps> = ({
           finalImageUrl = await uploadHazardImage(file);
         } catch (err: any) {
           const proceed = confirm(
-            `Image upload failed.\n\n${err?.message || err}\n\nDo you want to save the changes without updating the image?`
+            `Image upload failed.\n\n${err?.message || err}\n\nDo you want to save the changes without updating the image?`,
           );
           if (!proceed) {
             setIsSubmitting(false);
@@ -672,7 +718,7 @@ export const EditHazardModal: React.FC<EditProps> = ({
       }
 
       await handleEditRecord(id, {
-        hazard_area: lguName,           // backend resolves to lgu_id
+        hazard_area: lguName, // backend resolves to lgu_id
         hazard_type: form.hazard_type,
         image_url: finalImageUrl || null,
       });
@@ -713,7 +759,11 @@ export const EditHazardModal: React.FC<EditProps> = ({
   };
 
   return (
-    <Modal isOpen={isModalOpen} onClose={isSubmitting ? () => {} : closeModal} zIndex={998}>
+    <Modal
+      isOpen={isModalOpen}
+      onClose={isSubmitting ? () => {} : closeModal}
+      zIndex={998}
+    >
       <div className="modal-container" aria-busy={isSubmitting}>
         <div className="horizontal-container">
           <span className="details-title">Update Hazard</span>
@@ -753,7 +803,9 @@ export const EditHazardModal: React.FC<EditProps> = ({
                 }}
               >
                 {lguLoading ? (
-                  <div style={{ padding: "8px 12px", color: "#888" }}>Searching…</div>
+                  <div style={{ padding: "8px 12px", color: "#888" }}>
+                    Searching…
+                  </div>
                 ) : (
                   lguOptions.map((opt) => (
                     <div
@@ -814,7 +866,11 @@ export const EditHazardModal: React.FC<EditProps> = ({
             <img
               src={preview}
               alt="preview"
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
             />
           ) : (
             <div style={{ color: "#888" }}>
@@ -825,7 +881,10 @@ export const EditHazardModal: React.FC<EditProps> = ({
 
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#749AB6", opacity: isSubmitting ? 0.6 : 1 }}
+            style={{
+              backgroundColor: "#749AB6",
+              opacity: isSubmitting ? 0.6 : 1,
+            }}
             onClick={onSubmit}
             disabled={isSubmitting}
           >

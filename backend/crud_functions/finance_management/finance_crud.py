@@ -6,7 +6,7 @@ from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, case, literal, and_
 from crud_functions.utils import uid_from_string, random_suffix
-from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocation 
+from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocation, Donation, DonationType
 from data_schemas.finance_record_schema import (
     InflowFinanceRecordCreate, 
     FinanceRecordUpdate,
@@ -49,7 +49,9 @@ class FinanceRecordCRUD:
         limit: int = 50,
         offset: int = 0,
     ) -> List[FinanceRecord]:
-        stmt = select(FinanceRecord)
+        stmt = select(FinanceRecord).outerjoin(Donation).where(
+            (Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND)
+        )
         if transaction_type:
             stmt = stmt.filter(FinanceRecord.transaction_type == transaction_type)
         if status:
@@ -62,7 +64,11 @@ class FinanceRecordCRUD:
         skip = (page - 1) * limit
         return (
             db.query(FinanceRecord)
-            .filter(FinanceRecord.transaction_type == TransactionType.INFLOW)
+            .outerjoin(Donation)
+            .filter(
+                (FinanceRecord.transaction_type == TransactionType.INFLOW) &
+                ((Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND))
+            )
             .offset(skip)
             .limit(limit)
             .all()
@@ -73,7 +79,11 @@ class FinanceRecordCRUD:
         skip = (page - 1) * limit
         return (
             db.query(FinanceRecord)
-            .filter(FinanceRecord.transaction_type == TransactionType.OUTFLOW)
+            .outerjoin(Donation)
+            .filter(
+                (FinanceRecord.transaction_type == TransactionType.OUTFLOW) &
+                ((Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND))
+            )
             .offset(skip)
             .limit(limit)
             .all()
@@ -145,7 +155,10 @@ class FinanceRecordCRUD:
         }
         """
 
-        filters = []
+        filters = [
+            # Exclude INKIND donations from all financial summaries
+            (Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND)
+        ]
 
         if start_date:
             filters.append(FinanceRecord.date >= start_date)
@@ -192,7 +205,7 @@ class FinanceRecordCRUD:
             percentage_spent.label("percentage_spent"),
         )
 
-        stmt = (base_select.where(and_(*filters)) if filters else base_select) \
+        stmt = (base_select.outerjoin(Donation).where(and_(*filters)) if filters else base_select) \
             .group_by(FinanceRecord.budget_for) \
             .order_by(FinanceRecord.budget_for)
 

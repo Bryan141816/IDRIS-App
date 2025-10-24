@@ -110,44 +110,39 @@ const DonationsDashboard = () => {
   }, []);
 
   // =======================================> FUNDING PROPOSALS
-  const fundingProposalsLimit = 4;
+  const fundingProposalsLimit = 8;
   const [fundingProposals, setFundingProposals] = useState<FundingProposalInterface[]>([]);
-  const [fundingProposalsPage, setFundingProposalsPage] = useState<number>(1);
-  const [fundingProposalMaxPage, setFundingProposalMaxPage] = useState<number>(1);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     async function fetchFundingProposals() {
       try {
-        const proposals = await getFundingProposals(fundingProposalsLimit, fundingProposalsPage);
+        const proposals = await getFundingProposals(fundingProposalsLimit, 1);
         const records: FundingProposalInterface[] = proposals?.records ?? [];
-        const maxPage: number = proposals?.max_page ?? 1;
 
         if (records.length === 0) {
           // Use dummy programs and lock pagination to 1 page
           setFundingProposals(sampleFundingProposals);
-          setFundingProposalMaxPage(1);
         } else {
           setFundingProposals(records);
-          setFundingProposalMaxPage(Math.max(maxPage, 1));
         }
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
         setFundingProposals(sampleFundingProposals); // fallback to dummy on error
-        setFundingProposalMaxPage(1);
       } finally {
         setLoading(false);
       }
     }
 
     fetchFundingProposals();
-  }, [fundingProposalsPage]);
+  }, []);
 
-  const handleFundingProposalPage = (direct: "prev" | "next") => {
-    setFundingProposalsPage((prevPage) =>
-      direct === "prev"
-        ? Math.max(prevPage - 1, 1)
-        : Math.min(prevPage + 1, fundingProposalMaxPage)
-    );
+  const handleNavigation = (direction: "prev" | "next") => {
+    if (direction === "prev") {
+      setCurrentIndex((prevIndex) => (prevIndex === 0 ? fundingProposals.length - 1 : prevIndex - 1));
+    } else {
+      setCurrentIndex((prevIndex) => (prevIndex === fundingProposals.length - 1 ? 0 : prevIndex + 1));
+    }
   };
 
   // =======================================> Helpers
@@ -239,55 +234,55 @@ const DonationsDashboard = () => {
             <DashboardPieChart />
           </div>
 
-                  {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
-        <div id="funding-proposals">
-          <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
-            <div className="title-child">
-              <h3>Recent Programs</h3>
+          {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
+          <div id="funding-proposals">
+            <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
+              <div className="title-child">
+                <h3>Recent Programs</h3>
+              </div>
+              {isAdmin && (
+                <Link to="/donations_management/funding_proposals">
+                  <div className="icon-container">
+                    <MenuDots className="menu-icon" />
+                    Manage
+                  </div>
+                </Link>
+              )}
             </div>
-            {isAdmin && (
-              <Link to="/donations_management/funding_proposals">
-                <div className="icon-container">
-                  <MenuDots className="menu-icon" />
-                  Manage
-                </div>
-              </Link>
+
+            {fundingProposals.length > 0 && (
+              <FundingCard
+                key={currentIndex}
+                image={fundingProposals[currentIndex].image}
+                message={fundingProposals[currentIndex].description}
+                donated={fundingProposals[currentIndex].total_donated}
+                target={fundingProposals[currentIndex].budget_required}
+                anchorLink={""}
+                funding_id={fundingProposals[currentIndex].funding_id}
+                className="funding-item"
+              />
             )}
+            <div id="funding-proposal-page-control" className="page-contorol">
+              <button
+                className="prev-page"
+                onClick={() => handleNavigation("prev")}
+                disabled={fundingProposals.length <= 1}
+              >
+                Previous
+              </button>
+              <p>
+                {currentIndex + 1}/{fundingProposals.length}
+              </p>
+              <button
+                className="next-page"
+                onClick={() => handleNavigation("next")}
+                disabled={fundingProposals.length <= 1}
+              >
+                Next
+              </button>
+            </div>
+
           </div>
-
-          {fundingProposals.map((funding, index) => (
-            <FundingCard
-              key={index}
-              image={funding.image}
-              message={funding.description}
-              donated={funding.total_donated}
-              target={funding.budget_required}
-              anchorLink={""}
-              funding_id={funding.funding_id}
-              className="funding-item"
-            />
-          ))}
-                  <div id="funding-proposal-page-control" className="page-contorol">
-          <button
-            className="prev-page"
-            onClick={() => handleFundingProposalPage("prev")}
-            disabled={fundingProposalsPage <= 1 || fundingProposalMaxPage <= 1}
-          >
-            Previous
-          </button>
-          <p>
-            Page: {Math.min(fundingProposalsPage, fundingProposalMaxPage)}/{fundingProposalMaxPage}
-          </p>
-          <button
-            className="next-page"
-            onClick={() => handleFundingProposalPage("next")}
-            disabled={fundingProposalsPage >= fundingProposalMaxPage || fundingProposalMaxPage <= 1}
-          >
-            Next
-          </button>
-        </div>
-
-        </div>
 
         </div>
 

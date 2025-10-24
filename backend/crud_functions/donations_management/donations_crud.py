@@ -127,18 +127,19 @@ class DonationCRUD:
             # FinanceRecord.date is a DATE in your Pydantic model; use today() to match
             finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
 
-            finance = FinanceRecord(
-                # let DB default or your model factory generate if possible; otherwise:
-                finance_id=uid_from_string(f"DON{random_suffix(8)}"),
-                counterparty=donor_name,
-                transaction_type=TransactionType.INFLOW,
-                amount=amount_for_finance,    # Decimal
-                date=finance_date,            # date, not datetime
-                description=desc_for_finance,
-                status=RecordStatus.PENDING,
-                budget_for=BudgetAllocation.DONATIONS,
-            )
-            db.add(finance)
+            if donation_type != DonationType.INKIND:
+                finance = FinanceRecord(
+                    # let DB default or your model factory generate if possible; otherwise:
+                    finance_id=uid_from_string(f"DON{random_suffix(8)}"),
+                    counterparty=donor_name,
+                    transaction_type=TransactionType.INFLOW,
+                    amount=amount_for_finance,    # Decimal
+                    date=finance_date,            # date, not datetime
+                    description=desc_for_finance,
+                    status=RecordStatus.PENDING,
+                    budget_for=BudgetAllocation.DONATIONS,
+                )
+                db.add(finance)
 
             # --- Commit all together ---
             db.commit()
@@ -240,17 +241,18 @@ class DonationCRUD:
             donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
 
         finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
-        finance = FinanceRecord(
-            finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
-            counterparty=donor_name,
-            transaction_type=TransactionType.INFLOW,
-            amount=amount_for_finance,
-            date=finance_date,
-            description=desc_for_finance,
-            status=RecordStatus.PENDING,
-            budget_for=BudgetAllocation.DONATIONS,
-        )
-        db.add(finance)
+        if donation_type != DonationType.INKIND:
+            finance = FinanceRecord(
+                finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
+                counterparty=donor_name,
+                transaction_type=TransactionType.INFLOW,
+                amount=amount_for_finance,
+                date=finance_date,
+                description=desc_for_finance,
+                status=RecordStatus.PENDING,
+                budget_for=BudgetAllocation.DONATIONS,
+            )
+            db.add(finance)
 
         db.commit()
         db.refresh(donation)

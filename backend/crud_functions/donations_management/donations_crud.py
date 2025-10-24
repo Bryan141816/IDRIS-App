@@ -95,9 +95,7 @@ class DonationCRUD:
             else:
                 item_desc = getattr(donation_data, "item_description", None) \
                             or getattr(donation_data, "description", None)
-                est_val = getattr(donation_data, "estimated_value", None)
-                if est_val is None:
-                    est_val = getattr(donation_data, "amount", None)  # legacy fallback
+                est_val = getattr(donation_data, "estimated_value", None) or getattr(donation_data, "amount", None)
 
                 inkind = Donation_InKind(
                     donation_id=donation.donation_id,
@@ -107,7 +105,7 @@ class DonationCRUD:
                     quantity=getattr(donation_data, "quantity", None),
                 )
                 db.add(inkind)
-                amount_for_finance = Decimal(str(est_val or 0))
+                amount_for_finance = Decimal(str(est_val or 0)) if est_val is not None else Decimal("0")
                 desc_for_finance = f"In-kind donation: {item_desc or 'items'}"
 
             # --- Donor name (relationship if available; fallback fetch) ---
@@ -129,18 +127,19 @@ class DonationCRUD:
             # FinanceRecord.date is a DATE in your Pydantic model; use today() to match
             finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
 
-            finance = FinanceRecord(
-                # let DB default or your model factory generate if possible; otherwise:
-                finance_id=uid_from_string(f"DON{random_suffix(8)}"),
-                counterparty=donor_name,
-                transaction_type=TransactionType.INFLOW,
-                amount=amount_for_finance,    # Decimal
-                date=finance_date,            # date, not datetime
-                description=desc_for_finance,
-                status=RecordStatus.PENDING,
-                budget_for=BudgetAllocation.DONATIONS,
-            )
-            db.add(finance)
+            if donation_type != DonationType.INKIND:
+                finance = FinanceRecord(
+                    # let DB default or your model factory generate if possible; otherwise:
+                    finance_id=uid_from_string(f"DON{random_suffix(8)}"),
+                    counterparty=donor_name,
+                    transaction_type=TransactionType.INFLOW,
+                    amount=amount_for_finance,    # Decimal
+                    date=finance_date,            # date, not datetime
+                    description=desc_for_finance,
+                    status=RecordStatus.PENDING,
+                    budget_for=BudgetAllocation.DONATIONS,
+                )
+                db.add(finance)
 
             # --- Commit all together ---
             db.commit()
@@ -242,17 +241,18 @@ class DonationCRUD:
             donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
 
         finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
-        finance = FinanceRecord(
-            finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
-            counterparty=donor_name,
-            transaction_type=TransactionType.INFLOW,
-            amount=amount_for_finance,
-            date=finance_date,
-            description=desc_for_finance,
-            status=RecordStatus.PENDING,
-            budget_for=BudgetAllocation.DONATIONS,
-        )
-        db.add(finance)
+        if donation_type != DonationType.INKIND:
+            finance = FinanceRecord(
+                finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
+                counterparty=donor_name,
+                transaction_type=TransactionType.INFLOW,
+                amount=amount_for_finance,
+                date=finance_date,
+                description=desc_for_finance,
+                status=RecordStatus.PENDING,
+                budget_for=BudgetAllocation.DONATIONS,
+            )
+            db.add(finance)
 
         db.commit()
         db.refresh(donation)
@@ -423,64 +423,6 @@ class DonationCRUD:
             "retention_rate": round((retained_donors / total_prev_donors) * 100, 2) if total_prev_donors else 0.0,
         }
 
-    @staticmethod
-    def get_donations_with_details(db: Session, limit: int = 10):
-        """
-        Recent COMPLETED donations with donor name & proposal title,
-        including cash / in-kind detail pulled from related tables.
-        """
-        results = (
-            db.query(Donation)
-            .options(
-                joinedload(Donation.donor),
-                joinedload(Donation.proposal),
-                joinedload(Donation.cash),
-                joinedload(Donation.inkind),
-            )
-            .filter(Donation.status == DonationStatus.COMPLETED)
-            .order_by(Donation.donation_date.desc())
-            .limit(limit)
-            .all()
-        )
-
-        out = []
-        for d in results:
-            # Determine type; prefer explicit column but fall back to relationship presence
-            donation_type = (
-                DonationType(d.donation_type.upper()) 
-                if d.donation_type 
-                else DonationType.CASH if getattr(d, "CASH", None) else DonationType.INKIND if getattr(d, "INKIND", None) else None
-            )
-
-            # Cash details
-            cash_amount = d.cash.amount if d.cash else None
-            payment_method = d.cash.payment_method if d.cash else None
-
-            # In-kind details
-            estimated_value = d.inkind.estimated_value if d.inkind else None
-            item_description = (d.inkind.item_description or d.inkind.description) if d.inkind else None
-            quantity = d.inkind.quantity if d.inkind else None
-
-            out.append({
-                "donation_id": d.donation_id,
-                "donation_date": d.donation_date,
-                "donor_name": getattr(d.donor, "donor_name", None),
-                "funding_title": getattr(d.proposal, "title", None),
-
-                # Unified type + values
-                "donation_type": donation_type,
-                "amount": cash_amount if donation_type == DonationType.CASH else estimated_value,
-                "payment_method": payment_method if donation_type == DonationType.CASH else None,
-                "estimated_value": estimated_value if donation_type == DonationType.INKIND else None,
-                "item_description": item_description if donation_type == DonationType.INKIND else None,
-                "quantity": quantity if donation_type == DonationType.INKIND else None,
-
-                # Enums: return name if present, else raw value/string
-                "frequency": d.frequency.name if hasattr(d.frequency, "name") else d.frequency,
-                "status": d.status.name if hasattr(d.status, "name") else d.status,
-            })
-        return out  
-    
     @staticmethod
     def get_donor_aggregates(
         db: Session,

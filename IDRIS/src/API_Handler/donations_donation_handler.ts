@@ -83,14 +83,6 @@ export async function getRetentionRate(year: number = 2025): Promise<any> {
     });
 }
 
-export async function getDonationRecord(limit: number = 1): Promise<any> {
-    const response = await API.get(`/donations/recent/details`, {
-        params: { limit },
-    })
-
-    return response.data;
-}
-
 export interface DonorAggregates {
   total_cash: number;
   total_inkind: number;

@@ -153,11 +153,6 @@ def donor_retention(
     return result
 
 
-@router.get("/recent/details")
-def recent_donations(limit: int = 10, db: Session = Depends(get_db)):
-    return CRUD.get_donations_with_details(db, limit=limit)
-
-
 # helper to parse ISO strings (supports trailing Z)
 def _parse_iso(dt: Optional[str]) -> Optional[datetime]:
     if not dt:

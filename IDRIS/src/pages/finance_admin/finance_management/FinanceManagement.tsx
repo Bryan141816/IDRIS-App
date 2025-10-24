@@ -5,6 +5,7 @@ import DashboardSection from './DashboardSection';
 import InflowsSection from './InflowsSection';
 import OutflowsSection from './OutflowsSection';
 import ReportsExportSection from './ReportsExportSection';
+import DisbursementSection from './DisbursementSection';
 import {
   type InflowItem,
   type OutflowItem,
@@ -16,7 +17,7 @@ import {
   getBudgetAllocationSummary,
 } from '../../../API_Handler/finance_management_handler';
 
-type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'reports' | 'exports';
+type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'disbursement' | 'reports' | 'exports';
 
 const FinanceAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -99,6 +100,8 @@ const FinanceAdmin: React.FC = () => {
         )}
 
         {activeTab === 'exports' && <ReportsExportSection mode="exports" />}
+
+        {activeTab === 'disbursement' && <DisbursementSection mode="disbursement"/>}
       </div>
     </div>
   );

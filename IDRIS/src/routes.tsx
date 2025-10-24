@@ -426,6 +426,7 @@ export const router = createBrowserRouter([
           {
             path: "list_of_rafi_donors",
             lazy: ListOfRafiDonors,
+            handle: { allowedRoles: ["operations admin", "superadmin"] },
           },
           {
             path: "funding_proposals",

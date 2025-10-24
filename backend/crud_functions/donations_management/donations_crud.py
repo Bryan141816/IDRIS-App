@@ -95,9 +95,7 @@ class DonationCRUD:
             else:
                 item_desc = getattr(donation_data, "item_description", None) \
                             or getattr(donation_data, "description", None)
-                est_val = getattr(donation_data, "estimated_value", None)
-                if est_val is None:
-                    est_val = getattr(donation_data, "amount", None)  # legacy fallback
+                est_val = getattr(donation_data, "estimated_value", None) or getattr(donation_data, "amount", None)
 
                 inkind = Donation_InKind(
                     donation_id=donation.donation_id,
@@ -107,7 +105,7 @@ class DonationCRUD:
                     quantity=getattr(donation_data, "quantity", None),
                 )
                 db.add(inkind)
-                amount_for_finance = Decimal(str(est_val or 0))
+                amount_for_finance = Decimal(str(est_val or 0)) if est_val is not None else Decimal("0")
                 desc_for_finance = f"In-kind donation: {item_desc or 'items'}"
 
             # --- Donor name (relationship if available; fallback fetch) ---

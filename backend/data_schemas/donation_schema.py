@@ -41,7 +41,7 @@ class DonationCreate(BaseModel):
     frequency: Optional[DonationFrequency] = DonationFrequency.ONE_TIME
     donation_type: Optional[DonationType] = DonationType.CASH
 
-    amount: Decimal = Field(..., description="Required for cash donations")
+    amount: Optional[Decimal] = Field(None, description="Conditionally required for cash donations")
     description: Optional[str] = None
 
     payment_method: Optional[str] = None  # e.g., gcash, bank, etc.
@@ -54,8 +54,8 @@ class DonationCreate(BaseModel):
 
     @field_validator("amount")
     def amount_required_positive(cls, v):
-        if v is None or v <= 0:
-            raise ValueError("amount must be a positive number for cash donations.")
+        if v is not None and v <= 0:
+            raise ValueError("If provided, amount must be a positive number for cash donations.")
         return v
 
 class DonationUpdate(BaseModel):

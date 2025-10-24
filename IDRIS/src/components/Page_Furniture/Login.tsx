@@ -105,7 +105,8 @@ const Login = () => {
             break;
           default:
             backendErrorTitle = "Login Error";
-            backendErrorText = detail || "Unable to log in at this time. Please try again.";
+            backendErrorText =
+              detail || "Unable to log in at this time. Please try again.";
         }
       } else if (error.request) {
         backendErrorTitle = "Connection Error";
@@ -129,11 +130,12 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/auth/login";
+    window.location.href = "https://idris-app.onrender.com/auth/login";
   };
 
   const handleMicrosoftLogin = () => {
-    window.location.href = "http://localhost:8000/auth/microsoft/login";
+    window.location.href =
+      "https://idris-app.onrender.com/auth/microsoft/login";
   };
 
   return (

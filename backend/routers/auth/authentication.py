@@ -216,7 +216,7 @@ async def auth_callback_login(
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="Lax",
+        samesite="none",
         secure=False,
     )
 
@@ -296,43 +296,42 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
     """
     print(f"\n=== Login Attempt ===")
     print(f"Email: {form_data.email}")
-    
+
     # Step 1: Check if user exists in database
     user = get_user_by_email(db, form_data.email)
-    
+
     if not user:
         print("❌ User NOT FOUND in database")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
         )
-    
+
     print(f"✓ User found: ID={user.user_id}, Email={user.email}")
-    
+
     # Step 2: Check if account is activated
     if not user.is_activated:
         print("❌ Account NOT ACTIVATED")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account not activated. Please check your email to complete your profile."
+            detail="Account not activated. Please check your email to complete your profile.",
         )
-    
+
     print("✓ Account is activated")
-    
+
     # Step 3: Verify password
     print("Checking password...")
     from auth import verify_password
+
     is_password_correct = verify_password(form_data.password, user.hashed_password)
-    
+
     if not is_password_correct:
         print("❌ Password INCORRECT")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password"
         )
-    
+
     print("✓ Password correct!")
-    
+
     # Step 4: Create tokens
     access_token = create_access_token(data={"sub": user.email})
     refresh_token = create_refresh_token(data={"sub": user.email})
@@ -350,7 +349,6 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
     print("===================\n")
 
     return {"access_token": access_token, "token_type": "bearer", "user": user}
-
 
 
 @router.post("/refresh")
@@ -374,6 +372,7 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     new_access_token = create_access_token(data={"sub": email})
     return {"access_token": new_access_token, "token_type": "bearer"}
 
+
 @router.post("/activate_account")
 async def activate_account(
     profile_file: UploadFile | None = File(None),
@@ -388,7 +387,7 @@ async def activate_account(
 
     try:
         profile_data = json.loads(profile_info)
-        
+
         # Handle file upload
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         default_image_path = UPLOAD_DIR / "defaultProfile.webp"
@@ -405,6 +404,7 @@ async def activate_account(
             image_path = str(default_image_path).replace("\\", "/")
             if not default_image_path.exists():
                 from shutil import copyfile
+
                 bundled_default = Path("media/defaultProfile.webp")
                 copyfile(bundled_default, default_image_path)
 
@@ -424,7 +424,9 @@ async def activate_account(
             # Create new profile
             profile_db = UserProfile(
                 user_id=uid,
-                user_profile_id=uid_from_string(f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"),
+                user_profile_id=uid_from_string(
+                    f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"
+                ),
                 first_name=profile_data.get("fname"),
                 last_name=profile_data.get("lname"),
                 profile_image=image_path,
@@ -435,13 +437,13 @@ async def activate_account(
                 bio=profile_data.get("bio"),
             )
             db.add(profile_db)
-        
+
         # Activate user
         user = db.query(User).filter(User.user_id == uid).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         user.is_activated = True
-        
+
         # Commit all changes as a single transaction
         db.commit()
         db.refresh(profile_db)
@@ -453,16 +455,20 @@ async def activate_account(
                 await send_admin_profile_complete_email(user.email, user.user_id)
             except Exception as email_error:
                 # Log the error but don't fail the request
-                print(f"WARNING: Failed to send admin profile completion email to {user.email}. Error: {email_error}")
+                print(
+                    f"WARNING: Failed to send admin profile completion email to {user.email}. Error: {email_error}"
+                )
 
         return {"status": "success", "profile": profile_db.user_profile_id}
 
     except Exception as e:
         db.rollback()
         import traceback
+
         print("ERROR:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/forgot_password")
 async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):

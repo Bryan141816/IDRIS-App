@@ -28,7 +28,7 @@ function isTokenExpired(token: string) {
 }
 
 export const API = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "https://idris-app.onrender.com",
   withCredentials: true,
 });
 

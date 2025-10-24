@@ -107,16 +107,12 @@ function PageLayout() {
     location.pathname,
   );
 
-  const isPrintPage =
-    location.pathname === "/donation_report";
+  const isPrintPage = location.pathname === "/donation_report";
 
-
-  const hideNavbarRoutes = [
-    "/finance_printable",
-  ]
+  const hideNavbarRoutes = ["/finance_printable"];
 
   const shouldHideNavbar = false;
-    // isPrintPage || hideNavbarRoutes.includes(location.pathname);
+  // isPrintPage || hideNavbarRoutes.includes(location.pathname);
 
   const shouldHideLayout =
     isAuthPage ||
@@ -141,7 +137,9 @@ function PageLayout() {
   }
 
   return (
-    <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
+    <RealTimeDataProvider
+      url={`https://idris-app.onrender.com/real_time/${userId}`}
+    >
       <NotificationProvider>
         {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />

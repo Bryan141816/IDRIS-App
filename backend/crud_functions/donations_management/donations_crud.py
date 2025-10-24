@@ -424,64 +424,6 @@ class DonationCRUD:
         }
 
     @staticmethod
-    def get_donations_with_details(db: Session, limit: int = 10):
-        """
-        Recent COMPLETED donations with donor name & proposal title,
-        including cash / in-kind detail pulled from related tables.
-        """
-        results = (
-            db.query(Donation)
-            .options(
-                joinedload(Donation.donor),
-                joinedload(Donation.proposal),
-                joinedload(Donation.cash),
-                joinedload(Donation.inkind),
-            )
-            .filter(Donation.status == DonationStatus.COMPLETED)
-            .order_by(Donation.donation_date.desc())
-            .limit(limit)
-            .all()
-        )
-
-        out = []
-        for d in results:
-            # Determine type; prefer explicit column but fall back to relationship presence
-            donation_type = (
-                DonationType(d.donation_type.upper()) 
-                if d.donation_type 
-                else DonationType.CASH if getattr(d, "CASH", None) else DonationType.INKIND if getattr(d, "INKIND", None) else None
-            )
-
-            # Cash details
-            cash_amount = d.cash.amount if d.cash else None
-            payment_method = d.cash.payment_method if d.cash else None
-
-            # In-kind details
-            estimated_value = d.inkind.estimated_value if d.inkind else None
-            item_description = (d.inkind.item_description or d.inkind.description) if d.inkind else None
-            quantity = d.inkind.quantity if d.inkind else None
-
-            out.append({
-                "donation_id": d.donation_id,
-                "donation_date": d.donation_date,
-                "donor_name": getattr(d.donor, "donor_name", None),
-                "funding_title": getattr(d.proposal, "title", None),
-
-                # Unified type + values
-                "donation_type": donation_type,
-                "amount": cash_amount if donation_type == DonationType.CASH else estimated_value,
-                "payment_method": payment_method if donation_type == DonationType.CASH else None,
-                "estimated_value": estimated_value if donation_type == DonationType.INKIND else None,
-                "item_description": item_description if donation_type == DonationType.INKIND else None,
-                "quantity": quantity if donation_type == DonationType.INKIND else None,
-
-                # Enums: return name if present, else raw value/string
-                "frequency": d.frequency.name if hasattr(d.frequency, "name") else d.frequency,
-                "status": d.status.name if hasattr(d.status, "name") else d.status,
-            })
-        return out  
-    
-    @staticmethod
     def get_donor_aggregates(
         db: Session,
         donor_id: int,

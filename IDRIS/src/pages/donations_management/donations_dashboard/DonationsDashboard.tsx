@@ -16,10 +16,9 @@ import {
 import {
   getTotalDonations,
   getRetentionRate,
-  getDonationRecord,
 } from "../../../API_Handler/donations_donation_handler";
 
-import { sampleDonationRecord, sampleFundingProposals } from './dummy_data';
+import { sampleFundingProposals } from './dummy_data';
 
 export interface FundingProposalInterface {
   funding_id: number;
@@ -29,16 +28,6 @@ export interface FundingProposalInterface {
   budget_required: number;
   status: string;
   image: string;
-}
-
-export interface DonationRecordItem {
-  donor_name?: string;
-  amount?: number | string;
-  funding_title?: string;
-  donation_date?: string | Date;
-  donation_type?: string;
-  item_description?: string;
-  className?: string;
 }
 
 const DonationsDashboard = () => {
@@ -118,24 +107,6 @@ const DonationsDashboard = () => {
       }
     };
     fetchRetention();
-  }, []);
-
-  // =======================================> DONATIONS RECORDS
-  const donationsRecordsLimit = 5;
-  const [donationRecords, setDonationRecords] = useState<DonationRecordItem[]>([]); 
-  useEffect(() => {
-    const fetchDonationRecords = async () => {
-      try {
-        const response = await getDonationRecord(donationsRecordsLimit);
-        const arr = Array.isArray(response) ? response : [];
-        setDonationRecords(arr);
-      } catch (error) {
-        console.error("Failed to fetch donation records:", error);
-        setDonationRecords([]);
-      }
-    };
-
-    fetchDonationRecords();
   }, []);
 
   // =======================================> FUNDING PROPOSALS
@@ -268,75 +239,22 @@ const DonationsDashboard = () => {
             <DashboardPieChart />
           </div>
 
-          <div className="donation-record-container">
-            {/* =============== Donation Record Header with View All button =============== */}
-            <div className="donation-record-header">
-              <h3 className="public-feed-title funding-proposal-titles">Recent Donations</h3>
-              {isAdmin && (
-                <Link to="/donations_management/donation_records">
-              <button 
-                className="view-all-btn"
-                // onClick={handleViewAllDonations}
-                aria-label="View all donations"
-              >
-                <span>View All</span>
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 16 16" 
-                  fill="none" 
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="arrow-icon"
-                >
-                  <path 
-                    d="M6 12L10 8L6 4" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button> </Link>)}
-            </div>
-
-            {/* =============== Donation Record List =============== */}
-            <div id="donation-record-list">
-              {donationRecords.length > 0 ? (
-                donationRecords.map((donation, index) => (
-                  <DonationRecordCard
-                    key={index}
-                    donor_name={donation.donor_name}
-                    amount={donation.amount}
-                    funding_title={donation.funding_title}
-                    donation_date={safeParseDate(donation.donation_date)}
-                    donation_type={donation.donation_type}
-                    item_description={donation.item_description}
-                    className="donation-record"
-                  />
-                ))
-              ) : (
-                <p className="no-donations-message">No recent donations</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
-        <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
-          <div className="title-child">
-            <h3>Recent Programs</h3>
-          </div>          
-          {isAdmin && (
-            <Link to="/donations_management/funding_proposals">
-              <div className="icon-container">
-                <MenuDots className="menu-icon" />
-                Manage
-              </div>
-            </Link>
-          )}
-        </div>
-
+                  {/* =============== Recent Programs (always renders; dummy if empty) =============== */}
         <div id="funding-proposals">
+          <div id="funding-proposals-title" className="public-feed-title funding-proposal-titles">
+            <div className="title-child">
+              <h3>Recent Programs</h3>
+            </div>
+            {isAdmin && (
+              <Link to="/donations_management/funding_proposals">
+                <div className="icon-container">
+                  <MenuDots className="menu-icon" />
+                  Manage
+                </div>
+              </Link>
+            )}
+          </div>
+
           {fundingProposals.map((funding, index) => (
             <FundingCard
               key={index}
@@ -349,9 +267,7 @@ const DonationsDashboard = () => {
               className="funding-item"
             />
           ))}
-        </div>
-
-        <div id="funding-proposal-page-control" className="page-contorol">
+                  <div id="funding-proposal-page-control" className="page-contorol">
           <button
             className="prev-page"
             onClick={() => handleFundingProposalPage("prev")}
@@ -370,6 +286,11 @@ const DonationsDashboard = () => {
             Next
           </button>
         </div>
+
+        </div>
+
+        </div>
+
       </div>
     </>
   );

@@ -111,37 +111,6 @@ class InKindDonationCreate(BaseModel):
 
 # ==== Response / Read Schemas ====
 
-class DonationRecordBase(BaseModel):
-    id: int = Field(alias="donationRecordId")
-    donor_id: str
-    funding_id: Optional[str] = None
-
-    frequency: DonationFrequency
-    donation_type: Optional[DonationType] = DonationType.CASH
-
-    amount: Optional[Decimal] = None
-    description: Optional[str] = None
-    status: DonationStatus
-
-    donation_date: datetime
-
-    # In-kind fields
-    item_description: Optional[str] = None
-    estimated_value: Optional[Decimal] = None
-    quantity: Optional[str] = None
-
-    # Recurring fields
-    next_donation_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    is_active: Optional[bool] = None
-
-    payment_method: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-
-
 class DonationResponse(BaseModel):
     donation_id: str
     donor_id: str

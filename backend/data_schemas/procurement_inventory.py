@@ -4,8 +4,12 @@ from datetime import date
 
 
 class WarehouseZoneCreate(BaseModel):
+
     status: str
     zone_name: str
+    address: str
+    lat: float
+    long: float
     zone_type: str
     capacity: int
     manager: str
@@ -14,6 +18,9 @@ class WarehouseZoneCreate(BaseModel):
 class WarehouseZoneOut(BaseModel):
     warehouse_id: int
     status: str
+    address: str
+    lat: float
+    long: float
     zone_name: str
     zone_type: str
     capacity: int

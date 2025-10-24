@@ -120,11 +120,16 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
               value={formData.zone_type}
               onChange={handleChange}
             >
-              <option value="">Select type</option>
-              <option value="food storage">Food Storage</option>
-              <option value="medical supplies">Medical Supplies</option>
-              <option value="general storage">General Storage</option>
-              <option value="clothing & textiles">Clothing & Textiles</option>
+              <option value="" disabled>
+                Select Type
+              </option>
+              <option value="food storage zone">Food Storage Zone</option>
+              <option value="shelter materials zone">
+                Shelter Materials Zone
+              </option>
+              <option value="health & hygiene supplies zone">
+                Health & Hygiene Supplies Zone
+              </option>
             </select>
           </div>
           <div className="form-group">

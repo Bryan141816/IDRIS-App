@@ -34,6 +34,9 @@ class ProcurementInventoryCRUD:
         warehouse_zone = WarehouseZones(
             status=payload.status,
             zone_name=payload.zone_name,
+            address=payload.address,
+            lat=payload.lat,
+            long=payload.long,
             zone_type=payload.zone_type,
             capacity=payload.capacity,
             manager=payload.manager,

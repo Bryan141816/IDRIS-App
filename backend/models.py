@@ -153,12 +153,15 @@ class RAFIInfrastructure(Base):
     rafi_desc = Column(String(255), nullable=True)
     rafi_pic = Column(String, nullable=True)  # URL or file path
 
+
 class Hazard(Base):
     __tablename__ = "hazards_record"
 
     id = Column(Integer, primary_key=True, index=True)
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)  # <-- add
-    lgu = relationship("LGURecords")                                           # <-- add
+    lgu_id = Column(
+        Integer, ForeignKey("lgu_records.lgu_id"), nullable=False
+    )  # <-- add
+    lgu = relationship("LGURecords")  # <-- add
 
     hazard_area = Column(String(255), nullable=False)  # LGU name text
     hazard_type = Column(String, nullable=False)
@@ -187,10 +190,13 @@ class EvacuationCenter(Base):
         passive_deletes=True,
     )
 
+
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
+    id = Column(
+        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
+    )
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -217,6 +223,7 @@ class LGURecords(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
 
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
@@ -1054,6 +1061,9 @@ class WarehouseZones(Base):
     __tablename__ = "warehouse_zones"
 
     warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    address = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    long = Column(Float, nullable=False)
     status = Column(String(255), nullable=False)
     zone_name = Column(String(255), nullable=False)
 

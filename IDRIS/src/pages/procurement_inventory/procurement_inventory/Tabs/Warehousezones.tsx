@@ -4,48 +4,16 @@ import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { WarehouseZone } from "./Modals/ModalDefault";
 import { EditWarehouseZone } from "./Modals/EditWarehouseZone/EditWarehouseZoneModal";
 import { AssignStorage } from "./Modals/AssignStorage/AssignStorageModal";
-interface WarehouseZoneProps {
-  warehouse_id: number;
-  status: string;
-  zone_name: string;
-  zone_type: string;
-  capacity: number;
-  manager: string;
-}
-
-const donations = [
-  {
-    id: 1,
-    donor: "Red Cross Philippines",
-    items: "Medical Supplies",
-    quantity: 200,
-    date: "2024-05-28",
-    status: "Received",
-  },
-  {
-    id: 2,
-    donor: "Local Food Bank",
-    items: "Rice Packs",
-    quantity: 500,
-    date: "2024-05-29",
-    status: "Processing",
-  },
-  {
-    id: 3,
-    donor: "Community Center",
-    items: "Blankets",
-    quantity: 150,
-    date: "2024-05-30",
-    status: "Pending",
-  },
-];
 
 const WarehouseZoneComponent = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [warehouseZones, setWarehouseZone] = useState<WarehouseZoneProps[]>([]);
+  const [warehouseZones, setWarehouseZone] = useState<WarehouseZone[]>([]);
   const [selecteZone, setSelectedZone] = useState<WarehouseZone>({
     warehouse_id: -1,
     status: "",
+    address: "",
+    lat: -100000,
+    long: -100000,
     zone_name: "",
     zone_type: "",
     capacity: 0,
@@ -130,18 +98,30 @@ const WarehouseZoneComponent = () => {
 
             <div className="warehouse-details">
               <div className="detail-row">
-                <span>Type:</span>
+                <span>
+                  <strong>Address:</strong>
+                </span>
+                <span>{zone.address}</span>
+              </div>
+              <div className="detail-row">
+                <span>
+                  <strong>Type:</strong>
+                </span>
                 <span>{zone.zone_type}</span>
               </div>
               <div className="detail-row">
-                <span>Manager:</span>
+                <span>
+                  <strong>Manager:</strong>
+                </span>
                 <span>{zone.manager}</span>
               </div>
               <div className="detail-row">
-                <span>Capacity:</span>
+                <span>
+                  <strong>Capacity:</strong>
+                </span>
                 <span>{zone.capacity} units</span>
               </div>
-
+              {/**/}
               {/* <div className="capacity-bar"> */}
               {/*   <div */}
               {/*     className="capacity-fill" */}

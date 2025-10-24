@@ -115,12 +115,16 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
     zoom,
   }) => {
     const map = useMap();
+
     useEffect(() => {
       if (map) {
-        // Photon returns [lng, lat], Leaflet expects [lat, lng]
-        map.setView([coordinates[1], coordinates[0]], zoom, { animate: true });
+        map.flyTo([coordinates[1], coordinates[0]], zoom, {
+          animate: true,
+          duration: 1.5,
+        });
       }
     }, [coordinates, zoom, map]);
+
     return null;
   };
   useEffect(() => {

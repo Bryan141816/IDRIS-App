@@ -188,6 +188,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 9999;
 }
 
 .modalContent {
@@ -204,3 +205,27 @@
   display: flex;
   gap: 10px;
 }
+
+//adminactivate
+.uploadButton {
+    padding: 10px 20px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+
+    &:hover {
+        background: linear-gradient(140deg, #0d9668 0%, #86efac 100%);
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+

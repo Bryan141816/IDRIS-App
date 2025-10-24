@@ -89,6 +89,12 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    admin_user_profile = relationship(
+        "AdminUserProfile",
+        uselist=False,
+        back_populates="adminuser",
+        cascade="all, delete-orphan",
+    )   
     volunteers = relationship(
         "IndividualVolunteer", back_populates="user", cascade="all, delete-orphan"
     )
@@ -101,7 +107,7 @@ class User(Base):
     )
 
 
-# probably will add a email that is a foreign key to user table later
+
 class UserProfile(Base):
     __tablename__ = "user_profile"
     __random_pk_field__ = "user_profile_id"
@@ -126,6 +132,28 @@ class UserProfile(Base):
 
     # user = relationship("User", back_populates="user_profile")
 
+class AdminUserProfile(Base):
+    __tablename__ = "admin_user_profile"
+    __random_pk_field__ = "admin_user_profile_id"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    admin_user_profile_id = Column(String, primary_key=True)
+
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    employee_idNumber = Column(String(50), nullable=False, unique=True)
+    department = Column(String(100), nullable=False)
+    contact_number = Column(String(20), nullable=True)
+    position = Column(String(100), nullable=True)
+    employee_id = Column(String(300), nullable=True)  # URL or path
+    lgu_location = Column(String(255), nullable=True)
+
+    user_id = Column(
+        String, ForeignKey("users.user_id"), nullable=False, unique=True
+    )  # Foreign key to User
+
+    # Relationship
+    adminuser = relationship("User", back_populates="admin_user_profile")
 
 class Notifications(Base):
     __tablename__ = "notifications_table"

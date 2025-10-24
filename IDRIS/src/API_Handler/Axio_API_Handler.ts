@@ -1,5 +1,3 @@
-
-
 import axios from "axios";
 import { getAccessToken, setAccessToken, clearAccessToken } from "./token_store";
 
@@ -34,17 +32,38 @@ export const API = axios.create({
   withCredentials: true,
 });
 
+// ✅ List of public endpoints that don't require authentication
+const PUBLIC_ENDPOINTS = [
+  "/login",
+  "/register",
+  "/activate",
+  "/forgot_password",
+  "/reset_password",
+  "/auth/callback/login",
+  "/auth/login",
+  "/auth/register",
+  "/auth/microsoft/login",
+  "/auth/microsoft/register",
+  "/auth/microsoft/callback",
+  "/auth/callback",
+  // ✅ NEW: Admin-specific public endpoints
+  "/admin/register",
+  "/admin/verify_email",
+  "/admin/complete_profile",
+];
+
 // Attach token & refresh if needed
-
 API.interceptors.request.use(async (config) => {
-  // Check if the request is for /login or /register
-  console.log(config.url)
+  console.log("Request URL:", config.url);
 
-  const skipRefresh =
-    config.url?.includes("/login") || config.url?.includes("/register") || config.url?.includes("/activate") || config.url?.includes("/forgot_password") || config.url?.includes("/auth/callback/login");
+  // ✅ Check if the request URL matches any public endpoint
+  const skipRefresh = PUBLIC_ENDPOINTS.some((endpoint) =>
+    config.url?.includes(endpoint)
+  );
 
-  // If the request is login/register → skip token logic
+  // If the request is public → skip token logic
   if (skipRefresh) {
+    console.log("Skipping auth for public endpoint:", config.url);
     return config;
   }
 
@@ -53,13 +72,18 @@ API.interceptors.request.use(async (config) => {
   // If token expired → try refreshing
   if (token === "" || isTokenExpired(token)) {
     try {
+      console.log("Token expired or missing, refreshing...");
       const res = await axios.post("http://localhost:8000/refresh", null, {
         withCredentials: true,
       });
       token = res.data.access_token;
       setAccessToken(token);
+      console.log("Token refreshed successfully");
     } catch (err) {
+      console.error("Token refresh failed:", err);
       clearAccessToken();
+      // ✅ Optional: Redirect to login on refresh failure
+      // window.location.href = "/login";
       return Promise.reject(err);
     }
   }
@@ -71,9 +95,47 @@ API.interceptors.request.use(async (config) => {
   return config;
 });
 
-
+// ✅ Response interceptor with better error handling
 API.interceptors.response.use(
   (res) => res,
-  (err) => Promise.reject(err)
-);
+  async (err) => {
+    const originalRequest = err.config;
 
+    // ✅ Handle 401 Unauthorized (token expired during request)
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        console.log("401 error, attempting token refresh...");
+        const res = await axios.post("http://localhost:8000/refresh", null, {
+          withCredentials: true,
+        });
+        const newToken = res.data.access_token;
+        setAccessToken(newToken);
+
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return API(originalRequest);
+      } catch (refreshError) {
+        console.error("Refresh failed on 401:", refreshError);
+        clearAccessToken();
+        // ✅ Redirect to login
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // ✅ Handle 403 Forbidden (account not activated)
+    if (err.response?.status === 403) {
+      console.log("403 Forbidden - Account not activated");
+      // You can handle this in your components
+    }
+
+    // ✅ Handle 404 Not Found (user doesn't exist)
+    if (err.response?.status === 404) {
+      console.log("404 Not Found - User doesn't exist");
+    }
+
+    return Promise.reject(err);
+  }
+);

@@ -260,22 +260,35 @@ class EvacuationCenterOut(BaseModel):
     occupied: int
 
 
+# ---------- Base ----------
 class HazardBase(BaseModel):
     hazard_area: str
     hazard_type: str
-    image_url: str | None = None
-    action: str | None = None
+    image_url: Optional[str] = None
+    action: Optional[str] = None
+
+# ---------- Create (LGU REQUIRED) ----------
 
 class HazardCreate(HazardBase):
-    pass
+    # Was: lgu_id: int
+    lgu_id: Optional[int] = None  # make optional or remove this line entirely
 
+# ---------- Update (all optional, including LGU) ----------
+class HazardUpdate(BaseModel):
+    lgu_id: Optional[int] = None
+    hazard_area: Optional[str] = None
+    hazard_type: Optional[str] = None
+    image_url: Optional[str] = None
+    action: Optional[str] = None
+
+# ---------- Out (include LGU + timestamps) ----------
 class HazardOut(HazardBase):
     id: int
-    last_updated: datetime | None = None
+    lgu_id: int
+    last_updated: Optional[datetime] = None
 
     class Config:
         from_attributes = True
-
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "./CreateFunding.scss";
 import Swal from "sweetalert2";
 import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
+import { getDonors } from "../../../API_Handler/donations_donors_handler";
+import { createNotification } from "../../../API_Handler/notification_handler";
 
 // Format input as currency with commas
 function formatCurrencyInput(value: string): string {
@@ -65,12 +67,43 @@ const CreateFunding: React.FC = () => {
         throw new Error("Failed to create proposal");
       }
 
-      await Swal.fire({
-        icon: "success",
-        title: "Proposal Created",
-        text: "Your funding proposal has been created successfully!",
-        confirmButtonColor: "#28a745",
-      });
+      if (notifyDonors) {
+        try {
+          const donorsResponse = await getDonors();
+          const donorIds = donorsResponse.data.map((donor: any) => donor.user_id);
+
+          const notificationPayload = {
+            title: "New Funding Proposal",
+            message: `Hi, [donor_name]! A ${title} funding has been created, visit it by clicking this notification.`,
+            url_redirect: `/donations/funding_proposals/${response.data.funding_id}`,
+            donors: donorIds,
+          };
+
+          await createNotification(notificationPayload);
+
+          await Swal.fire({
+            icon: "success",
+            title: "Proposal Created",
+            text: "Your funding proposal has been created successfully! Notifications have been sent to donors.",
+            confirmButtonColor: "#28a745",
+          });
+        } catch (error) {
+          console.error("Error sending notifications:", error);
+          await Swal.fire({
+            icon: "warning",
+            title: "Proposal Created, but...",
+            text: "The funding proposal was created, but there was an error sending notifications to donors.",
+            confirmButtonColor: "#ffc107",
+          });
+        }
+      } else {
+        await Swal.fire({
+          icon: "success",
+          title: "Proposal Created",
+          text: "Your funding proposal has been created successfully!",
+          confirmButtonColor: "#28a745",
+        });
+      }
 
       Navigate(-1);
       return;

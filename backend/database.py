@@ -4,18 +4,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
+from decouple import config
 
 # Support both Docker and local development
-if os.getenv("DOCKER_ENV"):
-    # Running inside Docker
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:password@db:5432/mydatabase"
-    )
-else:
-    # Running locally - use localhost instead of 'db'
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:password@localhost:5432/mydatabase"
-    )
+DATABASE_URL = config("DATABASE_URL")
 
 # Fix postgres:// URL format for SQLAlchemy
 if DATABASE_URL.startswith("postgres://"):
@@ -79,4 +71,3 @@ def get_db():
 def create_tables():
     """Create all tables"""
     Base.metadata.create_all(bind=engine)
-

@@ -12,7 +12,7 @@ export type User = {
 };
 
 export type RequestItem = {
-  item_id: number;
+  item_id: string;
   item_name: string;
   category: string;
   quantity: number;

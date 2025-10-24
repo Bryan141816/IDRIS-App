@@ -202,7 +202,7 @@ const OutflowModal: React.FC<{
 };
 
 // ---------- Section (local rows + refresh on save) ----------
-const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = [] }) => {
+const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => void }> = ({ outflows = [], refetchData }) => {
   const [rows, setRows] = useState<OutflowItem[]>(outflows);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
@@ -294,6 +294,9 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[] }> = ({ outflows = []
         onSave={(saved) => {
           setModalOpen(false);
           upsertRow(saved as OutflowItem);
+          if (refetchData) {
+            refetchData();
+          }
         }}
       />
       <FilterModal

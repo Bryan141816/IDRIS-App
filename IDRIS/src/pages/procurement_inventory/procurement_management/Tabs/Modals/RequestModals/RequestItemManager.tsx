@@ -3,7 +3,7 @@ import { useState } from "react";
 import { formatCurrency, toTitleCase } from "../ProcurementDefaults";
 interface RequestItemManagerProp {
   onAdd: (requestItem: Omit<RequestItem, "item_id">) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
   requestItems: RequestItem[];
 }
 

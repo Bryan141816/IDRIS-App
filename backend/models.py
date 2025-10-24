@@ -386,24 +386,41 @@ class Donor(Base):
     def donor_name(self):
         if self.donor_type == "organization" and self.organization_name:
             return self.organization_name
+        elif self.user and self.user.user_profile:
+            return f"{self.user.user_profile.first_name} {self.user.user_profile.last_name}"
         elif self.user:
             return self.user.username
         return "Unknown Donor"
 
-    @donor_name.expression  # Queryable with donor_name
+    @donor_name.expression
     def donor_name(cls):
+        # Subquery to get the full name from UserProfile
+        fullname_sq = (
+            select(func.concat(UserProfile.first_name, " ", UserProfile.last_name))
+            .join(User, User.user_id == UserProfile.user_id)
+            .where(User.user_id == cls.user_id)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+
+        # Subquery to get the username as a fallback
         username_sq = (
             select(User.username)
             .where(User.user_id == cls.user_id)
             .correlate(cls)
             .scalar_subquery()
         )
-        return func.coalesce(
-            case(
-                (cls.donor_type == "organization", cls.organization_name),
-                else_=username_sq,
+
+        return case(
+            (
+                cls.donor_type == "organization",
+                func.coalesce(cls.organization_name, "Unknown Organization"),
             ),
-            literal("Unknown Donor"),
+            (
+                cls.donor_type == "individual",
+                func.coalesce(fullname_sq, username_sq, "Unknown Donor"),
+            ),
+            else_=literal("Unknown Donor"),
         )
 
 

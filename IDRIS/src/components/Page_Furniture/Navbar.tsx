@@ -152,7 +152,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 >
                   Donations Dashboard
                 </Link>
-                { userRoles.includes("operations admin") || userRoles.includes("superadmin") && 
+                { (userRoles.includes("operations admin") || userRoles.includes("superadmin")) && 
                   <Link
                     to="/donations_management/list_of_rafi_donors"
                     prefetch-link="/donations_management/list_of_rafi_donors"

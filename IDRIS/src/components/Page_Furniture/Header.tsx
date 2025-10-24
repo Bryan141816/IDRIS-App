@@ -47,16 +47,18 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
       </div>
 
       <div id="right-items">
-        <NotificationsButton userId={userId}></NotificationsButton>
-        <p id="rafi_btn">
-          {`${highestRole?.toUpperCase()}`}
-        </p>
+        <NotificationsButton></NotificationsButton>
+        <p id="rafi_btn">{`${highestRole?.toUpperCase()}`}</p>
 
         <div
           className="user-icon"
           onClick={() => toggleUserSettingsVisibility()}
         >
-          <img src={profileImage} alt="user-profile" style={{ borderRadius: "50%" }}/>
+          <img
+            src={profileImage}
+            alt="user-profile"
+            style={{ borderRadius: "50%" }}
+          />
           <CircleDot width={16} height={16} />
         </div>
 

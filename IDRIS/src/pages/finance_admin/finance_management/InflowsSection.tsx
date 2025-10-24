@@ -229,7 +229,7 @@ const InflowModal: React.FC<{
 };
 
 // ---- Section -----------------------------------------------------
-const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) => {
+const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => void }> = ({ inflows = [], refetchData }) => {
   const [rows, setRows] = useState<InflowItem[]>(inflows);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
@@ -324,9 +324,11 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[] }> = ({ inflows = [] }) 
         onClose={() => setModalOpen(false)}
         onSave={(saved) => {
           setModalOpen(false)
-          upsertRow(saved as InflowItem)
-        }
-        }
+          upsertRow(saved as InflowItem);
+          if (refetchData) {
+            refetchData();
+          }
+        }}
       />
       <FilterModal
         open={filterModalOpen}

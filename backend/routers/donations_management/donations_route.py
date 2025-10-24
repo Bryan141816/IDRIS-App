@@ -7,11 +7,17 @@ from sqlalchemy.exc import SQLAlchemyError
 from numbers import Number
 import hmac, hashlib, json
 from database import get_db
+from decouple import config
 from data_schemas.donation_schema import (
-                                          DonationCreate, DonationResponse, RecurringDonationCreate,
-                                          InKindDonationCreate, DonationHistoryResponse, PayMongoCheckoutRequest,
-                                          DonationUpdate, PaginatedDonationHistoryResponse
-                                        )
+    DonationCreate,
+    DonationResponse,
+    RecurringDonationCreate,
+    InKindDonationCreate,
+    DonationHistoryResponse,
+    PayMongoCheckoutRequest,
+    DonationUpdate,
+    PaginatedDonationHistoryResponse,
+)
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date
 from routers.role_checker import RoleChecker
@@ -19,16 +25,19 @@ from routers.role_checker import RoleChecker
 from typing import Optional, List
 from models import User
 from routers.auth.authentication import get_current_user_from_access_token
-from settings import settings
 from .helper import to_centavos, generate_donation_receipt
 
-from crud_functions.donations_management.donation_receipt_crud import get_donation_receipt_data
+from crud_functions.donations_management.donation_receipt_crud import (
+    get_donation_receipt_data,
+)
 from data_schemas.donation_receipt_schema import DonationReceiptSchema
 
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
+    dependencies=[
+        Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))
+    ],
 )
 
 router_user = APIRouter(
@@ -40,8 +49,13 @@ router_donor = APIRouter(
 )
 
 router_admin_or_donor = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "generic","superadmin"]))],
+    dependencies=[
+        Depends(
+            RoleChecker(["finance admin", "operations admin", "generic", "superadmin"])
+        )
+    ],
 )
+
 
 @router.post("/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
@@ -58,6 +72,7 @@ def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get
         # raise
         raise HTTPException(status_code=500, detail="Unexpected server error")
 
+
 @router.post("/one-time/create", response_model=DonationResponse)
 def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get_db)):
     try:
@@ -73,25 +88,26 @@ def create_one_time_donation(donation: DonationCreate, db: Session = Depends(get
         # raise
         raise HTTPException(status_code=500, detail="Unexpected server error")
 
+
 @router.post("/recurring/create")
 def create_recurring_donation_route(
-    donation_data: RecurringDonationCreate,
-    db: Session = Depends(get_db)
+    donation_data: RecurringDonationCreate, db: Session = Depends(get_db)
 ):
     try:
         return CRUD.create_recurring_donation(db, donation_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/donations/inkind")
 def create_inkind_donation_route(
-    donation_data: InKindDonationCreate,
-    db: Session = Depends(get_db)
+    donation_data: InKindDonationCreate, db: Session = Depends(get_db)
 ):
     try:
         return CRUD.create_inkind_donation(db, donation_data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.put("/cancel", response_model=DonationResponse)
 def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
@@ -100,12 +116,14 @@ def cancel_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.put("/completed", response_model=DonationResponse)
 def complete_donation(request: DonationUpdate, db: Session = Depends(get_db)):
     try:
         return CRUD.completed_donation_status(db, request.donation_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.put("/failed", response_model=DonationResponse)
 def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
@@ -118,22 +136,27 @@ def fail_donation(request: DonationUpdate, db: Session = Depends(get_db)):
 @router.get("/total_donations")
 def total_donations(
     year: int = Query(..., description="Year to filter (required)"),
-    month: int | None = Query(None, ge=1, le=12, description="Month to filter (optional)"),
-    db: Session = Depends(get_db)
+    month: int | None = Query(
+        None, ge=1, le=12, description="Month to filter (optional)"
+    ),
+    db: Session = Depends(get_db),
 ):
     total = CRUD.get_total_donations(db, year, month)
-    return {
-        "total_donations": total
-    }
+    return {"total_donations": total}
+
 
 @router.get("/donors/retention")
-def donor_retention(year: int = datetime.now(timezone.utc).year, db: Session = Depends(get_db)):
+def donor_retention(
+    year: int = datetime.now(timezone.utc).year, db: Session = Depends(get_db)
+):
     result = CRUD.get_donor_retention_by_year(db, year)
     return result
+
 
 @router.get("/recent/details")
 def recent_donations(limit: int = 10, db: Session = Depends(get_db)):
     return CRUD.get_donations_with_details(db, limit=limit)
+
 
 # helper to parse ISO strings (supports trailing Z)
 def _parse_iso(dt: Optional[str]) -> Optional[datetime]:
@@ -145,6 +168,7 @@ def _parse_iso(dt: Optional[str]) -> Optional[datetime]:
         return datetime.fromisoformat(dt)
     except Exception:
         raise HTTPException(status_code=400, detail=f"Invalid datetime: {dt}")
+
 
 @router.get("/get/donor_aggregates")
 def recent_donations(
@@ -168,6 +192,7 @@ def recent_donations(
         status=status_list,
     )
 
+
 @router.get("/me", response_model=List[DonationHistoryResponse])
 def get_my_donations(
     current_user: User = Depends(get_current_user_from_access_token),
@@ -188,10 +213,9 @@ def get_my_donations(
     donor_profiles = current_user.donor_profile
 
     if not donor_profiles:
-            raise HTTPException(
-                status_code=404,
-                detail="Donor profile not found for this user."
-            )
+        raise HTTPException(
+            status_code=404, detail="Donor profile not found for this user."
+        )
 
     first_profile = donor_profiles[0]
 
@@ -211,11 +235,9 @@ def get_my_donations(
 
 @router.post("/paymongo/checkout")
 async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
-
-    if not settings.PAYMONGO_SECRET_KEY:
+    PAYMONGO_SECRET_KEY = config("PAYMONGO_SECRET_KEY")
+    if not PAYMONGO_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
-
-    PAYMONGO_SECRET_KEY = settings.PAYMONGO_SECRET_KEY
     amountPesos = to_centavos(request.amount)
     # Option A (recommended): let httpx set Basic auth for you
     payload = {
@@ -250,14 +272,17 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
             return resp.json()
         except httpx.HTTPStatusError as e:
             # forward PayMongo error body with proper status
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise HTTPException(
+                status_code=e.response.status_code, detail=e.response.text
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/paymongo/session/{session_id}")
 async def get_session_status(session_id: str):
-    secret = settings.PAYMONGO_SECRET_KEY
+    secret = config("PAYMONGO_SECRET_KEY")
+
     if not secret:
         raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
 
@@ -271,9 +296,12 @@ async def get_session_status(session_id: str):
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+            raise HTTPException(
+                status_code=e.response.status_code, detail=e.response.text
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/all", response_model=PaginatedDonationHistoryResponse)
 def get_all_donations(
@@ -296,6 +324,7 @@ def get_all_donations(
     )
     return donations
 
+
 @router.post("/paymongo/webhook")
 async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
     """Handles incoming webhooks from PayMongo."""
@@ -310,7 +339,7 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
 
     # 3. Get webhook secret from environment
     # IMPORTANT: Use a dedicated webhook secret, not your main API secret key
-    webhook_secret = settings.PAYMONGO_WEBHOOK_SECRET
+    webhook_secret = config("PAYMONGO_WEBHOOK_SECRET")
     if not webhook_secret:
         logging.error("PAYMONGO_WEBHOOK_SECRET is not set")
         raise HTTPException(status_code=500, detail="Webhook secret is not configured")
@@ -334,7 +363,7 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
         expected_signature = hmac.new(
             webhook_secret.encode(),
             msg=timestamped_payload.encode(),
-            digestmod=hashlib.sha256
+            digestmod=hashlib.sha256,
         ).hexdigest()
 
         if not hmac.compare_digest(expected_signature, paymongo_signature):
@@ -348,28 +377,38 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         event_data = json.loads(payload)
         event_type = event_data.get("data", {}).get("attributes", {}).get("type")
-        checkout_session = event_data.get("data", {}).get("attributes", {}).get("data", {})
+        checkout_session = (
+            event_data.get("data", {}).get("attributes", {}).get("data", {})
+        )
 
         # Extract checkout ID
         checkout_id = checkout_session.get("id")
         if not checkout_id:
-            return Response(status_code=200, content="Event ignored: No checkout ID found.")
+            return Response(
+                status_code=200, content="Event ignored: No checkout ID found."
+            )
 
         # Find the corresponding donation
         donation = CRUD.get_donation_by_checkout_id(db, checkout_id)
         if not donation:
             logging.warning(f"Webhook received for unknown checkout_id: {checkout_id}")
             # Return 200 to acknowledge receipt and prevent retries from PayMongo
-            return Response(status_code=200, content="Donation for checkout ID not found.")
+            return Response(
+                status_code=200, content="Donation for checkout ID not found."
+            )
 
         # Update status based on event type
         if event_type == "checkout.session.payment.paid":
             CRUD.completed_donation_status(db, donation.donation_id)
-            logging.info(f"Donation {donation.donation_id} marked as COMPLETED via webhook.")
+            logging.info(
+                f"Donation {donation.donation_id} marked as COMPLETED via webhook."
+            )
 
         elif event_type == "checkout.session.payment.failed":
             CRUD.failed_donation_status(db, donation.donation_id)
-            logging.info(f"Donation {donation.donation_id} marked as FAILED via webhook.")
+            logging.info(
+                f"Donation {donation.donation_id} marked as FAILED via webhook."
+            )
 
         else:
             logging.info(f"Ignored webhook event type: {event_type}")
@@ -377,9 +416,12 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logging.exception("Error processing PayMongo webhook payload")
         # Still return 200 to avoid PayMongo retrying on a processing error
-        return Response(status_code=200, content="Webhook processed with an internal error.")
+        return Response(
+            status_code=200, content="Webhook processed with an internal error."
+        )
 
     return Response(status_code=200, content="Webhook processed successfully.")
+
 
 @router.get("/receipt/{donation_id}", response_model=DonationReceiptSchema)
 def get_donation_receipt(donation_id: str, db: Session = Depends(get_db)):
@@ -387,6 +429,7 @@ def get_donation_receipt(donation_id: str, db: Session = Depends(get_db)):
     if not receipt_data:
         raise HTTPException(status_code=404, detail="Donation not found")
     return receipt_data
+
 
 @router.get("/{donation_id}", response_model=DonationHistoryResponse)
 def get_donation_by_id(

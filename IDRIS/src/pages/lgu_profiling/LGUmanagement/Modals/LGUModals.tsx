@@ -91,14 +91,12 @@ const formatPayload = (form: LGUForm) => ({
 const CEBU_LAT = 10.3157;
 const CEBU_LON = 123.8854;
 
-function classifyFromPhoton(osmValue?: string): "province" | "city" | "municipality" | "barangay" | "" {
+// 🔧 Only allow "city" or "municipality" guesses (ignore barangay/province-like)
+function classifyFromPhoton(osmValue?: string): "city" | "municipality" | "" {
   const v = (osmValue || "").toLowerCase();
   if (v === "city") return "city";
   if (v === "town" || v === "municipality") return "municipality";
-  // Many barangays appear as suburb, quarter, village, neighbourhood, hamlet, district
-  if (["suburb", "village", "hamlet", "neighbourhood", "neighborhood", "quarter", "district", "residential"].includes(v)) {
-    return "barangay";
-  }
+  // ignore any barangay-like (suburb, village, hamlet, district, etc.) and province-levels
   return "";
 }
 
@@ -144,14 +142,14 @@ const AutocompleteLGU: React.FC<{
     }
     setLoading(true);
     try {
-      // bias to Cebu; lang en; limit 8; include query "Cebu Philippines"
+      // bias to Cebu; lang en; limit 8
       const url = new URL("https://photon.komoot.io/api/");
       url.searchParams.set("q", term);
       url.searchParams.set("limit", "8");
       url.searchParams.set("lang", "en");
       url.searchParams.set("lat", String(CEBU_LAT));
       url.searchParams.set("lon", String(CEBU_LON));
-      // const example: photon.komoot.io/api/?q=sabang sibonga&lat=10.291054&lon=123.879071
+      // example: photon.komoot.io/api/?q=sabang sibonga&lat=10.291054&lon=123.879071
       const resp = await fetch(url.toString());
       const data: PhotonResp = await resp.json();
 
@@ -398,16 +396,13 @@ export const AddLGUModal: React.FC<addLGUModalProps> = ({
             </div>
           </div>
 
-          {/* Removed the Map with Pin component here */}
-
+          {/* Classification — only City & Municipality */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>
             <select id="classification" name="classification" required value={form.classification} onChange={handleChange}>
               <option value="" disabled>Select Classification</option>
-              <option value="province">Province</option>
               <option value="city">City</option>
               <option value="municipality">Municipality</option>
-              <option value="barangay">Barangay</option>
             </select>
           </div>
 
@@ -543,7 +538,7 @@ export const ViewLGUModal: React.FC<viewLGUModalProp> = ({
       try {
         setLoading(true);
         // in ViewLGUModal useEffect
-const res = await API.get(`/lgu_profiling/manage_lgu/lgu/${id}`);
+        const res = await API.get(`/lgu_profiling/manage_lgu/lgu/${id}`);
 
         setDetail(res.data);
       } catch (e: any) {
@@ -891,14 +886,13 @@ export const EditLGUModal: React.FC<editLGUModalProp> = ({
             </div>
           </div>
 
+          {/* Classification — only City & Municipality */}
           <div className="horizontal-container">
             <span className="item-details-identifier">Classification:</span>
             <select id="classification" name="classification" required value={form.classification} onChange={handleChange}>
               <option value="" disabled>Select Classification</option>
-              <option value="province">Province</option>
               <option value="city">City</option>
               <option value="municipality">Municipality</option>
-              <option value="barangay">Barangay</option>
             </select>
           </div>
 

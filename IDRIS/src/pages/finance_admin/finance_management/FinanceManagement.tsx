@@ -40,53 +40,39 @@ const FinanceAdmin: React.FC = () => {
 
   const [budgetData, setBudgetData] = useState<BudgetItem[]>([]);
 
+  const fetchAllData = async () => {
+    try {
+      const [inflows, outflows, summary] = await Promise.all([
+        getInflowFinanceRecords(),
+        getOutflowFinanceRecords(),
+        getBudgetAllocationSummary(),
+      ]);
+
+      if (inflows) {
+        setFundInFlows(inflows);
+      } else {
+        console.error("Invalid response format for inflows:", inflows);
+      }
+
+      if (outflows) {
+        setFundOutFlows(outflows);
+      } else {
+        console.error("Invalid response format for outflows:", outflows);
+      }
+
+      if (summary) {
+        console.log("Budget allocation:", summary);
+        setBudgetData(summary);
+      } else {
+        console.error("Invalid response format for summary:", summary);
+      }
+    } catch (error) {
+      console.error("Failed to fetch finance data:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchAllInflows = async () => {
-      try {
-        const inflows = await getInflowFinanceRecords();
-
-        if (inflows != null) {
-          setFundInFlows(inflows);
-        } else {
-          console.error("Invalid response format:", inflows);
-        }
-      } catch (error) {
-        console.error("Failed to fetch finance summary:", error);
-      }
-    };
-
-    const fetchAllOutflows = async () => {
-      try {
-        const outflows = await getOutflowFinanceRecords();
-
-        if (outflows != null) {
-          setFundOutFlows(outflows);
-        } else {
-          console.error("Invalid response format:", outflows);
-        }
-      } catch (error) {
-        console.error("Failed to fetch finance summary:", error);
-      }
-    };
-
-    const fetchFinanceSummary = async () => {
-      try {
-        const summary = await getBudgetAllocationSummary();
-
-        if (summary != null) {
-          console.log("Budget allocation:", summary);
-          setBudgetData(summary);
-        } else {
-          console.error("Invalid response format:", summary);
-        }
-      } catch (error) {
-        console.error("Failed to fetch finance summary:", error);
-      }
-    };
-    
-    fetchAllInflows();
-    fetchAllOutflows();
-    fetchFinanceSummary();
+    fetchAllData();
   }, []);
   
   return (
@@ -104,9 +90,9 @@ const FinanceAdmin: React.FC = () => {
           />
         )}
 
-        {activeTab === 'inflows' && <InflowsSection inflows={fundInflows} />}
+        {activeTab === 'inflows' && <InflowsSection inflows={fundInflows} refetchData={fetchAllData} />}
 
-        {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} />}
+        {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} refetchData={fetchAllData} />}
 
         {activeTab === 'reports' && (
           <ReportsExportSection mode="reports"/>

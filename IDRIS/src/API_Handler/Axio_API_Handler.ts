@@ -50,6 +50,7 @@ const PUBLIC_ENDPOINTS = [
   "/admin/register",
   "/admin/verify_email",
   "/admin/complete_profile",
+  "/refresh"
 ];
 
 // Attach token & refresh if needed
@@ -95,47 +96,4 @@ API.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ✅ Response interceptor with better error handling
-API.interceptors.response.use(
-  (res) => res,
-  async (err) => {
-    const originalRequest = err.config;
 
-    // ✅ Handle 401 Unauthorized (token expired during request)
-    if (err.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        console.log("401 error, attempting token refresh...");
-        const res = await axios.post("http://localhost:8000/refresh", null, {
-          withCredentials: true,
-        });
-        const newToken = res.data.access_token;
-        setAccessToken(newToken);
-
-        // Retry the original request with new token
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        return API(originalRequest);
-      } catch (refreshError) {
-        console.error("Refresh failed on 401:", refreshError);
-        clearAccessToken();
-        // ✅ Redirect to login
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      }
-    }
-
-    // ✅ Handle 403 Forbidden (account not activated)
-    if (err.response?.status === 403) {
-      console.log("403 Forbidden - Account not activated");
-      // You can handle this in your components
-    }
-
-    // ✅ Handle 404 Not Found (user doesn't exist)
-    if (err.response?.status === 404) {
-      console.log("404 Not Found - User doesn't exist");
-    }
-
-    return Promise.reject(err);
-  }
-);

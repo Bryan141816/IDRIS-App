@@ -50,6 +50,8 @@ class FundingProposalCRUD:
             budget_required=proposal_data.budgetRequired,
             status=proposal_data.status,  # string column per model
             image=str(file_path).replace("\\", "/") if file_path else None,
+            starting_date=proposal_data.starting_date,
+            end_date=proposal_data.end_date,
         )
 
         try:
@@ -218,6 +220,8 @@ class FundingProposalCRUD:
         budget_required: int,
         status: str,
         image: Optional[UploadFile],
+        starting_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> FundingProposal:
         proposal = db.query(FundingProposal).filter(FundingProposal.funding_id == funding_id).first()
         if not proposal:
@@ -243,6 +247,10 @@ class FundingProposalCRUD:
         proposal.budget_required = budget_required
         proposal.status = status
         proposal.image = filename
+        if starting_date:
+            proposal.starting_date = starting_date
+        if end_date:
+            proposal.end_date = end_date
 
         try:
             db.commit()

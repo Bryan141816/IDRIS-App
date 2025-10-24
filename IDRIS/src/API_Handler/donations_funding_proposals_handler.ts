@@ -13,6 +13,12 @@ export async function createNewDonor(formData: FormData): Promise<any> {
 
 
 export async function createFundingproposals(formData: FormData): Promise<any>{
+  if (!formData.has('starting_date')) {
+    throw new Error('starting_date is a required field');
+  }
+  if (!formData.has('end_date')) {
+    throw new Error('end_date is a required field');
+  }
   const response = await API.post('/funding_proposals/proposals/create', formData,{
     headers: {
       'Content-Type': 'multipart/form-data',
@@ -31,7 +37,7 @@ export async function getFundingProposals(search = '', limit = 4, page = 1): Pro
   return response.data;
 }
 
-export async function updateFundingProposal(id: number, data: any): Promise<any> {
+export async function updateFundingProposal(id: number, data: FormData): Promise<any> {
   const response = await API.put(`/funding_proposals/proposals/update_proposal/${id}/`, data);
   return response.data;
 }

@@ -20,6 +20,8 @@ const CreateFunding: React.FC = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [budgetRequired, setBudgetRequired] = useState("");
+  const [startingDate, setStartingDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [notifyDonors, setNotifyDonors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +58,8 @@ const CreateFunding: React.FC = () => {
     formData.append("description", description);
     formData.append("budgetRequired", plainBudget);
     formData.append("status", "pending");
+    formData.append("starting_date", startingDate);
+    formData.append("end_date", endDate);
     if (selectedFile) {
       formData.append("image", selectedFile);
     }
@@ -171,6 +175,24 @@ const CreateFunding: React.FC = () => {
   />
 </div>
 
+          <div className="cf-field cf-input">
+            <label htmlFor="starting_date">Starting Date: </label>
+            <input
+              type="date"
+              name="starting_date"
+              onChange={(e) => setStartingDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="cf-field cf-input">
+            <label htmlFor="end_date">End Date: </label>
+            <input
+              type="date"
+              name="end_date"
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+            />
+          </div>
           <div className="cf-field cf-checkbox">
             <input
               type="checkbox"

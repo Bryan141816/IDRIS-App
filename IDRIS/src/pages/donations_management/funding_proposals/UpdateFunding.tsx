@@ -21,6 +21,12 @@ const CreateFunding: React.FC = () => {
   const [budgetRequired, setBudgetRequired] = useState(
     fundingData?.target || 0,
   );
+  const [startingDate, setStartingDate] = useState(
+    fundingData?.starting_date || "",
+  );
+  const [endDate, setEndDate] = useState(
+    fundingData?.end_date || "",
+  );
   const [notifyDonors, setNotifyDonors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -71,6 +77,12 @@ const CreateFunding: React.FC = () => {
     formData.append("description", description);
     formData.append("budgetRequired", budgetRequired.toString());
     formData.append("status", "Active");
+    if (startingDate) {
+      formData.append("starting_date", startingDate);
+    }
+    if (endDate) {
+      formData.append("end_date", endDate);
+    }
 
     // Only append image if a new file was selected
     if (selectedFile) {
@@ -165,6 +177,26 @@ const CreateFunding: React.FC = () => {
                 value={budgetRequired}
                 onChange={(e) => setBudgetRequired(Number(e.target.value))}
                 required
+              />
+            </div>
+
+            <div className="text-input">
+              <label htmlFor="starting_date">Starting Date: </label>
+              <input
+                type="date"
+                name="starting_date"
+                value={startingDate}
+                onChange={(e) => setStartingDate(e.target.value)}
+              />
+            </div>
+
+            <div className="text-input">
+              <label htmlFor="end_date">End Date: </label>
+              <input
+                type="date"
+                name="end_date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
 

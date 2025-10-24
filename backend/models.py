@@ -349,6 +349,8 @@ class FundingProposal(Base):
     )
     status = Column(String(50), nullable=False)
     image = Column(String, nullable=True)
+    starting_date = Column(DateTime(timezone=True), nullable=False)
+    end_date = Column(DateTime(timezone=True), nullable=False)
 
     donations = relationship("Donation", back_populates="proposal")
 

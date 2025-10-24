@@ -17,6 +17,8 @@ interface Proposal {
   budget_required: number;
   image?: string;
   total_donated?: number;
+  starting_date?: string;
+  end_date?: string;
 }
 
 const FundingProposals = () => {
@@ -171,6 +173,8 @@ const FundingProposals = () => {
               donated={item.total_donated ?? 0}
               target={item.budget_required}
               image={item.image || undefined}
+              starting_date={item.starting_date}
+              end_date={item.end_date}
             />
           ))
         )}

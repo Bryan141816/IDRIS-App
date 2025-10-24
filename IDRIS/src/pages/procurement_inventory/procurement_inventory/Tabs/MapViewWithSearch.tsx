@@ -1,0 +1,282 @@
+import React, { useState, ChangeEvent, useEffect } from "react";
+import L, { DivIcon } from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, ZoomControl, Marker } from "react-leaflet";
+import { useMapEvent } from "react-leaflet";
+import axios from "axios";
+import Swal from "sweetalert2";
+import { useMap } from "react-leaflet";
+interface MapViewWithSearchProp {
+  onClose: () => void;
+  defaultValue: { address: string; coordinates: [number, number] };
+  onSubmit: (address: string, coordinates: [number, number]) => void;
+}
+
+interface Geometry {
+  coordinates: [number, number]; // [longitude, latitude]
+}
+
+// The properties of each feature
+interface FeatureProperties {
+  name: string;
+  city: string;
+  state: string;
+}
+
+// Each feature
+interface Feature {
+  properties: FeatureProperties;
+  geometry: Geometry;
+}
+
+const getIcon = (): DivIcon => {
+  const svgIcon = `
+    <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="16" cy="37" rx="4" ry="2" fill="rgba(0,0,0,0.2)"/>
+      <path d="M16 1C8.82 1 3 6.82 3 14C3 23 16 38 16 38S29 23 29 14C29 6.82 23.18 1 16 1Z"
+        fill="#dc3545" stroke="white" stroke-width="2"/>
+      <circle cx="16" cy="14" r="6" fill="white"/>
+      <circle cx="16" cy="14" r="3" fill="#dc3545"/>
+      <text x="16" y="18" text-anchor="middle" fill="white" font-size="8" font-weight="bold">!</text>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svgIcon,
+    className: "custom-pin-marker",
+    iconSize: [32, 40],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -38],
+  });
+};
+export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
+  onClose,
+  onSubmit,
+  defaultValue,
+}) => {
+  const [initialized, setInitialized] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
+    defaultValue.coordinates[0] !== -1000000 ? defaultValue.coordinates : null,
+  );
+  const [searchValue, setSearchValue] = useState(defaultValue.address);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [center, setCenter] = useState<[number, number]>(
+    defaultValue.coordinates[0] !== -1000000
+      ? defaultValue.coordinates
+      : [10.359353, 123.868891],
+  ); // latitude, longitude
+  const [zoom, setZoom] = useState(
+    defaultValue.coordinates[0] !== -1000000 ? 17 : 12,
+  );
+  const [recommendedLocation, setRecommendedLocation] = useState<Feature[]>([]);
+  const [searchFound, setSearchFound] = useState(false);
+
+  const ClickHandler: React.FC = () => {
+    useMapEvent("click", (e) => {
+      setMarkerPosition([e.latlng.lat, e.latlng.lng]); // ✅ only use setter
+      setSearchFound(false);
+    });
+    return null;
+  };
+  const [target, setTarget] = useState<[number, number] | null>(null);
+
+  const ReCenterMap = (center: [number, number]) => {
+    console.log(center);
+    setCenter(center);
+    setZoom(15);
+  };
+
+  useEffect(() => {
+    if (!initialized) {
+      setInitialized(true);
+      return; // skip first render
+    }
+
+    if (!target) {
+      const timer = setTimeout(() => {
+        setDebouncedSearch(searchValue);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchValue]);
+
+  const ReCenter: React.FC<{ coordinates: [number, number]; zoom: number }> = ({
+    coordinates,
+    zoom,
+  }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (map) {
+        // Photon returns [lng, lat], Leaflet expects [lat, lng]
+        map.setView([coordinates[1], coordinates[0]], zoom, { animate: true });
+      }
+    }, [coordinates, zoom, map]);
+    return null;
+  };
+  useEffect(() => {
+    if (debouncedSearch) {
+      setSearchFound(false);
+      const search = async () => {
+        try {
+          const response = await axios.get(
+            `https://photon.komoot.io/api/?q=${debouncedSearch}&lat=${center[0]}&lon=${center[1]}`,
+          );
+          setSearchFound(true);
+          setRecommendedLocation(response.data.features);
+        } catch (e: any) {
+          console.log("Error search location: " + e.message);
+        }
+      };
+      search();
+      console.log("Searching for:", debouncedSearch);
+      // Call your API or do something
+    }
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    if (target) {
+      setSearchFound(false);
+      setTarget(null);
+    }
+  }, [target]);
+
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setSearchValue(value);
+    if (value.length === 0) {
+      setSearchFound(false);
+    }
+  };
+  const handleSubmit = () => {
+    if (markerPosition) {
+      onSubmit(searchValue, markerPosition);
+      onClose();
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Opps",
+        text: "Please mark the location properly",
+      });
+    }
+  };
+  return (
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+      <div className="modal" style={{ minWidth: "fit-content" }}>
+        <div className="modal-header">
+          <h3>Select Location</h3>
+          <button className="close-btn" onClick={onClose}>
+            x
+          </button>
+        </div>
+        <div
+          className="modal-content"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "65vh",
+            width: "65vw",
+            gap: "10px",
+          }}
+        >
+          <div style={{ display: "flex", width: "100%", position: "relative" }}>
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchValue}
+              onChange={handleSearchChange}
+            />
+            {searchFound && (
+              <div
+                style={{
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  border: "1px solid #ccc",
+                  padding: "10px",
+                  position: "absolute",
+                  zIndex: 999,
+                  backgroundColor: "white",
+                  width: "100%",
+                  top: "100%",
+                }}
+              >
+                {recommendedLocation.length === 0 ? (
+                  <p>No items found.</p>
+                ) : (
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {recommendedLocation.map((feature, index) => {
+                      const { coordinates } = feature.geometry;
+                      const { name, city, state } = feature.properties;
+
+                      return (
+                        <li
+                          key={index}
+                          style={{
+                            padding: "8px",
+                            borderBottom: "1px solid #eee",
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                          onClick={() => {
+                            setSearchValue(
+                              `${name}${city ? ", " + city : ""}, ${state}`,
+                            );
+                            setTarget(coordinates);
+                          }}
+                        >
+                          <strong>{name}</strong>
+                          <span>
+                            {city ? city + ", " : ""}
+                            {state}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              height: "100%",
+              width: "100%",
+              overflow: "hidden",
+              borderRadius: "5px",
+            }}
+          >
+            <MapContainer
+              center={center}
+              zoom={zoom}
+              zoomControl={false} // disable default top-left zoom control
+              style={{ height: "100%", width: "100%" }}
+              attributionControl={false}
+            >
+              {/* ✅ Add Zoom Buttons to bottom-right */}
+              <ZoomControl position="bottomright" />
+
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+              />
+
+              <ClickHandler />
+              {markerPosition && (
+                <Marker position={markerPosition} icon={getIcon()} />
+              )}
+              {target && <ReCenter coordinates={target} zoom={17} />}
+            </MapContainer>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="secondary-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="primary-btn" onClick={handleSubmit}>
+            Select Location
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -116,7 +116,9 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
         try {
           const response = await API.post(
             "/distribution_planning/create_route",
-            data,
+            {
+              key: "value",
+            },
           );
           refreshTable();
           onClose();

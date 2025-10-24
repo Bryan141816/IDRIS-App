@@ -5,17 +5,23 @@ import {
 } from "../ModalDefault";
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
-
+import { MapViewWithSearch } from "../../MapViewWithSearch";
+import Swal from "sweetalert2";
 export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
   onClose,
   refreshData,
 }) => {
   type WarehouseZoneForm = Omit<WarehouseZone, "warehouse_id">;
 
+  const [addressSelector, setAddressSelector] = useState(false);
+
   const [formData, setFormData] = useState<WarehouseZoneForm>({
     status: "active",
     zone_name: "",
     zone_type: "",
+    address: "",
+    lat: -1000000,
+    long: -1000000,
     capacity: 0,
     manager: "",
   });
@@ -38,6 +44,17 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
     };
     callFunction();
   };
+  const handleAddressSelection = (
+    address: string,
+    coordinates: [number, number],
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      address: address,
+      lat: coordinates[0],
+      long: coordinates[1],
+    }));
+  };
 
   const AddWareHouse = async () => {
     try {
@@ -52,58 +69,86 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
     }
   };
   return (
-    <InventoryModal
-      onClose={onClose}
-      modalType="add-warehouse"
-      onSubmit={handleSubmit}
-    >
-      <div className="modal-content">
-        <h3>Create Warehouse Zone</h3>
-        <div className="form-group">
-          <label>Zone Name</label>
-          <input
-            type="text"
-            placeholder="Enter zone name"
-            name="zone_name"
-            value={formData.zone_name}
-            onChange={handleChange}
-          />
+    <>
+      {addressSelector && (
+        <MapViewWithSearch
+          onClose={() => setAddressSelector(false)}
+          defaultValue={{
+            address: formData.address,
+            coordinates: [formData.lat, formData.long],
+          }}
+          onSubmit={handleAddressSelection}
+        ></MapViewWithSearch>
+      )}
+      <InventoryModal
+        onClose={onClose}
+        modalType="add-warehouse"
+        onSubmit={handleSubmit}
+      >
+        <div className="modal-content">
+          <h3>Create Warehouse Zone</h3>
+          <div className="form-group">
+            <label>Zone Name</label>
+            <input
+              type="text"
+              placeholder="Enter zone name"
+              name="zone_name"
+              value={formData.zone_name}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label>Address</label>
+            <input
+              type="text"
+              disabled
+              placeholder="No Address has been selected yet."
+              value={formData.address}
+            />
+            <button
+              onClick={() => setAddressSelector(true)}
+              className="secondary-btn"
+              style={{ width: "100%" }}
+            >
+              Select Address
+            </button>
+          </div>
+          <div className="form-group">
+            <label>Zone Type</label>
+            <select
+              name="zone_type"
+              value={formData.zone_type}
+              onChange={handleChange}
+            >
+              <option value="">Select type</option>
+              <option value="food storage">Food Storage</option>
+              <option value="medical supplies">Medical Supplies</option>
+              <option value="general storage">General Storage</option>
+              <option value="clothing & textiles">Clothing & Textiles</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Capacity</label>
+            <input
+              type="number"
+              placeholder="Enter capacity"
+              name="capacity"
+              value={formData.capacity}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="form-group">
+            <label>Manager</label>
+            <input
+              type="text"
+              placeholder="Enter manager name"
+              name="manager"
+              value={formData.manager}
+              onChange={handleChange}
+            />
+          </div>
         </div>
-        <div className="form-group">
-          <label>Zone Type</label>
-          <select
-            name="zone_type"
-            value={formData.zone_type}
-            onChange={handleChange}
-          >
-            <option value="">Select type</option>
-            <option value="food storage">Food Storage</option>
-            <option value="medical supplies">Medical Supplies</option>
-            <option value="general storage">General Storage</option>
-            <option value="clothing & textiles">Clothing & Textiles</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Capacity</label>
-          <input
-            type="number"
-            placeholder="Enter capacity"
-            name="capacity"
-            value={formData.capacity}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="form-group">
-          <label>Manager</label>
-          <input
-            type="text"
-            placeholder="Enter manager name"
-            name="manager"
-            value={formData.manager}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
-    </InventoryModal>
+      </InventoryModal>
+    </>
   );
 };

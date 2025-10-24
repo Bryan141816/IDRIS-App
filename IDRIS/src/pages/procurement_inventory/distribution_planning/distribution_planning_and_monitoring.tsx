@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
 import { VolunteerAssignmentTab } from "./Tabs/VolunteerAssignmentTab";
 import { MovementLogsTab } from "./Tabs/MovementLogs";
+
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
 type DashboardData = {
@@ -80,7 +81,11 @@ const FinanceAdmin = () => {
 
       setDeliveryStatusData(chartData);
     } catch (e: any) {
-      console.error("Error fetching distribution planning dashboard: " + e);
+      if (e.message) {
+        console.error(
+          "Error fetching distribution planning dashboard: " + e.message,
+        );
+      }
     }
   };
   useEffect(() => {

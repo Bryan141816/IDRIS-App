@@ -6,8 +6,42 @@ import {
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
+type Warehouse = {
+  long: number;
+  lat: number;
+  status: string;
+  zone_type: string;
+  manager: string;
+  address: string;
+  warehouse_id: number;
+  zone_name: string;
+  capacity: number;
+};
+
+// Assigned storage type
+type AssignedStorage = {
+  inventory_id: number;
+  quantity: number;
+  warehouse_id: number;
+  assigned_id: number;
+  unit_occupancy: number;
+  warehouse: Warehouse;
+};
+
+// Inventory item type
+type InventoryItem = {
+  item_name: string;
+  inventory_id: number;
+  batch: string;
+  expiry: string; // or Date if parsed
+  quantity: number;
+  category: string;
+  status: string;
+  assigned_storages: AssignedStorage[];
+};
+
 interface EditInventoryModalProp extends DefaultInventoryModalProps {
-  selectedData: InventoryItemsProps | null;
+  selectedData: InventoryItem | null;
 }
 
 export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
@@ -19,6 +53,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
     return <></>;
   }
   type InventoryItemForm = Omit<InventoryItemsProps, "inventory_id">;
+
   const [addForm, setAddForm] = useState<InventoryItemForm>(selectedData);
 
   const handleChange = (
@@ -80,23 +115,27 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
               onChange={handleChange}
             />
           </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select
-              value={addForm.category}
-              name="category"
-              onChange={handleChange}
-            >
-              <option value="" disabled>
-                Select category
-              </option>
-              <option value="food item">Food Item</option>
-              <option value="hygiene & sanitation">Hygiene & Sanitation</option>
-              <option value="shelter materials">Shelter Materials</option>
-              <option value="medical supplies">Medical Supplies</option>
-              <option value="personal care items">Personal Care Items</option>
-            </select>
-          </div>
+          {selectedData.assigned_storages.length <= 0 && (
+            <div className="form-group">
+              <label>Category</label>
+              <select
+                value={addForm.category}
+                name="category"
+                onChange={handleChange}
+              >
+                <option value="" disabled>
+                  Select category
+                </option>
+                <option value="food item">Food Item</option>
+                <option value="hygiene & sanitation">
+                  Hygiene & Sanitation
+                </option>
+                <option value="shelter materials">Shelter Materials</option>
+                <option value="medical supplies">Medical Supplies</option>
+                <option value="personal care items">Personal Care Items</option>
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label>Expiry Date</label>

@@ -22,6 +22,18 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+    const total_occupancy = Math.ceil(formData.total_occupancy ?? 0);
+    if (name === "capacity" && total_occupancy > 0) {
+      const numericValue = parseInt(value); // convert string to number
+
+      if (numericValue < total_occupancy) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: total_occupancy, // use number instead of string
+        }));
+        return;
+      }
+    }
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -102,43 +114,47 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
               onChange={handleChange}
             />
           </div>
-          <div
-            className="form-group"
-            style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-          >
-            <label>Address</label>
-            <MiniMap coordinate={[formData.lat, formData.long]}></MiniMap>
-            <input
-              type="text"
-              disabled
-              placeholder="No Address has been selected yet."
-              value={formData.address}
-            />
-            <button
-              onClick={() => setAddressSelector(true)}
-              className="secondary-btn"
-              style={{ width: "100%" }}
-            >
-              Select Address
-            </button>
-          </div>
-          <div className="form-group">
-            <label>Zone Type</label>
+          {formData.total_occupancy && formData.total_occupancy <= 0 && (
+            <>
+              <div
+                className="form-group"
+                style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+              >
+                <label>Address</label>
+                <MiniMap coordinate={[formData.lat, formData.long]}></MiniMap>
+                <input
+                  type="text"
+                  disabled
+                  placeholder="No Address has been selected yet."
+                  value={formData.address}
+                />
+                <button
+                  onClick={() => setAddressSelector(true)}
+                  className="secondary-btn"
+                  style={{ width: "100%" }}
+                >
+                  Select Address
+                </button>
+              </div>
+              <div className="form-group">
+                <label>Zone Type</label>
 
-            <select
-              name="zone_type"
-              value={formData.zone_type}
-              onChange={handleChange}
-            >
-              <option value="food storage zone">Food Storage Zone</option>
-              <option value="shelter materials zone">
-                Shelter Materials Zone
-              </option>
-              <option value="health & hygiene supplies zone">
-                Health & Hygiene Supplies Zone
-              </option>
-            </select>
-          </div>
+                <select
+                  name="zone_type"
+                  value={formData.zone_type}
+                  onChange={handleChange}
+                >
+                  <option value="food storage zone">Food Storage Zone</option>
+                  <option value="shelter materials zone">
+                    Shelter Materials Zone
+                  </option>
+                  <option value="health & hygiene supplies zone">
+                    Health & Hygiene Supplies Zone
+                  </option>
+                </select>
+              </div>
+            </>
+          )}
           <div className="form-group">
             <label>Capacity</label>
             <input

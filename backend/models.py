@@ -94,7 +94,7 @@ class User(Base):
         uselist=False,
         back_populates="adminuser",
         cascade="all, delete-orphan",
-    )   
+    )
     volunteers = relationship(
         "IndividualVolunteer", back_populates="user", cascade="all, delete-orphan"
     )
@@ -105,7 +105,6 @@ class User(Base):
     procurement_request = relationship(
         "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
     )
-
 
 
 class UserProfile(Base):
@@ -132,6 +131,7 @@ class UserProfile(Base):
 
     # user = relationship("User", back_populates="user_profile")
 
+
 class AdminUserProfile(Base):
     __tablename__ = "admin_user_profile"
     __random_pk_field__ = "admin_user_profile_id"
@@ -154,6 +154,7 @@ class AdminUserProfile(Base):
 
     # Relationship
     adminuser = relationship("User", back_populates="admin_user_profile")
+
 
 class Notifications(Base):
     __tablename__ = "notifications_table"
@@ -1099,7 +1100,6 @@ class WarehouseZones(Base):
     capacity = Column(Integer, nullable=False)
     manager = Column(String(255), nullable=False)
 
-    inventory_items = relationship("InventoryItems", back_populates="warehouse")
     assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
     routes = relationship(
         "DistributionRoute",
@@ -1114,14 +1114,10 @@ class InventoryItems(Base):
     item_name = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
     category = Column(String(255), nullable=False)
-    location = Column(
-        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=True
-    )
     batch = Column(String(255), nullable=False)
     expiry = Column(Date, nullable=True)
     status = Column(String(255), nullable=False)
 
-    warehouse = relationship("WarehouseZones", back_populates="inventory_items")
     assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
     distributed_items = relationship("DistributedItems", back_populates="item_info")
 
@@ -1140,6 +1136,7 @@ class AssignedStorage(Base):
     )
 
     # Additional field
+    quantity = Column(Integer, nullable=False)
     unit_occupancy = Column(Float, nullable=False)
 
     # Relationships

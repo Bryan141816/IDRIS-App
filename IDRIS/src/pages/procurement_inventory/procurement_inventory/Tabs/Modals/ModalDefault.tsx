@@ -54,6 +54,7 @@ export interface WarehouseZone {
   zone_type: string;
   capacity: number;
   manager: string;
+  total_occupancy?: number;
 }
 
 export interface InventoryItemsProps {

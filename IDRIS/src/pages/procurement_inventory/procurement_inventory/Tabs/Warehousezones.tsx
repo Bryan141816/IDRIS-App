@@ -18,6 +18,7 @@ const WarehouseZoneComponent = () => {
     zone_type: "",
     capacity: 0,
     manager: "",
+    total_occupancy: -0,
   });
   const openModal = (
     type: string,
@@ -119,17 +120,24 @@ const WarehouseZoneComponent = () => {
                 <span>
                   <strong>Capacity:</strong>
                 </span>
-                <span>{zone.capacity} units</span>
+                <span>
+                  {zone.capacity -
+                    Math.min(
+                      Math.ceil(zone.total_occupancy ?? 0),
+                      zone.capacity,
+                    )}
+                  /{zone.capacity} units
+                </span>
               </div>
-              {/**/}
-              {/* <div className="capacity-bar"> */}
-              {/*   <div */}
-              {/*     className="capacity-fill" */}
-              {/*     style={{ */}
-              {/*       width: `${(zone.occupied / zone.capacity) * 100}%`, */}
-              {/*     }} */}
-              {/*   ></div> */}
-              {/* </div> */}
+
+              <div className="capacity-bar">
+                <div
+                  className="capacity-fill"
+                  style={{
+                    width: `${Math.min(((zone.total_occupancy ?? 0) / zone.capacity) * 100, 100)}%`,
+                  }}
+                ></div>
+              </div>
 
               <div className="warehouse-actions">
                 <button

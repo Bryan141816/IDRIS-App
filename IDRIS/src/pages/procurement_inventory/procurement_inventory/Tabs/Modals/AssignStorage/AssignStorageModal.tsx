@@ -11,16 +11,26 @@ interface WarehouseZone {
   manager: string;
 }
 
-interface InventoryItemsProps {
+type AssignedStorage = {
+  assigned_id: number;
+  inventory_id: number;
+  warehouse_id: number;
+  quantity: number;
+  unit_occupancy: number;
+  warehouse: WarehouseZone;
+};
+
+type InventoryItem = {
   inventory_id: number;
   item_name: string;
+  batch: string;
+  expiry: string; // or Date if you parse it
   quantity: number;
   category: string;
-  batch: string;
-  expiry: string;
   status: string;
-  location: WarehouseZone | null;
-}
+  assigned_storages: AssignedStorage[];
+  already_recorded?: boolean;
+};
 type AssignStorageProps = DefaultInventoryModalProps & {
   selectedData: WarehouseZone;
 };
@@ -78,9 +88,17 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
   refreshData,
   selectedData,
 }) => {
-  const [inventoryItems, setInventoryItems] = useState<InventoryItemsProps[]>(
-    [],
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [enabledInput, setEnabledInput] = useState<Record<number, boolean>>({});
+  const [assignQuantities, setAssignQuantities] = useState<
+    Record<number, number>
+  >({});
+  const [unitOccupancy, setUnitOccupancy] = useState<Record<number, number>>(
+    {},
   );
+  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
+
+  // 🔹 Fetch data
   const fetchData = async () => {
     try {
       const categoryList: Record<string, string | string[]> = {
@@ -97,51 +115,123 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         {
           params: {
             category: categoryList[selectedData.zone_type],
-            is_assigned: "false",
+            exclude_fully_assigned: true,
+            is_for_assignment: true,
           },
         },
       );
 
       return response.data;
     } catch (e: any) {
-      console.error(`Error in fetching inventory item : ${e}`);
-      return false;
+      console.error(`Error fetching inventory items: ${e}`);
+      return [];
     }
   };
+
+  useEffect(() => {
+    const handleFetch = async () => {
+      const response = await fetchData();
+      setInventoryItems(response);
+    };
+    handleFetch();
+  }, []);
+
+  useEffect(() => {
+    setIsSubmitEnabled(Object.keys(enabledInput).length > 0);
+  }, [enabledInput]);
+
   const getStockStatus = (quantity: number = 0) => {
     if (quantity < 50) return "critical";
     if (quantity < 200) return "low";
     return "good";
   };
 
-  const [enabledInput, setEnabledInput] = useState<Record<number, boolean>>({});
-  const [unitsOcupancy, setUnitOcupancy] = useState<
-    Record<number, number | string>
-  >({});
-  const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
-  useEffect(() => {
-    const handleFetch = async () => {
-      const response = await fetchData();
-      console.log(response);
+  // 🧠 Handle checkbox toggle
+  const handleIncludeItem = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    id: number,
+  ) => {
+    const checked = e.target.checked;
+    setEnabledInput((prev) => ({
+      ...prev,
+      [id]: checked,
+    }));
 
-      setInventoryItems(response);
-    };
-    handleFetch();
-  }, []);
-  useEffect(() => {
-    if (Object.keys(enabledInput).length === 0) {
-      setIsSubmitEnabled(false);
-    } else {
-      setIsSubmitEnabled(true);
+    if (!checked) {
+      setAssignQuantities((prev) => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
+      setUnitOccupancy((prev) => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
     }
-  }, [enabledInput]);
+  };
+
+  // 🎯 Handle quantity input
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.name;
+    const value = parseFloat(e.target.value) || 0;
+    const item: InventoryItem | undefined = inventoryItems.find(
+      (i) => i.inventory_id === parseInt(input),
+    );
+    if (item && value > item?.quantity) {
+      setAssignQuantities((prev) => ({
+        ...prev,
+        [input]: item.quantity,
+      }));
+    } else {
+      setAssignQuantities((prev) => ({
+        ...prev,
+        [input]: value,
+      }));
+    }
+  };
+
+  // 🎯 Handle occupancy input
+  const handleUnitOccupancyChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const input = e.target.name;
+    const value = parseFloat(e.target.value) || 0;
+    setUnitOccupancy((prev) => ({
+      ...prev,
+      [input]: value,
+    }));
+  };
+
+  // 🚀 Submit payload
   const submitData = async () => {
     try {
+      const items = Object.keys(enabledInput)
+        .filter((key) => enabledInput[Number(key)]) // only included items
+        .map((key) => {
+          const itemId = Number(key);
+          const item: InventoryItem | undefined = inventoryItems.find(
+            (i) => i.inventory_id === itemId,
+          );
+
+          const quantity = assignQuantities[itemId] || 0;
+          let occupancy = unitOccupancy[itemId] || 0;
+
+          // Auto-calculate occupancy if already_recorded
+          if (item && item.assigned_storages.length > 0) {
+            const lastAssigned = item.assigned_storages[0];
+            occupancy = occupancy = lastAssigned?.unit_occupancy * quantity;
+          }
+
+          return {
+            item_id: itemId,
+            quantity,
+            occupancy,
+          };
+        });
       const response = await API.post(
         `/procurement_inventory/assign_storage?id=${selectedData.warehouse_id}`,
-        {
-          storage: unitsOcupancy,
-        },
+        items,
       );
       refreshData();
       onClose();
@@ -150,109 +240,93 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
       console.error("Error assigning storage: " + e);
     }
   };
-  const handleIncludeItem = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    id: number,
-  ) => {
-    const checked = e.target.checked;
 
-    setEnabledInput((prev) => ({
-      ...prev,
-      [id]: checked, // true = enabled, false = disabled
-    }));
-    if (!checked) {
-      setUnitOcupancy((prev) => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
-    }
-  };
-  const handleUnitOcupancyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.name;
-    const value = parseFloat(e.target.value) ?? 0;
-
-    setUnitOcupancy((prev) => ({
-      ...prev,
-      [input]: value,
-    }));
-  };
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const submit = async () => {
-      const response = await submitData();
-    };
-    submit();
+    console.log(inventoryItems);
+    submitData();
   };
 
   return (
-    <>
-      <InventoryModal
-        onClose={onClose}
-        modalType="add-warehouse"
-        onSubmit={(e) => {
-          handleSubmit(e);
-        }}
-        isSubmitEnabled={isSubmitEnabled}
-      >
-        <div className="inventory-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Item Name</th>
-                <th>Quantity</th>
-                <th>Category</th>
-                <th>Batch</th>
-                <th>Expiry</th>
-                <th>Status</th>
-                <th>Include Item</th>
-                <th>Unit Occupancy</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventoryItems.map((item) => (
-                <tr key={item.inventory_id}>
-                  <td>{item.item_name}</td>
-                  <td>{item.quantity}</td>
-                  <td>{item.category}</td>
-
-                  <td>{item.batch}</td>
-                  <td>
-                    {item.expiry
-                      ? new Date(item.expiry).toLocaleDateString()
-                      : "N/A"}
-                  </td>
-                  <td>
-                    <span
-                      className={`status-badge ${getStockStatus(item.quantity)}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                  <td>
+    <InventoryModal
+      onClose={onClose}
+      modalType="add-warehouse"
+      onSubmit={handleSubmit}
+      isSubmitEnabled={isSubmitEnabled}
+    >
+      <div className="inventory-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Quantity</th>
+              <th>Category</th>
+              <th>Batch</th>
+              <th>Expiry</th>
+              <th>Status</th>
+              <th>Include Item</th>
+              <th>Assign Quantity</th>
+              <th>Unit Occupancy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventoryItems.map((item) => (
+              <tr key={item.inventory_id}>
+                <td>{item.item_name}</td>
+                <td>{item.quantity}</td>
+                <td>{item.category}</td>
+                <td>{item.batch}</td>
+                <td>
+                  {item.expiry
+                    ? new Date(item.expiry).toLocaleDateString()
+                    : "N/A"}
+                </td>
+                <td>
+                  <span
+                    className={`status-badge ${getStockStatus(item.quantity)}`}
+                  >
+                    {item.status}
+                  </span>
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleIncludeItem(e, item.inventory_id)}
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    disabled={!enabledInput[item.inventory_id]}
+                    required={enabledInput[item.inventory_id]}
+                    value={assignQuantities[item.inventory_id] ?? ""}
+                    name={item.inventory_id.toString()}
+                    onChange={handleQuantityChange}
+                  />
+                </td>
+                <td>
+                  {item.already_recorded ? (
                     <input
-                      type="checkbox"
-                      onChange={(e) => {
-                        handleIncludeItem(e, item.inventory_id);
-                      }}
+                      type="text"
+                      value="Will use last record value"
+                      disabled
                     />
-                  </td>
-                  <td>
+                  ) : (
                     <input
                       type="number"
                       disabled={!enabledInput[item.inventory_id]}
                       required={enabledInput[item.inventory_id]}
-                      value={unitsOcupancy[item.inventory_id] ?? ""}
+                      value={unitOccupancy[item.inventory_id] ?? ""}
                       name={item.inventory_id.toString()}
-                      onChange={handleUnitOcupancyChange}
+                      onChange={handleUnitOccupancyChange}
                     />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </InventoryModal>
-    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </InventoryModal>
   );
 };

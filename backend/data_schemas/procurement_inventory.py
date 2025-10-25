@@ -65,5 +65,7 @@ class InventoryItemUpdate(BaseModel):
     status: str
 
 
-class AssignStorage(BaseModel):
-    storage: Dict[int, int]
+class AssignZone(BaseModel):
+    item_id: int
+    quantity: int
+    occupancy: float

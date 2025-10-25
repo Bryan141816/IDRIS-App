@@ -12,7 +12,7 @@ from data_schemas.procurement_inventory import (
     WarehouseZoneOut,
     InventoryItemCreate,
     InventoryItemsOut,
-    AssignStorage,
+    AssignZone,
     AddInventoryDonationCreate,
 )
 from crud_functions.procurement_manage.procurement_inventory import (
@@ -37,15 +37,13 @@ def add_warehouse_zone(request: WarehouseZoneCreate, db: Session = Depends(get_d
     return ProcurementInventoryCRUD.create_warehouse_zone(db, request)
 
 
-@router.get(
-    "/procurement_inventory/get_warehouse_zone", response_model=List[WarehouseZoneOut]
-)
+@router.get("/procurement_inventory/get_warehouse_zone")
 def get_warehouse_zone(db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.get_all_warehouse_zones(db)
 
 
 @router.post("/procurement_inventory/assign_storage")
-def assign_storage(id: int, payload: AssignStorage, db: Session = Depends(get_db)):
+def assign_storage(id: int, payload: List[AssignZone], db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.assign_storage(db, payload, id)
 
 
@@ -70,15 +68,17 @@ def add_inventory_item_bulk(
 
 @router.get(
     "/procurement_inventory/get_inventory_item",
-    response_model=List[InventoryItemsOut],
 )
 def get_inventory_item(
     db: Session = Depends(get_db),
     category: Optional[Union[str, List[str]]] = Query(None),
-    is_assigned: Optional[str] = Query(None),
+    exclude_fully_assigned: bool = Query(False),
+    is_for_assignment: bool = Query(False),
 ):
     # 🧩 category can now be a string or a list of strings — directly from frontend
-    return ProcurementInventoryCRUD.get_all_inventory_item(db, category, is_assigned)
+    return ProcurementInventoryCRUD.get_all_inventory_item(
+        db, category, exclude_fully_assigned, is_for_assignment
+    )
 
 
 @router.post("/procurement_inventory/update_inventory_item")

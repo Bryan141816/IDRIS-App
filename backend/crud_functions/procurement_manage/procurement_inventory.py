@@ -1,9 +1,10 @@
 from data_schemas.procurement_inventory import (
+    AssignZone,
     WarehouseZoneCreate,
     WarehouseZoneOut,
     InventoryItemCreate,
     InventoryItemUpdate,
-    AssignStorage,
+    AssignZone,
     AddInventoryDonationCreate,
 )
 
@@ -49,7 +50,34 @@ class ProcurementInventoryCRUD:
 
     @staticmethod
     def get_all_warehouse_zones(db: Session):
-        return db.query(WarehouseZones).order_by(WarehouseZones.zone_name.desc()).all()
+        # Query all warehouse zones with assigned storages preloaded
+        warehouses = (
+            db.query(
+                WarehouseZones,
+                func.coalesce(
+                    func.sum(AssignedStorage.quantity * AssignedStorage.unit_occupancy),
+                    0,
+                ).label("total_occupancy"),
+            )
+            .outerjoin(
+                AssignedStorage,
+                AssignedStorage.warehouse_id == WarehouseZones.warehouse_id,
+            )
+            .group_by(WarehouseZones.warehouse_id)
+            .all()
+        )
+
+        # Merge total_occupancy into warehouse object
+        result = []
+        for warehouse, total_occupancy in warehouses:
+            # Convert to dict if needed (SQLAlchemy object -> dict)
+            warehouse_dict = {**warehouse.__dict__}
+            # Remove internal SQLAlchemy state
+            warehouse_dict.pop("_sa_instance_state", None)
+            # Add total_occupancy
+            warehouse_dict["total_occupancy"] = float(total_occupancy)
+            result.append(warehouse_dict)
+        return result
 
     @staticmethod
     def update_warehouse_zone(db: Session, payload: WarehouseZoneOut):
@@ -132,27 +160,46 @@ class ProcurementInventoryCRUD:
     def get_all_inventory_item(
         db: Session,
         filter: Optional[Union[str, List[str]]] = None,
-        is_assigned: Optional[str] = None,
+        exclude_fully_assigned: bool = False,  # toggle
+        is_for_assignment: bool = False,
     ):
+        # Start the base query
+        query = db.query(InventoryItems).order_by(InventoryItems.item_name.desc())
 
-        query = (
-            db.query(InventoryItems)
-            .options(joinedload(InventoryItems.warehouse))
-            .order_by(InventoryItems.item_name.desc())
-        )
-
+        # Filter by category if provided
         if filter:
             if isinstance(filter, list):
                 query = query.filter(InventoryItems.category.in_(filter))
             elif isinstance(filter, str):
                 query = query.filter(InventoryItems.category == filter)
-        print(is_assigned)
-        if is_assigned == "false":
 
-            query = query.filter(InventoryItems.location == None)
+        # Eager-load assigned storages and warehouses
+        query = query.options(
+            joinedload(InventoryItems.assigned_storages).joinedload(
+                AssignedStorage.warehouse
+            )
+        )
 
-        items = query.all()
-        return items
+        # Fetch all items first
+        all_items = query.all()
+
+        if exclude_fully_assigned:
+            # Compute remaining quantity and filter
+            filtered_items = []
+            for item in all_items:
+                total_assigned = sum(
+                    storage.quantity for storage in item.assigned_storages
+                )
+                remaining_quantity = item.quantity - total_assigned
+                item.quantity = remaining_quantity
+                if len(item.assigned_storages) > 0:
+                    item.already_recorded = True
+
+                if remaining_quantity > 0:
+                    filtered_items.append(item)
+            return filtered_items
+
+        return all_items
 
     @staticmethod
     def update_inventory_item(db: Session, payload: InventoryItemUpdate):
@@ -174,18 +221,29 @@ class ProcurementInventoryCRUD:
         return inventory
 
     @staticmethod
-    def assign_storage(db: Session, payload: AssignStorage, id: int):
-        assign = [
-            AssignedStorage(warehouse_id=id, inventory_id=key, unit_occupancy=value)
-            for key, value in payload.storage.items()
-        ]
-        db.bulk_save_objects(assign)
-        for key, value in payload.storage.items():
-            db.query(InventoryItems).filter(InventoryItems.inventory_id == key).update(
-                {"location": id}
+    def assign_storage(db: Session, payload: List[AssignZone], id: int):
+        assignments = []
+
+        for item in payload:
+            print(item.quantity)
+            if item.quantity > 0:
+                unit_occupancy = item.occupancy / item.quantity
+            else:
+                unit_occupancy = 0
+            assignments.append(
+                AssignedStorage(
+                    warehouse_id=id,
+                    inventory_id=item.item_id,
+                    quantity=item.quantity,
+                    unit_occupancy=unit_occupancy,
+                )
             )
+
+        # 6️⃣ Save all assignments
+        db.bulk_save_objects(assignments)
         db.commit()
-        return {"message": "All items inserted"}
+
+        return {"message": "All items inserted successfully"}
 
     @staticmethod
     def get_all_inkind(db: Session):

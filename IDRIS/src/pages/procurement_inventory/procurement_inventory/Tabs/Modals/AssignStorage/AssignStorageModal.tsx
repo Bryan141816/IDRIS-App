@@ -2,6 +2,7 @@ import { DefaultInventoryModalProps } from "../ModalDefault";
 
 import { useState, useEffect, ReactNode } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
+import Swal from "sweetalert2";
 interface WarehouseZone {
   warehouse_id: number;
   status: string;
@@ -9,6 +10,7 @@ interface WarehouseZone {
   zone_type: string;
   capacity: number;
   manager: string;
+  total_occupancy?: number;
 }
 
 type AssignedStorage = {
@@ -206,6 +208,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
   // 🚀 Submit payload
   const submitData = async () => {
     try {
+      let total_occupancy_count = 0;
       const items = Object.keys(enabledInput)
         .filter((key) => enabledInput[Number(key)]) // only included items
         .map((key) => {
@@ -222,13 +225,23 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
             const lastAssigned = item.assigned_storages[0];
             occupancy = occupancy = lastAssigned?.unit_occupancy * quantity;
           }
-
+          total_occupancy_count += occupancy;
           return {
             item_id: itemId,
             quantity,
             occupancy,
           };
         });
+      const remaining =
+        selectedData.capacity - Math.ceil(selectedData.total_occupancy ?? 0);
+      if (remaining < total_occupancy_count) {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: `Warehouse capacity is full! Available capacity is ${remaining} and your trying to add ${total_occupancy_count} more units`,
+        });
+        return;
+      }
       const response = await API.post(
         `/procurement_inventory/assign_storage?id=${selectedData.warehouse_id}`,
         items,

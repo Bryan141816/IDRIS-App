@@ -3,26 +3,40 @@ import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem"
 import { EditInventoryModal } from "./Modals/EditInventoryItemModal/EditInventoryItemModal";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
-interface WarehouseZone {
-  warehouse_id: number;
+type Warehouse = {
+  long: number;
+  lat: number;
   status: string;
-  zone_name: string;
   zone_type: string;
-  capacity: number;
   manager: string;
-}
+  address: string;
+  warehouse_id: number;
+  zone_name: string;
+  capacity: number;
+};
 
-interface InventoryItemsProps {
+// Assigned storage type
+type AssignedStorage = {
   inventory_id: number;
+  quantity: number;
+  warehouse_id: number;
+  assigned_id: number;
+  unit_occupancy: number;
+  warehouse: Warehouse;
+};
+
+// Inventory item type
+type InventoryItem = {
   item_name: string;
+  inventory_id: number;
+  batch: string;
+  expiry: string; // or Date if parsed
   quantity: number;
   category: string;
-  batch: string;
-  expiry: string;
   status: string;
-  location: number;
-  warehouse: WarehouseZone;
-}
+  assigned_storages: AssignedStorage[];
+};
+
 const getStockStatus = (quantity: number = 0) => {
   if (quantity < 50) return "critical";
   if (quantity < 200) return "low";
@@ -31,13 +45,9 @@ const getStockStatus = (quantity: number = 0) => {
 
 const InventoryItems = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItemsProps[]>(
-    [],
-  );
-  const [selectedItem, setSelectedItem] = useState<InventoryItemsProps | null>(
-    null,
-  );
-  const openModal = (name: string, item: InventoryItemsProps | null = null) => {
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const openModal = (name: string, item: InventoryItem | null = null) => {
     setActiveModal(name);
     setSelectedItem(item);
   };
@@ -75,6 +85,9 @@ const InventoryItems = () => {
     };
     handleFetch();
   };
+
+  const getWarehouseNames = (assignedStorages: AssignedStorage[]): string =>
+    assignedStorages.map((s) => s.warehouse.zone_name).join(", ");
   return (
     <>
       {activeModal == "add-item" && (
@@ -129,10 +142,17 @@ const InventoryItems = () => {
                   <td>{item.item_name}</td>
                   <td>{item.quantity}</td>
                   <td>{item.category}</td>
-                  <td>
-                    {item.warehouse
-                      ? item.warehouse.zone_name
-                      : "No location assigned"}
+                  <td
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      maxWidth: "150px",
+                    }}
+                  >
+                    {item.assigned_storages.length > 0
+                      ? getWarehouseNames(item.assigned_storages)
+                      : "No locations assigned"}
                   </td>
                   <td>{item.batch}</td>
                   <td>

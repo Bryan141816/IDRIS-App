@@ -146,12 +146,19 @@ const WarehouseZoneComponent = () => {
                 >
                   Edit Zone
                 </button>
-                <button
-                  className="action-btn"
-                  onClick={() => openModal("assign-storage", zone)}
-                >
-                  Assign Storage
-                </button>
+                {zone.capacity -
+                  Math.min(
+                    Math.ceil(zone.total_occupancy ?? 0),
+                    zone.capacity,
+                  ) >
+                  0 && (
+                  <button
+                    className="action-btn"
+                    onClick={() => openModal("assign-storage", zone)}
+                  >
+                    Assign Storage
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -205,7 +205,6 @@ class LGURecordsCreate(BaseModel):
     classification: str
     population: int
     contact_info: str
-    risk_level: str
     lgu_picture: Optional[str] = None
     description: Optional[str] = None
     resources: Optional[List[str]] = None
@@ -222,7 +221,6 @@ class LGURecordsUpdate(BaseModel):
     classification: Optional[str] = None
     population: Optional[int] = None
     contact_info: Optional[str] = None
-    risk_level: Optional[str] = None
     lgu_picture: Optional[str] = None
     description: Optional[str] = None
     resources: Optional[List[str]] = None
@@ -230,6 +228,7 @@ class LGURecordsUpdate(BaseModel):
     schools: Optional[List[str]] = None
     gyms: Optional[List[str]] = None
     local_suppliers: Optional[List[str]] = None
+
 
 class LGURecordsOut(BaseModel):
     id: int
@@ -239,7 +238,6 @@ class LGURecordsOut(BaseModel):
     classification: str
     population: int
     contact_info: str
-    risk_level: str
     lgu_picture: Optional[str] = None
     description: Optional[str] = None
     resources: Optional[List[str]] = None
@@ -248,6 +246,7 @@ class LGURecordsOut(BaseModel):
     gyms: Optional[List[str]] = None
     local_suppliers: Optional[List[str]] = None
 
+    risk_level: Optional[int] = None
     class Config:
         from_attributes = True
 
@@ -353,7 +352,6 @@ class LGUDetailOut(BaseModel):
     classification: str
     population: int
     contact_info: str
-    risk_level: str
     lgu_picture: Optional[str] = None  # Link to the LGU image
     description: Optional[str] = None  # Additional description
     resources: List[str] = Field(default_factory=list)

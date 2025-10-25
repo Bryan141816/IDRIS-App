@@ -263,8 +263,6 @@ class BaranggayRecords(Base):
     contact_info = Column(String(255), nullable=True)
     population = Column(JSON, nullable=True)
 
-    risk_level = Column(String(50), nullable=True)  # ✅ added back
-
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
         Integer,

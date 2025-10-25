@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
 import { EditInventoryModal } from "./Modals/EditInventoryItemModal/EditInventoryItemModal";
+import { ViewInventory } from "./Modals/ViewInventory/ViewInventory";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
 type Warehouse = {
@@ -90,6 +91,12 @@ const InventoryItems = () => {
     assignedStorages.map((s) => s.warehouse.zone_name).join(", ");
   return (
     <>
+      {activeModal == "view-item" && (
+        <ViewInventory
+          onClose={closeModal}
+          selectedData={selectedItem}
+        ></ViewInventory>
+      )}
       {activeModal == "add-item" && (
         <AddInventoryItemTab
           onClose={closeModal}

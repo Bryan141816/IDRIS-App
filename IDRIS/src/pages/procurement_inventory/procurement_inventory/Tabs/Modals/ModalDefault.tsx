@@ -6,6 +6,7 @@ interface InventoryModalProps {
   children: ReactNode;
   modalType: string;
   zIndex?: number;
+  maxWidth?: string;
 }
 
 export const InventoryModal: React.FC<InventoryModalProps> = ({
@@ -14,10 +15,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   children,
   modalType,
   zIndex = 900,
+  maxWidth = "500px",
 }) => {
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div className="modal">
+      <div className="modal" style={{ maxWidth }}>
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
             ×

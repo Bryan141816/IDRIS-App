@@ -221,29 +221,47 @@ class ProcurementInventoryCRUD:
         return inventory
 
     @staticmethod
-    def assign_storage(db: Session, payload: List[AssignZone], id: int):
-        assignments = []
+    def assign_storage(db: Session, payload: List[AssignZone], warehouse_id: int):
+        # 1️⃣ Fetch all existing assignments for this warehouse
+        existing_assignments = (
+            db.query(AssignedStorage)
+            .filter(AssignedStorage.warehouse_id == warehouse_id)
+            .all()
+        )
+
+        # Map by inventory_id for quick lookup
+        existing_map = {a.inventory_id: a for a in existing_assignments}
+
+        to_insert = []
+        to_update = []
 
         for item in payload:
-            print(item.quantity)
-            if item.quantity > 0:
-                unit_occupancy = item.occupancy / item.quantity
+            unit_occupancy = item.occupancy / item.quantity if item.quantity > 0 else 0
+
+            if item.item_id in existing_map:
+                # Update existing record
+                assignment = existing_map[item.item_id]
+                assignment.quantity = assignment.quantity + item.quantity
+
+                to_update.append(assignment)
             else:
-                unit_occupancy = 0
-            assignments.append(
-                AssignedStorage(
-                    warehouse_id=id,
+                # Create new record
+                new_assignment = AssignedStorage(
+                    warehouse_id=warehouse_id,
                     inventory_id=item.item_id,
                     quantity=item.quantity,
                     unit_occupancy=unit_occupancy,
                 )
-            )
+                to_insert.append(new_assignment)
 
-        # 6️⃣ Save all assignments
-        db.bulk_save_objects(assignments)
+        # 2️⃣ Bulk save new objects
+        if to_insert:
+            db.bulk_save_objects(to_insert)
+
+        # 3️⃣ Commit all changes (updates are tracked automatically)
         db.commit()
 
-        return {"message": "All items inserted successfully"}
+        return {"message": "All items inserted/updated successfully"}
 
     @staticmethod
     def get_all_inkind(db: Session):

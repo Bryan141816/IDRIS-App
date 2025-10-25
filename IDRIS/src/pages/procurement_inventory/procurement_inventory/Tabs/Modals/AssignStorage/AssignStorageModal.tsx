@@ -97,7 +97,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         {
           params: {
             category: categoryList[selectedData.zone_type],
-            is_assigned: false,
+            is_assigned: "false",
           },
         },
       );

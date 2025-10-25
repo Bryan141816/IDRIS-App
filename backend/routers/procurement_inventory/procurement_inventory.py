@@ -75,10 +75,10 @@ def add_inventory_item_bulk(
 def get_inventory_item(
     db: Session = Depends(get_db),
     category: Optional[Union[str, List[str]]] = Query(None),
-    is_assigned: Optional[bool] = Query(None),
+    is_assigned: Optional[str] = Query(None),
 ):
     # 🧩 category can now be a string or a list of strings — directly from frontend
-    return ProcurementInventoryCRUD.get_all_inventory_item(db, category)
+    return ProcurementInventoryCRUD.get_all_inventory_item(db, category, is_assigned)
 
 
 @router.post("/procurement_inventory/update_inventory_item")

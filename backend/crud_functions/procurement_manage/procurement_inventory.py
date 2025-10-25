@@ -132,7 +132,7 @@ class ProcurementInventoryCRUD:
     def get_all_inventory_item(
         db: Session,
         filter: Optional[Union[str, List[str]]] = None,
-        is_assigned: Optional[bool] = None,
+        is_assigned: Optional[str] = None,
     ):
 
         query = (
@@ -146,7 +146,9 @@ class ProcurementInventoryCRUD:
                 query = query.filter(InventoryItems.category.in_(filter))
             elif isinstance(filter, str):
                 query = query.filter(InventoryItems.category == filter)
-        if not is_assigned:
+        print(is_assigned)
+        if is_assigned == "false":
+
             query = query.filter(InventoryItems.location == None)
 
         items = query.all()

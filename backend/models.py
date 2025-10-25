@@ -219,21 +219,20 @@ class EvacuationCenter(Base):
         passive_deletes=True,
     )
 
-
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    id = Column(
-        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
-    )
+    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
+
+    # NEW: tie record to the account that owns it (one-to-one)
+    user_id = Column(String, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, unique=True)
+
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
     classification = Column(String(255), nullable=False)
     population = Column(Integer, nullable=False)
     contact_info = Column(String(255), nullable=False)
-    risk_level = Column(String(50), nullable=False)
-
     lgu_picture = Column(String, nullable=True)
     description = Column(Text, nullable=True)
 
@@ -244,16 +243,11 @@ class LGURecords(Base):
     local_suppliers = Column(JSON, nullable=True)
 
     baranggays = relationship("BaranggayRecords", back_populates="lgu")
+    hazards = relationship("Hazard", back_populates="lgu", cascade="all, delete-orphan", passive_deletes=True)
 
-    # NEW: hazards under this LGU
-    hazards = relationship(
-        "Hazard",
-        back_populates="lgu",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
+    __table_args__ = (
+        UniqueConstraint("user_id", name="ux_lgu_user"),  # race-safe get-or-create
     )
-
-
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
 
@@ -268,8 +262,6 @@ class BaranggayRecords(Base):
     resources = Column(JSON, nullable=True)
     contact_info = Column(String(255), nullable=True)
     population = Column(JSON, nullable=True)
-
-    risk_level = Column(String(50), nullable=True)  # ✅ added back
 
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(

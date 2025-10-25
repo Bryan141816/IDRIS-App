@@ -57,7 +57,30 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       </div>
 
       <div id="nav-links">
-        {canSeeLGU && (
+       {userRoles.includes("lgu officer") && (
+  <div className="nav-items" id="lgu-profiling">
+    <div
+      className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
+      onClick={() => toggleNav("lgu")}
+    >
+      <LGU width={14} height={14} className="sidebar-icons" />
+      <a href="#" className="non-redirect">LGU PROFILING</a>
+    </div>
+    <div className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}>
+      <Link to="/lgu_profiling/map_of_cebu" className="nav-sub-item" onClick={onClose}>
+        Map of Cebu
+      </Link>
+      <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
+        Evacuation and Shelter Management
+      </Link>
+      <Link to="/lgu_profiling/LGUofficermanagement" className="nav-sub-item" onClick={onClose}>
+        LGU Officer Management
+      </Link>
+    </div>
+  </div>
+)}
+
+        {userRoles.includes("superadmin") && (
           <div className="nav-items" id="lgu-profiling">
             <div
               className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}

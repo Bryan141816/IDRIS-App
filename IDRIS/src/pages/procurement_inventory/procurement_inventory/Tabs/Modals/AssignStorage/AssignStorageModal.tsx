@@ -41,7 +41,6 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
   zIndex = 900,
   isSubmitEnabled,
 }) => {
-  console.log(isSubmitEnabled);
   return (
     <div className="modal-overlay" style={{ zIndex }}>
       <form
@@ -84,9 +83,20 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
   );
   const fetchData = async () => {
     try {
+      const categoryList: Record<string, string | string[]> = {
+        "food storage zone": "food item",
+        "shelter materials zone": "shelter materials",
+        "health & hygiene supplies zone": [
+          "hygiene & sanitation",
+          "personal care items",
+        ],
+      };
+
       const response = await API.get(
-        "/procurement_inventory/get_inventory_item",
+        `/procurement_inventory/get_inventory_item`,
+        { params: { category: categoryList[selectedData.zone_type] } },
       );
+
       return response.data;
     } catch (e: any) {
       console.error(`Error in fetching inventory item : ${e}`);

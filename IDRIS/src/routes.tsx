@@ -82,8 +82,12 @@ const UserManagement = () =>
   import("./pages/manage_users/ManageUsers").then((m) => ({
     Component: m.default,
   }));
-
 // LGU Profiling
+const LGUofficermanagement = () =>
+  import("./pages/lgu_profiling/LGUofficer/LGUofficer").then((m) => ({
+    Component: m.default,
+  }));
+
 const MapOfCebu = () =>
   import("./pages/lgu_profiling/map_of_cebu/MapOfCebu").then((m) => ({
     Component: m.default,
@@ -315,16 +319,39 @@ export const router = createBrowserRouter([
       { path: "notifications", lazy: NotificationPage },
       { path: "oauth_callback", lazy: OauthCallback },
       {
-        path: "lgu_profiling",
-        children: [
-          { path: "map_of_cebu", lazy: MapOfCebu },
-          { path: "evacuationandshelter", lazy: EvacuationAndShelter },
-          { path: "shelter_report_dashboard", lazy: ShelterReportDashboard },
-          { path: "LGU", lazy: LGU },
-          { path: "LGUmanagement", lazy: ManageLGU },
-          { path: "LGUSeeMore/:id", lazy: LGUSeeMore },
-        ],
-      },
+  path: "lgu_profiling",
+  children: [
+    {
+      path: "map_of_cebu",
+      lazy: MapOfCebu,
+    },
+    {
+      path: "evacuationandshelter",
+      lazy: EvacuationAndShelter,
+    },
+    {
+      path: "shelter_report_dashboard",
+      lazy: ShelterReportDashboard,
+    },
+    {
+      path: "LGU",
+      lazy: LGU,
+    },
+    {
+      path: "LGUmanagement",
+      lazy: ManageLGU,
+    },
+    {
+      path: "LGUofficermanagement",  // Added this new route for LGUofficermanagement
+      lazy: LGUofficermanagement,   // Corrected lazy-loaded import path
+    },
+    {
+      path: "LGUSeeMore/:id",
+      lazy: LGUSeeMore,
+    },
+  ],
+}
+,
       {
         path: "volunteer_management",
         children: [

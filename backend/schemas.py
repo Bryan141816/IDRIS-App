@@ -347,6 +347,23 @@ class HazardBase(BaseModel):
     action: Optional[str] = None
 
 # ---------- Create (LGU REQUIRED) ----------
+class LGUDetailOut(BaseModel):
+    id: int
+    name: str
+    classification: str
+    population: int
+    contact_info: str
+    risk_level: str
+    lgu_picture: Optional[str] = None  # Link to the LGU image
+    description: Optional[str] = None  # Additional description
+    resources: List[str] = Field(default_factory=list)
+    players: List[str] = Field(default_factory=list)
+    schools: List[str] = Field(default_factory=list)
+    gyms: List[str] = Field(default_factory=list)
+    local_suppliers: List[str] = Field(default_factory=list)
+
+    class Config:
+        orm_mode = True
 
 class HazardCreate(HazardBase):
     # Was: lgu_id: int

@@ -214,7 +214,6 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
                   <th>Item Name</th>
                   <th>Quantity</th>
                   <th>Category</th>
-                  <th>Batch</th>
                   <th>Expiry</th>
                 </tr>
               </thead>
@@ -232,23 +231,23 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
                           handleChange(index, "category", e.target.value)
                         }
                       >
-                        <option value="">Select category</option>
-                        <option value="food">Food</option>
-                        <option value="medical">Medical</option>
-                        <option value="clothing">Clothing</option>
-                        <option value="beverages">Beverages</option>
+                        <option value="" disabled>
+                          Select category
+                        </option>
+                        <option value="food item">Food Item</option>
+                        <option value="hygiene & sanitation">
+                          Hygiene & Sanitation
+                        </option>
+                        <option value="shelter materials">
+                          Shelter Materials
+                        </option>
+                        <option value="medical supplies">
+                          Medical Supplies
+                        </option>
+                        <option value="personal care items">
+                          Personal Care Items
+                        </option>
                       </select>
-                    </td>
-
-                    <td>
-                      <input
-                        type="text"
-                        value={item.batch}
-                        name="batch"
-                        onChange={(e) =>
-                          handleChange(index, "batch", e.target.value)
-                        }
-                      />
                     </td>
 
                     <td>

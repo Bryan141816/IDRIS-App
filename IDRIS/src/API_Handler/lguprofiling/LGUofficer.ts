@@ -1,16 +1,25 @@
-import { API } from "../Axio_API_Handler"; 
+import { API } from "../Axio_API_Handler";
 
 export const getMyLGULocation = async (): Promise<string | null> => {
   try {
     const response = await API.get("/lgu_profiling/me/lgu_location");
     const data = response.data;
-
     return data?.lgu_location ?? null;
   } catch (e: any) {
-    if (e.message) {
-      console.error("Error fetching LGU location: " + e.message);
-    }
-    return null; 
+    console.error("Error fetching LGU location:", e?.message);
+    return null;
   }
 };
-    
+
+// ✅ make sure this is a NAMED export (not default)
+export const getLGURecordByName = async (name: string): Promise<any | null> => {
+  try {
+    const res = await API.get("/lgu_profiling/manage_lgu/find_lgu_by_name", {
+      params: { name },
+    });
+    return res.data ?? null;
+  } catch (e: any) {
+    console.error("Error fetching LGU record:", e?.message);
+    return null;
+  }
+};

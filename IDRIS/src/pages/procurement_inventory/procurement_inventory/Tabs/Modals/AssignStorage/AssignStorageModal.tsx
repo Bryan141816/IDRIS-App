@@ -18,7 +18,6 @@ type AssignedStorage = {
   inventory_id: number;
   warehouse_id: number;
   quantity: number;
-  unit_occupancy: number;
   warehouse: WarehouseZone;
 };
 
@@ -95,9 +94,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
   const [assignQuantities, setAssignQuantities] = useState<
     Record<number, number>
   >({});
-  const [unitOccupancy, setUnitOccupancy] = useState<Record<number, number>>(
-    {},
-  );
+
   const [isSubmitEnabled, setIsSubmitEnabled] = useState(false);
 
   // 🔹 Fetch data
@@ -165,11 +162,6 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         delete newState[id];
         return newState;
       });
-      setUnitOccupancy((prev) => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
     }
   };
 
@@ -193,47 +185,21 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
     }
   };
 
-  // 🎯 Handle occupancy input
-  const handleUnitOccupancyChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const input = e.target.name;
-    const value = parseFloat(e.target.value) || 0;
-    setUnitOccupancy((prev) => ({
-      ...prev,
-      [input]: value,
-    }));
-  };
-
   // 🚀 Submit payload
   const submitData = async () => {
     try {
-      let total_occupancy_count = 0;
-      const items = Object.keys(enabledInput)
-        .filter((key) => enabledInput[Number(key)]) // only included items
-        .map((key) => {
-          const itemId = Number(key);
-          const item: InventoryItem | undefined = inventoryItems.find(
-            (i) => i.inventory_id === itemId,
-          );
-
-          const quantity = assignQuantities[itemId] || 0;
-          let occupancy = unitOccupancy[itemId] || 0;
-
-          // Auto-calculate occupancy if already_recorded
-          if (item && item.assigned_storages.length > 0) {
-            const lastAssigned = item.assigned_storages[0];
-            occupancy = occupancy = lastAssigned?.unit_occupancy * quantity;
-          }
-          total_occupancy_count += occupancy;
-          return {
-            item_id: itemId,
-            quantity,
-            occupancy,
-          };
-        });
+      const formatted = Object.entries(assignQuantities).map(
+        ([key, value]) => ({
+          item_id: Number(key),
+          quantity: value,
+        }),
+      );
       const remaining =
-        selectedData.capacity - Math.ceil(selectedData.total_occupancy ?? 0);
+        selectedData.capacity - (selectedData.total_occupancy ?? 0);
+      const total_occupancy_count = formatted.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
       if (remaining < total_occupancy_count) {
         Swal.fire({
           icon: "error",
@@ -244,7 +210,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
       }
       const response = await API.post(
         `/procurement_inventory/assign_storage?id=${selectedData.warehouse_id}`,
-        items,
+        formatted,
       );
       refreshData();
       onClose();
@@ -279,7 +245,6 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
               <th>Status</th>
               <th>Include Item</th>
               <th>Assign Quantity</th>
-              <th>Unit Occupancy</th>
             </tr>
           </thead>
           <tbody>
@@ -316,24 +281,6 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
                     name={item.inventory_id.toString()}
                     onChange={handleQuantityChange}
                   />
-                </td>
-                <td>
-                  {item.already_recorded ? (
-                    <input
-                      type="text"
-                      value="Will use last record value"
-                      disabled
-                    />
-                  ) : (
-                    <input
-                      type="number"
-                      disabled={!enabledInput[item.inventory_id]}
-                      required={enabledInput[item.inventory_id]}
-                      value={unitOccupancy[item.inventory_id] ?? ""}
-                      name={item.inventory_id.toString()}
-                      onChange={handleUnitOccupancyChange}
-                    />
-                  )}
                 </td>
               </tr>
             ))}

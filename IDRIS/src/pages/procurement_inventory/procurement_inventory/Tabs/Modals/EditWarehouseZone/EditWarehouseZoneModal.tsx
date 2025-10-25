@@ -114,7 +114,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
               onChange={handleChange}
             />
           </div>
-          {formData.total_occupancy && formData.total_occupancy <= 0 && (
+          {selectedData.total_occupancy === 0 && (
             <>
               <div
                 className="form-group"

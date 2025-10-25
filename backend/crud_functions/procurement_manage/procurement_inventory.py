@@ -51,13 +51,14 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def get_all_warehouse_zones(db: Session):
         # Query all warehouse zones with assigned storages preloaded
+
         warehouses = (
             db.query(
                 WarehouseZones,
                 func.coalesce(
-                    func.sum(AssignedStorage.quantity * AssignedStorage.unit_occupancy),
+                    func.sum(AssignedStorage.quantity),
                     0,
-                ).label("total_occupancy"),
+                ).label("total_quantity"),
             )
             .outerjoin(
                 AssignedStorage,
@@ -236,7 +237,6 @@ class ProcurementInventoryCRUD:
         to_update = []
 
         for item in payload:
-            unit_occupancy = item.occupancy / item.quantity if item.quantity > 0 else 0
 
             if item.item_id in existing_map:
                 # Update existing record
@@ -250,7 +250,6 @@ class ProcurementInventoryCRUD:
                     warehouse_id=warehouse_id,
                     inventory_id=item.item_id,
                     quantity=item.quantity,
-                    unit_occupancy=unit_occupancy,
                 )
                 to_insert.append(new_assignment)
 

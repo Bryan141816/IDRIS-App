@@ -127,11 +127,10 @@ const WarehouseZoneComponent = () => {
                   <strong>Capacity:</strong>
                 </span>
                 <span>
-                  {zone.capacity -
-                    Math.min(
-                      Math.ceil(zone.total_occupancy ?? 0),
-                      zone.capacity,
-                    )}
+                  {Math.min(
+                    Math.ceil(zone.total_occupancy ?? 0),
+                    zone.capacity,
+                  )}
                   /{zone.capacity} units
                 </span>
               </div>

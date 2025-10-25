@@ -12,7 +12,6 @@ interface AssignedStorage {
   warehouse_id: number;
   inventory_id: number;
   quantity: number;
-  unit_occupancy: number;
 }
 
 interface InventoryItem {
@@ -128,7 +127,6 @@ export const ViewWarehouse: React.FC<
                         <th>Item Name</th>
                         <th>Quantity</th>
                         <th>Category</th>
-                        <th>Unit Occupancy</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -143,15 +141,6 @@ export const ViewWarehouse: React.FC<
                           <td>{item.item_name}</td>
                           <td>{item.assigned_storages[0].quantity}</td>
                           <td>{item.category}</td>
-                          <td>
-                            {Math.min(
-                              Math.ceil(
-                                item.assigned_storages[0].quantity *
-                                  item.assigned_storages[0].unit_occupancy,
-                              ),
-                              selectedData.capacity,
-                            )}
-                          </td>
                         </tr>
                       ))}
                     </tbody>

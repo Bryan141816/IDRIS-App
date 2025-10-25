@@ -68,4 +68,3 @@ class InventoryItemUpdate(BaseModel):
 class AssignZone(BaseModel):
     item_id: int
     quantity: int
-    occupancy: float

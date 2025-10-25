@@ -1,6 +1,6 @@
 .activateFormContainer {
   display: flex;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
   min-height: 100vh;
   background: linear-gradient(120deg, #eaf6ff 40%, #c3e0fc 100%);
@@ -14,9 +14,7 @@
 // CARD remains same size
 .profileForm {
   display: flex;
-  width: 50%;
-  max-width: 480px;
-  min-width: 310px;
+  width: 40%;
   height: fit-content;
   max-height: 100%;
   background: white;
@@ -228,4 +226,3 @@
         transform: scale(0.98);
     }
 }
-

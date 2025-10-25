@@ -40,8 +40,10 @@ def get_table(
         "logistics": "disaster response admin officer",
     }
 
+    # ✅ Load both admin_user_profile AND user_profile relationships
     query = db.query(User).options(
-        joinedload(User.admin_user_profile)  # ✅ Load admin profile data
+        joinedload(User.admin_user_profile),
+        joinedload(User.user_profile)  # ✅ Added for generic users
     )
 
     if "superadmin" not in user_role:
@@ -62,7 +64,7 @@ def get_table(
         {"text": "UserName", "width": "150px", "action": "Sort"},
         {"text": "UserType", "width": "120px"},
         {"text": "Roles", "width": "150px"},
-        {"text": "Status", "width": "120px"},  # ✅ Changed from "Is Activated"
+        {"text": "Status", "width": "120px"},
         {"text": "Action", "width": "100px"},
     ]
 
@@ -98,17 +100,20 @@ def get_table(
                 width="100px",
             )
 
-        # ✅ Determine status with better labels
+        # ✅ UPDATED: Determine status with superadmin exception
         if report.user_type == "admin":
-            if not report.admin_user_profile:
+            if "superadmin" in report.roles:
+                status = "Active"
+                status_color = "#10b981"
+            elif not report.admin_user_profile:
                 status = "Incomplete Profile"
-                status_color = "#f59e0b"  # Orange
+                status_color = "#f59e0b"
             elif not report.is_activated:
                 status = "Pending Approval"
-                status_color = "#ef4444"  # Red
+                status_color = "#ef4444"
             else:
                 status = "Active"
-                status_color = "#10b981"  # Green
+                status_color = "#10b981"
         else:
             status = "Active" if report.is_activated else "Inactive"
             status_color = "#10b981" if report.is_activated else "#6b7280"
@@ -127,16 +132,32 @@ def get_table(
                 "employee_id": report.admin_user_profile.employee_id,
             }
 
+        # ✅ NEW: Collect generic user profile data if available
+        user_profile_data = {}
+        if report.user_profile:
+            user_profile_data = {
+                "first_name": report.user_profile.first_name,
+                "last_name": report.user_profile.last_name,
+                "phone_number": report.user_profile.phone_number,
+                "birthday": str(report.user_profile.bday) if report.user_profile.bday else None,  # ✅ Convert to string
+                "gender": report.user_profile.gender,
+                "address": report.user_profile.address,
+                "bio": report.user_profile.bio,
+                "profile_image": report.user_profile.profile_image,
+            }
+
         row_data = [
             Cell(type="Hidden", text=str(report.user_id), font_weight=0, color="#000", width="0px"),
             Cell(type="Hidden", text=str(report.roles), font_weight=0, color="#000", width="0px"),
-            # ✅ Store admin profile data as JSON string in hidden cell
+            # ✅ Store admin profile data as JSON string
             Cell(type="Hidden", text=str(admin_profile_data), font_weight=0, color="#000", width="0px"),
+            # ✅ NEW: Store user profile data as JSON string in a new hidden cell
+            Cell(type="Hidden", text=str(user_profile_data), font_weight=0, color="#000", width="0px"),
             Cell(type="Text", text=report.email, font_weight=500, color="#000", width="200px"),
             Cell(type="Text", text=report.username, font_weight=500, color="#000", width="150px"),
             Cell(type="Text", text=report.user_type, font_weight=500, color="#000", width="120px"),
             Cell(type="Text", text=", ".join(report.roles), font_weight=500, color="#000", width="150px"),
-            Cell(type="Text", text=status, font_weight=600, color=status_color, width="120px"),  # ✅ Status with color
+            Cell(type="Text", text=status, font_weight=600, color=status_color, width="120px"),
             last_row,
         ]
         pages["row"].append({"data": row_data})
@@ -147,13 +168,7 @@ def get_table(
     count = query.count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
 
-# @router.post(
-#     "/response_dashboard/report_list/add_report", response_model=ResponseReportOut
-# )
-# def add_response_report(report: ResponseReportCreate, db: Session = Depends(get_db)):
-#     return create_response_report(db, report)
-#
-#
+
 @router.delete("/delete_user/{user_id}", response_model=dict)
 def delete_response_report(user_id: str, db: Session = Depends(get_db)):
     query = db.query(User).filter(User.user_id == user_id).first()
@@ -166,7 +181,6 @@ def delete_response_report(user_id: str, db: Session = Depends(get_db)):
     return {"message": f"User {user_id} deleted successfully."}
 
 
-#
 class UpdateUserRole(BaseModel):
     roles: str
 

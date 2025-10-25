@@ -50,7 +50,8 @@ const PUBLIC_ENDPOINTS = [
   "/admin/register",
   "/admin/verify_email",
   "/admin/complete_profile",
-  "/refresh"
+  "/refresh",
+  "/get_user_from_token",
 ];
 
 // Attach token & refresh if needed
@@ -95,5 +96,3 @@ API.interceptors.request.use(async (config) => {
 
   return config;
 });
-
-

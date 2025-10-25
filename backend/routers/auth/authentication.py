@@ -784,7 +784,7 @@ async def get_user_from_token(
         "operations admin": "Operations Department",
         "logistics admin": "Logistics Department",
         "finance admin": "Finance Department",
-        "lgu officer": "LGU Operations",
+        "lgu officer": "LGU Officer",
         "superadmin": "System Administration",
     }
 

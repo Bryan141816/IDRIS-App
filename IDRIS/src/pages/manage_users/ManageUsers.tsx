@@ -104,12 +104,6 @@ const ViewReportModal = ({
 }: ViewReportModalProps) => {
     const [isMoreOptionVisible, setMoreOptionVisible] = useState(false);
 
-    useEffect(() => {
-        if (!isModalOpen) {
-            setMoreOptionVisible(false);
-        }
-    }, [isModalOpen]);
-
     const toggleMoreOptionVisible = () =>
         setMoreOptionVisible(!isMoreOptionVisible);
 
@@ -120,13 +114,20 @@ const ViewReportModal = ({
             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(" ");
     }
+
+    // ✅ Parse admin profile data (index 2)
     const adminProfileData = isViewModalSelected.data[2].text !== "{}"
         ? JSON.parse(isViewModalSelected.data[2].text.replace(/'/g, '"'))
         : null;
 
-    const userType = isViewModalSelected.data[5].text;
+    // ✅ Parse user profile data (index 3)
+    const userProfileData = isViewModalSelected.data[3].text !== "{}"
+        ? JSON.parse(isViewModalSelected.data[3].text.replace(/'/g, '"'))
+        : null;
+
+    const userType = isViewModalSelected.data[6].text;  // ✅ Updated index
     const isAdmin = userType === "admin";
-    const status = isViewModalSelected.data[7].text;
+    const status = isViewModalSelected.data[8].text;  // ✅ Updated index
 
     return (
         <Modal isOpen={isModalOpen} onClose={closeModal}>
@@ -163,17 +164,17 @@ const ViewReportModal = ({
                     </div>
                 </div>
 
-                {/* ✅ Account Information Section */}
+                {/* Account Information Section */}
                 <div className="horizontal-container">
                     <span className="details-title">Account Information</span>
                 </div>
                 <div className="horizontal-container">
                     <span className="item-details-identifier">Email Address:</span>
-                    <span>{isViewModalSelected.data[3].text}</span>
+                    <span>{isViewModalSelected.data[4].text}</span>
                 </div>
                 <div className="horizontal-container">
                     <span className="item-details-identifier">Username:</span>
-                    <span>{isViewModalSelected.data[4].text}</span>
+                    <span>{isViewModalSelected.data[5].text}</span>
                 </div>
                 <div className="horizontal-container">
                     <span className="item-details-identifier">User Type:</span>
@@ -181,7 +182,7 @@ const ViewReportModal = ({
                 </div>
                 <div className="horizontal-container">
                     <span className="item-details-identifier">Role:</span>
-                    <span className="role-badge">{toTitleCase(isViewModalSelected.data[6].text)}</span>
+                    <span className="role-badge">{toTitleCase(isViewModalSelected.data[7].text)}</span>
                 </div>
                 <div className="horizontal-container">
                     <span className="item-details-identifier">Status:</span>
@@ -197,7 +198,7 @@ const ViewReportModal = ({
                     </span>
                 </div>
 
-                {/* ✅ Admin Profile Details Section (only for admins) */}
+                {/* ✅ Admin Profile Details Section */}
                 {isAdmin && adminProfileData && (
                     <>
                         <div className="horizontal-container" style={{ marginTop: "20px" }}>
@@ -245,7 +246,57 @@ const ViewReportModal = ({
                     </>
                 )}
 
-                {/* ✅ Action Buttons */}
+                {/* ✅ NEW: Generic User Profile Details Section */}
+                {!isAdmin && userProfileData && (
+                    <>
+                        <div className="horizontal-container" style={{ marginTop: "20px" }}>
+                            <span className="details-title">User Profile Details</span>
+                        </div>
+                        <div className="horizontal-container">
+                            <span className="item-details-identifier">Full Name:</span>
+                            <span>{userProfileData.first_name} {userProfileData.last_name}</span>
+                        </div>
+                        <div className="horizontal-container">
+                            <span className="item-details-identifier">Phone Number:</span>
+                            <span>{userProfileData.phone_number}</span>
+                        </div>
+                        <div className="horizontal-container">
+                            <span className="item-details-identifier">Birthday:</span>
+                            <span>{userProfileData.birthday}</span>
+                        </div>
+                        <div className="horizontal-container">
+                            <span className="item-details-identifier">Gender:</span>
+                            <span>{toTitleCase(userProfileData.gender)}</span>
+                        </div>
+                        <div className="horizontal-container">
+                            <span className="item-details-identifier">Address:</span>
+                            <span>{userProfileData.address}</span>
+                        </div>
+                        {userProfileData.bio && (
+                            <div className="horizontal-container">
+                                <span className="item-details-identifier">Bio:</span>
+                                <span>{userProfileData.bio}</span>
+                            </div>
+                        )}
+                        {userProfileData.profile_image && (
+                            <div className="horizontal-container" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                                <span className="item-details-identifier">Profile Picture:</span>
+                                <img
+                                    src={`http://localhost:8000/${userProfileData.profile_image}`}
+                                    alt="Profile"
+                                    style={{
+                                        maxWidth: "200px",
+                                        marginTop: "10px",
+                                        border: "1px solid #d1d5db",
+                                        borderRadius: "50%"
+                                    }}
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* Action Buttons */}
                 <div className="action-button">
                     {isAdmin && status === "Pending Approval" && (
                         <button

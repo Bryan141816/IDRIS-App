@@ -8,8 +8,23 @@ import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPen, faImage, faMapMarkerAlt, faLock } from "@fortawesome/free-solid-svg-icons";
 
+/* ========= Helpers ========= */
+const toCSV = (arr?: string[]) => (Array.isArray(arr) ? arr.join(", ") : "");
+const toArray = (csv?: string) => {
+  if (!csv) return undefined;
+  const arr = csv.split(",").map((s) => s.trim()).filter(Boolean);
+  return arr.length ? arr : undefined;
+};
+
+const withBase = (maybeUrl?: string | null) => {
+  if (!maybeUrl) return null;
+  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl;
+  const base = (API.defaults as any)?.baseURL || "";
+  return `${String(base).replace(/\/$/, "")}/${String(maybeUrl).replace(/^\//, "")}`;
+};
+
 /* ========= Types ========= */
-type LGUForm = {
+export type LGUForm = {
   name: string;
   lat: number;
   lng: number;
@@ -18,14 +33,14 @@ type LGUForm = {
   contact_info: string;
   description?: string;
   lgu_picture?: string;
-  resources?: string;     // CSV in UI
+  resources?: string; // CSV string in form
   players?: string;
   schools?: string;
   gyms?: string;
   local_suppliers?: string;
 };
 
-type MyLGU = {
+export type MyLGU = {
   id?: number | string;
   name?: string;
   lat?: number;
@@ -42,16 +57,7 @@ type MyLGU = {
   local_suppliers?: string[];
 };
 
-/* ========= Helpers ========= */
-const toCSV = (arr?: string[]) => (Array.isArray(arr) ? arr.join(", ") : "");
-const toArray = (csv?: string) => {
-  if (!csv) return undefined;          // avoid writing [] when empty
-  const arr = csv.split(",").map(s => s.trim()).filter(Boolean);
-  return arr.length ? arr : undefined; // undefined if empty after trim
-};
-
 const formatPayload = (f: LGUForm) => ({
-  // name is locked server-side; we still send as read-only mirror
   name: f.name,
   lat: f.lat,
   lng: f.lng,
@@ -69,8 +75,6 @@ const formatPayload = (f: LGUForm) => ({
 
 /* =========================================================================
   VIEW
-  - GET /lgu_profiling/manage_lgu/my_lgu
-  - If 404 -> offer Create & Edit (auto-create + open editor)
 ===========================================================================*/
 type ViewProps = BaseModalProps & {
   onOpenEdit?: () => void;
@@ -96,8 +100,7 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
         setRecord(res.data || null);
         if (!res.data) setNotFound(true);
       } catch (err: any) {
-        const status = err?.response?.status;
-        if (status === 404) {
+        if (err?.response?.status === 404) {
           setNotFound(true);
           setRecord(null);
         } else {
@@ -121,7 +124,8 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
 
   const lat = Number(record?.lat ?? 0);
   const lng = Number(record?.lng ?? 0);
-  const hasCoords = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
+  const hasCoords =
+    Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0);
 
   return (
     <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
@@ -141,14 +145,19 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
               <button
                 style={{ backgroundColor: "#749AB6", color: "#fff" }}
                 onClick={async () => {
-                  try { await API.get("/lgu_profiling/manage_lgu/my_lgu_auto"); } catch {}
+                  try {
+                    await API.get("/lgu_profiling/manage_lgu/my_lgu_auto");
+                  } catch {}
                   onOpenEdit?.();
                 }}
                 title="Create your LGU record then edit details"
               >
                 Create & Edit
               </button>
-              <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={closeModal}>
+              <button
+                style={{ backgroundColor: "#F84B4D", color: "#fff" }}
+                onClick={closeModal}
+              >
                 Close
               </button>
             </div>
@@ -171,7 +180,14 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
               </span>
             </div>
 
-            <div style={{ width: "100%", height: "40vh", borderRadius: 10, overflow: "hidden" }}>
+            <div
+              style={{
+                width: "100%",
+                height: "40vh",
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
+            >
               {hasCoords ? (
                 <MapWithPin lat={lat} lng={lng} />
               ) : (
@@ -250,15 +266,28 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
 
             {record.lgu_picture && (
               <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
-                <img src={record.lgu_picture} alt="LGU" style={{ maxHeight: 160, borderRadius: 8 }} />
+                <img
+                  src={withBase(record.lgu_picture) || ""}
+                  alt="LGU"
+                  style={{ maxHeight: 160, borderRadius: 8 }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
               </div>
             )}
 
             <div className="action-button">
-              <button style={{ backgroundColor: "#749AB6", color: "#fff" }} onClick={onOpenEdit}>
+              <button
+                style={{ backgroundColor: "#749AB6", color: "#fff" }}
+                onClick={onOpenEdit}
+              >
                 <FontAwesomeIcon icon={faPen} /> Edit
               </button>
-              <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={closeModal}>
+              <button
+                style={{ backgroundColor: "#F84B4D", color: "#fff" }}
+                onClick={closeModal}
+              >
                 Close
               </button>
             </div>
@@ -270,14 +299,11 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
 };
 
 /* =========================================================================
-  EDIT (complete-only):
-  - Always fetch locked name from /me/lgu_location
-  - Prefill details from /manage_lgu/my_lgu if it exists
-  - Save via PUT /manage_lgu/my_lgu
-  - If missing, auto-create first via /manage_lgu/my_lgu_auto
+  EDIT
 ===========================================================================*/
 type EditProps = BaseModalProps & {
-  onSaved?: () => void;
+  /** Called after a successful save; passes freshly-fetched LGU record */
+  onSaved?: (updated?: MyLGU | null) => void;
 };
 
 export const MyLGUEditModal: React.FC<EditProps> = ({
@@ -317,12 +343,10 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
       setLoading(true);
       setExists(false);
       try {
-        // 1) Locked name from profile
         const locResp = await API.get("/lgu_profiling/me/lgu_location");
         const lockedName = locResp?.data?.lgu_location ?? "";
         setForm((prev) => ({ ...prev, name: lockedName }));
 
-        // 2) Existing LGU details (if seeded)
         try {
           const res = await API.get("/lgu_profiling/manage_lgu/my_lgu");
           const d: MyLGU = res.data || {};
@@ -330,7 +354,7 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
           setExists(has);
           if (has) {
             setForm({
-              name: lockedName, // enforce locked name
+              name: lockedName,
               lat: d.lat ?? 0,
               lng: d.lng ?? 0,
               classification: d.classification ?? "",
@@ -346,11 +370,7 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
             });
           }
         } catch (inner: any) {
-          if (inner?.response?.status === 404) {
-            // not seeded; exists stays false, fields remain empty except locked name
-          } else {
-            throw inner;
-          }
+          if (inner?.response?.status !== 404) throw inner;
         }
       } catch (err: any) {
         setMessageBox((p) => ({
@@ -368,7 +388,9 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
     })();
   }, [isModalOpen, setMessageBox]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -404,10 +426,21 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
         ...prev,
         isOpen: true,
         type: "message",
-        message: err?.response?.data?.detail || err?.message || "Upload failed",
+        message:
+          err?.response?.data?.detail || err?.message || "Upload failed",
       }));
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Fetch the latest saved record and bubble it up
+  const fetchFresh = async () => {
+    try {
+      const freshRes = await API.get("/lgu_profiling/manage_lgu/my_lgu");
+      onSaved?.(freshRes?.data ?? null);
+    } catch {
+      onSaved?.(null);
     }
   };
 
@@ -420,13 +453,13 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
       message: "Save changes to your LGU?",
       onSubmit: async () => {
         try {
-          // 1) If record not seeded yet, create it now
           if (!exists) {
             await API.get("/lgu_profiling/manage_lgu/my_lgu_auto");
             setExists(true);
           }
-          // 2) Try saving
           await API.put("/lgu_profiling/manage_lgu/my_lgu", payload);
+
+          await fetchFresh(); // let the parent update header instantly
 
           setMessageBox((p) => ({
             ...p,
@@ -434,23 +467,19 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
             type: "message",
             message: "Saved successfully.",
           }));
-          onSaved?.();
           closeModal();
         } catch (err: any) {
-          const status = err?.response?.status;
-
-          // 3) If still 404 (race), auto-create then retry once
-          if (status === 404) {
+          if (err?.response?.status === 404) {
             try {
               await API.get("/lgu_profiling/manage_lgu/my_lgu_auto");
               await API.put("/lgu_profiling/manage_lgu/my_lgu", payload);
+              await fetchFresh();
               setMessageBox((p) => ({
                 ...p,
                 isOpen: true,
                 type: "message",
                 message: "Saved successfully.",
               }));
-              onSaved?.();
               closeModal();
               return;
             } catch (e2: any) {
@@ -471,7 +500,10 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
             ...p,
             isOpen: true,
             type: "message",
-            message: err?.response?.data?.detail || err?.message || "Failed to save LGU.",
+            message:
+              err?.response?.data?.detail ||
+              err?.message ||
+              "Failed to save LGU.",
           }));
         }
       },
@@ -506,7 +538,14 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
               {/* Name (LOCKED to profile) */}
               <div className="horizontal-container">
                 <span className="item-details-identifier">LGU Name:</span>
-                <div style={{ display: "flex", width: "100%", gap: 8, alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
                   <input
                     type="text"
                     name="name"
@@ -528,7 +567,9 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
                     readOnly
                     placeholder="Select a location"
                     value={
-                      Number.isFinite(form.lat) && Number.isFinite(form.lng) && (form.lat !== 0 || form.lng !== 0)
+                      Number.isFinite(form.lat) &&
+                      Number.isFinite(form.lng) &&
+                      (form.lat !== 0 || form.lng !== 0)
                         ? `${form.lat} , ${form.lng}`
                         : ""
                     }
@@ -560,7 +601,9 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
                   value={form.classification}
                   onChange={handleChange}
                 >
-                  <option value="" disabled>Select Classification</option>
+                  <option value="" disabled>
+                    Select Classification
+                  </option>
                   <option value="City">City</option>
                   <option value="Municipality">Municipality</option>
                 </select>
@@ -568,33 +611,74 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
 
               <div className="horizontal-container">
                 <span className="item-details-identifier">Population:</span>
-                <input type="number" name="population" value={form.population} onChange={handleChange} />
+                <input
+                  type="number"
+                  name="population"
+                  value={form.population}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
                 <span className="item-details-identifier">Contact Info:</span>
-                <input type="text" name="contact_info" value={form.contact_info} onChange={handleChange} />
+                <input
+                  type="text"
+                  name="contact_info"
+                  value={form.contact_info}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
                 <span className="item-details-identifier">Description:</span>
-                <input type="text" name="description" value={form.description} onChange={handleChange} />
+                <input
+                  type="text"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                />
               </div>
 
               {/* Picture */}
               <div className="horizontal-container">
                 <span className="item-details-identifier">LGU Picture:</span>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      cursor: "pointer",
+                    }}
+                  >
                     <FontAwesomeIcon icon={faImage} />
                     <span>{uploading ? "Uploading..." : "Choose file"}</span>
-                    <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: "none" }} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                    />
                   </label>
                   {form.lgu_picture && (
                     <img
-                      src={form.lgu_picture}
+                      src={withBase(form.lgu_picture) || ""}
                       alt="preview"
-                      style={{ maxHeight: 50, borderRadius: 6, border: "1px solid #eee" }}
+                      style={{
+                        maxHeight: 50,
+                        borderRadius: 6,
+                        border: "1px solid #eee",
+                      }}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
                     />
                   )}
                 </div>
@@ -602,28 +686,63 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
 
               {/* CSV fields */}
               <div className="horizontal-container">
-                <span className="item-details-identifier">Resources (comma separated):</span>
-                <input type="text" name="resources" value={form.resources} onChange={handleChange} />
+                <span className="item-details-identifier">
+                  Resources (comma separated):
+                </span>
+                <input
+                  type="text"
+                  name="resources"
+                  value={form.resources}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
-                <span className="item-details-identifier">Players (comma separated):</span>
-                <input type="text" name="players" value={form.players} onChange={handleChange} />
+                <span className="item-details-identifier">
+                  Players (comma separated):
+                </span>
+                <input
+                  type="text"
+                  name="players"
+                  value={form.players}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
-                <span className="item-details-identifier">Schools (comma separated):</span>
-                <input type="text" name="schools" value={form.schools} onChange={handleChange} />
+                <span className="item-details-identifier">
+                  Schools (comma separated):
+                </span>
+                <input
+                  type="text"
+                  name="schools"
+                  value={form.schools}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
-                <span className="item-details-identifier">Gyms (comma separated):</span>
-                <input type="text" name="gyms" value={form.gyms} onChange={handleChange} />
+                <span className="item-details-identifier">
+                  Gyms (comma separated):
+                </span>
+                <input
+                  type="text"
+                  name="gyms"
+                  value={form.gyms}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="horizontal-container">
-                <span className="item-details-identifier">Local Suppliers (comma separated):</span>
-                <input type="text" name="local_suppliers" value={form.local_suppliers} onChange={handleChange} />
+                <span className="item-details-identifier">
+                  Local Suppliers (comma separated):
+                </span>
+                <input
+                  type="text"
+                  name="local_suppliers"
+                  value={form.local_suppliers}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="action-button">
@@ -634,7 +753,10 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
                 >
                   Save
                 </button>
-                <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={closeModal}>
+                <button
+                  style={{ backgroundColor: "#F84B4D", color: "#fff" }}
+                  onClick={closeModal}
+                >
                   Cancel
                 </button>
               </div>

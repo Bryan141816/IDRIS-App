@@ -57,7 +57,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       </div>
 
       <div id="nav-links">
-       {userRoles.includes("lgu officer") && (
+       {(userRoles.includes("lgu officer") || userRoles.includes("generic")) && (
   <div className="nav-items" id="lgu-profiling">
     <div
       className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
@@ -70,15 +70,20 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       <Link to="/lgu_profiling/map_of_cebu" className="nav-sub-item" onClick={onClose}>
         Map of Cebu
       </Link>
+      
       <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
         Evacuation and Shelter Management
       </Link>
-      <Link to="/lgu_profiling/LGUofficermanagement" className="nav-sub-item" onClick={onClose}>
-        LGU Officer Management
-      </Link>
+      
+      {userRoles.includes("lgu officer") && (
+        <Link to="/lgu_profiling/LGUofficermanagement" className="nav-sub-item" onClick={onClose}>
+          LGU Officer Management
+        </Link>
+      )}
     </div>
   </div>
 )}
+
 
         {userRoles.includes("superadmin") && (
           <div className="nav-items" id="lgu-profiling">

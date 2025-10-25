@@ -336,6 +336,8 @@ const AdminActivate = () => {
 
     const idFileInputRef = useRef<HTMLInputElement>(null);
 
+    const isLguOfficer = userRole.toLowerCase().includes("lgu officer");
+
     const handleInfoChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
@@ -421,6 +423,7 @@ const AdminActivate = () => {
                 setProfileInfo((prev) => ({
                     ...prev,
                     department: userData.department,
+                    lguLocation: userData.roles[0].toLowerCase().includes("lgu officer") ? "" : "N/A",
                 }));
 
                 setUserRole(userData.roles[0] || "");
@@ -458,21 +461,6 @@ const AdminActivate = () => {
                 <p style={{ textAlign: "center", color: "#6b7280", marginBottom: "1rem" }}>
                     Please fill in your admin details below. Your account will be reviewed by a superadmin.
                 </p>
-
-                <div style={{
-                    background: "#f3f4f6",
-                    padding: "12px",
-                    borderRadius: "6px",
-                    marginBottom: "1.5rem",
-                    textAlign: "center"
-                }}>
-                    <p style={{ margin: 0, fontSize: "14px", color: "#374151" }}>
-                        <strong>Role:</strong> {userRole.split(' ').map(word =>
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ')}
-                    </p>
-                </div>
-
                 <form onSubmit={(e) => { e.preventDefault(); submitProfile(); }}>
                     <div className={styles.columnContainer}>
                         <div className={styles.inputContainers}>
@@ -510,43 +498,45 @@ const AdminActivate = () => {
                         </div>
                     </div>
 
-                    <div className={styles.columnContainer}>
-                        <div className={styles.inputContainers}>
-                            <label>LGU (Local Government Unit):</label>
-                            <AutocompleteAddress
-                                value={profileInfo.lguLocation}
-                                onChange={(name) =>
-                                    setProfileInfo((prev) => ({ ...prev, lguLocation: name }))
-                                }
-                                onPick={async ({ name, lat, lng }) => {
-                                    setFetchingAddress(true);
-                                    try {
-                                        const formalAddress = await fetchAddress(lat, lng);
-                                        setProfileInfo((prev) => ({
-                                            ...prev,
-                                            lguLocation: formalAddress || name,
-                                            latitude: lat,
-                                            longitude: lng,
-                                        }));
-                                    } catch (error) {
-                                        setProfileInfo((prev) => ({
-                                            ...prev,
-                                            lguLocation: name,
-                                            latitude: lat,
-                                            longitude: lng,
-                                        }));
-                                    } finally {
-                                        setFetchingAddress(false);
+                    {isLguOfficer && (
+                        <div className={styles.columnContainer}>
+                            <div className={styles.inputContainers}>
+                                <label>LGU (Local Government Unit):</label>
+                                <AutocompleteAddress
+                                    value={profileInfo.lguLocation}
+                                    onChange={(name) =>
+                                        setProfileInfo((prev) => ({ ...prev, lguLocation: name }))
                                     }
-                                }}
-                            />
-                            {fetchingAddress && (
-                                <small style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                                    🔄 Fetching LGU details...
-                                </small>
-                            )}
+                                    onPick={async ({ name, lat, lng }) => {
+                                        setFetchingAddress(true);
+                                        try {
+                                            const formalAddress = await fetchAddress(lat, lng);
+                                            setProfileInfo((prev) => ({
+                                                ...prev,
+                                                lguLocation: formalAddress || name,
+                                                latitude: lat,
+                                                longitude: lng,
+                                            }));
+                                        } catch (error) {
+                                            setProfileInfo((prev) => ({
+                                                ...prev,
+                                                lguLocation: name,
+                                                latitude: lat,
+                                                longitude: lng,
+                                            }));
+                                        } finally {
+                                            setFetchingAddress(false);
+                                        }
+                                    }}
+                                />
+                                {fetchingAddress && (
+                                    <small style={{ color: "#3b82f6", fontSize: "12px", marginTop: "4px", display: "block" }}>
+                                        🔄 Fetching LGU details...
+                                    </small>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className={styles.columnContainer}>
                         <div className={styles.inputContainers}>
@@ -563,9 +553,6 @@ const AdminActivate = () => {
                                 }}
                                 title="Department is automatically assigned based on your role"
                             />
-                            <small style={{ color: "#6b7280", fontSize: "12px", marginTop: "4px", display: "block" }}>
-                                ℹ️ Department is assigned based on your role
-                            </small>
                         </div>
                         <div className={styles.inputContainers}>
                             <label htmlFor="position">Position:</label>
@@ -575,7 +562,6 @@ const AdminActivate = () => {
                                 value={profileInfo.position}
                                 onChange={handleInfoChange}
                                 required
-                                placeholder="e.g., Officer, Coordinator, Manager"
                             />
                         </div>
                     </div>
@@ -589,7 +575,6 @@ const AdminActivate = () => {
                                 value={profileInfo.contactNumber}
                                 onChange={handleInfoChange}
                                 required
-                                placeholder="+63 XXX XXX XXXX"
                             />
                         </div>
                     </div>
@@ -610,10 +595,10 @@ const AdminActivate = () => {
                                 onClick={() => idFileInputRef.current?.click()}
                                 className={styles.uploadButton}
                             >
-                                📎 Upload Government ID
+                                Upload Government ID
                             </button>
                             {idPreview && (
-                                <div style={{ marginTop: "10px" }}>
+                                <div style={{ marginTop: "10px" , marginLeft: "100px"}}>
                                     <img
                                         src={idPreview}
                                         alt="ID Preview"

@@ -9,7 +9,7 @@ function App() {
   return (
     <UserProvider>
       <UserRoleProvider>
-        <RouterProvider router={router} />;
+        <RouterProvider router={router} />
       </UserRoleProvider>
     </UserProvider>
   );

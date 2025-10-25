@@ -5,7 +5,7 @@ import {
 } from "../ModalDefault";
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
-
+import Swal from "sweetalert2";
 type Warehouse = {
   long: number;
   lat: number;
@@ -74,6 +74,12 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
       );
       return response.data;
     } catch (e: any) {
+      Swal.fire({
+        title: "Add Inventory Item",
+        text: "An error occured while updating item: " + e.message,
+        icon: "error",
+      });
+
       console.error(`Error on adding inventory item: ${e}`);
       return false;
     }
@@ -81,9 +87,25 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
 
   const handleSubmit = () => {
     const _submit = async () => {
+      const confirm = await Swal.fire({
+        title: "Are you sure you want to edit this item?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+      if (!confirm.isConfirmed) {
+        return;
+      }
       const response = await handleRequest();
-      refreshData();
-      onClose();
+      if (response) {
+        Swal.fire({
+          title: "Add Inventory Item",
+          text: "Item has been updated succesfuly",
+          icon: "success",
+        });
+
+        refreshData();
+        onClose();
+      }
     };
     _submit();
   };

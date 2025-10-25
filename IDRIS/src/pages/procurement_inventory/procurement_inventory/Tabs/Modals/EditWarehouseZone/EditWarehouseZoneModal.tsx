@@ -9,7 +9,7 @@ import { MiniMap } from "../../MiniMap";
 type EditWarehouseZoneProp = DefaultInventoryModalProps & {
   selectedData: WarehouseZone;
 };
-
+import Swal from "sweetalert2";
 import { MapViewWithSearch } from "../../MapViewWithSearch";
 export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
   onClose,
@@ -41,8 +41,24 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
   };
   const handleSubmit = () => {
     const callFunction = async () => {
+      const result = await Swal.fire({
+        title: "Are you sure you want to edit this item?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+
+      if (!result.isConfirmed) {
+        return;
+      }
+
       const response = await EditWarehouse();
       if (response) {
+        Swal.fire({
+          title: "Add Inventory Item",
+          text: "Warehouse has been updated succesfuly",
+          icon: "success",
+        });
+
         refreshData();
         onClose();
       }
@@ -58,6 +74,11 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
       );
       return response.data; // ✅ now it's the actual data
     } catch (e: any) {
+      Swal.fire({
+        title: "Add Inventory Item",
+        text: "An error occured while updating warehouse: " + e.message,
+        icon: "error",
+      });
       console.error(`Error in updating warehouse zone:`, e);
       return false;
     }

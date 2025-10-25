@@ -3,7 +3,7 @@ import {
   InventoryModal,
   InventoryItemsProps,
 } from "../ModalDefault";
-
+import Swal from "sweetalert2";
 import { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
@@ -31,24 +31,29 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
     }));
   };
 
-  const handleRequest = async () => {
-    try {
-      const response = await API.post(
-        "/procurement_inventory/add_inventory_item",
-        addForm,
-      );
-      return response.data;
-    } catch (e: any) {
-      console.error(`Error on adding inventory item: ${e}`);
-      return false;
-    }
-  };
-
   const handleSubmit = () => {
     const _submit = async () => {
-      const response = await handleRequest();
-      refreshData();
-      onClose();
+      try {
+        const response = await API.post(
+          "/procurement_inventory/add_inventory_item",
+          addForm,
+        );
+        Swal.fire({
+          title: "Add Inventory Item",
+          text: "Item has been added succesfuly",
+          icon: "success",
+        });
+        refreshData();
+        onClose();
+      } catch (e: any) {
+        Swal.fire({
+          title: "Add Inventory Item",
+          text: "An error occured while adding item: " + e.message,
+          icon: "error",
+        });
+        console.error(`Error on adding inventory item: ${e}`);
+        return false;
+      }
     };
     _submit();
   };

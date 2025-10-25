@@ -1,3 +1,5 @@
+from typing import Optional
+from typing import Union
 from crud import delete
 from fastapi import APIRouter, Query
 from fastapi import Depends, Request
@@ -67,10 +69,15 @@ def add_inventory_item_bulk(
 
 
 @router.get(
-    "/procurement_inventory/get_inventory_item", response_model=List[InventoryItemsOut]
+    "/procurement_inventory/get_inventory_item",
+    response_model=List[InventoryItemsOut],
 )
-def get_inventory_item(db: Session = Depends(get_db)):
-    return ProcurementInventoryCRUD.get_all_inventory_item(db)
+def get_inventory_item(
+    db: Session = Depends(get_db),
+    category: Optional[Union[str, List[str]]] = Query(None),
+):
+    # 🧩 category can now be a string or a list of strings — directly from frontend
+    return ProcurementInventoryCRUD.get_all_inventory_item(db, category)
 
 
 @router.post("/procurement_inventory/update_inventory_item")

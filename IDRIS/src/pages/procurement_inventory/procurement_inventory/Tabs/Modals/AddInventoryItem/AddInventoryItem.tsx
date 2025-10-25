@@ -98,16 +98,7 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               <option value="personal care items">Personal Care Items</option>
             </select>
           </div>
-          <div className="form-group">
-            <label>Batch Number</label>
-            <input
-              type="text"
-              placeholder="Enter batch number"
-              value={addForm.batch}
-              name="batch"
-              onChange={handleChange}
-            />
-          </div>
+
           <div className="form-group">
             <label>Expiry Date</label>
             <input

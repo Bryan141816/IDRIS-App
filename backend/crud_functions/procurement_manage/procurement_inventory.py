@@ -22,10 +22,10 @@ from models import (
 from zoneinfo import ZoneInfo
 import asyncio
 from real_time_handler import send_real_time
-from typing import List
+from typing import List, Optional, Union
 from fastapi import HTTPException, status
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 
 class ProcurementInventoryCRUD:
@@ -78,11 +78,15 @@ class ProcurementInventoryCRUD:
     def create_inventory_item(db: Session, payload: InventoryItemCreate):
         if not payload.expiry:
             payload.expiry = None
+
+        now = datetime.now(timezone.utc)
+        formatted = f"{now.month}{now.day}{str(now.year)[-2:]}"
+
         item = InventoryItems(
             item_name=payload.item_name,
             quantity=payload.quantity,
             category=payload.category,
-            batch=payload.batch,
+            batch=f"BATCH-{formatted}",
             expiry=payload.expiry,
             status="in stock",
         )
@@ -94,20 +98,20 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def create_inventory_items_bulk(db: Session, payload: AddInventoryDonationCreate):
         items_to_create = []
-
+        now = datetime.now(timezone.utc)
+        formatted = f"{now.month}{now.day}{str(now.year)[-2:]}"
         for item_payload in payload.items:
             expiry_value = item_payload.expiry or None
             item = InventoryItems(
                 item_name=item_payload.item_name,
                 quantity=item_payload.quantity,
                 category=item_payload.category,
-                batch=item_payload.batch,
+                batch=f"BATCH={formatted}",
                 expiry=expiry_value,
                 status="in stock",
             )
             items_to_create.append(item)
 
-        # ✅ Bulk insert all inventory items
         db.add_all(items_to_create)
         db.commit()
 
@@ -125,13 +129,24 @@ class ProcurementInventoryCRUD:
         return items_to_create
 
     @staticmethod
-    def get_all_inventory_item(db: Session):
-        items = (
+    def get_all_inventory_item(
+        db: Session,
+        filter: Optional[Union[str, List[str]]] = None,  # ✅ Correct type hint
+    ):
+
+        query = (
             db.query(InventoryItems)
-            .options(joinedload(InventoryItems.warehouse))  # ✅ eager load relation
+            .options(joinedload(InventoryItems.warehouse))
             .order_by(InventoryItems.item_name.desc())
-            .all()
         )
+
+        if filter:
+            if isinstance(filter, list):
+                query = query.filter(InventoryItems.category.in_(filter))
+            elif isinstance(filter, str):
+                query = query.filter(InventoryItems.category == filter)
+
+        items = query.all()
         return items
 
     @staticmethod

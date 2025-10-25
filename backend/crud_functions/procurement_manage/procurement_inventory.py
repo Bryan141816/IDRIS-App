@@ -385,3 +385,13 @@ class ProcurementInventoryCRUD:
                 db
             ),
         }
+
+    @staticmethod
+    def get_assigned_storages(db: Session, warehouse_id: int):
+        return (
+            db.query(InventoryItems)
+            .join(AssignedStorage)
+            .filter(AssignedStorage.warehouse_id == warehouse_id)
+            .options(joinedload(InventoryItems.assigned_storages))
+            .all()
+        )

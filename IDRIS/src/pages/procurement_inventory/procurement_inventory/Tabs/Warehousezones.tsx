@@ -4,7 +4,7 @@ import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { WarehouseZone } from "./Modals/ModalDefault";
 import { EditWarehouseZone } from "./Modals/EditWarehouseZone/EditWarehouseZoneModal";
 import { AssignStorage } from "./Modals/AssignStorage/AssignStorageModal";
-
+import { ViewWarehouse } from "./Modals/ViewWarehouse/ViewWarehouse";
 const WarehouseZoneComponent = () => {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [warehouseZones, setWarehouseZone] = useState<WarehouseZone[]>([]);
@@ -53,6 +53,12 @@ const WarehouseZoneComponent = () => {
   }, []);
   return (
     <>
+      {activeModal === "view-storage" && (
+        <ViewWarehouse
+          onClose={closeModal}
+          selectedData={selecteZone}
+        ></ViewWarehouse>
+      )}
       {activeModal === "add-warehouse" && (
         <AddWarehouseZone
           onClose={closeModal}
@@ -159,6 +165,12 @@ const WarehouseZoneComponent = () => {
                     Assign Storage
                   </button>
                 )}
+                <button
+                  className="action-btn"
+                  onClick={() => openModal("view-storage", zone)}
+                >
+                  View
+                </button>
               </div>
             </div>
           </div>

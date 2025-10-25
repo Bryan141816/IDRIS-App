@@ -89,3 +89,8 @@ def update_inventory_item(payload: InventoryItemUpdate, db: Session = Depends(ge
 @router.get("/procurement_inventory/get_all_inkind")
 def get_all_inkind(db: Session = Depends(get_db)):
     return ProcurementInventoryCRUD.get_all_inkind(db)
+
+
+@router.get("/procurement_inventory/get_assigned_storage")
+def get_assigned_storage(db: Session = Depends(get_db), warehouse_id: int = Query(-1)):
+    return ProcurementInventoryCRUD.get_assigned_storages(db, warehouse_id)

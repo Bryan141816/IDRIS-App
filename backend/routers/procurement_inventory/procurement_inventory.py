@@ -75,6 +75,7 @@ def add_inventory_item_bulk(
 def get_inventory_item(
     db: Session = Depends(get_db),
     category: Optional[Union[str, List[str]]] = Query(None),
+    is_assigned: Optional[bool] = Query(None),
 ):
     # 🧩 category can now be a string or a list of strings — directly from frontend
     return ProcurementInventoryCRUD.get_all_inventory_item(db, category)

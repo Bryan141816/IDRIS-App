@@ -94,7 +94,12 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
 
       const response = await API.get(
         `/procurement_inventory/get_inventory_item`,
-        { params: { category: categoryList[selectedData.zone_type] } },
+        {
+          params: {
+            category: categoryList[selectedData.zone_type],
+            is_assigned: false,
+          },
+        },
       );
 
       return response.data;

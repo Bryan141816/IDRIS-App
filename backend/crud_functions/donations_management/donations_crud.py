@@ -95,14 +95,12 @@ class DonationCRUD:
             else:
                 item_desc = getattr(donation_data, "item_description", None) \
                             or getattr(donation_data, "description", None)
-                est_val = getattr(donation_data, "estimated_value", None) or getattr(donation_data, "amount", None)
+                est_val = getattr(donation_data, "amount", None)
 
                 inkind = Donation_InKind(
                     donation_id=donation.donation_id,
                     inkind_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                     item_description=item_desc,
-                    estimated_value=est_val,
-                    quantity=getattr(donation_data, "quantity", None),
                 )
                 db.add(inkind)
                 amount_for_finance = Decimal(str(est_val or 0)) if est_val is not None else Decimal("0")
@@ -218,13 +216,11 @@ class DonationCRUD:
             desc_for_finance = "Cash donation"
         else:
             item_desc = getattr(donation_data, "item_description", None) or getattr(donation_data, "description", None)
-            est_val = getattr(donation_data, "estimated_value", None) or getattr(donation_data, "amount", None)
+            est_val = getattr(donation_data, "amount", None)
             inkind = Donation_InKind(
                 donation_id=donation.donation_id,
                 inkind_id=uid_from_string(f"{donation.donation_id}{random_suffix(6)}"),
                 item_description=item_desc,
-                estimated_value=est_val,
-                quantity=getattr(donation_data, "quantity", None),
             )
             db.add(inkind)
             amount_for_finance = Decimal(str(est_val or 0))
@@ -371,9 +367,8 @@ class DonationCRUD:
 
         # Outer join to avoid dropping rows that don't have a cash/inkind record
         cash_sum_expr = func.coalesce(func.sum(Donation_Cash.amount), 0)
-        inkind_sum_expr = func.coalesce(func.sum(Donation_InKind.estimated_value), 0)
 
-        total_expr = (cash_sum_expr + inkind_sum_expr).label("total")
+        total_expr = (cash_sum_expr).label("total")
 
         total = (
             db.query(total_expr)
@@ -473,16 +468,7 @@ class DonationCRUD:
                     ),
                     0,
                 ).label("total_cash"),
-                # Sum estimated in-kind values when type is INKIND
-                func.coalesce(
-                    func.sum(
-                        case(
-                            (Donation.inkind != None, Donation_InKind.estimated_value),  # noqa: E711
-                            else_=0,
-                        )
-                    ),
-                    0,
-                ).label("total_inkind"),
+ 
                 # Count donations after filters
                 func.count(Donation.donation_id).label("donation_count"),
                 # Active recurring = freq != ONE_TIME AND is_active = true

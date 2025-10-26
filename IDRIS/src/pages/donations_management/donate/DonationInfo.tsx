@@ -36,6 +36,14 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
   const [activeAmount, setActiveAmount] = useState<string>("0");
   const [isCustom, setIsCustom] = useState<boolean>(true);
   const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+
+  const inKindCategories = {
+    'Food Items': ['Canned Goods', 'Instant Noodles', 'Rice', 'Bottled Water', 'Coffee and Tea', 'Milk'],
+    'Hygiene and Sanitation': ['Soap', 'Shampoo', 'Toothbrush', 'Toothpaste', 'Sanitary Napkins', 'Diapers'],
+    'Shelter Materials': ['Tents', 'Tarpaulins', 'Blankets', 'Sleeping Mats', 'Ropes', 'Plywood'],
+    'Medical Supplies': ['First Aid Kits', 'Bandages', 'Antiseptic Wipes', 'Pain Relievers', 'Vitamins', 'Face Masks'],
+  };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
@@ -135,30 +143,49 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
             <small className="form-group__helper-text">
               Select all items that apply. ( Quantity indicates boxes or packs per item. )
             </small>
-            <div className="checkbox-group">
-              {['Clothing', 'Packed Meals', 'Water', 'Medical Supplies', 'Hygiene Kit', 'Rice', 'Canned Goods'].map((item) => (
-                <div
-                  key={item}
-                  className={`checkbox-item ${item in selectedItems ? 'checked' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    id={item}
-                    name={item}
-                    checked={item in selectedItems}
-                    onChange={handleCheckboxChange}
-                  />
-                  <label htmlFor={item}>{item}</label>
-                  {item in selectedItems && (
-                    <input
-                      type="number"
-                      min="1"
-                      value={selectedItems[item]}
-                      onChange={(e) => handleQuantityChange(item, e.target.value)}
-                      className="quantity-input"
-                    />
+            <div className="in-kind-categories">
+              {Object.entries(inKindCategories).map(([category, items]) => (
+                <div key={category} className="category-group">
+                  <button
+                    type="button"
+                    className="category-header"
+                    onClick={() => setOpenCategory(openCategory === category ? null : category)}
+                  >
+                    {category}
+                  </button>
+                  {openCategory === category && (
+                    <div className="checkbox-group">
+                      {items.map((item) => {
+                        const compositeKey = `${category}: ${item}`;
+                        return (
+                          <div
+                            key={compositeKey}
+                            className={`checkbox-item ${compositeKey in selectedItems ? 'checked' : ''}`}
+                          >
+                            <input
+                              type="checkbox"
+                              id={compositeKey}
+                              name={compositeKey}
+                              checked={compositeKey in selectedItems}
+                              onChange={handleCheckboxChange}
+                            />
+                            <label htmlFor={compositeKey}>{item}</label>
+                            {compositeKey in selectedItems && (
+                              <input
+                                type="number"
+                                min="1"
+                                value={selectedItems[compositeKey]}
+                                onChange={(e) => handleQuantityChange(compositeKey, e.target.value)}
+                                className="quantity-input"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                </div>))}
+                </div>
+              ))}
             </div>
             {showOtherInput && (
               <div className="form-group">

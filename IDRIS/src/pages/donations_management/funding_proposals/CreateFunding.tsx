@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "./CreateFunding.scss";
+import "./createFunding.scss";
 import Swal from "sweetalert2";
 import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
 import { getDonors } from "../../../API_Handler/donations_donors_handler";
@@ -51,6 +51,21 @@ const CreateFunding: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // For API, send only digits
+    const start = new Date(startingDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 3) {
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Date Range",
+        text: "The end date must be at least 3 days after the start date.",
+        confirmButtonColor: "#dc3545",
+      });
+      return;
+    }
+
     const plainBudget = budgetRequired.replace(/,/g, "");
 
     const formData = new FormData();
@@ -159,20 +174,20 @@ const CreateFunding: React.FC = () => {
             ></textarea>
           </div>
           <div className="cf-field cf-amount">
-  <label htmlFor="targetAmount">Target Amount:</label>
-  <span className="currency">₱</span>
-  <input
-    type="text"
-    name="targetAmount"
-    placeholder="Amount Here"
-    value={budgetRequired}
-    onChange={e => setBudgetRequired(formatCurrencyInput(e.target.value))}
-    required
-    autoComplete="off"
-    inputMode="numeric"
-    pattern="[\d,]+"
-  />
-</div>
+            <label htmlFor="targetAmount">Target Amount:</label>
+            <span className="currency">₱</span>
+            <input
+              type="text"
+              name="targetAmount"
+              placeholder="Amount Here"
+              value={budgetRequired}
+              onChange={e => setBudgetRequired(formatCurrencyInput(e.target.value))}
+              required
+              autoComplete="off"
+              inputMode="numeric"
+              pattern="[\d,]+"
+            />
+          </div>
 
           <div className="cf-field cf-input">
             <label htmlFor="starting_date">Starting Date: </label>
@@ -224,8 +239,8 @@ const CreateFunding: React.FC = () => {
                   {/* Upload SVG */}
                   <svg width="44" height="44" viewBox="0 0 24 24" fill="none">
                     <path d="M12 16V4M12 4L7 9M12 4L17 9"
-                      stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <rect x="3" y="17" width="18" height="3" rx="1.5" fill="#60a5fa" opacity="0.25"/>
+                      stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <rect x="3" y="17" width="18" height="3" rx="1.5" fill="#60a5fa" opacity="0.25" />
                   </svg>
                 </span>
                 <div className="upload-text">Browse or Drop a File Here</div>

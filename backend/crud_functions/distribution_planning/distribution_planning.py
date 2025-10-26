@@ -3,6 +3,7 @@ from data_schemas.distribution_planning import (
     RouteCreate,
     AssignTeam,
     UpdateRoute,
+    TeamDataCreate
 )
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm import joinedload
@@ -37,45 +38,83 @@ class DistributionAndPlanningCRUD:
 
     @staticmethod
     def add_team(payload: TeamDataCreate, db: Session):
-        # Create the team first
-        teamdata = DistributionTeam(
+        # Create the distribution team
+        new_team = DistributionTeam(
             team_name=payload.team_name,
             deployment_area=payload.deployment_area,
             assignment_duration=payload.assignment_duration,
             starting_date=payload.starting_date,
+            status="pending"
         )
+        db.add(new_team)
+        db.commit()
+        db.refresh(new_team)
 
-        # Add and flush to get the team_id (before commit)
-        db.add(teamdata)
-        db.flush()  # flush assigns auto-incremented ID to teamdata.team_id
-
-        # Now add team members
+        # Add team members with pending status
+        # DO NOT update volunteer availability_status here - only when they accept
         for member_data in payload.team_members:
             team_member = TeamMembers(
-                team_id=teamdata.team_id,
+                team_id=new_team.team_id,
                 member=member_data.volunteer_id,
                 role=member_data.role,
+                status='pending',
+                assigned_by=payload.assigned_by
             )
             db.add(team_member)
 
-        # Commit all together
         db.commit()
-        db.refresh(teamdata)
 
-        return teamdata
+        # Return data for notifications
+        return {
+            "team_id": new_team.team_id,
+            "team_name": new_team.team_name,
+            "deployment_area": new_team.deployment_area,
+            "starting_date": str(new_team.starting_date),
+            "assignment_duration": new_team.assignment_duration,
+            "team_members": [
+                {"volunteer_id": m.volunteer_id, "role": m.role}
+                for m in payload.team_members
+            ]
+        }
 
     @staticmethod
     def get_all_distribution_team(db: Session):
-        teams = (
-            db.query(DistributionTeam)
-            .options(
-                joinedload(DistributionTeam.team_members).joinedload(
-                    TeamMembers.volunteer
-                )
-            )
-            .all()
-        )
-        return teams
+        """Get all distribution teams with member details including status"""
+        teams = db.query(DistributionTeam).all()
+
+        result = []
+        for team in teams:
+            # Get team members with their volunteer info and status
+            team_members = db.query(TeamMembers, IndividualVolunteer).join(
+                IndividualVolunteer,
+                TeamMembers.member == IndividualVolunteer.volunteer_id
+            ).filter(
+                TeamMembers.team_id == team.team_id
+            ).all()
+
+            # Format team members with status
+            members_list = []
+            for team_member, volunteer in team_members:
+                members_list.append({
+                    "role": team_member.role,
+                    "status": team_member.status,  # Add this line
+                    "volunteer": {
+                        "first_name": volunteer.first_name,
+                        "last_name": volunteer.last_name
+                    }
+                })
+
+            result.append({
+                "team_id": team.team_id,
+                "team_name": team.team_name,
+                "team_members": members_list,
+                "deployment_area": team.deployment_area,
+                "assignment_duration": team.assignment_duration,
+                "starting_date": team.starting_date,
+                "status": team.status
+            })
+
+        return result
 
     @staticmethod
     def get_warehouse_items(warehouse_id: int, db: Session):

@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { updateFundingProposal } from "../../../API_Handler/donations_funding_proposals_handler";
 import { UserContext } from "../../../UserContext";
+import { useUserRoleContext } from "../../../UserRoleContext";
 
 const backendUrl = "http://127.0.0.1:8000";
 
@@ -12,8 +13,8 @@ const CreateFunding: React.FC = () => {
   const Navigate = useNavigate();
   const location = useLocation();
   const fundingData = location.state;
-  const { user } = useContext(UserContext);
-  const isSuperAdmin = user?.roles?.includes("superadmin");
+  const { userRoles } = useUserRoleContext();
+  const isSuperAdmin = userRoles.includes("superadmin");
 
   const id = fundingData?.proposalId || null;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

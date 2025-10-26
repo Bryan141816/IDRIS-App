@@ -19,6 +19,7 @@ interface Proposal {
   total_donated?: number;
   starting_date?: string;
   end_date?: string;
+  is_active: boolean;
 }
 
 const FundingProposals = () => {
@@ -175,6 +176,7 @@ const FundingProposals = () => {
               image={item.image || undefined}
               starting_date={item.starting_date}
               end_date={item.end_date}
+              is_active={item.is_active}
             />
           ))
         )}

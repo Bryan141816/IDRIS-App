@@ -28,6 +28,7 @@ export interface FundingProposalInterface {
   budget_required: number;
   status: string;
   image: string;
+  is_active: boolean;
 }
 
 const DonationsDashboard = () => {
@@ -259,6 +260,7 @@ const DonationsDashboard = () => {
                 target={fundingProposals[currentIndex].budget_required}
                 anchorLink={""}
                 funding_id={fundingProposals[currentIndex].funding_id}
+                is_active={fundingProposals[currentIndex].is_active}
                 className="funding-item"
               />
             )}

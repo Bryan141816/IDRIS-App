@@ -1,4 +1,4 @@
-import styles from "./fundingCard.module.scss";
+import styles from "./FundingCard.module.scss";
 import defaultFundingImage from "../files/default_image.jpg";
 import { CircleDot } from "../../../components/Page_Furniture/Icons";
 import { useState, useEffect, useRef } from "react";
@@ -19,6 +19,7 @@ type FundingProp = {
   target?: number;
   starting_date?: string;
   end_date?: string;
+  is_active?: boolean;
 };
 
 const FundingCard: React.FC<FundingProp> = ({
@@ -28,6 +29,7 @@ const FundingCard: React.FC<FundingProp> = ({
   description,
   donated = 0,
   target = 100,
+  is_active,
 }) => {
   const fundingData = { proposalId, title, image, description, target };
 
@@ -109,6 +111,13 @@ const FundingCard: React.FC<FundingProp> = ({
 
       {/* FOOTER */}
       <div className={styles.fundingFooter}>
+        <div className={styles.statusIndicator}>
+          {is_active ? (
+            <span className={styles.active}>Active</span>
+          ) : (
+            <span className={styles.inactive}>Inactive</span>
+          )}
+        </div>
         <div className={styles.progressBarContainer}>
           <div
             className={styles.progressBar}
@@ -122,7 +131,7 @@ const FundingCard: React.FC<FundingProp> = ({
           <p className={styles.percentage}>{percentage}%</p>
         </div>
 
-        {userRoles.includes("donor") && proposalId != null && (
+        {userRoles.includes("donor") && proposalId != null && is_active && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate
           </button>

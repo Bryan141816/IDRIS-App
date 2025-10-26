@@ -189,6 +189,20 @@
   }
 }
 
+.statusIndicator {
+  text-align: right;
+  padding: 0 8px 4px;
+  font-weight: bold;
+
+  .active {
+    color: #28a745;
+  }
+
+  .inactive {
+    color: #dc3545;
+  }
+}
+
 @media screen and (max-width: 720px) {
   .fundingCard { max-width: 98%; min-width: 80vw; }
   .fundingHead { padding: 7px 10px; gap: 3px; min-height: 0; }

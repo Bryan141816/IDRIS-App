@@ -164,6 +164,8 @@ class FundingProposalCRUD:
                     updated_at=p.updated_at,
                     image=p.image,
                     total_donated=donation_map.get(p.funding_id, 0.0),
+                    starting_date=p.starting_date,
+                    end_date=p.end_date,
                 )
                 for p in proposals
             ]
@@ -254,12 +256,16 @@ class FundingProposalCRUD:
         if end_date:
             proposal.end_date = end_date
 
-        # Determine is_active status based on dates
-        now = datetime.now(timezone.utc)
-        start = make_aware(proposal.starting_date)
-        end = make_aware(proposal.end_date)
-
-        proposal.is_active = start <= now <= end
+        # Superadmin can manually override is_active
+        if user_is_superadmin and is_active is not None:
+            proposal.is_active = is_active
+            
+        else:
+            # Determine is_active status based on dates
+            now = datetime.now(timezone.utc)
+            start = make_aware(proposal.starting_date)
+            end = make_aware(proposal.end_date)
+            proposal.is_active = start <= now <= end
 
         try:
             db.commit()

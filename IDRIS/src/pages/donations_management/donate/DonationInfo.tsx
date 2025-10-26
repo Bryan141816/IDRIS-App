@@ -43,6 +43,9 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
     'Hygiene and Sanitation': ['Soap', 'Shampoo', 'Toothbrush', 'Toothpaste', 'Sanitary Napkins', 'Diapers'],
     'Shelter Materials': ['Tents', 'Tarpaulins', 'Blankets', 'Sleeping Mats', 'Ropes', 'Plywood'],
     'Medical Supplies': ['First Aid Kits', 'Bandages', 'Antiseptic Wipes', 'Pain Relievers', 'Vitamins', 'Face Masks'],
+    'Clothing/Apparel': ['Shirts', 'Pants', 'Dresses', 'Jackets'],
+    'Footwear': ['Slippers', 'Shoes'],
+    'Blankets': ['Warm Blankets', 'Shelter']
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {

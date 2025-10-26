@@ -46,6 +46,7 @@ from email_handler import (
     send_admin_email_verification,
     send_superadmin_approval_notification,
     send_admin_activated_email,
+    send_user_activated_email,
 )
 from pathlib import Path
 from uuid import uuid4
@@ -456,14 +457,17 @@ async def activate_account(
         db.commit()
         db.refresh(profile_db)
 
-        # After successful commit, attempt to send notification email
-        # This is non-critical, so we wrap it in its own try/except
-        if user.user_type == "admin":
-            try:
-                await send_admin_profile_complete_email(user.email, user.user_id)
-            except Exception as email_error:
-                # Log the error but don't fail the request
-                print(f"WARNING: Failed to send admin profile completion email to {user.email}. Error: {email_error}")
+        # ✅ Send activation confirmation email based on user type
+        try:
+            if user.user_type == "admin":
+                # For admins: notify superadmins for approval
+                await send_superadmin_approval_notification(user.email, user.user_id, db)
+            else:
+                # ✅ For regular users: send activation confirmation email
+                await send_user_activated_email(user.email)
+        except Exception as email_error:
+            # Log the error but don't fail the request
+            print(f"WARNING: Failed to send activation email to {user.email}. Error: {email_error}")
 
         return {"status": "success", "profile": profile_db.user_profile_id}
 
@@ -473,6 +477,7 @@ async def activate_account(
         print("ERROR:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/forgot_password")
 async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):

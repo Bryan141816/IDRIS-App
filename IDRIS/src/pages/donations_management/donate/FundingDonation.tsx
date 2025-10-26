@@ -36,7 +36,8 @@ const DonationPage: React.FC = () => {
 
   const [donationFormData, setDonationFormData] = useState({
     amount: '',
-    description: ''
+    description: '',
+    category: ''
   });
 
   const [paymentFormData, setPaymentFormData] = useState({
@@ -73,16 +74,29 @@ const DonationPage: React.FC = () => {
   useEffect(() => {
     if (donationKind === 'In-Kind (Goods or Services)') {
       const description = Object.entries(selectedItems)
-        .map(([item, quantity]) => {
-          if (item === 'Other') {
-            return otherDescription ? `${quantity}x Other: ${otherDescription}` : `${quantity}x Other`;
-          }
-          return `${quantity}x ${item}`;
+        .map(([compositeKey, quantity]) => {
+            if (compositeKey === 'Other') {
+                return otherDescription ? `${quantity}x Other: ${otherDescription}` : `${quantity}x Other`;
+            }
+            const [category, item] = compositeKey.split(': ');
+            return `${quantity}x ${item}`;
         })
         .join(', ');
+
+      const categories = [
+        ...new Set(
+            Object.keys(selectedItems)
+                .map(key => key.split(': ')[0])
+                .filter(cat => cat !== 'Other')
+        )
+      ].join(', ');
+
       handleDonationInputChange('description', description);
+      // This is a temporary solution to store the category data in the form.
+      // In a real application, you would likely have a dedicated field for this.
+      handleDonationInputChange('category', categories);
     }
-  }, [selectedItems, otherDescription, donationKind, handleDonationInputChange]);
+}, [selectedItems, otherDescription, donationKind, handleDonationInputChange]);
 
   useEffect(() => {
     fetchAndSetUserId();
@@ -90,25 +104,10 @@ const DonationPage: React.FC = () => {
       const fetchProposal = async () => {
         try {
           const proposal = await getFundingProposalsById(fundingId);
-          if (!proposal.is_active) {
-            Swal.fire({
-              icon: 'error',
-              title: 'Donation Failed',
-              text: 'This funding proposal is no longer active.',
-              confirmButtonColor: '#dc3545',
-            });
-            setFundingProposal(null);
-          } else {
-            setFundingProposal(proposal);
-          }
+          console.log(proposal);
+          setFundingProposal(proposal);
         } catch (error) {
           console.error('Failed to fetch funding proposal', error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Failed to fetch funding proposal details.',
-            confirmButtonColor: '#dc3545',
-          });
         }
       };
       fetchProposal();
@@ -132,7 +131,7 @@ const DonationPage: React.FC = () => {
   };
 
   const resetForms = () => {
-    setDonationFormData({ amount: '', description: '' });
+    setDonationFormData({ amount: '', description: '', category: '' });
     setPaymentFormData({ cardHolderName: '', cardNumber: '', expiryDate: '', cvv: '' });
     setDonationFrequency('One-time');
     setDonationKind('In-Kind');
@@ -194,6 +193,7 @@ const DonationPage: React.FC = () => {
       funding_id: fundingId,
       donation_type: normalizeDonationType(donationKind),
       payment_method: paymentMethod,
+      category: donationFormData.category,
     };
 
     let checkoutWindow: Window | null = null;
@@ -327,7 +327,8 @@ const DonationPage: React.FC = () => {
         description: donationFormData.description,
         funding_id: fundingId,
         donation_type: normalizeDonationType(donationKind),
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        category: donationFormData.category,
       }
 
       const donationResponse = await createDonation(formData);

@@ -229,6 +229,34 @@
   }
 }
 
+.in-kind-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.category-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.category-header {
+  width: 100%;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.category-header:hover {
+  background-color: #f3f4f6;
+}
 .checkbox-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -103,10 +103,6 @@ class InKindDonationCreate(BaseModel):
 
     description: Optional[str] = None
     item_description: str
-    estimated_value: Optional[Decimal] = None
-    quantity: Optional[str] = None  # e.g., "10 boxes", "5 pcs"
-
-#     Note: amount is not used for in-kind; estimated_value is optional.
 
 
 # ==== Response / Read Schemas ====
@@ -137,8 +133,6 @@ class DonationInKindResponse(BaseModel):
     inkind_id: str
     item_description: Optional[str] = None
     description: Optional[str] = None
-    quantity: Optional[str] = None
-    estimated_value: Optional[float] = None
 
     class Config:
         from_attributes = True

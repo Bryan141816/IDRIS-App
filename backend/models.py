@@ -1056,22 +1056,28 @@ OrganizationVolunteer.active_events_joined = column_property(
 class ProcurementRequest(Base):
     __tablename__ = "procurement_request"
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    requester_id = Column(String, ForeignKey("users.user_id"))
+    lgu = Column(ForeignKey("user.user_id"), nullable=False)
+    request_type = Column(String(255))
+    request_ref_num = Column(String(255), nullable=False)
+    request_title = Column(String(255), nullable=False)
+    request_description = Column(String(255), nullable=False)
+    priority = Column(String(255))
+    date_requested = Column(Date)
+    disaster_type = Column(String(255), nullable=False)
+    date_needed = Column(Date)
 
-    requester = relationship("User", back_populates="procurement_request")
 
-    title = Column(String(255), nullable=False)
-    lgu_name = Column(String(255), nullable=False)
-    priority = Column(String(50), nullable=False)
-    status = Column(String(50), nullable=False)
-    description = Column(String(255), nullable=False)
-    justification = Column(String(255), nullable=False)
-    date = Column(DateTime(timezone=True), nullable=False)
-    comment = Column(String(255), nullable=True)
-    reason_or_code = Column(String(255), nullable=True)
+class ReliefRequestItem(Base):
+    __tablename__ = "relief_request_item"
+    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
 
-    # ✅ should be plural (list of items)
-    request_items = relationship("ProcurementRequestItem", back_populates="request")
+    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
+    item_name = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+    # ✅ belongs to ONE request
+    request = relationship("ProcurementRequest", back_populates="request_items")
 
 
 class ProcurementRequestItem(Base):
@@ -1080,9 +1086,8 @@ class ProcurementRequestItem(Base):
 
     request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
     item_name = Column(String(255), nullable=False)
-    category = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
-    price_p_each = Column(Float, nullable=False)
+    unit = Column(String(255))
 
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="request_items")

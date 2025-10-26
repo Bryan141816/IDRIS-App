@@ -53,7 +53,7 @@ export async function getUserProfileById(user_profile_id: string): Promise<UserP
 //   return normalizeUserProfile(res.data);
 // }
 
-export async function getUserProfileByUserId(): Promise<any> {
+export async function getUserProfileByUserId(user_id: number): Promise<any> {
   const response = await API.get('/user-profile/me');
   return response.data;
 }

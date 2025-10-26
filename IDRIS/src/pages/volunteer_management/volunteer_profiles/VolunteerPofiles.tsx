@@ -78,6 +78,8 @@ const VolunteerProfile: React.FC = () => {
     const [volunteerData, setVolunteerData] = useState<VolunteerData | null>(null);
     const [loading, setLoading] = useState(true);
     const [isIndividual, setIsIndividual] = useState(true);
+    const [mapCenter, setMapCenter] = useState<LatLngExpression>([10.3157, 123.8854]);
+    const [isGeocoding, setIsGeocoding] = useState(false);
 
     // Calculate age from birthdate
     const calculateAge = (birthDate: string): number => {
@@ -106,6 +108,40 @@ const VolunteerProfile: React.FC = () => {
 
         const months = end.diff(start, 'month');
         return Math.max(months, 0);
+    };
+
+    // Geocode address to get accurate coordinates
+    const geocodeAddress = async (address: string) => {
+        if (!address || address === "Address not available") {
+            console.warn("No address to geocode");
+            return null;
+        }
+
+        try {
+            setIsGeocoding(true);
+            console.log("🔍 Geocoding address:", address);
+
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.features && data.features.length > 0) {
+                const coords = data.features[0].geometry.coordinates;
+                const lng = coords[0];
+                const lat = coords[1];
+
+                console.log("✅ Geocoded coordinates:", { lat, lng });
+                return { lat, lng };
+            } else {
+                console.warn("⚠️ No geocoding results found");
+                return null;
+            }
+        } catch (error) {
+            console.error("❌ Geocoding error:", error);
+            return null;
+        } finally {
+            setIsGeocoding(false);
+        }
     };
 
     useEffect(() => {
@@ -229,13 +265,7 @@ const VolunteerProfile: React.FC = () => {
                         }
                     };
                 } else {
-                    // ✅ Organization volunteer data with CORRECT field names from your API
                     console.log("Formatting Organization Data...");
-                    console.log("Organization Name:", volunteerInfo?.organization_name);
-                    console.log("Organization Picture:", volunteerInfo?.organization_picture);
-                    console.log("Organization Type:", volunteerInfo?.organization_type);
-                    console.log("Phone Number:", volunteerInfo?.organization_phone_number);
-                    console.log("Organization Address:", volunteerInfo?.organization_address);
 
                     formattedData = {
                         name: volunteerInfo?.organization_name || "Organization Name",
@@ -300,6 +330,25 @@ const VolunteerProfile: React.FC = () => {
                 console.log("Formatted Volunteer Data:", formattedData);
                 setVolunteerData(formattedData);
 
+                // ✅ Geocode address for accurate map positioning
+                if (formattedData.address && formattedData.address !== "Address not available") {
+                    const hasDefaultCoords =
+                        formattedData.location.lat === 10.3157 &&
+                        formattedData.location.lng === 123.8854;
+
+                    if (hasDefaultCoords) {
+                        console.log("⚠️ Using default coordinates, geocoding address...");
+                        const coords = await geocodeAddress(formattedData.address);
+                        if (coords) {
+                            setMapCenter([coords.lat, coords.lng]);
+                        } else {
+                            setMapCenter([formattedData.location.lat, formattedData.location.lng]);
+                        }
+                    } else {
+                        setMapCenter([formattedData.location.lat, formattedData.location.lng]);
+                    }
+                }
+
             } catch (error) {
                 console.error("Error loading volunteer profile:", error);
             } finally {
@@ -313,8 +362,6 @@ const VolunteerProfile: React.FC = () => {
     const renderTabContent = (): React.ReactNode => {
         if (!volunteerData) return <p>No data available</p>;
 
-        console.log("Rendering Tab:", activeTab, "Is Individual:", isIndividual);
-
         switch (activeTab) {
             case 'personalInfo':
                 if (!isIndividual) return null;
@@ -323,33 +370,23 @@ const VolunteerProfile: React.FC = () => {
                         <div className="info-grid">
                             <div className="info-item">
                                 <div className="info-label">Age</div>
-                                <div className="info-value">
-                                    <span className="info-icon">🎂</span> {volunteerData.personalInfo?.age}
-                                </div>
+                                <div className="info-value">{volunteerData.personalInfo?.age}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Date of Birth</div>
-                                <div className="info-value">
-                                    <span className="info-icon">📅</span> {volunteerData.personalInfo?.dateOfBirth}
-                                </div>
+                                <div className="info-value">{volunteerData.personalInfo?.dateOfBirth}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Phone Number</div>
-                                <div className="info-value">
-                                    <span className="info-icon">📞</span> {volunteerData.personalInfo?.phoneNumber}
-                                </div>
+                                <div className="info-value">{volunteerData.personalInfo?.phoneNumber}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Address</div>
-                                <div className="info-value">
-                                    <span className="info-icon">📍</span> {volunteerData.personalInfo?.address}
-                                </div>
+                                <div className="info-value">{volunteerData.personalInfo?.address}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Gender</div>
-                                <div className="info-value">
-                                    <span className="info-icon">👤</span> {volunteerData.personalInfo?.gender}
-                                </div>
+                                <div className="info-value">{volunteerData.personalInfo?.gender}</div>
                             </div>
                         </div>
                     </div>
@@ -357,39 +394,28 @@ const VolunteerProfile: React.FC = () => {
 
             case 'organizationInfo':
                 if (isIndividual) return null;
-                console.log("Rendering Organization Info:", volunteerData.organizationInfo);
                 return (
                     <div className="info-content">
                         <div className="info-grid">
                             <div className="info-item">
                                 <div className="info-label">Organization Name</div>
-                                <div className="info-value">
-                                    {volunteerData.organizationInfo?.organizationName}
-                                </div>
+                                <div className="info-value">{volunteerData.organizationInfo?.organizationName}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Organization Type</div>
-                                <div className="info-value">
-                                    {volunteerData.organizationInfo?.organizationType}
-                                </div>
+                                <div className="info-value">{volunteerData.organizationInfo?.organizationType}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Phone Number</div>
-                                <div className="info-value">
-                                    {volunteerData.organizationInfo?.phoneNumber}
-                                </div>
+                                <div className="info-value">{volunteerData.organizationInfo?.phoneNumber}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Email</div>
-                                <div className="info-value">
-                                    {volunteerData.organizationInfo?.email}
-                                </div>
+                                <div className="info-value">{volunteerData.organizationInfo?.email}</div>
                             </div>
                             <div className="info-item">
                                 <div className="info-label">Address</div>
-                                <div className="info-value">
-                                    {volunteerData.organizationInfo?.address}
-                                </div>
+                                <div className="info-value">{volunteerData.organizationInfo?.address}</div>
                             </div>
                             {volunteerData.organizationInfo?.website && (
                                 <div className="info-item">
@@ -527,32 +553,21 @@ const VolunteerProfile: React.FC = () => {
         );
     }
 
-    const mapCenter: LatLngExpression = [volunteerData.location.lat, volunteerData.location.lng];
-
     return (
         <div className="volunteer-container">
-            {/* Breadcrumb Navigation */}
             <h2 className="page-title">Volunteer Profile</h2>
             <Breadcrumb>
                 <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
                 <Breadcrumb.Item>
-                    <Link to="/volunteer_management/volunteer_dashboard">
-                        Volunteer Dashboard
-                    </Link>
+                    <Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link>
                 </Breadcrumb.Item>
-                <Breadcrumb.Item>
-                    <span>Volunteer Profile</span>
-                </Breadcrumb.Item>
+                <Breadcrumb.Item><span>Volunteer Profile</span></Breadcrumb.Item>
             </Breadcrumb>
 
-            {/* Main Content */}
             <div className="main-content1">
                 <div className="profile-container">
-                    {/* Banner and Profile Info */}
                     <div className="profile-header">
-                        <div className="profile-banner">
-                            {/* Mountain background image will be set via CSS */}
-                        </div>
+                        <div className="profile-banner"></div>
                         <div className="profile-info">
                             <div className="profile-avatar">
                                 <img
@@ -564,38 +579,44 @@ const VolunteerProfile: React.FC = () => {
                             <div className="profile-details">
                                 <h2 className="volunteer-name">
                                     <span className="name-text">{volunteerData.name}</span>
-                                    {volunteerData.certified && (
-                                        <span className="certified-badge">Approved</span>
-                                    )}
+                                    {volunteerData.certified && <span className="certified-badge">Approved</span>}
                                 </h2>
                                 <p className="volunteer-role">{volunteerData.role}</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Profile Content */}
                     <div className="profile-content">
                         <div className="profile-left">
                             <div className="address-label">
                                 ({isIndividual ? 'Volunteer Address' : 'Organization Address'})
                             </div>
                             <div className="map-placeholder">
-                                <MapContainer
-                                    center={mapCenter}
-                                    zoom={13}
-                                    scrollWheelZoom={false}
-                                    style={{ height: '100%', width: '100%' }}
-                                >
-                                    <TileLayer
-                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                    />
-                                    <Marker position={mapCenter}>
-                                        <Popup>
-                                            {volunteerData.address}
-                                        </Popup>
-                                    </Marker>
-                                </MapContainer>
+                                {isGeocoding ? (
+                                    <div style={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        background: '#f0f0f0'
+                                    }}>
+                                        <Spin tip="Loading accurate location..." />
+                                    </div>
+                                ) : (
+                                    <MapContainer
+                                        center={mapCenter}
+                                        zoom={15}
+                                        zoomControl={false}
+                                        attributionControl={false}
+                                        style={{ height: '100%', width: '100%' }}
+                                        key={`${mapCenter[0]}-${mapCenter[1]}`}
+                                    >
+                                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                                        <Marker position={mapCenter}>
+                                            <Popup>{volunteerData.address}</Popup>
+                                        </Marker>
+                                    </MapContainer>
+                                )}
                             </div>
                             <div className="address-text">{volunteerData.address}</div>
                         </div>
@@ -619,7 +640,6 @@ const VolunteerProfile: React.FC = () => {
                                             Organization Information
                                         </div>
                                     )}
-                                    {/* Description - Only show for individual volunteers */}
                                     {isIndividual && (
                                         <div
                                             className={`sidebar-item ${activeTab === 'description' ? 'active' : ''}`}
@@ -628,7 +648,6 @@ const VolunteerProfile: React.FC = () => {
                                             Description
                                         </div>
                                     )}
-                                    {/* Skills/Services - Only show for individual volunteers */}
                                     {isIndividual && (
                                         <div
                                             className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
@@ -657,7 +676,6 @@ const VolunteerProfile: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Statistics Section */}
                     {volunteerData.statistics && (
                         <div className="statistics-section">
                             <h2 className="statistics-title">
@@ -671,7 +689,6 @@ const VolunteerProfile: React.FC = () => {
                                         <p className="stat-value">{volunteerData.statistics.totalPrograms}</p>
                                     </div>
                                 </div>
-
                                 <div className="stat-card">
                                     <div className="stat-icon">📅</div>
                                     <div className="stat-content">
@@ -679,7 +696,6 @@ const VolunteerProfile: React.FC = () => {
                                         <p className="stat-value">{volunteerData.statistics.monthlyActivity}</p>
                                     </div>
                                 </div>
-
                                 <div className="stat-card">
                                     <div className="stat-icon">📈</div>
                                     <div className="stat-content">
@@ -691,7 +707,6 @@ const VolunteerProfile: React.FC = () => {
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="stat-card">
                                     <div className="stat-icon">🎯</div>
                                     <div className="stat-content">

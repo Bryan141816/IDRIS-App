@@ -37,7 +37,7 @@
 
 .profile-banner {
   height: 180px;
-  background-image: url("https://images.unsplash.com/photo-1579446565308-427218a2c60e");
+  background-image: url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80");
   background-size: cover;
   background-position: center;
 }
@@ -81,7 +81,7 @@
 }
 
 .name-text {
-  color: #0066cc;
+  color: #ffffff;
 }
 
 .certified-badge {

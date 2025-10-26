@@ -144,6 +144,8 @@ const FundingCard: React.FC<FundingProp> = ({
           <div
             className={`${styles.progressBar} ${ atStart ? styles.progressBar__notStarted : ""}`}
             style={{ width: `${percentage}%` }}
+            title={`${starting_date} to ${end_date}`}
+            aria-label={`${starting_date} to ${end_date}`}
           />
         </div>
         {userRoles.includes("donor") && proposalId != null && is_active && !atStart && (

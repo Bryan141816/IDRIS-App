@@ -325,17 +325,6 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>Zone Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter zone name"
-                    name="zone_name"
-                    value={formData.zone_name}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
                   <label>Capacity</label>
                   <input
                     type="number"

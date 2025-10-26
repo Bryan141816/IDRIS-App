@@ -117,16 +117,18 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
         onSubmit={handleSubmit}
       >
         <div className="modal-content">
-          <div className="form-group">
-            <label>Item Name</label>
-            <input
-              type="text"
-              placeholder="Enter item name"
-              value={addForm.item_name}
-              name="item_name"
-              onChange={handleChange}
-            />
-          </div>
+          {selectedData.assigned_storages.length <= 0 && (
+            <div className="form-group">
+              <label>Item Name</label>
+              <input
+                type="text"
+                placeholder="Enter item name"
+                value={addForm.item_name}
+                name="item_name"
+                onChange={handleChange}
+              />
+            </div>
+          )}
           <div className="form-group">
             <label>Quantity</label>
             <input
@@ -158,16 +160,17 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
               </select>
             </div>
           )}
-
-          <div className="form-group">
-            <label>Expiry Date</label>
-            <input
-              type="date"
-              value={addForm.expiry}
-              name="expiry"
-              onChange={handleChange}
-            />
-          </div>
+          {selectedData.assigned_storages.length <= 0 && (
+            <div className="form-group">
+              <label>Expiry Date</label>
+              <input
+                type="date"
+                value={addForm.expiry}
+                name="expiry"
+                onChange={handleChange}
+              />
+            </div>
+          )}
         </div>
       </InventoryModal>
     </>

@@ -263,8 +263,12 @@ def get_current_user_from_access_token(
     return user
 
 
-@router.post("/register", response_model=TokenWithUserResponse)
-async def register(user: UserCreate, response: Response, db: Session = Depends(get_db)):
+@router.post("/register")
+async def register(user: UserCreate, db: Session = Depends(get_db)):
+    """
+    Register a new user and send activation email
+    User must activate account before logging in
+    """
     try:
         new_user = create_user(
             db,
@@ -275,28 +279,20 @@ async def register(user: UserCreate, response: Response, db: Session = Depends(g
             user_type=user.user_type,
             roles=[user.user_role],
         )
-        access_token = create_access_token(data={"sub": new_user.email})
-        refresh_token = create_refresh_token(data={"sub": new_user.email})
 
-        response.set_cookie(
-            key=REFRESH_TOKEN_COOKIE,
-            value=refresh_token,
-            httponly=True,
-            max_age=60 * 60 * 24 * 7,
-            samesite="Lax",
-            secure=False,
-        )
-
-        # For regular users, send activation email immediately
+        # Send activation email based on user type
         if user.user_type != "admin":
             token = create_token(uid_from_string(user.username), "activation")
             await send_activation_email(user.email, token)
         else:
-            # ✅ For admins, send profile completion email
             token = create_token(uid_from_string(user.username), "activation")
             await send_admin_activation_email(user.email, token)
 
-        return {"access_token": access_token, "token_type": "bearer", "user": new_user}
+        # ✅ Don't return tokens - user must activate first
+        return {
+            "message": "Registration successful! Please check your email to activate your account.",
+            "email": new_user.email
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -532,11 +528,11 @@ def logout(response: Response):
 @router.post("/admin/register")
 async def register_admin(
     user: UserCreate,
-    response: Response,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db)  # ✅ Removed Response parameter
 ):
     """
     Register an admin user and send email verification
+    Admin must complete profile and await superadmin approval before logging in
     """
     try:
         # Create admin user account
@@ -553,27 +549,14 @@ async def register_admin(
         # Generate email verification token
         token = create_token(uid_from_string(user.username), "activation")
 
-        # STEP 1: Send email verification to admin
+        # Send email verification to admin
         await send_admin_email_verification(user.email, token)
 
-        # Create access tokens for immediate login
-        access_token = create_access_token(data={"sub": new_admin.email})
-        refresh_token = create_refresh_token(data={"sub": new_admin.email})
-
-        response.set_cookie(
-            key=REFRESH_TOKEN_COOKIE,
-            value=refresh_token,
-            httponly=True,
-            max_age=60 * 60 * 24 * 7,
-            samesite="Lax",
-            secure=False,
-        )
-
+        # ✅ Don't create or return tokens - admin must complete profile and get approval
         return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": new_admin,
-            "message": "Please check your email to verify your account"
+            "message": "Registration successful! Please check your email to complete your admin profile.",
+            "email": new_admin.email,
+            "next_step": "Email verification required"
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

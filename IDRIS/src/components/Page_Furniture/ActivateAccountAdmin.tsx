@@ -353,10 +353,11 @@ const AdminActivate = () => {
         }
     };
 
-    // Input validations
+    // ✅ FIXED: Input validations - checking idFile state variable, not profileInfo.idFile
     const validateForm = () => {
-        const { firstName, lastName, employeeIdNumber, contactNumber, lguLocation, idFile } = profileInfo;
+        const { firstName, lastName, employeeIdNumber, contactNumber, lguLocation } = profileInfo;
 
+        // ✅ Check idFile state variable instead of profileInfo.idFile
         if (!firstName || !lastName || !employeeIdNumber || !contactNumber || !idFile) {
             Swal.fire({
                 icon: "error",
@@ -366,12 +367,13 @@ const AdminActivate = () => {
             return false;
         }
 
-        const phoneRegex = /^[0-9]{10}$/;
+        // ✅ Improved phone validation - accepts 10 or 11 digits
+        const phoneRegex = /^[0-9]{10,11}$/;
         if (!phoneRegex.test(contactNumber)) {
             Swal.fire({
                 icon: "error",
                 title: "Invalid Contact Number",
-                text: "Please enter a valid 10-digit phone number.",
+                text: "Please enter a valid 10 or 11-digit phone number.",
             });
             return false;
         }
@@ -612,6 +614,7 @@ const AdminActivate = () => {
                                 name="contactNumber"
                                 value={profileInfo.contactNumber}
                                 onChange={handleInfoChange}
+                                placeholder="e.g., 09123456789"
                                 required
                             />
                         </div>
@@ -619,7 +622,7 @@ const AdminActivate = () => {
 
                     <div className={styles.columnContainer}>
                         <div className={styles.inputContainers}>
-                            <label>Upload Government ID:</label>
+                            <label>Upload Government ID: <span style={{ color: "red" }}>*</span></label>
                             <input
                                 ref={idFileInputRef}
                                 type="file"
@@ -633,7 +636,7 @@ const AdminActivate = () => {
                                 onClick={() => idFileInputRef.current?.click()}
                                 className={styles.uploadButton}
                             >
-                                Upload Government ID
+                                {idFile ? "Change Government ID" : "Upload Government ID"}
                             </button>
                             {idPreview && (
                                 <div style={{ marginTop: "10px", marginLeft: "100px" }}>

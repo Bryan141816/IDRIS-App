@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { AssignVolunteerModal } from "./Modals/AssignVolunteerModal/AssignVolunteerModal";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import AssignRoute from "./Modals/AssignRoute/AssignRoute";
+
 type Volunteer = {
   last_name: string;
   first_name: string;
 };
+
 type VolunteerRecord = {
   role: string;
   volunteer: Volunteer;
+  status?: string; // Add status field
 };
+
 type TeamData = {
   team_id: number;
   team_name: string;
@@ -24,15 +28,18 @@ export const VolunteerAssignmentTab = () => {
   const [activeModal, setActiveModal] = useState("");
   const [teamDatas, setTeamData] = useState<TeamData[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<TeamData | null>(null);
+
   const openModal = (type: string, selectedData: TeamData | null = null) => {
     setActiveModal(type);
     if (selectedData) {
       setSelectedTeam(selectedData);
     }
   };
+
   const closeModal = () => {
     setActiveModal("");
   };
+
   const refreshTable = async () => {
     try {
       const response = await API.get(
@@ -41,12 +48,28 @@ export const VolunteerAssignmentTab = () => {
       console.log(response.data);
       setTeamData(response.data);
     } catch (e: any) {
-      console.error("Error fetching distsributions team: " + e);
+      console.error("Error fetching distributions team: " + e);
     }
   };
+
   useEffect(() => {
     refreshTable();
   }, []);
+
+  // Helper function to get status badge color
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'accepted':
+        return '#52c41a'; // Green
+      case 'pending':
+        return '#faad14'; // Yellow/Orange
+      case 'rejected':
+        return '#f5222d'; // Red
+      default:
+        return '#d9d9d9'; // Gray
+    }
+  };
+
   return (
     <>
       {activeModal === "assign" && (
@@ -93,7 +116,7 @@ export const VolunteerAssignmentTab = () => {
                       style={{
                         textAlign: "start",
                         padding: "10px",
-                        backgroundColor: "#749ab6 ",
+                        backgroundColor: "#749ab6",
                         color: "white",
                       }}
                     >
@@ -104,11 +127,14 @@ export const VolunteerAssignmentTab = () => {
                         <th style={{ textAlign: "start", padding: "10px" }}>
                           Role
                         </th>
+                        <th style={{ textAlign: "start", padding: "10px" }}>
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {teamData.team_members.map((volunteer) => (
-                        <tr>
+                      {teamData.team_members.map((volunteer, index) => (
+                        <tr key={index}>
                           <td style={{ padding: "10px" }}>
                             {volunteer.volunteer.first_name}{" "}
                             {volunteer.volunteer.last_name}
@@ -116,23 +142,39 @@ export const VolunteerAssignmentTab = () => {
                           <td style={{ padding: "10px" }}>
                             {volunteer.role.toUpperCase()}
                           </td>
+                          <td style={{ padding: "10px" }}>
+                            <span
+                              style={{
+                                padding: "4px 12px",
+                                borderRadius: "12px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                backgroundColor: getStatusColor(volunteer.status),
+                                color: "white",
+                                textTransform: "uppercase",
+                                display: "inline-block",
+                              }}
+                            >
+                              {volunteer.status || 'pending'}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
                 <span>
-                  <b>Deployment Area:</b>
+                  <b>Deployment Area: </b>
                   {teamData.deployment_area}
                 </span>
 
                 <span>
-                  <b>Assignment Duration:</b>
+                  <b>Assignment Duration: </b>
                   {teamData.assignment_duration}{" "}
                   {teamData.assignment_duration > 1 ? "Days" : "Day"}
                 </span>
                 <span>
-                  <b>Starting Date:</b>
+                  <b>Starting Date: </b>
                   {teamData.starting_date}
                 </span>
                 <div className="route-actions">

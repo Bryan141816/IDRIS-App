@@ -1178,6 +1178,12 @@ class TeamMembers(Base):
         Integer, ForeignKey("individual_volunteer.volunteer_id"), nullable=False
     )
     role = Column(String(255), nullable=False)
+    status = Column(String(20), default='pending', nullable=False)
+    assigned_at = Column(DateTime, server_default=func.now(), nullable=False)
+    responded_at = Column(DateTime, nullable=True)
+    assigned_by = Column(String(255), ForeignKey("users.user_id"), nullable=True)
+
+    # Relationships
     team = relationship("DistributionTeam", back_populates="team_members")
     volunteer = relationship("IndividualVolunteer")
 

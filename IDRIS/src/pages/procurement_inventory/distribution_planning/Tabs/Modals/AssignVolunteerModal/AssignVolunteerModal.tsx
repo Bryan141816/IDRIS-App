@@ -1,5 +1,6 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
+
 interface AssignVolunteerModalProp {
     onClose: () => void;
     refreshTable: () => void;
@@ -16,21 +17,22 @@ type Volunteer = {
     role?: string;
     availability_status?: string;
 };
+
 type TeamData = {
     team_name: string;
     team_members: { volunteer_id: number; role: string | undefined }[];
     deployment_area: string;
     assignment_duration: number;
     starting_date: string;
+    assigned_by?: string; // Add this field
 };
+
 export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
     onClose,
     refreshTable,
 }) => {
     const [isEditMember, setIsEditMember] = useState(false);
-
     const [teamMember, setTeamMember] = useState<Volunteer[]>([]);
-
     const [teamData, setTeamData] = useState<TeamData>({
         team_name: "",
         team_members: [],
@@ -40,7 +42,6 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
     });
 
     const handleSelect = (volunteers: Volunteer[]) => {
-        // If some volunteers already had roles, keep them
         const merged = volunteers.map((v) => {
             const existing = teamMember.find(
                 (tm) => tm.volunteer_id === v.volunteer_id,
@@ -49,6 +50,7 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
         });
         setTeamMember(merged);
     };
+
     const handleRoleChange = (volunteer_id: number, role: string) => {
         setTeamMember((prev) =>
             prev.map((member) =>
@@ -56,26 +58,67 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
             ),
         );
     };
+
+    // Helper function to get current user ID
+    const getCurrentUserId = (): string | null => {
+        try {
+            // Option 1: From localStorage
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                return user.user_id || user.id;
+            }
+
+            // Option 2: From sessionStorage
+            const sessionUserStr = sessionStorage.getItem('user');
+            if (sessionUserStr) {
+                const user = JSON.parse(sessionUserStr);
+                return user.user_id || user.id;
+            }
+
+            return null;
+        } catch (error) {
+            console.error("Error getting current user:", error);
+            return null;
+        }
+    };
+
     const handleAssign = () => {
         const filteredMember = teamMember.map(({ volunteer_id, role }) => ({
             volunteer_id,
             role,
         }));
-        teamData.team_members = filteredMember;
-        const submit = async (teamData: TeamData) => {
+
+        // Get current user ID
+        const currentUserId = getCurrentUserId();
+
+        // Update team data with members and assigned_by
+        const updatedTeamData = {
+            ...teamData,
+            team_members: filteredMember,
+            assigned_by: currentUserId || undefined,  // Add current user ID
+        };
+
+        const submit = async (data: TeamData) => {
             try {
                 const response = await API.post(
                     "/distribution_planning/add_team",
-                    teamData,
+                    data,
                 );
-                refreshTable();
-                onClose();
+
+                if (response.status === 200) {
+                    refreshTable();
+                    onClose();
+                }
             } catch (e: any) {
                 console.error("Error in adding team: " + e);
+
             }
         };
-        submit(teamData);
+
+        submit(updatedTeamData);
     };
+
     const handleInputChanges = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     ) => {
@@ -85,6 +128,7 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
             [name]: value,
         }));
     };
+
     return (
         <>
             {isEditMember && (
@@ -154,7 +198,7 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
                                                 </td>
                                                 <td style={{ padding: "10px" }}>
                                                     <select
-                                                        value={volunteer.role?.toUpperCase() || ""}
+                                                        value={volunteer.role || ""}
                                                         onChange={(e) =>
                                                             handleRoleChange(
                                                                 volunteer.volunteer_id,
@@ -217,6 +261,7 @@ export const AssignVolunteerModal: React.FC<AssignVolunteerModalProp> = ({
     );
 };
 
+// SelectVolunteer component remains the same
 interface SelectVolunteerProp {
     onClose: () => void;
     handleSelect: (volunteers: Volunteer[]) => void;
@@ -250,10 +295,8 @@ const SelectVolunteer: React.FC<SelectVolunteerProp> = ({
 
     const handleCheckboxChange = (volunteer: Volunteer, checked: boolean) => {
         if (checked) {
-            // add to selected
             setSelectedVolunteers((prev) => [...prev, volunteer]);
         } else {
-            // remove from selected
             setSelectedVolunteers((prev) =>
                 prev.filter((v) => v.volunteer_id !== volunteer.volunteer_id),
             );

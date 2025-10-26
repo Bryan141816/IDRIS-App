@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import "./CreateFunding.scss";
+import "./createFunding.scss";
 import Swal from "sweetalert2";
 import { createFundingproposals } from "../../../API_Handler/donations_funding_proposals_handler";
 import { getDonors } from "../../../API_Handler/donations_donors_handler";

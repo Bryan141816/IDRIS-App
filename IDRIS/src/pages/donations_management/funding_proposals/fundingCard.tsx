@@ -17,6 +17,8 @@ type FundingProp = {
   description?: string;
   donated?: number;
   target?: number;
+  starting_date?: string;
+  end_date?: string;
 };
 
 const FundingCard: React.FC<FundingProp> = ({
@@ -81,7 +83,7 @@ const FundingCard: React.FC<FundingProp> = ({
       <div className={styles.fundingHead}>
         <p className={styles.title}>{title}</p>
         <div className={styles.menuContainer} ref={menuRef}>
-          {(userRoles.includes("finance admin") || userRoles.includes("operations admin")) && (
+          {(userRoles.includes("superadmin") || userRoles.includes("operations admin")) && (
             <div className={styles.iconsContainer} onClick={toggleActive}>
               <CircleDot width={14} height={14} />
               <CircleDot width={14} height={14} />

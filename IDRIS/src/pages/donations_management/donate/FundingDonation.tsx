@@ -90,10 +90,25 @@ const DonationPage: React.FC = () => {
       const fetchProposal = async () => {
         try {
           const proposal = await getFundingProposalsById(fundingId);
-          console.log(proposal);
-          setFundingProposal(proposal);
+          if (!proposal.is_active) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Donation Failed',
+              text: 'This funding proposal is no longer active.',
+              confirmButtonColor: '#dc3545',
+            });
+            setFundingProposal(null);
+          } else {
+            setFundingProposal(proposal);
+          }
         } catch (error) {
           console.error('Failed to fetch funding proposal', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to fetch funding proposal details.',
+            confirmButtonColor: '#dc3545',
+          });
         }
       };
       fetchProposal();

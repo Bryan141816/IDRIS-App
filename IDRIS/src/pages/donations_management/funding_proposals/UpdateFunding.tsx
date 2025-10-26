@@ -1,9 +1,10 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./createFunding.scss";
 import Swal from "sweetalert2";
 import UploadFile from "../../../components/Page_Furniture/UploadFile";
 import { updateFundingProposal } from "../../../API_Handler/donations_funding_proposals_handler";
+import { UserContext } from "../../../UserContext";
 
 const backendUrl = "http://127.0.0.1:8000";
 
@@ -11,6 +12,8 @@ const CreateFunding: React.FC = () => {
   const Navigate = useNavigate();
   const location = useLocation();
   const fundingData = location.state;
+  const { user } = useContext(UserContext);
+  const isSuperAdmin = user?.roles?.includes("superadmin");
 
   const id = fundingData?.proposalId || null;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -27,6 +30,7 @@ const CreateFunding: React.FC = () => {
   const [endDate, setEndDate] = useState(
     fundingData?.end_date || "",
   );
+  const [isActive, setIsActive] = useState(fundingData?.is_active ?? true);
   const [notifyDonors, setNotifyDonors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -76,7 +80,9 @@ const CreateFunding: React.FC = () => {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("budgetRequired", budgetRequired.toString());
-    formData.append("status", "Active");
+    if (isSuperAdmin) {
+      formData.append("is_active", isActive.toString());
+    }
     if (startingDate) {
       formData.append("starting_date", startingDate);
     }
@@ -84,7 +90,6 @@ const CreateFunding: React.FC = () => {
       formData.append("end_date", endDate);
     }
 
-    // Only append image if a new file was selected
     if (selectedFile) {
       formData.append("image", selectedFile);
     }
@@ -94,8 +99,8 @@ const CreateFunding: React.FC = () => {
 
       await Swal.fire({
         icon: "success",
-        title: "Proposal Created",
-        text: "Your funding proposal has been created successfully!",
+        title: "Proposal Updated",
+        text: "Your funding proposal has been updated successfully!",
         confirmButtonColor: "#28a745",
       });
 
@@ -103,7 +108,6 @@ const CreateFunding: React.FC = () => {
     } catch (error: any) {
       console.error("Error details:", error);
 
-      // More detailed error handling
       if (error.response?.status === 500) {
         await Swal.fire({
           icon: "error",
@@ -133,7 +137,7 @@ const CreateFunding: React.FC = () => {
     if (document.referrer) {
       window.location.href = document.referrer;
     } else {
-      window.history.back(); // Fallback if no referrer
+      window.history.back();
     }
   }
 
@@ -199,6 +203,19 @@ const CreateFunding: React.FC = () => {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
+
+            {isSuperAdmin && (
+              <div className="text-input checkbox-input">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  id="is_active"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />
+                <label htmlFor="is_active">Is Active?</label>
+              </div>
+            )}
 
             <div className="text-input checkbox-input">
               <input

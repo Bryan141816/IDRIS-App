@@ -1145,6 +1145,31 @@ class AssignedStorage(Base):
     inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
 
 
+@event.listens_for(Session, "before_flush")
+def delete_zero_quantity_assigned_storage(session: Session, flush_context, instances):
+    """
+    Before the session flushes updates/inserts, delete any AssignedStorage rows
+    whose quantity is <= 0 so they don't get persisted.
+    """
+    # Updated rows
+    for obj in list(session.dirty):
+        if (
+            isinstance(obj, AssignedStorage)
+            and (obj.quantity is not None)
+            and (obj.quantity <= 0)
+        ):
+            session.delete(obj)
+
+    # New rows that ended up with 0 or negative (just in case)
+    for obj in list(session.new):
+        if (
+            isinstance(obj, AssignedStorage)
+            and (obj.quantity is not None)
+            and (obj.quantity <= 0)
+        ):
+            session.expunge(obj)
+
+
 class TeamMembers(Base):
     __tablename__ = "team_members"
     members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)

@@ -6,7 +6,7 @@ interface InventoryModalProps {
   children: ReactNode;
   modalType: string;
   zIndex?: number;
-  maxWidth?: string;
+  maxWidth?: string | null;
 }
 
 export const InventoryModal: React.FC<InventoryModalProps> = ({
@@ -19,7 +19,10 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 }) => {
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div className="modal" style={{ maxWidth }}>
+      <div
+        className="modal"
+        style={{ maxWidth: maxWidth ? maxWidth : "500px" }}
+      >
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
             ×
@@ -57,6 +60,7 @@ export interface WarehouseZone {
   capacity: number;
   manager: string;
   total_occupancy?: number;
+  is_assigned?: boolean;
 }
 
 export interface InventoryItemsProps {

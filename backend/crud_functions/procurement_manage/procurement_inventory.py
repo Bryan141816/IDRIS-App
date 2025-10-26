@@ -6,6 +6,7 @@ from data_schemas.procurement_inventory import (
     InventoryItemUpdate,
     AssignZone,
     AddInventoryDonationCreate,
+    UpdateAssignedStorage,
 )
 
 from sqlalchemy.orm import Session
@@ -51,14 +52,13 @@ class ProcurementInventoryCRUD:
     @staticmethod
     def get_all_warehouse_zones(db: Session):
         # Query all warehouse zones with assigned storages preloaded
-
         warehouses = (
             db.query(
                 WarehouseZones,
-                func.coalesce(
-                    func.sum(AssignedStorage.quantity),
-                    0,
-                ).label("total_quantity"),
+                func.coalesce(func.sum(AssignedStorage.quantity), 0).label(
+                    "total_quantity"
+                ),
+                func.count(AssignedStorage.assigned_id).label("assigned_count"),
             )
             .outerjoin(
                 AssignedStorage,
@@ -68,35 +68,66 @@ class ProcurementInventoryCRUD:
             .all()
         )
 
-        # Merge total_occupancy into warehouse object
+        # Merge total_occupancy and is_assigned into warehouse object
         result = []
-        for warehouse, total_occupancy in warehouses:
-            # Convert to dict if needed (SQLAlchemy object -> dict)
+        for warehouse, total_occupancy, assigned_count in warehouses:
             warehouse_dict = {**warehouse.__dict__}
-            # Remove internal SQLAlchemy state
             warehouse_dict.pop("_sa_instance_state", None)
-            # Add total_occupancy
             warehouse_dict["total_occupancy"] = float(total_occupancy)
+            warehouse_dict["is_assigned"] = (
+                assigned_count > 0
+            )  # ✅ True if any assigned storage exists
             result.append(warehouse_dict)
+
         return result
 
     @staticmethod
     def update_warehouse_zone(db: Session, payload: WarehouseZoneOut):
+        # 1) Load zone
         zone = (
             db.query(WarehouseZones)
             .filter(WarehouseZones.warehouse_id == payload.warehouse_id)
             .first()
         )
-
         if not zone:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Warehouse zone with id {payload.warehouse_id} not found",
             )
 
-        # Update only provided fields
-        for key, value in payload.dict(exclude_unset=True).items():
+        # 2) Split zone fields vs. assigned_storage updates
+        data = payload.model_dump(exclude_unset=True)
+
+        # 3) Update zone scalar fields
+        for key, value in data.items():
             setattr(zone, key, value)
+
+        if not payload.assigned_storage:
+            db.commit()
+            db.refresh(zone)
+            return zone
+
+        assigned_ids = [u.assigned_id for u in payload.assigned_storage]
+
+        # Fetch all matching AssignedStorage rows in one query
+        rows = (
+            db.query(AssignedStorage)
+            .filter(
+                AssignedStorage.warehouse_id == payload.warehouse_id,
+                AssignedStorage.assigned_id.in_(assigned_ids),
+            )
+            .all()
+        )
+
+        # Index by assigned_id for quick lookup
+        by_id = {row.assigned_id: row for row in rows}
+
+        # Loop through and update quantities
+        for update in payload.assigned_storage:
+            assigned_id = update.assigned_id
+            quantity = update.quantity
+            row = by_id[assigned_id]
+            row.quantity = quantity
 
         db.commit()
         db.refresh(zone)
@@ -387,10 +418,32 @@ class ProcurementInventoryCRUD:
 
     @staticmethod
     def get_assigned_storages(db: Session, warehouse_id: int):
-        return (
-            db.query(InventoryItems)
-            .join(AssignedStorage)
+
+        rows = (
+            db.query(AssignedStorage, InventoryItems)
+            .join(
+                InventoryItems,
+                InventoryItems.inventory_id == AssignedStorage.inventory_id,
+            )
             .filter(AssignedStorage.warehouse_id == warehouse_id)
-            .options(joinedload(InventoryItems.assigned_storages))
             .all()
         )
+
+        return [
+            {
+                "warehouse_id": asn.warehouse_id,
+                "inventory_id": asn.inventory_id,
+                "quantity": asn.quantity,
+                "assigned_id": asn.assigned_id,
+                "inventory_item": {
+                    "inventory_id": item.inventory_id,
+                    "item_name": item.item_name,
+                    "quantity": item.quantity,
+                    "category": item.category,
+                    "batch": item.batch,
+                    "expiry": item.expiry.isoformat() if item.expiry else None,
+                    "status": item.status,
+                },
+            }
+            for asn, item in rows
+        ]

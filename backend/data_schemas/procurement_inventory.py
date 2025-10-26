@@ -15,6 +15,11 @@ class WarehouseZoneCreate(BaseModel):
     manager: str
 
 
+class UpdateAssignedStorage(BaseModel):
+    assigned_id: int
+    quantity: int
+
+
 class WarehouseZoneOut(BaseModel):
     warehouse_id: int
     status: str
@@ -25,6 +30,7 @@ class WarehouseZoneOut(BaseModel):
     zone_type: str
     capacity: int
     manager: str
+    assigned_storage: Optional[List[UpdateAssignedStorage]] = None
 
 
 class InventoryItemCreate(BaseModel):

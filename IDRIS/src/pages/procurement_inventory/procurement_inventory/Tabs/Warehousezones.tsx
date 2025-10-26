@@ -19,6 +19,7 @@ const WarehouseZoneComponent = () => {
     capacity: 0,
     manager: "",
     total_occupancy: -0,
+    is_assigned: false,
   });
   const openModal = (
     type: string,

@@ -7,22 +7,22 @@ import { useState, useEffect } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { MiniMap } from "../../MiniMap";
 
-interface AssignedStorage {
+export interface InventoryItem {
+  inventory_id: number;
+  item_name: string;
+  quantity: number;
+  category: string;
+  batch: string;
+  expiry: string | null; // ISO date string, or null if no expiry
+  status: string;
+}
+
+export interface AssignedStorageWithItem {
   assigned_id: number;
   warehouse_id: number;
   inventory_id: number;
   quantity: number;
-}
-
-interface InventoryItem {
-  inventory_id: number;
-  item_name: string;
-  batch: string;
-  expiry: string; // ISO date string, e.g. "2025-11-08"
-  quantity: number;
-  category: string;
-  status: string;
-  assigned_storages: AssignedStorage[];
+  inventory_item: InventoryItem;
 }
 
 interface ViewWarehouseProps extends DefaultInventoryModalProps {
@@ -32,7 +32,7 @@ export const ViewWarehouse: React.FC<
   Omit<ViewWarehouseProps, "refreshData">
 > = ({ onClose, selectedData }) => {
   const [assignedStorage, setAssignedStorage] = useState<
-    InventoryItem[] | null
+    AssignedStorageWithItem[] | null
   >(null);
   useEffect(() => {
     const fetch = async () => {
@@ -132,15 +132,15 @@ export const ViewWarehouse: React.FC<
                     <tbody>
                       {(!assignedStorage || assignedStorage.length === 0) && (
                         <tr>
-                          <td colSpan={4}>No Items have been assigned yet</td>
+                          <td colSpan={3}>No Items have been assigned yet</td>
                         </tr>
                       )}
 
                       {assignedStorage.map((item) => (
                         <tr key={item.inventory_id}>
-                          <td>{item.item_name}</td>
-                          <td>{item.assigned_storages[0].quantity}</td>
-                          <td>{item.category}</td>
+                          <td>{item.inventory_item.item_name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.inventory_item.category}</td>
                         </tr>
                       ))}
                     </tbody>

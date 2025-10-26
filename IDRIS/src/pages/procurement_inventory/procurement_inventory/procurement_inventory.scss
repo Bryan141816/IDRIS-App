@@ -377,8 +377,9 @@
 
   table {
     width: 100%;
+    box-sizing: border-box;
+    table-layout: fixed;
     border-collapse: collapse;
-    min-width: 800px;
 
     thead {
       background: linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%);
@@ -390,6 +391,8 @@
         font-weight: 600;
         font-size: 0.875rem;
         white-space: nowrap;
+        min-width: 100px;
+        max-width: 1fr;
       }
     }
 

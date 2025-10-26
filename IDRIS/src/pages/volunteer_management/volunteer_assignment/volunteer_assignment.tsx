@@ -14,6 +14,8 @@ import { getAllOrganizationVolunteers } from '../../../API_Handler/organization_
 import { Breadcrumb, Empty } from 'antd';
 import { VolunteerStatus } from '../../../API_Handler/volunteer_status_handler';
 import type { CheckboxOptionType } from "antd";
+import { API } from '../../../API_Handler/Axio_API_Handler';
+import Swal from 'sweetalert2';
 
 type Availability = 'available' | 'unavailable' | 'assigned';
 type TaskLifecycle = 'incoming' | 'ongoing' | 'finished';
@@ -76,21 +78,21 @@ interface PhotonResp {
 }
 
 const skillsOptions: CheckboxOptionType[] = [
-  { label: "CPR", value: "CPR" },
-  { label: "First Aid", value: "First Aid" },
-  { label: "Search & Rescue", value: "Search & Rescue" },
-  { label: "Fire Safety", value: "Fire Safety" },
-  { label: "Evacuation Assistance", value: "Evacuation Assistance" },
-  { label: "Crowd Control", value: "Crowd Control" },
-  { label: "Radio Communication", value: "Radio Communication" },
-  { label: "Disaster Assessment", value: "Disaster Assessment" },
-  { label: "Logistics Management", value: "Logistics Management" },
-  { label: "Driving (Emergency Vehicles)", value: "Driving (Emergency Vehicles)" },
-  { label: "Medical Assistance", value: "Medical Assistance" },
-  { label: "Shelter Management", value: "Shelter Management" },
-  { label: "Relief Goods Distribution", value: "Relief Goods Distribution" },
-  { label: "Counseling / Psychological First Aid", value: "Counseling / Psychological First Aid" },
-  { label: "Documentation / Reporting", value: "Documentation / Reporting" },
+    { label: "CPR", value: "CPR" },
+    { label: "First Aid", value: "First Aid" },
+    { label: "Search & Rescue", value: "Search & Rescue" },
+    { label: "Fire Safety", value: "Fire Safety" },
+    { label: "Evacuation Assistance", value: "Evacuation Assistance" },
+    { label: "Crowd Control", value: "Crowd Control" },
+    { label: "Radio Communication", value: "Radio Communication" },
+    { label: "Disaster Assessment", value: "Disaster Assessment" },
+    { label: "Logistics Management", value: "Logistics Management" },
+    { label: "Driving (Emergency Vehicles)", value: "Driving (Emergency Vehicles)" },
+    { label: "Medical Assistance", value: "Medical Assistance" },
+    { label: "Shelter Management", value: "Shelter Management" },
+    { label: "Relief Goods Distribution", value: "Relief Goods Distribution" },
+    { label: "Counseling / Psychological First Aid", value: "Counseling / Psychological First Aid" },
+
 ];
 
 
@@ -169,6 +171,53 @@ async function createAssignment(taskId: string | number, volunteerId: string) {
         const raw = err?.response?.data?.detail ?? err?.response?.data ?? err?.message ?? err;
         const msg = typeof raw === 'string' ? raw : JSON.stringify(raw);
         throw new Error(msg);
+    }
+}
+
+async function fetchAddress(lat: number, lng: number): Promise<string> {
+    console.log("🔄 Starting reverse geocoding for:", lat, lng);
+
+    try {
+        const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=en`;
+        console.log("📡 Calling Photon reverse:", url);
+
+        const response = await fetch(url);
+        console.log("📊 Response status:", response.status);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("📮 Photon reverse response:", data);
+
+        if (data.features && data.features.length > 0) {
+            const feature = data.features[0];
+            const props = feature.properties || {};
+
+            // Build formatted address from properties
+            const addressParts = [];
+
+            if (props.name) addressParts.push(props.name);
+            if (props.street) addressParts.push(props.street);
+            if (props.housenumber) addressParts.push(props.housenumber);
+            if (props.city) addressParts.push(props.city);
+            else if (props.county) addressParts.push(props.county);
+            if (props.state) addressParts.push(props.state);
+            if (props.country) addressParts.push(props.country);
+            if (props.postcode) addressParts.push(props.postcode);
+
+            const formattedAddress = addressParts.join(", ");
+            console.log("📍 Formatted address:", formattedAddress);
+
+            return formattedAddress || props.name || "";
+        } else {
+            console.warn("⚠️ No features in reverse geocoding response");
+            return "";
+        }
+    } catch (error) {
+        console.error("❌ Reverse geocoding failed:", error);
+        return "";
     }
 }
 
@@ -334,6 +383,51 @@ const AutocompleteAddress: React.FC<{
     );
 };
 
+const hasMatchingSkills = (volunteerSkills: string[], requiredSkills: string[]): boolean => {
+    if (requiredSkills.length === 0) return true; // No skills required
+    return volunteerSkills.some(skill =>
+        requiredSkills.some(reqSkill =>
+            skill.toLowerCase().trim() === reqSkill.toLowerCase().trim()
+        )
+    );
+};
+
+/**
+ * Check if two date ranges overlap
+ */
+const doDateRangesOverlap = (
+    start1: string,
+    end1: string,
+    start2: string,
+    end2: string
+): boolean => {
+    const e1start = new Date(start1).getTime();
+    const e1end = new Date(end1).getTime();
+    const e2start = new Date(start2).getTime();
+    const e2end = new Date(end2).getTime();
+
+    return (e1start < e2end && e1end > e2start);
+};
+
+const hasOverlappingAssignment = (
+    volunteerId: string,
+    newStart: string,
+    newEnd: string,
+    areas: VolunteerArea[],
+    currentAreaId?: string
+): boolean => {
+    return areas.some(area => {
+        // Skip the current area being checked
+        if (area.id === currentAreaId) return false;
+
+        // Check if volunteer is assigned to this area
+        if (!area.assignedVolunteers.includes(volunteerId)) return false;
+
+        // Check if dates overlap
+        return doDateRangesOverlap(area.start_at, area.end_at, newStart, newEnd);
+    });
+};
+
 const VolunteerAssignmentPage: React.FC = () => {
     const [areas, setAreas] = useState<VolunteerArea[]>([]);
     const [selectedArea, setSelectedArea] = useState<string>('');
@@ -353,6 +447,10 @@ const VolunteerAssignmentPage: React.FC = () => {
         maxVolunteers: '',
         requiredSkills: [],
     });
+    const [validationWarnings, setValidationWarnings] = useState<{
+        volunteerId: string;
+        warnings: string[];
+    }[]>([]);
 
     const filteredVolunteers = volunteers.filter(
         (v) =>
@@ -361,7 +459,37 @@ const VolunteerAssignmentPage: React.FC = () => {
             v.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const availableVolunteers = filteredVolunteers.filter((v) => v.availability_status === 'available' && v.status === 'approved');
+    const availableVolunteers = useMemo(() => {
+        if (!selectedArea) {
+            // If no area is selected, show all approved volunteers
+            return filteredVolunteers.filter((v) => v.status === 'approved');
+        }
+
+        const selectedAreaData = areas.find(a => a.id === selectedArea);
+        if (!selectedAreaData) {
+            return filteredVolunteers.filter((v) => v.status === 'approved');
+        }
+
+        // Filter volunteers who:
+        // 1. Are approved
+        // 2. Don't have overlapping assignments with the selected area
+        return filteredVolunteers.filter((v) => {
+            // Must be approved
+            if (v.status !== 'approved') return false;
+
+            // Check if volunteer has overlapping assignments
+            const hasOverlap = hasOverlappingAssignment(
+                v.id,
+                selectedAreaData.start_at,
+                selectedAreaData.end_at,
+                areas,
+                selectedAreaData.id
+            );
+
+            // Include volunteer if they DON'T have an overlap
+            return !hasOverlap;
+        });
+    }, [filteredVolunteers, selectedArea, areas]);
 
     const activeAreas = useMemo(() => {
         return areas
@@ -369,8 +497,73 @@ const VolunteerAssignmentPage: React.FC = () => {
             .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
     }, [areas]);
 
+    const getVolunteerValidation = (volunteerId: string): string[] => {
+        if (!selectedArea) return [];
+
+        const area = areas.find(a => a.id === selectedArea);
+        if (!area) return [];
+
+        const volunteer = volunteers.find(v => v.id === volunteerId);
+        if (!volunteer) return [];
+
+        const warnings: string[] = [];
+
+        // Check skill mismatch
+        if (!hasMatchingSkills(volunteer.skills, area.requiredSkills)) {
+            warnings.push(`Missing required skills: ${area.requiredSkills.join(', ')}`);
+        }
+
+        // Check overlapping assignments
+        if (hasOverlappingAssignment(volunteerId, area.start_at, area.end_at, areas, area.id)) {
+            warnings.push('Has overlapping assignment during this time');
+        }
+
+        return warnings;
+    };
+
     const handleAssignVolunteers = async () => {
         if (!selectedArea || selectedVolunteers.length === 0) return;
+
+        const area = areas.find(a => a.id === selectedArea);
+        if (!area) return;
+
+        // Validate all selected volunteers
+        const validationErrors: { volunteerId: string; warnings: string[] }[] = [];
+
+        selectedVolunteers.forEach(volId => {
+            const warnings = getVolunteerValidation(volId);
+            if (warnings.length > 0) {
+                validationErrors.push({ volunteerId: volId, warnings });
+            }
+        });
+
+        // If there are validation errors, show confirmation dialog
+        if (validationErrors.length > 0) {
+            const volunteerNames = validationErrors.map(err => {
+                const vol = volunteers.find(v => v.id === err.volunteerId);
+                return `<li style="text-align: left; margin: 5px 0;"><strong>${vol?.name}:</strong> ${err.warnings.join(', ')}</li>`;
+            }).join('\n');
+
+            const result = await Swal.fire({
+                title: '⚠️ Warning',
+                html: `<div style="text-align: left;">
+                    <p>The following volunteers have issues:</p>
+                    <ul style="padding-left: 20px; margin: 10px 0;">
+                        ${volunteerNames}
+                    </ul>
+                    <p>Do you want to proceed anyway?</p>
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, proceed',
+                cancelButtonText: 'No, cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+            });
+
+            if (!result.isConfirmed) return;
+        }
+
         const areaId = String(selectedArea);
 
         const results = await Promise.allSettled(
@@ -381,7 +574,6 @@ const VolunteerAssignmentPage: React.FC = () => {
         );
 
         const failed: string[] = [];
-
         results.forEach((r) => {
             if (r.status === 'fulfilled') {
                 const { volId, assignment } = r.value as { volId: string; assignment: AssignmentDTO };
@@ -413,12 +605,31 @@ const VolunteerAssignmentPage: React.FC = () => {
         });
 
         if (failed.length > 0) {
-            alert(`Some assignments failed:\n- ${failed.join('\n- ')}`);
+            await Swal.fire({
+                title: 'Assignment Failed',
+                html: `<div style="text-align: left;">
+                    <p>Some assignments failed:</p>
+                    <ul style="padding-left: 20px;">
+                        ${failed.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>`,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            await Swal.fire({
+                title: 'Success!',
+                text: `Successfully assigned ${selectedVolunteers.length} volunteer(s)`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
 
         setSelectedVolunteers([]);
         setShowAssignModal(false);
         setSelectedArea('');
+        setValidationWarnings([]);
     };
 
     const handleRemoveVolunteer = async (areaId: string, volunteerId: string) => {
@@ -443,15 +654,44 @@ const VolunteerAssignmentPage: React.FC = () => {
         }
 
         if (!assignmentId) {
-            alert("Couldn't find the assignment ID for this volunteer. Try reloading the page.");
+            await Swal.fire({
+                title: 'Error',
+                text: "Couldn't find the assignment ID for this volunteer. Try reloading the page.",
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
             return;
         }
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: 'Do you want to unassign this volunteer?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, unassign',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+        });
+
+        if (!result.isConfirmed) return;
 
         try {
             await apiDeleteAssignment(assignmentId);
+            await Swal.fire({
+                title: 'Unassigned!',
+                text: 'Volunteer has been unassigned successfully.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } catch (e: any) {
             const msg = e?.response?.data?.detail || e?.message || 'Delete failed';
-            alert(msg);
+            await Swal.fire({
+                title: 'Error',
+                text: msg,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
             return;
         }
 
@@ -660,16 +900,70 @@ const VolunteerAssignmentPage: React.FC = () => {
     };
 
     const handleCreateArea = async () => {
-        if (!newArea.name.trim()) return alert('Name is required');
-        if (!newArea.location.trim()) return alert('Location is required');
-        if (!newArea.start_at || !newArea.end_at) return alert('Start and End are required');
+        if (!newArea.name.trim()) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'Name is required',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (!newArea.location.trim()) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'Location is required',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (!newArea.start_at || !newArea.end_at) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'Start and End dates are required',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const mv = Number(newArea.maxVolunteers);
+        if (!Number.isFinite(mv) || mv <= 0) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'Max volunteers must be a positive number',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         if (!Number.isFinite(mv) || mv <= 0) return alert('Max volunteers must be a positive number');
 
         const startISO = toIsoOrNull(newArea.start_at);
         const endISO = toIsoOrNull(newArea.end_at);
-        if (!startISO || !endISO) return alert('Invalid date/time');
-        if (new Date(endISO) <= new Date(startISO)) return alert('End must be after Start');
+        if (!startISO || !endISO) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'Invalid datetime',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (new Date(endISO) <= new Date(startISO)) {
+            await Swal.fire({
+                title: 'Validation Error',
+                text: 'End must be after Start',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
 
         const payload = {
             title: newArea.name.trim(),
@@ -681,6 +975,7 @@ const VolunteerAssignmentPage: React.FC = () => {
             max_volunteers: mv,
             required_skills: newArea.requiredSkills,
         };
+
 
         try {
             const created = await createProgram(payload);
@@ -719,6 +1014,14 @@ const VolunteerAssignmentPage: React.FC = () => {
                 },
                 ...prev,
             ]);
+
+            await Swal.fire({
+                title: 'Success!',
+                text: 'Program/Event created successfully',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
             setShowAddModal(false);
             setNewArea({
                 name: '',
@@ -730,7 +1033,12 @@ const VolunteerAssignmentPage: React.FC = () => {
                 requiredSkills: [],
             });
         } catch (e: any) {
-            alert(e?.response?.data?.detail || e?.message || 'Failed to create program');
+            await Swal.fire({
+                title: 'Error',
+                text: e?.response?.data?.detail || e?.message || 'Failed to create program',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
     };
 
@@ -959,36 +1267,77 @@ const VolunteerAssignmentPage: React.FC = () => {
 
                 {showAssignModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-lg max-w-md w-full p-6">
+                        <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Volunteers</h3>
                             <p className="text-sm text-gray-600 mb-4">
                                 Select volunteers to assign to {areas.find((a) => a.id === selectedArea)?.name}
                             </p>
 
-                            <div className="max-h-60 overflow-y-auto mb-4">
+                            {/* Show required skills */}
+                            {selectedArea && (areas.find(a => a.id === selectedArea)?.requiredSkills?.length ?? 0) > 0 && (
+                                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                    <p className="text-sm font-medium text-blue-900 mb-1">Required Skills:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                        {areas.find(a => a.id === selectedArea)?.requiredSkills.map((skill) => (
+                                            <span key={skill} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="max-h-96 overflow-y-auto mb-4 space-y-2">
                                 {availableVolunteers.length === 0 ? (
                                     <Empty description="No volunteers to assign" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                                 ) : (
-                                    availableVolunteers.map((volunteer) => (
-                                        <label key={volunteer.id} className="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer gap-3">
-                                            <input
-                                                type="checkbox"
-                                                className="w-4 h-4 mt-1 flex-shrink-0"
-                                                checked={selectedVolunteers.includes(volunteer.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedVolunteers((prev) => [...prev, volunteer.id]);
-                                                    } else {
-                                                        setSelectedVolunteers((prev) => prev.filter((id) => id !== volunteer.id));
-                                                    }
-                                                }}
-                                            />
-                                            <div>
-                                                <p className="font-medium text-gray-900">{volunteer.name}</p>
-                                                <p className="text-sm text-gray-600">{volunteer.skills.join(', ')}</p>
+                                    availableVolunteers.map((volunteer) => {
+                                        const warnings = getVolunteerValidation(volunteer.id);
+                                        const hasWarnings = warnings.length > 0;
+
+                                        return (
+                                            <div
+                                                key={volunteer.id}
+                                                className={`border rounded-md ${hasWarnings ? 'border-yellow-300 bg-yellow-50' : 'border-gray-200'}`}
+                                            >
+                                                <label className="flex items-start p-3 cursor-pointer gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 mt-1 flex-shrink-0"
+                                                        checked={selectedVolunteers.includes(volunteer.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedVolunteers((prev) => [...prev, volunteer.id]);
+                                                            } else {
+                                                                setSelectedVolunteers((prev) => prev.filter((id) => id !== volunteer.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-medium text-gray-900">{volunteer.name}</p>
+                                                            {hasWarnings && (
+                                                                <span className="text-yellow-600 text-xs">⚠️</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 mb-1">
+                                                            Skills: {volunteer.skills.join(', ') || 'None'}
+                                                        </p>
+                                                        {hasWarnings && (
+                                                            <div className="mt-1 space-y-1">
+                                                                {warnings.map((warning, idx) => (
+                                                                    <p key={idx} className="text-xs text-yellow-700 flex items-start gap-1">
+                                                                        <span>⚠</span>
+                                                                        <span>{warning}</span>
+                                                                    </p>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </label>
                                             </div>
-                                        </label>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </div>
 
@@ -998,6 +1347,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                                         setShowAssignModal(false);
                                         setSelectedVolunteers([]);
                                         setSelectedArea('');
+                                        setValidationWarnings([]);
                                     }}
                                     className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                                 >
@@ -1049,8 +1399,18 @@ const VolunteerAssignmentPage: React.FC = () => {
                                     <AutocompleteAddress
                                         value={newArea.location}
                                         onChange={(name) => setNewArea((prev) => ({ ...prev, location: name }))}
-                                        onPick={({ name }) => {
-                                            setNewArea((prev) => ({ ...prev, location: name }));
+                                        onPick={async ({ name, lat, lng, classificationGuess }) => {
+                                            console.log("✅ Selected from dropdown:", name);
+                                            console.log("📍 Coordinates:", lat, lng);
+
+                                            // ✅ Fetch formal address from Photon reverse geocoding
+                                            const formalAddress = await fetchAddress(lat, lng);
+                                            console.log("📮 Formal address:", formalAddress);
+
+                                            setNewArea((prev) => ({
+                                                ...prev,
+                                                location: formalAddress || name, // Use formal address or fallback to name
+                                            }));
                                         }}
                                     />
                                 </div>

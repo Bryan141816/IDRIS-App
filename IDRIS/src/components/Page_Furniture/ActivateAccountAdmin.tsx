@@ -353,6 +353,41 @@ const AdminActivate = () => {
         }
     };
 
+    // Input validations
+    const validateForm = () => {
+        const { firstName, lastName, employeeIdNumber, contactNumber, lguLocation, idFile } = profileInfo;
+
+        if (!firstName || !lastName || !employeeIdNumber || !contactNumber || !idFile) {
+            Swal.fire({
+                icon: "error",
+                title: "Form Error",
+                text: "Please fill in all required fields and upload your ID.",
+            });
+            return false;
+        }
+
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(contactNumber)) {
+            Swal.fire({
+                icon: "error",
+                title: "Invalid Contact Number",
+                text: "Please enter a valid 10-digit phone number.",
+            });
+            return false;
+        }
+
+        if (isLguOfficer && !lguLocation) {
+            Swal.fire({
+                icon: "error",
+                title: "LGU Location Required",
+                text: "Please select your LGU location.",
+            });
+            return false;
+        }
+
+        return true;
+    };
+
     const submitProfile = async () => {
         if (!token) {
             Swal.fire({
@@ -362,6 +397,9 @@ const AdminActivate = () => {
             });
             return;
         }
+
+        // Validate the form before submitting
+        if (!validateForm()) return;
 
         Swal.fire({
             title: "Submitting Profile...",
@@ -598,7 +636,7 @@ const AdminActivate = () => {
                                 Upload Government ID
                             </button>
                             {idPreview && (
-                                <div style={{ marginTop: "10px" , marginLeft: "100px"}}>
+                                <div style={{ marginTop: "10px", marginLeft: "100px" }}>
                                     <img
                                         src={idPreview}
                                         alt="ID Preview"

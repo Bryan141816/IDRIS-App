@@ -4,21 +4,22 @@ from typing import List, Optional
 from pathlib import Path
 from database import get_db
 from routers.role_checker import RoleChecker
-from datetime import date
+from datetime import date, datetime
 from math import ceil
-from models import FundingProposal
+from models import FundingProposal, User
 from schemas import Number
-from crud_functions.donations_management.funding_proposals import FundingProposalCRUD  as CRUD
+from crud_functions.donations_management.funding_proposals import FundingProposalCRUD as CRUD
 from crud_functions.utils import uid_from_string
 from data_schemas.funding_proposal_schema import (
     FundingProposalCreate, FundingProposalUpdate, FundingProposalGet,
     FundingProposalResponse , FundingProposalResponsePaginated, FundingPieChart
-    )
+)
+from routers.auth.authentication import get_current_user_from_access_token
 
 router = APIRouter()
 
 router_admin = APIRouter(
-    dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
+    dependencies=[Depends(RoleChecker(["finance admin", "operations admin", "superadmin"]))],
 )
 
 router_user = APIRouter(
@@ -67,6 +68,9 @@ def read_one_proposal(funding_id: str, db: Session = Depends(get_db)):
         proposal = CRUD.get_proposal_by_id(db=db, funding_id=funding_id)
         if not proposal:
             raise HTTPException(status_code=404, detail="Proposal not found")
+        # Donors should not be able to donate to inactive proposals
+        if not proposal['is_active']:
+             raise HTTPException(status_code=403, detail="This funding proposal is not active.")
         return proposal
     except HTTPException:
         raise
@@ -79,20 +83,18 @@ def create_proposal_endpoint(
     title: str = Form(...),
     description: str = Form(...),
     budgetRequired: int = Form(...),
-    status: str = Form(...),
     image: Optional[UploadFile] = File(None),
     starting_date: date = Form(...),
     end_date: date = Form(...),
     db: Session = Depends(get_db)
 ):
     proposal_data = FundingProposalCreate(
-        funding_id = uid_from_string(f"{title}{description}"),
+        funding_id=uid_from_string(f"{title}{description}"),
         title=title,
         description=description,
         budgetRequired=budgetRequired,
-        status=status,
-        starting_date=starting_date,
-        end_date=end_date
+        starting_date=datetime.combine(starting_date, datetime.min.time()),
+        end_date=datetime.combine(end_date, datetime.max.time())
     )
     return CRUD.create_funding_proposal(db=db, proposal_data=proposal_data, image=image)
 
@@ -102,27 +104,33 @@ def update_proposal_endpoint(
     title: str = Form(...),
     description: str = Form(...),
     budgetRequired: int = Form(...),
-    status: str = Form("Active"),
+    is_active: Optional[bool] = Form(None),
     image: Optional[UploadFile] = File(None),
     starting_date: Optional[date] = Form(None),
     end_date: Optional[date] = Form(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_from_access_token)
 ):
-    print(f"funding id: ", funding_id)
+    user_is_superadmin = "superadmin" in current_user.roles
+
+    start_datetime = datetime.combine(starting_date, datetime.min.time()) if starting_date else None
+    end_datetime = datetime.combine(end_date, datetime.max.time()) if end_date else None
+
     return CRUD.update_proposal(
         db=db,
         funding_id=funding_id,
         title=title,
         description=description,
         budget_required=budgetRequired,
-        status=status,
+        is_active=is_active,
         image=image,
-        starting_date=starting_date,
-        end_date=end_date
+        starting_date=start_datetime,
+        end_date=end_datetime,
+        user_is_superadmin=user_is_superadmin
     )
 
 @router_admin.delete("/proposals/delete_proposal/{funding_id}")
-def delete_proposal_endpoint(funding_id: int, db: Session = Depends(get_db)):
+def delete_proposal_endpoint(funding_id: str, db: Session = Depends(get_db)):
     try:
         if not CRUD.delete_proposal(db, funding_id):
             raise HTTPException(status_code=404, detail="Proposal not found")
@@ -148,7 +156,6 @@ def get_total_holding(
     response = CRUD.total_holding(db, date_since, date_to)
     print(response)
     return response
-
 
 router.include_router(router_admin)
 router.include_router(router_donor)

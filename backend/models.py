@@ -390,7 +390,7 @@ class FundingProposal(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    status = Column(String(50), nullable=False)
+    is_active = Column(Boolean, default=True)
     image = Column(String, nullable=True)
     starting_date = Column(DateTime(timezone=True), nullable=False)
     end_date = Column(DateTime(timezone=True), nullable=False)
@@ -609,10 +609,6 @@ class Donation_InKind(Base):
         String, nullable=True
     )  # Description of donated items/services
 
-    estimated_value = Column(
-        Numeric(10, 2), nullable=True
-    )  # Estimated monetary value of in-kind donation
-
     donation_id = Column(
         String,
         ForeignKey("donation_records.donation_id", ondelete="CASCADE"),
@@ -620,7 +616,6 @@ class Donation_InKind(Base):
         unique=True,
     )
 
-    quantity = Column(String(50), nullable=True)  # Quantity/units of donated items
     donation = relationship("Donation", back_populates="inkind")
 
     inventory_item = relationship(

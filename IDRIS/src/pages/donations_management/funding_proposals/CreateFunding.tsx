@@ -57,7 +57,6 @@ const CreateFunding: React.FC = () => {
     formData.append("title", title);
     formData.append("description", description);
     formData.append("budgetRequired", plainBudget);
-    formData.append("status", "pending");
     formData.append("starting_date", startingDate);
     formData.append("end_date", endDate);
     if (selectedFile) {

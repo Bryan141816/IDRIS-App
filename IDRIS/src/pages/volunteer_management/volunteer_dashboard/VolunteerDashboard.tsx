@@ -16,6 +16,7 @@ import {
 } from "../../../API_Handler/assignment_handler";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import Swal from "sweetalert2";
+import { getUserProfileByUserId } from '../../../API_Handler/user_profile_handler';
 
 interface IndividualVolunteerRead {
     volunteer_id: number;
@@ -61,6 +62,7 @@ interface NewsAnnouncement {
     maxVolunteers: number;
     currentVolunteers: number;
     volunteersNeeded: number;
+    skills?: string[];
 }
 
 interface CalendarEvent {
@@ -102,9 +104,29 @@ export default function IDRISDashboard() {
         useState<IndividualVolunteerRead | null>(null);
     const [myOrgVolunteer, setMyOrgVolunteer] = useState<any | null>(null);
     const [joining, setJoining] = useState<Record<number, boolean>>({}); // programId -> loading
-
+    const [volunteerProfiles, setVolunteerProfiles] = useState<Record<number, any>>({});
     // ---------- helpers ----------
     const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+    const fetchVolunteerProfiles = async (volunteerList: IndividualVolunteerRead[]) => {
+        const profiles: Record<number, any> = {};
+
+        for (const volunteer of volunteerList) {
+            try {
+                if (volunteer.user_id) {
+                    // ✅ Use the existing handler function
+                    const profileData = await getUserProfileByUserId(volunteer.user_id);
+                    profiles[volunteer.volunteer_id] = profileData;
+                    console.log(`✅ Fetched profile for volunteer ${volunteer.volunteer_id}:`, profileData);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to fetch profile for user ${volunteer.user_id}:`, error);
+            }
+        }
+
+        setVolunteerProfiles(profiles);
+    };
+
 
     const toAbsoluteFileUrl = (p?: string) => {
         if (!p) return "";
@@ -317,6 +339,7 @@ export default function IDRISDashboard() {
                         maxVolunteers: max,
                         currentVolunteers: current,
                         volunteersNeeded: Math.max(0, max - current),
+                        skills: program.skills ?? program.required_skills ?? undefined,
                     };
                 });
 
@@ -435,22 +458,26 @@ export default function IDRISDashboard() {
     const fetchVolunteers = async () => {
         try {
             setLoading(true);
-
             const data = await getAllVolunteers();
             const orgData = await getAllOrganizationVolunteers();
 
-            const list = Array.isArray(data)
-                ? data.map((v) => ({ ...v, status: normalizeStatus(v) }))
+            const list: IndividualVolunteerRead[] = Array.isArray(data)
+                ? data.map((v: any) => ({ ...v, status: normalizeStatus(v) }))
                 : [];
 
             const orgList = Array.isArray(orgData)
-                ? orgData.map((o) => ({ ...o, status: normalizeStatus(o) }))
+                ? orgData.map((o: any) => ({ ...o, status: normalizeStatus(o) }))
                 : [];
 
             setVolunteers(list);
             setOrganizationVolunteers(orgList);
 
-            if (list.length > 0) setSelectedVolunteer(list[0]);
+            // ✅ Fetch user profiles for volunteers
+            await fetchVolunteerProfiles(list);
+
+            if (list.length > 0) {
+                setSelectedVolunteer(list[0]);
+            }
         } catch (error) {
             console.error("Error fetching volunteers:", error);
             message.error("Failed to load volunteers data");
@@ -575,6 +602,8 @@ export default function IDRISDashboard() {
         return days;
     };
 
+
+
     const isToday = (d: number) =>
         d === today.getDate() &&
         viewDate.getMonth() === today.getMonth() &&
@@ -606,22 +635,207 @@ export default function IDRISDashboard() {
     const canJoin = (n: NewsAnnouncement) =>
         n.lifecycle !== "finished" && n.currentVolunteers < n.maxVolunteers;
 
-
     const joinProgram = async (n: NewsAnnouncement) => {
-  if (!canJoin(n)) return;
-  const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
-  const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
-  if (!iv && !ov) {
-    // Show required Swal message
-    Swal.fire({
-      icon: "warning",
-      title: "Volunteer Registration Required",
-      text: "You must be a registered volunteer to join programs. Please register as a volunteer first.",
-      confirmButtonText: "OK"
-    });
-    return;
-  }
+        if (!canJoin(n)) return;
 
+        const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
+        const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
+
+        if (!iv && !ov) {
+            Swal.fire({
+                icon: "warning",
+                title: "Volunteer Registration Required",
+                text: "You must be a registered volunteer to join programs. Please register as a volunteer first.",
+                confirmButtonText: "OK"
+            });
+            return;
+        }
+
+        // 1. Fetch the programs already joined by the volunteer
+        let joinedPrograms: any[] = [];
+        try {
+            const volunteerId = iv?.volunteer_id || ov?.volunteer_id;
+            const response = await API.get(`/assignments/volunteer/${volunteerId}`);
+
+            joinedPrograms = Array.isArray(response.data)
+                ? response.data.map((assignment: any) => assignment.program || assignment)
+                : [];
+
+            console.log("Joined programs:", joinedPrograms);
+        } catch (error) {
+            console.error("Failed to fetch joined programs:", error);
+        }
+
+        // 2. Check if already joined THIS specific program
+        const alreadyJoinedThisProgram = joinedPrograms.some(
+            (program: any) => (program.id || program.program_id) === n.id
+        );
+
+        if (alreadyJoinedThisProgram) {
+            Swal.fire({
+                title: "Already Joined",
+                text: "You are already part of this program.",
+                icon: "info",
+                confirmButtonText: "Got it",
+            });
+            return;
+        }
+
+        // 3. Check volunteer availability against program dates
+        const volunteerAvailability = iv?.availability || ov?.availability || "";
+
+        if (volunteerAvailability && (n.startat || n.endat || n.taskdate)) {
+            // Parse availability string (e.g., "Sunday,Monday,Friday")
+            const availableDays = volunteerAvailability
+                .split(",")
+                .map((day: string) => day.trim().toLowerCase())
+                .filter(Boolean);
+
+            // Get program start and end dates
+            const programStart = n.startat
+                ? new Date(n.startat)
+                : n.taskdate
+                    ? new Date(n.taskdate + "T08:00:00")
+                    : null;
+
+            const programEnd = n.endat
+                ? new Date(n.endat)
+                : n.taskdate
+                    ? new Date(n.taskdate + "T17:00:00")
+                    : null;
+
+            if (programStart && programEnd && !isNaN(programStart.getTime()) && !isNaN(programEnd.getTime())) {
+                // Get all days the program runs
+                const programDays: string[] = [];
+                const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+                let currentDate = new Date(programStart);
+                const endDate = new Date(programEnd);
+
+                while (currentDate <= endDate) {
+                    const dayName = dayNames[currentDate.getDay()];
+                    if (!programDays.includes(dayName)) {
+                        programDays.push(dayName);
+                    }
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                console.log("Program runs on:", programDays);
+                console.log("Volunteer available on:", availableDays);
+
+                // Check if volunteer is available on ALL days the program runs
+                const unavailableDays = programDays.filter(day => !availableDays.includes(day));
+
+                if (unavailableDays.length > 0) {
+                    // Format unavailable days for display
+                    const formattedUnavailable = unavailableDays
+                        .map(day => day.charAt(0).toUpperCase() + day.slice(1))
+                        .join(", ");
+
+                    Swal.fire({
+                        title: "Availability Conflict",
+                        html: `
+            <p>You cannot join this program because you are not available on the following day(s):</p>
+            <br/>
+            <p><strong>${formattedUnavailable}</strong></p>
+            <br/>
+            <p>Please update your availability settings or choose a program that matches your schedule.</p>
+          `,
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                    });
+                    return;
+                }
+            }
+        }
+
+        // 4. Check for overlapping programs (with OTHER programs, not this one)
+        if (joinedPrograms.length > 0 && (n.startat || n.endat || n.taskdate)) {
+            for (const program of joinedPrograms) {
+                const programStart = new Date(program.start_at || program.startat || program.task_date || "");
+                const programEnd = new Date(program.end_at || program.endat || program.task_date || "");
+
+                const newProgramStart = n.startat
+                    ? new Date(n.startat)
+                    : n.taskdate
+                        ? new Date(n.taskdate + "T08:00:00")
+                        : null;
+
+                const newProgramEnd = n.endat
+                    ? new Date(n.endat)
+                    : n.taskdate
+                        ? new Date(n.taskdate + "T17:00:00")
+                        : null;
+
+                if (
+                    newProgramStart && newProgramEnd &&
+                    !isNaN(programStart.getTime()) && !isNaN(programEnd.getTime())
+                ) {
+                    const hasOverlap =
+                        (newProgramStart <= programEnd && newProgramStart >= programStart) ||
+                        (newProgramEnd >= programStart && newProgramEnd <= programEnd) ||
+                        (newProgramStart <= programStart && newProgramEnd >= programEnd);
+
+                    if (hasOverlap) {
+                        const conflictName = program.title || "another program";
+                        const conflictDate = fmtRange(
+                            program.start_at || program.startat,
+                            program.end_at || program.endat,
+                            program.task_date || program.taskdate
+                        );
+
+                        Swal.fire({
+                            title: "Program Time Conflict",
+                            html: `
+              <p>You cannot join this program because it overlaps with another program you've already joined.</p>
+              <br/>
+              <p><strong>Conflicting Program:</strong> ${conflictName}</p>
+              <p><strong>Date:</strong> ${conflictDate}</p>
+            `,
+                            icon: "error",
+                            confirmButtonText: "OK",
+                        });
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 5. Check for skill match
+        const programSkills = n.skills || [];
+        const volunteerSkills = iv?.skills || ov?.skills || [];
+
+        const normalizedProgramSkills = Array.isArray(programSkills)
+            ? programSkills
+            : typeof programSkills === "string"
+                ? programSkills.split(",").map((s: string) => s.trim()).filter(Boolean)
+                : [];
+
+        const normalizedVolunteerSkills = Array.isArray(volunteerSkills)
+            ? volunteerSkills
+            : typeof volunteerSkills === "string"
+                ? volunteerSkills.split(",").map((s: string) => s.trim()).filter(Boolean)
+                : [];
+
+        if (normalizedProgramSkills.length > 0) {
+            const skillMatch = normalizedProgramSkills.some((skill: string) =>
+                normalizedVolunteerSkills.some((vSkill: string) =>
+                    vSkill.toLowerCase().trim() === skill.toLowerCase().trim()
+                )
+            );
+
+            if (!skillMatch) {
+                Swal.fire({
+                    title: "Skill Mismatch",
+                    text: `Your skills do not match the requirements for this program.\n\nRequired: ${normalizedProgramSkills.join(', ')}\nYour skills: ${normalizedVolunteerSkills.join(', ')}`,
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+                return;
+            }
+        }
+
+        // 6. All checks passed - proceed with joining
         try {
             setJoining((prev) => ({ ...prev, [n.id]: true }));
 
@@ -629,22 +843,14 @@ export default function IDRISDashboard() {
                 await apiCreateAssignment(n.id, {
                     individual_volunteer_id: iv.volunteer_id,
                 });
-
-                // 🔑 Update local state to reflect assigned status immediately
-                setMyVolunteer((prev) =>
-                    prev ? { ...prev, availability_status: "assigned" } : prev
-                );
             } else if (ov) {
                 await apiCreateAssignment(n.id, {
                     organization_volunteer_id: ov.volunteer_id,
                 });
-
-                setMyOrgVolunteer((prev: any) =>
-                    prev ? { ...prev, availability_status: "assigned" } : prev
-                );
             }
+
             await fetchVolunteers();
-            // ✅ Success message
+
             Swal.fire({
                 title: "Joined Program",
                 text: `You have successfully joined the program "${n.title}". Thank you for volunteering!`,
@@ -652,30 +858,28 @@ export default function IDRISDashboard() {
                 confirmButtonText: "OK",
             });
 
-            // update local counters
             setNewsAnnouncements((prev) =>
                 prev.map((x) =>
                     x.id === n.id
                         ? {
                             ...x,
-                            currentVolunteers: Math.min(
-                                x.currentVolunteers + 1,
-                                x.maxVolunteers
-                            ),
+                            currentVolunteers: Math.min(x.currentVolunteers + 1, x.maxVolunteers),
                             volunteersNeeded: Math.max(x.volunteersNeeded - 1, 0),
                         }
                         : x
                 )
             );
         } catch (e: any) {
-            const detail =
-                e?.response?.data?.detail || e?.message || "Failed to join this event";
+            const detail = e?.response?.data?.detail || e?.message || "Failed to join this event";
 
-            if (
-                String(detail).toLowerCase().includes("already") ||
-                e?.response?.status === 409
-            ) {
-                // ✅ Info message
+            if (e?.response?.status === 409) {
+                Swal.fire({
+                    title: "Cannot Join Program",
+                    text: "There was a conflict. You may have already joined this program or there's a scheduling conflict.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                });
+            } else if (String(detail).toLowerCase().includes("already")) {
                 Swal.fire({
                     title: "Already Joined",
                     text: "You are already part of this program.",
@@ -683,7 +887,6 @@ export default function IDRISDashboard() {
                     confirmButtonText: "Got it",
                 });
             } else {
-                // ✅ Error message
                 Swal.fire({
                     title: "Error",
                     text: detail,
@@ -695,6 +898,10 @@ export default function IDRISDashboard() {
             setJoining((prev) => ({ ...prev, [n.id]: false }));
         }
     };
+
+
+
+
 
     if (loading) {
         return <div>Loading...</div>;
@@ -805,8 +1012,10 @@ export default function IDRISDashboard() {
                                                 const name = fullName(v) || "Unnamed Volunteer";
                                                 const programs = Number(v.events_joined ?? 0);
 
-                                                const picUrl = v.profile_picture
-                                                    ? toAbsoluteFileUrl(v.profile_picture)
+                                                // ✅ Get profile picture from the user profile (users table)
+                                                const userProfile = volunteerProfiles[v.volunteer_id];
+                                                const picUrl = userProfile?.profile_image
+                                                    ? toAbsoluteFileUrl(userProfile.profile_image)
                                                     : "";
 
                                                 return (
@@ -829,8 +1038,7 @@ export default function IDRISDashboard() {
                                                         <div className="volunteer-info">
                                                             <div className="volunteer-name">{name}</div>
                                                             <div className="volunteer-meta">
-                                                                {programs} program{programs === 1 ? "" : "s"}{" "}
-                                                                joined
+                                                                {programs} program{programs === 1 ? "" : "s"} joined
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1171,33 +1379,27 @@ export default function IDRISDashboard() {
                                                         </div>
 
                                                         {/* JOIN BUTTON */}
-                                                        {!isOpsAdmin &&
-                                                            myVolunteer?.availability_status !== "assigned" &&
-                                                            myOrgVolunteer?.availability_status !== "assigned" && (
-                                                                <button
-                                                                    onClick={() => joinProgram(item)}
-                                                                    disabled={disabled}
-                                                                    className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
-                                                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                                        : "bg-blue-600 text-white hover:bg-blue-700"
-                                                                        }`}
-                                                                    title={
-                                                                        disabled
-                                                                            ? "You can't join this event now"
-                                                                            : "Join this event"
-                                                                    }
-                                                                >
-                                                                    {buttonLabel}
-                                                                </button>
-                                                            )}
+                                                        {!isOpsAdmin && (
+                                                            <button
+                                                                onClick={() => joinProgram(item)}
+                                                                disabled={disabled}
+                                                                className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
+                                                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                                    : "bg-blue-600 text-white hover:bg-blue-700"
+                                                                    }`}
+                                                                title={disabled ? "You can't join this event now" : "Join this event"}
+                                                            >
+                                                                {buttonLabel}
+                                                            </button>
+                                                        )}
                                                     </div>
 
-                                                    {/* Assigned / Capacity + progress + Needed */}
+
+                                                    {/* Assigned Capacity progress + Needed */}
                                                     <div className="mb-1">
+                                                        {/* Assigned count */}
                                                         <div className="flex justify-between text-sm mb-1">
-                                                            <span className="text-gray-700">
-                                                                Volunteers Assigned
-                                                            </span>
+                                                            <span className="text-gray-700">Volunteers Assigned</span>
                                                             <span
                                                                 className={
                                                                     item.currentVolunteers >= item.maxVolunteers
@@ -1209,6 +1411,7 @@ export default function IDRISDashboard() {
                                                             </span>
                                                         </div>
 
+                                                        {/* Progress bar */}
                                                         <div className="w-full bg-gray-200 rounded-full h-2">
                                                             <div
                                                                 className={`h-2 rounded-full transition-all ${barColor}`}
@@ -1216,19 +1419,50 @@ export default function IDRISDashboard() {
                                                             />
                                                         </div>
 
+                                                        {/* Volunteers needed */}
                                                         <div className="flex justify-between text-sm mt-1">
                                                             <span className="text-gray-700">Needed</span>
                                                             <span
                                                                 className={
-                                                                    item.volunteersNeeded === 0
-                                                                        ? "text-green-600"
-                                                                        : "text-gray-700"
+                                                                    item.volunteersNeeded === 0 ? "text-green-600" : "text-gray-700"
                                                                 }
                                                             >
                                                                 {item.volunteersNeeded}
                                                             </span>
                                                         </div>
                                                     </div>
+
+                                                    {/* Required Skills - Exactly like Volunteer Assignment */}
+                                                    {(() => {
+                                                        // Normalize skills to array (exact same logic as assignment page)
+                                                        const reqSkills = Array.isArray(item.skills)
+                                                            ? item.skills
+                                                            : item.skills
+                                                                ? String(item.skills).split(",").map((s: string) => s.trim()).filter(Boolean)
+                                                                : [];
+
+                                                        // Debug logging
+                                                        console.log("Program:", item.title);
+                                                        console.log("Raw skills:", item.skills);
+                                                        console.log("Normalized skills:", reqSkills);
+
+                                                        return reqSkills.length > 0 ? (
+                                                            <div className="mb-3">
+                                                                <p className="text-sm font-medium text-gray-700 mb-1">Required Skills</p>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {reqSkills.map((skill) => (
+                                                                        <span
+                                                                            key={skill}
+                                                                            className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
+                                                                        >
+                                                                            {skill}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        ) : null;
+                                                    })()}
+
                                                 </div>
                                             );
                                         })

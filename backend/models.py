@@ -102,8 +102,11 @@ class User(Base):
         "OrganizationVolunteer", back_populates="user", cascade="all, delete-orphan"
     )
 
-    procurement_request = relationship(
-        "ProcurementRequest", back_populates="requester", cascade="all, delete-orphan"
+    procurement_requests = relationship(
+        "ProcurementRequest",
+        back_populates="requester",
+        foreign_keys="ProcurementRequest.lgu",
+        # cascade="all, delete-orphan",  # enable only if you truly want orphan delete
     )
 
 
@@ -211,7 +214,7 @@ class EvacuationCenter(Base):
     capacity = Column(Integer, nullable=False)
     occupied = Column(Integer, nullable=False, server_default="0")
 
-    # ✅ cascade delete to barangays
+    # ✅ cascade delete to /barangays
     barangay = relationship(
         "BaranggayRecords",
         back_populates="evacucation_center",
@@ -1056,15 +1059,64 @@ OrganizationVolunteer.active_events_joined = column_property(
 class ProcurementRequest(Base):
     __tablename__ = "procurement_request"
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    lgu = Column(ForeignKey("user.user_id"), nullable=False)
+    lgu = Column(String(255), ForeignKey("users.user_id"), nullable=False)
     request_type = Column(String(255))
     request_ref_num = Column(String(255), nullable=False)
     request_title = Column(String(255), nullable=False)
     request_description = Column(String(255), nullable=False)
+    use_different_end = Column(Boolean, default=False)
+
+    different_end_type = Column(String(255), nullable=True)
+
+    end_barangay = Column(Integer, ForeignKey("baranggay_records.id"), nullable=True)
+    end_evac = Column(
+        Integer,
+        ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    end_address = Column(String(255), nullable=True)
+    end_lat = Column(Float, nullable=True)
+    end_long = Column(Float, nullable=True)
     priority = Column(String(255))
     date_requested = Column(Date)
     disaster_type = Column(String(255), nullable=False)
     date_needed = Column(Date)
+
+    # ---- Relationships ----
+    requester = relationship(
+        "User",
+        back_populates="procurement_requests",
+        foreign_keys=[lgu],
+    )
+
+    evacuation_center = relationship(
+        "EvacuationCenter",
+        primaryjoin="ProcurementRequest.end_evac==EvacuationCenter.evacuation_id",
+        foreign_keys=[end_evac],
+        lazy="joined",
+    )
+
+    barangay = relationship(
+        "BaranggayRecords",
+        primaryjoin="ProcurementRequest.end_barangay==BaranggayRecords.id",
+        foreign_keys=[end_barangay],
+        lazy="joined",
+    )
+
+    # ---- the two item collections (fix) ----
+    relief_items = relationship(
+        "ReliefRequestItem",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    procurement_items = relationship(
+        "ProcurementRequestItem",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class ReliefRequestItem(Base):
@@ -1077,7 +1129,7 @@ class ReliefRequestItem(Base):
     quantity = Column(Integer, nullable=False)
 
     # ✅ belongs to ONE request
-    request = relationship("ProcurementRequest", back_populates="request_items")
+    request = relationship("ProcurementRequest", back_populates="relief_items")
 
 
 class ProcurementRequestItem(Base):
@@ -1090,7 +1142,7 @@ class ProcurementRequestItem(Base):
     unit = Column(String(255))
 
     # ✅ belongs to ONE request
-    request = relationship("ProcurementRequest", back_populates="request_items")
+    request = relationship("ProcurementRequest", back_populates="procurement_items")
 
 
 class WarehouseZones(Base):
@@ -1183,7 +1235,7 @@ class TeamMembers(Base):
         Integer, ForeignKey("individual_volunteer.volunteer_id"), nullable=False
     )
     role = Column(String(255), nullable=False)
-    status = Column(String(20), default='pending', nullable=False)
+    status = Column(String(20), default="pending", nullable=False)
     assigned_at = Column(DateTime, server_default=func.now(), nullable=False)
     responded_at = Column(DateTime, nullable=True)
     assigned_by = Column(String(255), ForeignKey("users.user_id"), nullable=True)

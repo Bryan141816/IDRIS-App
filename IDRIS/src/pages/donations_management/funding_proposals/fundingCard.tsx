@@ -29,9 +29,11 @@ const FundingCard: React.FC<FundingProp> = ({
   description,
   donated = 0,
   target = 100,
+  starting_date,
+  end_date,
   is_active,
 }) => {
-  const fundingData = { proposalId, title, image, description, target };
+  const fundingData = { proposalId, title, image, description, target, starting_date, end_date, is_active };
 
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
@@ -69,8 +71,6 @@ const FundingCard: React.FC<FundingProp> = ({
   const [imgSrc, setImgSrc] = useState<string>(() => buildImageUrl(image));
   useEffect(() => { setImgSrc(buildImageUrl(image)); }, [image]);
 
-  const percentage = Math.round(getPercentage(donated, target));
-
   const goToUpdatePage = () => {
     navigate("/donations_management/funding_proposals/update", { state: fundingData });
   };
@@ -78,6 +78,23 @@ const FundingCard: React.FC<FundingProp> = ({
   const handleDonateButton = (fundingId: number) => {
     navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
   };
+
+  const getDaysRemaining = (endDateStr?: string) => {
+    if (!endDateStr) return { text: "No end date", value: null };
+    const endDate = new Date(endDateStr);
+    const now = new Date();
+    if (endDate < now) return { text: "Ended", value: 0 };
+    const diffTime = Math.abs(endDate.getTime() - now.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return { text: `${diffDays} days remaining`, value: diffDays };
+  };
+
+  const { text: daysRemainingText, value: daysRemainingValue } = getDaysRemaining(end_date);
+
+  const percentage = Math.round(
+    getTimeRemainingPercent(starting_date ?? new Date(), end_date ?? new Date())
+  );
+  const atStart = is_active && Math.round(percentage) === 100;
 
   return (
     <div className={styles.fundingCard}>
@@ -111,27 +128,25 @@ const FundingCard: React.FC<FundingProp> = ({
 
       {/* FOOTER */}
       <div className={styles.fundingFooter}>
-        <div className={styles.statusIndicator}>
-          {is_active ? (
-            <span className={styles.active}>Active</span>
-          ) : (
-            <span className={styles.inactive}>Inactive</span>
-          )}
+        <div className={styles.daysRemainingContainer}>
+          <p>{daysRemainingText}</p>
+          <p className={styles.statusIndicator}>
+            { atStart ? (
+              <span className={styles.not_started}>Not Started</span>
+            ) : is_active ? (
+              <span className={styles.active}>Active</span>
+            ) : (
+              <span className={styles.inactive}>Inactive</span>
+            )}
+          </p>
         </div>
         <div className={styles.progressBarContainer}>
           <div
-            className={styles.progressBar}
+            className={`${styles.progressBar} ${ atStart ? styles.progressBar__notStarted : ""}`}
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <div className={styles.progressContainer}>
-          <p className={styles.progress}>
-            {formatCurrency(donated)}
-          </p>
-          <p className={styles.percentage}>{percentage}%</p>
-        </div>
-
-        {userRoles.includes("donor") && proposalId != null && is_active && (
+        {userRoles.includes("donor") && proposalId != null && is_active && !atStart && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate
           </button>
@@ -143,7 +158,55 @@ const FundingCard: React.FC<FundingProp> = ({
 
 export default FundingCard;
 
-function getPercentage(current: number, target: number) {
-  if (!target) return 0;
-  return (current / target) * 100;
+type DateInput = Date | string | number;
+
+export function getTimeRemainingPercent(
+  start: DateInput,
+  end: DateInput,
+  now: DateInput = new Date()
+): number {
+  const elapsed = getTimeProgressPercent(start, end, now);
+  return Math.max(0, Math.min(100, 100 - elapsed));
 }
+
+
+export function getTimeProgressPercent(
+  start: DateInput,
+  end: DateInput,
+  now: DateInput = new Date(),
+  reverse = false // when true → percent remaining
+): number {
+  const s = toDate(start);
+  const e = toDate(end);
+  const n = toDate(now);
+
+  if (!isValidDate(s) || !isValidDate(e) || !isValidDate(n)) return 0;
+
+  const totalMs = e.getTime() - s.getTime();
+  if (totalMs <= 0) return reverse ? 0 : (n.getTime() >= e.getTime() ? 100 : 0);
+
+  if (n <= s) return reverse ? 100 : 0;
+  if (n >= e) return reverse ? 0 : 100;
+
+  const elapsed = ((n.getTime() - s.getTime()) / totalMs) * 100;
+  const val = reverse ? 100 - elapsed : elapsed;
+  return Math.max(0, Math.min(100, val));
+}
+
+/** Robust-ish parser for common inputs */
+function toDate(input: DateInput): Date {
+  if (input instanceof Date) return new Date(input.getTime());
+  if (typeof input === "number") return new Date(input);
+  if (typeof input === "string") {
+    // Normalize plain "YYYY-MM-DD" to midnight local time to avoid UTC shifts.
+    // If you prefer UTC, change to `${input}T00:00:00Z`.
+    const isoDayOnly = /^\d{4}-\d{2}-\d{2}$/;
+    return isoDayOnly.test(input) ? new Date(`${input}T00:00:00`) : new Date(input);
+  }
+  return new Date(NaN);
+}
+
+function isValidDate(d: Date): boolean {
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+

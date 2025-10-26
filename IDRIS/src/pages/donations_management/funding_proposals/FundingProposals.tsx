@@ -75,8 +75,8 @@ const FundingProposals = () => {
       try {
         const data = await getFundingProposals(searched, limit, page);
         const records: Proposal[] = data?.records ?? [];
-        const maxPage: number = data?.max_page ?? 1;
-
+        const maxPage: number = data?.max_page ?? 1;  
+        console.log(records);
         setProposals(records);
         setFundingProposalMaxPage(Math.max(maxPage, 1));
         setNoResults(records.length === 0);

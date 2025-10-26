@@ -108,11 +108,11 @@ def update_proposal_endpoint(
     image: Optional[UploadFile] = File(None),
     starting_date: Optional[date] = Form(None),
     end_date: Optional[date] = Form(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_from_access_token)
+    current_user: User = Depends(get_current_user_from_access_token),
+    db: Session = Depends(get_db)
 ):
     user_is_superadmin = "superadmin" in current_user.roles
-
+    print("is_superadmin: ", user_is_superadmin, is_active)
     start_datetime = datetime.combine(starting_date, datetime.min.time()) if starting_date else None
     end_datetime = datetime.combine(end_date, datetime.max.time()) if end_date else None
 

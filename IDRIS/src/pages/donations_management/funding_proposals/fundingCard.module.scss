@@ -51,8 +51,12 @@
     svg {
       color: $steel-blue;
       transition: color 0.2s;
-      width: 21px; height: 21px;
-      &:hover { color: $primary-color; }
+      width: 21px;
+      height: 21px;
+
+      &:hover {
+        color: $primary-color;
+      }
     }
   }
 
@@ -67,7 +71,9 @@
     display: none;
     font-size: 14px;
 
-    &.active { display: block; }
+    &.active {
+      display: block;
+    }
 
     button {
       background: none;
@@ -136,7 +142,20 @@
       height: 100%;
       border-radius: 10px;
       transition: width 0.4s;
+
+      &__notStarted{
+        background-color: #6c757d;
+      }
     }
+  }
+
+  .daysRemainingContainer {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 8px 0;
   }
 
   .progressContainer {
@@ -170,7 +189,10 @@
     background: none;
     border: none;
     cursor: pointer;
-    &:hover { text-decoration: underline; }
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .donateButton {
@@ -185,7 +207,10 @@
     cursor: pointer;
     box-shadow: 0 1px 8px rgba(90, 108, 126, 0.10);
     transition: background 0.18s;
-    &:hover { background-color: darken($primary-color, 10%); }
+
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
   }
 }
 
@@ -201,20 +226,50 @@
   .inactive {
     color: #dc3545;
   }
+
+  .not_started{
+    color: #6c757d;
+  }
 }
 
 @media screen and (max-width: 720px) {
-  .fundingCard { max-width: 98%; min-width: 80vw; }
-  .fundingHead { padding: 7px 10px; gap: 3px; min-height: 0; }
-  .fundingBody, .fundingFooter { padding: 8px 10px; }
-  .menuItems { right: 0; top: 24px; }
+  .fundingCard {
+    max-width: 98%;
+    min-width: 80vw;
+  }
+
+  .fundingHead {
+    padding: 7px 10px;
+    gap: 3px;
+    min-height: 0;
+  }
+
+  .fundingBody,
+  .fundingFooter {
+    padding: 8px 10px;
+  }
+
+  .menuItems {
+    right: 0;
+    top: 24px;
+  }
 
   .fundingBody {
     flex-direction: column-reverse;
     gap: 7px;
 
-    .description { -webkit-line-clamp: 4; font-size: 13px; }
-    .image { border-radius: 9px; }
+    .description {
+      -webkit-line-clamp: 4;
+      font-size: 13px;
+    }
+
+    .image {
+      border-radius: 9px;
+    }
   }
-  .donateButton { font-size: 15px; padding: 9px 0; }
+
+  .donateButton {
+    font-size: 15px;
+    padding: 9px 0;
+  }
 }

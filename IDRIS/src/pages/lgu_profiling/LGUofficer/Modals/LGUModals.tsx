@@ -124,12 +124,12 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
                   invalid={!!d.contact && !is11Digits(d.contact)}
                 />
                 <DL label="Coordinates" value={fmtLL(d.lat, d.lng)} />
-                {!!d.lgu_seal && <ImgBlock label="LGU Seal" src={d.lgu_seal} />}
+                {/* moved images out of this section */}
               </Section>
 
               <Section title="Disaster Risk Profile">
                 <DL label="Major Hazard" value={d.major_hazard?.join(", ") || "—"} />
-                {!!d.hazard_picture && <ImgBlock label="Hazard Picture" src={d.hazard_picture} />}
+                {/* moved image out of this section */}
               </Section>
 
               <Section title="Disaster Risk Reduction & Management Office">
@@ -150,6 +150,14 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
                 <DL label="PWD" value={fmtNum(d.pwd)} />
                 <DL label="Senior Citizen" value={fmtNum(d.senior)} />
                 <DL label="Children" value={fmtNum(d.children)} />
+              </Section>
+
+              {/* --- NEW: Images at the very bottom --- */}
+              <Section title="Images">
+                <div className="lgu-media-row">
+                  <ImgOrPlaceholder label="LGU Seal" src={d.lgu_seal} />
+                  <ImgOrPlaceholder label="Hazard Picture" src={d.hazard_picture} />
+                </div>
               </Section>
             </>
           )}
@@ -604,11 +612,27 @@ function DL({
   );
 }
 
+/** Keep if needed elsewhere */
 function ImgBlock({ label, src }: { label: string; src: string }) {
   return (
     <div style={{ marginTop: 8 }}>
       <div className="item-details-identifier">{label}</div>
       <img src={src} alt={label} className="img-thumb" />
+    </div>
+  );
+}
+
+/** NEW: shows image or a tidy placeholder */
+function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
+  const hasImg = !!src;
+  return (
+    <div className="lgu-media">
+      <div className="item-details-identifier" style={{ marginBottom: 6 }}>{label}</div>
+      {hasImg ? (
+        <img src={src} alt={label} className="img-thumb" />
+      ) : (
+        <div className="img-placeholder">No image</div>
+      )}
     </div>
   );
 }

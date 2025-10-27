@@ -425,3 +425,22 @@ html, body {
   color: #6b7280;
   padding: 1.25rem !important;
 }
+
+
+/* lgu seal */
+.lgu-summary-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lgu-seal-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #374151;
+  text-align: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  width: fit-content;
+}

@@ -33,14 +33,14 @@ type BarangayRow = {
   name: string;
   location: string;
   captain: string;
-  contact: string;
+  evacuation: string;
 };
 
 /* Placeholder data */
 const sampleBarangays: BarangayRow[] = [
-  { id: 1, name: "Barangay Mabini", location: "10.3182, 123.8971", captain: "Juan Dela Cruz", contact: "09171234567" },
-  { id: 2, name: "Barangay Poblacion", location: "10.3150, 123.9002", captain: "Maria Santos", contact: "09181234567" },
-  { id: 3, name: "Barangay San Roque", location: "10.3201, 123.8805", captain: "Pedro Reyes", contact: "09991234567" },
+  { id: 1, name: "Barangay Mabini", location: "10.3182, 123.8971", captain: "Juan Dela Cruz", evacuation: "Dayag's Evac" },
+  { id: 2, name: "Barangay Poblacion", location: "10.3150, 123.9002", captain: "Maria Santos", evacuation: "Antier's Evac" },
+  { id: 3, name: "Barangay San Roque", location: "10.3201, 123.8805", captain: "Pedro Reyes", evacuation: "Alcantara's Evac" },
 ];
 
 /* ========================= RAFI TABLE TYPES ========================= */
@@ -170,7 +170,7 @@ const MapOfCebu = () => {
         `Barangay: ${row.name}\n` +
         `Location: ${row.location}\n` +
         `Captain: ${row.captain}\n` +
-        `Contact: ${row.contact}`,
+        `Evacuation: ${row.evacuation}`,
       onSubmit: undefined,
       onClose: () => setMessageBox((prev) => ({ ...prev, isOpen: false })),
     });
@@ -257,19 +257,21 @@ const MapOfCebu = () => {
       {/* === LGU SUMMARY CARD === */}
       <div className="lgu-summary-card">
         <div className="lgu-summary-left">
-          <img
-            src={lguImageSrc}
-            alt={displayName || "LGU"}
-            className="lgu-summary-img"
-            onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement;
-              if (!img.src.endsWith("defaultpicture.jpg")) {
-                (img as any).onerror = null;
-                img.src = defaultpicture;
-              }
-            }}
-          />
-        </div>
+  <div className="lgu-seal-label">LGU Seal</div>
+  <img
+    src={lguImageSrc}
+    alt={displayName || "LGU"}
+    className="lgu-summary-img"
+    onError={(e) => {
+      const img = e.currentTarget as HTMLImageElement;
+      if (!img.src.endsWith("defaultpicture.jpg")) {
+        (img as any).onerror = null;
+        img.src = defaultpicture;
+      }
+    }}
+  />
+</div>
+
 
         <div className="lgu-summary-center" />
 
@@ -390,7 +392,7 @@ const MapOfCebu = () => {
                   <th>Barangay</th>
                   <th>Location</th>
                   <th>Captain</th>
-                  <th>Contact</th>
+                  <th>Evacuation</th>
                   <th className="col-action">Action</th>
                 </tr>
               </thead>
@@ -407,7 +409,7 @@ const MapOfCebu = () => {
                       <td>{b.name}</td>
                       <td>{b.location}</td>
                       <td>{b.captain}</td>
-                      <td>{b.contact}</td>
+                      <td>{b.evacuation}</td>
                       <td className="col-action">
                         <button className="btn-view" onClick={() => handleViewBarangay(b)}>
                           View

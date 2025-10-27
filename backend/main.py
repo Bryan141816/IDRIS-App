@@ -29,7 +29,7 @@ from routers.donations_management import (
     donations_route,
 )
 from routers.finance_management import finance_route, finance_report_routes
-from routers.lgu_profiling import manage_lgu, mapofcebu
+from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
 from routers.volunteer_management import (
     individual_volunteer_routes,
     organization_volunteer_routes,
@@ -45,9 +45,13 @@ from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
 from routers import notification_donors_route
 import real_time_handler
+
+# ✅ LGU officer location-only router
 from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
-# NEW: Admin LGU router (Option A separate file)
-from routers.lgu_profiling.LGUofficerManage import admin_router as admin_lgu_router
+
+# ❌ REMOVE these (LGU CRUD/Manage — not needed anymore)
+# from routers.lgu_profiling.LGUofficerManage import admin_router as admin_lgu_router
+# from routers.lgu_profiling import manage_lgu
 
 import models  # ✅ correct import path for User model
 
@@ -85,10 +89,16 @@ app.include_router(real_time_handler.router)
 app.include_router(notification.router)
 app.include_router(ManageUsers.router)
 app.include_router(distributionAndplanning.router)
+
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
-app.include_router(lgu_officer_router)            # /lgu_profiling (officer, complete-only)
-app.include_router(admin_lgu_router)              # /admin/lgu     (admin, create/update)
+
+# ✅ Keep ONLY the officer router (exposes /lgu_profiling/me/lgu_location)
+app.include_router(lgu_officer_router)
+
+# ❌ Removed admin/manage LGU routers
+# app.include_router(admin_lgu_router)
+# app.include_router(manage_lgu.router)
 
 app.include_router(
     transparency_report_route.router,
@@ -104,8 +114,10 @@ app.include_router(finance_route.router, prefix="/finance", tags=["Finance Manag
 app.include_router(
     finance_report_routes.router, prefix="/finance_reports", tags=["Finance Reports"]
 )
-app.include_router(manage_lgu.router)
+
+# Keep map router if other pages use it
 app.include_router(mapofcebu.router)
+
 app.include_router(response_dashboard.router)
 app.include_router(report_list.router)
 app.include_router(demand_and_response.router)

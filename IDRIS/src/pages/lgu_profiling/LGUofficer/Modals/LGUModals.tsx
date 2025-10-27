@@ -1,9 +1,10 @@
-// MyLGUModals.tsx (frontend-only modal; no backend calls)
+// LGUModals.tsx (frontend-only modal; no backend calls)
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
+import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faImage, faLock } from "@fortawesome/free-solid-svg-icons";
+import { faImage, faLock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
 
 /* ========= Types ========= */
@@ -16,6 +17,10 @@ export type LGUEditForm = {
   barangay_count?: number | ""; // locked (prefetch)
   mayor?: string;
   contact?: string; // 11 digits
+
+  // Coordinates
+  lat?: number;
+  lng?: number;
 
   // Disaster Risk Profile
   major_hazard: Array<"Typhoon" | "Flood" | "Earthquake" | "Fire" | "Landslide">;
@@ -53,6 +58,21 @@ const readAsDataUrl = (file: File) =>
     r.readAsDataURL(file);
   });
 
+function fmtNum(v?: number | "" | null) {
+  if (v === "" || v == null || Number.isNaN(v as number)) return "—";
+  try {
+    return Number(v).toLocaleString();
+  } catch {
+    return String(v);
+  }
+}
+
+function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
+  if (lat === "" || lng === "" || lat == null || lng == null) return "—";
+  const f = (n: number) => Number(n).toFixed(6);
+  return `${f(Number(lat))}, ${f(Number(lng))}`;
+}
+
 /* =========================================================================
    VIEW
 ===========================================================================*/
@@ -64,7 +84,7 @@ type ViewProps = BaseModalProps & {
 export const MyLGUViewModal: React.FC<ViewProps> = ({
   isModalOpen,
   closeModal,
-  setMessageBox,
+  setMessageBox, // kept for parity; not used here
   onOpenEdit,
   data,
 }) => {
@@ -76,7 +96,7 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
       isOpen={isModalOpen}
       onClose={closeModal}
       zIndex={998}
-  width="clamp(560px, 56vw, 840px)" 
+      width="clamp(560px, 56vw, 840px)"
       height="86vh"
     >
       <div className="modal-container lgu-modal">
@@ -103,6 +123,7 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
                   value={d.contact || "—"}
                   invalid={!!d.contact && !is11Digits(d.contact)}
                 />
+                <DL label="Coordinates" value={fmtLL(d.lat, d.lng)} />
                 {!!d.lgu_seal && <ImgBlock label="LGU Seal" src={d.lgu_seal} />}
               </Section>
 
@@ -163,6 +184,8 @@ type EditProps = BaseModalProps & {
     lgu_name?: string;
     barangay_count?: number;
     evacuation_center?: string;
+    lat?: number;
+    lng?: number;
   };
 };
 
@@ -183,6 +206,9 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
     mayor: "",
     contact: "",
 
+    lat: prefetch?.lat,
+    lng: prefetch?.lng,
+
     major_hazard: [],
     hazard_picture: "",
 
@@ -197,7 +223,11 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
     children: "",
   });
 
-  // keep prefetch-locked fields in sync when the modal opens
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+  const openLocationPicker = () => setLocationPickerIsOpen(true);
+  const closeLocationPicker = () => setLocationPickerIsOpen(false);
+
+  // keep prefetch-locked fields (and lat/lng) in sync when the modal opens
   useEffect(() => {
     if (!isModalOpen) return;
     setForm((p) => ({
@@ -205,6 +235,8 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
       lgu_name: prefetch?.lgu_name || p.lgu_name || "",
       barangay_count: (prefetch?.barangay_count ?? p.barangay_count) as number | "",
       evacuation_center: prefetch?.evacuation_center || p.evacuation_center || "",
+      lat: prefetch?.lat ?? p.lat,
+      lng: prefetch?.lng ?? p.lng,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isModalOpen]);
@@ -255,11 +287,19 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
   const save = () => {
     if (invalids.contact || invalids.drmm_contact) {
       setMessageBox((p: any) => ({
-        // ^ use `any` to avoid implicit-any complaint for your app-level message box type
         ...p,
         isOpen: true,
         type: "message",
         message: "Phone numbers must be exactly 11 digits.",
+      }));
+      return;
+    }
+    if ((form.lat == null) !== (form.lng == null)) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Please pick a valid location (both latitude and longitude).",
       }));
       return;
     }
@@ -274,9 +314,22 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
       isOpen={isModalOpen}
       onClose={closeModal}
       zIndex={998}
-  width="clamp(560px, 56vw, 840px)" 
+      width="clamp(560px, 56vw, 840px)"
       height="86vh"
     >
+      {/* Map picker */}
+      {locationPickerIsOpen && (
+        <LocationPickerModal
+          isOpenProp={locationPickerIsOpen}
+          onCloseProp={closeLocationPicker}
+          onSubmit={(mapData: { lat: number; lng: number }) =>
+            setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }))
+          }
+          lat={Number(form.lat) || 0}
+          lng={Number(form.lng) || 0}
+        />
+      )}
+
       <div className="modal-container lgu-modal">
         <div className="horizontal-container">
           <span className="details-title">Edit LGU Details</span>
@@ -287,7 +340,37 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
           <Section title="LGU information Details">
             <Row label="LGU Name" locked>
               <input type="text" value={form.lgu_name} readOnly disabled placeholder="(prefetch)" />
-              
+            </Row>
+
+            {/* Lat/Lng textbox + pin button */}
+            <Row label="Location">
+              <input
+                type="text"
+                readOnly
+                placeholder="Pick on map"
+                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
+                style={{ width: 260 }}
+              />
+              <button
+                type="button"
+                onClick={openLocationPicker}
+                title="Pick location on map"
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid #ddd",
+                  outline: "none",
+                  color: "#3b82f6",
+                  width: 35,
+                  height: 32,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
+              </button>
             </Row>
 
             <Row label="Classification">
@@ -348,11 +431,11 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
           <Section title="Disaster Risk Profile">
             <Row label="Major Hazard">
               <CheckGroup
-  options={['Typhoon','Flood','Earthquake','Fire','Landslide']}
-  selected={form.major_hazard}
-  onToggle={(v) => toggle('major_hazard', v)}
-  columns={3}
-/>
+                options={["Typhoon", "Flood", "Earthquake", "Fire", "Landslide"]}
+                selected={form.major_hazard}
+                onToggle={(v) => toggle("major_hazard", v)}
+                columns={3}
+              />
             </Row>
 
             <Row label="Hazard Picture">
@@ -390,7 +473,7 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
             <Row label="Evacuation Center" locked>
               <input
                 type="text"
-                value={form.evacuation_center}
+                value={form.evacuation_center || ""}
                 readOnly
                 disabled
                 placeholder="(prefetch)"
@@ -399,26 +482,49 @@ export const MyLGUEditModal: React.FC<EditProps> = ({
 
             <Row label="Critical Facilities">
               <CheckGroup
-  options={[
-    'Municipal Hall','Barangay Hall','Hospital/Health Center',
-    'Evacuation Center','Police Station','Fire Station','School'
-  ]}
-  selected={form.critical_facilities}
-  onToggle={(v) => toggle('critical_facilities', v)}
-  columns={3}
-/>
+                options={[
+                  "Municipal Hall",
+                  "Barangay Hall",
+                  "Hospital/Health Center",
+                  "Evacuation Center",
+                  "Police Station",
+                  "Fire Station",
+                  "School",
+                ]}
+                selected={form.critical_facilities}
+                onToggle={(v) => toggle("critical_facilities", v)}
+                columns={3}
+              />
             </Row>
           </Section>
 
           <Section title="Vulnerable Population">
             <Row label="PWD">
-              <input type="number" min={0} value={form.pwd ?? ""} onChange={onNum("pwd")} placeholder="0" />
+              <input
+                type="number"
+                min={0}
+                value={form.pwd ?? ""}
+                onChange={onNum("pwd")}
+                placeholder="0"
+              />
             </Row>
             <Row label="Senior Citizen">
-              <input type="number" min={0} value={form.senior ?? ""} onChange={onNum("senior")} placeholder="0" />
+              <input
+                type="number"
+                min={0}
+                value={form.senior ?? ""}
+                onChange={onNum("senior")}
+                placeholder="0"
+              />
             </Row>
             <Row label="Children">
-              <input type="number" min={0} value={form.children ?? ""} onChange={onNum("children")} placeholder="0" />
+              <input
+                type="number"
+                min={0}
+                value={form.children ?? ""}
+                onChange={onNum("children")}
+                placeholder="0"
+              />
             </Row>
           </Section>
         </div>
@@ -468,9 +574,7 @@ function Row({
       </div>
 
       {/* content column */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        {children}
-      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{children}</div>
 
       {/* lock column (single source of truth) */}
       {locked ? <LockIcon /> : <span />}
@@ -508,11 +612,12 @@ function ImgBlock({ label, src }: { label: string; src: string }) {
     </div>
   );
 }
+
 function CheckGroup({
   options,
   selected,
   onToggle,
-  columns = 3,                 // <- nice default, change per use
+  columns = 3,
 }: {
   options: string[];
   selected: string[];
@@ -522,10 +627,10 @@ function CheckGroup({
   return (
     <div
       className="lgu-checkgrid"
-      style={{ '--cols': String(columns) } as React.CSSProperties}
+      style={{ "--cols": String(columns) } as React.CSSProperties}
     >
       {options.map((opt) => {
-        const id = `chk_${opt.replace(/\s+/g, '_')}`;
+        const id = `chk_${opt.replace(/\s+/g, "_")}`;
         const checked = selected?.includes(opt);
         return (
           <label key={opt} htmlFor={id} className="lgu-check">
@@ -544,13 +649,4 @@ function LockIcon() {
       <FontAwesomeIcon icon={faLock} style={{ color: "#64748b" }} />
     </span>
   );
-}
-
-function fmtNum(v?: number | "" | null) {
-  if (v === "" || v == null || Number.isNaN(v as number)) return "—";
-  try {
-    return Number(v).toLocaleString();
-  } catch {
-    return String(v);
-  }
 }

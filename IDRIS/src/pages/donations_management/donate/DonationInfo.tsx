@@ -182,16 +182,6 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
                                 className="quantity-input"
                               />
                             )}
-                            <div className="checkbox-item">
-                              <input
-                                type="checkbox"
-                                id="Other"
-                                name="Other"
-                                checked={"Other" in selectedItems}
-                                onChange={handleCheckboxChange}
-                              />
-                              <label htmlFor="Other">Other</label>
-                            </div>
                           </div>
                         );
                       })}
@@ -199,6 +189,17 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
                   )}
                 </div>
               ))}
+              <div className="checkbox-item">
+                <input
+                  type="checkbox"
+                  id="Other"
+                  name="Other"
+                  checked={"Other" in selectedItems}
+                  onChange={handleCheckboxChange}
+                />
+                <label htmlFor="Other">Other</label>
+              </div>
+
             </div>
             {showOtherInput && (
               <div className="form-group">

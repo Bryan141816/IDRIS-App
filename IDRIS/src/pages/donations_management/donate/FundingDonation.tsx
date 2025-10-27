@@ -49,7 +49,7 @@ const DonationPage: React.FC = () => {
 
   const [errors, setErrors] = useState<any>({});
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: number }>({});
-  const [otherDescription, setOtherDescription] = useState('');
+  const [otherDescription, setOtherDescription] = useState<any[]>([]);
 
   const fetchAndSetUserId = async () => {
     try {
@@ -73,30 +73,34 @@ const DonationPage: React.FC = () => {
 
   useEffect(() => {
     if (donationKind === 'In-Kind (Goods or Services)') {
-      const description = Object.entries(selectedItems)
+      const standardItemsDescription = Object.entries(selectedItems)
+        .filter(([compositeKey]) => compositeKey !== 'Other')
         .map(([compositeKey, quantity]) => {
-            if (compositeKey === 'Other') {
-                return otherDescription ? `${quantity}x Other: ${otherDescription}` : `${quantity}x Other`;
-            }
-            const [category, item] = compositeKey.split(': ');
-            return `${quantity}x ${item}`;
+          const [, item] = compositeKey.split(': ');
+          return `${quantity}x ${item}`;
         })
+        .join(', ');
+
+      const otherItemsDescription = otherDescription
+        .map(item => `${item.quantity}x ${item.description}`)
+        .join(', ');
+
+      const description = [standardItemsDescription, otherItemsDescription]
+        .filter(Boolean)
         .join(', ');
 
       const categories = [
         ...new Set(
-            Object.keys(selectedItems)
-                .map(key => key.split(': ')[0])
-                .filter(cat => cat !== 'Other')
+          Object.keys(selectedItems)
+            .map(key => key.split(': ')[0])
+            .filter(cat => cat !== 'Other')
         )
       ].join(', ');
 
       handleDonationInputChange('description', description);
-      // This is a temporary solution to store the category data in the form.
-      // In a real application, you would likely have a dedicated field for this.
       handleDonationInputChange('category', categories);
     }
-}, [selectedItems, otherDescription, donationKind, handleDonationInputChange]);
+  }, [selectedItems, otherDescription, donationKind, handleDonationInputChange]);
 
   useEffect(() => {
     fetchAndSetUserId();
@@ -137,7 +141,7 @@ const DonationPage: React.FC = () => {
     setDonationKind('In-Kind');
     setPaymentMethod('paymongo');
     setSelectedItems({});
-    setOtherDescription('');
+    setOtherDescription([]);
   };
 
   const validate = () => {
@@ -146,8 +150,8 @@ const DonationPage: React.FC = () => {
       if (Object.keys(selectedItems).length === 0) {
         newErrors.description = 'Please select at least one item.';
       }
-      if ('Other' in selectedItems && !otherDescription) {
-        newErrors.otherDescription = 'Please describe the other item(s).';
+      if ('Other' in selectedItems && otherDescription.some(item => !item.description)) {
+        newErrors.otherDescription = 'Please describe all other items.';
       }
     } else {
       if (!donationFormData.description) {

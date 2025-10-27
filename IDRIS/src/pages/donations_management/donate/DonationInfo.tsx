@@ -16,8 +16,8 @@ interface DonorDonationFormProps {
   errors: any;
   selectedItems: { [key: string]: number };
   setSelectedItems: (items: { [key: string]: number }) => void;
-  otherDescription: string;
-  setOtherDescription: (description: string) => void;
+  otherDescription: any[];
+  setOtherDescription: (description: any[]) => void;
 }
 
 const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
@@ -35,7 +35,6 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
 }) => {
   const [activeAmount, setActiveAmount] = useState<string>("0");
   const [isCustom, setIsCustom] = useState<boolean>(true);
-  const [showOtherInput, setShowOtherInput] = useState<boolean>(false);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
 
   const inKindCategories = {
@@ -60,9 +59,10 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
     setSelectedItems(newSelectedItems);
 
     if (name === 'Other') {
-      setShowOtherInput(checked);
-      if (!checked) {
-        setOtherDescription('');
+      if (checked) {
+        setOtherDescription([{ id: 1, description: '', quantity: 1, isInitial: true }]);
+      } else {
+        setOtherDescription([]);
       }
     }
   };
@@ -77,12 +77,47 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
     }
   };
 
+  const handleUpdateOtherItem = (id: number, field: string, value: string) => {
+    const updatedItems = otherDescription.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    setOtherDescription(updatedItems);
+  };
+
+  const handleSaveOtherItem = (id: number) => {
+    const updatedItems = otherDescription.map(item =>
+      item.id === id ? { ...item, isInitial: false } : item
+    );
+    setOtherDescription(updatedItems);
+  };
+
+  const handleEditOtherItem = (id: number) => {
+    const updatedItems = otherDescription.map(item =>
+      item.id === id ? { ...item, isInitial: true } : item
+    );
+    setOtherDescription(updatedItems);
+  };
+
+  const handleAddOtherItem = () => {
+    const newItem = {
+      id: Date.now() + Math.random(),
+      description: '',
+      quantity: 1,
+      isInitial: true,
+    };
+    setOtherDescription([...otherDescription, newItem]);
+  };
+
+  const handleDeleteOtherItem = (id: number) => {
+    const updatedItems = otherDescription.filter(item => item.id !== id);
+    setOtherDescription(updatedItems);
+  };
+
   useEffect(() => {
     // Reset selections when switching away from in-kind
     if (donationKind !== 'In-Kind (Goods or Services)') {
       setSelectedItems({});
-      setOtherDescription('');
-      setShowOtherInput(false);
+      setOtherDescription([]);
     }
   }, [donationKind, setSelectedItems, setOtherDescription]);
 
@@ -201,19 +236,49 @@ const DonorDonationForm: React.FC<DonorDonationFormProps> = ({
               </div>
 
             </div>
-            {showOtherInput && (
-              <div className="form-group">
-                <label htmlFor="other-description" className="form-group__label">Other — describe</label>
-                <input
-                  type="text"
-                  id="other-description"
-                  value={otherDescription}
-                  onChange={(e) => setOtherDescription(e.target.value)}
-                  className={`form-group__input ${errors.otherDescription ? 'input-error' : ''}`}
-                  placeholder="Describe other item(s) (this will be added to the description)"
-                />
-                <small className="form-group__helper-text">This text is appended to the selected items and sent as the donation description.</small>
-                {errors.otherDescription && <p className="error-message">{errors.otherDescription}</p>}
+            {otherDescription.length > 0 && (
+              <div className="other-items-container">
+                {otherDescription.map((item) => (
+                  <div key={item.id} className="other-item">
+                    {item.isInitial ? (
+                      <>
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => handleUpdateOtherItem(item.id, 'description', e.target.value)}
+                          className="form-group__input"
+                          placeholder="Describe other item"
+                        />
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateOtherItem(item.id, 'quantity', e.target.value)}
+                          className="quantity-input"
+                        />
+                        <button onClick={() => handleSaveOtherItem(item.id)} className="button-small">Add</button>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={item.description}
+                          className="form-group__input"
+                          disabled
+                        />
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          className="quantity-input"
+                          disabled
+                        />
+                        <button onClick={() => handleEditOtherItem(item.id)} className="button-small">Edit</button>
+                        <button onClick={() => handleDeleteOtherItem(item.id)} className="button-small button-danger">Delete</button>
+                      </>
+                    )}
+                  </div>
+                ))}
+                <button onClick={handleAddOtherItem} className="button-link">Add Another Item</button>
               </div>
             )}
           </div>

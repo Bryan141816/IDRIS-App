@@ -226,10 +226,6 @@ class EvacuationCenter(Base):
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    id = Column(
-        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
-    )
-
     # NEW: tie record to the account that owns it (one-to-one)
     user_id = Column(
         String,
@@ -238,34 +234,52 @@ class LGURecords(Base):
         unique=True,
     )
 
-    name = Column(String(255), nullable=False)
-    lat = Column(Float, nullable=False)
-    lng = Column(Float, nullable=False)
-    classification = Column(String(255), nullable=False)
-    population = Column(Integer, nullable=False)
-    contact_info = Column(String(255), nullable=False)
-    lgu_picture = Column(String, nullable=True)
-    description = Column(Text, nullable=True)
+    # Keep Python attr name `id` mapped to DB column "lgu_id"
+    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
 
-    resources = Column(JSON, nullable=True)
-    players = Column(JSON, nullable=True)
-    schools = Column(JSON, nullable=True)
-    gyms = Column(JSON, nullable=True)
-    local_suppliers = Column(JSON, nullable=True)
+    # === Coordinates (NEW) ===
+    # Use Decimal with 6 dp for stable precision (roughly ~0.11 m at equator).
+    # Nullable so you can backfill gradually. Add range checks + index.
+    lat = Column(Numeric(9, 6), nullable=True)   # -90..90
+    lng = Column(Numeric(9, 6), nullable=True)   # -180..180
 
-    baranggays = relationship("BaranggayRecords", back_populates="lgu")
+    __table_args__ = (
+        CheckConstraint("lat IS NULL OR (lat >= -90 AND lat <= 90)", name="ck_lgu_lat_range"),
+        CheckConstraint("lng IS NULL OR (lng >= -180 AND lng <= 180)", name="ck_lgu_lng_range"),
+        Index("ix_lgu_records_lat_lng", "lat", "lng"),
+    )
+
+    # === Core Fields (leader's new spec) ===
+    lgu_seal = Column(String, nullable=True)                      # Picture attachment
+    lgu_name = Column(String(255), nullable=False)                # string
+    lgu_classification = Column(String(255), nullable=False)      # dropdown
+    mayor = Column(String(255), nullable=True)                    # input
+    lgu_contact = Column(String(11), nullable=True)               # 11-digit number (string)
+
+    # === DRRM / Hazards ===
+    lgu_majorHazard = Column(JSON, nullable=True)                 # checkbox (JSON array/object)
+    DRMMpersonel = Column(String(255), nullable=True)             # input
+    DRMM_contact = Column(String(11), nullable=True)              # 11-digit number (string)
+    hazard_pic = Column(String, nullable=True)                    # Picture attachment
+
+    # === Facilities & Community Stats ===
+    lgu_critical_facility = Column(JSON, nullable=True)           # checkbox (JSON)
+    lgu_pwd = Column(Integer, nullable=True)                      # number
+    lgu_senior = Column(Integer, nullable=True)                   # number
+    lgu_children = Column(Integer, nullable=True)                 # number
+
+    # === Relationships (APPLIED) ===
+    baranggays = relationship(
+        "BaranggayRecords",
+        back_populates="lgu"
+    )
+
     hazards = relationship(
         "Hazard",
         back_populates="lgu",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-
-    __table_args__ = (
-        UniqueConstraint("user_id", name="ux_lgu_user"),  # race-safe get-or-create
-    )
-
-
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
 

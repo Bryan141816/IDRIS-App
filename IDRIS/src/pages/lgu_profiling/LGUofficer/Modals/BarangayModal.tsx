@@ -1,665 +1,136 @@
-import { BaseModalProps } from "../ModalProps";
-import { useState, useEffect, useRef } from "react";
-import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
+// BarangayModals.tsx (frontend-only; no backend calls)
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
+import type { BaseModalProps } from "../ModalProps";
+import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faMapMarkerAlt,
-  faEllipsisVertical,
-  faTrash,
-  faPen,
-} from "@fortawesome/free-solid-svg-icons";
-import { MapWithPin } from "../ModalProps";
-import { API } from "../../../../API_Handler/Axio_API_Handler";
+import { faLock, faMapMarkerAlt, faTriangleExclamation, faImage } from "@fortawesome/free-solid-svg-icons";
+import "../../css/LGUModal.css"; // reuse same styles
 
-/* -------------------- Fuzzy Search -------------------- */
-type FuzzySeachElementProps = {
-  value: string | null;
-  setLGUID: (idOrName: string, name: string) => void;
-  name: string;
-  searchURL: string;
+/* ========= Types ========= */
+export type BarangayForm = {
+  // Barangay Information Details
+  barangay_name: string;
+  lat?: number;
+  lng?: number;
+  total_population?: number | "";
+  households?: number | "";
+  barangay_captain?: string;
+  contact?: string; // 11 digits
+  barangay_seal?: string; // dataUrl preview
+
+  // Disaster Risk Profile
+  common_hazards: Array<"Typhoons" | "Flooding" | "Earthquakes" | "Landslides" | "Fire">;
+  nearest_evacuation?: string; // prefetch, locked
+
+  // Vulnerable Groups
+  pwd?: number | "";
+  senior?: number | "";
+  children?: number | "";
 };
 
-const FuzzySeachElement: React.FC<FuzzySeachElementProps> = ({
-  value,
-  name,
-  searchURL,
-  setLGUID,
-}) => {
-  type LGURecord = {
-    id: number | string;
-    name: string;
-    lat?: number;
-    lng?: number;
-    contact_info?: string;
-  };
+export type MyBarangay = BarangayForm;
 
-  const [results, setResults] = useState<LGURecord[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(event.target as Node)
-      )
-        setIsSearching(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab" || event.key === "Escape") setIsSearching(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  async function searchLGU(q: string, sim_threshold: number = 0.2) {
-    try {
-      const res = await API.get(
-        `${searchURL}?q=${encodeURIComponent(q)}&sim_threshold=${sim_threshold}`,
-      );
-      const data = res.data;
-      return Array.isArray(data) ? data : data ? [data] : [];
-    } catch {
-      return [];
-    }
+/* ========= Helpers ========= */
+const is11Digits = (v?: string) => !!v && /^[0-9]{11}$/.test(v);
+function fmtNum(v?: number | "" | null) {
+  if (v === "" || v == null || Number.isNaN(v as number)) return "—";
+  try {
+    return Number(v).toLocaleString();
+  } catch {
+    return String(v);
   }
-
-  useEffect(() => {
-    if (!value || value.trim() === "") {
-      setIsSearching(false);
-      setResults([]);
-    }
-  }, [value]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value;
-    setLGUID(q, name);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      const trimmed = q.trim();
-      if (!trimmed) {
-        setResults([]);
-        setIsSearching(false);
-        return;
-      }
-      const res = await searchLGU(trimmed);
-      setResults(res);
-      setIsSearching(true);
-    }, 500);
-  };
-
-  return (
-    <div
-      ref={wrapperRef}
-      style={{
-        display: "flex",
-        width: "100%",
-        gap: "5px",
-        position: "relative",
-      }}
-    >
-      <input
-        value={value ?? ""}
-        onChange={handleChange}
-        onFocus={() => {
-          if ((value ?? "").length > 0 && results.length > 0)
-            setIsSearching(true);
-        }}
-        placeholder="Type to search…"
-      />
-      {isSearching && (
-        <div
-          style={{
-            display: "flex",
-            border: "1px solid #ddd",
-            width: "100%",
-            maxHeight: "200px",
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            borderRadius: "5px",
-            backgroundColor: "white",
-            overflowY: "auto",
-            zIndex: 10000,
-          }}
-        >
-          {results.length > 0 ? (
-            <div style={{ width: "100%" }}>
-              {results.map((val, i) => (
-                <button
-                  key={`${val.id ?? val.name}-${i}`}
-                  style={{
-                    padding: "5px",
-                    width: "100%",
-                    textAlign: "start",
-                    background: "white",
-                    border: "none",
-                    borderBottom: "1px solid #eee",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => {
-                    setLGUID(String(val.name), name);
-                    setIsSearching(false);
-                  }}
-                >
-                  {val.name}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div style={{ padding: "8px" }}>No results found…</div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* -------------------- Types -------------------- */
-type addLGUModalProps = BaseModalProps & {
-  handleAddRecord: (payload: any) => void;
-};
-type viewEvecuationModalProp = BaseModalProps & {
-  selectedData: any;
-  handleDeleteRecord: (id: string) => void;
-  openEditModal: () => void;
-};
-type editEvacuationModalProp = BaseModalProps & {
-  selectedData: any;
-  handleEditRecord: (id: string, payload: any) => void;
-};
-
-/* -------------------- Add Barangay -------------------- */
-export const AddBarangayModal: React.FC<addLGUModalProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  handleAddRecord,
-}) => {
-  type BarangayForm = {
-    name: string;
-    lat: number;
-    lng: number;
-    LGU: string;
-    evacuation: string;
-    population: number;
-    contact_info: string;
-    risk_level: string;
-    baranggay_desc: string;
-  };
-
-  const [form, setForm] = useState<BarangayForm>({
-    name: "",
-    lat: 0,
-    lng: 0,
-    LGU: "",
-    evacuation: "",
-    population: 0,
-    contact_info: "",
-    risk_level: "",
-    baranggay_desc: "",
+}
+function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
+  if (lat === "" || lng === "" || lat == null || lng == null) return "—";
+  const f = (n: number) => Number(n).toFixed(6);
+  return `${f(Number(lat))}, ${f(Number(lng))}`;
+}
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = reject;
+    r.readAsDataURL(file);
   });
 
-  const [barangayPic, setBarangayPic] = useState<File | null>(null);
-  const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
-    null,
-  );
-  const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setBarangayPic(file);
-    setBarangayPicPreview(file ? URL.createObjectURL(file) : null);
-  };
-
-  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
-  const openLocationPicker = () => setLocationPickerIsOpen(true);
-  const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: {
-    lat: number;
-    lng: number;
-  }) => {
-    setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    const nextVal = type === "number" && value !== "" ? Number(value) : value;
-    setForm((prev) => ({ ...prev, [name]: nextVal }));
-  };
-
-  const handleSearchChange = (idOrName: string, fieldName: string) => {
-    setForm((prev) => ({ ...prev, [fieldName]: idOrName.toString() }));
-  };
-
-  const uploadBarangayPic = async (file: File): Promise<string | null> => {
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await API.post("/api/files/barangay_pictures", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return res.data.url;
-    } catch {
-      return null;
-    }
-  };
-
-  const submitAdd = async () => {
-    let picUrl: string | null = null;
-    if (barangayPic) {
-      picUrl = await uploadBarangayPic(barangayPic);
-      if (!picUrl) {
-        setMessageBox((prev) => ({
-          ...prev,
-          isOpen: true,
-          type: "message",
-          message: "Image upload failed. Please try again.",
-        }));
-        return;
-      }
-    }
-
-    const payload = {
-      name: form.name,
-      lat: form.lat,
-      lng: form.lng,
-      LGU: form.LGU,
-      evacuation: form.evacuation || null,
-      population: form.population,
-      contact_info: form.contact_info,
-      risk_level: form.risk_level,
-      baranggay_pic: picUrl,
-      baranggay_desc: form.baranggay_desc || null,
-      resources: null,
-    };
-
-    handleAddRecord(payload);
-  };
-
-  return (
-    <>
-      {locationPickerIsOpen && (
-        <LocationPickerModal
-          isOpenProp={locationPickerIsOpen}
-          onCloseProp={closeLocationPicker}
-          onSubmit={handleLocationPickerSubmit}
-          lat={form.lat}
-          lng={form.lng}
-        />
-      )}
-      <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Add Barangay</span>
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Name:</span>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Barangay Picture:</span>
-            <div style={{ width: "100%" }}>
-              <input type="file" accept="image/*" onChange={onPicChange} />
-              {barangayPicPreview && (
-                <img
-                  src={barangayPicPreview}
-                  alt="Preview"
-                  style={{
-                    marginTop: 8,
-                    maxWidth: "100%",
-                    maxHeight: 160,
-                    borderRadius: 6,
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Location:</span>
-            <div style={{ display: "flex", width: "100%", gap: "5px" }}>
-              <input
-                type="text"
-                readOnly
-                placeholder="Select a location"
-                value={form.lat ? `${form.lat} , ${form.lng}` : ""}
-              />
-              <button
-                style={{
-                  backgroundColor: "transparent",
-                  border: "1px solid #ddd",
-                  outline: "none",
-                  color: "#3b82f6",
-                  width: "35px",
-                  borderRadius: "5px",
-                }}
-                onClick={openLocationPicker}
-              >
-                <FontAwesomeIcon
-                  icon={faMapMarkerAlt}
-                  style={{ height: "20px" }}
-                />
-              </button>
-            </div>
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">LGU:</span>
-            <FuzzySeachElement
-              value={form.LGU}
-              name="LGU"
-              setLGUID={handleSearchChange}
-              searchURL="/lgu_profiling/manage_lgu/search_lgu"
-            />
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Evacuation Center:</span>
-            <FuzzySeachElement
-              value={form.evacuation}
-              name="evacuation"
-              setLGUID={handleSearchChange}
-              searchURL="/lgu_profiling/manage_lgu/search_evacuation"
-            />
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Population:</span>
-            <input
-              type="number"
-              name="population"
-              value={form.population}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Contact Info:</span>
-            <input
-              type="text"
-              name="contact_info"
-              value={form.contact_info}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Risk Level:</span>
-            <select
-              id="risk_level"
-              name="risk_level"
-              required
-              value={form.risk_level}
-              onChange={handleChange}
-            >
-              <option value="" disabled>
-                Select Risk Level
-              </option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-
-          <div className="horizontal-container">
-            <span className="item-details-identifier">
-              Barangay Description:
-            </span>
-            <textarea
-              name="baranggay_desc"
-              value={form.baranggay_desc}
-              onChange={handleChange}
-              placeholder="Enter a description for the barangay"
-              rows={4}
-              style={{ width: "100%", borderRadius: "5px", padding: "8px" }}
-            />
-          </div>
-
-          <div className="action-button">
-            <button
-              style={{ backgroundColor: "#749AB6", color: "#ffff" }}
-              onClick={() => {
-                setMessageBox((prev) => ({
-                  ...prev,
-                  isOpen: true,
-                  type: "confirm",
-                  message: "Are you sure you want to add this record?",
-                  onSubmit: submitAdd,
-                }));
-              }}
-            >
-              Add
-            </button>
-            <button
-              style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
-              onClick={closeModal}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </>
-  );
+/* =========================================================================
+   VIEW
+===========================================================================*/
+type ViewProps = BaseModalProps & {
+  data?: MyBarangay | null;
+  onOpenEdit?: () => void;
+  onOpenDelete?: () => void;
 };
 
-/* -------------------- View Barangay -------------------- */
-export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
+export const BarangayViewModal: React.FC<ViewProps> = ({
   isModalOpen,
   closeModal,
-  setMessageBox,
-  selectedData,
-  handleDeleteRecord,
-  openEditModal,
+  setMessageBox, // parity (kept for BaseModalProps)
+  onOpenDelete,
+  onOpenEdit,
+  data,
 }) => {
-  const [isMoreOptionVisible, setIsMoreOptionVisible] = useState(false);
-  const toggleMoreOptionVisible = () =>
-    setIsMoreOptionVisible(!isMoreOptionVisible);
-
-  useEffect(() => {
-    if (!isModalOpen) setIsMoreOptionVisible(false);
-  }, [isModalOpen]);
-
-  const details = (selectedData as any)?.fullRecord || {};
-  const rawId = details.id ?? selectedData?.data?.[0]?.text;
-  const safeId = Number(rawId);
-
-  const name = details.name ?? selectedData?.data?.[1]?.text ?? "-";
-  const lguDisplay =
-    details.lgu_name ??
-    details.lgu?.name ??
-    selectedData?.data?.[2]?.text ??
-    "—";
-  const evacDisplay =
-    details.evacuation_center_name ??
-    details.evacucation_center?.name ??
-    selectedData?.data?.[3]?.text ??
-    "—";
-  const contactInfo =
-    details.contact_info ?? selectedData?.data?.[4]?.text ?? "-";
-  const population = details.population ?? selectedData?.data?.[5]?.text ?? 0;
-  const riskLevel = details.risk_level ?? selectedData?.data?.[8]?.text ?? "-";
-
-  const lat = Number(details.lat);
-  const lng = Number(details.lng);
-  const hasValidCoords = Number.isFinite(lat) && Number.isFinite(lng);
-
-  const barangayPic: string | undefined = details.baranggay_pic || undefined;
-  const baranggayDesc: string | undefined = details.baranggay_desc || undefined;
+  if (!isModalOpen) return null;
+  const d = data ?? null;
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
-      <div className="modal-container" style={{ paddingTop: "30px" }}>
-        <div className="horizontal-container space-between-container">
-          <span className="title-modal-text">View Details</span>
-          <div
-            className="horizontal-container"
-            style={{ width: "auto", gap: "5px" }}
-          >
-            <div className="more-options-container">
-              <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon
-                  icon={faEllipsisVertical}
-                  style={{ height: "20px" }}
+    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
+      <div className="modal-container lgu-modal">
+        <div className="horizontal-container">
+          <span className="title-modal-text">Barangay Information</span>
+        </div>
+
+        <div className="lgu-scroll">
+          {!d ? (
+            <div style={{ padding: 12, color: "#6b7280" }}>
+              No data yet. Click <b>Edit</b> or <b>Create</b> to fill this in.
+            </div>
+          ) : (
+            <>
+              <Section title="Barangay Information Details">
+                <DL label="Barangay Name" value={d.barangay_name || "—"} />
+                <DL label="Location (Lat, Lng)" value={fmtLL(d.lat, d.lng)} />
+                <DL label="Total Population" value={fmtNum(d.total_population)} />
+                <DL label="Number of Households" value={fmtNum(d.households)} />
+                <DL label="Barangay Captain" value={d.barangay_captain || "—"} />
+                <DL
+                  label="Contact Number"
+                  value={d.contact || "—"}
+                  invalid={!!d.contact && !is11Digits(d.contact)}
                 />
-              </button>
-              {isMoreOptionVisible && (
-                <div className="more-options-viewer">
-                  <button onClick={openEditModal}>
-                    <FontAwesomeIcon icon={faPen} /> Edit Record
-                  </button>
-                  <button
-                    style={{ color: "red" }}
-                    onClick={() => {
-                      setMessageBox((prev) => ({
-                        ...prev,
-                        isOpen: true,
-                        type: "confirm",
-                        message: "Are you sure you want to delete this record?",
-                        onSubmit: () => {
-                          if (!Number.isFinite(safeId)) {
-                            setMessageBox((p) => ({
-                              ...p,
-                              isOpen: true,
-                              type: "message",
-                              message: "Delete failed: invalid ID.",
-                            }));
-                            return;
-                          }
-                          handleDeleteRecord(safeId.toString());
-                        },
-                      }));
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faTrash} /> Delete Record
-                  </button>
+              </Section>
+
+              <Section title="Disaster Risk Profile">
+                <DL label="Common Hazards" value={d.common_hazards?.join(", ") || "—"} />
+                <DL label="Nearest Evacuation" value={d.nearest_evacuation || "—"} locked />
+              </Section>
+
+              <Section title="Vulnerable Groups">
+                <DL label="PWD" value={fmtNum(d.pwd)} />
+                <DL label="Senior" value={fmtNum(d.senior)} />
+                <DL label="Children" value={fmtNum(d.children)} />
+              </Section>
+
+              {/* Dedicated, read-only Barangay Seal section */}
+              <Section title="Barangay Seal">
+                <div className="lgu-media-row">
+                  <ImgOrPlaceholder label="Barangay Seal" src={d.barangay_seal} />
                 </div>
-              )}
-            </div>
-          </div>
+              </Section>
+            </>
+          )}
         </div>
-
-        <div className="horizontal-container">
-          <span className="details-title">Details</span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Name:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>{name}</span>
-        </div>
-
-        {barangayPic && (
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Picture:</span>
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              <img
-                src={barangayPic}
-                alt="Barangay"
-                style={{
-                  marginTop: 8,
-                  maxWidth: "100%",
-                  maxHeight: 220,
-                  borderRadius: 6,
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {baranggayDesc && (
-          <div className="horizontal-container">
-            <span className="item-details-identifier">
-              Barangay Description:
-            </span>
-            <div style={{ width: "100%", textAlign: "center" }}>
-              <p>{baranggayDesc}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">LGU:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {lguDisplay}
-          </span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Evacuation Center:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {evacDisplay}
-          </span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Population:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {typeof population === "number"
-              ? population.toLocaleString()
-              : population}
-          </span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Contact Info:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {contactInfo}
-          </span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Risk Level:</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {riskLevel}
-          </span>
-        </div>
-
-        <div className="horizontal-container">
-          <span className="item-details-identifier">Location (Lat, Lng):</span>
-          <span style={{ width: "100%", textAlign: "center" }}>
-            {hasValidCoords ? `${lat}, ${lng}` : "—"}
-          </span>
-        </div>
-
-        {hasValidCoords && (
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              height: "50vh",
-              borderRadius: "10px",
-              overflow: "hidden",
-            }}
-          >
-            <MapWithPin lat={lat} lng={lng} />
-          </div>
-        )}
 
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
-            Close
+          <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={onOpenDelete}>
+            Delete
+          </button>
+          <button style={{ backgroundColor: "#749AB6", color: "#fff" }} onClick={onOpenEdit}>
+            Edit
+          </button>
+          <button style={{ backgroundColor: "#9CA3AF", color: "#fff" }} onClick={closeModal}>
+            Cancel
           </button>
         </div>
       </div>
@@ -667,338 +138,627 @@ export const ViewBarangayModal: React.FC<viewEvecuationModalProp> = ({
   );
 };
 
-/* -------------------- Edit Barangay -------------------- */
-export const EditBarangayModal: React.FC<editEvacuationModalProp> = ({
+/* =========================================================================
+   CREATE (frontend-only)
+===========================================================================*/
+type CreateProps = BaseModalProps & {
+  onCreate?: (data: MyBarangay | null) => void;
+  prefetch?: {
+    nearest_evacuation?: string; // locked
+    lat?: number;
+    lng?: number;
+  };
+};
+
+export const BarangayCreateModal: React.FC<CreateProps> = ({
   isModalOpen,
   closeModal,
   setMessageBox,
-  handleEditRecord,
-  selectedData,
+  onCreate,
+  prefetch,
 }) => {
-  type BarangayForm = {
-    name: string;
-    lat: number;
-    lng: number;
-    LGU: string | null;
-    evacuation: string | null;
-    population: number;
-    contact_info: string;
-    risk_level: string;
-    baranggay_desc: string;
-  };
-
-  const details = (selectedData as any)?.fullRecord || {};
-  const rawId = details.id ?? selectedData?.data?.[0]?.text;
-  const safeId = Number(rawId);
-
-  const [form, setForm] = useState<BarangayForm>({
-    name: details?.name ?? "",
-    lat: details?.lat ? parseFloat(details.lat) : 0,
-    lng: details?.lng ? parseFloat(details.lng) : 0,
-    LGU: details?.lgu_name ?? details?.lgu?.name ?? "",
-    evacuation:
-      details?.evacuation_center_name ??
-      details?.evacucation_center?.name ??
-      "",
-    population: details?.population ? parseInt(details.population) : 0,
-    contact_info: details?.contact_info ?? "",
-    risk_level: details?.risk_level ?? "",
-    baranggay_desc: details?.baranggay_desc ?? "",
+  const [form, setForm] = useState<MyBarangay>({
+    barangay_name: "",
+    lat: prefetch?.lat,
+    lng: prefetch?.lng,
+    total_population: "",
+    households: "",
+    barangay_captain: "",
+    contact: "",
+    barangay_seal: "",
+    common_hazards: [],
+    nearest_evacuation: prefetch?.nearest_evacuation || "",
+    pwd: "",
+    senior: "",
+    children: "",
   });
 
-  const [barangayPicFile, setBarangayPicFile] = useState<File | null>(null);
-  const [barangayPicPreview, setBarangayPicPreview] = useState<string | null>(
-    details?.baranggay_pic ?? null,
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    setForm((p) => ({
+      ...p,
+      nearest_evacuation: prefetch?.nearest_evacuation ?? p.nearest_evacuation,
+      lat: prefetch?.lat ?? p.lat,
+      lng: prefetch?.lng ?? p.lng,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen]);
+
+  const invalids = useMemo(
+    () => ({
+      contact: !!form.contact && !is11Digits(form.contact),
+      name: !form.barangay_name?.trim(),
+    }),
+    [form.contact, form.barangay_name]
   );
 
-  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
-  const openLocationPicker = () => setLocationPickerIsOpen(true);
-  const closeLocationPicker = () => setLocationPickerIsOpen(false);
+  const onText =
+    (key: keyof MyBarangay) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((p) => ({ ...p, [key]: e.target.value }));
 
-  const handleLocationPickerSubmit = (mapData: {
-    lat: number;
-    lng: number;
-  }) => {
-    setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
-  };
+  const onNum =
+    (key: keyof MyBarangay) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = e.target.value;
+      setForm((p) => ({ ...p, [key]: v === "" ? "" : Number(v) }));
+    };
 
-  const onPicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setBarangayPicFile(file);
-    setBarangayPicPreview(
-      file ? URL.createObjectURL(file) : (details?.baranggay_pic ?? null),
-    );
-  };
+  const onImage =
+    (key: keyof MyBarangay) =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const url = await readAsDataUrl(f);
+      setForm((p) => ({ ...p, [key]: url }));
+    };
 
-  const uploadBarangayPic = async (file: File): Promise<string | null> => {
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await API.post("/api/files/barangay_pictures", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return res.data?.url ?? null;
-    } catch {
-      return null;
-    }
-  };
+  const toggle = (val: MyBarangay["common_hazards"][number]) =>
+    setForm((prev) => {
+      const s = new Set(prev.common_hazards ?? []);
+      s.has(val) ? s.delete(val) : s.add(val);
+      return { ...prev, common_hazards: Array.from(s) as MyBarangay["common_hazards"] };
+    });
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    const nextVal = type === "number" && value !== "" ? Number(value) : value;
-    setForm((prev) => ({ ...prev, [name]: nextVal }));
-  };
-
-  const handleSearchChange = (idOrName: string, fieldName: string) => {
-    setForm((prev) => ({ ...prev, [fieldName]: idOrName.toString() }));
-  };
-
-  const confirmDetachEvacuation = () => {
-    const current = (form.evacuation || "").trim();
-    if (current === "") {
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "message",
-        message: "No evacuation center is currently set.",
-      }));
-      return;
-    }
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: true,
-      type: "confirm",
-      message: `Are you sure you want to detach the evacuation center ${current ? `“${current}” ` : ""}from “${form.name}”?`,
-      onSubmit: () => setForm((p) => ({ ...p, evacuation: "" })),
-    }));
-  };
-
-  const submitEdit = async () => {
-    if (!Number.isFinite(safeId)) {
-      setMessageBox((p) => ({
+  const save = () => {
+    if (invalids.name) {
+      setMessageBox((p: any) => ({
         ...p,
         isOpen: true,
         type: "message",
-        message: "Update failed: invalid ID.",
+        message: "Barangay Name is required.",
+      }));
+      return;
+    }
+    if (invalids.contact) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Contact Number must be exactly 11 digits.",
+      }));
+      return;
+    }
+    if ((form.lat == null) !== (form.lng == null)) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Please pick a valid location (both latitude and longitude).",
+      }));
+      return;
+    }
+    onCreate?.(form);
+    closeModal();
+  };
+
+  if (!isModalOpen) return null;
+
+  return (
+    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
+      {pickerOpen && (
+        <LocationPickerModal
+          isOpenProp={pickerOpen}
+          onCloseProp={() => setPickerOpen(false)}
+          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
+            setForm((p) => ({ ...p, lat, lng }))
+          }
+          lat={Number(form.lat) || 0}
+          lng={Number(form.lng) || 0}
+        />
+      )}
+
+      <div className="modal-container lgu-modal">
+        <div className="horizontal-container">
+          <span className="details-title">Create Barangay</span>
+        </div>
+
+        <div className="lgu-scroll">
+          <Section title="Barangay Information Details">
+            <Row label="Barangay Name">
+              <input
+                type="text"
+                value={form.barangay_name}
+                onChange={onText("barangay_name")}
+                placeholder="Enter barangay name"
+              />
+            </Row>
+
+            <Row label="Location">
+              <input
+                type="text"
+                readOnly
+                placeholder="Pick on map"
+                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
+                style={{ width: 260 }}
+              />
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                title="Pick location on map"
+                style={pinBtnStyle}
+              >
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
+              </button>
+            </Row>
+
+            {/* Barangay Seal upload with small preview */}
+            <Row label="Barangay Seal">
+              <label className="filelike">
+                <FontAwesomeIcon icon={faImage} />
+                <span>Choose image</span>
+                <input type="file" accept="image/*" onChange={onImage("barangay_seal")} hidden />
+              </label>
+              {!!form.barangay_seal && (
+                <img src={form.barangay_seal} alt="Barangay Seal" className="img-thumb" />
+              )}
+            </Row>
+
+            <Row label="Total Population">
+              <input type="number" min={0} value={form.total_population ?? ""} onChange={onNum("total_population")} />
+            </Row>
+
+            <Row label="Number of Households">
+              <input type="number" min={0} value={form.households ?? ""} onChange={onNum("households")} />
+            </Row>
+
+            <Row label="Barangay Captain">
+              <input type="text" value={form.barangay_captain ?? ""} onChange={onText("barangay_captain")} />
+            </Row>
+
+            <Row label="Contact Number" hint="11 digits">
+              <input
+                type="tel"
+                value={form.contact ?? ""}
+                onChange={onText("contact")}
+                placeholder="09XXXXXXXXX"
+                className={invalids.contact ? "input-invalid" : undefined}
+                maxLength={11}
+              />
+            </Row>
+          </Section>
+
+          <Section title="Disaster Risk Profile">
+            <Row label="Common Hazards">
+              <CheckGroup
+                options={["Typhoons", "Flooding", "Earthquakes", "Landslides", "Fire"] as const}
+                selected={form.common_hazards}
+                onToggle={toggle}
+                columns={3}
+              />
+            </Row>
+
+            <Row label="Nearest Evacuation" locked>
+              <input type="text" value={form.nearest_evacuation || ""} readOnly disabled placeholder="(prefetch)" />
+            </Row>
+          </Section>
+
+          <Section title="Vulnerable Groups">
+            <Row label="PWD">
+              <input type="number" min={0} value={form.pwd ?? ""} onChange={onNum("pwd")} placeholder="0" />
+            </Row>
+            <Row label="Senior">
+              <input type="number" min={0} value={form.senior ?? ""} onChange={onNum("senior")} placeholder="0" />
+            </Row>
+            <Row label="Children">
+              <input type="number" min={0} value={form.children ?? ""} onChange={onNum("children")} placeholder="0" />
+            </Row>
+          </Section>
+
+          {/* (Removed the bottom preview section for Create; preview is inline with the upload row) */}
+        </div>
+
+        <div className="action-button">
+          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
+            Save
+          </button>
+          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+/* =========================================================================
+   EDIT (frontend-only)
+===========================================================================*/
+type EditProps = BaseModalProps & {
+  data: MyBarangay;
+  onSaved?: (data: MyBarangay | null) => void;
+  prefetch?: {
+    nearest_evacuation?: string; // locked
+    lat?: number;
+    lng?: number;
+  };
+};
+
+export const BarangayEditModal: React.FC<EditProps> = ({
+  isModalOpen,
+  closeModal,
+  setMessageBox,
+  data,
+  onSaved,
+  prefetch,
+}) => {
+  const [form, setForm] = useState<MyBarangay>({ ...data });
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    setForm((p) => ({
+      ...p,
+      nearest_evacuation: prefetch?.nearest_evacuation ?? p.nearest_evacuation,
+      lat: prefetch?.lat ?? p.lat,
+      lng: prefetch?.lng ?? p.lng,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isModalOpen]);
+
+  const invalids = useMemo(
+    () => ({
+      contact: !!form.contact && !is11Digits(form.contact),
+      name: !form.barangay_name?.trim(),
+    }),
+    [form.contact, form.barangay_name]
+  );
+
+  const onText =
+    (key: keyof MyBarangay) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((p) => ({ ...p, [key]: e.target.value }));
+
+  const onNum =
+    (key: keyof MyBarangay) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const v = e.target.value;
+      setForm((p) => ({ ...p, [key]: v === "" ? "" : Number(v) }));
+    };
+
+  const onImage =
+    (key: keyof MyBarangay) =>
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const url = await readAsDataUrl(f);
+      setForm((p) => ({ ...p, [key]: url }));
+    };
+
+  const toggle = (val: MyBarangay["common_hazards"][number]) =>
+    setForm((prev) => {
+      const s = new Set(prev.common_hazards ?? []);
+      s.has(val) ? s.delete(val) : s.add(val);
+      return { ...prev, common_hazards: Array.from(s) as MyBarangay["common_hazards"] };
+    });
+
+  const save = () => {
+    if (invalids.name) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Barangay Name is required.",
+      }));
+      return;
+    }
+    if (invalids.contact) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Contact Number must be exactly 11 digits.",
+      }));
+      return;
+    }
+    if ((form.lat == null) !== (form.lng == null)) {
+      setMessageBox((p: any) => ({
+        ...p,
+        isOpen: true,
+        type: "message",
+        message: "Please pick a valid location (both latitude and longitude).",
       }));
       return;
     }
 
-    let picUrl: string | null = null;
-    if (barangayPicFile) {
-      picUrl = await uploadBarangayPic(barangayPicFile);
-      if (!picUrl) {
-        setMessageBox((prev) => ({
-          ...prev,
-          isOpen: true,
-          type: "message",
-          message: "Image upload failed. Please try again.",
-        }));
-        return;
-      }
-    }
-
-    const payload = {
-      ...form,
-      ...(picUrl ? { baranggay_pic: picUrl } : {}),
-    };
-
-    setMessageBox((prev) => ({
-      ...prev,
-      isOpen: true,
-      type: "confirm",
-      message: "Are you sure you want to update this record?",
-      onSubmit: () => handleEditRecord(safeId.toString(), payload),
-    }));
+    onSaved?.(form);
+    closeModal();
   };
 
+  if (!isModalOpen) return null;
+
   return (
-    <>
-      {locationPickerIsOpen && (
+    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
+      {pickerOpen && (
         <LocationPickerModal
-          isOpenProp={locationPickerIsOpen}
-          onCloseProp={closeLocationPicker}
-          onSubmit={handleLocationPickerSubmit}
-          lat={form.lat}
-          lng={form.lng}
+          isOpenProp={pickerOpen}
+          onCloseProp={() => setPickerOpen(false)}
+          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
+            setForm((p) => ({ ...p, lat, lng }))
+          }
+          lat={Number(form.lat) || 0}
+          lng={Number(form.lng) || 0}
         />
       )}
 
-      <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998}>
-        <div className="modal-container">
-          <div className="horizontal-container">
-            <span className="details-title">Edit Barangay</span>
-          </div>
+      <div className="modal-container lgu-modal">
+        <div className="horizontal-container">
+          <span className="details-title">Edit Barangay</span>
+        </div>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Name:</span>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-            />
-          </div>
+        <div className="lgu-scroll">
+          <Section title="Barangay Information Details">
+            <Row label="Barangay Name">
+              <input type="text" value={form.barangay_name} onChange={onText("barangay_name")} />
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Location:</span>
-            <div style={{ display: "flex", width: "100%", gap: "5px" }}>
+            <Row label="Location">
               <input
                 type="text"
                 readOnly
-                placeholder="Select a location"
-                value={form.lat ? `${form.lat} , ${form.lng}` : ""}
+                placeholder="Pick on map"
+                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
+                style={{ width: 260 }}
               />
-              <button
-                style={{
-                  backgroundColor: "transparent",
-                  border: "1px solid #ddd",
-                  outline: "none",
-                  color: "#3b82f6",
-                  width: "35px",
-                  borderRadius: "5px",
-                }}
-                onClick={openLocationPicker}
-              >
-                <FontAwesomeIcon
-                  icon={faMapMarkerAlt}
-                  style={{ height: "20px" }}
-                />
+              <button type="button" onClick={() => setPickerOpen(true)} title="Pick location on map" style={pinBtnStyle}>
+                <FontAwesomeIcon icon={faMapMarkerAlt} />
               </button>
-            </div>
-          </div>
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">LGU:</span>
-            <FuzzySeachElement
-              value={form.LGU ?? ""}
-              name="LGU"
-              setLGUID={handleSearchChange}
-              searchURL="/lgu_profiling/manage_lgu/search_lgu"
-            />
-          </div>
+            {/* Edit: keep attachment, remove preview */}
+            <Row label="Barangay Seal">
+              <label className="filelike">
+                <FontAwesomeIcon icon={faImage} />
+                <span>Choose image</span>
+                <input type="file" accept="image/*" onChange={onImage("barangay_seal")} hidden />
+              </label>
+            </Row>
 
-          <div
-            className="horizontal-container"
-            style={{ alignItems: "center" }}
-          >
-            <span className="item-details-identifier">Evacuation Center:</span>
-            <div style={{ display: "flex", width: "100%", gap: "8px" }}>
-              <div style={{ flex: 1 }}>
-                <FuzzySeachElement
-                  value={form.evacuation ?? ""}
-                  name="evacuation"
-                  setLGUID={handleSearchChange}
-                  searchURL="/lgu_profiling/manage_lgu/search_evacuation"
-                />
-              </div>
-              <button
-                type="button"
-                title="Detach evacuation center"
-                style={{
-                  padding: "6px 10px",
-                  backgroundColor: "#f87171",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  height: "32px",
-                  alignSelf: "center",
-                }}
-                onClick={confirmDetachEvacuation}
-              >
-                Detach
-              </button>
-            </div>
-          </div>
+            <Row label="Total Population">
+              <input type="number" min={0} value={form.total_population ?? ""} onChange={onNum("total_population")} />
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Population:</span>
-            <input
-              type="number"
-              name="population"
-              value={form.population}
-              onChange={handleChange}
-              min={0}
-            />
-          </div>
+            <Row label="Number of Households">
+              <input type="number" min={0} value={form.households ?? ""} onChange={onNum("households")} />
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Contact Info:</span>
-            <input
-              type="text"
-              name="contact_info"
-              value={form.contact_info}
-              onChange={handleChange}
-            />
-          </div>
+            <Row label="Barangay Captain">
+              <input type="text" value={form.barangay_captain ?? ""} onChange={onText("barangay_captain")} />
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Risk Level:</span>
-            <select
-              id="risk_level"
-              name="risk_level"
-              required
-              value={form.risk_level}
-              onChange={handleChange}
-            >
-              <option value="" disabled>
-                Select Risk Level
-              </option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
+            <Row label="Contact Number" hint="11 digits">
+              <input
+                type="tel"
+                value={form.contact ?? ""}
+                onChange={onText("contact")}
+                placeholder="09XXXXXXXXX"
+                className={invalids.contact ? "input-invalid" : undefined}
+                maxLength={11}
+              />
+            </Row>
+          </Section>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">
-              Barangay Description:
-            </span>
-            <textarea
-              name="baranggay_desc"
-              value={form.baranggay_desc}
-              onChange={handleChange}
-              placeholder="Edit description here"
-              rows={4}
-              style={{ width: "100%", borderRadius: "5px", padding: "8px" }}
-            />
-          </div>
+          <Section title="Disaster Risk Profile">
+            <Row label="Common Hazards">
+              <CheckGroup
+                options={["Typhoons", "Flooding", "Earthquakes", "Landslides", "Fire"] as const}
+                selected={form.common_hazards}
+                onToggle={toggle}
+                columns={3}
+              />
+            </Row>
 
-          <div className="horizontal-container">
-            <span className="item-details-identifier">Picture:</span>
-            <div style={{ width: "100%" }}>
-              <input type="file" accept="image/*" onChange={onPicChange} />
-              {barangayPicPreview && (
-                <img
-                  src={barangayPicPreview}
-                  alt="Preview"
-                  style={{
-                    marginTop: 8,
-                    maxWidth: "100%",
-                    maxHeight: 160,
-                    borderRadius: 6,
-                  }}
-                />
-              )}
-            </div>
-          </div>
+            <Row label="Nearest Evacuation" locked>
+              <input type="text" value={form.nearest_evacuation || ""} readOnly disabled placeholder="(prefetch)" />
+            </Row>
+          </Section>
 
-          <div className="action-button">
-            <button style={{ backgroundColor: "#749AB6" }} onClick={submitEdit}>
-              Confirm
-            </button>
-            <button style={{ backgroundColor: "#F84B4D" }} onClick={closeModal}>
-              Cancel
-            </button>
-          </div>
+          <Section title="Vulnerable Groups">
+            <Row label="PWD">
+              <input type="number" min={0} value={form.pwd ?? ""} onChange={onNum("pwd")} placeholder="0" />
+            </Row>
+            <Row label="Senior">
+              <input type="number" min={0} value={form.senior ?? ""} onChange={onNum("senior")} placeholder="0" />
+            </Row>
+            <Row label="Children">
+              <input type="number" min={0} value={form.children ?? ""} onChange={onNum("children")} placeholder="0" />
+            </Row>
+          </Section>
+
+          {/* (Removed the bottom Images preview section for Edit) */}
         </div>
-      </Modal>
-    </>
+
+        <div className="action-button">
+          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
+            Save
+          </button>
+          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
+};
+
+/* =========================================================================
+   DELETE CONFIRMATION (frontend-only)
+===========================================================================*/
+type DeleteProps = BaseModalProps & {
+  targetName?: string;
+  onConfirm?: () => void;
+};
+
+export const BarangayDeleteModal: React.FC<DeleteProps> = ({
+  isModalOpen,
+  closeModal,
+  targetName,
+  onConfirm,
+}) => {
+  if (!isModalOpen) return null;
+  return (
+    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={999} width="min(520px, 92vw)" height="auto">
+      <div className="modal-container lgu-modal" style={{ padding: 24 }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
+          <FontAwesomeIcon icon={faTriangleExclamation} style={{ color: "#b91c1c" }} />
+          <span className="details-title">Delete Barangay</span>
+        </div>
+        <p style={{ color: "#374151", marginBottom: 16 }}>
+          Are you sure you want to delete <b>{targetName ?? "this barangay"}</b>? This action cannot be undone.
+        </p>
+        <div className="action-button">
+          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={onConfirm}>
+            Delete
+          </button>
+          <button style={{ background: "#749AB6", color: "#fff" }} onClick={closeModal}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+/* ========= Presentational helpers ========= */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="section-block" style={{ marginTop: 12 }}>
+      <h3 className="section-title" style={{ marginBottom: 8 }}>
+        {title}
+      </h3>
+      <div className="lgu-modal-form">{children}</div>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  children,
+  locked,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  locked?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div className="lgu-row">
+      <div className="item-details-identifier" style={{ fontWeight: 700 }}>
+        {label}
+        {hint ? ` — ${hint}` : ""}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{children}</div>
+      {locked ? <LockIcon /> : <span />}
+    </div>
+  );
+}
+
+function DL({
+  label,
+  value,
+  locked,
+  invalid,
+}: {
+  label: string;
+  value: React.ReactNode;
+  locked?: boolean;
+  invalid?: boolean;
+}) {
+  return (
+    <div className="lgu-row" style={{ padding: "4px 0" }}>
+      <div className="item-details-identifier" style={{ fontWeight: 700 }}>
+        {label}
+      </div>
+      <div style={{ color: invalid ? "#b91c1c" : "#111827" }}>{value}</div>
+      {locked ? <LockIcon /> : <span />}
+    </div>
+  );
+}
+
+/** shows image or a tidy placeholder (matches your LGU modal pattern) */
+function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
+  const hasImg = !!src;
+  return (
+    <div className="lgu-media">
+      <div className="item-details-identifier" style={{ marginBottom: 6 }}>{label}</div>
+      {hasImg ? (
+        <img src={src} alt={label} className="img-thumb" />
+      ) : (
+        <div className="img-placeholder">No image</div>
+      )}
+    </div>
+  );
+}
+
+function CheckGroup<T extends string>({
+  options,
+  selected,
+  onToggle,
+  columns = 3,
+}: {
+  options: readonly T[];
+  selected: readonly T[];
+  onToggle: (v: T) => void;
+  columns?: number;
+}) {
+  return (
+    <div className="lgu-checkgrid" style={{ "--cols": String(columns) } as React.CSSProperties}>
+      {options.map((opt) => {
+        const id = `chk_${String(opt).replace(/\s+/g, "_")}`;
+        const checked = selected?.includes(opt);
+        return (
+          <label key={id} htmlFor={id} className="lgu-check">
+            <input id={id} type="checkbox" checked={!!checked} onChange={() => onToggle(opt)} />
+            <span className="lgu-check-text">{opt}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <span title="Prefetched and locked">
+      <FontAwesomeIcon icon={faLock} style={{ color: "#64748b" }} />
+    </span>
+  );
+}
+
+/* Small inline style for the pin/map button (matches LGU modals) */
+const pinBtnStyle: React.CSSProperties = {
+  backgroundColor: "transparent",
+  border: "1px solid  #ddd",
+  outline: "none",
+  color: "#3b82f6",
+  width: 35,
+  height: 32,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 6,
+  cursor: "pointer",
 };

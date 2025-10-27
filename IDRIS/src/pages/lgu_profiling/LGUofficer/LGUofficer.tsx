@@ -1,22 +1,36 @@
-// LGUofficer.tsx
-import { useEffect, useMemo, useState } from "react";
+// RAFFIInfrastructure.tsx
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../css/LGUofficermanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import defaultpicture from "../../../../public/images/defaultpicture.jpg";
-import {
-  getMyLGULocation,
-  getLGURecordByName,
-} from "../../../API_Handler/lguprofiling/LGUofficer";
-
+import { getMyLGULocation } from "../../../API_Handler/lguprofiling/LGUofficer";
 import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
 
-// ✅ Frontend-only modals (no backend writes inside)
+// ✅ LGU modals (unchanged in this file)
 import {
   MyLGUViewModal,
   MyLGUEditModal,
   type LGUEditForm,
 } from "./Modals/LGUModals";
+
+// ✅ Barangay modals (your file)
+import {
+  BarangayViewModal,
+  BarangayEditModal,
+  BarangayCreateModal,
+  BarangayDeleteModal,
+  type MyBarangay,
+} from "./Modals/BarangayModal";
+
+// ✅ RAFFI modals (from previous answer)
+import {
+  RAFFIViewModal,
+  RAFFIEditModal,
+  RAFFICreateModal,
+  RAFFIDeleteModal,
+  type RAFFIRecord,
+} from "./Modals/RAFIInfrastructure";
 
 /* ========================= TYPES ========================= */
 type MessageBoxState = {
@@ -27,74 +41,154 @@ type MessageBoxState = {
   onClose: () => void;
 };
 
-// Compatible with both old & new API payloads
-export type LGURecord = {
-  // old
-  id?: number;
-  name?: string;
-  classification?: string;
-  contact_info?: string;
-  lgu_picture?: string | null;
+// Local table row wrappers (keep your existing MyBarangay intact)
+type BarangayRow = MyBarangay & { id: string | number };
 
-  // new (snake_case)
-  lgu_id?: number;
-  lgu_name?: string;
-  lgu_classification?: string;
-  lgu_contact?: string | null;
-  lgu_seal?: string | null;
-  mayor?: string | null;
+// RAFFI row (aligned with RAFFIRecord/RAFFIForm)
+type RAFFIRow = RAFFIRecord & { id: string | number };
 
-  // optional extras
-  description?: string | null;
-  resources?: string[] | null;
-  players?: string[] | null;
-  schools?: string[] | null;
-  gyms?: string[] | null;
-  local_suppliers?: string[] | null;
-
-  // sometimes present
-  population?: number;
-  barangays?: any[];
-  DRMMpersonel?: string | null;
+/* ========================= HELPERS ========================= */
+const fmtLL = (lat?: number | "" | null, lng?: number | "" | null) => {
+  if (lat == null || lng == null || lat === "" || lng === "") return "—";
+  const f = (n: number) => Number(n).toFixed(6);
+  return `${f(Number(lat))}, ${f(Number(lng))}`;
 };
 
-/* ========================= UTILS ========================= */
-const withBase = (maybeUrl?: string | null) => {
-  if (!maybeUrl) return null;
-  if (/^https?:\/\//i.test(maybeUrl)) return maybeUrl;
-  const base = (API.defaults as any)?.baseURL || "";
-  return `${String(base).replace(/\/$/, "")}/${String(maybeUrl).replace(/^\//, "")}`;
-};
+/* ===== Placeholder data ===== */
+const sampleBarangays: BarangayRow[] = [
+  {
+    id: 1,
+    barangay_name: "Barangay Mabini",
+    lat: 10.3182,
+    lng: 123.8971,
+    total_population: 12000,
+    households: 2500,
+    barangay_captain: "Juan Dela Cruz",
+    contact: "09171234567",
+    common_hazards: ["Typhoons", "Flooding"],
+    nearest_evacuation: "Dayag's Evac",
+    pwd: 120,
+    senior: 800,
+    children: 3000,
+  },
+  {
+    id: 2,
+    barangay_name: "Barangay Poblacion",
+    lat: 10.315,
+    lng: 123.9002,
+    total_population: 9800,
+    households: 2100,
+    barangay_captain: "Maria Santos",
+    contact: "09181234567",
+    common_hazards: ["Typhoons", "Earthquakes"],
+    nearest_evacuation: "Antier's Evac",
+    pwd: 95,
+    senior: 720,
+    children: 2500,
+  },
+  {
+    id: 3,
+    barangay_name: "Barangay San Roque",
+    lat: 10.3201,
+    lng: 123.8805,
+    total_population: 14300,
+    households: 3000,
+    barangay_captain: "Pedro Reyes",
+    contact: "09191234567",
+    common_hazards: ["Landslides", "Typhoons"],
+    nearest_evacuation: "Alcantara's Evac",
+    pwd: 140,
+    senior: 950,
+    children: 3600,
+  },
+];
 
-// Fetch the LGU record bound to the logged-in officer
-async function getMyLGURecord(): Promise<LGURecord | null> {
-  try {
-    const res = await API.get("/lgu_profiling/manage_lgu/my_lgu");
-    return res?.data ?? null;
-  } catch (err: any) {
-    if (err?.response?.status === 404) return null;
-    throw err;
-  }
-}
+const sampleRAFFIs: RAFFIRow[] = [
+  {
+    id: "rf1",
+    raffi_name: "RAFFI Multi-Purpose Hall",
+    raffi_description: "Community hall used for relief ops and trainings.",
+    lat: 10.3182,
+    lng: 123.8971,
+    raffi_picture: "",
+  },
+  {
+    id: "rf2",
+    raffi_name: "RAFFI Evacuation Center",
+    raffi_description: "Designated evacuation site with 20 rooms.",
+    lat: 10.3150,
+    lng: 123.9002,
+    raffi_picture: "",
+  },
+  {
+    id: "rf3",
+    raffi_name: "RAFFI Water Point",
+    raffi_description: "Solar-powered water filtration kiosk.",
+    lat: 10.3201,
+    lng: 123.8805,
+    raffi_picture: "",
+  },
+];
 
 /* ========================= COMPONENT ========================= */
-const MapOfCebu = () => {
-  // ✅ Officer-scoped LGU modals
+const LGUofficer = () => {
+  // LGU modals
   const [myLGUViewOpen, setMyLGUViewOpen] = useState(false);
   const [myLGUEditOpen, setMyLGUEditOpen] = useState(false);
-
-  // ✅ Data shown in the modals (frontend only)
   const [modalData, setModalData] = useState<LGUEditForm | null>(null);
 
-  // ✅ Current user's LGU location (label for header)
+  // LGU info
   const [myLGULocation, setMyLGULocation] = useState<string | null>(null);
   const [loadingLGU, setLoadingLGU] = useState<boolean>(true);
 
-  // ✅ The full LGU record
-  const [myLGURecord, setMyLGURecord] = useState<LGURecord | null>(null);
-  const [loadingLGURecord, setLoadingLGURecord] = useState<boolean>(false);
+  // Tables
+  const [barangays, setBarangays] = useState<BarangayRow[]>([]);
+  const [raffis, setRAFFIs] = useState<RAFFIRow[]>([]);
 
-  // Fetch the location label for header
+  // Barangay modal state
+  const [selectedBarangay, setSelectedBarangay] = useState<BarangayRow | null>(null);
+  const [isBrgyViewOpen, setIsBrgyViewOpen] = useState(false);
+  const [isBrgyEditOpen, setIsBrgyEditOpen] = useState(false);
+  const [isBrgyCreateOpen, setIsBrgyCreateOpen] = useState(false);
+  const [isBrgyDeleteOpen, setIsBrgyDeleteOpen] = useState(false);
+
+  // RAFFI modal state
+  const [selectedRAFFI, setSelectedRAFFI] = useState<RAFFIRow | null>(null);
+  const [isRAFFIViewOpen, setIsRAFFIViewOpen] = useState(false);
+  const [isRAFFIEditOpen, setIsRAFFIEditOpen] = useState(false);
+  const [isRAFFICreateOpen, setIsRAFFICreateOpen] = useState(false);
+  const [isRAFFIDeleteOpen, setIsRAFFIDeleteOpen] = useState(false);
+
+  // Filters
+  const [filterView, setFilterView] = useState<"all" | "barangay" | "raffi">("all");
+
+  // Dropdowns
+  const [isAddPinOpen, setIsAddPinOpen] = useState(false);
+  const addPinRef = useRef<HTMLDivElement | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement | null>(null);
+
+  // MessageBox
+  const [messageBox, setMessageBox] = useState<MessageBoxState>({
+    isOpen: false,
+    type: "message",
+    message: "",
+    onSubmit: undefined,
+    onClose: () => setMessageBox((prev) => ({ ...prev, isOpen: false })),
+  });
+
+  // Close menus outside
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (addPinRef.current && !addPinRef.current.contains(target)) setIsAddPinOpen(false);
+      if (filterRef.current && !filterRef.current.contains(target)) setIsFilterOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  // Fetch LGU location
   useEffect(() => {
     (async () => {
       try {
@@ -107,106 +201,118 @@ const MapOfCebu = () => {
     })();
   }, []);
 
-  // Fetch the bound LGU record; fallback to find-by-name if needed
+  // Load placeholder rows
   useEffect(() => {
-    (async () => {
-      if (loadingLGU) return;
+    setBarangays(sampleBarangays);
+    setRAFFIs(sampleRAFFIs);
+  }, [myLGULocation]);
 
-      setLoadingLGURecord(true);
-      try {
-        const mine = await getMyLGURecord();
-        if (mine) {
-          setMyLGURecord(mine);
-          return;
-        }
-        if (myLGULocation) {
-          const rec = await getLGURecordByName(myLGULocation);
-          setMyLGURecord(rec ?? null);
-        } else {
-          setMyLGURecord(null);
-        }
-      } catch {
-        setMyLGURecord(null);
-      } finally {
-        setLoadingLGURecord(false);
-      }
-    })();
-  }, [myLGULocation, loadingLGU]);
+  const displayName = myLGULocation ?? (loadingLGU ? "Loading..." : "—");
+  const lguImageSrc = useMemo(() => defaultpicture, []);
 
-  const [messageBox, setMessageBox] = useState<MessageBoxState>({
-    isOpen: false,
-    type: "message",
-    message: "",
-    onSubmit: undefined,
-    onClose: () => setMessageBox((prev) => ({ ...prev, isOpen: false })),
-  });
-
-  /* ---------- Derived display fields (handles both schemas) ---------- */
-  const displayName =
-    myLGURecord?.lgu_name ??
-    myLGURecord?.name ??
-    (loadingLGU ? "Loading..." : "—");
-
-  const displayClass =
-    myLGURecord?.lgu_classification ??
-    myLGURecord?.classification ??
-    "";
-
-  const displayMayor = myLGURecord?.mayor ?? "";
-
-  const displayPopulation =
-    typeof (myLGURecord as any)?.population === "number"
-      ? (myLGURecord as any).population
-      : null;
-
-  const displayBarangays = Array.isArray((myLGURecord as any)?.barangays)
-    ? (myLGURecord as any).barangays.length
-    : null;
-
-  const displayDRRM = (myLGURecord as any)?.DRMMpersonel ?? "";
-
-  const displayContact =
-    (myLGURecord?.lgu_contact as string | null) ??
-    (myLGURecord?.contact_info as string | null) ??
-    "";
-
-  /* ---------- Image (prefer lgu_seal, fallback to old lgu_picture, then default) ---------- */
-  const lguImageSrc = useMemo(() => {
-    const url =
-      withBase(myLGURecord?.lgu_seal) ||
-      withBase(myLGURecord?.lgu_picture);
-    return url || defaultpicture;
-  }, [myLGURecord?.lgu_seal, myLGURecord?.lgu_picture]);
-
-  /* ---------- Map card data -> modal shape ---------- */
-  function toModalData(rec: LGURecord | null): LGUEditForm {
+  function toModalData(): LGUEditForm {
     return {
-      // LGU info
-      lgu_name: rec?.lgu_name ?? rec?.name ?? "",
-      classification: ((rec?.lgu_classification ?? rec?.classification) as any) || "",
-      lgu_seal: withBase(rec?.lgu_seal ?? rec?.lgu_picture) ?? undefined,
-      population: (rec as any)?.population ?? "",
-      barangay_count: Array.isArray((rec as any)?.barangays) ? (rec as any).barangays.length : "",
-      mayor: rec?.mayor ?? "",
-      contact: (rec?.lgu_contact ?? rec?.contact_info) ?? "",
-
-      // DRP
+      lgu_name: myLGULocation ?? "",
+      classification: "",
+      lgu_seal: undefined,
+      population: "",
+      barangay_count: "",
+      mayor: "",
+      contact: "",
       major_hazard: [],
       hazard_picture: "",
-
-      // DRRMO
-      drmm_personnel: (rec as any)?.DRMMpersonel ?? "",
+      drmm_personnel: "",
       drmm_contact: "",
       evacuation_center: "",
-
       critical_facilities: [],
-
-      // Vulnerable pop
       pwd: "",
       senior: "",
       children: "",
     };
   }
+
+  /* ===== Barangay actions ===== */
+  const openBrgyView = (row: BarangayRow) => {
+    setSelectedBarangay(row);
+    setIsBrgyViewOpen(true);
+  };
+  const openBrgyEdit = () => {
+    setIsBrgyViewOpen(false);
+    setIsBrgyEditOpen(true);
+  };
+  const openBrgyDelete = () => {
+    setIsBrgyDeleteOpen(true);
+  };
+  const confirmBrgyDelete = () => {
+    if (!selectedBarangay) return;
+    setBarangays((prev) => prev.filter((b) => b.id !== selectedBarangay.id));
+    setIsBrgyDeleteOpen(false);
+    setIsBrgyViewOpen(false);
+    setSelectedBarangay(null);
+  };
+  const saveBrgyEdit = (data: MyBarangay | null) => {
+    if (!selectedBarangay || !data) return;
+    setBarangays((prev) =>
+      prev.map((b) => (b.id === selectedBarangay.id ? { ...selectedBarangay, ...data } : b))
+    );
+    setSelectedBarangay((p) => (p ? { ...p, ...data } : p));
+    setIsBrgyEditOpen(false);
+    setIsBrgyViewOpen(true);
+  };
+  const createBarangay = (data: MyBarangay | null) => {
+    if (!data) return;
+    const newRow: BarangayRow = { id: Date.now(), ...data };
+    setBarangays((prev) => [newRow, ...prev]);
+    setIsBrgyCreateOpen(false);
+    setSelectedBarangay(newRow);
+    setIsBrgyViewOpen(true);
+  };
+
+  /* ===== RAFFI actions ===== */
+  const openRAFFIView = (row: RAFFIRow) => {
+    setSelectedRAFFI(row);
+    setIsRAFFIViewOpen(true);
+  };
+  const openRAFFIEdit = () => {
+    setIsRAFFIViewOpen(false);
+    setIsRAFFIEditOpen(true);
+  };
+  const openRAFFIDelete = () => {
+    setIsRAFFIDeleteOpen(true);
+  };
+  const confirmRAFFIDelete = () => {
+    if (!selectedRAFFI) return;
+    setRAFFIs((prev) => prev.filter((r) => r.id !== selectedRAFFI.id));
+    setIsRAFFIDeleteOpen(false);
+    setIsRAFFIViewOpen(false);
+    setSelectedRAFFI(null);
+  };
+  const saveRAFFIEdit = (data: RAFFIRecord | null) => {
+    if (!selectedRAFFI || !data) return;
+    setRAFFIs((prev) =>
+      prev.map((r) => (r.id === selectedRAFFI.id ? { ...selectedRAFFI, ...data } : r))
+    );
+    setSelectedRAFFI((p) => (p ? { ...p, ...data } : p));
+    setIsRAFFIEditOpen(false);
+    setIsRAFFIViewOpen(true);
+  };
+  const createRAFFI = (data: RAFFIRecord | null) => {
+    if (!data) return;
+    const newRow: RAFFIRow = { id: Date.now(), ...data };
+    setRAFFIs((prev) => [newRow, ...prev]);
+    setIsRAFFICreateOpen(false);
+    setSelectedRAFFI(newRow);
+    setIsRAFFIViewOpen(true);
+  };
+
+  /* ===== Filter helpers ===== */
+  const applyFilter = (value: "all" | "barangay" | "raffi") => {
+    setFilterView(value);
+    setIsFilterOpen(false);
+  };
+
+  const showBarangay = filterView === "all" || filterView === "barangay";
+  const showRAFFI = filterView === "all" || filterView === "raffi";
 
   return (
     <div className="app-container">
@@ -218,7 +324,7 @@ const MapOfCebu = () => {
         onSubmit={messageBox.onSubmit}
       />
 
-      {/* === LGU modals === */}
+      {/* === LGU MODALS === */}
       <MyLGUViewModal
         isModalOpen={myLGUViewOpen}
         closeModal={() => setMyLGUViewOpen(false)}
@@ -229,16 +335,11 @@ const MapOfCebu = () => {
           setMyLGUEditOpen(true);
         }}
       />
-
       <MyLGUEditModal
         isModalOpen={myLGUEditOpen}
         closeModal={() => setMyLGUEditOpen(false)}
         setMessageBox={setMessageBox}
-        prefetch={{
-          lgu_name: displayName || "",
-          barangay_count: displayBarangays ?? undefined,
-          evacuation_center: "",
-        }}
+        prefetch={{ lgu_name: displayName || "", barangay_count: undefined, evacuation_center: "" }}
         onSaved={(updated) => {
           setModalData(updated ?? null);
           setMyLGUEditOpen(false);
@@ -246,16 +347,88 @@ const MapOfCebu = () => {
         }}
       />
 
-      {/* Page header (outside the card) */}
+      {/* === BARANGAY MODALS === */}
+      <BarangayViewModal
+        isModalOpen={isBrgyViewOpen}
+        closeModal={() => setIsBrgyViewOpen(false)}
+        setMessageBox={setMessageBox}
+        data={selectedBarangay ?? undefined}
+        onOpenEdit={openBrgyEdit}
+        onOpenDelete={openBrgyDelete}
+      />
+      <BarangayEditModal
+        isModalOpen={isBrgyEditOpen}
+        closeModal={() => {
+          setIsBrgyEditOpen(false);
+          setIsBrgyViewOpen(true);
+        }}
+        setMessageBox={setMessageBox}
+        data={(selectedBarangay as MyBarangay) || ({} as MyBarangay)}
+        onSaved={saveBrgyEdit}
+        prefetch={{
+          nearest_evacuation: selectedBarangay?.nearest_evacuation,
+          lat: selectedBarangay?.lat,
+          lng: selectedBarangay?.lng,
+        }}
+      />
+      <BarangayCreateModal
+        isModalOpen={isBrgyCreateOpen}
+        closeModal={() => setIsBrgyCreateOpen(false)}
+        setMessageBox={setMessageBox}
+        onCreate={createBarangay}
+        prefetch={{ nearest_evacuation: "", lat: undefined, lng: undefined }}
+      />
+      <BarangayDeleteModal
+        isModalOpen={isBrgyDeleteOpen}
+        closeModal={() => setIsBrgyDeleteOpen(false)}
+        setMessageBox={setMessageBox}
+        targetName={selectedBarangay?.barangay_name}
+        onConfirm={confirmBrgyDelete}
+      />
+
+      {/* === RAFFI MODALS === */}
+      <RAFFIViewModal
+        isModalOpen={isRAFFIViewOpen}
+        closeModal={() => setIsRAFFIViewOpen(false)}
+        data={selectedRAFFI ?? undefined}
+        onOpenEdit={openRAFFIEdit}
+        onOpenDelete={openRAFFIDelete}
+  setMessageBox={setMessageBox}  
+      />
+      <RAFFIEditModal
+        isModalOpen={isRAFFIEditOpen}
+        closeModal={() => {
+          setIsRAFFIEditOpen(false);
+          setIsRAFFIViewOpen(true);
+        }}
+        setMessageBox={setMessageBox}
+        data={(selectedRAFFI as RAFFIRecord) || ({} as RAFFIRecord)}
+        onSaved={saveRAFFIEdit}
+      />
+      <RAFFICreateModal
+        isModalOpen={isRAFFICreateOpen}
+        closeModal={() => setIsRAFFICreateOpen(false)}
+        setMessageBox={setMessageBox}
+        onCreate={createRAFFI}
+        prefill={{ lat: undefined, lng: undefined }}
+      />
+      <RAFFIDeleteModal
+        isModalOpen={isRAFFIDeleteOpen}
+        closeModal={() => setIsRAFFIDeleteOpen(false)}
+        targetName={selectedRAFFI?.raffi_name}
+        onConfirm={confirmRAFFIDelete}
+  setMessageBox={setMessageBox}  
+      />
+
+      {/* === HEADER === */}
       <header className="lgu-page-header">
         <h1 className="lgu-page-title">{displayName}</h1>
-        {displayClass && <div className="lgu-page-sub">{displayClass}</div>}
       </header>
 
-      {/* Summary Card */}
+      {/* === SUMMARY CARD === */}
       <div className="lgu-summary-card">
-        {/* Left: LGU Seal */}
         <div className="lgu-summary-left">
+          <div className="lgu-seal-label">LGU Seal</div>
           <img
             src={lguImageSrc}
             alt={displayName || "LGU"}
@@ -269,49 +442,171 @@ const MapOfCebu = () => {
             }}
           />
         </div>
-
-        {/* Spacer (center column removed in CSS, but kept safe) */}
         <div className="lgu-summary-center" />
-
-        {/* Right: Facts table + View more */}
         <div className="lgu-summary-right">
           <div className="lgu-summary-grid">
-            <div className="label">Category</div>
-            <div className="value">{displayClass || "—"}</div>
-
-            <div className="label">Mayor</div>
-            <div className="value">{displayMayor || "—"}</div>
-
-            <div className="label">Population</div>
-            <div className="value">
-              {displayPopulation != null ? displayPopulation.toLocaleString() : "—"}
-            </div>
-
-            <div className="label">No. of Barangays</div>
-            <div className="value">{displayBarangays != null ? displayBarangays : "—"}</div>
-
-            <div className="label">DRRM Personnel</div>
-            <div className="value">{displayDRRM || "—"}</div>
-
-            <div className="label">Contact Nos.</div>
-            <div className="value">{displayContact || "—"}</div>
+            <div className="label">Category</div><div className="value">—</div>
+            <div className="label">Mayor</div><div className="value">—</div>
+            <div className="label">Population</div><div className="value">—</div>
+            <div className="label">No. of Barangays</div><div className="value">{barangays.length}</div>
+            <div className="label">DRRM Personnel</div><div className="value">—</div>
+            <div className="label">Contact Nos.</div><div className="value">—</div>
           </div>
-
           <div className="lgu-summary-actions">
             <button
               className="view-lgu-button"
-              onClick={() => {
-                setModalData(toModalData(myLGURecord));
-                setMyLGUViewOpen(true);
-              }}
+              onClick={() => { setModalData(toModalData()); setMyLGUViewOpen(true); }}
+              disabled={!myLGULocation}
             >
               View more
             </button>
           </div>
         </div>
       </div>
+
+      {/* === TOOLS BAR === */}
+      <div className="lgu-tools">
+        {/* Add Pin */}
+        <div className="addpin-dropdown" ref={addPinRef}>
+          <button
+            className="btn-pin"
+            onClick={() => setIsAddPinOpen((o) => !o)}
+            aria-haspopup="menu"
+            aria-expanded={isAddPinOpen}
+          >
+            + Add Pin <span className="caret">▾</span>
+          </button>
+          {isAddPinOpen && (
+            <div className="addpin-menu" role="menu">
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setIsAddPinOpen(false);
+                  setIsBrgyCreateOpen(true);
+                }}
+              >
+                Barangay
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setIsAddPinOpen(false);
+                  setIsRAFFICreateOpen(true); // <-- RAFFI create here
+                }}
+              >
+                RAFFI
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Filter */}
+        <div className="filter-dropdown" ref={filterRef}>
+          <button
+            className="btn-pin"
+            onClick={() => setIsFilterOpen((o) => !o)}
+            aria-haspopup="menu"
+            aria-expanded={isFilterOpen}
+          >
+            Filter:{" "}
+            <strong
+              style={{ marginLeft: 6, marginRight: 6, fontWeight: 800, color: "var(--clr-text)" }}
+            >
+              {filterView === "all" ? "All" : filterView === "barangay" ? "Barangay" : "RAFFI"}
+            </strong>
+            <span className="caret">▾</span>
+          </button>
+          {isFilterOpen && (
+            <div className="filter-menu" role="menu">
+              <button role="menuitem" onClick={() => applyFilter("all")} aria-pressed={filterView === "all"}>
+                All
+              </button>
+              <button role="menuitem" onClick={() => applyFilter("barangay")} aria-pressed={filterView === "barangay"}>
+                Barangay
+              </button>
+              <button role="menuitem" onClick={() => applyFilter("raffi")} aria-pressed={filterView === "raffi"}>
+                RAFFI
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* === BARANGAY TABLE === */}
+      {showBarangay && (
+        <section className="barangay-section">
+          <div className="barangay-header"><h2>Barangays</h2></div>
+          <div className="barangay-table-wrap">
+            <table className="barangay-table">
+              <thead>
+                <tr>
+                  <th>Barangay</th>
+                  <th>Location</th>
+                  <th>Captain</th>
+                  <th>Evacuation</th>
+                  <th className="col-action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {barangays.length === 0 ? (
+                  <tr><td colSpan={5} className="empty-cell">No barangays to display.</td></tr>
+                ) : (
+                  barangays.map((b) => (
+                    <tr key={b.id}>
+                      <td>{b.barangay_name}</td>
+                      <td>{fmtLL(b.lat, b.lng)}</td>
+                      <td>{b.barangay_captain || "—"}</td>
+                      <td>{b.nearest_evacuation || "—"}</td>
+                      <td className="col-action">
+                        <button className="btn-view" onClick={() => openBrgyView(b)}>View</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {/* === RAFFI TABLE === */}
+      {showRAFFI && (
+        <section className="raffi-section" style={{ marginTop: "2rem" }}>
+          <div className="raffi-header"><h2>RAFFI</h2></div>
+          <div className="raffi-table-wrap">
+            <table className="barangay-table">
+              <thead>
+                <tr>
+                  <th>RAFFI Name</th>
+                  <th>Location</th>
+                  <th>Description</th>
+                  <th className="col-action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {raffis.length === 0 ? (
+                  <tr><td colSpan={4} className="empty-cell">No RAFFI items to display.</td></tr>
+                ) : (
+                  raffis.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.raffi_name}</td>
+                      <td>{fmtLL(r.lat, r.lng)}</td>
+                      <td>{r.raffi_description || "—"}</td>
+                      <td className="col-action">
+                        <button className="btn-view" onClick={() => openRAFFIView(r)}>
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
+export default LGUofficer;
 
-export default MapOfCebu;

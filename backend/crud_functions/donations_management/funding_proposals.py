@@ -211,6 +211,8 @@ class FundingProposalCRUD:
             "created_at": proposal.created_at,
             "updated_at": proposal.updated_at,
             "image": proposal.image,
+            "starting_date": proposal.starting_date,
+            "end_date": proposal.end_date,
         }
         
         return result

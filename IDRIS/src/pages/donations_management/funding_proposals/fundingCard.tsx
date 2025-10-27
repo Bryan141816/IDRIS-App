@@ -1,4 +1,4 @@
-import styles from "./FundingCard.module.scss";
+import styles from "./fundingCard.module.scss";
 import defaultFundingImage from "../files/default_image.jpg";
 import { CircleDot } from "../../../components/Page_Furniture/Icons";
 import { useState, useEffect, useRef } from "react";
@@ -7,6 +7,7 @@ import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 import { formatCurrency } from "../helpers";
 import Swal from "sweetalert2";
+import { getDaysRemaining, getCardClass } from "./cardUtils";
 
 const backendUrl = "http://127.0.0.1:8000";
 
@@ -79,17 +80,7 @@ const FundingCard: React.FC<FundingProp> = ({
     navigate("/donations_management/funding_donation", { state: { funding_id: fundingId } });
   };
 
-  const getDaysRemaining = (endDateStr?: string) => {
-    if (!endDateStr) return { text: "No end date", value: null };
-    const endDate = new Date(endDateStr);
-    const now = new Date();
-    if (endDate < now) return { text: "Ended", value: 0 };
-    const diffTime = Math.abs(endDate.getTime() - now.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return { text: `${diffDays} days remaining`, value: diffDays };
-  };
-
-  const { text: daysRemainingText, value: daysRemainingValue } = getDaysRemaining(end_date);
+  const { text: daysRemainingText, percentage: daysRemainingPercentage } = getDaysRemaining(starting_date, end_date);
 
   const percentage = Math.round(
     getTimeRemainingPercent(starting_date ?? new Date(), end_date ?? new Date())
@@ -97,7 +88,7 @@ const FundingCard: React.FC<FundingProp> = ({
   const atStart = is_active && Math.round(percentage) === 100;
 
   return (
-    <div className={styles.fundingCard}>
+    <div className={`${styles.fundingCard} ${getCardClass(daysRemainingPercentage)}`}>
       {/* HEADER */}
       <div className={styles.fundingHead}>
         <p className={styles.title}>{title}</p>
@@ -142,7 +133,7 @@ const FundingCard: React.FC<FundingProp> = ({
         </div>
         <div className={styles.progressBarContainer}>
           <div
-            className={`${styles.progressBar} ${ atStart ? styles.progressBar__notStarted : ""}`}
+            className={`${styles.progressBar} ${ atStart ? styles.progressBar__notStarted : getCardClass(daysRemainingPercentage)}`}
             style={{ width: `${percentage}%` }}
             title={`${starting_date} to ${end_date}`}
             aria-label={`${starting_date} to ${end_date}`}

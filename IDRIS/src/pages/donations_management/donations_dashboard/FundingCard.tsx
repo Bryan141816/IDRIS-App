@@ -1,4 +1,4 @@
-import styles from "../funding_proposals/FundingCard.module.scss";
+import styles from "./FundingCard.module.scss";
 import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import Image from '../../images/no-image.jpg';
@@ -59,7 +59,7 @@ export const FundingCard: React.FC<FundingProps> = ({
             style={{ width: `${filled}%` }}
           ></div>
         </div>
-        <p>{filled}% Raised</p>
+        {/* <p>{filled}% Raised</p> */}
       </div>
       {userRoles.includes("donor") && is_active && (
         <button

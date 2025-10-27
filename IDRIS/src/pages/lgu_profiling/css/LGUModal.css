@@ -226,3 +226,39 @@
   .lgu-checkgrid { grid-auto-rows: auto; } /* allow wrap on very small screens */
   .lgu-check { white-space: normal; }      /* let long labels wrap only on mobile */
 }
+.lgu-media-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .lgu-media-row { grid-template-columns: 1fr; }
+}
+
+.lgu-media .img-thumb {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.img-placeholder {
+  width: 260px;
+  height: 160px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+  color: #6b7280;
+  font-size: 0.925rem;
+}
+
+
+
+
+

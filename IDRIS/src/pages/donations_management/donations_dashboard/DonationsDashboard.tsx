@@ -241,14 +241,12 @@ const DonationsDashboard = () => {
               <div className="title-child">
                 <h3>Recent Programs</h3>
               </div>
-              {isAdmin && (
                 <Link to="/donations_management/funding_proposals">
                   <div className="icon-container">
                     <MenuDots className="menu-icon" />
-                    Manage
+                    { isAdmin ? "Manage" : "More" }
                   </div>
                 </Link>
-              )}
             </div>
 
             {fundingProposals.length > 0 && (

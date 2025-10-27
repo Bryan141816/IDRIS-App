@@ -10,14 +10,22 @@ export const SubmitProcurementRequest: React.FC<
 > = ({ onClose, refreshData, apiUrl }) => {
   type RequestProcurement = {
     request_type: string;
+    use_different_end: boolean;
   };
   const [formData, setFormData] = useState<RequestProcurement>({
     request_type: "relief",
+    use_different_end: false,
   });
   const changeRequestType = (type: string) => {
     setFormData((prev) => ({
       ...prev,
       request_type: type,
+    }));
+  };
+  const changeDeliveryType = (type: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      use_different_end: type,
     }));
   };
   return (
@@ -88,6 +96,52 @@ export const SubmitProcurementRequest: React.FC<
             <option value="high">High</option>
           </select>
         </div>
+        <div
+          className="form-group"
+          style={{ display: "flex", gap: "5px", flexDirection: "column" }}
+        >
+          <label>Delivery Location:</label>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              className="secondary-btn"
+              style={{
+                width: "50%",
+                backgroundColor: !formData.use_different_end
+                  ? "#749ab6"
+                  : "#ffffff",
+                color: !formData.use_different_end ? "#ffffff" : "#749ab6",
+              }}
+              onClick={() => changeDeliveryType(false)}
+            >
+              Use this LGU's address
+            </button>
+            <button
+              className="secondary-btn"
+              style={{
+                width: "50%",
+                backgroundColor: formData.use_different_end
+                  ? "#749ab6"
+                  : "#ffffff",
+                color: formData.use_different_end ? "#ffffff" : "#749ab6",
+              }}
+              onClick={() => changeDeliveryType(true)}
+            >
+              Use a different address and location
+            </button>
+          </div>
+          {formData.use_different_end && (
+            <>
+              <input
+                type="text"
+                placeholder="No Address have been selected yet"
+              />
+              <button className="secondary-btn" style={{ width: "100%" }}>
+                Select Address
+              </button>
+            </>
+          )}
+        </div>
+
         <div className="form-group">
           <label>
             {formData.request_type === "relief"

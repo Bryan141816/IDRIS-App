@@ -146,6 +146,18 @@
       &__notStarted{
         background-color: #6c757d;
       }
+
+      &.safe {
+        background-color: #28a745;
+      }
+      
+      &.warning {
+        background-color: #ffc107;
+      }
+      
+      &.danger {
+        background-color: #dc3545;
+      }
     }
   }
 

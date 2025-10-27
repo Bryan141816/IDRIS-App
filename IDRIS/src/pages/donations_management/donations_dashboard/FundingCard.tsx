@@ -1,4 +1,4 @@
-import styles from "./FundingCard.module.scss";
+import styles from "../funding_proposals/FundingCard.module.scss";
 import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import Image from '../../images/no-image.jpg';
@@ -14,6 +14,7 @@ type FundingProps = {
   target?: number;
   anchorLink?: number | string;
   funding_id: number; // Funding ID for Donate
+  is_active?: boolean;
   className?: string;
 };
 
@@ -24,6 +25,7 @@ export const FundingCard: React.FC<FundingProps> = ({
   target,
   anchorLink,
   funding_id,
+  is_active,
   className = "",
 }) => {
   const navigate = useNavigate();
@@ -43,6 +45,13 @@ export const FundingCard: React.FC<FundingProps> = ({
     <div className={`${styles.fundingCard} ${className}`}>
       <img src={imageUrl} alt="funding-image" />
       <p className={styles.fundingMessage}>{message || "No description available."}</p>
+      <div className={styles.statusIndicator}>
+        {is_active ? (
+          <span className={styles.active}>Active</span>
+        ) : (
+          <span className={styles.inactive}>Inactive</span>
+        )}
+      </div>
       <div className={styles["progress-container"]}>
         <div className={styles["full-bar"]}>
           <div
@@ -52,7 +61,7 @@ export const FundingCard: React.FC<FundingProps> = ({
         </div>
         <p>{filled}% Raised</p>
       </div>
-      {userRoles.includes("donor") && (
+      {userRoles.includes("donor") && is_active && (
         <button
           className={styles["funding-donate-btn"]}
           onClick={() => handleDonateButton(funding_id)}

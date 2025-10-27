@@ -61,7 +61,9 @@ class FundingProposalGet(BaseModel):
     created_at: datetime
     updated_at: datetime
     image: Optional[str] = None
-
+    starting_date: datetime
+    end_date: datetime
+    
     class Config:
         from_attributes = True
         populate_by_name = True

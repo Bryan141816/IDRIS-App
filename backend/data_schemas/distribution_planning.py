@@ -15,6 +15,7 @@ class TeamDataCreate(BaseModel):
     deployment_area: str
     assignment_duration: int
     starting_date: date
+    assigned_by: Optional[str] = None
 
 
 class Volunteer(BaseModel):
@@ -24,6 +25,7 @@ class Volunteer(BaseModel):
 
 class VolunteerRecordOut(BaseModel):
     role: str
+    status: str  
     volunteer: Volunteer
 
 

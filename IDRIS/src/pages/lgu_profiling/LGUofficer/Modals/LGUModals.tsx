@@ -4,9 +4,35 @@ import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
 import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faImage, faLock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faImage,
+  faLock,
+  faMapMarkerAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
-
+import defaultpicture from "../../../../../public/images/defaultpicture.jpg";
+export interface LGUOut {
+  id: number;
+  lgu_name: string;
+  lgu_seal?: string | null;
+  lgu_classification: string;
+  lat?: number | null;
+  lng?: number | null;
+  population?: number | null;
+  mayor?: string | null;
+  lgu_contact?: string | null;
+  lgu_majorHazard?: string[] | null;
+  DRMMpersonel?: string | null;
+  DRMM_contact?: string | null;
+  hazard_pic?: string | null;
+  lgu_critical_facility?: string[] | null;
+  lgu_pwd?: number | null;
+  lgu_senior?: number | null;
+  lgu_children?: number | null;
+  baranggay_count?: number | null;
+}
+import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
+import { API } from "../../../../API_Handler/Axio_API_Handler";
 /* ========= Types ========= */
 export type LGUEditForm = {
   // LGU information Details
@@ -23,7 +49,9 @@ export type LGUEditForm = {
   lng?: number;
 
   // Disaster Risk Profile
-  major_hazard: Array<"Typhoon" | "Flood" | "Earthquake" | "Fire" | "Landslide">;
+  major_hazard: Array<
+    "Typhoon" | "Flood" | "Earthquake" | "Fire" | "Landslide"
+  >;
   hazard_picture?: string; // dataUrl preview
 
   // DRRMO
@@ -76,24 +104,24 @@ function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
 /* =========================================================================
    VIEW
 ===========================================================================*/
-type ViewProps = BaseModalProps & {
-  data?: LGUEditForm | null;
+
+type ViewProps = {
+  closeModal: () => void;
+
+  data: LGUOut;
   onOpenEdit?: () => void;
 };
 
 export const MyLGUViewModal: React.FC<ViewProps> = ({
-  isModalOpen,
   closeModal,
-  setMessageBox, // kept for parity; not used here
   onOpenEdit,
   data,
 }) => {
-  if (!isModalOpen) return null;
-  const d = data ?? null;
+  const d = data;
 
   return (
     <Modal
-      isOpen={isModalOpen}
+      isOpen={true}
       onClose={closeModal}
       zIndex={998}
       width="clamp(560px, 56vw, 840px)"
@@ -114,49 +142,63 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
             <>
               <Section title="LGU information Details">
                 <DL label="LGU Name" value={d.lgu_name || "—"} locked />
-                <DL label="Classification" value={d.classification || "—"} />
-                <DL label="Total Population" value={fmtNum(d.population)} />
-                <DL label="No. of Barangay" value={fmtNum(d.barangay_count)} locked />
-                <DL label="Mayor" value={d.mayor || "—"} />
                 <DL
-                  label="Mayor's Contact"
-                  value={d.contact || "—"}
-                  invalid={!!d.contact && !is11Digits(d.contact)}
+                  label="Classification"
+                  value={d.lgu_classification || "—"}
                 />
+                <DL label="Total Population" value={fmtNum(d.population)} />
+                <DL
+                  label="No. of Barangay"
+                  value={fmtNum(d.baranggay_count)}
+                  locked
+                />
+                <DL label="Mayor" value={d.mayor || "—"} />
                 <DL label="Coordinates" value={fmtLL(d.lat, d.lng)} />
                 {/* moved images out of this section */}
               </Section>
 
               <Section title="Disaster Risk Profile">
-                <DL label="Major Hazard" value={d.major_hazard?.join(", ") || "—"} />
+                <DL
+                  label="Major Hazard"
+                  value={d.lgu_majorHazard?.join(", ") || "—"}
+                />
                 {/* moved image out of this section */}
               </Section>
 
               <Section title="Disaster Risk Reduction & Management Office">
-                <DL label="DRMM local personnel" value={d.drmm_personnel || "—"} />
+                <DL
+                  label="DRMM local personnel"
+                  value={d.DRMMpersonel || "—"}
+                />
+
                 <DL
                   label="DRMM contact"
-                  value={d.drmm_contact || "—"}
-                  invalid={!!d.drmm_contact && !is11Digits(d.drmm_contact)}
+                  value={d.DRMM_contact || "—"}
+                  invalid={!!d.DRMM_contact && !is11Digits(d.DRMM_contact)}
                 />
-                <DL label="Evacuation Center" value={d.evacuation_center || "—"} locked />
                 <DL
                   label="Critical Facilities"
-                  value={d.critical_facilities?.join(", ") || "—"}
+                  value={d.lgu_critical_facility?.join(", ") || "—"}
                 />
               </Section>
 
               <Section title="Vulnerable Population">
-                <DL label="PWD" value={fmtNum(d.pwd)} />
-                <DL label="Senior Citizen" value={fmtNum(d.senior)} />
-                <DL label="Children" value={fmtNum(d.children)} />
+                <DL label="PWD" value={fmtNum(d.lgu_pwd)} />
+                <DL label="Senior Citizen" value={fmtNum(d.lgu_senior)} />
+                <DL label="Children" value={fmtNum(d.lgu_children)} />
               </Section>
 
               {/* --- NEW: Images at the very bottom --- */}
               <Section title="Images">
                 <div className="lgu-media-row">
-                  <ImgOrPlaceholder label="LGU Seal" src={d.lgu_seal} />
-                  <ImgOrPlaceholder label="Hazard Picture" src={d.hazard_picture} />
+                  <ImgOrPlaceholder
+                    label="LGU Seal"
+                    src={d.lgu_seal ? d.lgu_seal : defaultpicture}
+                  />
+                  <ImgOrPlaceholder
+                    label="Hazard Picture"
+                    src={d.hazard_pic ? d.hazard_pic : defaultpicture}
+                  />
                 </div>
               </Section>
             </>
@@ -183,376 +225,424 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
   );
 };
 
-/* =========================================================================
-   EDIT (frontend only)
-===========================================================================*/
-type EditProps = BaseModalProps & {
-  onSaved?: (data: MyLGU | null) => void;
-  prefetch?: {
-    lgu_name?: string;
-    barangay_count?: number;
-    evacuation_center?: string;
-    lat?: number;
-    lng?: number;
-  };
-};
-
-export const MyLGUEditModal: React.FC<EditProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  onSaved,
-  prefetch,
-}) => {
+export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
   // ===== state =====
-  const [form, setForm] = useState<LGUEditForm>({
-    lgu_name: prefetch?.lgu_name || "",
-    classification: "",
+  const defaultForm: LGUOut = {
+    id: 0,
+    lgu_name: "",
+    lat: 0,
+    lng: 0,
+    lgu_classification: "",
     lgu_seal: "",
-    population: "",
-    barangay_count: prefetch?.barangay_count ?? "",
+    population: 0,
     mayor: "",
-    contact: "",
+    DRMMpersonel: "",
+    DRMM_contact: "",
+    lgu_pwd: 0,
+    lgu_senior: 0,
+    lgu_children: 0,
+    hazard_pic: "",
+    lgu_majorHazard: [],
+  };
+  const [form, setForm] = useState<LGUOut>(data ?? defaultForm);
 
-    lat: prefetch?.lat,
-    lng: prefetch?.lng,
-
-    major_hazard: [],
-    hazard_picture: "",
-
-    drmm_personnel: "",
-    drmm_contact: "",
-    evacuation_center: prefetch?.evacuation_center || "",
-
-    critical_facilities: [],
-
-    pwd: "",
-    senior: "",
-    children: "",
-  });
+  useEffect(() => {
+    if (data) {
+      // merge with defaults so missing keys get default values
+      setForm({ ...defaultForm, ...data });
+    }
+  }, [data]);
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
+  const [lguContactInvalid, setLguContactInvalid] = useState(false);
+  const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
 
-  // keep prefetch-locked fields (and lat/lng) in sync when the modal opens
-  useEffect(() => {
-    if (!isModalOpen) return;
-    setForm((p) => ({
-      ...p,
-      lgu_name: prefetch?.lgu_name || p.lgu_name || "",
-      barangay_count: (prefetch?.barangay_count ?? p.barangay_count) as number | "",
-      evacuation_center: prefetch?.evacuation_center || p.evacuation_center || "",
-      lat: prefetch?.lat ?? p.lat,
-      lng: prefetch?.lng ?? p.lng,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen]);
-
-  // simple validations
-  const invalids = useMemo(
-    () => ({
-      contact: !!form.contact && !is11Digits(form.contact),
-      drmm_contact: !!form.drmm_contact && !is11Digits(form.drmm_contact),
-    }),
-    [form.contact, form.drmm_contact]
-  );
-
-  // ===== handlers =====
-  const onText =
-    (key: keyof LGUEditForm) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const onNum =
-    (key: keyof LGUEditForm) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      setForm((p) => ({ ...p, [key]: v === "" ? "" : Number(v) }));
+  const handleSubmit = () => {
+    const submit = async () => {
+      try {
+        const response = await API.put("/lgu_profiling/api/update_lgu", form);
+        console.log(response.data);
+      } catch (e: any) {
+        console.error("Error updating lgu: " + e.message);
+      }
     };
+    submit();
+  };
+  const handleContactChange = (key: keyof LGUOut, val: string) => {
+    // Allow digits, parentheses, plus sign
+    const cleaned = val.replace(/[^\d()+]/g, "");
 
-  const onSelect =
-    (key: keyof LGUEditForm) =>
-    (e: React.ChangeEvent<HTMLSelectElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value as any }));
+    // Philippine mobile or landline pattern
+    const validPattern =
+      /^(?:\+639\d{9}|09\d{9}|0\d{1,2}\d{7}|\(\d{2,3}\)\d{7})$/;
 
-  const onImage =
-    (key: keyof LGUEditForm) =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const url = await readAsDataUrl(f);
-      setForm((p) => ({ ...p, [key]: url }));
-    };
+    setForm((prev) => ({ ...prev, [key]: cleaned }));
 
-  const toggle = (key: keyof LGUEditForm, val: string) =>
-    setForm((prev) => {
-      const set = new Set((prev[key] as unknown as string[]) ?? []);
-      set.has(val) ? set.delete(val) : set.add(val);
-      return { ...prev, [key]: Array.from(set) as any };
-    });
-
-  const save = () => {
-    if (invalids.contact || invalids.drmm_contact) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Phone numbers must be exactly 11 digits.",
-      }));
-      return;
+    // Check validity
+    const setIsInvalid =
+      key === "lgu_contact" ? setLguContactInvalid : setDrrmContactInvalid;
+    if (cleaned === "" || validPattern.test(cleaned)) {
+      setIsInvalid(false);
+    } else {
+      setIsInvalid(true);
     }
-    if ((form.lat == null) !== (form.lng == null)) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Please pick a valid location (both latitude and longitude).",
-      }));
-      return;
-    }
-    onSaved?.(form);
-    closeModal();
   };
 
-  if (!isModalOpen) return null;
+  const toggle = (key: keyof LGUOut, val: string) => {
+    setForm((prev) => {
+      // Convert existing field to a Set (handles undefined/null gracefully)
+      const current = Array.isArray(prev[key]) ? (prev[key] as string[]) : [];
+      const next = new Set(current);
 
+      // Toggle logic
+      if (next.has(val)) {
+        next.delete(val);
+      } else {
+        next.add(val);
+      }
+
+      // Return updated form
+      return {
+        ...prev,
+        [key]: Array.from(next),
+      };
+    });
+  };
+  const onImage =
+    (key: keyof LGUOut) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+        const url = await readAsDataUrl(file); // your existing helper
+        setForm((prev) => ({
+          ...prev,
+          [key]: url as string, // ensure type is string
+        }));
+      } catch (err) {
+        console.error("Failed to read image file:", err);
+      }
+    };
+  const onLocationSelectSubmit = (
+    address: string,
+    coordinates: [number, number],
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      lat: coordinates[0],
+      lng: coordinates[1],
+    }));
+  };
   return (
-    <Modal
-      isOpen={isModalOpen}
-      onClose={closeModal}
-      zIndex={998}
-      width="clamp(560px, 56vw, 840px)"
-      height="86vh"
-    >
-      {/* Map picker */}
+    <>
       {locationPickerIsOpen && (
-        <LocationPickerModal
-          isOpenProp={locationPickerIsOpen}
-          onCloseProp={closeLocationPicker}
-          onSubmit={(mapData: { lat: number; lng: number }) =>
-            setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }))
-          }
-          lat={Number(form.lat) || 0}
-          lng={Number(form.lng) || 0}
-        />
-      )}
+        <MapViewWithSearch
+          onClose={closeLocationPicker}
+          defaultValue={{
+            address: form.lgu_name,
+            coordinates: [form.lat ?? 0, form.lng ?? 0],
+          }}
+          onSubmit={onLocationSelectSubmit}
+          changeAddressOnclik={false}
+          autoSearch={form.lng === 0 && form.lat === 0}
+        ></MapViewWithSearch>
+      )}{" "}
+      <Modal
+        isOpen={true}
+        onClose={closeModal}
+        zIndex={998}
+        width="clamp(560px, 56vw, 840px)"
+        height="86vh"
+      >
+        <div className="modal-container lgu-modal">
+          <div className="horizontal-container">
+            <span className="details-title">Edit LGU Details</span>
+          </div>
 
-      <div className="modal-container lgu-modal">
-        <div className="horizontal-container">
-          <span className="details-title">Edit LGU Details</span>
+          {/* SCROLLABLE BODY */}
+          <div className="lgu-scroll">
+            <Section title="LGU Information Details">
+              {/* Lat/Lng textbox + pin button */}
+              <Row label="Location">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: "8px", // optional spacing
+                  }}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="Pick on map"
+                    value={
+                      form.lat && form.lng ? `${form.lat}, ${form.lng}` : ""
+                    }
+                    style={{ flex: 1 }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={openLocationPicker}
+                    title="Pick location on map"
+                    style={{
+                      backgroundColor: "transparent",
+                      border: "1px solid #ddd",
+                      outline: "none",
+                      color: "#3b82f6",
+                      width: "44px",
+                      height: "44px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faMapMarkerAlt} />
+                  </button>
+                </div>
+              </Row>
+
+              <Row label="Classification">
+                <select
+                  value={form.lgu_classification}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      lgu_classification: e.target.value,
+                    }))
+                  }
+                  required
+                >
+                  <option value="" disabled>
+                    Select classification
+                  </option>
+                  <option value="Municipality">Municipality</option>
+                  <option value="City">City</option>
+                </select>
+              </Row>
+              <Row label="LGU's Contact">
+                <input
+                  type="tel"
+                  value={form.lgu_contact ?? ""}
+                  onChange={(e) =>
+                    handleContactChange("lgu_contact", e.target.value)
+                  }
+                />
+
+                <label>
+                  {lguContactInvalid && "Contact number is invalid"}
+                </label>
+              </Row>
+              <Row label="LGU Seal">
+                <label className="filelike">
+                  <FontAwesomeIcon icon={faImage} />
+                  <span>Choose image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={onImage("lgu_seal")}
+                  />
+                </label>
+                {form.lgu_seal && (
+                  <img
+                    src={form.lgu_seal}
+                    alt="LGU Seal"
+                    className="img-thumb"
+                  />
+                )}
+              </Row>
+
+              <Row label="Total Population">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.population ?? 0}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      population: Number(e.target.value),
+                    }))
+                  }
+                />
+              </Row>
+
+              <Row label="Mayor">
+                <input
+                  type="text"
+                  value={form.mayor ?? ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, mayor: e.target.value }))
+                  }
+                />
+              </Row>
+            </Section>
+
+            <Section title="Disaster Risk Profile">
+              <Row label="Major Hazard">
+                <CheckGroup
+                  options={[
+                    "Typhoon",
+                    "Flood",
+                    "Earthquake",
+                    "Fire",
+                    "Landslide",
+                  ]}
+                  selected={form.lgu_majorHazard ?? []}
+                  onToggle={(v) => toggle("lgu_majorHazard", v)}
+                  columns={3}
+                />
+              </Row>
+
+              <Row label="Hazard Picture">
+                <label className="filelike">
+                  <FontAwesomeIcon icon={faImage} />
+                  <span>Choose image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={onImage("hazard_pic")}
+                  />
+                </label>
+                {form.hazard_pic && (
+                  <img
+                    src={form.hazard_pic}
+                    alt="Hazard"
+                    className="img-thumb"
+                  />
+                )}
+              </Row>
+            </Section>
+
+            <Section title="Disaster Risk Reduction & Management Office">
+              <Row label="DRMM local personnel">
+                <input
+                  type="text"
+                  value={form.DRMMpersonel ?? ""}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      DRMMpersonel: e.target.value,
+                    }))
+                  }
+                />
+              </Row>
+
+              <Row label="DRMM contact">
+                <input
+                  type="tel"
+                  value={form.DRMM_contact ?? ""}
+                  placeholder="09XXXXXXXXX"
+                  onChange={(e) =>
+                    handleContactChange("DRMM_contact", e.target.value)
+                  }
+                />
+                <label>
+                  {drrmContactInvalid && "Contact number is invalid"}
+                </label>
+              </Row>
+              <Row label="Critical Facilities">
+                <CheckGroup
+                  options={[
+                    "Municipal Hall",
+                    "Barangay Hall",
+                    "Hospital/Health Center",
+                    "Evacuation Center",
+                    "Police Station",
+                    "Fire Station",
+                    "School",
+                  ]}
+                  selected={form.lgu_critical_facility ?? []}
+                  onToggle={(v) => toggle("lgu_critical_facility", v)}
+                  columns={3}
+                />
+              </Row>
+            </Section>
+
+            <Section title="Vulnerable Population">
+              <Row label="PWD">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.lgu_pwd ?? 0}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      lgu_pwd: Number(e.target.value),
+                    }))
+                  }
+                />
+              </Row>
+
+              <Row label="Senior Citizen">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.lgu_senior ?? 0}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      lgu_senior: Number(e.target.value),
+                    }))
+                  }
+                />
+              </Row>
+
+              <Row label="Children">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.lgu_children ?? 0}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      lgu_children: Number(e.target.value),
+                    }))
+                  }
+                />
+              </Row>
+            </Section>
+          </div>
+
+          {/* FOOTER */}
+          <div className="action-button">
+            <button
+              style={{ background: "#749AB6", color: "#fff" }}
+              onClick={handleSubmit}
+            >
+              Save
+            </button>
+            <button
+              style={{ background: "#F84B4D", color: "#fff" }}
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
-
-        {/* SCROLLABLE BODY */}
-        <div className="lgu-scroll">
-          <Section title="LGU information Details">
-            <Row label="LGU Name" locked>
-              <input type="text" value={form.lgu_name} readOnly disabled placeholder="(prefetch)" />
-            </Row>
-
-            {/* Lat/Lng textbox + pin button */}
-            <Row label="Location">
-              <input
-                type="text"
-                readOnly
-                placeholder="Pick on map"
-                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
-                style={{ width: 260 }}
-              />
-              <button
-                type="button"
-                onClick={openLocationPicker}
-                title="Pick location on map"
-                style={{
-                  backgroundColor: "transparent",
-                  border: "1px solid #ddd",
-                  outline: "none",
-                  color: "#3b82f6",
-                  width: 35,
-                  height: 32,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                }}
-              >
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-              </button>
-            </Row>
-
-            <Row label="Classification">
-              <select value={form.classification} onChange={onSelect("classification")} required>
-                <option value="" disabled>
-                  Select classification
-                </option>
-                <option value="Municipality">Municipality</option>
-                <option value="City">City</option>
-              </select>
-            </Row>
-
-            <Row label="LGU Seal">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("lgu_seal")} hidden />
-              </label>
-              {!!form.lgu_seal && <img src={form.lgu_seal} alt="LGU Seal" className="img-thumb" />}
-            </Row>
-
-            <Row label="Total Population">
-              <input
-                type="number"
-                value={form.population ?? ""}
-                min={0}
-                onChange={onNum("population")}
-                placeholder="0"
-              />
-            </Row>
-
-            <Row label="No. of Barangay" locked>
-              <input
-                type="number"
-                value={form.barangay_count ?? ""}
-                readOnly
-                disabled
-                placeholder="(prefetch)"
-              />
-            </Row>
-
-            <Row label="Mayor">
-              <input type="text" value={form.mayor ?? ""} onChange={onText("mayor")} />
-            </Row>
-
-            <Row label="Mayor's Contact" hint="11 digits">
-              <input
-                type="tel"
-                value={form.contact ?? ""}
-                onChange={onText("contact")}
-                placeholder="09XXXXXXXXX"
-                className={invalids.contact ? "input-invalid" : undefined}
-                maxLength={11}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Disaster Risk Profile">
-            <Row label="Major Hazard">
-              <CheckGroup
-                options={["Typhoon", "Flood", "Earthquake", "Fire", "Landslide"]}
-                selected={form.major_hazard}
-                onToggle={(v) => toggle("major_hazard", v)}
-                columns={3}
-              />
-            </Row>
-
-            <Row label="Hazard Picture">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("hazard_picture")} hidden />
-              </label>
-              {!!form.hazard_picture && (
-                <img src={form.hazard_picture} alt="Hazard" className="img-thumb" />
-              )}
-            </Row>
-          </Section>
-
-          <Section title="Disaster Risk Reduction & Management Office">
-            <Row label="DRMM local personnel">
-              <input
-                type="text"
-                value={form.drmm_personnel ?? ""}
-                onChange={onText("drmm_personnel")}
-              />
-            </Row>
-
-            <Row label="DRMM contact" hint="11 digits">
-              <input
-                type="tel"
-                value={form.drmm_contact ?? ""}
-                onChange={onText("drmm_contact")}
-                placeholder="09XXXXXXXXX"
-                className={invalids.drmm_contact ? "input-invalid" : undefined}
-                maxLength={11}
-              />
-            </Row>
-
-            <Row label="Evacuation Center" locked>
-              <input
-                type="text"
-                value={form.evacuation_center || ""}
-                readOnly
-                disabled
-                placeholder="(prefetch)"
-              />
-            </Row>
-
-            <Row label="Critical Facilities">
-              <CheckGroup
-                options={[
-                  "Municipal Hall",
-                  "Barangay Hall",
-                  "Hospital/Health Center",
-                  "Evacuation Center",
-                  "Police Station",
-                  "Fire Station",
-                  "School",
-                ]}
-                selected={form.critical_facilities}
-                onToggle={(v) => toggle("critical_facilities", v)}
-                columns={3}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Vulnerable Population">
-            <Row label="PWD">
-              <input
-                type="number"
-                min={0}
-                value={form.pwd ?? ""}
-                onChange={onNum("pwd")}
-                placeholder="0"
-              />
-            </Row>
-            <Row label="Senior Citizen">
-              <input
-                type="number"
-                min={0}
-                value={form.senior ?? ""}
-                onChange={onNum("senior")}
-                placeholder="0"
-              />
-            </Row>
-            <Row label="Children">
-              <input
-                type="number"
-                min={0}
-                value={form.children ?? ""}
-                onChange={onNum("children")}
-                placeholder="0"
-              />
-            </Row>
-          </Section>
-        </div>
-
-        {/* FOOTER */}
-        <div className="action-button">
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
-            Save
-          </button>
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
+      </Modal>
+    </>
   );
 };
 
 /* ========= Presentational helpers ========= */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="section-block" style={{ marginTop: 12 }}>
       <h3 className="section-title" style={{ marginBottom: 8 }}>
@@ -582,7 +672,16 @@ function Row({
       </div>
 
       {/* content column */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>{children}</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexDirection: "column",
+        }}
+      >
+        {children}
+      </div>
 
       {/* lock column (single source of truth) */}
       {locked ? <LockIcon /> : <span />}
@@ -612,28 +711,28 @@ function DL({
   );
 }
 
-/** Keep if needed elsewhere */
-function ImgBlock({ label, src }: { label: string; src: string }) {
-  return (
-    <div style={{ marginTop: 8 }}>
-      <div className="item-details-identifier">{label}</div>
-      <img src={src} alt={label} className="img-thumb" />
-    </div>
-  );
-}
-
 /** NEW: shows image or a tidy placeholder */
 function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
   const hasImg = !!src;
   return (
     <div className="lgu-media">
-      <div className="item-details-identifier" style={{ marginBottom: 6 }}>{label}</div>
+      <div className="item-details-identifier" style={{ marginBottom: 6 }}>
+        {label}
+      </div>
       {hasImg ? (
         <img src={src} alt={label} className="img-thumb" />
       ) : (
         <div className="img-placeholder">No image</div>
       )}
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <span title="Prefetched and locked">
+      <FontAwesomeIcon icon={faLock} style={{ color: "#64748b" }} />
+    </span>
   );
 }
 
@@ -658,19 +757,16 @@ function CheckGroup({
         const checked = selected?.includes(opt);
         return (
           <label key={opt} htmlFor={id} className="lgu-check">
-            <input id={id} type="checkbox" checked={!!checked} onChange={() => onToggle(opt)} />
+            <input
+              id={id}
+              type="checkbox"
+              checked={!!checked}
+              onChange={() => onToggle(opt)}
+            />
             <span className="lgu-check-text">{opt}</span>
           </label>
         );
       })}
     </div>
-  );
-}
-
-function LockIcon() {
-  return (
-    <span title="Prefetched and locked">
-      <FontAwesomeIcon icon={faLock} style={{ color: "#64748b" }} />
-    </span>
   );
 }

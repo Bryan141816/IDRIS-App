@@ -6,7 +6,7 @@ import { API } from "../../../API_Handler/Axio_API_Handler";
 import defaultpicture from "../../../../public/images/defaultpicture.jpg";
 import { getMyLGULocation } from "../../../API_Handler/lguprofiling/LGUofficer";
 import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
-
+import { LGUOut } from "./Modals/LGUModals";
 // ✅ LGU modals (unchanged in this file)
 import {
   MyLGUViewModal,
@@ -116,7 +116,7 @@ const sampleRAFFIs: RAFFIRow[] = [
     id: "rf2",
     raffi_name: "RAFFI Evacuation Center",
     raffi_description: "Designated evacuation site with 20 rooms.",
-    lat: 10.3150,
+    lat: 10.315,
     lng: 123.9002,
     raffi_picture: "",
   },
@@ -131,411 +131,147 @@ const sampleRAFFIs: RAFFIRow[] = [
 ];
 
 /* ========================= COMPONENT ========================= */
-const LGUofficer = () => {
-  // LGU modals
-  const [myLGUViewOpen, setMyLGUViewOpen] = useState(false);
-  const [myLGUEditOpen, setMyLGUEditOpen] = useState(false);
-  const [modalData, setModalData] = useState<LGUEditForm | null>(null);
-
-  // LGU info
-  const [myLGULocation, setMyLGULocation] = useState<string | null>(null);
+const LGUofficer: React.FC = () => {
+  const [myLGULocation, setMyLGULocation] = useState<LGUOut | null>(null);
   const [loadingLGU, setLoadingLGU] = useState<boolean>(true);
+  const [selectedData, setSelectedData] = useState<LGUOut | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState("");
 
-  // Tables
-  const [barangays, setBarangays] = useState<BarangayRow[]>([]);
-  const [raffis, setRAFFIs] = useState<RAFFIRow[]>([]);
-
-  // Barangay modal state
-  const [selectedBarangay, setSelectedBarangay] = useState<BarangayRow | null>(null);
-  const [isBrgyViewOpen, setIsBrgyViewOpen] = useState(false);
-  const [isBrgyEditOpen, setIsBrgyEditOpen] = useState(false);
-  const [isBrgyCreateOpen, setIsBrgyCreateOpen] = useState(false);
-  const [isBrgyDeleteOpen, setIsBrgyDeleteOpen] = useState(false);
-
-  // RAFFI modal state
-  const [selectedRAFFI, setSelectedRAFFI] = useState<RAFFIRow | null>(null);
-  const [isRAFFIViewOpen, setIsRAFFIViewOpen] = useState(false);
-  const [isRAFFIEditOpen, setIsRAFFIEditOpen] = useState(false);
-  const [isRAFFICreateOpen, setIsRAFFICreateOpen] = useState(false);
-  const [isRAFFIDeleteOpen, setIsRAFFIDeleteOpen] = useState(false);
-
-  // Filters
-  const [filterView, setFilterView] = useState<"all" | "barangay" | "raffi">("all");
-
-  // Dropdowns
-  const [isAddPinOpen, setIsAddPinOpen] = useState(false);
-  const addPinRef = useRef<HTMLDivElement | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement | null>(null);
-
-  // MessageBox
-  const [messageBox, setMessageBox] = useState<MessageBoxState>({
-    isOpen: false,
-    type: "message",
-    message: "",
-    onSubmit: undefined,
-    onClose: () => setMessageBox((prev) => ({ ...prev, isOpen: false })),
-  });
-
-  // Close menus outside
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (addPinRef.current && !addPinRef.current.contains(target)) setIsAddPinOpen(false);
-      if (filterRef.current && !filterRef.current.contains(target)) setIsFilterOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
+  const openModal = (type: string, selected: LGUOut | null = null) => {
+    setActiveModal(type);
+    if (selected) {
+      setSelectedData(selected);
+    }
+  };
+  const closeModal = () => {
+    setActiveModal("");
+    setSelectedData(null);
+  };
   // Fetch LGU location
   useEffect(() => {
+    let isMounted = true;
     (async () => {
       try {
         setLoadingLGU(true);
+        setError(null);
         const loc = await getMyLGULocation();
-        setMyLGULocation(loc || null);
+        console.log(loc);
+        if (isMounted) setMyLGULocation(loc);
+      } catch (e) {
+        if (isMounted) setError("Failed to load LGU information.");
       } finally {
-        setLoadingLGU(false);
+        if (isMounted) setLoadingLGU(false);
       }
     })();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Load placeholder rows
-  useEffect(() => {
-    setBarangays(sampleBarangays);
-    setRAFFIs(sampleRAFFIs);
-  }, [myLGULocation]);
-
-  const displayName = myLGULocation ?? (loadingLGU ? "Loading..." : "—");
-  const lguImageSrc = useMemo(() => defaultpicture, []);
-
-  function toModalData(): LGUEditForm {
-    return {
-      lgu_name: myLGULocation ?? "",
-      classification: "",
-      lgu_seal: undefined,
-      population: "",
-      barangay_count: "",
-      mayor: "",
-      contact: "",
-      major_hazard: [],
-      hazard_picture: "",
-      drmm_personnel: "",
-      drmm_contact: "",
-      evacuation_center: "",
-      critical_facilities: [],
-      pwd: "",
-      senior: "",
-      children: "",
-    };
-  }
-
-  /* ===== Barangay actions ===== */
-  const openBrgyView = (row: BarangayRow) => {
-    setSelectedBarangay(row);
-    setIsBrgyViewOpen(true);
-  };
-  const openBrgyEdit = () => {
-    setIsBrgyViewOpen(false);
-    setIsBrgyEditOpen(true);
-  };
-  const openBrgyDelete = () => {
-    setIsBrgyDeleteOpen(true);
-  };
-  const confirmBrgyDelete = () => {
-    if (!selectedBarangay) return;
-    setBarangays((prev) => prev.filter((b) => b.id !== selectedBarangay.id));
-    setIsBrgyDeleteOpen(false);
-    setIsBrgyViewOpen(false);
-    setSelectedBarangay(null);
-  };
-  const saveBrgyEdit = (data: MyBarangay | null) => {
-    if (!selectedBarangay || !data) return;
-    setBarangays((prev) =>
-      prev.map((b) => (b.id === selectedBarangay.id ? { ...selectedBarangay, ...data } : b))
-    );
-    setSelectedBarangay((p) => (p ? { ...p, ...data } : p));
-    setIsBrgyEditOpen(false);
-    setIsBrgyViewOpen(true);
-  };
-  const createBarangay = (data: MyBarangay | null) => {
-    if (!data) return;
-    const newRow: BarangayRow = { id: Date.now(), ...data };
-    setBarangays((prev) => [newRow, ...prev]);
-    setIsBrgyCreateOpen(false);
-    setSelectedBarangay(newRow);
-    setIsBrgyViewOpen(true);
-  };
-
-  /* ===== RAFFI actions ===== */
-  const openRAFFIView = (row: RAFFIRow) => {
-    setSelectedRAFFI(row);
-    setIsRAFFIViewOpen(true);
-  };
-  const openRAFFIEdit = () => {
-    setIsRAFFIViewOpen(false);
-    setIsRAFFIEditOpen(true);
-  };
-  const openRAFFIDelete = () => {
-    setIsRAFFIDeleteOpen(true);
-  };
-  const confirmRAFFIDelete = () => {
-    if (!selectedRAFFI) return;
-    setRAFFIs((prev) => prev.filter((r) => r.id !== selectedRAFFI.id));
-    setIsRAFFIDeleteOpen(false);
-    setIsRAFFIViewOpen(false);
-    setSelectedRAFFI(null);
-  };
-  const saveRAFFIEdit = (data: RAFFIRecord | null) => {
-    if (!selectedRAFFI || !data) return;
-    setRAFFIs((prev) =>
-      prev.map((r) => (r.id === selectedRAFFI.id ? { ...selectedRAFFI, ...data } : r))
-    );
-    setSelectedRAFFI((p) => (p ? { ...p, ...data } : p));
-    setIsRAFFIEditOpen(false);
-    setIsRAFFIViewOpen(true);
-  };
-  const createRAFFI = (data: RAFFIRecord | null) => {
-    if (!data) return;
-    const newRow: RAFFIRow = { id: Date.now(), ...data };
-    setRAFFIs((prev) => [newRow, ...prev]);
-    setIsRAFFICreateOpen(false);
-    setSelectedRAFFI(newRow);
-    setIsRAFFIViewOpen(true);
-  };
-
-  /* ===== Filter helpers ===== */
-  const applyFilter = (value: "all" | "barangay" | "raffi") => {
-    setFilterView(value);
-    setIsFilterOpen(false);
-  };
-
-  const showBarangay = filterView === "all" || filterView === "barangay";
-  const showRAFFI = filterView === "all" || filterView === "raffi";
-
   return (
-    <div className="app-container">
-      <MessageBox
-        isOpen={messageBox.isOpen}
-        onClose={messageBox.onClose}
-        type={messageBox.type}
-        message={messageBox.message}
-        onSubmit={messageBox.onSubmit}
-      />
+    <>
+      {activeModal === "view-lgu" && selectedData && (
+        <MyLGUViewModal
+          closeModal={closeModal}
+          onOpenEdit={() => {
+            openModal("edit-modal", myLGULocation);
+          }}
+          data={selectedData}
+        ></MyLGUViewModal>
+      )}
+      {activeModal === "edit-modal" && selectedData && (
+        <MyLGUEditModal
+          closeModal={closeModal}
+          data={selectedData}
+        ></MyLGUEditModal>
+      )}
+      <div className="app-container">
+        <header className="lgu-page-header">
+          <h1 className="lgu-page-title">
+            {loadingLGU
+              ? "Loading..."
+              : "LGU of " + (myLGULocation?.lgu_name ?? "")}
+          </h1>
+        </header>
 
-      {/* === LGU MODALS === */}
-      <MyLGUViewModal
-        isModalOpen={myLGUViewOpen}
-        closeModal={() => setMyLGUViewOpen(false)}
-        setMessageBox={setMessageBox}
-        data={modalData}
-        onOpenEdit={() => {
-          setMyLGUViewOpen(false);
-          setMyLGUEditOpen(true);
-        }}
-      />
-      <MyLGUEditModal
-        isModalOpen={myLGUEditOpen}
-        closeModal={() => setMyLGUEditOpen(false)}
-        setMessageBox={setMessageBox}
-        prefetch={{ lgu_name: displayName || "", barangay_count: undefined, evacuation_center: "" }}
-        onSaved={(updated) => {
-          setModalData(updated ?? null);
-          setMyLGUEditOpen(false);
-          setMyLGUViewOpen(true);
-        }}
-      />
+        {error && (
+          <div
+            className="alert error"
+            role="alert"
+            style={{ marginBottom: 12 }}
+          >
+            {error}
+          </div>
+        )}
 
-      {/* === BARANGAY MODALS === */}
-      <BarangayViewModal
-        isModalOpen={isBrgyViewOpen}
-        closeModal={() => setIsBrgyViewOpen(false)}
-        setMessageBox={setMessageBox}
-        data={selectedBarangay ?? undefined}
-        onOpenEdit={openBrgyEdit}
-        onOpenDelete={openBrgyDelete}
-      />
-      <BarangayEditModal
-        isModalOpen={isBrgyEditOpen}
-        closeModal={() => {
-          setIsBrgyEditOpen(false);
-          setIsBrgyViewOpen(true);
-        }}
-        setMessageBox={setMessageBox}
-        data={(selectedBarangay as MyBarangay) || ({} as MyBarangay)}
-        onSaved={saveBrgyEdit}
-        prefetch={{
-          nearest_evacuation: selectedBarangay?.nearest_evacuation,
-          lat: selectedBarangay?.lat,
-          lng: selectedBarangay?.lng,
-        }}
-      />
-      <BarangayCreateModal
-        isModalOpen={isBrgyCreateOpen}
-        closeModal={() => setIsBrgyCreateOpen(false)}
-        setMessageBox={setMessageBox}
-        onCreate={createBarangay}
-        prefetch={{ nearest_evacuation: "", lat: undefined, lng: undefined }}
-      />
-      <BarangayDeleteModal
-        isModalOpen={isBrgyDeleteOpen}
-        closeModal={() => setIsBrgyDeleteOpen(false)}
-        setMessageBox={setMessageBox}
-        targetName={selectedBarangay?.barangay_name}
-        onConfirm={confirmBrgyDelete}
-      />
-
-      {/* === RAFFI MODALS === */}
-      <RAFFIViewModal
-        isModalOpen={isRAFFIViewOpen}
-        closeModal={() => setIsRAFFIViewOpen(false)}
-        data={selectedRAFFI ?? undefined}
-        onOpenEdit={openRAFFIEdit}
-        onOpenDelete={openRAFFIDelete}
-  setMessageBox={setMessageBox}  
-      />
-      <RAFFIEditModal
-        isModalOpen={isRAFFIEditOpen}
-        closeModal={() => {
-          setIsRAFFIEditOpen(false);
-          setIsRAFFIViewOpen(true);
-        }}
-        setMessageBox={setMessageBox}
-        data={(selectedRAFFI as RAFFIRecord) || ({} as RAFFIRecord)}
-        onSaved={saveRAFFIEdit}
-      />
-      <RAFFICreateModal
-        isModalOpen={isRAFFICreateOpen}
-        closeModal={() => setIsRAFFICreateOpen(false)}
-        setMessageBox={setMessageBox}
-        onCreate={createRAFFI}
-        prefill={{ lat: undefined, lng: undefined }}
-      />
-      <RAFFIDeleteModal
-        isModalOpen={isRAFFIDeleteOpen}
-        closeModal={() => setIsRAFFIDeleteOpen(false)}
-        targetName={selectedRAFFI?.raffi_name}
-        onConfirm={confirmRAFFIDelete}
-  setMessageBox={setMessageBox}  
-      />
-
-      {/* === HEADER === */}
-      <header className="lgu-page-header">
-        <h1 className="lgu-page-title">{displayName}</h1>
-      </header>
-
-      {/* === SUMMARY CARD === */}
-      <div className="lgu-summary-card">
-        <div className="lgu-summary-left">
-          <div className="lgu-seal-label">LGU Seal</div>
-          <img
-            src={lguImageSrc}
-            alt={displayName || "LGU"}
-            className="lgu-summary-img"
-            onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement;
-              if (!img.src.endsWith("defaultpicture.jpg")) {
-                (img as any).onerror = null;
-                img.src = defaultpicture;
+        {/* === SUMMARY CARD === */}
+        <div className="lgu-summary-card">
+          <div className="lgu-summary-left">
+            <div className="lgu-seal-label">LGU Seal</div>
+            <img
+              className="lgu-summary-img"
+              alt="LGU Seal"
+              src={
+                myLGULocation?.lgu_seal
+                  ? myLGULocation.lgu_seal
+                  : defaultpicture
               }
-            }}
-          />
-        </div>
-        <div className="lgu-summary-center" />
-        <div className="lgu-summary-right">
-          <div className="lgu-summary-grid">
-            <div className="label">Category</div><div className="value">—</div>
-            <div className="label">Mayor</div><div className="value">—</div>
-            <div className="label">Population</div><div className="value">—</div>
-            <div className="label">No. of Barangays</div><div className="value">{barangays.length}</div>
-            <div className="label">DRRM Personnel</div><div className="value">—</div>
-            <div className="label">Contact Nos.</div><div className="value">—</div>
+            />
           </div>
-          <div className="lgu-summary-actions">
-            <button
-              className="view-lgu-button"
-              onClick={() => { setModalData(toModalData()); setMyLGUViewOpen(true); }}
-              disabled={!myLGULocation}
-            >
-              View more
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {/* === TOOLS BAR === */}
-      <div className="lgu-tools">
-        {/* Add Pin */}
-        <div className="addpin-dropdown" ref={addPinRef}>
-          <button
-            className="btn-pin"
-            onClick={() => setIsAddPinOpen((o) => !o)}
-            aria-haspopup="menu"
-            aria-expanded={isAddPinOpen}
-          >
-            + Add Pin <span className="caret">▾</span>
-          </button>
-          {isAddPinOpen && (
-            <div className="addpin-menu" role="menu">
+          <div className="lgu-summary-center" />
+
+          <div className="lgu-summary-right">
+            <div className="lgu-summary-grid">
+              <div className="label">Category</div>
+              <div className="value">
+                {myLGULocation?.lgu_classification ?? "—"}
+              </div>
+
+              <div className="label">Mayor</div>
+              <div className="value">
+                {myLGULocation?.mayor ?? "Not yet filled up"}
+              </div>
+
+              <div className="label">Population</div>
+              <div className="value">
+                {myLGULocation?.population ?? "Not yet filled up"}
+              </div>
+
+              <div className="label">No. of Barangays</div>
+              <div className="value">{myLGULocation?.baranggay_count ?? 0}</div>
+
+              <div className="label">DRRM Personnel</div>
+              <div className="value">
+                {myLGULocation?.DRMMpersonel ?? "Not yet filled up"}
+              </div>
+
+              <div className="label">Contact Nos.</div>
+              <div className="value">
+                {myLGULocation?.lgu_contact ?? "Not yet filled up"}
+              </div>
+            </div>
+
+            <div className="lgu-summary-actions">
               <button
-                role="menuitem"
-                onClick={() => {
-                  setIsAddPinOpen(false);
-                  setIsBrgyCreateOpen(true);
-                }}
+                className="view-lgu-button"
+                onClick={() => openModal("view-lgu", myLGULocation)}
               >
-                Barangay
-              </button>
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setIsAddPinOpen(false);
-                  setIsRAFFICreateOpen(true); // <-- RAFFI create here
-                }}
-              >
-                RAFFI
+                View more
               </button>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Filter */}
-        <div className="filter-dropdown" ref={filterRef}>
-          <button
-            className="btn-pin"
-            onClick={() => setIsFilterOpen((o) => !o)}
-            aria-haspopup="menu"
-            aria-expanded={isFilterOpen}
-          >
-            Filter:{" "}
-            <strong
-              style={{ marginLeft: 6, marginRight: 6, fontWeight: 800, color: "var(--clr-text)" }}
-            >
-              {filterView === "all" ? "All" : filterView === "barangay" ? "Barangay" : "RAFFI"}
-            </strong>
-            <span className="caret">▾</span>
-          </button>
-          {isFilterOpen && (
-            <div className="filter-menu" role="menu">
-              <button role="menuitem" onClick={() => applyFilter("all")} aria-pressed={filterView === "all"}>
-                All
-              </button>
-              <button role="menuitem" onClick={() => applyFilter("barangay")} aria-pressed={filterView === "barangay"}>
-                Barangay
-              </button>
-              <button role="menuitem" onClick={() => applyFilter("raffi")} aria-pressed={filterView === "raffi"}>
-                RAFFI
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
+        {/* === TOOLS BAR === */}
+        <div className="lgu-tools">{/* Add tool buttons/filters here */}</div>
 
-      {/* === BARANGAY TABLE === */}
-      {showBarangay && (
+        {/* === BARANGAY TABLE === */}
         <section className="barangay-section">
-          <div className="barangay-header"><h2>Barangays</h2></div>
+          <div className="barangay-header">
+            <h2>Barangays</h2>
+          </div>
           <div className="barangay-table-wrap">
             <table className="barangay-table">
               <thead>
@@ -548,31 +284,25 @@ const LGUofficer = () => {
                 </tr>
               </thead>
               <tbody>
-                {barangays.length === 0 ? (
-                  <tr><td colSpan={5} className="empty-cell">No barangays to display.</td></tr>
-                ) : (
-                  barangays.map((b) => (
-                    <tr key={b.id}>
-                      <td>{b.barangay_name}</td>
-                      <td>{fmtLL(b.lat, b.lng)}</td>
-                      <td>{b.barangay_captain || "—"}</td>
-                      <td>{b.nearest_evacuation || "—"}</td>
-                      <td className="col-action">
-                        <button className="btn-view" onClick={() => openBrgyView(b)}>View</button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                {/* Render rows here. For now, show an empty state. */}
+                <tr>
+                  <td
+                    colSpan={5}
+                    style={{ textAlign: "center", padding: "1rem" }}
+                  >
+                    {loadingLGU ? "Loading..." : "No barangays to display."}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         </section>
-      )}
 
-      {/* === RAFFI TABLE === */}
-      {showRAFFI && (
+        {/* === RAFFI TABLE === */}
         <section className="raffi-section" style={{ marginTop: "2rem" }}>
-          <div className="raffi-header"><h2>RAFFI</h2></div>
+          <div className="raffi-header">
+            <h2>RAFFI</h2>
+          </div>
           <div className="raffi-table-wrap">
             <table className="barangay-table">
               <thead>
@@ -584,29 +314,21 @@ const LGUofficer = () => {
                 </tr>
               </thead>
               <tbody>
-                {raffis.length === 0 ? (
-                  <tr><td colSpan={4} className="empty-cell">No RAFFI items to display.</td></tr>
-                ) : (
-                  raffis.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.raffi_name}</td>
-                      <td>{fmtLL(r.lat, r.lng)}</td>
-                      <td>{r.raffi_description || "—"}</td>
-                      <td className="col-action">
-                        <button className="btn-view" onClick={() => openRAFFIView(r)}>
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                <tr>
+                  <td
+                    colSpan={4}
+                    style={{ textAlign: "center", padding: "1rem" }}
+                  >
+                    {loadingLGU ? "Loading..." : "No RAFFI entries to display."}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         </section>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
-export default LGUofficer;
 
+export default LGUofficer;

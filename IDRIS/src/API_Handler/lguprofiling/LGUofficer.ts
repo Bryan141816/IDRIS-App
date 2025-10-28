@@ -1,10 +1,12 @@
 import { API } from "../Axio_API_Handler";
-
-export const getMyLGULocation = async (): Promise<string | null> => {
+import { LGUOut } from "../../pages/lgu_profiling/LGUofficer/Modals/LGUModals";
+export const getMyLGULocation = async (): Promise<LGUOut | null> => {
   try {
     const response = await API.get("/lgu_profiling/me/lgu_location");
+    console.log(response.data)
     const data = response.data;
-    return data?.lgu_location ?? null;
+
+    return data ?? null;
   } catch (e: any) {
     console.error("Error fetching LGU location:", e?.message);
     return null;

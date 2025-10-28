@@ -254,15 +254,17 @@ class LGURecords(Base):
     lgu_classification = Column(String(255), nullable=False)  # dropdown
     mayor = Column(String(255), nullable=True)  # input
     lgu_contact = Column(String(11), nullable=True)  # 11-digit number (string)
-
+    population = Column(Integer, nullable=True)
     # === DRRM / Hazards ===
-    lgu_majorHazard = Column(JSON, nullable=True)  # checkbox (JSON array/object)
+    lgu_majorHazard = Column(
+        ARRAY(String), nullable=True
+    )  # checkbox (JSON array/object)
     DRMMpersonel = Column(String(255), nullable=True)  # input
     DRMM_contact = Column(String(11), nullable=True)  # 11-digit number (string)
     hazard_pic = Column(String, nullable=True)  # Picture attachment
 
     # === Facilities & Community Stats ===
-    lgu_critical_facility = Column(JSON, nullable=True)  # checkbox (JSON)
+    lgu_critical_facility = Column(ARRAY(String), nullable=True)  # checkbox (JSON)
     lgu_pwd = Column(Integer, nullable=True)  # number
     lgu_senior = Column(Integer, nullable=True)  # number
     lgu_children = Column(Integer, nullable=True)  # number

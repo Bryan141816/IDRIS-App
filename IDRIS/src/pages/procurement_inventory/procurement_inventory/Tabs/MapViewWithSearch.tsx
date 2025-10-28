@@ -6,10 +6,13 @@ import { useMapEvent } from "react-leaflet";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useMap } from "react-leaflet";
+import "../../procurement_management/ProcurementManagement.scss";
 interface MapViewWithSearchProp {
   onClose: () => void;
   defaultValue: { address: string; coordinates: [number, number] };
   onSubmit: (address: string, coordinates: [number, number]) => void;
+  changeAddressOnclik?: boolean;
+  autoSearch?: boolean;
 }
 
 interface Geometry {
@@ -53,6 +56,8 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   onClose,
   onSubmit,
   defaultValue,
+  changeAddressOnclik = true,
+  autoSearch = false,
 }) => {
   const [initialized, setInitialized] = useState(false);
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
@@ -72,6 +77,9 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   const [searchFound, setSearchFound] = useState(false);
   const [typing, setTyping] = useState(false);
   const reverseGeo = async (coordinates: [number, number]) => {
+    if (!changeAddressOnclik) {
+      return;
+    }
     try {
       setSearchValue("Locating Point");
       const response = await axios.get(
@@ -186,6 +194,23 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
       // Call your API or do something
     }
   }, [debouncedSearch]);
+  useEffect(() => {
+    if (autoSearch) {
+      setSearchFound(false);
+      const search = async () => {
+        try {
+          const response = await axios.get(
+            `https://photon.komoot.io/api/?q=${defaultValue.address}&lat=${10.359353}&lon=${123.868891}`,
+          );
+          const target = response.data.features[0].geometry.coordinates;
+          setTarget(target);
+        } catch (e: any) {
+          console.error("Error search location: " + e.message);
+        }
+      };
+      search();
+    }
+  }, []);
 
   useEffect(() => {
     if (target) {
@@ -203,7 +228,10 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
     }
   };
   const handleSubmit = () => {
-    if (searchValue.trim() === "" || searchValue.trim() === "Locating Point") {
+    if (
+      (searchValue.trim() === "" || searchValue.trim() === "Locating Point") &&
+      !changeAddressOnclik
+    ) {
       Swal.fire({
         icon: "error",
         title: "Opps",

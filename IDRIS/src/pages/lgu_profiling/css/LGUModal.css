@@ -3,7 +3,7 @@
   /* fill the Modal shell width; Modal's width prop controls outer max-width */
   width: 100%;
   max-width: none;
-  max-height: 90vh;           /* scroll when tall */
+  max-height: 90vh; /* scroll when tall */
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0 auto;
@@ -15,10 +15,19 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-.lgu-modal::-webkit-scrollbar { width: 8px; }
-.lgu-modal::-webkit-scrollbar-track { background: transparent; }
-.lgu-modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
-.lgu-modal::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.lgu-modal::-webkit-scrollbar {
+  width: 8px;
+}
+.lgu-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lgu-modal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+.lgu-modal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 /* titles */
 .lgu-modal .title-modal-text,
@@ -56,7 +65,7 @@
 .lgu-modal .lgu-row {
   display: grid;
   grid-template-columns: minmax(180px, 280px) 1fr auto;
-  align-items: center;
+  align-items: start;
   column-gap: 12px;
 }
 
@@ -83,7 +92,9 @@
   font-size: 0.97rem;
   color: #0f172a;
   outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .lgu-modal textarea {
   min-height: 100px;
@@ -94,11 +105,11 @@
 .lgu-modal select:focus,
 .lgu-modal textarea:focus {
   border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(59,130,246,.18);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
 .lgu-modal .input-invalid {
   border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, .16);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
 }
 
 /* file button (image pickers) */
@@ -112,7 +123,9 @@
   background: #f8fafc;
   color: #0f172a;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 .lgu-modal .filelike:hover {
   background: #f1f5f9;
@@ -166,7 +179,9 @@
 
 /* responsive: stack rows on narrow screens */
 @media (max-width: 900px) {
-  .lgu-modal { padding: 16px; }
+  .lgu-modal {
+    padding: 16px;
+  }
   .lgu-modal .lgu-row {
     grid-template-columns: 1fr;
     row-gap: 6px;
@@ -174,37 +189,39 @@
 }
 /* push the footer lower (closer to the bottom) */
 .lgu-modal {
-  padding-bottom: 20px;              /* was ~72px – reduce the gap */
+  padding-bottom: 20px; /* was ~72px – reduce the gap */
 }
 
 .lgu-modal .action-button {
   position: sticky;
-  bottom: -10px;                     /* nudge below content area */
-  padding: 12px 0 4px;               /* slimmer internal padding */
-  margin-top: 28px;                  /* a touch more space from content */
-  background: #fff;                  /* keep it solid over scroll */
+  bottom: -10px; /* nudge below content area */
+  padding: 12px 0 4px; /* slimmer internal padding */
+  margin-top: 28px; /* a touch more space from content */
+  background: #fff; /* keep it solid over scroll */
   z-index: 1;
 }
 
 /* optional: make the buttons sit even closer to the edge on tall screens */
 @media (min-height: 800px) {
-  .lgu-modal .action-button { bottom: -16px; }
+  .lgu-modal .action-button {
+    bottom: -16px;
+  }
 }
 /* --- Checkbox grids ----------------------------------------------------- */
 .lgu-checkgrid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), minmax(160px, 1fr));
-  gap: 10px 24px;              /* row-gap | column-gap */
+  gap: 10px 24px; /* row-gap | column-gap */
   align-items: center;
-  grid-auto-rows: 32px;        /* equal row height for tidy alignment */
+  grid-auto-rows: 32px; /* equal row height for tidy alignment */
 }
 
 .lgu-check {
   display: flex;
   align-items: center;
   gap: 8px;
-  line-height: 1;              /* keep compact, no extra vertical wobble */
-  white-space: nowrap;         /* avoid multi-line labels that misalign rows */
+  line-height: 1; /* keep compact, no extra vertical wobble */
+  white-space: nowrap; /* avoid multi-line labels that misalign rows */
 }
 
 .lgu-check input {
@@ -219,12 +236,20 @@
 
 /* Responsive: reduce columns gracefully */
 @media (max-width: 1000px) {
-  .lgu-checkgrid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+  .lgu-checkgrid {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
 }
 @media (max-width: 600px) {
-  .lgu-checkgrid { grid-template-columns: 1fr; }
-  .lgu-checkgrid { grid-auto-rows: auto; } /* allow wrap on very small screens */
-  .lgu-check { white-space: normal; }      /* let long labels wrap only on mobile */
+  .lgu-checkgrid {
+    grid-template-columns: 1fr;
+  }
+  .lgu-checkgrid {
+    grid-auto-rows: auto;
+  } /* allow wrap on very small screens */
+  .lgu-check {
+    white-space: normal;
+  } /* let long labels wrap only on mobile */
 }
 .lgu-media-row {
   display: grid;
@@ -234,7 +259,9 @@
 }
 
 @media (max-width: 720px) {
-  .lgu-media-row { grid-template-columns: 1fr; }
+  .lgu-media-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .lgu-media .img-thumb {
@@ -257,8 +284,3 @@
   color: #6b7280;
   font-size: 0.925rem;
 }
-
-
-
-
-

@@ -2,34 +2,48 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
-
+from typing import Dict, Optional, List, Any
+import base64, re, os, uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
-from models import User, LGURecords, AdminUserProfile, LGURecords
+from models import User, LGURecords, AdminUserProfile, LGURecords, BaranggayRecords
 from routers.auth.authentication import get_current_user_from_access_token
 from schemas import LGURecordsUpdate, LGURecordsOut
 from routers.GetUserId import GetUserId
 from pydantic import BaseModel
+from starlette.requests import Request
 
 logger = logging.getLogger(__name__)
 
 # Prefix matches your logs: /lgu_profiling/...
 router = APIRouter(prefix="/lgu_profiling", tags=["LGU Profiling"])
+DATA_URL_RE = re.compile(r"^data:(image/\w+);base64,(.+)$")
 
 
 class LGUOut(BaseModel):
     id: int
     lgu_name: str
-    lgu_classification: str
     lat: Optional[float] = None
     lng: Optional[float] = None
+    lgu_classification: Optional[str] = None
+    lgu_seal: Optional[str] = None  # data URL OR normal URL OR None
+    population: Optional[int] = None
     mayor: Optional[str] = None
+    DRMMpersonel: Optional[str] = None
+    DRMM_contact: Optional[str] = None
+    lgu_pwd: Optional[int] = None
+    lgu_senior: Optional[int] = None
+    lgu_children: Optional[int] = None
+    hazard_pic: Optional[str] = None  # same rules as lgu_seal
+    lgu_majorHazard: Optional[List[str]] = None
     lgu_contact: Optional[str] = None
+    lgu_critical_facility: Optional[List[str]] = None
+    baranggay_count: int
+    population: Optional[int] = None
 
     class Config:
         # Pydantic v1:
@@ -38,24 +52,161 @@ class LGUOut(BaseModel):
         # from_attributes = True
 
 
-@router.get("/me/lgu_location", response_model=LGUOut)
+class LGUPayload(BaseModel):
+    id: int
+    lgu_name: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    lgu_classification: Optional[str] = None
+    lgu_seal: Optional[str] = None  # data URL OR normal URL OR None
+    population: Optional[int] = None
+    mayor: Optional[str] = None
+    DRMMpersonel: Optional[str] = None
+    DRRM_contact: Optional[str] = None
+    lgu_pwd: Optional[int] = None
+    lgu_senior: Optional[int] = None
+    lgu_children: Optional[int] = None
+    hazard_pic: Optional[str] = None  # same rules as lgu_seal
+    lgu_majorHazard: Optional[List[str]] = None
+    lgu_contact: Optional[str] = None
+    population: Optional[int] = None
+    lgu_critical_facility: Optional[List[str]] = None
+
+
+def to_abs_url(path: Optional[str], request: Request) -> Optional[str]:
+    if not path:
+        return None
+    # already absolute?
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+    base = str(request.base_url).rstrip("/")  # http://host:port
+    if path.startswith("/"):
+        return f"{base}{path}"
+    return f"{base}/{path}"
+
+
+@router.get("/me/lgu_location")
 def lgu_profiling(
+    request: Request,
     db: Session = Depends(get_db),
     user_id: str = Depends(GetUserId()),
 ):
-    # 1) Load the admin profile for the current user and eager-load its LGU
-    admin_profile = (
+    admin = (
         db.query(AdminUserProfile)
         .options(joinedload(AdminUserProfile.lgu))
         .filter(AdminUserProfile.user_id == user_id)
         .first()
     )
-    if not admin_profile:
-        raise HTTPException(status_code=404, detail="Admin profile not found for user")
+    if not admin or not admin.lgu:
+        raise HTTPException(404, "LGU not found")
 
-    if not admin_profile.lgu:
-        raise HTTPException(
-            status_code=404, detail="LGU record not linked to this admin profile"
-        )
+    lgu = admin.lgu
 
-    return admin_profile.lgu
+    # DB-level count (no need to load all rows)
+    baranggay_count = (
+        db.query(func.count(BaranggayRecords.id))
+        .filter(BaranggayRecords.lgu_id == lgu.id)
+        .scalar()
+    ) or 0
+
+    payload = {
+        "id": lgu.id,
+        "lgu_name": lgu.lgu_name,
+        "lat": float(lgu.lat) if lgu.lat is not None else None,
+        "lng": float(lgu.lng) if lgu.lng is not None else None,
+        "lgu_classification": lgu.lgu_classification,
+        "lgu_seal": to_abs_url(lgu.lgu_seal, request),
+        "hazard_pic": to_abs_url(lgu.hazard_pic, request),
+        "lgu_majorHazard": lgu.lgu_majorHazard,
+        "lgu_contact": lgu.lgu_contact,
+        "lgu_critical_facility": lgu.lgu_critical_facility,
+        "mayor": lgu.mayor,
+        "DRMMpersonel": lgu.DRMMpersonel,
+        "DRMM_contact": lgu.DRMM_contact,
+        "population": lgu.population,
+        "lgu_pwd": lgu.lgu_pwd,
+        "lgu_children": lgu.lgu_children,
+        "lgu_senior": lgu.lgu_senior,
+        "baranggay_count": baranggay_count,  # ← NEW
+    }
+
+    return LGUOut.model_validate(payload)
+
+
+def save_image_from_data_url(
+    data_url: str,
+    dest_dir: str = "media/lgu_info",  # <- write into the mounted folder
+    public_base: str = "/media/lgu_info",  # <- URL that matches your mount
+) -> str:
+    m = DATA_URL_RE.match(data_url)
+    if not m:
+        raise ValueError("Not a valid image data URL")
+
+    mime, b64 = m.groups()
+    ext = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/jpg": "jpg",
+        "image/webp": "webp",
+        "image/gif": "gif",
+        # add more if needed
+    }.get(mime, "bin")
+
+    os.makedirs(dest_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.{ext}"
+
+    with open(os.path.join(dest_dir, filename), "wb") as f:
+        f.write(base64.b64decode(b64))
+
+    # IMPORTANT: return the URL with the filename
+    return f"{public_base}/{filename}"
+
+
+def normalize_image_field(val: Optional[str]) -> Optional[str]:
+    if val is None:
+        return None  # explicit clear
+    if isinstance(val, str) and DATA_URL_RE.match(val):
+        return save_image_from_data_url(val)  # uses media/lgu_info by default
+    return val  # already a URL
+
+
+@router.put("/api/update_lgu")
+def patch_lgu(p: LGUPayload, db: Session = Depends(get_db)):
+    # 1) Load the row
+    lgu_id = p.id
+    rec = db.query(LGURecords).filter(LGURecords.id == lgu_id).first()
+    if not rec:
+        raise HTTPException(404, f"LGU with id={lgu_id} not found")
+
+    # 2) Only the fields sent by client
+    updates: Dict[str, Any] = p.model_dump(exclude_unset=True)
+
+    updates.pop("id")
+    # 3) Special handling for images
+    if "lgu_seal" in updates:
+        updates["lgu_seal"] = normalize_image_field(updates["lgu_seal"])
+
+    if "hazard_pic" in updates:
+        updates["hazard_pic"] = normalize_image_field(updates["hazard_pic"])
+
+    # 4) (Optional) Coerce/validate arrays if needed
+    # e.g., ensure lists for ARRAY(String) columns
+    if "lgu_majorHazard" in updates and updates["lgu_majorHazard"] is None:
+        updates["lgu_majorHazard"] = None  # explicit clear is allowed
+    if "lgu_critical_facility" in updates and updates["lgu_critical_facility"] is None:
+        updates["lgu_critical_facility"] = None
+
+    # 5) Apply updates
+    for k, v in updates.items():
+        print(f"key: {k}: value: {v}")
+        setattr(rec, k, v)
+
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    return {
+        "ok": True,
+        "message": "LGU record updated",
+        "id": rec.id,
+    }

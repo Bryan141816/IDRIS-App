@@ -91,7 +91,6 @@ app.include_router(distributionAndplanning.router)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 
-# ✅ Keep ONLY the officer router (exposes /lgu_profiling/me/lgu_location)
 app.include_router(lgu_officer_router)
 
 # ❌ Removed admin/manage LGU routers

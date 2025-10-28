@@ -6,7 +6,7 @@ from data_schemas.report_schema import TableResponse, Cell
 from schemas import ResponseReportOut, ResponseReportCreate
 from database import get_db
 from crud import delete, create_response_report
-from models import User
+from models import User, AdminUserProfile
 from routers.role_checker import RoleChecker, GetUserRoles
 import math
 from sqlalchemy import or_
@@ -42,8 +42,8 @@ def get_table(
 
     # ✅ Load both admin_user_profile AND user_profile relationships
     query = db.query(User).options(
-        joinedload(User.admin_user_profile),
-        joinedload(User.user_profile)  # ✅ Added for generic users
+        joinedload(User.admin_user_profile).joinedload(AdminUserProfile.lgu),  # ← add
+        joinedload(User.user_profile),
     )
 
     if "superadmin" not in user_role:
@@ -121,6 +121,7 @@ def get_table(
         # ✅ Collect admin profile data if available
         admin_profile_data = {}
         if report.admin_user_profile:
+            lgu_obj = report.admin_user_profile.lgu
             admin_profile_data = {
                 "first_name": report.admin_user_profile.first_name,
                 "last_name": report.admin_user_profile.last_name,
@@ -128,7 +129,8 @@ def get_table(
                 "department": report.admin_user_profile.department,
                 "position": report.admin_user_profile.position,
                 "contact_number": report.admin_user_profile.contact_number,
-                "lgu_location": report.admin_user_profile.lgu_location,
+                "lgu_id": report.admin_user_profile.lgu_id,
+                "lgu_name": lgu_obj.lgu_name if lgu_obj else None,  # ← include name
                 "employee_id": report.admin_user_profile.employee_id,
             }
 
@@ -139,7 +141,9 @@ def get_table(
                 "first_name": report.user_profile.first_name,
                 "last_name": report.user_profile.last_name,
                 "phone_number": report.user_profile.phone_number,
-                "birthday": str(report.user_profile.bday) if report.user_profile.bday else None,  # ✅ Convert to string
+                "birthday": (
+                    str(report.user_profile.bday) if report.user_profile.bday else None
+                ),  # ✅ Convert to string
                 "gender": report.user_profile.gender,
                 "address": report.user_profile.address,
                 "bio": report.user_profile.bio,
@@ -147,17 +151,71 @@ def get_table(
             }
 
         row_data = [
-            Cell(type="Hidden", text=str(report.user_id), font_weight=0, color="#000", width="0px"),
-            Cell(type="Hidden", text=str(report.roles), font_weight=0, color="#000", width="0px"),
+            Cell(
+                type="Hidden",
+                text=str(report.user_id),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
+            Cell(
+                type="Hidden",
+                text=str(report.roles),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
             # ✅ Store admin profile data as JSON string
-            Cell(type="Hidden", text=str(admin_profile_data), font_weight=0, color="#000", width="0px"),
+            Cell(
+                type="Hidden",
+                text=str(admin_profile_data),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
             # ✅ NEW: Store user profile data as JSON string in a new hidden cell
-            Cell(type="Hidden", text=str(user_profile_data), font_weight=0, color="#000", width="0px"),
-            Cell(type="Text", text=report.email, font_weight=500, color="#000", width="200px"),
-            Cell(type="Text", text=report.username, font_weight=500, color="#000", width="150px"),
-            Cell(type="Text", text=report.user_type, font_weight=500, color="#000", width="120px"),
-            Cell(type="Text", text=", ".join(report.roles), font_weight=500, color="#000", width="150px"),
-            Cell(type="Text", text=status, font_weight=600, color=status_color, width="120px"),
+            Cell(
+                type="Hidden",
+                text=str(user_profile_data),
+                font_weight=0,
+                color="#000",
+                width="0px",
+            ),
+            Cell(
+                type="Text",
+                text=report.email,
+                font_weight=500,
+                color="#000",
+                width="200px",
+            ),
+            Cell(
+                type="Text",
+                text=report.username,
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=report.user_type,
+                font_weight=500,
+                color="#000",
+                width="120px",
+            ),
+            Cell(
+                type="Text",
+                text=", ".join(report.roles),
+                font_weight=500,
+                color="#000",
+                width="150px",
+            ),
+            Cell(
+                type="Text",
+                text=status,
+                font_weight=600,
+                color=status_color,
+                width="120px",
+            ),
             last_row,
         ]
         pages["row"].append({"data": row_data})

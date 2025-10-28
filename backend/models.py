@@ -149,7 +149,7 @@ class AdminUserProfile(Base):
     contact_number = Column(String(20), nullable=True)
     position = Column(String(100), nullable=True)
     employee_id = Column(String(300), nullable=True)  # URL or path
-    lgu_location = Column(String(255), nullable=True)
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
 
     user_id = Column(
         String, ForeignKey("users.user_id"), nullable=False, unique=True
@@ -157,6 +157,7 @@ class AdminUserProfile(Base):
 
     # Relationship
     adminuser = relationship("User", back_populates="admin_user_profile")
+    lgu = relationship("LGURecords", backref="admin_profiles")  # ← add this
 
 
 class Notifications(Base):
@@ -226,53 +227,48 @@ class EvacuationCenter(Base):
 class LGURecords(Base):
     __tablename__ = "lgu_records"
 
-    # NEW: tie record to the account that owns it (one-to-one)
-    user_id = Column(
-        String,
-        ForeignKey("users.user_id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
-
     # Keep Python attr name `id` mapped to DB column "lgu_id"
-    id = Column("lgu_id", Integer, primary_key=True, index=True, server_default=Identity())
+    id = Column(
+        "lgu_id", Integer, primary_key=True, index=True, server_default=Identity()
+    )
 
     # === Coordinates (NEW) ===
     # Use Decimal with 6 dp for stable precision (roughly ~0.11 m at equator).
     # Nullable so you can backfill gradually. Add range checks + index.
-    lat = Column(Numeric(9, 6), nullable=True)   # -90..90
-    lng = Column(Numeric(9, 6), nullable=True)   # -180..180
+    lat = Column(Numeric(9, 6), nullable=True)  # -90..90
+    lng = Column(Numeric(9, 6), nullable=True)  # -180..180
 
     __table_args__ = (
-        CheckConstraint("lat IS NULL OR (lat >= -90 AND lat <= 90)", name="ck_lgu_lat_range"),
-        CheckConstraint("lng IS NULL OR (lng >= -180 AND lng <= 180)", name="ck_lgu_lng_range"),
+        CheckConstraint(
+            "lat IS NULL OR (lat >= -90 AND lat <= 90)", name="ck_lgu_lat_range"
+        ),
+        CheckConstraint(
+            "lng IS NULL OR (lng >= -180 AND lng <= 180)", name="ck_lgu_lng_range"
+        ),
         Index("ix_lgu_records_lat_lng", "lat", "lng"),
     )
 
     # === Core Fields (leader's new spec) ===
-    lgu_seal = Column(String, nullable=True)                      # Picture attachment
-    lgu_name = Column(String(255), nullable=False)                # string
-    lgu_classification = Column(String(255), nullable=False)      # dropdown
-    mayor = Column(String(255), nullable=True)                    # input
-    lgu_contact = Column(String(11), nullable=True)               # 11-digit number (string)
+    lgu_seal = Column(String, nullable=True)  # Picture attachment
+    lgu_name = Column(String(255), nullable=False)  # string
+    lgu_classification = Column(String(255), nullable=False)  # dropdown
+    mayor = Column(String(255), nullable=True)  # input
+    lgu_contact = Column(String(11), nullable=True)  # 11-digit number (string)
 
     # === DRRM / Hazards ===
-    lgu_majorHazard = Column(JSON, nullable=True)                 # checkbox (JSON array/object)
-    DRMMpersonel = Column(String(255), nullable=True)             # input
-    DRMM_contact = Column(String(11), nullable=True)              # 11-digit number (string)
-    hazard_pic = Column(String, nullable=True)                    # Picture attachment
+    lgu_majorHazard = Column(JSON, nullable=True)  # checkbox (JSON array/object)
+    DRMMpersonel = Column(String(255), nullable=True)  # input
+    DRMM_contact = Column(String(11), nullable=True)  # 11-digit number (string)
+    hazard_pic = Column(String, nullable=True)  # Picture attachment
 
     # === Facilities & Community Stats ===
-    lgu_critical_facility = Column(JSON, nullable=True)           # checkbox (JSON)
-    lgu_pwd = Column(Integer, nullable=True)                      # number
-    lgu_senior = Column(Integer, nullable=True)                   # number
-    lgu_children = Column(Integer, nullable=True)                 # number
+    lgu_critical_facility = Column(JSON, nullable=True)  # checkbox (JSON)
+    lgu_pwd = Column(Integer, nullable=True)  # number
+    lgu_senior = Column(Integer, nullable=True)  # number
+    lgu_children = Column(Integer, nullable=True)  # number
 
     # === Relationships (APPLIED) ===
-    baranggays = relationship(
-        "BaranggayRecords",
-        back_populates="lgu"
-    )
+    baranggays = relationship("BaranggayRecords", back_populates="lgu")
 
     hazards = relationship(
         "Hazard",
@@ -280,14 +276,16 @@ class LGURecords(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
 
     id = Column(Integer, index=True, primary_key=True, server_default=Identity())
     name = Column(String(255), nullable=False)
 
-    lat = Column(Float, nullable=False)
-    lng = Column(Float, nullable=False)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
 
     baranggay_pic = Column(String, nullable=True)
     baranggay_desc = Column(Text, nullable=True)

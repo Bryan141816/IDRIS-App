@@ -48,10 +48,7 @@ import real_time_handler
 
 # ✅ LGU officer location-only router
 from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
-
-# ❌ REMOVE these (LGU CRUD/Manage — not needed anymore)
-# from routers.lgu_profiling.LGUofficerManage import admin_router as admin_lgu_router
-# from routers.lgu_profiling import manage_lgu
+import insert_lgu_info
 
 import models  # ✅ correct import path for User model
 
@@ -61,6 +58,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+insert_lgu_info.insert_lgu_records_if_empty()
 # Initialize FastAPI app
 app = FastAPI()
 SECRET_KEY = config("SECRET_KEY")

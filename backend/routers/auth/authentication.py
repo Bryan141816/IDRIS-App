@@ -9,6 +9,7 @@ from fastapi import (
     File,
     Form,
 )
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from jose import JWTError
 from schemas import (
@@ -20,8 +21,12 @@ from schemas import (
     ForgotPasswordRequest,
     ResetPasswordRequest,
 )
-from models import User, UserProfile, AdminUserProfile
-from crud import (create_user, authenticate_user, get_user_by_email,  create_admin_user_profile,
+from models import User, UserProfile, AdminUserProfile, LGURecords
+from crud import (
+    create_user,
+    authenticate_user,
+    get_user_by_email,
+    create_admin_user_profile,
     get_admin_user_profile_by_user_id,
     activate_admin_user,
     get_pending_admin_activations,
@@ -291,10 +296,11 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         # ✅ Don't return tokens - user must activate first
         return {
             "message": "Registration successful! Please check your email to activate your account.",
-            "email": new_user.email
+            "email": new_user.email,
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.post("/login", response_model=TokenWithUserResponse)
 def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_db)):
@@ -310,8 +316,7 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
     if not user:
         print("❌ User NOT FOUND in database")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Account not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
         )
 
     print(f"✓ User found: ID={user.user_id}, Email={user.email}")
@@ -321,7 +326,7 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
         print("❌ Account NOT ACTIVATED")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account not activated. Please check your email to complete your profile."
+            detail="Account not activated. Please check your email to complete your profile.",
         )
 
     print("✓ Account is activated")
@@ -329,13 +334,13 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
     # Step 3: Verify password
     print("Checking password...")
     from auth import verify_password
+
     is_password_correct = verify_password(form_data.password, user.hashed_password)
 
     if not is_password_correct:
         print("❌ Password INCORRECT")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password"
         )
 
     print("✓ Password correct!")
@@ -359,7 +364,6 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 
-
 @router.post("/refresh")
 def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
     token = request.cookies.get(REFRESH_TOKEN_COOKIE)
@@ -380,6 +384,7 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 
     new_access_token = create_access_token(data={"sub": email})
     return {"access_token": new_access_token, "token_type": "bearer"}
+
 
 @router.post("/activate_account")
 async def activate_account(
@@ -412,6 +417,7 @@ async def activate_account(
             image_path = str(default_image_path).replace("\\", "/")
             if not default_image_path.exists():
                 from shutil import copyfile
+
                 bundled_default = Path("media/defaultProfile.webp")
                 copyfile(bundled_default, default_image_path)
 
@@ -431,7 +437,9 @@ async def activate_account(
             # Create new profile
             profile_db = UserProfile(
                 user_id=uid,
-                user_profile_id=uid_from_string(f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"),
+                user_profile_id=uid_from_string(
+                    f"{profile_data.get('fname')}{profile_data.get('lname')}{profile_data.get('birthday')}"
+                ),
                 first_name=profile_data.get("fname"),
                 last_name=profile_data.get("lname"),
                 profile_image=image_path,
@@ -457,19 +465,24 @@ async def activate_account(
         try:
             if user.user_type == "admin":
                 # For admins: notify superadmins for approval
-                await send_superadmin_approval_notification(user.email, user.user_id, db)
+                await send_superadmin_approval_notification(
+                    user.email, user.user_id, db
+                )
             else:
                 # ✅ For regular users: send activation confirmation email
                 await send_user_activated_email(user.email)
         except Exception as email_error:
             # Log the error but don't fail the request
-            print(f"WARNING: Failed to send activation email to {user.email}. Error: {email_error}")
+            print(
+                f"WARNING: Failed to send activation email to {user.email}. Error: {email_error}"
+            )
 
         return {"status": "success", "profile": profile_db.user_profile_id}
 
     except Exception as e:
         db.rollback()
         import traceback
+
         print("ERROR:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -527,8 +540,7 @@ def logout(response: Response):
 
 @router.post("/admin/register")
 async def register_admin(
-    user: UserCreate,
-    db: Session = Depends(get_db)  # ✅ Removed Response parameter
+    user: UserCreate, db: Session = Depends(get_db)  # ✅ Removed Response parameter
 ):
     """
     Register an admin user and send email verification
@@ -556,7 +568,7 @@ async def register_admin(
         return {
             "message": "Registration successful! Please check your email to complete your admin profile.",
             "email": new_admin.email,
-            "next_step": "Email verification required"
+            "next_step": "Email verification required",
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -574,7 +586,9 @@ async def verify_admin_email(
     # Verify token
     uid = verify_token(token, "activation")
     if not uid:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired verification token"
+        )
 
     # Get user
     user = db.query(User).filter(User.user_id == uid).first()
@@ -582,7 +596,9 @@ async def verify_admin_email(
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.user_type != "admin":
-        raise HTTPException(status_code=400, detail="This endpoint is for admin users only")
+        raise HTTPException(
+            status_code=400, detail="This endpoint is for admin users only"
+        )
 
     # Mark email as verified (you might want to add an email_verified field to your User model)
     # For now, we'll proceed to profile completion
@@ -590,7 +606,7 @@ async def verify_admin_email(
     return {
         "status": "success",
         "message": "Email verified. Please complete your admin profile.",
-        "user_id": uid
+        "user_id": uid,
     }
 
 
@@ -608,7 +624,9 @@ async def complete_admin_profile(
     # Verify token
     uid = verify_token(token, "activation")
     if not uid:
-        raise HTTPException(status_code=400, detail="Invalid or expired activation token")
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired activation token"
+        )
 
     try:
         profile_data = json.loads(profile_info)
@@ -632,7 +650,9 @@ async def complete_admin_profile(
             raise HTTPException(status_code=404, detail="User not found")
 
         if user.user_type != "admin":
-            raise HTTPException(status_code=400, detail="This endpoint is for admin users only")
+            raise HTTPException(
+                status_code=400, detail="This endpoint is for admin users only"
+            )
 
         # Check if profile already exists
         admin_profile = get_admin_user_profile_by_user_id(db, uid)
@@ -645,12 +665,13 @@ async def complete_admin_profile(
             admin_profile.department = profile_data.get("department")
             admin_profile.contact_number = profile_data.get("contactNumber")
             admin_profile.position = profile_data.get("position")
-            admin_profile.lgu_location = profile_data.get("lguLocation")
+            admin_profile.lgu_id = profile_data.get("lgu_id")
             if employee_id_path:
                 admin_profile.employee_id = employee_id_path
         else:
             # Create new admin profile
             from schemas import AdminUserProfileCreate
+
             admin_profile_data = AdminUserProfileCreate(
                 first_name=profile_data.get("firstName"),
                 last_name=profile_data.get("lastName"),
@@ -659,7 +680,7 @@ async def complete_admin_profile(
                 contact_number=profile_data.get("contactNumber"),
                 position=profile_data.get("position"),
                 employee_id=employee_id_path,
-                lgu_location=profile_data.get("lguLocation"),
+                lgu_id=profile_data.get("lgu_id"),
             )
             admin_profile = create_admin_user_profile(db, admin_profile_data, uid)
 
@@ -670,20 +691,24 @@ async def complete_admin_profile(
         try:
             await send_superadmin_new_admin_notification(user.email, user.username, db)
         except Exception as email_error:
-            print(f"WARNING: Failed to send superadmin notification. Error: {email_error}")
+            print(
+                f"WARNING: Failed to send superadmin notification. Error: {email_error}"
+            )
 
         return {
             "status": "success",
             "message": "Profile submitted. Waiting for superadmin approval.",
-            "profile_id": admin_profile.admin_user_profile_id
+            "profile_id": admin_profile.admin_user_profile_id,
         }
 
     except Exception as e:
         db.rollback()
         import traceback
+
         print("ERROR:", e)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/admin/activate/{user_id}")
 async def activate_admin_account(
@@ -699,7 +724,7 @@ async def activate_admin_account(
     if "superadmin" not in current_user.roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can activate admin accounts"
+            detail="Only superadmins can activate admin accounts",
         )
 
     # Get the admin user to activate
@@ -719,12 +744,14 @@ async def activate_admin_account(
     try:
         await send_admin_activated_email(admin_user.email)
     except Exception as email_error:
-        print(f"WARNING: Failed to send activation email to {admin_user.email}. Error: {email_error}")
+        print(
+            f"WARNING: Failed to send activation email to {admin_user.email}. Error: {email_error}"
+        )
 
     return {
         "status": "success",
         "message": f"Admin {admin_user.username} has been activated",
-        "user": activated_user
+        "user": activated_user,
     }
 
 
@@ -740,7 +767,7 @@ async def get_pending_activations(
     if "superadmin" not in current_user.roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can view pending activations"
+            detail="Only superadmins can view pending activations",
         )
 
     pending_admins = get_pending_admin_activations(db)
@@ -748,8 +775,9 @@ async def get_pending_activations(
     return {
         "status": "success",
         "count": len(pending_admins),
-        "pending_admins": pending_admins
+        "pending_admins": pending_admins,
     }
+
 
 @router.post("/get_user_from_token")
 async def get_user_from_token(
@@ -787,3 +815,14 @@ async def get_user_from_token(
         "roles": user.roles,
         "department": department,  # ✅ Derived from role
     }
+
+
+@router.get("/activate/get_lgu_list")
+def get_lgu_list(db: Session = Depends(get_db)):
+    stmt = select(LGURecords.id.label("lgu_id"), LGURecords.lgu_name).order_by(
+        LGURecords.lgu_name
+    )
+
+    result = db.execute(stmt).mappings().all()  # ← returns list of dict-like mappings
+    # If you want *plain* dicts:
+    return [dict(row) for row in result]

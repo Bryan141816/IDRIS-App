@@ -1,7 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict,Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 from typing import List, Optional, Union
-
 
 
 class ErrorResponse(BaseModel):
@@ -38,9 +37,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: Optional[str]
-    user_type: Optional[str] = "user"      # ✅ Added
-    user_role: Optional[str] = "generic"   # ✅ Added
-
+    user_type: Optional[str] = "user"  # ✅ Added
+    user_role: Optional[str] = "generic"  # ✅ Added
 
 
 # required on creation
@@ -48,6 +46,7 @@ class UserCreate(UserBase):
 
 class UserProfileSchema(BaseModel):
     profile_image: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -62,6 +61,7 @@ class UserSchema(UserBase):
     class Config:
         from_attributes = True
 
+
 # Admin User Schemas
 class AdminUserProfileCreate(BaseModel):
     first_name: str
@@ -71,7 +71,7 @@ class AdminUserProfileCreate(BaseModel):
     contact_number: Optional[str] = None
     position: Optional[str] = None
     employee_id: Optional[str] = None  # URL or path for ID image
-    lgu_location: Optional[str] = None
+    lgu_id: int
 
     class Config:
         from_attributes = True
@@ -85,7 +85,7 @@ class AdminUserProfileUpdate(BaseModel):
     contact_number: Optional[str] = None
     position: Optional[str] = None
     employee_id: Optional[str] = None
-    lgu_location: Optional[str] = None
+    lgu_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -101,7 +101,7 @@ class AdminUserProfileOut(BaseModel):
     contact_number: Optional[str] = None
     position: Optional[str] = None
     employee_id: Optional[str] = None
-    lgu_location: Optional[str] = None
+    lgu_id: int
     user_id: str
 
     class Config:
@@ -129,6 +129,7 @@ class AdminUserSchema(UserBase):
 
 class AdminActivationRequest(BaseModel):
     """Schema for admin account activation"""
+
     admin_user_id: str
     is_activated: bool
     approved_by: Optional[str] = None  # user_id of superadmin who approved
@@ -137,6 +138,7 @@ class AdminActivationRequest(BaseModel):
 
 class TokenWithAdminResponse(BaseModel):
     """Response schema after admin login"""
+
     access_token: str
     token_type: str
     user: AdminUserSchema
@@ -164,6 +166,7 @@ class EmergencyReportPerformanceMetrics(BaseModel):
     responseTimeTarget: float
     completionRate: float
     staffUtilization: float
+
 
 class EmergencyReportResponse(BaseModel):
     reportTitle: str
@@ -247,8 +250,10 @@ class LGURecordsOut(BaseModel):
     local_suppliers: Optional[List[str]] = None
 
     risk_level: Optional[int] = None
+
     class Config:
         from_attributes = True
+
 
 class BaranggayRecordsCreate(BaseModel):
     name: str
@@ -270,7 +275,7 @@ class BaranggayRecordsUpdate(BaseModel):
     lat: Optional[float] = None
     lng: Optional[float] = None
     LGU: Optional[str] = None
-    evacuation: Optional[str] = None   # None or "" means DETACH
+    evacuation: Optional[str] = None  # None or "" means DETACH
     population: Optional[Union[int, dict, list]] = None
     contact_info: Optional[str] = None
     risk_level: Optional[str] = None
@@ -295,6 +300,7 @@ class BaranggayRecordsOut(BaseModel):
     baranggay_desc: Optional[str] = None  # ✅ Include in the output model
     resources: Optional[dict] = None
 
+
 class RafiInfrastructureCreate(BaseModel):
     rafi_name: str
     lat: float
@@ -310,6 +316,7 @@ class RafiInfrastructureUpdate(BaseModel):
     rafi_desc: Optional[str] = None
     rafi_pic: Optional[str] = None
 
+
 class RafiInfrastructureOut(BaseModel):
     rafi_id: int
     rafi_name: str
@@ -320,6 +327,7 @@ class RafiInfrastructureOut(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class EvacuationCenterCreate(BaseModel):
     name: str
@@ -345,6 +353,7 @@ class HazardBase(BaseModel):
     image_url: Optional[str] = None
     action: Optional[str] = None
 
+
 # ---------- Create (LGU REQUIRED) ----------
 class LGUDetailOut(BaseModel):
     id: int
@@ -363,9 +372,11 @@ class LGUDetailOut(BaseModel):
     class Config:
         orm_mode = True
 
+
 class HazardCreate(HazardBase):
     # Was: lgu_id: int
     lgu_id: Optional[int] = None  # make optional or remove this line entirely
+
 
 # ---------- Update (all optional, including LGU) ----------
 class HazardUpdate(BaseModel):
@@ -375,6 +386,7 @@ class HazardUpdate(BaseModel):
     image_url: Optional[str] = None
     action: Optional[str] = None
 
+
 # ---------- Out (include LGU + timestamps) ----------
 class HazardOut(HazardBase):
     id: int
@@ -383,6 +395,8 @@ class HazardOut(HazardBase):
 
     class Config:
         from_attributes = True
+
+
 class ResponseReportCreate(BaseModel):
     report_type: str
     status: str

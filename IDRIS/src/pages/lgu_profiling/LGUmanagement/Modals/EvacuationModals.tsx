@@ -15,7 +15,7 @@ import { API } from "../../../../API_Handler/Axio_API_Handler";
 async function fetchLinkedBarangaysForEvac(evacId: string | number) {
   try {
     const res = await API.get(
-      `/lgu_profiling/manage_lgu/evacuation/${evacId}/linked_barangays`
+      `/lgu_profiling/manage_lgu/evacuation/${evacId}/linked_barangays`,
     );
     return res.data as { count: number; names: string[] };
   } catch (e) {
@@ -23,7 +23,6 @@ async function fetchLinkedBarangaysForEvac(evacId: string | number) {
     return { count: 0, names: [] };
   }
 }
-
 
 type addEvacuationModalProp = BaseModalProps & {
   handleAddEvacuation: (payload: any) => void;
@@ -63,13 +62,16 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
     setAddEvacuationForm((prev) => ({
       ...prev,
       lat: mapData.lat,
       lng: mapData.lng,
     }));
-  }
+  };
 
   const handleAddModalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -139,7 +141,10 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
                 }}
                 onClick={openLocationPicker}
               >
-                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
               </button>
             </div>
           </div>
@@ -170,7 +175,7 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
 
           <div className="action-button">
             <button
-              style={{ backgroundColor: "#749AB6", color: "#ffff"  }}
+              style={{ backgroundColor: "#749AB6", color: "#ffff" }}
               onClick={() => {
                 setMessageBox((prev) => ({
                   ...prev,
@@ -185,7 +190,10 @@ export const AddEvacuationModal: React.FC<addEvacuationModalProp> = ({
             >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D", color: "#ffff" }} onClick={closeModal}>
+            <button
+              style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
+              onClick={closeModal}
+            >
               Cancel
             </button>
           </div>
@@ -216,10 +224,16 @@ export const ViewEvecuationModal: React.FC<viewEvecuationModalProp> = ({
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">View Details</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
             <div className="more-options-container">
               <button onClick={toggleMoreOptionVisible}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
@@ -227,48 +241,49 @@ export const ViewEvecuationModal: React.FC<viewEvecuationModalProp> = ({
                     <FontAwesomeIcon icon={faPen} /> Edit Record
                   </button>
                   <button
-  style={{ color: "red" }}
-  onClick={async () => {
-    const evacId = selectedData.data[0].text;   // hidden id
-    const evacName = selectedData.data[1].text; // name
+                    style={{ color: "red" }}
+                    onClick={async () => {
+                      const evacId = selectedData.data[0].text; // hidden id
+                      const evacName = selectedData.data[1].text; // name
 
-    const { count, names } = await fetchLinkedBarangaysForEvac(evacId);
+                      const { count, names } =
+                        await fetchLinkedBarangaysForEvac(evacId);
 
-    if (count > 0) {
-      // show up to 5 to keep it readable
-      const shown = names.slice(0, 5).join(", ");
-      const more  = count > 5 ? ` and ${count - 5} more…` : "";
+                      if (count > 0) {
+                        // show up to 5 to keep it readable
+                        const shown = names.slice(0, 5).join(", ");
+                        const more = count > 5 ? ` and ${count - 5} more…` : "";
 
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "confirm",
-        message:
-          `Heads up: “${evacName}” is linked to ${count} barangay record(s): ` +
-          `${shown}${more}.\n\n` +
-          `Are you sure you want to delete this record?`,
-        onSubmit: () => {
-          // proceed with your normal delete (backend will still block if linked)
-          handleDeleteRecord(evacId);
-        },
-      }));
-    } else {
-      // normal confirm (your original flow)
-      setMessageBox((prev) => ({
-        ...prev,
-        isOpen: true,
-        type: "confirm",
-        message: "Are you sure you want to delete this record?",
-        onSubmit: () => {
-          handleDeleteRecord(evacId);
-        },
-      }));
-    }
-  }}
->
-  <FontAwesomeIcon icon={faTrash} /> Delete Record
-</button>
-
+                        setMessageBox((prev) => ({
+                          ...prev,
+                          isOpen: true,
+                          type: "confirm",
+                          message:
+                            `Heads up: “${evacName}” is linked to ${count} barangay record(s): ` +
+                            `${shown}${more}.\n\n` +
+                            `Are you sure you want to delete this record?`,
+                          onSubmit: () => {
+                            // proceed with your normal delete (backend will still block if linked)
+                            handleDeleteRecord(evacId);
+                          },
+                        }));
+                      } else {
+                        // normal confirm (your original flow)
+                        setMessageBox((prev) => ({
+                          ...prev,
+                          isOpen: true,
+                          type: "confirm",
+                          message:
+                            "Are you sure you want to delete this record?",
+                          onSubmit: () => {
+                            handleDeleteRecord(evacId);
+                          },
+                        }));
+                      }
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faTrash} /> Delete Record
+                  </button>
                 </div>
               )}
             </div>
@@ -287,7 +302,9 @@ export const ViewEvecuationModal: React.FC<viewEvecuationModalProp> = ({
         </div>
 
         <div className="horizontal-container">
-          <span className="item-details-identifier">Location: (Latitude, Longitude)</span>
+          <span className="item-details-identifier">
+            Location: (Latitude, Longitude)
+          </span>
           <span style={{ width: "100%", textAlign: "center" }}>
             {selectedData.data[2].text}, {selectedData.data[3].text}
           </span>
@@ -359,7 +376,10 @@ export const EditEvacuationModal: React.FC<editEvacuationModalProp> = ({
 
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
     setAddEvacuationForm((prev) => ({
       ...prev,
       lat: mapData.lat,
@@ -435,7 +455,10 @@ export const EditEvacuationModal: React.FC<editEvacuationModalProp> = ({
                 }}
                 onClick={openLocationPicker}
               >
-                <FontAwesomeIcon icon={faMapMarkerAlt} style={{ height: "20px" }} />
+                <FontAwesomeIcon
+                  icon={faMapMarkerAlt}
+                  style={{ height: "20px" }}
+                />
               </button>
             </div>
           </div>
@@ -474,7 +497,10 @@ export const EditEvacuationModal: React.FC<editEvacuationModalProp> = ({
                   type: "confirm",
                   message: "Are you sure you want to update this record?",
                   onSubmit: () => {
-                    handleEditRecord(selectedData.data[0].text, addEvacuationForm);
+                    handleEditRecord(
+                      selectedData.data[0].text,
+                      addEvacuationForm,
+                    );
                   },
                 }));
               }}

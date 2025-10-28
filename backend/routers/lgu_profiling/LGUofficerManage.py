@@ -11,8 +11,10 @@ from routers.auth.authentication import get_current_user_from_access_token
 
 router = APIRouter(prefix="/lgu_profiling", tags=["LGU Profiling"])
 
+
 class LGULocationOut(BaseModel):
-    lgu_location: str
+    lgu_id: int
+
 
 def _require_profile_with_location(user: User) -> str:
     """
@@ -32,6 +34,7 @@ def _require_profile_with_location(user: User) -> str:
         )
     return prof.lgu_location
 
+
 @router.get("/me/lgu_location", response_model=LGULocationOut)
 def get_my_lgu_location(
     current_user: User = Depends(get_current_user_from_access_token),
@@ -42,6 +45,7 @@ def get_my_lgu_location(
     """
     loc = _require_profile_with_location(current_user)
     return LGULocationOut(lgu_location=loc)
+
 
 # (Optional) short alias if you like
 @router.get("/me/location", response_model=LGULocationOut, include_in_schema=False)

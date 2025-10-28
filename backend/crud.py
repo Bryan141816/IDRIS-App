@@ -21,10 +21,11 @@ from schemas import (
     InKindMonitoringCreate,
     DemandAndResponseCreate,
     AdminUserProfileCreate,
-    AdminUserProfileUpdate
+    AdminUserProfileUpdate,
 )
 from crud_functions.utils import uid_from_string
 from sqlalchemy.orm import joinedload
+
 
 # Generic CRUD functions
 def get_by_id(db: Session, model, id):
@@ -121,12 +122,12 @@ def authenticate_user(db: Session, email: str, password: str):
         return False
     return user
 
+
 # Admin User Profile CRUD Functions
 
+
 def create_admin_user_profile(
-    db: Session,
-    admin_profile: AdminUserProfileCreate,
-    user_id: str
+    db: Session, admin_profile: AdminUserProfileCreate, user_id: str
 ) -> AdminUserProfile:
     """
     Create an admin user profile linked to a user account
@@ -143,8 +144,8 @@ def create_admin_user_profile(
         contact_number=admin_profile.contact_number,
         position=admin_profile.position,
         employee_id=admin_profile.employee_id,
-        lgu_location=admin_profile.lgu_location,
-        user_id=user_id
+        lgu_id=admin_profile.lgu_id,
+        user_id=user_id,
     )
     db.add(db_admin_profile)
     db.commit()
@@ -152,37 +153,45 @@ def create_admin_user_profile(
     return db_admin_profile
 
 
-def get_admin_user_profile_by_user_id(db: Session, user_id: str) -> Optional[AdminUserProfile]:
+def get_admin_user_profile_by_user_id(
+    db: Session, user_id: str
+) -> Optional[AdminUserProfile]:
     """
     Get admin profile by user_id
     """
-    return db.query(AdminUserProfile).filter(
-        AdminUserProfile.user_id == user_id
-    ).first()
+    return (
+        db.query(AdminUserProfile).filter(AdminUserProfile.user_id == user_id).first()
+    )
 
 
-def get_admin_user_profile_by_id(db: Session, admin_profile_id: str) -> Optional[AdminUserProfile]:
+def get_admin_user_profile_by_id(
+    db: Session, admin_profile_id: str
+) -> Optional[AdminUserProfile]:
     """
     Get admin profile by admin_user_profile_id
     """
-    return db.query(AdminUserProfile).filter(
-        AdminUserProfile.admin_user_profile_id == admin_profile_id
-    ).first()
+    return (
+        db.query(AdminUserProfile)
+        .filter(AdminUserProfile.admin_user_profile_id == admin_profile_id)
+        .first()
+    )
 
 
-def get_admin_user_profile_by_employee_id(db: Session, employee_id_number: str) -> Optional[AdminUserProfile]:
+def get_admin_user_profile_by_employee_id(
+    db: Session, employee_id_number: str
+) -> Optional[AdminUserProfile]:
     """
     Get admin profile by employee ID number
     """
-    return db.query(AdminUserProfile).filter(
-        AdminUserProfile.employee_idNumber == employee_id_number
-    ).first()
+    return (
+        db.query(AdminUserProfile)
+        .filter(AdminUserProfile.employee_idNumber == employee_id_number)
+        .first()
+    )
 
 
 def get_all_admin_user_profiles(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100
+    db: Session, skip: int = 0, limit: int = 100
 ) -> List[AdminUserProfile]:
     """
     Get all admin user profiles with pagination
@@ -191,9 +200,7 @@ def get_all_admin_user_profiles(
 
 
 def update_admin_user_profile(
-    db: Session,
-    user_id: str,
-    profile_update: AdminUserProfileUpdate
+    db: Session, user_id: str, profile_update: AdminUserProfileUpdate
 ) -> Optional[AdminUserProfile]:
     """
     Update admin user profile
@@ -237,9 +244,7 @@ def get_admin_user_with_profile(db: Session, user_id: str) -> Optional[User]:
 
 
 def get_all_admin_users_with_profiles(
-    db: Session,
-    skip: int = 0,
-    limit: int = 100
+    db: Session, skip: int = 0, limit: int = 100
 ) -> List[User]:
     """
     Get all admin users with their profiles
@@ -401,6 +406,7 @@ def create_response_dashboard_budget_create(
     db.add(db_record)
     db.commit()
     return db_record
+
 
 def get_superadmins(db: Session) -> List[User]:
     return db.query(User).filter(User.roles.contains(["superadmin"])).all()

@@ -230,8 +230,8 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
   const defaultForm: LGUOut = {
     id: 0,
     lgu_name: "",
-    lat: 0,
-    lng: 0,
+    lat: -1000000,
+    lng: -1000000,
     lgu_classification: "",
     lgu_seal: "",
     population: 0,
@@ -342,11 +342,14 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
           onClose={closeLocationPicker}
           defaultValue={{
             address: form.lgu_name,
-            coordinates: [form.lat ?? 0, form.lng ?? 0],
+            coordinates: [form.lat ?? -1000000, form.lng ?? -1000000],
           }}
           onSubmit={onLocationSelectSubmit}
           changeAddressOnclik={false}
-          autoSearch={form.lng === 0 && form.lat === 0}
+          autoSearch={
+            (form.lat === null && form.lng === null) ||
+            (form.lat === -1000000 && form.lng === -1000000)
+          }
         ></MapViewWithSearch>
       )}{" "}
       <Modal

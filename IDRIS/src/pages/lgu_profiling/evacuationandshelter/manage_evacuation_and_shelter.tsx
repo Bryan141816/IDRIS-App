@@ -9,11 +9,16 @@ import LocationPickerModal from "../../../components/Page_Furniture/LocationPick
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { Empty } from "antd";
-
+import { Barangay } from "../LGUofficer/LGUofficer";
+import { MapViewWithSearch } from "../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 /* ---------- helpers ---------- */
 const toL = (v?: string | null) => (v ?? "").toLowerCase();
 
-const deriveStatus = (occupied: number, capacity: number, provided?: string) => {
+const deriveStatus = (
+  occupied: number,
+  capacity: number,
+  provided?: string,
+) => {
   // prefer provided status if present
   const s = (provided ?? "").trim();
   if (s) return s;
@@ -36,10 +41,18 @@ const greenPinIcon = new L.Icon({
 
 const EvacuationAndShelter = () => {
   const navigate = useNavigate();
-  const evacuationCenterRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const statusSectionRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const barangayAssignmentRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const reportsRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const evacuationCenterRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const statusSectionRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const barangayAssignmentRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const reportsRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
 
@@ -47,6 +60,7 @@ const EvacuationAndShelter = () => {
     name: "",
     capacity: "",
     occupied: 0,
+    baranggay_id: 0,
     lat: 0,
     lng: 0,
   });
@@ -54,6 +68,13 @@ const EvacuationAndShelter = () => {
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
+  type barangayminiinfo = {
+    id: number;
+    name: string;
+    lat: number;
+    lng: number;
+    baranggay_pic: string;
+  };
   type Shelter = {
     id: string | number;
     name: string;
@@ -61,25 +82,40 @@ const EvacuationAndShelter = () => {
     lng: number;
     capacity: number;
     occupied: number;
-    status?: string;   // made optional
-    address?: string;
+    barangay?: barangayminiinfo[] | null;
   };
 
   const [shelters, setShelters] = useState<Shelter[]>([]);
-  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(null);
+  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(
+    null,
+  );
 
-  type EditModalType = { id: string | number; occupied: number; capacity: number } | null;
+  type EditModalType = {
+    id: string | number;
+    occupied: number;
+    capacity: number;
+  } | null;
   const [editModal, setEditModal] = useState<EditModalType>(null);
 
   const isLguAdmin =
-    (userType === "admin" && userRoles.includes("lgu officer")) || userRoles.includes("superadmin");
+    (userType === "admin" && userRoles.includes("lgu officer")) ||
+    userRoles.includes("superadmin");
 
   const scrollToSection = (ref: React.RefObject<HTMLDivElement>) =>
-    ref.current?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+      inline: "nearest",
+    });
 
-  const handleFormChange = (e: { target: { name: any; value: any; type: any } }) => {
+  const handleFormChange = (e: {
+    target: { name: any; value: any; type: any };
+  }) => {
     const { name, value, type } = e.target;
-    setCenterForm((prev) => ({ ...prev, [name]: type === "number" ? Number(value) : value }));
+    setCenterForm((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }));
   };
 
   const openPicker = () => setIsPickerOpen(true);
@@ -93,20 +129,43 @@ const EvacuationAndShelter = () => {
   const handleDropdownToggle = (id: string | number) =>
     setDropdownOpenId(id === dropdownOpenId ? null : id);
 
-  const handleEditClick = (id: string | number, occupied: number, capacity: number) => {
+  const handleEditClick = (
+    id: string | number,
+    occupied: number,
+    capacity: number,
+  ) => {
     setEditModal({ id, occupied, capacity });
     setDropdownOpenId(null);
   };
 
   const handleEditInput = (e: { target: { value: any } }) =>
     setEditModal((modal) =>
-      modal ? { id: modal.id, capacity: modal.capacity, occupied: Number(e.target.value) } : modal
+      modal
+        ? {
+            id: modal.id,
+            capacity: modal.capacity,
+            occupied: Number(e.target.value),
+          }
+        : modal,
     );
 
   const handleEditModalClose = () => setEditModal(null);
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-
+  const [barangayList, setBarangayList] = useState<Barangay[]>([]);
+  useEffect(() => {
+    if (isRegisterModalOpen) {
+      const fetch = async () => {
+        try {
+          const response = await API.get("/lgu_profiling/me/barangay_list");
+          setBarangayList(response.data);
+        } catch (e: any) {
+          console.error("Error fetching barangay: " + e.mesasge);
+        }
+      };
+      fetch();
+    }
+  }, [isRegisterModalOpen]);
   const handleEditSave = async () => {
     if (!editModal) return;
 
@@ -120,20 +179,25 @@ const EvacuationAndShelter = () => {
     }
 
     // Find the shelter object by id
-    const shelterToUpdate = shelters.find((shelter) => shelter.id === editModal.id);
+    const shelterToUpdate = shelters.find(
+      (shelter) => shelter.id === editModal.id,
+    );
     if (!shelterToUpdate) {
       await Swal.fire("Error", "Shelter not found.", "error");
       return;
     }
 
     try {
-      await API.put(`/lgu_profiling/manage_lgu/update_evacuation/${editModal.id}`, {
-        name: shelterToUpdate.name,
-        lat: shelterToUpdate.lat,
-        lng: shelterToUpdate.lng,
-        capacity: shelterToUpdate.capacity,
-        occupied: editModal.occupied, // use updated value
-      });
+      await API.put(
+        `/lgu_profiling/manage_lgu/update_evacuation/${editModal.id}`,
+        {
+          name: shelterToUpdate.name,
+          lat: shelterToUpdate.lat,
+          lng: shelterToUpdate.lng,
+          capacity: shelterToUpdate.capacity,
+          occupied: editModal.occupied, // use updated value
+        },
+      );
       setEditModal(null);
       await Swal.fire("Success", "Evacuee count updated!", "success");
       fetchShelters();
@@ -173,11 +237,19 @@ const EvacuationAndShelter = () => {
         return;
       }
       if (!payload.lat || !payload.lng) {
-        await Swal.fire("Required", "Please pick a location on the map.", "warning");
+        await Swal.fire(
+          "Required",
+          "Please pick a location on the map.",
+          "warning",
+        );
         return;
       }
       if (Number(payload.occupied) < 0 || Number(payload.capacity) < 0) {
-        await Swal.fire("Error", "Capacity and occupied must be non-negative.", "error");
+        await Swal.fire(
+          "Error",
+          "Capacity and occupied must be non-negative.",
+          "error",
+        );
         return;
       }
       if (Number(payload.occupied) > Number(payload.capacity)) {
@@ -186,15 +258,22 @@ const EvacuationAndShelter = () => {
       }
 
       if (editingId) {
-        await API.put(`/lgu_profiling/manage_lgu/add_evacuation/${editingId}`, payload);
+        await API.put(`/lgu_profiling/api/add_evacuation/`, payload);
         await Swal.fire("Updated", "Evacuation center updated.", "success");
       } else {
-        await API.post("/lgu_profiling/manage_lgu/add_evacuation", payload);
+        await API.post("/lgu_profiling/api/add_evacuation", payload);
         setIsRegisterModalOpen(false);
         await Swal.fire("Created", "Evacuation center created.", "success");
       }
 
-      setCenterForm({ name: "", capacity: "", occupied: 0, lat: 0, lng: 0 });
+      setCenterForm({
+        name: "",
+        capacity: "",
+        occupied: 0,
+        lat: 0,
+        lng: 0,
+        baranggay_id: -1,
+      });
       setEditingId(null);
       fetchShelters();
     } catch {
@@ -205,7 +284,7 @@ const EvacuationAndShelter = () => {
   async function fetchAddress(lat: any, lng: any) {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
       );
       const data = await response.json();
       return data.display_name || "";
@@ -216,39 +295,32 @@ const EvacuationAndShelter = () => {
 
   async function fetchShelters() {
     try {
-      const response = await API.get("/lgu_profiling/manage_lgu/get_evacuation");
+      const response = await API.get("/lgu_profiling/api/get_evacuation");
 
-      const evacData = response.data.table_datas.flatMap((page: { row: any[] }) =>
-        page.row.map((row) => {
-          const cells = row.data;
-          return {
-            id: cells[0].text,
-            name: cells[1].text,
-            lat: parseFloat(cells[2].text),
-            lng: parseFloat(cells[3].text),
-            capacity: parseInt(cells[4].text, 10),
-            occupied: parseInt(cells[5].text, 10),
-            // If backend provides a status in a later column, include it safely:
-            status: cells[6]?.text ?? undefined,
-          } as Shelter;
-        })
-      );
-
-      const enriched = await Promise.all(
-        evacData.map(async (shelter: Shelter) => ({
-          ...shelter,
-          address: await fetchAddress(shelter.lat, shelter.lng),
-        }))
-      );
-      setShelters(enriched);
+      setShelters(response.data);
     } catch {
       // swallow for now; you can add toast/log if needed
     }
   }
 
+  const getBarangayCoordinate = (id: number): [number, number] | null => {
+    const b = barangayList.find((b) => b.id === id);
+    return b && b.lat != null && b.lng != null ? [b.lat, b.lng] : null;
+  };
+
   useEffect(() => {
     fetchShelters();
   }, []);
+  const onLocationSelectSubmit = (
+    address: string,
+    coordinates: [number, number],
+  ) => {
+    setCenterForm((prev) => ({
+      ...prev,
+      lat: coordinates[0],
+      lng: coordinates[1],
+    }));
+  };
 
   return (
     <>
@@ -262,7 +334,8 @@ const EvacuationAndShelter = () => {
             <div className="status-content">
               <h3>Shelters Occupied</h3>
               <p className="status-number">
-                {shelters.filter((s) => s.occupied > 0).length}/{shelters.length}
+                {shelters.filter((s) => s.occupied > 0).length}/
+                {shelters.length}
               </p>
               <span className="status-label">Assigned to shelters</span>
             </div>
@@ -276,7 +349,9 @@ const EvacuationAndShelter = () => {
               <p className="status-number">
                 {shelters.reduce((total, s) => total + s.occupied, 0)}
               </p>
-              <span className="status-label">Across {shelters.length} locations</span>
+              <span className="status-label">
+                Across {shelters.length} locations
+              </span>
             </div>
           </div>
           <div className="status-card info">
@@ -287,15 +362,21 @@ const EvacuationAndShelter = () => {
               <h3>Available Capacity</h3>
               <p className="status-number">
                 {Math.round(
-                  (shelters.reduce((total, s) => total + (s.capacity - s.occupied), 0) /
+                  (shelters.reduce(
+                    (total, s) => total + (s.capacity - s.occupied),
+                    0,
+                  ) /
                     shelters.reduce((total, s) => total + s.capacity, 1)) *
-                    100
+                    100,
                 )}
                 %
               </p>
               <span className="status-label">
-                {shelters.reduce((total, s) => total + (s.capacity - s.occupied), 0)} available
-                capacity
+                {shelters.reduce(
+                  (total, s) => total + (s.capacity - s.occupied),
+                  0,
+                )}{" "}
+                available capacity
               </span>
             </div>
           </div>
@@ -306,8 +387,12 @@ const EvacuationAndShelter = () => {
           <section className="quick-actions">
             <h2>Quick Actions</h2>
             <div className="action-buttons">
-              <button className="action-btn primary" onClick={() => setIsRegisterModalOpen(true)}>
-                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation Center
+              <button
+                className="action-btn primary"
+                onClick={() => setIsRegisterModalOpen(true)}
+              >
+                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation
+                Center
               </button>
               <button
                 className="action-btn secondary"
@@ -317,7 +402,9 @@ const EvacuationAndShelter = () => {
               </button>
               <button
                 className="action-btn secondary"
-                onClick={() => navigate("/lgu_profiling/shelter_report_dashboard")}
+                onClick={() =>
+                  navigate("/lgu_profiling/shelter_report_dashboard")
+                }
               >
                 <i className="fas fa-file-alt"></i>Generate Reports
               </button>
@@ -330,7 +417,8 @@ const EvacuationAndShelter = () => {
             <section className="map-section">
               <div className="section-header">
                 <h2>
-                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps and Occupancy
+                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps
+                  and Occupancy
                 </h2>
               </div>
               <div className="map-container">
@@ -362,74 +450,91 @@ const EvacuationAndShelter = () => {
             {shelters.length === 0 ? (
               <Empty description="No shelters added yet" />
             ) : (
-              shelters.map(({ id, name, address, capacity, occupied, status }) => {
-                const capacityPercent =
-                  capacity === 0 ? 0 : Math.min(100, Math.round((occupied / capacity) * 100));
-                const statusLabel = deriveStatus(occupied, capacity, status);
+              shelters.map(
+                ({ id, name, capacity, occupied, lat, lng, barangay }) => {
+                  const capacityPercent =
+                    capacity === 0
+                      ? 0
+                      : Math.min(100, Math.round((occupied / capacity) * 100));
+                  const statusLabel = deriveStatus(occupied, capacity);
 
-                return (
-                  <div className="shelter-item" key={id} style={{ position: "relative" }}>
-                    <div className="shelter-info">
-                      <h4 className="shelter-title-row">
-                        <span>{name}</span>
-                        {isLguAdmin && (
-                          <>
-                            <button
-                              className="kebab-menu-btn"
-                              aria-label="Options"
-                              onClick={() => handleDropdownToggle(id)}
-                              type="button"
-                            >
-                              <span className="kebab-menu-icon">⋮</span>
-                            </button>
-                            {dropdownOpenId === id && (
-                              <div className="kebab-dropdown">
-                                <button
-                                  className="kebab-dropdown-item"
-                                  onClick={() => handleEditClick(id, occupied, capacity)}
-                                >
-                                  <i className="fas fa-edit"></i> Edit
-                                </button>
-                                <button
-                                  className="kebab-dropdown-item danger"
-                                  onClick={() => handleDeleteClick(id)}
-                                >
-                                  <i className="fas fa-trash"></i> Delete
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </h4>
-
-                      {address ? (
-                        <p>
-                          <i className="fas fa-map-marker-alt" /> {address}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div className="shelter-stats">
-                      <div className="capacity-bar">
-                        <div className="capacity-fill" style={{ width: `${capacityPercent}%` }} />
+                  return (
+                    <div
+                      className="shelter-item"
+                      key={id}
+                      style={{ position: "relative" }}
+                    >
+                      <div className="shelter-info">
+                        <h4 className="shelter-title-row">
+                          <span>
+                            {name} ({lat}, {lng})
+                          </span>
+                          {isLguAdmin && (
+                            <>
+                              <button
+                                className="kebab-menu-btn"
+                                aria-label="Options"
+                                onClick={() => handleDropdownToggle(id)}
+                                type="button"
+                              >
+                                <span className="kebab-menu-icon">⋮</span>
+                              </button>
+                              {dropdownOpenId === id && (
+                                <div className="kebab-dropdown">
+                                  <button
+                                    className="kebab-dropdown-item"
+                                    onClick={() =>
+                                      handleEditClick(id, occupied, capacity)
+                                    }
+                                  >
+                                    <i className="fas fa-edit"></i> Edit
+                                  </button>
+                                  <button
+                                    className="kebab-dropdown-item danger"
+                                    onClick={() => handleDeleteClick(id)}
+                                  >
+                                    <i className="fas fa-trash"></i> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </h4>
                       </div>
-                      <span className="capacity-text">
-                        {occupied}/{capacity} people
-                      </span>
-                      <span className="capacity-percent">{capacityPercent}%</span>
-                    </div>
 
-                    <span className={`shelter-badge ${toL(statusLabel)}`}>{statusLabel}</span>
-                  </div>
-                );
-              })
+                      <div className="shelter-stats">
+                        <div className="capacity-bar">
+                          <div
+                            className="capacity-fill"
+                            style={{ width: `${capacityPercent}%` }}
+                          />
+                        </div>
+                        <span className="capacity-text">
+                          {occupied}/{capacity} people
+                        </span>
+                        <span className="capacity-percent">
+                          {capacityPercent}%
+                        </span>
+                      </div>
+
+                      <span className={`shelter-badge ${toL(statusLabel)}`}>
+                        Status: {statusLabel}
+                      </span>
+                      <span>
+                        Barrangay Assigned:{" "}
+                        {barangay && String(barangay[0].name)}
+                      </span>
+                    </div>
+                  );
+                },
+              )
             )}
           </div>
         </section>
 
         {/* Edit Modal */}
         {editModal && (
-          <div className="modal-backdrop">
+          <div className="modal-backdrop" style={{ zIndex: 900 }}>
             <div className="modal">
               <h3>Edit number of evacuees</h3>
               <p>Max: {editModal.capacity} people.</p>
@@ -442,7 +547,10 @@ const EvacuationAndShelter = () => {
                 className="modal-input"
               />
               <div className="modal-actions">
-                <button onClick={handleEditModalClose} className="modal-btn cancel">
+                <button
+                  onClick={handleEditModalClose}
+                  className="modal-btn cancel"
+                >
                   Cancel
                 </button>
                 <button onClick={handleEditSave} className="modal-btn save">
@@ -454,13 +562,17 @@ const EvacuationAndShelter = () => {
         )}
 
         {isRegisterModalOpen && (
-          <div className="modal-backdrop">
+          <div className="modal-backdrop" style={{ zIndex: 900 }}>
             <div className="modal">
               <div className="modal-header">
                 <h3>
-                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation Center
+                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation
+                  Center
                 </h3>
-                <button className="modal-close" onClick={() => setIsRegisterModalOpen(false)}>
+                <button
+                  className="modal-close"
+                  onClick={() => setIsRegisterModalOpen(false)}
+                >
                   &times;
                 </button>
               </div>
@@ -477,6 +589,47 @@ const EvacuationAndShelter = () => {
                     required
                   />
                 </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Barangay</label>
+
+                    <select
+                      style={{ width: "210%" }}
+                      value={centerForm.baranggay_id ?? ""}
+                      onChange={(e) =>
+                        setCenterForm((prev) => ({
+                          ...prev,
+                          baranggay_id: Number(e.target.value), // ✅ cast to number if your ID is numeric
+                        }))
+                      }
+                    >
+                      {barangayList.length === 0 ? (
+                        <option disabled value={-1}>
+                          Fetching data...
+                        </option>
+                      ) : (
+                        <>
+                          <option value={-1}>Select Barangay</option>
+
+                          {barangayList
+                            .filter((item) => !item.evacucation_center_id) // show only barangays without evac center
+                            .map((item) => (
+                              <option
+                                key={item.id}
+                                value={item.id}
+                                disabled={!(item.lat && item.lng)} // disable if no location
+                              >
+                                {item.name}
+                                {!item.lat || !item.lng
+                                  ? " (Missing some info)"
+                                  : ""}
+                              </option>
+                            ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
 
                 <div className="form-group">
                   <label>Location (Latitude, Longitude)</label>
@@ -485,7 +638,11 @@ const EvacuationAndShelter = () => {
                       type="text"
                       readOnly
                       placeholder="Select a location"
-                      value={centerForm.lat ? `${centerForm.lat}, ${centerForm.lng}` : ""}
+                      value={
+                        centerForm.lat
+                          ? `${centerForm.lat}, ${centerForm.lng}`
+                          : ""
+                      }
                     />
                     <button
                       type="button"
@@ -513,7 +670,9 @@ const EvacuationAndShelter = () => {
                   </div>
                 </div>
 
-                {editingId && <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>}
+                {editingId && (
+                  <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>
+                )}
 
                 <div className="modal-actions">
                   <button
@@ -525,7 +684,9 @@ const EvacuationAndShelter = () => {
                   </button>
                   <button type="submit" className="modal-btn save">
                     <i className="fas fa-save"></i>{" "}
-                    {editingId ? "Update Evacuation Center" : "Save Evacuation Center"}
+                    {editingId
+                      ? "Update Evacuation Center"
+                      : "Save Evacuation Center"}
                   </button>
                 </div>
               </form>
@@ -533,16 +694,18 @@ const EvacuationAndShelter = () => {
           </div>
         )}
 
-        {isPickerOpen && (
-          <div className="location-picker-modal">
-            <LocationPickerModal
-              isOpenProp={isPickerOpen}
-              onCloseProp={closePicker}
-              onSubmit={handlePickerSubmit}
-              lat={centerForm.lat}
-              lng={centerForm.lng}
-            />
-          </div>
+        {isPickerOpen && centerForm.baranggay_id != -1 && (
+          <MapViewWithSearch
+            onClose={() => setIsPickerOpen(false)}
+            onSubmit={onLocationSelectSubmit}
+            defaultValue={{
+              address: ``,
+              coordinates: [-1000000, -1000000],
+            }}
+            customCenter={
+              getBarangayCoordinate(centerForm.baranggay_id) ?? null
+            }
+          ></MapViewWithSearch>
         )}
       </main>
     </>

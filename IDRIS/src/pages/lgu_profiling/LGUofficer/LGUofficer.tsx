@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "../css/LGUofficermanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
-import { API } from "../../../API_Handler/Axio_API_Handler";
 import defaultpicture from "../../../../public/images/defaultpicture.jpg";
 import { getMyLGULocation } from "../../../API_Handler/lguprofiling/LGUofficer";
 import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
@@ -18,8 +17,6 @@ import {
 import {
   BarangayViewModal,
   BarangayEditModal,
-  BarangayCreateModal,
-  BarangayDeleteModal,
   type MyBarangay,
 } from "./Modals/BarangayModal";
 
@@ -31,8 +28,37 @@ import {
   RAFFIDeleteModal,
   type RAFFIRecord,
 } from "./Modals/RAFIInfrastructure";
-
+import { API } from "../../../API_Handler/Axio_API_Handler";
 /* ========================= TYPES ========================= */
+
+export interface Evacuation {
+  name: string;
+  evacuation_id: number;
+  capacity: number;
+  lng: number;
+  lat: number;
+  occupied: number;
+}
+
+export interface Barangay {
+  id: number;
+  name: string;
+  lat: number | null;
+  lng: number | null;
+  barangay_captain: string | null;
+  total_population: number | null;
+  barangay_pwd: number | null;
+  barangay_children: number | null;
+  barangay_senior: number | null;
+  baranggay_pic: string | null;
+  contact_info: string | null;
+  household_count: number | null;
+  lgu_id: number;
+  evacucation_center_id: number | null;
+  common_hazards: string[] | null; // assuming it can be multiple hazards
+  evacucation_center: Evacuation | null;
+}
+
 type MessageBoxState = {
   isOpen: boolean;
   type: "message" | "confirm";
@@ -134,11 +160,16 @@ const sampleRAFFIs: RAFFIRow[] = [
 const LGUofficer: React.FC = () => {
   const [myLGULocation, setMyLGULocation] = useState<LGUOut | null>(null);
   const [loadingLGU, setLoadingLGU] = useState<boolean>(true);
-  const [selectedData, setSelectedData] = useState<LGUOut | null>(null);
+  const [selectedData, setSelectedData] = useState<LGUOut | Barangay | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState("");
-
-  const openModal = (type: string, selected: LGUOut | null = null) => {
+  const [barangayList, setBarangayList] = useState<Barangay[]>([]);
+  const openModal = (
+    type: string,
+    selected: LGUOut | Barangay | null = null,
+  ) => {
     setActiveModal(type);
     if (selected) {
       setSelectedData(selected);
@@ -149,6 +180,15 @@ const LGUofficer: React.FC = () => {
     setSelectedData(null);
   };
   // Fetch LGU location
+  //
+  const fetchBarangay = async () => {
+    try {
+      const response = await API.get("/lgu_profiling/me/barangay_list");
+      setBarangayList(response.data);
+    } catch (e: any) {
+      console.error("Error fetching barangay: " + e.mesasge);
+    }
+  };
   useEffect(() => {
     let isMounted = true;
     (async () => {
@@ -164,14 +204,25 @@ const LGUofficer: React.FC = () => {
         if (isMounted) setLoadingLGU(false);
       }
     })();
+    fetchBarangay();
     return () => {
       isMounted = false;
     };
   }, []);
 
+  function isLGUOut(x: LGUOut | Barangay): x is LGUOut {
+    // pick fields unique to LGUOut
+    return typeof (x as LGUOut).lgu_name === "string";
+  }
+
+  function isBarangay(x: LGUOut | Barangay): x is Barangay {
+    // pick fields unique to Barangay
+    return typeof (x as Barangay).name === "string";
+  }
+
   return (
     <>
-      {activeModal === "view-lgu" && selectedData && (
+      {activeModal === "view-lgu" && selectedData && isLGUOut(selectedData) && (
         <MyLGUViewModal
           closeModal={closeModal}
           onOpenEdit={() => {
@@ -180,12 +231,35 @@ const LGUofficer: React.FC = () => {
           data={selectedData}
         ></MyLGUViewModal>
       )}
-      {activeModal === "edit-modal" && selectedData && (
-        <MyLGUEditModal
-          closeModal={closeModal}
-          data={selectedData}
-        ></MyLGUEditModal>
-      )}
+      {activeModal === "edit-modal" &&
+        selectedData &&
+        isLGUOut(selectedData) && (
+          <MyLGUEditModal
+            closeModal={closeModal}
+            data={selectedData}
+          ></MyLGUEditModal>
+        )}
+      {activeModal === "view-barangay" &&
+        selectedData &&
+        isBarangay(selectedData) && (
+          <BarangayViewModal
+            closeModal={closeModal}
+            data={selectedData}
+          ></BarangayViewModal>
+        )}
+      {activeModal === "edit-barangay" &&
+        myLGULocation &&
+        myLGULocation.lat &&
+        myLGULocation.lng &&
+        selectedData &&
+        isBarangay(selectedData) && (
+          <BarangayEditModal
+            lgu_name={myLGULocation?.lgu_name}
+            closeModal={closeModal}
+            data={selectedData}
+            lgu_coordinate={[myLGULocation.lat, myLGULocation.lng]}
+          ></BarangayEditModal>
+        )}
       <div className="app-container">
         <header className="lgu-page-header">
           <h1 className="lgu-page-title">
@@ -276,23 +350,78 @@ const LGUofficer: React.FC = () => {
             <table className="barangay-table">
               <thead>
                 <tr>
-                  <th>Barangay</th>
-                  <th>Location</th>
+                  <th>Name</th>
+                  <th>Coordinates</th>
+                  <th>Contact</th>
                   <th>Captain</th>
+                  <th>Total Household </th>
+                  <th>Total Population</th>
                   <th>Evacuation</th>
                   <th className="col-action">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {/* Render rows here. For now, show an empty state. */}
-                <tr>
-                  <td
-                    colSpan={5}
-                    style={{ textAlign: "center", padding: "1rem" }}
-                  >
-                    {loadingLGU ? "Loading..." : "No barangays to display."}
-                  </td>
-                </tr>
+                {barangayList.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      style={{ textAlign: "center", padding: "1rem" }}
+                    >
+                      {loadingLGU ? "Loading..." : "No barangays to display."}
+                    </td>
+                  </tr>
+                ) : (
+                  barangayList.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.name}</td>
+                      <td>
+                        {item.lat && item.lng
+                          ? `${item.lat}, ${item.lng}`
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        {item.contact_info
+                          ? item.contact_info
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        {item.barangay_captain
+                          ? item.barangay_captain
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        {item.household_count
+                          ? item.household_count
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        {item.total_population
+                          ? item.total_population
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        {item.evacucation_center
+                          ? item.evacucation_center?.name
+                          : "Not yet assigned"}
+                      </td>
+                      <td>
+                        <button
+                          className="action-btn"
+                          onClick={() => openModal("view-barangay", item)}
+                        >
+                          View
+                        </button>
+                        <button
+                          className="action-btn"
+                          onClick={() => openModal("edit-barangay", item)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

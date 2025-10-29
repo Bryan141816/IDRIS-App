@@ -13,6 +13,7 @@ interface MapViewWithSearchProp {
   onSubmit: (address: string, coordinates: [number, number]) => void;
   changeAddressOnclik?: boolean;
   autoSearch?: boolean;
+  customCenter?: [number, number] | null;
 }
 
 interface Geometry {
@@ -58,6 +59,7 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   defaultValue,
   changeAddressOnclik = true,
   autoSearch = false,
+  customCenter = null,
 }) => {
   const [initialized, setInitialized] = useState(false);
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
@@ -68,10 +70,12 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   const [center, setCenter] = useState<[number, number]>(
     defaultValue.coordinates[0] !== -1000000
       ? defaultValue.coordinates
-      : [10.359353, 123.868891],
+      : customCenter
+        ? customCenter
+        : [10.359353, 123.868891],
   ); // latitude, longitude
   const [zoom, setZoom] = useState(
-    defaultValue.coordinates[0] !== -1000000 ? 17 : 12,
+    defaultValue.coordinates[0] !== -1000000 || customCenter ? 17 : 12,
   );
   const [recommendedLocation, setRecommendedLocation] = useState<Feature[]>([]);
   const [searchFound, setSearchFound] = useState(false);
@@ -181,6 +185,10 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
       setSearchFound(false);
       const search = async () => {
         try {
+          let center = [10.359353, 123.868891];
+          if (customCenter) {
+            center = customCenter;
+          }
           const response = await axios.get(
             `https://photon.komoot.io/api/?q=${debouncedSearch}&lat=${10.359353}&lon=${123.868891}`,
           );

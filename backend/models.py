@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from enum import unique
+from enum import auto, unique
 from asyncio.base_events import Server
 from contextlib import nullcontext
 from datetime import timezone
@@ -207,8 +207,7 @@ class EvacuationCenter(Base):
     __tablename__ = "evacuation_center"
     __random_pk_field__ = "evacuation_id"
 
-    id = Column(Integer, index=True, server_default=Identity())
-    evacuation_id = Column(Integer, primary_key=True)
+    evacuation_id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -219,7 +218,6 @@ class EvacuationCenter(Base):
     barangay = relationship(
         "BaranggayRecords",
         back_populates="evacucation_center",
-        cascade="all, delete-orphan",
         passive_deletes=True,
     )
 
@@ -290,10 +288,11 @@ class BaranggayRecords(Base):
     lng = Column(Float, nullable=True)
 
     baranggay_pic = Column(String, nullable=True)
-    baranggay_desc = Column(Text, nullable=True)
-    resources = Column(JSON, nullable=True)
     contact_info = Column(String(255), nullable=True)
-    population = Column(JSON, nullable=True)
+    barangay_captain = Column(String(255), nullable=True)
+
+    household_count = Column(Integer, nullable=True)
+    total_population = Column(Integer, nullable=True)
 
     lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     evacucation_center_id = Column(
@@ -301,6 +300,10 @@ class BaranggayRecords(Base):
         ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
         nullable=True,
     )
+    common_hazards = Column(ARRAY(String), nullable=True)
+    barangay_pwd = Column(Integer, nullable=True)
+    barangay_senior = Column(Integer, nullable=True)
+    barangay_children = Column(Integer, nullable=True)
 
     lgu = relationship("LGURecords", back_populates="baranggays")
     evacucation_center = relationship(

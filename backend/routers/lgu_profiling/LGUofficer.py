@@ -10,7 +10,14 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
-from models import User, LGURecords, AdminUserProfile, LGURecords, BaranggayRecords
+from models import (
+    User,
+    LGURecords,
+    AdminUserProfile,
+    LGURecords,
+    BaranggayRecords,
+    EvacuationCenter,
+)
 from routers.auth.authentication import get_current_user_from_access_token
 from schemas import LGURecordsUpdate, LGURecordsOut
 from routers.GetUserId import GetUserId
@@ -22,6 +29,41 @@ logger = logging.getLogger(__name__)
 # Prefix matches your logs: /lgu_profiling/...
 router = APIRouter(prefix="/lgu_profiling", tags=["LGU Profiling"])
 DATA_URL_RE = re.compile(r"^data:(image/\w+);base64,(.+)$")
+
+
+class BarangayMiniOut(BaseModel):
+    id: int
+    name: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    baranggay_pic: Optional[str] = None
+
+    class Config:
+        orm_mode = True  # v1
+        # from_attributes = True  # v2
+
+
+class EvacuationWithBarangaysOut(BaseModel):
+    evacuation_id: int
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+    occupied: int
+    barangay: List[BarangayMiniOut]  # nested list
+
+    class Config:
+        orm_mode = True
+        # from_attributes = True
+
+
+class EvacuationOut(BaseModel):
+    evacuation_id: int
+    name: str
+    lat: float
+    lng: float
+    capacity: int
+    occupied: int
 
 
 class LGUOut(BaseModel):
@@ -71,6 +113,25 @@ class LGUPayload(BaseModel):
     lgu_contact: Optional[str] = None
     population: Optional[int] = None
     lgu_critical_facility: Optional[List[str]] = None
+
+
+class BarangayRecordsOut(BaseModel):
+    id: int
+    name: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    baranggay_pic: Optional[str] = None
+    contact_info: Optional[str] = None
+    barangay_captain: Optional[str] = None
+    household_count: Optional[int] = None
+    total_population: Optional[int] = None
+    lgu_id: int
+    common_hazards: Optional[List[str]] = None
+    barangay_pwd: Optional[int] = None
+    barangay_senior: Optional[int] = None
+    barangay_children: Optional[int] = None
+    evacucation_center_id: Optional[int] = None
+    evacucation_center: Optional[EvacuationOut] = None
 
 
 def to_abs_url(path: Optional[str], request: Request) -> Optional[str]:
@@ -133,6 +194,41 @@ def lgu_profiling(
     return LGUOut.model_validate(payload)
 
 
+@router.get(
+    "/me/barangay_list",
+)
+def barangay_list(
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+    if not admin or not admin.lgu:
+        raise HTTPException(404, "LGU not found")
+
+    lgu = admin.lgu
+
+    barangays = (
+        db.query(BaranggayRecords)
+        .options(joinedload(BaranggayRecords.evacucation_center))  # ← eager-load
+        .filter(BaranggayRecords.lgu_id == lgu.id)
+        .order_by(BaranggayRecords.name.asc())
+        .all()
+    )
+
+    # Make barangay_pic absolute if present
+    for b in barangays:
+        if b.baranggay_pic:
+            b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
+
+    return barangays
+
+
 def save_image_from_data_url(
     data_url: str,
     dest_dir: str = "media/lgu_info",  # <- write into the mounted folder
@@ -162,11 +258,17 @@ def save_image_from_data_url(
     return f"{public_base}/{filename}"
 
 
-def normalize_image_field(val: Optional[str]) -> Optional[str]:
+def normalize_image_field(
+    val: Optional[str],
+    dest_dir: str = "media/lgu_info",
+    public_base: str = "/media/lgu_info",
+) -> Optional[str]:
     if val is None:
         return None  # explicit clear
     if isinstance(val, str) and DATA_URL_RE.match(val):
-        return save_image_from_data_url(val)  # uses media/lgu_info by default
+        return save_image_from_data_url(
+            val, dest_dir, public_base
+        )  # uses media/lgu_info by default
     return val  # already a URL
 
 
@@ -198,7 +300,6 @@ def patch_lgu(p: LGUPayload, db: Session = Depends(get_db)):
 
     # 5) Apply updates
     for k, v in updates.items():
-        print(f"key: {k}: value: {v}")
         setattr(rec, k, v)
 
     db.add(rec)
@@ -210,3 +311,100 @@ def patch_lgu(p: LGUPayload, db: Session = Depends(get_db)):
         "message": "LGU record updated",
         "id": rec.id,
     }
+
+
+@router.put("/api/update_barangay")
+def update_barangay(p: BarangayRecordsOut, db: Session = Depends(get_db)):
+    barangay_id = p.id
+    rec = db.query(BaranggayRecords).filter(BaranggayRecords.id == barangay_id).first()
+    if not rec:
+        raise HTTPException(404, f"Barangay with id={barangay_id} not found")
+    updates: Dict[str, Any] = p.model_dump(exclude_unset=True)
+    updates.pop("id")
+    updates.pop("lgu_id")
+    if "baranggay_pic" in updates:
+        updates["baranggay_pic"] = normalize_image_field(
+            updates["baranggay_pic"],
+            dest_dir="media/barangay_pictures",
+            public_base="/media/barangay_pictures",
+        )
+    if "common_hazards" in updates and updates["common_hazards"] is None:
+        updates["common_hazards"] = None
+    for k, v in updates.items():
+        setattr(rec, k, v)
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    return {
+        "ok": True,
+        "message": "Barangay record updated",
+        "id": rec.id,
+    }
+
+
+class EvacuationAdd(BaseModel):
+    name: str
+    lat: float
+    lng: float
+    baranggay_id: int
+    capacity: int
+    occupied: int
+
+
+@router.post("/api/add_evacuation")
+def add_evacuation(payload: EvacuationAdd, db: Session = Depends(get_db)):
+    try:
+        rec = EvacuationCenter(
+            name=payload.name,
+            lat=payload.lat,
+            lng=payload.lng,
+            capacity=payload.capacity,
+        )
+        db.add(rec)
+        db.flush()  # get rec.evacuation_id without committing yet
+
+        # If barangay_id is provided, link it
+        if payload.baranggay_id is not None:
+            b = (
+                db.query(BaranggayRecords)
+                .filter(BaranggayRecords.id == payload.baranggay_id)
+                .first()
+            )
+            if not b:
+                raise HTTPException(
+                    404, f"Barangay id={payload.baranggay_id} not found"
+                )
+
+            # link
+            b.evacucation_center_id = rec.evacuation_id
+            db.add(b)
+
+        db.commit()
+        db.refresh(rec)
+        return rec
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(500, f"DB error: {e}")
+
+
+@router.get("/api/get_evacuation", response_model=List[EvacuationWithBarangaysOut])
+def list_evac_centers_with_barangays(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    evac_list = (
+        db.query(EvacuationCenter)
+        .options(joinedload(EvacuationCenter.barangay))  # eager-load barangays
+        .order_by(EvacuationCenter.name.asc())
+        .all()
+    )
+
+    # Optional: make barangay pictures absolute URLs
+    for ec in evac_list:
+        for b in ec.barangay:
+            if b.baranggay_pic:
+                b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
+
+    return evac_list

@@ -87,6 +87,10 @@ const LGUofficermanagement = () =>
   import("./pages/lgu_profiling/LGUofficer/LGUofficer").then((m) => ({
     Component: m.default,
   }));
+const LGUofficerSuperAdmin = () =>
+  import(
+    "./pages/lgu_profiling/LGUofficerSuperAdmin/LGUofficerSuperAdmin"
+  ).then((m) => ({ Component: m.default }));
 
 const MapOfCebu = () =>
   import("./pages/lgu_profiling/map_of_cebu/MapOfCebu").then((m) => ({
@@ -342,9 +346,14 @@ export const router = createBrowserRouter([
       lazy: ManageLGU,
     },
     {
-      path: "LGUofficermanagement",  // Added this new route for LGUofficermanagement
-      lazy: LGUofficermanagement,   // Corrected lazy-loaded import path
+      path: "LGUofficermanagement", 
+      lazy: LGUofficermanagement,   
     },
+        {
+      path: "LGUofficerSuperAdmin",
+      lazy: LGUofficerSuperAdmin,
+    },
+
     {
       path: "LGUSeeMore/:id",
       lazy: LGUSeeMore,
@@ -534,7 +543,6 @@ export const router = createBrowserRouter([
   },
 ]);
 
-// ✅ Prefetch Map (unchanged)
 export const prefetchMap: Record<string, () => Promise<any>> = {
   "/login": Login,
   "/register": Register,
@@ -543,6 +551,7 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/lgu_profiling/shelter_report_dashboard": ShelterReportDashboard,
   "/lgu_profiling/LGU": LGU,
   "/lgu_profiling/LGUmanagement": ManageLGU,
+  "/lgu_profiling/LGUofficerSuperAdmin": LGUofficerSuperAdmin,
   "/lgu_profiling/LGUSeeMore": LGUSeeMore,
   "/volunteer_management/track_volunteer_application":
     TrackVolunteerApplication,

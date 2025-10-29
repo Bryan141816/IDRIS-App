@@ -444,31 +444,3 @@ html, body {
   border-radius: 6px;
   width: fit-content;
 }
-
-.app-container {
-  position: relative; /* so the absolute back-button anchors correctly */
-}
-
-/* Back button styling */
-.back-button {
-  display: inline-block;
-  position: absolute;
-  top: 1.2rem;
-  left: 1.6rem;
-  background-color: #749AB6;
-  color: #fff;
-  padding: 0.4rem 0.9rem;
-  border-radius: 6px;
-  font-weight: 600;
-  text-decoration: none;
-  line-height: 1;
-  transition: background-color 0.2s ease-in-out, transform 0.08s ease-in-out;
-}
-
-.back-button:hover {
-  background-color: #5b88a3;
-}
-
-    .back-button:active {
-      transform: translateY(1px);
-    }

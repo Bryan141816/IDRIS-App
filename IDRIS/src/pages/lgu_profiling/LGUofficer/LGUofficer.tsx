@@ -1,10 +1,14 @@
-// RAFFIInfrastructure.tsx
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import "../css/LGUofficermanagement.css";
 import "../../response_dashboard/DefaultListViewStyle.scss";
 import defaultpicture from "../../../../public/images/defaultpicture.jpg";
 import { getMyLGULocation } from "../../../API_Handler/lguprofiling/LGUofficer";
 import { MessageBox } from "../../../components/Page_Furniture/MessageBox";
+import { Link } from "react-router-dom";
+import { useUserContext } from "../../../UserContext";
+import { useUserRoleContext } from "../../../UserRoleContext";
+
 import { LGUOut } from "./Modals/LGUModals";
 // ✅ LGU modals (unchanged in this file)
 import {
@@ -29,6 +33,8 @@ import {
   type RAFFIRecord,
 } from "./Modals/RAFIInfrastructure";
 import { API } from "../../../API_Handler/Axio_API_Handler";
+
+
 /* ========================= TYPES ========================= */
 
 export interface Evacuation {
@@ -158,6 +164,11 @@ const sampleRAFFIs: RAFFIRow[] = [
 
 /* ========================= COMPONENT ========================= */
 const LGUofficer: React.FC = () => {
+
+  const { userType } = useUserContext();
+  const { userRoles } = useUserRoleContext();
+  const roles = Array.isArray(userRoles) ? userRoles : [];
+
   const [myLGULocation, setMyLGULocation] = useState<LGUOut | null>(null);
   const [loadingLGU, setLoadingLGU] = useState<boolean>(true);
   const [selectedData, setSelectedData] = useState<LGUOut | Barangay | null>(
@@ -260,7 +271,21 @@ const LGUofficer: React.FC = () => {
             lgu_coordinate={[myLGULocation.lat, myLGULocation.lng]}
           ></BarangayEditModal>
         )}
+
+
+
+
+        {/* backkk button,,,, condition ni sa superAdmin kung mo navigate dri sa specific lgu*/}
       <div className="app-container">
+          {userType === "admin" && userRoles.includes("superadmin") && (
+    <Link
+      to="/lgu_profiling/LGUofficerSuperAdmin"
+      className="back-button"
+    >
+      ← All Records
+    </Link>
+  )}
+
         <header className="lgu-page-header">
           <h1 className="lgu-page-title">
             {loadingLGU

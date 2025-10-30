@@ -572,7 +572,7 @@ useEffect(() => {
 
           {selectedMarker.type === "evacuation" && renderEvacCard(selectedMarker)}
 
-          {selectedMarker.type == "lgu" && (
+          {selectedMarker.type !== "evacuation" && (
             <>
               {selectedMarker.image && (
                 <img src={selectedMarker.image} alt={selectedMarker.lguName} 

@@ -1447,7 +1447,7 @@ class Disbursement(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     disbursement_id = Column(String, primary_key=True)
-    title = Column(String, nullable=False, default="No title")
+    disbursement_name = Column(String, nullable=False, default="No title")
     origin_name = Column(String, nullable=False, default="No origin")
     origin_id = Column(Integer, nullable=False)
     attachment = Column(String, nullable=True)
@@ -1477,7 +1477,7 @@ class DisbursementItem(Base):
     item_id = Column(String, primary_key=True)
     item_name = Column(String(100), nullable=False, default="Item name")
     quantity = Column(Integer, nullable=False, default=0)
-    unit = Column(Numeric(14, 2), nullable=False, default="pcs")
+    unit = Column(String(10), nullable=False, default="pcs")
     unit_cost = Column(Numeric(20, 2), nullable=False, default=0)
     vendor = Column(String(255), nullable=False, default="Vendor name")
     disbursement_id = Column(

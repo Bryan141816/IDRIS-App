@@ -29,6 +29,7 @@ from routers.donations_management import (
     donations_route,
 )
 from routers.finance_management import finance_route, finance_report_routes
+from routers.finance_management import disbursement_route
 from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
 from routers.volunteer_management import (
     individual_volunteer_routes,
@@ -110,6 +111,9 @@ app.include_router(
 app.include_router(finance_route.router, prefix="/finance", tags=["Finance Management"])
 app.include_router(
     finance_report_routes.router, prefix="/finance_reports", tags=["Finance Reports"]
+)
+app.include_router(
+    disbursement_route.router, prefix="/finance", tags=["Finance Management"]
 )
 
 # Keep map router if other pages use it

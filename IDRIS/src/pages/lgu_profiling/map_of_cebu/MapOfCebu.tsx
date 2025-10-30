@@ -14,20 +14,27 @@ type MarkerWithPhotos = MarkerType & {
   occupied?: number | null;
   evacStatus?: string | null;
   address?: string | null; // optional if your API later adds it
+
+  // LGU specific fields
+  classification?: string;
+  mayor?: string | null;
+  drmmPersonnel?: string | null;
+  baranggayCount?: number | null;
+  
+  hazardPic?: string | null;
 };
 
-type LGUPoint = {
+type LGUDetail = {
   id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  classification: string;
-  population: number;
-  contact_info: string;
-  risk_level: string;
-  imageUrl?: string | null;
-  description?: string | null;
-  resources?: string[] | null;
+  lgu_name: string;
+  lgu_classification: string;
+  population?: number | null;
+  mayor?: string | null;   
+  lgu_contact?: string | null;
+  lat: number | string | null;
+  lng: number | string | null;
+  lgu_seal?: string | null;
+  hazard_pic?: string | null; 
 };
 
 type RafiPoint = {
@@ -154,45 +161,52 @@ const MapOfCebu = () => {
   }
 
   /* ---------- Fetch LGU points ---------- */
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    (async () => {
-      const url = `${API_BASE}/points`;
-      try {
-        const res = await fetch(url, { mode: "cors" });
-        if (!res.ok) throw new Error(`GET /points failed: HTTP ${res.status}`);
-        const data: LGUPoint[] = await res.json();
-        if (cancelled) return;
+  (async () => {
+    // NEW endpoint that returns LGUDetailOut[]
+    const url = `${API_BASE}/lgu/points`;
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error(`GET /lgu/points failed: HTTP ${res.status}`);
+      const data: LGUDetail[] = await res.json();
+      if (cancelled) return;
 
-        const mapped: MarkerWithPhotos[] = data.map((p) => ({
-          lat: p.lat,
-          lng: p.lng,
-          lguName: p.name,
-          type: "lgu",
-          description: p.description || "",
-          population: String(p.population ?? ""),
-          resources:
-            Array.isArray(p.resources) && p.resources.length ? p.resources.join(", ") : "-",
-          evacuationCenter: "",
-          image: p.imageUrl || "/images/lgu/default.jpg",
-          hazardAreas: [],
-          lguId: p.id,
-        }));
+    const mapped: MarkerWithPhotos[] = data
+  .filter((p) => p && p.lat != null && p.lng != null)
+  .map((p) => ({
+    lat: Number(p.lat) || 0,
+    lng: Number(p.lng) || 0,
+    lguName: p.lgu_name,
+    type: "lgu",
+    population: String(p.population ?? ""),
+    image: p.lgu_seal || "/images/lgu/default.jpg",
+    hazardAreas: [],
+    lguId: p.id,
 
-        setLguMarkers(mapped);
-      } catch (e: any) {
-        console.error("LGU fetch error:", e);
-        setError((prev) => prev ?? (e?.message || "Failed to load LGU points."));
-      } finally {
-        setPendingLoads((n) => Math.max(0, n - 1));
-      }
-    })();
+    // NEW
+    classification: p.lgu_classification,
+    mayor: p.mayor ?? null,
+    drmmPersonnel: (p as any).DRMMpersonel ?? null, // from API
+    baranggayCount: null, // ⬅️ leave blank in UI by request (ignore p.baranggay_count)
+    hazardPic: (p as any).hazard_pic ?? null,
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }));
+
+      setLguMarkers(mapped);
+    } catch (e: any) {
+      console.error("LGU fetch error:", e);
+      setError((prev) => prev ?? (e?.message || "Failed to load LGU points."));
+    } finally {
+      setPendingLoads((n) => Math.max(0, n - 1));
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   /* ---------- Fetch RAFI points ---------- */
   useEffect(() => {
@@ -561,71 +575,95 @@ const MapOfCebu = () => {
           {selectedMarker.type !== "evacuation" && (
             <>
               {selectedMarker.image && (
-                <img src={selectedMarker.image} alt={selectedMarker.lguName} style={headerImg} />
+                <img src={selectedMarker.image} alt={selectedMarker.lguName} 
+    className="lgu-header-img" />
               )}
 
-              <h2>{selectedMarker.lguName}</h2>
-              <hr />
-              <p>{selectedMarker.description}</p>
-              <hr />
+              <h2><b>{selectedMarker.lguName}</b> </h2>
+              {selectedMarker.type === "lgu" && (
+  <>
+    <div style={{ ...card, padding: 12, marginTop: 8 }}>
+      <div style={row}>
+        <span style={label}>Classification</span>
+        <span style={value}>
+          {selectedMarker.classification || "-"}
+        </span>
+      </div>
+      <div style={row}>
+        <span style={label}>Mayor</span>
+        <span style={value}>
+          {selectedMarker.mayor || "-"}
+        </span>
+      </div>
+      <div style={row}>
+        <span style={label}>Population</span>
+        <span style={value}>
+          {(() => {
+            const n = Number(selectedMarker.population);
+            return Number.isFinite(n) ? n.toLocaleString() : (selectedMarker.population || "-");
+          })()}
+        </span>
+      </div>
+      <div style={row}>
+        <span style={label}>No. of Barangay</span>
+        <span style={value}>{"" /* intentionally left blank */}</span>
+      </div>
+      <div style={{ ...row, borderBottom: "none" }}>
+        <span style={label}>DRMM Personnel</span>
+        <span style={value}>
+          {selectedMarker.drmmPersonnel || "-"}
+        </span>
+      </div>
+    </div>
 
-              {(selectedMarker.type === "lgu" || selectedMarker.type === "barangay") && (
-                <>
-                  <p><strong>Population:</strong> {selectedMarker.population}</p>
-                  <p><strong>Available Resources:</strong> {selectedMarker.resources || "-"}</p>
-                  <p><strong>Evacuation Center:</strong> {selectedMarker.evacuationCenter}</p>
+    {/* Optional: link + hazards, kept from your original */}
+    {selectedMarker.lguId != null && (
+      <>
+        <Link
+          to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
+          className="see-more-link"
+          style={{ display: "inline-block", marginTop: 10 }}
+        >
+          See More
+        </Link>
 
-                  {selectedMarker.type === "lgu" && selectedMarker.lguId != null && (
-                    <>
-                      <Link
-                        to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
-                        className="see-more-link"
-                      >
-                        See More
-                      </Link>
+        <div style={{ marginTop: 12 }}>
+  <h4 style={{ margin: "8px 0" }}>Hazard Photo</h4>
 
-                      <div style={{ marginTop: 12 }}>
-                        <h4 style={{ margin: "8px 0" }}>Hazard Photos</h4>
+  {hazardLoading[selectedMarker.lguId!] && (
+    <div style={{ fontSize: 13, color: "#6b7280" }}>
+      Loading photos…
+    </div>
+  )}
 
-                        {hazardLoading[selectedMarker.lguId] && (
-                          <div style={{ fontSize: 13, color: "#6b7280" }}>Loading photos…</div>
-                        )}
+  {!hazardLoading[selectedMarker.lguId!] && (() => {
+    
 
-                        {!hazardLoading[selectedMarker.lguId] &&
-                          (hazardsByLGU[selectedMarker.lguId]?.length ? (
-                            <div style={hazardsList}>
-                              {hazardsByLGU[selectedMarker.lguId].map((p, idx) => (
-                                <a
-                                  href={p.src}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  key={idx}
-                                  title={p.label}
-                                  style={hazardItem}
-                                >
-                                  <img src={p.src} alt={p.label} style={hazardImg} />
-                                  <div style={hazardCaption}>{p.label}</div>
-                                </a>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 13, color: "#6b7280" }}>No photos found.</div>
-                          ))}
-                      </div>
-                    </>
-                  )}
+    // ⬇️ Fallback: show single hazard_pic from backend if available
+    if (selectedMarker.hazardPic) {
+  return (
+      <img
+        src={selectedMarker.hazardPic}
+        alt="Hazard"
+        className="hazard-pic"
+      />
+  );
+}
 
-                  {selectedMarker.type === "barangay" && (
-                    <button
-                      className="map-button"
-                      style={{ marginTop: 10 }}
-                      onClick={handleNearestEvacuation}
-                    >
-                      Nearest Evacuation
-                    </button>
-                  )}
-                </>
-              )}
+
+    return (
+      <div style={{ fontSize: 13, color: "#6b7280" }}>
+        No photos found.
+      </div>
+    );
+  })()}
+</div>
+
+      </>
+    )}
+  </>
+)}
+
             </>
           )}
         </div>

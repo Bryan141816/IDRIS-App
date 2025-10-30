@@ -1,4 +1,4 @@
-// LGUModals.tsx (frontend-only modal; no backend calls)
+//  Modals.tsx (frontend-only modal; no backend calls)
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
@@ -10,6 +10,7 @@ import {
   faMapMarkerAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
+import Swal from "sweetalert2";
 import defaultpicture from "../../../../../public/images/defaultpicture.jpg";
 export interface LGUOut {
   id: number;
@@ -258,18 +259,37 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
   const [lguContactInvalid, setLguContactInvalid] = useState(false);
   const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = () => {
-    const submit = async () => {
-      try {
-        const response = await API.put("/lgu_profiling/api/update_lgu", form);
-        console.log(response.data);
-      } catch (e: any) {
-        console.error("Error updating lgu: " + e.message);
-      }
-    };
-    submit();
+ const handleSubmit = () => {
+  const submit = async () => {
+    try {
+      console.log("FORM before submit:", JSON.stringify(form, null, 2));
+
+      const response = await API.put("/lgu_profiling/api/update_lgu", form);
+
+      console.log("API response:", response?.data);
+      Swal.fire({
+        icon: "success",
+        title: "Saved successfully!",
+        text: "LGU details have been updated.",
+        confirmButtonColor: "#6d28d9",
+      }).then(() => closeModal());
+    } catch (e: any) {
+      console.error("Error updating lgu:", e?.response ?? e);
+      Swal.fire({
+        icon: "error",
+        title: "Update failed!",
+        text:
+          (e?.response?.data && e.response.data.message) ||
+          "Something went wrong while saving. Please try again.",
+        confirmButtonColor: "#ef4444",
+      });
+    }
   };
+  submit();
+};
+
   const handleContactChange = (key: keyof LGUOut, val: string) => {
     // Allow digits, parentheses, plus sign
     const cleaned = val.replace(/[^\d()+]/g, "");

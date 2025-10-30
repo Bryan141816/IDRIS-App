@@ -156,8 +156,8 @@
   font-size: 12px; /* Larger font size for better visibility */
   border-radius: 5px; /* Rounded corners */
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 10px;
+  right: 10px;
   cursor: pointer;
   z-index: 101;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
@@ -211,4 +211,43 @@
   display: inline-block;
   margin-right: 8px;
   border: 1px solid #555;
+}
+
+
+
+
+/* ====hazard pic in lgu ==== */
+.hazard-pic {
+  display: block;
+  width: 100%;
+  max-width: 250px ;       /* ⬅️ smaller and centered */
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 0 auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.hazard-pic-caption {
+  text-align: center;
+  font-size: 13px;
+  color: #374151;
+  margin-top: 6px;
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 4px 6px;
+  display: inline-block;
+}
+
+
+
+/* ==== LGU Header / Seal Image ==== */
+.lgu-header-img {
+  display: block;
+  width: 100%;
+  max-width: 200px;    /* ⬅️ make it smaller */
+  max-height: 200px;   /* limits height */
+  margin: 0 auto 10px auto; /* center + spacing below */  /* keeps the seal/logo aspect ratio */
+  border-radius: 10px;      /* adds breathing space around seal */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }

@@ -17,6 +17,7 @@ from sqlalchemy import (
     Numeric,
     Date,
     Float,
+    DECIMAL,
     Identity,
     Identity,
     CheckConstraint,
@@ -1434,3 +1435,59 @@ class FinanceAudit(Base):
     details = Column(Text, nullable=True)
 
     record = relationship("FinanceRecord", back_populates="audits")
+
+class DisbursementStatus(enum.Enum):
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    PAID = "PAID"
+    REJECTED = "REJECTED"
+
+class Disbursement(Base):
+    __tablename__ = "disbursement"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    disbursement_id = Column(String, primary_key=True)
+    title = Column(String, nullable=False, default="No title")
+    origin_name = Column(String, nullable=False, default="No origin")
+    origin_id = Column(Integer, nullable=False)
+    attachment = Column(String, nullable=True)
+    remarks = Column(String, nullable=True)
+    status = Column(SqlEnum(DisbursementStatus), nullable=False, default = DisbursementStatus.SUBMITTED)
+    date_created = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    date_updated = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    
+    items = relationship(   
+        "DisbursementItem",
+        back_populates="disbursement",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    
+class DisbursementItem(Base):
+    __tablename__ = "disbursement_item"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    item_id = Column(String, primary_key=True)
+    item_name = Column(String(100), nullable=False, default="Item name")
+    quantity = Column(Integer, nullable=False, default=0)
+    unit = Column(Numeric(14, 2), nullable=False, default="pcs")
+    unit_cost = Column(Numeric(20, 2), nullable=False, default=0)
+    vendor = Column(String(255), nullable=False, default="Vendor name")
+    disbursement_id = Column(
+        String,
+        ForeignKey("disbursement.disbursement_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    
+    disbursement = relationship(
+        "Disbursement",
+        back_populates="items",
+    )

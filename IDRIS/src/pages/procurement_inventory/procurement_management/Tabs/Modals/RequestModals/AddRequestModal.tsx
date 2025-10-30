@@ -15,6 +15,13 @@ export const SubmitProcurementRequest: React.FC<
   type RequestProcurement = {
     request_type: string;
     use_different_end: boolean;
+    request_title: string;
+    request_description: string;
+    disaster_type: string;
+    priority: string;
+    date_needed: string;
+    end_barangay: number;
+    end_evacuation: number;
   };
   type RequestItem = {
     name: string;
@@ -32,6 +39,13 @@ export const SubmitProcurementRequest: React.FC<
   const [formData, setFormData] = useState<RequestProcurement>({
     request_type: "relief",
     use_different_end: false,
+    request_title: "",
+    request_description: "",
+    disaster_type: "",
+    priority: "low",
+    date_needed: "",
+    end_barangay: -1,
+    end_evacuation: -1,
   });
   const [isUseBarangayPicker, SetIsUseBarangayPicker] = useState(false);
   const changeRequestType = (type: string) => {
@@ -41,12 +55,51 @@ export const SubmitProcurementRequest: React.FC<
     }));
   };
   const changeDeliveryType = (type: boolean) => {
+    if (type) {
+      setFormData((prev) => ({
+        ...prev,
+        use_different_end: type,
+        end_evacuation: -1,
+        end_barangay: -1,
+      }));
+      setSelectedDifferent("");
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
       use_different_end: type,
     }));
   };
-  const handleBarangayPicker = (id: number, name: string, type: string) => {};
+  const handleBarangayPicker = (id: number, name: string, type: string) => {
+    setSelectedDifferent(name);
+    if (type === "barangay") {
+      setFormData((prev) => ({
+        ...prev,
+        end_barangay: id,
+        end_evacuation: -1,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        end_barangay: -1,
+        end_evacuation: id,
+      }));
+    }
+  };
+  const handleSubmit = () => {
+    const payload = { ...formData, request_items: requestItem };
+    const submit = async () => {
+      try {
+        const response = await API.post(
+          "/request_procurement/add_request",
+          payload,
+        );
+      } catch (e: any) {
+        console.error("Error adding procurement request: " + e.message);
+      }
+    };
+    submit();
+  };
   return (
     <>
       {isUseBarangayPicker && (
@@ -56,7 +109,11 @@ export const SubmitProcurementRequest: React.FC<
           setSelectedLocation={handleBarangayPicker}
         ></SelectBarangayEvacuation>
       )}
-      <ModalOverlay onClose={onClose} modalType="submit">
+      <ModalOverlay
+        onClose={onClose}
+        modalType="submit"
+        onSubmit={handleSubmit}
+      >
         <div className="modal-content">
           <h3>Submit Procurement Request</h3>
           <div className="form-group">
@@ -96,15 +153,43 @@ export const SubmitProcurementRequest: React.FC<
           </div>
           <div className="form-group">
             <label>Request Title:</label>
-            <input type="text" />
+            <input
+              type="text"
+              value={formData.request_title}
+              onChange={(e) => {
+                const { value } = e.target;
+                setFormData((prev) => ({
+                  ...prev,
+                  request_title: value,
+                }));
+              }}
+            />
           </div>
           <div className="form-group">
             <label>Request Description:</label>
-            <textarea></textarea>
+            <textarea
+              value={formData.request_description}
+              onChange={(e) => {
+                const { value } = e.target;
+                setFormData((prev) => ({
+                  ...prev,
+                  request_description: value,
+                }));
+              }}
+            ></textarea>
           </div>
           <div className="form-group">
             <label>Disaster Type:</label>
-            <select>
+            <select
+              value={formData.disaster_type}
+              onChange={(e) => {
+                const { value } = e.target;
+                setFormData((prev) => ({
+                  ...prev,
+                  disaster_type: value,
+                }));
+              }}
+            >
               <option value="" disabled>
                 Select type
               </option>
@@ -117,7 +202,16 @@ export const SubmitProcurementRequest: React.FC<
           </div>
           <div className="form-group">
             <label>Priority Level:</label>
-            <select>
+            <select
+              value={formData.priority}
+              onChange={(e) => {
+                const { value } = e.target;
+                setFormData((prev) => ({
+                  ...prev,
+                  priority: value,
+                }));
+              }}
+            >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -163,6 +257,7 @@ export const SubmitProcurementRequest: React.FC<
                 <input
                   type="text"
                   placeholder="No Address have been selected yet"
+                  value={selectedDifferent}
                 />
                 <button
                   className="secondary-btn"
@@ -379,7 +474,17 @@ export const SubmitProcurementRequest: React.FC<
           </div>
           <div className="form-group">
             <label>Date Needed:</label>
-            <input type="date" />
+            <input
+              type="date"
+              value={formData.date_needed}
+              onChange={(e) => {
+                const { value } = e.target;
+                setFormData((prev) => ({
+                  ...prev,
+                  date_needed: value,
+                }));
+              }}
+            />
           </div>
         </div>
       </ModalOverlay>

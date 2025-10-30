@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Optional, Literal
 from datetime import date
 
@@ -31,6 +31,41 @@ class ProcurementRequestItemSchema(BaseModel):
         orm_mode = True
 
 
+class RequestItemSchema(BaseModel):
+    name: str = Field(..., description="Item or supply name")
+    category: Optional[str] = Field(None, description="Item category (for relief type)")
+    quantity: int = Field(..., ge=0, description="Quantity requested")
+    unit: Optional[str] = Field(
+        None, description="Unit of measure (for procurement type)"
+    )
+
+
+class ProcurementRequestCreateSchema(BaseModel):
+    request_type: str = Field(
+        ..., pattern="^(relief|procurement)$", description="Type of request"
+    )
+    use_different_end: bool = Field(
+        ..., description="Whether to use a different delivery location"
+    )
+
+    request_title: str
+    request_description: str
+    disaster_type: str
+    priority: str
+    date_needed: date
+
+    # Endpoints (barangay / evacuation)
+    end_barangay: Optional[int] = Field(
+        -1, description="Barangay ID or -1 if not selected"
+    )
+    end_evacuation: Optional[int] = Field(
+        -1, description="Evacuation center ID or -1 if not selected"
+    )
+
+    # Nested list of requested items
+    request_items: List[RequestItemSchema]
+
+
 # ----------------------------
 # ProcurementRequest Schema
 # ----------------------------
@@ -57,7 +92,7 @@ class ProcurementRequestSchema(BaseModel):
 
     # Nested relationship
     requester: UserOut
-    request_items: List[ProcurementRequestItemSchema] = []
+    request_items: List[RequestItemSchema] = []
 
     class Config:
         orm_mode = True

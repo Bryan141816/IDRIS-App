@@ -1085,7 +1085,7 @@ class ProcurementRequest(Base):
     use_different_end = Column(Boolean, default=False)
 
     different_end_type = Column(String(255), nullable=True)
-
+    status = Column(String(255), default="Pending Approval")
     end_barangay = Column(Integer, ForeignKey("baranggay_records.id"), nullable=True)
     end_evac = Column(
         Integer,

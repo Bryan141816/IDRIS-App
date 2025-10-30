@@ -1,17 +1,27 @@
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
     UpdateProcurementRequest,
+    ProcurementRequestCreateSchema,
 )
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from models import ProcurementRequest, ProcurementRequestItem, User, Notifications
+from models import (
+    ProcurementRequest,
+    ProcurementRequestItem,
+    User,
+    Notifications,
+    ReliefRequestItem,
+    ProcurementRequestItem,
+)
 from zoneinfo import ZoneInfo  # Python 3.9+ built-in
 import asyncio
 from real_time_handler import send_real_time
 from typing import List
 
 PH_TZ = ZoneInfo("Asia/Manila")
+
+from datetime import date, datetime, timedelta, timezone
 
 
 class ProcurementRequestCRUD:
@@ -59,76 +69,75 @@ class ProcurementRequestCRUD:
 
     @staticmethod
     async def create_procurement_request(
-        db: Session, request: ProcurementRequestCreate, user_id: str
+        db: Session, request: ProcurementRequestCreateSchema, lgu_id: int
     ):
         # get current Philippine time
-        now_ph = datetime.now(PH_TZ)
+        now = datetime.now(timezone.utc)
+        formatted = f"{now.month}{now.day}{str(now.year)[-2:]}"
 
+        # Hour + minute, then format to 3 digits (trim if > 999)
+        sum_hm = now.hour + now.minute + now.second
+        hm_str = str(sum_hm).zfill(3)[-3:]  # pad to 3, trim if longer
+
+        # Combine
+        formatted += hm_str
+        use_different_end = False
+        different_end_type = None
+        end_barangay = None
+        end_evac = None
+        if not request.end_barangay == -1:
+            use_different_end = True
+            different_end_type = "barangay"
+            end_barangay = request.end_barangay
+
+        if not request.end_evacuation == -1:
+            use_different_end = True
+            different_end_type = "evacuation"
+            end_evac = request.end_evacuation
         procurement_request = ProcurementRequest(
-            requester_id=user_id,
-            title=request.title,
-            lgu_name=request.lgu_name,
+            lgu_id=lgu_id,
+            request_type=request.request_type,
+            request_ref_num=f"REF{formatted}",
+            request_title=request.request_title,
+            request_description=request.request_description,
+            use_different_end=use_different_end,
+            different_end_type=different_end_type,
             priority=request.priority,
-            description=request.description,
-            justification=request.justification,
-            date=now_ph,  # store full datetime with timezone
-            status="pending approval",
+            end_barangay=end_barangay,
+            end_evac=end_evac,
+            date_requested=now,
+            disaster_type=request.disaster_type,
+            date_needed=request.date_needed,
         )
 
         db.add(procurement_request)
         db.flush()
+        if request.request_type == "relief":
+            request_item = [
+                ReliefRequestItem(
+                    request_id=procurement_request.request_id,
+                    item_name=item.name,
+                    category=item.category,
+                    quantity=item.quantity,
+                )
+                for item in request.request_items
+            ]
+            db.add_all(request_item)
+        else:
+            request_items = [
+                ProcurementRequestItem(
+                    request_id=procurement_request.request_id,
+                    item_name=item.name,
+                    quantity=item.quantity,
+                    unit=item.unit,
+                )
+                for item in request.request_items
+            ]
 
-        request_items = [
-            ProcurementRequestItem(
-                request_id=procurement_request.request_id,
-                item_name=item.item_name,
-                quantity=item.quantity,
-                category=item.category,
-                price_p_each=item.price_p_each,
-            )
-            for item in request.request_items
-        ]
-
-        db.add_all(request_items)
+            db.add_all(request_items)
         db.commit()
         db.refresh(procurement_request)
 
-        response = {
-            "request_id": procurement_request.request_id,
-            "requester_id": procurement_request.requester_id,
-            "title": procurement_request.title,
-            "lgu_name": procurement_request.lgu_name,
-            "priority": procurement_request.priority,
-            "status": procurement_request.status,
-            "description": procurement_request.description,
-            "justification": procurement_request.justification,
-            "date": procurement_request.date.isoformat(),
-            "comment": procurement_request.comment or "",
-            "reason_or_code": procurement_request.reason_or_code,
-            "requester": (
-                {
-                    "user_id": procurement_request.requester.user_id,
-                    "username": procurement_request.requester.username,
-                }
-                if procurement_request.requester
-                else None
-            ),
-            "request_items": [
-                {
-                    "item_id": item.item_id,
-                    "item_name": item.item_name,
-                    "category": item.category,
-                    "quantity": item.quantity,
-                    "price_p_each": float(item.price_p_each),
-                }
-                for item in procurement_request.request_items
-            ],
-        }
-        asyncio.create_task(
-            ProcurementRequestCRUD.broadcast_procurement_event(
-                db, user_id, response, "add_procurement_event"
-            )
-        )
         return procurement_request
 
     @staticmethod

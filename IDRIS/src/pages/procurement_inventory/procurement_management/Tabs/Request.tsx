@@ -3,12 +3,11 @@ import "../ProcurementManagement.scss";
 
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import {
-  RequestData,
+  ProcurementRequest,
   ModalType,
   getPriorityColor,
   getStatusColor,
   formatCurrency,
-  calculateTotal,
 } from "./Modals/ProcurementDefaults";
 import { SubmitProcurementRequest } from "./Modals/RequestModals/AddRequestModal";
 import { ViewDetails } from "./Modals/RequestModals/ViewDetailsRequest";
@@ -21,12 +20,14 @@ interface RequestTabProps {
   apiUrl: string;
 }
 const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
-  const [requests, setRequests] = useState<RequestData[]>([]);
+  const [requests, setRequests] = useState<ProcurementRequest[]>([]);
   const { userRoles } = useUserRoleContext();
   const { event, connected } = useContext(RealTimeDataContext);
   const fetchData = async () => {
     try {
-      const response = await API.get<RequestData[]>(`${apiUrl}/get_request`);
+      const response = await API.get<ProcurementRequest[]>(
+        `${apiUrl}/get_request`,
+      );
       setRequests(response.data); // ✅ set state with response
     } catch (error) {
       console.error("Error fetching requests:", error);
@@ -38,11 +39,13 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
   const refreshData = () => fetchData();
 
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [selectedItem, setSelectedItem] = useState<RequestData | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ProcurementRequest | null>(
+    null,
+  );
 
   const openModal = (
     type: Exclude<ModalType, null>,
-    item: RequestData | null = null,
+    item: ProcurementRequest | null = null,
   ) => {
     setActiveModal(type);
     setSelectedItem(item);
@@ -51,44 +54,6 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
     setActiveModal(null);
     setSelectedItem(null);
   };
-
-  useEffect(() => {
-    if (event?.event_type === "add_procurement_event") {
-      const tempArr = [...requests];
-      tempArr.unshift(event.data as RequestData);
-      setRequests(tempArr);
-    } else if (event?.event_type === "update_procurement_event") {
-      const { request_id, status, comments, reason_or_code } = event.data;
-
-      // Update requests list
-
-      const idx = requests.findIndex((req) => req.request_id === request_id);
-      if (idx !== -1) {
-        const updatedRequests = [...requests];
-        updatedRequests[idx] = {
-          ...updatedRequests[idx],
-          status: status ?? updatedRequests[idx].status,
-          comment: comments ?? updatedRequests[idx].comment,
-          reason_or_code: reason_or_code ?? updatedRequests[idx].reason_or_code,
-        };
-        setRequests(updatedRequests);
-      }
-
-      // Update selected item if it's the same request
-      if (selectedItem?.request_id === request_id) {
-        setSelectedItem((prev) =>
-          prev
-            ? {
-                ...prev,
-                status: status ?? prev.status,
-                comment: comments ?? prev.comment,
-                reason_or_code: reason_or_code ?? prev.reason_or_code,
-              }
-            : prev,
-        );
-      }
-    }
-  }, [event]);
 
   return (
     <div className="requests-content">
@@ -133,9 +98,11 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
       )}
       <div className="section-header">
         <h2>Procurement Requests</h2>
-        <button className="primary-btn" onClick={() => openModal("submit")}>
-          + Submit Request
-        </button>
+        {userRoles.includes("lgu officer") && (
+          <button className="primary-btn" onClick={() => openModal("submit")}>
+            + Submit Request
+          </button>
+        )}
       </div>
 
       <div className="requests-grid">
@@ -143,10 +110,10 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
           requests.map((request) => (
             <div key={request.request_id} className="request-card">
               <div className="request-header">
-                <div className="request-id">{request.request_id}</div>
+                <div className="request-id">{request.request_ref_num}</div>
                 <div className="request-badges">
                   <span
-                    className={`priority-badge ${getPriorityColor(request.priority)}`}
+                    className={`priority-badge ${getPriorityColor(request.priority ?? "Low")}`}
                   >
                     {request.priority}
                   </span>
@@ -158,16 +125,14 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                 </div>
               </div>
               <div className="request-content">
-                <h3>{request.title}</h3>
-                <p className="request-description">{request.description}</p>
+                <h3>{request.request_title} </h3>
+                <p className="request-description">
+                  {request.request_description}
+                </p>
                 <div className="request-details">
                   <div className="detail-row">
                     <span>Requester:</span>
-                    <span>{request.requester.username}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Department:</span>
-                    <span>{request.lgu_name}</span>
+                    <span>{request.lgu.name}</span>
                   </div>
                   <div className="detail-row">
                     <span>Date:</span>
@@ -178,21 +143,11 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                         month: "2-digit",
                         day: "2-digit",
                         timeZone: "Asia/Manila", // <-- force UTC+8
-                      }).format(new Date(request.date))}
-                    </span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Estimated Cost:</span>
-                    <span className="cost">
-                      {formatCurrency(calculateTotal(request.request_items))}
+                      }).format(new Date(request.date_requested))}
                     </span>
                   </div>
                 </div>
-                {request.reason_or_code && request.status === "rejected" && (
-                  <div className="rejection-reason">
-                    <strong>Rejection Reason:</strong> {request.reason_or_code}
-                  </div>
-                )}
+
                 <div className="request-actions">
                   <button
                     className="action-btn"

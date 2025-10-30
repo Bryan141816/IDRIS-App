@@ -11,28 +11,65 @@ export type User = {
   username: string;
 };
 
-export type RequestItem = {
-  item_id: string;
-  item_name: string;
+export interface ProcurementRequest {
+  request_id: number;
+  lgu: {
+    id: number;
+    name: string;
+  };
+  request_type: "relief" | "procurement" | string; // Allow flexibility
+  request_ref_num: string;
+  request_title: string;
+  request_description: string;
+  status: string;
+  priority: string | null;
+  date_requested: string; // ISO date (e.g., "2025-10-30")
+  disaster_type: string;
+  date_needed: string;
+  use_different_end: boolean;
+  different_end_type: "barangay" | "evacuation" | null;
+
+  // Conditional destination target
+  end_target: EndTarget | null;
+
+  // fallback end info (manual entry)
+  fallback_end: {
+    end_address: string | null;
+    end_lat: number | null;
+    end_long: number | null;
+  };
+
+  // Which table the items were pulled from
+  items_source: "relief" | "procurement";
+
+  // Items themselves
+  items: (ReliefItem | ProcurementItem)[];
+}
+
+export interface EndTarget {
+  type: "barangay" | "evacuation" | null;
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  capacity?: number; // only for evacuation centers
+  occupied?: number; // only for evacuation centers
+}
+
+export interface ReliefItem {
+  item_id: number;
+  name: string;
   category: string;
   quantity: number;
-  price_p_each: number;
-};
+}
 
-export type RequestData = {
-  request_id: number;
-  requester: User; // ✅ instead of requester_id, now has username
-  title: string;
-  lgu_name: string;
-  priority: "low" | "medium" | "high";
-  status: "pending approval" | "approved" | "rejected" | "in progress";
-  description: string;
-  justification: string;
-  date: string; // ISO string from backend
-  comment?: string;
-  reason_or_code?: string;
-  request_items: RequestItem[];
-};
+export interface ProcurementItem {
+  item_id: number;
+  name: string;
+  quantity: number;
+  unit?: string;
+}
+
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -65,12 +102,4 @@ export const getStatusColor = (status: string) => {
     default:
       return "pending";
   }
-};
-export const calculateTotal = (items?: RequestItem[] | null): number =>
-  items?.reduce((sum, item) => sum + item.quantity * item.price_p_each, 0) ?? 0;
-export const toTitleCase = (str: string) => {
-  return str
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 };

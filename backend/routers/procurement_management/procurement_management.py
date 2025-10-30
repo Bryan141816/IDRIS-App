@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
 from fastapi import Request
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, select, literal, and_
 from zoneinfo import ZoneInfo
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
@@ -31,7 +31,7 @@ from create_notification import send_notification
 
 router = APIRouter(
     tags=["procurement_management"],
-    dependencies=[Depends(RoleChecker(["logistics admin", "superadmin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
 )
 
 # Dashboard Function

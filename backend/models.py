@@ -102,13 +102,6 @@ class User(Base):
         "OrganizationVolunteer", back_populates="user", cascade="all, delete-orphan"
     )
 
-    procurement_requests = relationship(
-        "ProcurementRequest",
-        back_populates="requester",
-        foreign_keys="ProcurementRequest.lgu",
-        # cascade="all, delete-orphan",  # enable only if you truly want orphan delete
-    )
-
 
 class UserProfile(Base):
     __tablename__ = "user_profile"
@@ -274,6 +267,14 @@ class LGURecords(Base):
         "Hazard",
         back_populates="lgu",
         cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    procurement_requests = relationship(
+        "ProcurementRequest",
+        back_populates="lgu",
+        primaryjoin="LGURecords.id==ProcurementRequest.lgu_id",
+        foreign_keys="ProcurementRequest.lgu_id",
         passive_deletes=True,
     )
 
@@ -1076,7 +1077,7 @@ OrganizationVolunteer.active_events_joined = column_property(
 class ProcurementRequest(Base):
     __tablename__ = "procurement_request"
     request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    lgu = Column(String(255), ForeignKey("users.user_id"), nullable=False)
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
     request_type = Column(String(255))
     request_ref_num = Column(String(255), nullable=False)
     request_title = Column(String(255), nullable=False)
@@ -1100,10 +1101,10 @@ class ProcurementRequest(Base):
     date_needed = Column(Date)
 
     # ---- Relationships ----
-    requester = relationship(
-        "User",
+
+    lgu = relationship(
+        "LGURecords",
         back_populates="procurement_requests",
-        foreign_keys=[lgu],
     )
 
     evacuation_center = relationship(

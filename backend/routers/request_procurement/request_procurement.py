@@ -8,6 +8,8 @@ from models import (
     ProcurementRequest,
     ProcurementRequestItem,
     User,
+    BaranggayRecords,
+    EvacuationCenter,
 )  # no Role import datetime
 from datetime import datetime, timezone
 from pydantic import BaseModel
@@ -26,6 +28,7 @@ from crud_functions.procurement_manage.procurement_management import (
     ProcurementRequestCRUD,
     UpdateProcurementRequest,
 )
+from sqlalchemy import select, literal, and_
 from routers.GetUserId import GetUserId
 from create_notification import send_notifications_bulk
 import asyncio
@@ -88,6 +91,34 @@ async def get_request(
         .order_by(ProcurementRequest.date.desc())
         .all()
     )
+
+
+@router.get("/request_procurement/barangay_evac_list")
+def barangay_evac_list(db: Session = Depends(get_db)):
+    q_barangay = select(
+        BaranggayRecords.id.label("id"),
+        BaranggayRecords.name.label("name"),
+        literal("barangay").label("type"),
+    ).where(
+        and_(
+            BaranggayRecords.lat.isnot(None),
+            BaranggayRecords.lng.isnot(None),
+        )
+    )
+
+    # Evacuation centers (no filters)
+    q_evac = select(
+        EvacuationCenter.evacuation_id.label("id"),
+        EvacuationCenter.name.label("name"),
+        literal("evacuation").label("type"),
+    )
+
+    # Combine both queries (no deduping)
+    q = q_barangay.union_all(q_evac).order_by("name")
+
+    # Execute and return mappings
+    rows = db.execute(q).mappings().all()
+    return [dict(r) for r in rows]
 
 
 #

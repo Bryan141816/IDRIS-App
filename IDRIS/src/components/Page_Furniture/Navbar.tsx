@@ -111,7 +111,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 (userRoles.includes("lgu officer") ||
                   userRoles.includes("disaster response admin") ||
                   userRoles.includes("superadmin")) && (
-                  <Link to="/lgu_profiling/LGUmanagement" className="nav-sub-item" onClick={onClose}>
+                  <Link to="/lgu_profiling/LGUofficerSuperAdmin" className="nav-sub-item" onClick={onClose}>
                     Pin Location Management
                   </Link>
                 )}

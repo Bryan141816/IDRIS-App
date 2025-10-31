@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getDisbursements, updateDisbursementStatus } from "../../../API_Handler/finance_disbursement_handler";
 
 const BUDGET_SOURCES = [
   "Government Grants and Funds",
@@ -8,85 +9,95 @@ const BUDGET_SOURCES = [
 ];
 
 interface Item {
-  id: number;
-  name: string;
-  qty: number;
+  item_id: string;
+  item_name: string;
+  quantity: number;
   unit: string;
-  unitCost: number;
+  unit_cost: number;
   vendor: string;
 }
 
-interface RequestData {
-  id: number;
-  title: string;
+interface DisbursementData {
+  disbursement_id: string;
+  disbursement_name: string;
   status: "pending" | "approved";
-  dateRequested: string;
-  budgetSource: string;
+  date_created: string;
+  origin_name: string;
   items: Item[];
 }
 
-const INITIAL_DATA: RequestData[] = [
-  {
-    id: 1001,
-    title: "IT Equipment",
-    status: "pending",
-    dateRequested: "10/22/2025",
-    budgetSource: BUDGET_SOURCES[0],
-    items: [
-      { id: 1, name: "Mouse", qty: 10, unit: "pcs", unitCost: 0, vendor: "" },
-      { id: 2, name: "Keyboard", qty: 5, unit: "pcs", unitCost: 0, vendor: "" },
-    ],
-  }
-];
+interface FormState {
+  dateOfPayment: string;
+  budgetSource: string;
+  items: Item[];
+  remarks: string;
+  attachment?: File;
+}
 
-const StatusBadge = ({ status }: { status: string }) => (
+const StatusBadge = ({ status }: { status:string }) => (
   <span className={`status-badge ${status.toLowerCase()}`}>{status.toUpperCase()}</span>
 );
 
 const DisbursementSection: React.FC = () => {
-  const [requests, setRequests] = useState(INITIAL_DATA);
+  const [requests, setRequests] = useState<DisbursementData[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
     dateOfPayment: "",
     budgetSource: BUDGET_SOURCES[0],
-    items: INITIAL_DATA[0].items.map(i => ({ ...i })),
+    items: [],            // now typed as Item[]
     remarks: "",
-    attachment: undefined as File | undefined,
+    attachment: undefined,
   });
+  
+  const fetchDisbursements = async () => {
+    try {
+      const data = await getDisbursements();
+      setRequests(data);
+    } catch (error) {
+      console.error("Failed to fetch disbursements:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDisbursements();
+  }, []);
+
 
   const handleDisburseClick = (idx: number) => {
     setSelectedIdx(idx);
     setForm({
       dateOfPayment: "",
-      budgetSource: requests[idx].budgetSource,
-      items: requests[idx].items.map(i => ({ ...i, unitCost: 0, vendor: "" })),
+      budgetSource: requests[idx].origin_name,
+      items: requests[idx].items.map(i => ({ ...i, unitCost: 0, vendor: "" })), // Item[]
       remarks: "",
       attachment: undefined,
     });
     setShowModal(true);
   };
 
-  const onItemChange = (idx: number, field: string, value: string | number) => {
-    setForm(f => ({
-      ...f,
-      items: f.items.map((item, i) =>
-        i !== idx
-          ? item
-          : { ...item, [field]: value, unitCost: field === "unitCost" ? Number(value) : item.unitCost }
+  const onItemChange = <K extends keyof Item>(idx: number, field: K, value: Item[K]) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) =>
+        i === idx ? { ...item, [field]: value } : item
       ),
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedIdx === null) return;
-    setRequests(reqs =>
-      reqs.map((r, i) =>
-        i === selectedIdx ? { ...r, status: "approved" } : r
-      )
-    );
-    setShowModal(false);
+
+    const disbursementToUpdate = requests[selectedIdx];
+
+    try {
+      await updateDisbursementStatus(disbursementToUpdate.disbursement_id, "approved");
+      setShowModal(false);
+      fetchDisbursements();
+    } catch (error) {
+      console.error("Failed to update disbursement status:", error);
+    }
   };
 
   return (
@@ -108,14 +119,14 @@ const DisbursementSection: React.FC = () => {
           </thead>
           <tbody>
             {requests.map((row, idx) => (
-              <tr key={row.id}>
-                <td>{row.id}</td>
-                <td>{row.title}</td>
-                <td>{row.dateRequested}</td>
+              <tr key={row.disbursement_id}>
+                <td>{row.disbursement_id}</td>
+                <td>{row.disbursement_name}</td>
+                <td>{row.date_created}</td>
                 <td>
                   <StatusBadge status={row.status} />
                 </td>
-                <td>{row.budgetSource}</td>
+                <td>{row.origin_name}</td>
                 <td>
                   <button
                     className="action-btn"
@@ -139,11 +150,11 @@ const DisbursementSection: React.FC = () => {
               </button>
             </div>
             <div className="modal-content compact-content">
-              <h3>Disburse Request #{requests[selectedIdx].id}</h3>
+              <h3>Disburse Request #{requests[selectedIdx].disbursement_id}</h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <label>Request Title</label>
-                  <input disabled value={requests[selectedIdx].title} />
+                  <input disabled value={requests[selectedIdx].disbursement_name} />
                 </div>
                 <div className="form-row">
                   <label>Date of Payment</label>
@@ -180,21 +191,21 @@ const DisbursementSection: React.FC = () => {
                   </thead>
                   <tbody>
                     {form.items.map((item, idx) => (
-                      <tr key={item.id}>
-                        <td>{item.name}</td>
-                        <td>{item.qty}</td>
+                      <tr key={item.item_id}>
+                        <td>{item.item_name}</td>
+                        <td>{item.quantity}</td>
                         <td>{item.unit}</td>
                         <td>
                           <input
                             type="number"
-                            value={item.unitCost}
+                            value={item.unit_cost}
                             min="0"
-                            onChange={e => onItemChange(idx, "unitCost", Number(e.target.value))}
+                            onChange={e => onItemChange(idx, "unit_cost", Number(e.target.value))}
                             required
                           />
                         </td>
                         <td className="amount">
-                          ₱{(item.unitCost * item.qty).toLocaleString()}
+                          ₱{(item.unit_cost * item.quantity).toLocaleString()}
                         </td>
                         <td>
                           <input

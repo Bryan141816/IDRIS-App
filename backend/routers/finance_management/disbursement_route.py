@@ -18,7 +18,7 @@ router_admin = APIRouter(
 def create_disbursement(disbursement: DisbursementCreate, db: Session = Depends(get_db)):
     return disbursement_crud.create_disbursement(db=db, disbursement=disbursement)
 
-@router_admin.get("/disbursements/get_all/", response_model=List[Disbursement])
+@router.get("/disbursements/get_all/", response_model=List[Disbursement])
 def read_disbursements(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     disbursements = disbursement_crud.get_disbursements(db, skip=skip, limit=limit)
     return disbursements

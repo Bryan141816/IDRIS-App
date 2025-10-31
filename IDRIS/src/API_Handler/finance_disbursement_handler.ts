@@ -31,14 +31,16 @@ export async function getDisbursement(id: string): Promise<any> {
   }
 };
 
-export async function updateDisbursementStatus(id: number, status: string): Promise<any> {
+export async function updateDisbursementStatus(id: string, status: string): Promise<any> {
   try {
-    const response = await API.patch(`/finance/disbursements/update/`, {
-      params: {
-        disbursementId: id,
-        status,
+    const response = await API.patch(`/finance/disbursements/update/`,
+      { status },
+      {
+        params: {
+          disbursementId: id,
+        }
       }
-    });
+    );
     return response.data;
   } catch (error) {
     console.error(`Error updating disbursement status for ${id}:`, error);

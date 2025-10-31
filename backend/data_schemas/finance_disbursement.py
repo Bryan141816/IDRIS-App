@@ -20,12 +20,17 @@ class DisbursementItem(DisbursementItemBase):
         from_attributes = True
 
 class DisbursementBase(BaseModel):
-    title: str
+    disbursement_name: str
     origin_name: str
     origin_id: int
     attachment: Optional[str] = None
     remarks: Optional[str] = None
-
+    status: str
+    date_created: datetime
+    
+    class Config:
+        from_attributes = True
+    
 class DisbursementCreate(DisbursementBase):
     items: List[DisbursementItemCreate]
 

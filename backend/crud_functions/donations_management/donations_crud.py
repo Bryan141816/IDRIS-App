@@ -421,7 +421,7 @@ class DonationCRUD:
     @staticmethod
     def get_donor_aggregates(
         db: Session,
-        donor_id: int,
+        donor_id: str,
         *,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
@@ -500,7 +500,7 @@ class DonationCRUD:
         if status_vals:
             q = q.filter(Donation.status.in_(status_vals))
 
-        total_cash, total_inkind, donation_count, active_recurring_count = q.one()
+        total_cash, donation_count, active_recurring_count = q.one()
 
         def _to_float(x):
             try:
@@ -510,7 +510,6 @@ class DonationCRUD:
 
         return {
             "total_cash": _to_float(total_cash),
-            "total_inkind": _to_float(total_inkind),
             "donation_count": int(donation_count or 0),
             "active_recurring_count": int(active_recurring_count or 0),
         }

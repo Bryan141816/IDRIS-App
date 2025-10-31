@@ -485,6 +485,34 @@ export default function IDRISDashboard() {
             setLoading(false);
         }
     };
+    const [joinedProgramIds, setJoinedProgramIds] = useState<Set<number>>(new Set());
+
+    // Add this function to fetch joined programs
+    const fetchJoinedPrograms = async () => {
+        if (!myVolunteer && !myOrgVolunteer) return;
+
+        try {
+            const volunteerId = myVolunteer?.volunteer_id || myOrgVolunteer?.volunteer_id;
+            if (!volunteerId) return;
+
+            // Get all programs
+            const allPrograms = await listPrograms();
+            const joinedIds = new Set<number>();
+
+            // Check each program to see if this volunteer is assigned
+            for (const program of allPrograms) {
+                if (program.assigned_volunteer_ids && program.assigned_volunteer_ids.includes(volunteerId)) {
+                    joinedIds.add(program.id);
+                }
+            }
+
+            setJoinedProgramIds(joinedIds);
+            console.log("Joined program IDs:", Array.from(joinedIds));
+        } catch (error) {
+            console.error("Failed to fetch joined programs:", error);
+        }
+    };
+
 
     useEffect(() => {
         // try fetch "my"  individual/org volunteer profiles (requires auth)
@@ -512,6 +540,14 @@ export default function IDRISDashboard() {
         fetchMyProfiles();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Call fetchJoinedPrograms when volunteer profiles are loaded
+    useEffect(() => {
+        if (myVolunteer || myOrgVolunteer) {
+            fetchJoinedPrograms();
+        }
+    }, [myVolunteer, myOrgVolunteer]);
+
 
     const totalVolunteersNumber = useMemo(() => {
         const ind = volunteers.filter((v) => statusOf(v) === "approved").length;
@@ -850,7 +886,7 @@ export default function IDRISDashboard() {
             }
 
             await fetchVolunteers();
-
+            await fetchJoinedPrograms();
             Swal.fire({
                 title: "Joined Program",
                 text: `You have successfully joined the program "${n.title}". Thank you for volunteering!`,
@@ -899,13 +935,10 @@ export default function IDRISDashboard() {
         }
     };
 
-
-
-
-
     if (loading) {
         return <div>Loading...</div>;
     }
+
 
     return (
         <div className="dashboard-container">
@@ -1379,19 +1412,41 @@ export default function IDRISDashboard() {
                                                         </div>
 
                                                         {/* JOIN BUTTON */}
-                                                        {!isOpsAdmin && (
-                                                            <button
-                                                                onClick={() => joinProgram(item)}
-                                                                disabled={disabled}
-                                                                className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
-                                                                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                                                    : "bg-blue-600 text-white hover:bg-blue-700"
-                                                                    }`}
-                                                                title={disabled ? "You can't join this event now" : "Join this event"}
-                                                            >
-                                                                {buttonLabel}
-                                                            </button>
-                                                        )}
+                                                        {!isOpsAdmin && (() => {
+                                                            const alreadyJoined = joinedProgramIds.has(item.id);
+                                                            const disabled = !canJoin(item) || !!joining[item.id] || alreadyJoined;
+
+                                                            const buttonLabel = alreadyJoined
+                                                                ? "Already Joined"
+                                                                : item.lifecycle === "finished"
+                                                                    ? "Closed"
+                                                                    : item.currentVolunteers >= item.maxVolunteers
+                                                                        ? "Full"
+                                                                        : joining[item.id]
+                                                                            ? "Joining..."
+                                                                            : "Join";
+
+                                                            return (
+                                                                <button
+                                                                    onClick={() => joinProgram(item)}
+                                                                    disabled={disabled}
+                                                                    className={`px-3 py-1 rounded-md text-sm transition-colors ${disabled
+                                                                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                                                        : "bg-blue-600 text-white hover:bg-blue-700"
+                                                                        }`}
+                                                                    title={
+                                                                        alreadyJoined
+                                                                            ? "You have already joined this program"
+                                                                            : disabled
+                                                                                ? "You can't join this event now"
+                                                                                : "Join this event"
+                                                                    }
+                                                                >
+                                                                    {buttonLabel}
+                                                                </button>
+                                                            );
+                                                        })()}
+
                                                     </div>
 
 

@@ -393,6 +393,7 @@
         white-space: nowrap;
         min-width: 100px;
         max-width: 1fr;
+
       }
     }
 
@@ -409,7 +410,7 @@
           padding: 1rem;
           font-size: 0.875rem;
           color: #374151;
-          white-space: nowrap;
+          overflow-wrap: break-word;
         }
       }
     }
@@ -775,9 +776,9 @@
   @media (max-width: 768px) {
     font-size: 0.8rem;
 
-    table {
-      min-width: 700px;
-    }
+    // Remove the nested table selector and apply directly to the component
+    min-width: 700px;
+    overflow-x: auto; // Add horizontal scroll for small screens
 
     th,
     td {
@@ -785,6 +786,7 @@
     }
   }
 }
+
 
 
 /* Loading and Error States */

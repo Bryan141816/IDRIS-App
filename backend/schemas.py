@@ -71,7 +71,7 @@ class AdminUserProfileCreate(BaseModel):
     contact_number: Optional[str] = None
     position: Optional[str] = None
     employee_id: Optional[str] = None  # URL or path for ID image
-    lgu_id: int
+    lgu_id: Optional[int] = None
 
     class Config:
         from_attributes = True

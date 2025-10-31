@@ -85,82 +85,9 @@ const fmtLL = (lat?: number | "" | null, lng?: number | "" | null) => {
   const f = (n: number) => Number(n).toFixed(6);
   return `${f(Number(lat))}, ${f(Number(lng))}`;
 };
+// ✅ add this
 
-/* ===== Placeholder data ===== */
-const sampleBarangays: BarangayRow[] = [
-  {
-    id: 1,
-    barangay_name: "Barangay Mabini",
-    lat: 10.3182,
-    lng: 123.8971,
-    total_population: 12000,
-    households: 2500,
-    barangay_captain: "Juan Dela Cruz",
-    contact: "09171234567",
-    common_hazards: ["Typhoons", "Flooding"],
-    nearest_evacuation: "Dayag's Evac",
-    pwd: 120,
-    senior: 800,
-    children: 3000,
-  },
-  {
-    id: 2,
-    barangay_name: "Barangay Poblacion",
-    lat: 10.315,
-    lng: 123.9002,
-    total_population: 9800,
-    households: 2100,
-    barangay_captain: "Maria Santos",
-    contact: "09181234567",
-    common_hazards: ["Typhoons", "Earthquakes"],
-    nearest_evacuation: "Antier's Evac",
-    pwd: 95,
-    senior: 720,
-    children: 2500,
-  },
-  {
-    id: 3,
-    barangay_name: "Barangay San Roque",
-    lat: 10.3201,
-    lng: 123.8805,
-    total_population: 14300,
-    households: 3000,
-    barangay_captain: "Pedro Reyes",
-    contact: "09191234567",
-    common_hazards: ["Landslides", "Typhoons"],
-    nearest_evacuation: "Alcantara's Evac",
-    pwd: 140,
-    senior: 950,
-    children: 3600,
-  },
-];
 
-const sampleRAFFIs: RAFFIRow[] = [
-  {
-    id: "rf1",
-    raffi_name: "RAFFI Multi-Purpose Hall",
-    raffi_description: "Community hall used for relief ops and trainings.",
-    lat: 10.3182,
-    lng: 123.8971,
-    raffi_picture: "",
-  },
-  {
-    id: "rf2",
-    raffi_name: "RAFFI Evacuation Center",
-    raffi_description: "Designated evacuation site with 20 rooms.",
-    lat: 10.315,
-    lng: 123.9002,
-    raffi_picture: "",
-  },
-  {
-    id: "rf3",
-    raffi_name: "RAFFI Water Point",
-    raffi_description: "Solar-powered water filtration kiosk.",
-    lat: 10.3201,
-    lng: 123.8805,
-    raffi_picture: "",
-  },
-];
 
 /* ========================= COMPONENT ========================= */
 const LGUofficer: React.FC = () => {
@@ -177,6 +104,19 @@ const LGUofficer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState("");
   const [barangayList, setBarangayList] = useState<Barangay[]>([]);
+  const handleBarangaySaved = (updated: Barangay) => {
+  // update the table rows immediately
+  setBarangayList(prev =>
+    prev.map(b => (b.id === updated.id ? { ...b, ...updated } : b))
+  );
+
+  // (optional) keep the currently selectedData in sync if it's the same barangay
+  setSelectedData(prev =>
+    prev && "id" in prev && (prev as Barangay).id === updated.id
+      ? { ...(prev as Barangay), ...updated }
+      : prev
+  );
+};
   const openModal = (
     type: string,
     selected: LGUOut | Barangay | null = null,
@@ -242,14 +182,21 @@ const LGUofficer: React.FC = () => {
           data={selectedData}
         ></MyLGUViewModal>
       )}
-      {activeModal === "edit-modal" &&
-        selectedData &&
-        isLGUOut(selectedData) && (
-          <MyLGUEditModal
-            closeModal={closeModal}
-            data={selectedData}
-          ></MyLGUEditModal>
-        )}
+      {activeModal === "edit-barangay" &&
+  myLGULocation &&
+  myLGULocation.lat &&
+  myLGULocation.lng &&
+  selectedData &&
+  isBarangay(selectedData) && (
+    <BarangayEditModal
+      lgu_name={myLGULocation?.lgu_name}
+      closeModal={closeModal}
+      data={selectedData}
+      lgu_coordinate={[myLGULocation.lat, myLGULocation.lng]}
+      onSaved={handleBarangaySaved}   // ✅ add this line
+    />
+)}
+
       {activeModal === "view-barangay" &&
         selectedData &&
         isBarangay(selectedData) && (
@@ -258,20 +205,7 @@ const LGUofficer: React.FC = () => {
             data={selectedData}
           ></BarangayViewModal>
         )}
-      {activeModal === "edit-barangay" &&
-        myLGULocation &&
-        myLGULocation.lat &&
-        myLGULocation.lng &&
-        selectedData &&
-        isBarangay(selectedData) && (
-          <BarangayEditModal
-            lgu_name={myLGULocation?.lgu_name}
-            closeModal={closeModal}
-            data={selectedData}
-            lgu_coordinate={[myLGULocation.lat, myLGULocation.lng]}
-          ></BarangayEditModal>
-        )}
-
+     
 
 
 

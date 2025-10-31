@@ -18,11 +18,13 @@ export default function FinanceReport({
     address: { street: "35 Eduardo Aboitiz St", city: "Cebu City", state: "Philippines", zip: "6000" },
     contact: { phone: "(09) 000-000-0000", email: "sampleemail@gmail.com" },
   } as CompanyInfo,
+  reportType = "",
   reportTitle = "Finance Report",
   currency = "USD",
 }: {
   finances?: Finance[];
   companyInfo?: CompanyInfo;
+  reportType?: string;
   reportTitle?: string;
   currency?: string;
 }) {
@@ -34,7 +36,10 @@ export default function FinanceReport({
   (location.state as any)?.reportTitle ??
   undefined;
 
-  const title = repTitle ?? reportTitle ?? "Finance Report";
+  const specific = repTitle ?? reportTitle;
+  const title = specific ? `Finance Report: ${specific}` : "Finance Report";
+  
+  const hideCounterparty = reportType == 'inflows';
 
   // ------- Rows: no placeholders; show empty state instead -------
   const [rows, setRows] = useState<Finance[]>(Array.isArray(_finances) ? _finances : []);
@@ -95,16 +100,32 @@ export default function FinanceReport({
       doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - rightMargin, y, { align: "right" });
     };
 
-    const head = [["Finance ID", "Counterparty", "Amount", "Date", "Category", "Description", "Type"]];
+    const head = [
+      hideCounterparty
+        ? ["Finance ID", "Amount", "Date", "Category", "Description", "Type"]
+        : ["Finance ID", "Counterparty", "Amount", "Date", "Category", "Description", "Type"]
+    ];
+
     const body = rows.length
       ? rows.map(r => [
-          String(r.finance_id),
-          r.counterparty,
-          formatCurrency(r.amount),
-          formatDateOnly(r.date),
-          r.inflow_source || r.spend_category || "—",
-          r.purpose,
-          r.transaction_type,
+          hideCounterparty
+            ? [
+                String(r.finance_id),
+                formatCurrency(r.amount),
+                formatDateOnly(r.date),
+                r.inflow_source || r.spend_category || "—",
+                r.purpose,
+                r.transaction_type,
+              ]
+            : [
+                String(r.finance_id),
+                r.counterparty || "—",
+                formatCurrency(r.amount),
+                formatDateOnly(r.date),
+                r.inflow_source || r.spend_category || "—",
+                r.purpose,
+                r.transaction_type,
+              ]
         ])
       : [["No Data Found", "", "", "", "", "", ""]];
 

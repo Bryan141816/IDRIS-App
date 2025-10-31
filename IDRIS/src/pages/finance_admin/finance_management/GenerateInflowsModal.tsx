@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getInflowsReport, getOutflowsReport } from '../../../API_Handler/finance_management_handler';
+import { InflowsSelection } from "./ReportsExportSection";
+
 type ReportType = "Monthly" | "Quarterly" | "Annual";
 type FinanceStatus = "PENDING" | "RECEIVED";
 type ExportFormat = "Print";
@@ -8,7 +10,7 @@ type ExportFormat = "Print";
 interface Props {
   open: boolean;
   onClose: () => void;
-  isInflows?: boolean;
+  strType?: InflowsSelection;
   navigatePath?: string; // default: "/finance&admin/finance_management/inflows"
 }
 
@@ -68,7 +70,7 @@ const computeRange = (
 const GenerateInflowsModal: React.FC<Props> = ({
   open,
   onClose,
-  isInflows = true,
+  strType = "inflows",
   navigatePath = "/finance_printable",
 }) => {
   const navigate = useNavigate();
@@ -102,19 +104,27 @@ const GenerateInflowsModal: React.FC<Props> = ({
   
     setLoading(true);
     try {
-      let data: any; // <- declare once in outer scope
+      let data: any;
   
-      // Call the correct API with range + statuses (+ optional allocation)
-      if (isInflows) {
+      if (strType == "inflows") {
         data = await getInflowsReport(
           from,
           to
         );
-      } else {
+      } else if(strType == "outflows") {
         data = await getOutflowsReport(
           from,
           to
         );
+      } else {
+        let inflows = await getInflowsReport(
+          from, to
+        )
+        let outflows = await getOutflowsReport(
+          from,
+          to,
+        );
+        data = [...inflows, ...outflows];
       }
   
       console.log("Report data:", data);
@@ -122,6 +132,8 @@ const GenerateInflowsModal: React.FC<Props> = ({
       navigate(navigatePath, {
         state: {
           finances: Array.isArray(data) ? data : (data?.finances ?? []),
+          reportTitle: strType == "inflows" ? "INFLOWS" : strType == "outflows" ? "OUTFLOWS" : "INFLOWS & OUTFLOWS",
+          reportType: strType,
         },
       });
   
@@ -145,7 +157,7 @@ const GenerateInflowsModal: React.FC<Props> = ({
         </div>
 
         <div className="modal-content">
-          <h3>Generate { isInflows ? "Inflows" : "Outflows"}</h3>
+          <h3>Generate { strType=="inflows" ? "Inflows" : strType=="outflows" ? "Outflows" : "Inflows and Outflows"}</h3>
 
           {/* Report Type */}
           <div className="form-group">

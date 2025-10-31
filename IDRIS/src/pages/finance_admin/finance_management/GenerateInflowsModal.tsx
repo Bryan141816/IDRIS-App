@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getInflowsReport, getOutflowsReport } from '../../../API_Handler/finance_management_handler';
-import { FinanceStatuses, BudgetAllocations } from './types';
 type ReportType = "Monthly" | "Quarterly" | "Annual";
 type FinanceStatus = "PENDING" | "RECEIVED";
 type ExportFormat = "Print";
@@ -79,10 +78,6 @@ const GenerateInflowsModal: React.FC<Props> = ({
   const [quarter, setQuarter] = useState<Quarter | "">("");
   const [yearValue, setYearValue] = useState<string>("");
 
-  // Status limited to Pending & Received
-  const [financeStatus, setFinanceStatus] = useState<FinanceStatus[]>([]);
-  const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
-
   const [format, setFormat] = useState<ExportFormat>("Print");
   const [loading, setLoading] = useState(false);
 
@@ -92,7 +87,6 @@ const GenerateInflowsModal: React.FC<Props> = ({
     setMonthValue("");
     setQuarter("");
     setYearValue("");
-    setFinanceStatus([]);
     setFormat("Print");
   }, [open]);
 
@@ -101,16 +95,6 @@ const GenerateInflowsModal: React.FC<Props> = ({
     (reportType === "Quarterly" && (!yearValue || !quarter) && "Select year and quarter.") ||
     (reportType === "Annual" && !yearValue && "Select a year.") ||
     "";
-
-  const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[];
-    setBudgetAllocation(selected);
-  };
-
-  const handleStatuses = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value as FinanceStatus);
-    setFinanceStatus(selected);
-  };
 
   const handleGenerate = async () => {
     const { from, to, error } = computeRange(reportType, yearValue, monthValue, quarter);
@@ -124,16 +108,12 @@ const GenerateInflowsModal: React.FC<Props> = ({
       if (isInflows) {
         data = await getInflowsReport(
           from,
-          to,
-          financeStatus as string[],
-          (budgetAllocation as unknown as string[]) ?? undefined
+          to
         );
       } else {
         data = await getOutflowsReport(
           from,
-          to,
-          financeStatus as string[],
-          (budgetAllocation as unknown as string[]) ?? undefined
+          to
         );
       }
   
@@ -240,37 +220,6 @@ const GenerateInflowsModal: React.FC<Props> = ({
             )}
 
             {invalidPeriodMsg && <small className="error-text">{invalidPeriodMsg}</small>}
-          </div>
-
-          <div className="form-group">
-            <label>Budget Allocation</label>
-            <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
-              <option>EMERGENCY SUPPLIES</option>
-              <option>FOOD AND WATER</option>
-              <option>TRANSPORTATION</option>
-              <option>EQUIPMENT</option>
-              <option>ADMINISTRATIVE</option>
-              <option>DONATIONS</option>
-              <option>GENERAL</option>
-            </select>
-          </div>
-
-          {/* Status (Pending/Received only) */}
-          <div className="form-group">
-            <label htmlFor="statusSelect">Status</label>
-            <select
-              id="statusSelect"
-              multiple
-              value={financeStatus}
-              onChange={handleStatuses}
-            >
-              <option>PENDING</option>
-              {isInflows && <option>PAID</option>}
-              {isInflows && <option>RECEIVED</option>}
-              {!isInflows && <option>APPROVED</option>}
-              {!isInflows && <option>DENIED</option>}
-              {!isInflows && <option>RECONCILED</option>}
-            </select>
           </div>
 
           {/* Output format (kept hidden/commented as in your snippet) */}

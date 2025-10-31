@@ -35,7 +35,8 @@ const normalizeRow = (r: any): Finance => ({
   counterparty: r.counterparty ?? r.donor_name ?? r.donor ?? r.name ?? "—",
   amount: Number(r.amount ?? r.total_amount ?? 0),
   date: r.date ?? r.donation_date ?? r.created_at ?? new Date().toISOString().slice(0, 10),
-  budget_for: String(r.budget_for ?? r.allocation_type ?? "—"),
+  inflow_source: r.inflow_source,
+  spend_category: r.spend_category,
   description: r.description ?? r.notes ?? "—",
   transaction_type: String(r.transaction_type ?? r.donation_type ?? r.type ?? "UNKNOWN"),
 });
@@ -162,7 +163,7 @@ export async function buildFinanceReportPDFBlob(
     "Counterparty",
     "Amount",
     "Date",
-    "Budget For",
+    "Category",
     "Description",
     "Transaction Type",
   ]];
@@ -173,7 +174,7 @@ export async function buildFinanceReportPDFBlob(
         r.counterparty,
         fmtMoney(r.amount, currency),
         fmtDate(r.date),
-        r.budget_for,
+        r.inflow_source || r.spend_category || "—",
         String(r.description ?? "—").length > 120
           ? String(r.description).slice(0, 117) + "..."
           : String(r.description ?? "—"),
@@ -389,7 +390,7 @@ export function printFinanceHTMLReportFromRows(
         <td>${r.counterparty}</td>
         <td class="right">${new Intl.NumberFormat("en-PH", { style: "currency", currency }).format(r.amount || 0)}</td>
         <td>${fmtDate(r.date)}</td>
-        <td>${r.budget_for}</td>
+        <td>${r.inflow_source || r.spend_category || "—"}</td>
         <td>${r.description ?? "—"}</td>
         <td>${String(r.transaction_type || "").replace(/_/g, " ")}</td>
       </tr>
@@ -410,7 +411,7 @@ export function printFinanceHTMLReportFromRows(
   <table>
     <thead><tr>
       <th>ID</th><th>Counterparty</th><th>Amount</th><th>Date</th>
-      <th>Budget For</th><th>Description</th><th>Transaction Type</th>
+      <th>Category</th><th>Description</th><th>Transaction Type</th>
     </tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>

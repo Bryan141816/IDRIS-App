@@ -176,7 +176,7 @@ const FinancialReportDashboard: React.FC = () => {
         <div className="pageBreakBefore" />
 
         {/* Pending Transactions Analysis */}
-        <section className={`${styles.section} pageBreakAfter`}>
+        {/* <section className={`${styles.section} pageBreakAfter`}>
           <h2 className={styles.sectionTitle}>Pending Transactions Analysis</h2>
           <div className={styles.chartsGrid}>
             <PendingTransactionsChart
@@ -230,7 +230,7 @@ const FinancialReportDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Footer */}
         <footer className={styles.footer}>

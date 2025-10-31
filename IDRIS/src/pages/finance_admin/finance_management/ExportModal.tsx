@@ -8,8 +8,6 @@ import {
 import {
   type Finance,
   type CompanyInfo,
-  type FinanceStatuses,
-  type BudgetAllocations,
 } from './types';
 
 export type ExportPreset =
@@ -44,8 +42,6 @@ const ExportModal: React.FC<Props> = ({ open, preset = "Complete Financial Log",
   // Export filters/format
   const [exportType, setExportType] = useState<ExportPreset>(preset);
   const [format, setFormat] = useState<ExportFormat>("Excel (.xlsx)");
-  const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
-  const [financeStatus, setFinanceStatus] = useState<FinanceStatuses[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -58,8 +54,6 @@ const ExportModal: React.FC<Props> = ({ open, preset = "Complete Financial Log",
 
     setExportType(preset);
     setFormat("Excel (.xlsx)");
-    setBudgetAllocation([]);
-    setFinanceStatus([]);
   }, [open, preset]);
 
   const invalidPeriodMsg = (() => {
@@ -93,25 +87,14 @@ const ExportModal: React.FC<Props> = ({ open, preset = "Complete Financial Log",
     return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
   };
 
-  const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setBudgetAllocation(Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[]);
-  };
-
-  const handleStatuses = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFinanceStatus(Array.from(e.target.selectedOptions, (o) => o.value) as FinanceStatuses[]);
-  };
-
   const handleExport = async () => {
     const { from, to, error } = computeRange();
     if (error) return;
 
-    const statuses = (financeStatus as unknown as string[]) || undefined;
-    const allocation_type = (budgetAllocation as unknown as string[]) || undefined;
-
     setLoading(true);
 
     try {
-      const results = await getReportData(from, to, statuses, allocation_type);
+      const results = await getReportData(from, to,);
 
       const rangeLabel =
         reportType === "Monthly"
@@ -123,8 +106,6 @@ const ExportModal: React.FC<Props> = ({ open, preset = "Complete Financial Log",
       const reportTitle = [
         "Finance Report",
         rangeLabel ? `(${rangeLabel})` : "",
-        allocation_type?.length ? `• ${allocation_type.join(", ")}` : "",
-        statuses?.length ? `• ${statuses.join(", ")}` : "",
         exportType ? `• ${exportType}` : "",
       ]
         .filter(Boolean)
@@ -232,31 +213,6 @@ const ExportModal: React.FC<Props> = ({ open, preset = "Complete Financial Log",
               <option>Inflows Only</option>
               <option>Outflows Only</option>
               <option>Budget Summary</option>
-            </select>
-          </div>
-
-          {/* Filters */}
-          <div className="form-group">
-            <label>Budget Allocation</label>
-            <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
-              <option>EMERGENCY SUPPLIES</option>
-              <option>FOOD AND WATER</option>
-              <option>TRANSPORTATION</option>
-              <option>EQUIPMENT</option>
-              <option>ADMINISTRATIVE</option>
-              <option>DONATIONS</option>
-              <option>GENERAL</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Status</label>
-            <select multiple value={financeStatus} onChange={handleStatuses}>
-              <option>PENDING</option>
-              <option>PAID</option>
-              <option>RECEIVED</option>
-              <option>APPROVED</option>
-              <option>DENIED</option>
-              <option>RECONCILED</option>
             </select>
           </div>
 

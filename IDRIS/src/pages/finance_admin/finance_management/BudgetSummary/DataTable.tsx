@@ -9,9 +9,9 @@ export type AllocationItem = {
   inflow: number | string;
   outflow: number | string;
   net: number | string;
-  pending_inflow: number | string;
-  pending_outflow: number | string;
-  denied: number | string;
+  // pending_inflow: number | string;
+  // pending_outflow: number | string;
+  // denied: number | string;
 };
 
 export type FinanceData = {
@@ -24,9 +24,9 @@ export type KPIs = {
   total_inflow: number | string;
   total_outflow: number | string;
   net_balance: number | string;
-  pending_inflow: number | string;
-  pending_outflow: number | string;
-  denied_total: number | string;
+  // pending_inflow: number | string;
+  // pending_outflow: number | string;
+  // denied_total: number | string;
 };
 
 type Props = {
@@ -58,9 +58,9 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
               <th className={`${styles.th} ${styles.thRight}`}>Inflow</th>
               <th className={`${styles.th} ${styles.thRight}`}>Outflow</th>
               <th className={`${styles.th} ${styles.thRight}`}>Net Balance</th>
-              <th className={`${styles.th} ${styles.thRight}`}>Pending In</th>
+              {/* <th className={`${styles.th} ${styles.thRight}`}>Pending In</th>
               <th className={`${styles.th} ${styles.thRight}`}>Pending Out</th>
-              <th className={`${styles.th} ${styles.thRight}`}>Denied</th>
+              <th className={`${styles.th} ${styles.thRight}`}>Denied</th> */}
               <th className={`${styles.th} ${styles.thRight}`}>Utilization</th>
             </tr>
           </thead>
@@ -92,7 +92,7 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
                     {formatCurrency(item.net)}
                   </td>
 
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellAmber}`}>
+                  {/* <td className={`${styles.cell} ${styles.cellRight} ${styles.cellAmber}`}>
                     {formatCurrency(item.pending_inflow)}
                   </td>
 
@@ -102,7 +102,7 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
 
                   <td className={`${styles.cell} ${styles.cellRight} ${styles.cellDanger}`}>
                     {formatCurrency(item.denied)}
-                  </td>
+                  </td> */}
 
                   <td className={`${styles.cell} ${styles.cellRight} ${styles.cellUtil}`}>
                     {util}%
@@ -126,7 +126,7 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
                 {formatCurrency(kpis.net_balance)}
               </td>
 
-              <td className={`${styles.cell} ${styles.cellRight} ${styles.cellAmber}`}>
+              {/* <td className={`${styles.cell} ${styles.cellRight} ${styles.cellAmber}`}>
                 {formatCurrency(kpis.pending_inflow)}
               </td>
 
@@ -136,7 +136,7 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
 
               <td className={`${styles.cell} ${styles.cellRight} ${styles.cellDanger}`}>
                 {formatCurrency(kpis.denied_total)}
-              </td>
+              </td> */}
 
               <td className={`${styles.cell} ${styles.cellRight} ${styles.cellUtil}`}>
                 {overallUtil}%

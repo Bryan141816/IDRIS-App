@@ -5,7 +5,7 @@ from typing import Iterable, List, Dict, Any, Optional, Union
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, case, literal, and_, or_
+from sqlalchemy import select, func, case, literal, and_, or_, cast, String
 from crud_functions.utils import uid_from_string, random_suffix
 from models import FinanceRecord, TransactionType, InflowSource, SpendCategory
 from data_schemas.finance_record_schema import (
@@ -174,7 +174,7 @@ class FinanceReport:
         """
         Return aggregated dashboard dict grouped by allocation (inflow_source/spend_category).
         Only accepts from_date/to_date. If neither provided, defaults to year-to-date.
-        Includes all statuses in KPIs and breakdown; pending/denied are still reported separately.
+        With no status column in schema, pending_* and denied are returned as 0 to preserve response shape.
         """
 
         # default date window if none provided: year-to-date
@@ -183,13 +183,13 @@ class FinanceReport:
             from_date = date(today.year, 1, 1)
             to_date = today
 
-        # Base query with filters (for diagnostics) - includes all statuses
+        # Base query with filters (for diagnostics)
         base_q = db.query(FinanceRecord).filter(
             FinanceRecord.date >= from_date, FinanceRecord.date <= to_date
         )
         records_considered = base_q.count()
 
-        # total inflow (all statuses)
+        # total inflow (all records)
         total_inflow_q = db.query(
             func.coalesce(
                 func.sum(
@@ -203,7 +203,7 @@ class FinanceReport:
         ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         total_inflow = Decimal(total_inflow_q.scalar() or 0)
 
-        # total outflow (all statuses)
+        # total outflow (all records)
         total_outflow_q = db.query(
             func.coalesce(
                 func.sum(
@@ -217,45 +217,10 @@ class FinanceReport:
         ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
         total_outflow = Decimal(total_outflow_q.scalar() or 0)
 
-        # pending inflow/outflow (status == PENDING)
-        pending_inflow_q = db.query(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (
-                            (FinanceRecord.transaction_type == TransactionType.INFLOW),
-                            FinanceRecord.amount,
-                        ),
-                        else_=0,
-                    )
-                ),
-                0,
-            )
-        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
-        pending_inflow = Decimal(pending_inflow_q.scalar() or 0)
-
-        pending_outflow_q = db.query(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (
-                            (FinanceRecord.transaction_type == TransactionType.OUTFLOW),
-                            FinanceRecord.amount,
-                        ),
-                        else_=0,
-                    )
-                ),
-                0,
-            )
-        ).filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
-        pending_outflow = Decimal(pending_outflow_q.scalar() or 0)
-
-        # denied total (all denied amounts)
-        denied_q = db.query(func.coalesce(func.sum(FinanceRecord.amount), 0)).filter(
-            FinanceRecord.date >= from_date,
-            FinanceRecord.date <= to_date,
-        )
-        denied_total = Decimal(denied_q.scalar() or 0)
+        # No-status mode: these KPIs aren’t computable without a status field
+        # pending_inflow = Decimal(0)
+        # pending_outflow = Decimal(0)
+        # denied_total = Decimal(0)
 
         # last_updated (most recent updated_at for the window)
         max_updated = db.query(func.max(FinanceRecord.updated_at)).filter(
@@ -264,17 +229,23 @@ class FinanceReport:
         ).scalar()
         last_updated_val = max_updated or datetime.utcnow()
 
-        # Breakdown by allocation (always group by inflow_source/spend_category)
-        breakdown_allocation = []
-
+        # ---- KEY FIX: cast both CASE branches to the same type (text) ----
         grouping_key = case(
-            (FinanceRecord.transaction_type == TransactionType.INFLOW, FinanceRecord.inflow_source),
-            (FinanceRecord.transaction_type == TransactionType.OUTFLOW, FinanceRecord.spend_category)
+            (
+                FinanceRecord.transaction_type == TransactionType.INFLOW,
+                cast(FinanceRecord.inflow_source, String),
+            ),
+            (
+                FinanceRecord.transaction_type == TransactionType.OUTFLOW,
+                cast(FinanceRecord.spend_category, String),
+            ),
+            else_=literal("Uncategorized"),
         ).label("allocation")
 
         grp_query = (
             db.query(
                 grouping_key,
+                # inflow / outflow (all records)
                 func.coalesce(
                     func.sum(
                         case(
@@ -293,61 +264,31 @@ class FinanceReport:
                     ),
                     0,
                 ).label("outflow"),
-                func.coalesce(
-                    func.sum(
-                        case(
-                            (
-                                (FinanceRecord.transaction_type == TransactionType.INFLOW),
-                                FinanceRecord.amount,
-                            ),
-                            else_=0,
-                        )
-                    ),
-                    0,
-                ).label("pending_inflow"),
-                func.coalesce(
-                    func.sum(
-                        case(
-                            (
-                                (FinanceRecord.transaction_type == TransactionType.OUTFLOW),
-                                FinanceRecord.amount,
-                            ),
-                            else_=0,
-                        )
-                    ),
-                    0,
-                ).label("pending_outflow"),
-                func.coalesce(
-                    func.sum(
-                        case(
-                            else_=0,
-                        )
-                    ),
-                    0,
-                ).label("denied"),
+                # No-status mode: keep response shape with zeros
+                # literal(0).label("pending_inflow"),
+                # literal(0).label("pending_outflow"),
+                # literal(0).label("denied"),
             )
             .filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
             .group_by(grouping_key)
         )
 
         rows = grp_query.all()
+        breakdown_allocation = []
         for r in rows:
             inflow = Decimal(r.inflow or 0)
             outflow = Decimal(r.outflow or 0)
-            pending_in = Decimal(r.pending_inflow or 0)
-            pending_out = Decimal(r.pending_outflow or 0)
-            denied = Decimal(r.denied or 0)
             net = inflow - outflow
-            allocation_name = r.allocation.name if hasattr(r.allocation, "name") else str(r.allocation)
+            allocation_name = r.allocation if r.allocation is not None else "Uncategorized"
             breakdown_allocation.append(
                 {
                     "allocation": allocation_name,
                     "inflow": _decimal_to_str(inflow),
                     "outflow": _decimal_to_str(outflow),
                     "net": _decimal_to_str(net),
-                    "pending_inflow": _decimal_to_str(pending_in),
-                    "pending_outflow": _decimal_to_str(pending_out),
-                    "denied": _decimal_to_str(denied),
+                    # "pending_inflow": _decimal_to_str(Decimal(0)),
+                    # "pending_outflow": _decimal_to_str(Decimal(0)),
+                    # "denied": _decimal_to_str(Decimal(0)),
                 }
             )
 
@@ -360,17 +301,17 @@ class FinanceReport:
                 "total_inflow": _decimal_to_str(total_inflow),
                 "total_outflow": _decimal_to_str(total_outflow),
                 "net_balance": _decimal_to_str(total_inflow - total_outflow),
-                "pending_inflow": _decimal_to_str(pending_inflow),
-                "pending_outflow": _decimal_to_str(pending_outflow),
-                "denied_total": _decimal_to_str(denied_total),
+                # "pending_inflow": _decimal_to_str(pending_inflow),
+                # "pending_outflow": _decimal_to_str(pending_outflow),
+                # "denied_total": _decimal_to_str(denied_total),
                 "last_updated": last_updated_val.isoformat(),
             },
             "breakdown": {"allocation": breakdown_allocation},
             "diagnostics": {"records_considered": int(records_considered)},
         }
 
-        return result
-
+        return result    
+    
 def _decimal_to_str(d: Decimal) -> str:
     if d is None:
         d = Decimal("0.00")

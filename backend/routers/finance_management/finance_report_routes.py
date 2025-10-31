@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Form
 from sqlalchemy.orm import Session
@@ -30,24 +30,29 @@ router_admin_or_donor = APIRouter(
 def list_records_all(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
     to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
-    allocation_type_a: Optional[List[InflowSource]] = Query(None, alias="allocation_type"),
-    allocation_type_b: Optional[List[InflowSource]] = Query(None, alias="allocation_type[]"),
-
+    inflow_source_a: Optional[List[InflowSource]] = Query(None, alias="inflow_source"),
+    inflow_source_b: Optional[List[InflowSource]] = Query(None, alias="inflow_source[]"),
+    spend_category_a: Optional[List[SpendCategory]] = Query(None, alias="spend_category"),
+    spend_category_b: Optional[List[SpendCategory]] = Query(None, alias="spend_category[]"),
     db: Session = Depends(get_db),
 ):
     """
     Get records with optional filters: date range, status list, and allocation type.
     """
-    allocation_type = (allocation_type_a or []) + (allocation_type_b or [])
-
+    inflow_sources: List[InflowSource] = (inflow_source_a or []) + (inflow_source_b or [])
+    spend_categories: List[SpendCategory] = (spend_category_a or []) + (spend_category_b or [])
+    
+    categories: List[Union[InflowSource, SpendCategory, str]] = (
+        list(inflow_sources) + list(spend_categories)
+    )    
+    
     records = FinanceReport.get_all(
         db=db,
         from_date=from_date,
         to_date=to_date,
-        allocation_type=allocation_type,
-    )
+        categories = categories or None,
+    ) or []
 
-    records = records or []
     print(records)
     # Return as dicts (or use Pydantic schema if you already have one)
     return [
@@ -58,7 +63,7 @@ def list_records_all(
             "date": rec.date,
             "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
             "spend_category": rec.spend_category.value if rec.spend_category else None,
-            "description": rec.description,
+            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
         }
         for rec in records
@@ -95,7 +100,7 @@ def list_inflows(
             "amount": float(rec.amount),
             "date": rec.date,
             "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
-            "description": rec.description,
+            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
         }
         for rec in (inflows or [])
@@ -131,7 +136,7 @@ def list_outflows(
             "amount": float(rec.amount),
             "date": rec.date,
             "spend_category": rec.spend_category.value if rec.spend_category else None,
-            "description": rec.description,
+            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
         }
         for rec in (outflows or [])

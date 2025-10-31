@@ -52,7 +52,7 @@ export type OutflowItem = {
 };
 
 export type BudgetItem = {
-  budget_for: string;
+  category: string;
   inflow_total: number;
   outflow_total: number;
   net_total: number;
@@ -66,14 +66,6 @@ export interface ReportItem {
   period: string;
   generated: string;
 }
-
-// export interface BudgetItem {
-//   category: string;
-//   allocated: number;
-//   spent: number;
-//   remaining: number;
-//   percentage: number;
-// }
 
 export interface CompanyInfo {
   name: string;

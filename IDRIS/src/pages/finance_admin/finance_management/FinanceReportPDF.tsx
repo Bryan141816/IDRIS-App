@@ -43,12 +43,6 @@ export default function FinanceReport({
 
   const totalAmount = rows.reduce((sum, f) => sum + (Number.isFinite(f.amount) ? f.amount : 0), 0);
 
-  const statusClass = (status: string) => {
-    const key = "status" + status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    return (styles as Record<string, string>)[key] ?? "";
-  };
-
-
   const handleDownloadPDF = async () => {
     const doc = new jsPDF({ orientation: "p", unit: "mm", format: "letter" });
     const pageWidth  = doc.internal.pageSize.getWidth();
@@ -101,19 +95,18 @@ export default function FinanceReport({
       doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - rightMargin, y, { align: "right" });
     };
 
-    const head = [["Finance ID", "Counterparty", "Amount", "Date", "Budget For", "Description", "Type", "Status"]];
+    const head = [["Finance ID", "Counterparty", "Amount", "Date", "Category", "Description", "Type"]];
     const body = rows.length
       ? rows.map(r => [
           String(r.finance_id),
           r.counterparty,
           formatCurrency(r.amount),
           formatDateOnly(r.date),
-          r.budget_for,
+          r.inflow_source || r.spend_category || "—",
           r.description,
           r.transaction_type,
-          r.status,
         ])
-      : [["No Data Found", "", "", "", "", "", "", ""]];
+      : [["No Data Found", "", "", "", "", "", ""]];
 
     autoTable(doc, {
       head, body,
@@ -201,10 +194,9 @@ export default function FinanceReport({
                 <th className={`${styles.tableCell} ${styles.headerCell}`}>Counterparty</th>
                 <th className={`${styles.tableCell} ${styles.headerCell}`}>Amount</th>
                 <th className={`${styles.tableCell} ${styles.headerCell}`}>Date</th>
-                <th className={`${styles.tableCell} ${styles.headerCell}`}>Budget For</th>
+                <th className={`${styles.tableCell} ${styles.headerCell}`}>Category</th>
                 <th className={`${styles.tableCell} ${styles.headerCell}`}>Description</th>
                 <th className={`${styles.tableCell} ${styles.headerCell}`}>Type</th>
-                <th className={`${styles.tableCell} ${styles.headerCell}`}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -214,19 +206,14 @@ export default function FinanceReport({
                   <td className={styles.tableCell}>{f.counterparty}</td>
                   <td className={`${styles.tableCell} ${styles.amount}`}>{formatCurrency(f.amount)}</td>
                   <td className={styles.tableCell}>{formatDateOnly(f.date)}</td>
-                  <td className={styles.tableCell}>{f.budget_for}</td>
+                  <td className={styles.tableCell}>{f.inflow_source || f.spend_category || "—"}</td>
                   <td className={styles.tableCell}>{f.description}</td>
                   <td className={styles.tableCell}>{f.transaction_type}</td>
-                  <td className={styles.tableCell}>
-                    <span className={`${styles.badge} ${styles.statusBadge} ${statusClass(f.status)}`}>
-                      {f.status}
-                    </span>
-                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td className={`${styles.tableCell} ${styles.noData}`} colSpan={8}>No Data Found</td>
+                  <td className={`${styles.tableCell} ${styles.noData}`} colSpan={7}>No Data Found</td>
                 </tr>
               )}
             </tbody>

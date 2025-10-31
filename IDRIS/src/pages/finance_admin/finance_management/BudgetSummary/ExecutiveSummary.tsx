@@ -9,8 +9,6 @@ type Kpis = {
   total_inflow: number | string;
   total_outflow: number | string;
   net_balance: number | string;
-  pending_inflow: number | string;
-  pending_outflow: number | string;
   denied_total: number | string;
 };
 
@@ -27,8 +25,6 @@ const ExecutiveSummary: React.FC<Props> = ({ kpis }) => {
     total_inflow: toNum(kpis.total_inflow),
     total_outflow: toNum(kpis.total_outflow),
     net_balance: toNum(kpis.net_balance),
-    pending_inflow: toNum(kpis.pending_inflow),
-    pending_outflow: toNum(kpis.pending_outflow),
     denied_total: toNum(kpis.denied_total),
   };
 
@@ -40,9 +36,7 @@ const ExecutiveSummary: React.FC<Props> = ({ kpis }) => {
         <KPICard title="Total Inflow" value={formatCurrency(k.total_inflow)} icon={TrendingUp} color="green" />
         <KPICard title="Total Outflow" value={formatCurrency(k.total_outflow)} icon={TrendingDown} color="red" />
         <KPICard title="Net Balance" value={formatCurrency(k.net_balance)} icon={DollarSign} color="blue" />
-        <KPICard title="Pending Inflow" value={formatCurrency(k.pending_inflow)} icon={Clock} color="yellow" />
-        <KPICard title="Pending Outflow" value={formatCurrency(k.pending_outflow)} icon={Clock} color="orange" />
-        <KPICard title="Denied Total" value={formatCurrency(k.denied_total)} icon={XCircle} color="red" />
+        {/* <KPICard title="Denied Total" value={formatCurrency(k.denied_total)} icon={XCircle} color="red" /> */}
       </div>
 
       <div className={styles.summaryBox}>
@@ -65,7 +59,7 @@ const ExecutiveSummary: React.FC<Props> = ({ kpis }) => {
               </li>
             </ul>
           </div>
-          <div>
+          {/* <div>
             <ul className={styles.highlightList}>
               <li>
                 <span className={styles.dotYellow} />
@@ -80,7 +74,7 @@ const ExecutiveSummary: React.FC<Props> = ({ kpis }) => {
                 </span>
               </li>
             </ul>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

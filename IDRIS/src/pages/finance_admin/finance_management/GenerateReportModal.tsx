@@ -5,7 +5,7 @@ import {
   downloadFinanceReportPDFFromRows,
   previewPrintFinanceReportFromRowsUserGesture,
 } from "./FinanceReport";
-import { Finance, CompanyInfo, FinanceStatuses, BudgetAllocations } from './types';
+import { Finance, CompanyInfo } from './types';
 
 export type ReportType = "Monthly" | "Quarterly" | "Annual";
 type ExportFormat = "PDF Report" | "Print";
@@ -28,9 +28,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
   const [quarter, setQuarter] = useState<"Q1" | "Q2" | "Q3" | "Q4" | "">("");
   const [yearValue, setYearValue] = useState<string>(""); // "YYYY"
 
-  // Filters (NEW)
-  const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
-
   // Output format for "Generate"
   const [format, setFormat] = useState<ExportFormat>("PDF Report");
   const [loading, setLoading] = useState(false);
@@ -41,7 +38,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     setMonthValue("");
     setYearValue("");
     setQuarter("");
-    setBudgetAllocation([]);
     setFormat("PDF Report");
   }, [open]);
 
@@ -79,12 +75,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
   };
   
-  // Handlers for filters (NEW)
-  const handleBudgetAllocations = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[];
-    setBudgetAllocation(selected);
-  };
-
   const handleGenerateReport = async () => {
     const { from, to, error } = computeRange();
     if (error) return;
@@ -92,21 +82,7 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     setLoading(true);
     try {
       // pass filters to the API
-      const normalizedAllocations = budgetAllocation.map((a) => {
-        const val = a.toLowerCase();
-
-        if (val.includes("emergency")) return "EMERGENCY";
-        if (val.includes("food") || val.includes("water")) return "FOOD AND WATER";
-        if (val.includes("transport")) return "TRANSPORTATION";
-        if (val.includes("equip")) return "EQUIPMENT";
-        if (val.includes("admin")) return "ADMINISTRATIVE";
-        if (val.includes("donation")) return "DONATIONS";
-        if (val.includes("general")) return "GENERAL";
-
-        return a; // fallback if nothing matched
-      });
-
-      const results = await getReportData(from, to, [], normalizedAllocations);
+      const results = await getReportData(from, to, []);
 
       const rangeLabel =
         reportType === "Monthly"
@@ -118,7 +94,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
       const reportTitle = [
         "Finance Report",
         rangeLabel ? `(${rangeLabel})` : "",
-        normalizedAllocations?.length ? `• ${normalizedAllocations.join(", ")}` : "",
       ]
         .filter(Boolean)
         .join(" ");
@@ -257,24 +232,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
 
             {invalidPeriodMsg && <small className="error-text">{invalidPeriodMsg}</small>}
           </div>
-
-          {/* Filters (NEW) */}
-
-          {!isSummary &&
-            <div className="form-group">
-              <label>Budget Allocation</label>
-              <select multiple value={budgetAllocation} onChange={handleBudgetAllocations}>
-                <option>EMERGENCY SUPPLIES</option>
-                <option>FOOD AND WATER</option>
-                <option>TRANSPORTATION</option>
-                <option>EQUIPMENT</option>
-                <option>ADMINISTRATIVE</option>
-                <option>DONATIONS</option>
-                <option>GENERAL</option>
-              </select>
-            </div>
-          }
-
 
           {/* Output format */}
           <div className="form-group">

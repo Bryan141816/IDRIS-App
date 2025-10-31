@@ -143,7 +143,7 @@ class AdminUserProfile(Base):
     contact_number = Column(String(20), nullable=True)
     position = Column(String(100), nullable=True)
     employee_id = Column(String(300), nullable=True)  # URL or path
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=True)
 
     user_id = Column(
         String, ForeignKey("users.user_id"), nullable=False, unique=True
@@ -1462,14 +1462,14 @@ class Disbursement(Base):
         onupdate=func.now(),
         nullable=False,
     )
-    
-    items = relationship(   
+
+    items = relationship(
         "DisbursementItem",
         back_populates="disbursement",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-    
+
 class DisbursementItem(Base):
     __tablename__ = "disbursement_item"
     id = Column(Integer, index=True, server_default=Identity())
@@ -1486,7 +1486,7 @@ class DisbursementItem(Base):
         nullable=False,
         index=True,
     )
-    
+
     disbursement = relationship(
         "Disbursement",
         back_populates="items",

@@ -579,7 +579,7 @@ useEffect(() => {
     className="lgu-header-img" />
               )}
 
-              <h2><b>{selectedMarker.lguName}</b> </h2>
+              <h2><center><b>{selectedMarker.lguName}</b> </center></h2>
               {selectedMarker.type === "lgu" && (
   <>
     <div style={{ ...card, padding: 12, marginTop: 8 }}>

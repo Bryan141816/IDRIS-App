@@ -1,5 +1,6 @@
 // BarangayModals.tsx (frontend-only; no backend calls)
-import React, { useEffect, useMemo, useState } from "react";
+
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
 import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
@@ -15,6 +16,8 @@ import { Barangay } from "../LGUofficer";
 import defaultPicture from "../../../../../public/images/defaultpicture.jpg";
 import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
+import Swal from "sweetalert2";
+
 /* ========= Types ========= */
 export type BarangayForm = {
   // Barangay Information Details
@@ -153,24 +156,34 @@ export const BarangayViewModal: React.FC<ViewProps> = ({
     </Modal>
   );
 };
-
 /* =========================================================================
    CREATE (frontend-only)
 ===========================================================================*/
 
+async function updateBarangay(id: number, payload: any) {
+  // If your backend expects PUT/PATCH, keep it consistent here.
+  const { data } = await API.put(`/lgu_profiling/barangays/${id}`, payload);
+  return data; // assume API returns the updated barangay
+}
 type EditProps = {
   closeModal: () => void;
   data: Barangay;
   lgu_name: string;
   lgu_coordinate: [number, number];
+  onSaved?: (updated: Barangay) => void; // ⬅️ pass the updated row back
 };
+
+
 
 export const BarangayEditModal: React.FC<EditProps> = ({
   closeModal,
   data,
   lgu_name,
   lgu_coordinate,
+  onSaved, // ✅ include in destructure
 }) => {
+
+
   const [form, setForm] = useState<Barangay>(data);
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
@@ -231,20 +244,46 @@ export const BarangayEditModal: React.FC<EditProps> = ({
       lng: coordinates[1],
     }));
   };
+  const handleUpdate = async () => {
+  Swal.fire({
+    title: "Saving...",
+    text: "Please wait while we save the barangay record.",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
 
-  const handleUpdate = () => {
-    const updateBarangay = async () => {
-      try {
-        const response = await API.put(
-          "/lgu_profiling/api/update_barangay",
-          form,
-        );
-      } catch (e: any) {
-        console.error("Error updating barangay: " + e.message);
-      }
-    };
-    updateBarangay();
-  };
+  try {
+    // ⬇️ renamed to 'response' instead of 'updated'
+    const response = await API.put("/lgu_profiling/api/update_barangay", form);
+
+    await Swal.fire({
+      icon: "success",
+      title: "Successfully Saved!",
+      text: "Barangay details have been updated.",
+      confirmButtonColor: "#3085d6",
+      confirmButtonText: "OK",
+    });
+
+    // ✅ trigger parent update instantly
+    onSaved?.(form);
+
+    closeModal();
+  } catch (e: any) {
+    console.error("Error updating barangay: " + e.message);
+    Swal.fire({
+      icon: "error",
+      title: "Save Failed",
+      text:
+        e?.response?.data?.detail ||
+        "Something went wrong while saving the barangay.",
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Try Again",
+    });
+  }
+};
+
+
+
   return (
     <>
       {locationPickerIsOpen && (

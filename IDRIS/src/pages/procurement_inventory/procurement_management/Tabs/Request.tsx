@@ -69,6 +69,13 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
           onClose={closeModal}
           selectedItem={selectedItem}
           refreshData={refreshData}
+          mode={
+            userRoles.includes("lgu officer") ||
+            selectedItem?.status === "Approved" ||
+            selectedItem?.status === "Rejected"
+              ? "view"
+              : "review"
+          }
         ></ViewDetails>
       )}
 
@@ -153,7 +160,11 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                     className="action-btn"
                     onClick={() => openModal("view", request)}
                   >
-                    View Details
+                    {userRoles.includes("lgu officer") ||
+                    request.status === "Approved" ||
+                    request.status === "Rejected"
+                      ? "View Details"
+                      : "Review Request"}
                   </button>
                   {request.status === "pending approval" &&
                     userRoles.includes("logistics admin") && (

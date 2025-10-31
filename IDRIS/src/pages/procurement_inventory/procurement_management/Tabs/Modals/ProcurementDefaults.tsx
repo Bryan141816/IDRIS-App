@@ -1,6 +1,7 @@
 export type ModalType =
   | "submit"
   | "view"
+  | "review"
   | "approve"
   | "reject"
   | "update"

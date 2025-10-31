@@ -6,18 +6,43 @@ import {
 } from "../ProcurementDefaults";
 import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { ModalOverlay } from "../ProcurementModalsDefault";
+import { ModalType } from "../ProcurementDefaults";
+import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
 interface ViewDetailsProps extends ProcurementDefaultModalProps {
   selectedItem: ProcurementRequest | null;
+  mode?: Exclude<ModalType, null>;
 }
 
 export const ViewDetails: React.FC<ViewDetailsProps> = ({
   onClose,
   selectedItem,
+  mode = "view",
 }) => {
-  console.log(selectedItem);
+  const handleApproval = async (type: string) => {
+    try {
+      const response = await API.post(
+        `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
+      );
+    } catch (e: any) {
+      console.error(
+        `Error ${type} in request ${selectedItem?.request_ref_num}`,
+      );
+    }
+  };
+  const onReject = () => {
+    handleApproval("reject");
+  };
+  const onApprove = () => {
+    handleApproval("approve");
+  };
   return (
-    <ModalOverlay onClose={onClose} modalType="view">
+    <ModalOverlay
+      onClose={onClose}
+      modalType={mode}
+      onSubmit={onApprove}
+      onReject={onReject}
+    >
       <div className="modal-content">
         <h3>Request Details - {selectedItem?.request_ref_num}</h3>
         <div className="view-details">

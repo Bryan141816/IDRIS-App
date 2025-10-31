@@ -1,7 +1,7 @@
 # routers/distribution_planning.py
 
 from fastapi import APIRouter, Query, Depends, BackgroundTasks, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from database import get_db, SessionLocal
 from data_schemas.distribution_planning import (
     TeamDataCreate,
@@ -18,7 +18,16 @@ from typing import List, Optional
 import asyncio
 from create_notification import send_notifications_bulk, send_notification
 from datetime import datetime
-from models import TeamMembers, DistributionTeam, IndividualVolunteer
+from models import (
+    TeamMembers,
+    DistributionTeam,
+    IndividualVolunteer,
+    ProcurementRequest,
+    LGURecords,
+    AssignedStorage,
+    InventoryItems,
+    WarehouseZones,
+)
 
 
 router = APIRouter(
@@ -32,21 +41,26 @@ router = APIRouter(
 # Background task function defined directly in router
 # routers/distributionAndplanning/distributionAndplanning.py
 
+
 def send_team_notifications(team_data: dict):
     """Send notifications to all assigned volunteers"""
     db = SessionLocal()
 
     try:
         # Get the created team_members to access members_id
-        team_members = db.query(TeamMembers).filter(
-            TeamMembers.team_id == team_data["team_id"]
-        ).all()
+        team_members = (
+            db.query(TeamMembers)
+            .filter(TeamMembers.team_id == team_data["team_id"])
+            .all()
+        )
 
         notifications = []
         for team_member in team_members:
-            volunteer = db.query(IndividualVolunteer).filter(
-                IndividualVolunteer.volunteer_id == team_member.member
-            ).first()
+            volunteer = (
+                db.query(IndividualVolunteer)
+                .filter(IndividualVolunteer.volunteer_id == team_member.member)
+                .first()
+            )
 
             if volunteer and volunteer.user_id:
                 notification_obj = {
@@ -61,7 +75,7 @@ def send_team_notifications(team_data: dict):
                     # Include members_id in URL for easy extraction
                     "url_redirect": f"/volunteer/assignment/{team_member.members_id}",
                     "date": datetime.now(),
-                    "isRead": False
+                    "isRead": False,
                 }
                 notifications.append(notification_obj)
 
@@ -70,6 +84,7 @@ def send_team_notifications(team_data: dict):
 
     finally:
         db.close()
+
 
 @router.get("/distribution_planning/get_dashboard")
 def get_dashboard(db: Session = Depends(get_db)):
@@ -85,7 +100,7 @@ def get_volunteers(db: Session = Depends(get_db)):
 def add_team(
     payload: TeamDataCreate,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Create team
     result = DistributionAndPlanningCRUD.add_team(payload, db)
@@ -95,7 +110,7 @@ def add_team(
 
     return {
         "message": "Team created successfully. Notifications sent to volunteers.",
-        "team_id": result["team_id"]
+        "team_id": result["team_id"],
     }
 
 
@@ -148,74 +163,86 @@ def get_all_response(db: Session = Depends(get_db)):
 @router.get("/distribution_planning/pending_assignments/{volunteer_id}")
 def get_pending_assignments(volunteer_id: int, db: Session = Depends(get_db)):
     """Get all pending team assignments for a volunteer"""
-    pending = db.query(TeamMembers, DistributionTeam).join(
-        DistributionTeam, TeamMembers.team_id == DistributionTeam.team_id
-    ).filter(
-        TeamMembers.member == volunteer_id,
-        TeamMembers.status == 'pending'
-    ).all()
+    pending = (
+        db.query(TeamMembers, DistributionTeam)
+        .join(DistributionTeam, TeamMembers.team_id == DistributionTeam.team_id)
+        .filter(TeamMembers.member == volunteer_id, TeamMembers.status == "pending")
+        .all()
+    )
 
     results = []
     for member, team in pending:
-        results.append({
-            "members_id": member.members_id,
-            "team_id": team.team_id,
-            "team_name": team.team_name,
-            "role": member.role,
-            "deployment_area": team.deployment_area,
-            "assignment_duration": team.assignment_duration,
-            "starting_date": str(team.starting_date),
-            "assigned_at": member.assigned_at.isoformat() if member.assigned_at else None
-        })
+        results.append(
+            {
+                "members_id": member.members_id,
+                "team_id": team.team_id,
+                "team_name": team.team_name,
+                "role": member.role,
+                "deployment_area": team.deployment_area,
+                "assignment_duration": team.assignment_duration,
+                "starting_date": str(team.starting_date),
+                "assigned_at": (
+                    member.assigned_at.isoformat() if member.assigned_at else None
+                ),
+            }
+        )
 
     return results
 
 
 @router.put("/distribution_planning/respond_to_assignment/{members_id}")
 async def respond_to_assignment(
-    members_id: int,
-    status: str,
-    db: Session = Depends(get_db)
+    members_id: int, status: str, db: Session = Depends(get_db)
 ):
     """Volunteer accepts or rejects team assignment"""
-    if status not in ['accepted', 'rejected']:
-        raise HTTPException(status_code=400, detail="Status must be 'accepted' or 'rejected'")
+    if status not in ["accepted", "rejected"]:
+        raise HTTPException(
+            status_code=400, detail="Status must be 'accepted' or 'rejected'"
+        )
 
     # Get the team member record
-    team_member = db.query(TeamMembers).filter(
-        TeamMembers.members_id == members_id
-    ).first()
+    team_member = (
+        db.query(TeamMembers).filter(TeamMembers.members_id == members_id).first()
+    )
 
     if not team_member:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    if team_member.status != 'pending':
-        raise HTTPException(status_code=400, detail=f"Assignment already {team_member.status}")
+    if team_member.status != "pending":
+        raise HTTPException(
+            status_code=400, detail=f"Assignment already {team_member.status}"
+        )
 
     # Update team member status
     team_member.status = status
     team_member.responded_at = datetime.now()
 
     # Update volunteer availability status
-    volunteer = db.query(IndividualVolunteer).filter(
-        IndividualVolunteer.volunteer_id == team_member.member
-    ).first()
+    volunteer = (
+        db.query(IndividualVolunteer)
+        .filter(IndividualVolunteer.volunteer_id == team_member.member)
+        .first()
+    )
 
     if volunteer:
-        if status == 'accepted':
-            volunteer.availability_status = 'assigned'  # Update to assigned
-        elif status == 'rejected':
-            volunteer.availability_status = 'available'  # Keep or set back to available
+        if status == "accepted":
+            volunteer.availability_status = "assigned"  # Update to assigned
+        elif status == "rejected":
+            volunteer.availability_status = "available"  # Keep or set back to available
 
     db.commit()
 
     # Get team details for notification
-    team = db.query(DistributionTeam).filter(
-        DistributionTeam.team_id == team_member.team_id
-    ).first()
+    team = (
+        db.query(DistributionTeam)
+        .filter(DistributionTeam.team_id == team_member.team_id)
+        .first()
+    )
 
     # Get volunteer name for the message
-    volunteer_name = f"{volunteer.first_name} {volunteer.last_name}" if volunteer else "A volunteer"
+    volunteer_name = (
+        f"{volunteer.first_name} {volunteer.last_name}" if volunteer else "A volunteer"
+    )
 
     # Notify the admin who assigned them
     if team_member.assigned_by:
@@ -227,7 +254,7 @@ async def respond_to_assignment(
             "message": f"{volunteer_name} has {status} the assignment to {team.team_name}.",
             "url_redirect": f"/admin/distribution/teams/{team_member.team_id}",
             "date": datetime.now(),
-            "isRead": False
+            "isRead": False,
         }
 
         await send_notification(db, admin_notification)
@@ -235,7 +262,7 @@ async def respond_to_assignment(
     return {
         "message": f"Assignment {status} successfully",
         "status": status,
-        "availability_status": volunteer.availability_status if volunteer else None
+        "availability_status": volunteer.availability_status if volunteer else None,
     }
 
 
@@ -243,20 +270,22 @@ async def respond_to_assignment(
 def remove_team_member(members_id: int, db: Session = Depends(get_db)):
     """Remove a volunteer from a team and set their status back to available"""
 
-    team_member = db.query(TeamMembers).filter(
-        TeamMembers.members_id == members_id
-    ).first()
+    team_member = (
+        db.query(TeamMembers).filter(TeamMembers.members_id == members_id).first()
+    )
 
     if not team_member:
         raise HTTPException(status_code=404, detail="Team member not found")
 
     # Update volunteer availability status back to available
-    volunteer = db.query(IndividualVolunteer).filter(
-        IndividualVolunteer.volunteer_id == team_member.member
-    ).first()
+    volunteer = (
+        db.query(IndividualVolunteer)
+        .filter(IndividualVolunteer.volunteer_id == team_member.member)
+        .first()
+    )
 
     if volunteer:
-        volunteer.availability_status = 'available'
+        volunteer.availability_status = "available"
 
     # Delete the team member record
     db.delete(team_member)
@@ -264,5 +293,148 @@ def remove_team_member(members_id: int, db: Session = Depends(get_db)):
 
     return {
         "message": "Volunteer removed from team successfully",
-        "volunteer_id": team_member.member
+        "volunteer_id": team_member.member,
     }
+
+
+def serialize_request(r: ProcurementRequest) -> dict:
+    # ---- end target ----
+    end_target = None
+    if r.use_different_end:
+        t = (r.different_end_type or "").strip().lower()
+        if t == "barangay" and r.barangay:
+            end_target = {
+                "type": "barangay",
+                "id": r.barangay.id,
+                "name": r.barangay.name,
+                "lat": r.barangay.lat,
+                "lng": r.barangay.lng,
+            }
+        elif t in {"evac", "evacuation", "evacuation_center"} and r.evacuation_center:
+            end_target = {
+                "type": "evacuation",
+                "id": r.evacuation_center.evacuation_id,
+                "name": r.evacuation_center.name,
+                "lat": r.evacuation_center.lat,
+                "lng": r.evacuation_center.lng,
+                "capacity": r.evacuation_center.capacity,
+                "occupied": r.evacuation_center.occupied,
+            }
+        else:
+            # Flag was set but no matching/linked record
+            end_target = {"type": None}
+
+    # ---- items ----
+    rtype = (r.request_type or "").strip().lower()
+    if rtype == "relief":
+        item_source = "relief"
+        items = [
+            {
+                "item_id": i.item_id,
+                "name": i.item_name,
+                "category": i.category,
+                "quantity": i.quantity,
+            }
+            for i in (r.relief_items or [])
+        ]
+    else:
+        item_source = "procurement"
+        items = [
+            {
+                "item_id": i.item_id,
+                "name": i.item_name,
+                "quantity": i.quantity,
+                "unit": i.unit,
+            }
+            for i in (r.procurement_items or [])
+        ]
+
+    return {
+        "request_id": r.request_id,
+        "lgu": {
+            "id": r.lgu.id if r.lgu else None,
+            "name": r.lgu.lgu_name if r.lgu else None,
+        },
+        "request_type": r.request_type,
+        "request_ref_num": r.request_ref_num,
+        "request_title": r.request_title,
+        "request_description": r.request_description,
+        "status": r.status,
+        "priority": r.priority,
+        "date_requested": r.date_requested.isoformat() if r.date_requested else None,
+        "disaster_type": r.disaster_type,
+        "date_needed": r.date_needed.isoformat() if r.date_needed else None,
+        "use_different_end": r.use_different_end,
+        "different_end_type": r.different_end_type,
+        "end_target": end_target,  # <- conditional block above
+        "fallback_end": {
+            "end_address": r.end_address,
+            "end_lat": r.end_lat,
+            "end_long": r.end_long,
+        },  # keep raw fields in case you still need them
+        "items_source": item_source,  # "relief" | "procurement"
+        "items": items,  # <- list of the retrieved items
+    }
+
+
+@router.get("/distribution_planning/get_request")
+def get_request(db: Session = Depends(get_db)):
+    query = (
+        db.query(ProcurementRequest)
+        .options(
+            joinedload(ProcurementRequest.lgu).load_only(
+                LGURecords.id, LGURecords.lgu_name
+            ),
+            joinedload(ProcurementRequest.barangay),  # end target (barangay)
+            joinedload(ProcurementRequest.evacuation_center),  # end target (evac)
+            selectinload(ProcurementRequest.relief_items),  # items (relief)
+            selectinload(ProcurementRequest.procurement_items),  # items (procurement)
+        )
+        .filter(ProcurementRequest.status == "Approved")
+        .order_by(ProcurementRequest.date_needed.asc())  # optional: newest first
+    )
+
+    rows: List[ProcurementRequest] = query.all()
+    return [serialize_request(r) for r in rows]
+
+
+@router.get("/distribution_planning/get_assigned")
+def list_assigned_storage_by_category(
+    category: str = Query(
+        ..., description="Filter assigned storage by inventory category"
+    ),
+    db: Session = Depends(get_db),
+):
+    # Build query
+    rows = (
+        db.query(
+            AssignedStorage.assigned_id,
+            AssignedStorage.quantity,
+            InventoryItems.item_name.label("inventory_item_name"),
+            InventoryItems.category.label("inventory_category"),
+            WarehouseZones.zone_name.label("warehouse_zone_name"),
+        )
+        .join(
+            InventoryItems, AssignedStorage.inventory_id == InventoryItems.inventory_id
+        )
+        .join(
+            WarehouseZones, AssignedStorage.warehouse_id == WarehouseZones.warehouse_id
+        )
+        .filter(InventoryItems.category == category)  # ✅ Filter by category only
+        .order_by(AssignedStorage.assigned_id.desc())
+        .all()
+    )
+
+    # Convert to list of dicts
+    results = [
+        {
+            "assigned_id": r.assigned_id,
+            "quantity": r.quantity,
+            "inventory_item_name": r.inventory_item_name,
+            "inventory_category": r.inventory_category,
+            "warehouse_zone_name": r.warehouse_zone_name,
+        }
+        for r in rows
+    ]
+
+    return results

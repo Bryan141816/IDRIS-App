@@ -4,157 +4,95 @@ import {
   WarehouseZone,
   InventoryItemsProps,
 } from "../../../../procurement_inventory/Tabs/Modals/ModalDefault";
+import { MapViewWithSearch } from "../../../../procurement_inventory/Tabs/MapViewWithSearch";
+import { ProcurementRequest } from "../../../../procurement_management/Tabs/Modals/ProcurementDefaults";
 interface AddRouteModalProp {
   onClose: () => void;
   refreshTable: () => void;
 }
-
-interface Need {
-  id: number;
-  need: string;
-  amount: string;
-}
-
-interface DemandAndResponse {
-  address: string;
-  title_label: string;
-  status: string; // e.g. "no response"
-  priority: string; // e.g. "medium"
-  submitted_at: string; // ISO timestamp
-  last_updated: string; // ISO timestamp
-  demand_id: number;
-  id: number;
-  lat: number;
-  lng: number;
-  needs: Need[];
-}
-
+type requestItemsType = {
+  item_id: number;
+  name: string;
+  category?: string;
+  quantity: number;
+  unit?: string;
+};
+type AssignedStorageItem = {
+  assigned_id: number;
+  quantity: number;
+  inventory_item_name: string;
+  inventory_category: string;
+  warehouse_zone_name: string;
+};
 export const AddRouteModal: React.FC<AddRouteModalProp> = ({
   onClose,
   refreshTable,
 }) => {
-  const [formData, setFormData] = useState<{
-    routeName: string;
-    endLocationId: number;
-    endLocation: string;
-    schedule: string;
-  }>({
-    routeName: "",
-    endLocationId: -1,
-    endLocation: "",
-    schedule: "",
-  });
+  type formDataType = {
+    route_name: string;
+    gathering_area_name: string;
+    gathering_area_lat: number;
+    gathering_area_lng: number;
+    delivery_id: number;
+  };
+  const defaultFormData = {
+    route_name: "",
+    gathering_area_name: "",
+    gathering_area_lat: -1000000,
+    gathering_area_lng: -1000000,
+    delivery_id: -1,
+  };
+  const [requestItems, setRequestItems] = useState<requestItemsType[]>([]);
 
-  const [wareHousePicker, setWareHousePicker] = useState(false);
-  const [responsePicker, setResponsePicker] = useState(false);
-  const [selectedWareHouseZone, setSelectedWareHouseZone] =
-    useState<WarehouseZone | null>(null);
-  const [itemsPicker, setItemsPicker] = useState(false);
-  const [selectedItems, setSelectedItem] = useState<
-    { item: InventoryItemsProps; distributionQty: number }[]
-  >([]);
-  const [selectedResponse, setSelectedResponse] =
-    useState<DemandAndResponse | null>(null);
-  const setZone = (zone: WarehouseZone | null) => {
-    setSelectedWareHouseZone(zone);
-  };
-  const setResponse = (response: DemandAndResponse | null) => {
-    setSelectedResponse(response);
-    if (response) {
-      setFormData((prev) => ({
-        ...prev,
-        endLocationId: response.id,
-        endLocation: response?.address,
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        endLocationId: -1,
-        endLocation: "",
-      }));
-    }
-  };
-  const setItem = (
-    items: { item: InventoryItemsProps; distributionQty: number }[],
-  ) => {
-    console.log(items);
-    setSelectedItem(items);
-  };
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
+  const [formData, setFormData] = useState<formDataType>(defaultFormData);
+  const [selectedDelivery, setSelectedDelivery] = useState("");
+  const [openMapViewSelect, setOpenMapViewSelect] = useState(false);
+  const [openDeliveryPicker, setOpenDeliveryPicker] = useState(false);
+  const [selectedRequest, setSelectedRequest] =
+    useState<ProcurementRequest | null>(null);
+  const handleMapSubmit = (address: string, coordinates: [number, number]) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      gathering_area_name: address,
+      gathering_area_lat: coordinates[0],
+      gathering_area_lng: coordinates[1],
     }));
   };
-  function formatSelectedItems(
-    data: { item: InventoryItemsProps; distributionQty: number }[],
-  ): string {
-    if (data.length <= 0) {
-      return "No Item is Selected";
-    }
-    return data
-      .map((d) => `${d.distributionQty}x ${d.item.item_name}`)
-      .join(", ");
-  }
-  const handleSubmit = () => {
-    if (selectedWareHouseZone && selectedItems.length > 0) {
-      const simplifiedItems = selectedItems.map(
-        ({ item, distributionQty }) => ({
-          inventory_id: item.inventory_id,
-          distributionQty,
-        }),
-      );
-      const Normalizeddata = {
-        ...formData,
-        warehouse_id: selectedWareHouseZone.warehouse_id,
-        items: simplifiedItems,
-      };
-      const submit = async (data: any) => {
-        try {
-          const response = await API.post(
-            "/distribution_planning/create_route",
-            {
-              key: "value",
-            },
-          );
-          refreshTable();
-          onClose();
-        } catch (e: any) {
-          console.error("Error creating route: " + e);
-        }
-      };
-      submit(Normalizeddata);
-    }
+  const handleDeliverSubmit = (request: ProcurementRequest) => {
+    setFormData((prev) => ({
+      ...prev,
+      delivery_id: request.request_id,
+    }));
+
+    setSelectedDelivery(
+      `${request.end_target?.name ? `${request.end_target.name}, ` : ""}${request.lgu.name}, Cebu`,
+    );
+    setSelectedRequest(request);
+    setRequestItems(request.items);
   };
   return (
     <>
-      {wareHousePicker && (
-        <WareHousePicker
-          onClose={() => setWareHousePicker(false)}
-          selectedWarehouseZone={selectedWareHouseZone}
-          setZone={setZone}
-        ></WareHousePicker>
+      {openMapViewSelect && (
+        <MapViewWithSearch
+          onClose={() => setOpenMapViewSelect(false)}
+          onSubmit={handleMapSubmit}
+          defaultValue={{
+            address: formData.gathering_area_name,
+            coordinates: [
+              formData.gathering_area_lat,
+              formData.gathering_area_lng,
+            ],
+          }}
+        ></MapViewWithSearch>
       )}
-      {itemsPicker && selectedWareHouseZone && (
-        <ItemsSelector
-          onClose={() => setItemsPicker(false)}
-          selectedItems={selectedItems}
-          warehouse_id={selectedWareHouseZone.warehouse_id}
-          setItems={setItem}
-        ></ItemsSelector>
-      )}
-      {responsePicker && (
-        <ResponseModal
-          onClose={() => setResponsePicker(false)}
-          selectedResponse={selectedResponse}
-          setResponse={setResponse}
-        ></ResponseModal>
+      {openDeliveryPicker && (
+        <DileveryLocationPicker
+          onClose={() => setOpenDeliveryPicker(false)}
+          onSubmit={handleDeliverSubmit}
+        ></DileveryLocationPicker>
       )}
       <div className="modal-overlay" style={{ zIndex: 900 }}>
-        <div className="modal">
+        <div className="modal " style={{ minWidth: "50vw" }}>
           <div className="modal-header">
             <h3>Create New Route</h3>
             <button className="close-btn" onClick={onClose}>
@@ -163,86 +101,60 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
           </div>
           <div className="modal-content">
             <div className="form-group">
-              <label>Route Name</label>
+              <label>Route Name:</label>
               <input
                 type="text"
-                placeholder="Enter route name"
-                value={formData.routeName}
-                name="routeName"
-                onChange={handleChange}
+                value={formData.route_name}
+                onChange={(e) => {
+                  const { value } = e.target;
+                  setFormData((prev) => ({
+                    ...prev,
+                    route_name: value,
+                  }));
+                }}
               />
             </div>
             <div className="form-group">
-              <label>Start Location</label>
-              <div>
-                <input
-                  type="text"
-                  placeholder="Starting point"
-                  disabled
-                  value={
-                    selectedWareHouseZone ? selectedWareHouseZone.zone_name : ""
-                  }
-                />
-                <button
-                  className="secondary-btn"
-                  style={{ width: "100%" }}
-                  onClick={() => setWareHousePicker(true)}
-                >
-                  Select Location
-                </button>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Distribution Items</label>
+              <label>Gathering Area:</label>
               <input
                 type="text"
-                placeholder="Starting point"
                 disabled
-                value={formatSelectedItems(selectedItems)}
+                value={formData.gathering_area_name}
               />
               <button
                 className="secondary-btn"
                 style={{ width: "100%" }}
-                onClick={() => setItemsPicker(true)}
+                onClick={() => setOpenMapViewSelect(true)}
               >
-                Edit Items
+                Select Location
               </button>
             </div>
             <div className="form-group">
-              <label>End Location</label>
-              <div>
-                <input
-                  type="text"
-                  placeholder="End point"
-                  disabled
-                  value={selectedResponse ? selectedResponse.address : ""}
-                />
-                <button
-                  className="secondary-btn"
-                  style={{ width: "100%" }}
-                  onClick={() => setResponsePicker(true)}
-                >
-                  Select Location
-                </button>
+              <label>Delivery Location:</label>
+              <input type="text" disabled value={selectedDelivery} />
+              <button
+                className="secondary-btn"
+                style={{ width: "100%" }}
+                onClick={() => setOpenDeliveryPicker(true)}
+              >
+                Select Location
+              </button>
+            </div>
+            {selectedRequest && requestItems && (
+              <div className="form-group">
+                <label>Request Items:</label>
+                <RequestItemsHandler
+                  requestItems={requestItems}
+                  onSubmit={() => {}}
+                ></RequestItemsHandler>
               </div>
-            </div>
-            <div className="form-group">
-              <label>Schedule</label>
-              <input
-                type="datetime-local"
-                value={formData.schedule}
-                name="schedule"
-                onChange={handleChange}
-              />
-            </div>
+            )}
           </div>
           <div className="modal-actions">
             <button className="secondary-btn" onClick={onClose}>
               Cancel
             </button>
-            <button className="primary-btn" onClick={handleSubmit}>
-              Create Route
-            </button>
+            <button className="primary-btn">Create Route</button>
           </div>
         </div>
       </div>
@@ -250,449 +162,396 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
   );
 };
 
-interface WareHousePickerProp {
+interface DileveryLocationPickerProp {
   onClose: () => void;
-  selectedWarehouseZone: WarehouseZone | null;
-  setZone: (zone: WarehouseZone | null) => void;
+  selected_id?: number;
+  onSubmit: (request: ProcurementRequest) => void;
 }
-
-const WareHousePicker: React.FC<WareHousePickerProp> = ({
+const DileveryLocationPicker: React.FC<DileveryLocationPickerProp> = ({
   onClose,
-  selectedWarehouseZone,
-  setZone,
+  selected_id,
+  onSubmit,
 }) => {
-  const [wareHouseZone, setWareHouseZone] = useState<WarehouseZone[]>([]);
-  const fetchData = async () => {
-    try {
-      const response = await API.get(
-        "/procurement_inventory/get_warehouse_zone",
-      );
-      setWareHouseZone(response.data);
-    } catch (e: any) {
-      console.error("error fetching volunteer: " + e);
-    }
-  };
-
+  const [requestList, setRequestList] = useState<ProcurementRequest[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   useEffect(() => {
-    fetchData();
+    const fetch = async () => {
+      try {
+        const response = await API.get("/distribution_planning/get_request");
+        setRequestList(response.data);
+      } catch (e: any) {
+        console.error("Error fetching delivery location: " + e.message);
+      }
+    };
+    fetch();
   }, []);
-  const [selectedZone, setSelectedZone] = useState<WarehouseZone | null>(
-    selectedWarehouseZone,
-  );
-
-  const handleCheckboxChange = (zone: WarehouseZone) => {
-    // If the clicked row is already selected, deselect it
-    if (selectedZone?.warehouse_id === zone.warehouse_id) {
-      setSelectedZone(null);
-    } else {
-      setSelectedZone(zone);
-    }
-  };
-  const handleSelect = () => {
-    setZone(selectedZone);
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div
-        className="modal"
-        style={{
-          zIndex: 990,
-          width: "60%",
-          maxWidth: "1000px",
-        }}
-      >
-        <div className="modal-header">
-          <h3>Select Starting Location</h3>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="modal-content">
-          {wareHouseZone && (
-            <div style={{ width: "100%" }}>
-              <table style={{ width: "100%" }}>
-                <thead
-                  style={{
-                    textAlign: "start",
-                    padding: "10px",
-                    backgroundColor: "#749ab6",
-                    color: "white",
-                  }}
-                >
-                  <tr>
-                    <th>{"  "}</th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Name
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Zone Type
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {wareHouseZone.map((zone) => (
-                    <tr
-                      key={zone.warehouse_id}
-                      style={{
-                        backgroundColor:
-                          selectedZone?.warehouse_id === zone.warehouse_id
-                            ? "#e3f2fd"
-                            : "transparent",
-                      }}
-                    >
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={
-                            selectedZone?.warehouse_id === zone.warehouse_id
-                          }
-                          onChange={() => handleCheckboxChange(zone)}
-                        />
-                      </td>
-                      <td style={{ padding: "10px" }}>{zone.zone_name}</td>
-                      <td style={{ padding: "10px" }}>{zone.zone_type}</td>
-                      <td style={{ padding: "10px" }}>{zone.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="primary-btn" onClick={handleSelect}>
-            Select
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface ItemsSelectorProps {
-  onClose: () => void;
-  selectedItems: { item: InventoryItemsProps; distributionQty: number }[];
-  warehouse_id: number;
-  setItems: (
-    items: { item: InventoryItemsProps; distributionQty: number }[],
-  ) => void;
-}
-
-const ItemsSelector: React.FC<ItemsSelectorProps> = ({
-  onClose,
-  selectedItems,
-  warehouse_id,
-  setItems,
-}) => {
-  const [inventory, setInventory] = useState<InventoryItemsProps[]>([]);
-  const [selected, setSelected] =
-    useState<{ item: InventoryItemsProps; distributionQty: number }[]>(
-      selectedItems,
-    );
-
-  const fetchData = async () => {
-    try {
-      const response = await API.get(
-        `/distribution_planning/get_warehouse_items?warehouse_id=${warehouse_id}`,
-      );
-      setInventory(response.data);
-    } catch (e: any) {
-      console.error("error fetching Inventory: " + e);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Handle checkbox toggle
-  const handleSelectItem = (item: InventoryItemsProps, checked: boolean) => {
+  const checkBoxHandle = (index: number, checked: boolean) => {
     if (checked) {
-      // Add to selected
-      setSelected((prev) => [
-        ...prev,
-        { item, distributionQty: 0 }, // default quantity 0
-      ]);
+      setSelectedIndex(index);
     } else {
-      // Remove if unchecked
-      setSelected((prev) =>
-        prev.filter((s) => s.item.inventory_id !== item.inventory_id),
-      );
+      setSelectedIndex(-1);
     }
   };
-
-  // Handle distribution quantity change
-  const handleQtyChange = (itemId: number, value: number) => {
-    setSelected((prev) =>
-      prev.map((s) =>
-        s.item.inventory_id === itemId ? { ...s, distributionQty: value } : s,
-      ),
-    );
-  };
-
-  // Check if item is selected
-  const isItemSelected = (itemId: number) =>
-    selected.some((s) => s.item.inventory_id === itemId);
-
-  // Get distribution qty
-  const getDistributionQty = (itemId: number) =>
-    selected.find((s) => s.item.inventory_id === itemId)?.distributionQty || 0;
-
-  const handleSelect = () => {
-    if (selected.length <= 0) {
-      return;
-    }
-    const invalid = selected.some(
-      (s) => !s.distributionQty || s.distributionQty <= 0,
-    );
-    if (invalid) {
-      alert(
-        "Please enter a valid distribution quantity for all selected items.",
-      );
-      return;
-    }
-    setItems(selected);
+  const handleSubmit = () => {
+    const request = requestList[selectedIndex];
+    onSubmit(request);
     onClose();
   };
   return (
     <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div
-        className="modal"
-        style={{
-          zIndex: 990,
-          width: "80%",
-          maxWidth: "1200px",
-        }}
-      >
+      <div className="modal " style={{ minWidth: "50vw" }}>
         <div className="modal-header">
-          <h3>Select Items for Distribution</h3>
+          <h3>Select Delivery Location</h3>
           <button className="close-btn" onClick={onClose}>
             ×
           </button>
         </div>
-
         <div className="modal-content">
-          {inventory && (
-            <div style={{ width: "100%" }}>
-              <table style={{ width: "100%" }}>
-                <thead
-                  style={{
-                    textAlign: "start",
-                    padding: "10px",
-                    backgroundColor: "#749ab6",
-                    color: "white",
-                  }}
-                >
-                  <tr>
-                    <th>{"  "}</th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Distribution Quantity
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Name
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Quantity
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Category
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Batch
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Expiry
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inventory.map((item) => (
-                    <tr key={item.inventory_id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={isItemSelected(item.inventory_id)}
-                          onChange={(e) =>
-                            handleSelectItem(item, e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="number"
-                          value={getDistributionQty(item.inventory_id)}
-                          onChange={(e) =>
-                            handleQtyChange(
-                              item.inventory_id,
-                              Number(e.target.value),
-                            )
-                          }
-                          disabled={!isItemSelected(item.inventory_id)}
-                          required={isItemSelected(item.inventory_id)}
-                          min={0}
-                          style={{ width: "100px" }}
-                        />
-                      </td>
-                      <td style={{ padding: "10px" }}>{item.item_name}</td>
-                      <td style={{ padding: "10px" }}>{item.quantity}</td>
-                      <td style={{ padding: "10px" }}>{item.category}</td>
-                      <td style={{ padding: "10px" }}>{item.batch}</td>
-                      <td style={{ padding: "10px" }}>{item.expiry}</td>
-                      <td style={{ padding: "10px" }}>{item.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
-            Cancel
-          </button>
-          <button className="primary-btn" onClick={handleSelect}>
-            Select
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface ResponseProp {
-  onClose: () => void;
-  selectedResponse: DemandAndResponse | null;
-  setResponse: (response: DemandAndResponse | null) => void;
-}
-
-const ResponseModal: React.FC<ResponseProp> = ({
-  onClose,
-  selectedResponse,
-  setResponse,
-}) => {
-  const [responseList, setResponseList] = useState<DemandAndResponse[]>([]);
-  const fetchData = async () => {
-    try {
-      const response = await API.get("/distribution_planning/get_all_response");
-      setResponseList(response.data);
-    } catch (e: any) {
-      console.error("error fetching volunteer: " + e);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-  const [responseItem, setResponseItem] = useState<DemandAndResponse | null>(
-    selectedResponse,
-  );
-
-  const handleCheckboxChange = (response: DemandAndResponse) => {
-    // If the clicked row is already selected, deselect it
-    if (responseItem?.id === response.id) {
-      setResponseItem(null);
-    } else {
-      setResponseItem(response);
-    }
-  };
-  const handleSelect = () => {
-    setResponse(responseItem);
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div
-        className="modal"
-        style={{
-          zIndex: 990,
-          width: "60%",
-          maxWidth: "1000px",
-        }}
-      >
-        <div className="modal-header">
-          <h3>Select Starting Location</h3>
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="modal-content">
-          {responseList && (
-            <div style={{ width: "100%" }}>
-              <table style={{ width: "100%" }}>
-                <thead
-                  style={{
-                    textAlign: "start",
-                    padding: "10px",
-                    backgroundColor: "#749ab6",
-                    color: "white",
-                  }}
-                >
-                  <tr>
-                    <th>{"  "}</th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Title
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Address
-                    </th>
-                    <th style={{ textAlign: "start", padding: "10px" }}>
-                      Priority
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {responseList.map((response) => (
+          <div style={{ background: "white", width: "100%" }}>
+            <table style={{ width: "100%" }}>
+              <thead
+                style={{
+                  background:
+                    "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
+                  color: "white",
+                }}
+              >
+                <tr>
+                  <th style={{ textAlign: "start", padding: "10px" }}></th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Location
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Date Requested
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Date Needed
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {requestList.length > 0 &&
+                  requestList.map((item, index) => (
                     <tr
-                      key={response.id}
+                      key={index}
                       style={{
-                        backgroundColor:
-                          responseItem?.id === response.id
-                            ? "#e3f2fd"
+                        background:
+                          selectedIndex === index
+                            ? "rgb(169 214 247)"
                             : "transparent",
                       }}
                     >
-                      <td>
+                      <td style={{ padding: "10px" }}>
                         <input
                           type="checkbox"
-                          checked={responseItem?.id === response.id}
-                          onChange={() => handleCheckboxChange(response)}
+                          checked={selectedIndex === index}
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>,
+                          ) => {
+                            checkBoxHandle(index, e.target.checked);
+                          }}
                         />
                       </td>
                       <td style={{ padding: "10px" }}>
-                        {response.title_label}
+                        {item.end_target && `${item.end_target.name}, `}
+                        {item.lgu.name}, Cebu
                       </td>
-                      <td style={{ padding: "10px" }}>{response.address}</td>
-                      <td style={{ padding: "10px" }}>{response.priority}</td>
+                      <td style={{ padding: "10px" }}>{item.date_requested}</td>
+                      <td style={{ padding: "10px" }}>{item.date_needed}</td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+              </tbody>
+            </table>
+          </div>
         </div>
-
         <div className="modal-actions">
           <button className="secondary-btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="primary-btn" onClick={handleSelect}>
-            Select
+          <button className="primary-btn" onClick={handleSubmit}>
+            Select Location
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+type StorageInfo = {
+  assigned_id: number;
+  inventory_name: string;
+  warehouse_name: string;
+  quantity_assigned: number;
+};
+interface RequestItemsHandlerProp {
+  requestItems: requestItemsType[];
+  onSubmit: () => void;
+}
+
+const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
+  requestItems,
+  onSubmit,
+}) => {
+  const [requestList, setRequestList] = useState<
+    (requestItemsType & StorageInfo)[]
+  >([]);
+  const [selectedRequest, setSelectedRequest] = useState<
+    (requestItemsType & StorageInfo) | null
+  >(null);
+  const [openPickInventory, setOpenPickInventory] = useState(false);
+  const [requestIndexPicked, setRequestIndexPicked] = useState(-1);
+
+  const openInventory = (
+    item: requestItemsType & StorageInfo,
+    index: number,
+  ) => {
+    setOpenPickInventory(true);
+    setSelectedRequest(item);
+    setRequestIndexPicked(index);
+  };
+  const closeInventory = () => {
+    setOpenPickInventory(false);
+    setSelectedRequest(null);
+    setRequestIndexPicked(-1);
+  };
+
+  useEffect(() => {
+    const mapped = requestItems.map((item) => ({
+      item_id: item.item_id,
+      name: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unit: item.unit,
+      assigned_id: -1,
+      inventory_name: "",
+      warehouse_name: "",
+      quantity_assigned: -1,
+    }));
+
+    setRequestList(mapped); // ✅ set all at once
+  }, []);
+  const handlePickInventorySubmit = (index: number, inventory: StorageInfo) => {
+    setRequestList((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              assigned_id: inventory.assigned_id,
+              inventory_name: inventory.inventory_name,
+              warehouse_name: inventory.warehouse_name,
+              quantity_assigned: inventory.quantity_assigned,
+            }
+          : item,
+      ),
+    );
+  };
+  return (
+    <>
+      {openPickInventory && selectedRequest && (
+        <PickInventoryModal
+          onClose={closeInventory}
+          item={selectedRequest}
+          index={requestIndexPicked}
+          onSubmit={handlePickInventorySubmit}
+        ></PickInventoryModal>
+      )}
+      <div style={{ background: "white", width: "100%" }}>
+        <table style={{ width: "100%" }}>
+          <thead
+            style={{
+              background: "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
+              color: "white",
+            }}
+          >
+            <tr>
+              <th style={{ textAlign: "start", padding: "10px" }}></th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Items</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>
+                Quantity Needed
+              </th>
+              <th style={{ textAlign: "start", padding: "10px" }}>
+                Inventory Name
+              </th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Quantity</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Warehouse</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requestList.length > 0 &&
+              requestList.map((item, index) => (
+                <tr key={index}>
+                  <td style={{ padding: "10px" }}>
+                    <input type="checkbox" />
+                  </td>
+                  <td style={{ padding: "10px" }}>{item.name}</td>
+                  <td style={{ padding: "10px" }}>{item.quantity}</td>
+                  <td style={{ padding: "10px" }}>{item.inventory_name}</td>
+                  <td style={{ padding: "10px" }}>
+                    {item.quantity_assigned !== -1
+                      ? item.quantity_assigned
+                      : ""}
+                  </td>
+                  <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
+                  <td style={{ padding: "10px", width: "fit-content" }}>
+                    <button
+                      className="action-btn"
+                      style={{ width: "fit-content" }}
+                      onClick={() => openInventory(item, index)}
+                    >
+                      Pick from inventory
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
+interface PickInventoryModalProp {
+  onClose: () => void;
+  item: requestItemsType & StorageInfo;
+  index: number;
+  onSubmit: (index: number, inventory: StorageInfo) => void;
+}
+
+const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
+  onClose,
+  item,
+  index,
+  onSubmit,
+}) => {
+  const [responseData, setResponseData] = useState<AssignedStorageItem[]>([]);
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const response = await API.get(
+          `/distribution_planning/get_assigned?category=${item.category}`,
+        );
+        setResponseData(response.data);
+      } catch (e: any) {
+        console.error("Error fetching inventory: " + e.message);
+      }
+    };
+    fetch();
+  }, []);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [quantityInput, setQuantityInput] = useState(-1);
+
+  const handlCheckChange = (index: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIndex(index);
+    } else {
+      setSelectedIndex(-1);
+      setQuantityInput(-1);
+    }
+  };
+  const handleSubmit = () => {
+    const selected = responseData[selectedIndex];
+    onSubmit(index, {
+      assigned_id: selected.assigned_id,
+      inventory_name: selected.inventory_item_name,
+      warehouse_name: selected.warehouse_zone_name,
+      quantity_assigned: quantityInput,
+    });
+    onClose();
+  };
+  return (
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+      <div className="modal " style={{ minWidth: "50vw" }}>
+        <div className="modal-header">
+          <h3>Pick Inventory Item</h3>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="modal-content">
+          <div style={{ background: "white", width: "100%" }}>
+            <table style={{ width: "100%" }}>
+              <thead
+                style={{
+                  background:
+                    "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
+                  color: "white",
+                }}
+              >
+                <tr>
+                  <th style={{ textAlign: "start", padding: "10px" }}></th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Items Name
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Category
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Available Quantity
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Warehouse
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Quantity
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {responseData.length > 0 &&
+                  responseData.map((item, index) => (
+                    <tr key={index}>
+                      <td style={{ padding: "10px" }}>
+                        <input
+                          type="checkbox"
+                          checked={index === selectedIndex}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            handlCheckChange(index, e.target.checked)
+                          }
+                        />
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {item.inventory_item_name}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {item.inventory_category}
+                      </td>
+                      <td style={{ padding: "10px" }}>{item.quantity}</td>
+                      <td style={{ padding: "10px" }}>
+                        {item.warehouse_zone_name}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        <input
+                          type="number"
+                          value={
+                            quantityInput !== -1 && selectedIndex === index
+                              ? quantityInput
+                              : ""
+                          }
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>,
+                          ) => {
+                            const value =
+                              e.target.value === ""
+                                ? -1
+                                : Number(e.target.value);
+                            setQuantityInput(value);
+                          }}
+                          disabled={selectedIndex !== index}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="secondary-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="primary-btn" onClick={handleSubmit}>
+            Select Item
           </button>
         </div>
       </div>

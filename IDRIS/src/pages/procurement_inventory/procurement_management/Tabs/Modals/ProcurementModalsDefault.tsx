@@ -10,6 +10,7 @@ interface ModalProps {
   children: ReactNode;
   modalType: Exclude<ModalType, null>; // ensures no nulls
   onClose: () => void; // or any function signature you need
+  onReject?: () => void | null;
   onSubmit?: () => void | Promise<void> | null;
   zIndex?: number;
 }
@@ -18,6 +19,7 @@ export const ModalOverlay: React.FC<ModalProps> = ({
   modalType,
   onClose,
   onSubmit,
+  onReject,
   zIndex = 900,
 }) => {
   return (
@@ -33,13 +35,18 @@ export const ModalOverlay: React.FC<ModalProps> = ({
           <button className="secondary-btn" onClick={onClose}>
             {modalType === "view" ? "Close" : "Cancel"}
           </button>
+          {modalType === "review" && (
+            <button
+              className="primary-btn"
+              style={{ background: "red", color: "white" }}
+              onClick={onReject}
+            >
+              Reject
+            </button>
+          )}
           {modalType !== "view" && (
             <button className="primary-btn" onClick={onSubmit}>
-              {modalType === "approve"
-                ? "Approve"
-                : modalType === "reject"
-                  ? "Reject"
-                  : "Save"}
+              {modalType === "review" ? "Approve" : "Save"}
             </button>
           )}
         </div>

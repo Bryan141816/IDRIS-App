@@ -1,13 +1,5 @@
 export type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'reports' | 'exports';
 
-export type FinanceStatuses =
-  | "PENDING"
-  | "RECEIVED"
-  | "PAID"
-  | "APPROVED"
-  | "DENIED"
-  | "RECONCILED";
-
 export type BudgetAllocations =
   | "EMERGENCY SUPPLIES"
   | "FOOD AND WATER"
@@ -29,7 +21,6 @@ export type Finance = {
   date: string;       // ISO-like string is fine
   budget_for: string;
   description: string;
-  status: string;
   transaction_type: string;
 };
 
@@ -39,7 +30,6 @@ export type InflowItem = {
   amount: number;
   budget_for: string;
   date: string;
-  status: 'PENDING' | 'RECEIVED' | 'PROCESSING';
   description: string;
 };
 
@@ -49,7 +39,6 @@ export type OutflowItem = {
   amount: number;
   budget_for: string;
   date: string;
-  status: 'PENDING' | 'APPROVED' | 'PAID' | 'CANCELLED';
   description: string;
 };
 
@@ -67,7 +56,6 @@ export interface ReportItem {
   type: string;
   period: string;
   generated: string;
-  status: 'Generated' | 'Draft';
 }
 
 // export interface BudgetItem {

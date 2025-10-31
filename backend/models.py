@@ -1444,16 +1444,6 @@ class TransactionType(enum.Enum):
     OUTFLOW = "OUTFLOW"
 
 
-class RecordStatus(enum.Enum):
-    PENDING = "PENDING"  # recorded but not yet received/paid
-    RECEIVED = "RECEIVED"  # for inflows
-
-    PAID = "PAID"  # for outflows
-    APPROVED = "APPROVED"  # approver ok (often outflow)
-    DENIED = "DENIED"  # rejected
-    RECONCILED = "RECONCILED"  # cleared in reconciliation
-
-
 class FinanceRecord(Base):
     __tablename__ = "finance_records"
     id = Column(Integer, index=True, server_default=Identity())
@@ -1464,9 +1454,6 @@ class FinanceRecord(Base):
     amount = Column(Numeric(14, 2), nullable=False)
     date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
-    status = Column(
-        SqlEnum(RecordStatus), nullable=False, index=True, default=RecordStatus.PENDING
-    )
     created_at = Column(DateTime, nullable=False, default=func.now())
     updated_at = Column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()

@@ -23,19 +23,3 @@ def _to_alloc_enums(items: List[Union[str, BudgetAllocation]]) -> List[BudgetAll
                 out.append(mem); break
     return out
 
-def _to_status_enums(items: List[Union[str, RecordStatus]]) -> List[RecordStatus]:
-    out: List[RecordStatus] = []
-    for raw in items or []:
-        if isinstance(raw, RecordStatus):
-            out.append(raw); continue
-        s = str(raw).strip().lower()
-        if "pending" in s: out.append(RecordStatus.PENDING); continue
-        if "received" in s: out.append(RecordStatus.RECEIVED); continue
-        if "paid" in s: out.append(RecordStatus.PAID); continue
-        if "approved" in s: out.append(RecordStatus.APPROVED); continue
-        if "denied" in s: out.append(RecordStatus.DENIED); continue
-        if "reconcil" in s: out.append(RecordStatus.RECONCILED); continue
-        for mem in RecordStatus:
-            if s == mem.value.lower() or s == mem.name.lower():
-                out.append(mem); break
-    return out

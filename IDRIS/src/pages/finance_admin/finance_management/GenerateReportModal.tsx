@@ -30,7 +30,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
 
   // Filters (NEW)
   const [budgetAllocation, setBudgetAllocation] = useState<BudgetAllocations[]>([]);
-  const [financeStatus, setFinanceStatus] = useState<FinanceStatuses[]>([]);
 
   // Output format for "Generate"
   const [format, setFormat] = useState<ExportFormat>("PDF Report");
@@ -43,7 +42,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     setYearValue("");
     setQuarter("");
     setBudgetAllocation([]);
-    setFinanceStatus([]);
     setFormat("PDF Report");
   }, [open]);
 
@@ -86,10 +84,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
     const selected = Array.from(e.target.selectedOptions, (o) => o.value) as BudgetAllocations[];
     setBudgetAllocation(selected);
   };
-  const handleStatuses = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value) as FinanceStatuses[];
-    setFinanceStatus(selected);
-  };
 
   const handleGenerateReport = async () => {
     const { from, to, error } = computeRange();
@@ -112,20 +106,7 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
         return a; // fallback if nothing matched
       });
 
-      const normalizedStatuses = financeStatus.map((s) => {
-        const val = s.toLowerCase();
-
-        if (val.includes("pending")) return "PENDING";
-        if (val.includes("received")) return "RECEIVED";
-        if (val.includes("paid")) return "PAID";
-        if (val.includes("approved")) return "APPROVED";
-        if (val.includes("denied")) return "DENIED";
-        if (val.includes("reconciled")) return "RECONCILED";
-
-        return s; // fallback
-      });
-
-      const results = await getReportData(from, to, normalizedStatuses, normalizedAllocations);
+      const results = await getReportData(from, to, [], normalizedAllocations);
 
       const rangeLabel =
         reportType === "Monthly"
@@ -138,7 +119,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
         "Finance Report",
         rangeLabel ? `(${rangeLabel})` : "",
         normalizedAllocations?.length ? `• ${normalizedAllocations.join(", ")}` : "",
-        normalizedStatuses?.length ? `• ${normalizedStatuses.join(", ")}` : "",
       ]
         .filter(Boolean)
         .join(" ");
@@ -295,19 +275,6 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
             </div>
           }
 
-          {!isSummary &&
-            <div className="form-group">
-              <label>Status</label>
-              <select multiple value={financeStatus} onChange={handleStatuses}>
-                <option>PENDING</option>
-                <option>PAID</option>
-                <option>RECEIVED</option>
-                <option>APPROVED</option>
-                <option>DENIED</option>
-                <option>RECONCILED</option>
-              </select>
-            </div>
-          }
 
           {/* Output format */}
           <div className="form-group">

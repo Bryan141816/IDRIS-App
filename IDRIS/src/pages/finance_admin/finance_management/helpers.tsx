@@ -27,29 +27,6 @@ export const toDateInput = (value?: string | Date | number | null) => {
   return local.toISOString().slice(0, 10);
 };
 
-export const getActionRequired = (data: FinanceRecordType): string => {
-  const pendingOut = parseFloat(data.kpis.pending_outflow || "0");
-  const pendingIn = parseFloat(data.kpis.pending_inflow || "0");
-  const denied = parseFloat(data.kpis.denied_total || "0");
-
-  if (pendingOut > 0) {
-    return `${formatCurrency(pendingOut)} in pending outflows require immediate review.`;
-  }
-  if (pendingIn > 0) {
-    return `${formatCurrency(pendingIn)} in pending inflows require confirmation.`;
-  }
-  if (denied > 0) {
-    return `${formatCurrency(denied)} in denied transactions need reconciliation.`;
-  }
-
-  return "No immediate action required.";
-};
-
-export const getTotalPendingTransactions = (data: FinanceRecordType): number => {
-  const pendingOut = parseFloat(data.kpis.pending_outflow || "0");
-  const pendingIn = parseFloat(data.kpis.pending_inflow || "0");
-  return pendingOut + pendingIn;
-};
 
 // ------- Download as PDF (jsPDF + autotable) -------
 export const urlToDataUrl = async (url: string): Promise<string | null> => {
@@ -103,12 +80,10 @@ export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {
 
 export const totalIn = (rows: InflowItem[]) =>
   rows
-    .filter((r) => (r.status ?? '').toUpperCase() === 'RECEIVED')
     .reduce((s, r) => s + toNumber(r.amount), 0);
 
 export const totalOut = (rows: OutflowItem[]) =>
   rows
-    .filter((r) => (r.status ?? '').toUpperCase() === 'PAID')
     .reduce((s, r) => s + toNumber(r.amount), 0);
 
 export const toNumber = (v: number | string | bigint | null | undefined): number => {

@@ -11,7 +11,6 @@ from data_schemas.finance_record_schema import (
     FinanceRecordUpdate,
     # FinanceRecordStatusUpdate,
     TransactionType,
-    RecordStatus,
 )
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
 
@@ -55,7 +54,6 @@ def create_finance_record(
 @router_admin.get("/get_lists",response_model=List[FinanceRecordRead])
 def list_finance_records(
     transaction_type: Optional[TransactionType] = Query(None),
-    status_filter: Optional[RecordStatus] = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -63,7 +61,6 @@ def list_finance_records(
     items = FinanceRecordCRUD.list(
         db,
         transaction_type=transaction_type,
-        status=status_filter,
         limit=limit,
         offset=offset,
     )
@@ -111,28 +108,6 @@ def update_finance_record(patch: FinanceRecordUpdate = Depends(FinanceRecordUpda
 #     return obj
 
 
-@router_admin.get("/summary/budget_allocation")
-def get_budget_allocation_summary(
-    start_date: Optional[date] = Query(None, description="Filter start date"),
-    end_date: Optional[date] = Query(None, description="Filter end date"),
-    statuses: Optional[List[RecordStatus]] = Query(
-        None,
-        description="Statuses to include (default: RECEIVED, PAID, RECONCILED)",
-    ),
-    include_zero_rows: bool = Query(True, description="Include categories with zero totals"),
-    db: Session = Depends(get_db),
-):
-    """
-    Summarize inflows and outflows grouped by budget allocation.
-    """
-    result = FinanceRecordCRUD.summarize_by_budget_allocation(
-        db,
-        start_date=start_date,
-        end_date=end_date,
-        statuses=statuses,
-        include_zero_rows=include_zero_rows,
-    )
-    return result
 
 
 

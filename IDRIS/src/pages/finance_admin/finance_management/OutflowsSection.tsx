@@ -15,17 +15,6 @@ import {
 
 import { withSwal } from '../../withSwal';
 
-export const normalizeRecordStatus = (status: string | null | undefined) => {
-  const s = (status || "").toUpperCase();
-  if (s === "PENDING") return "PENDING";
-  if (s === "PAID") return "PAID";
-  if (s === "APPROVED") return "APPROVED";
-  if (s === "DENIED") return "DENIED";
-  if (s === "RECONCILED") return "RECONCILED";
-  
-  return "PENDING";
-};
-
 const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   const fd = new FormData();
   if (isUpdate) fd.append('finance_id', String((form as any).finance_id));
@@ -33,7 +22,6 @@ const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   fd.append('transaction_type', 'OUTFLOW');
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', String(form.date)); // "YYYY-MM-DD"
-  fd.append('status', normalizeRecordStatus(form.status));
   if (form.description) fd.append('description', form.description);
   fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
   return fd;
@@ -159,21 +147,6 @@ const OutflowModal: React.FC<{
               </div>
             }
 
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                disabled={readOnly}
-                value={form.status || 'PENDING'}
-                onChange={e => setForm({ ...form, status: e.target.value as OutflowItem['status'] })}
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="PAID">PAID</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="DENIED">DENIED</option>
-                <option value="RECONCILED">RECONCILED</option>
-              </select>
-            </div>
-
             {mode != "edit" &&
               <div className="form-group">
                 <label>Description</label>
@@ -262,7 +235,6 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
               <th>Amount</th>
               <th>Vendor</th>
               <th>Date</th>
-              <th>Status</th>
               <th>Description</th>
               <th>Actions</th>
             </tr>
@@ -274,7 +246,6 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
                 <td className="amount negative">{formatCurrency(row.amount)}</td>
                 <td>{row.counterparty}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
                 <td>{row.description}</td>
                 <td>
                   <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>

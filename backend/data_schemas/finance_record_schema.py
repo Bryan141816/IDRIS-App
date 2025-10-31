@@ -15,7 +15,6 @@ class FinanceRecordBase(BaseModel):
     amount: Decimal
     date: date
     description: Optional[str] = None
-    status: RecordStatus
     budget_for: str
 
 
@@ -24,7 +23,6 @@ class InflowFinanceRecordCreate(BaseModel):
     counterparty: str
     transaction_type: TransactionType = TransactionType.INFLOW
     amount: Decimal
-    status: RecordStatus = RecordStatus.PENDING
     description: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
     budget_for: BudgetAllocation =  Field(default=BudgetAllocation.GENERAL)
@@ -35,7 +33,6 @@ class InflowFinanceRecordCreate(BaseModel):
         counterparty: str = Form(...),
         transaction_type: TransactionType = Form(TransactionType.INFLOW),
         amount: Decimal = Form(...),
-        status: RecordStatus = Form(RecordStatus.PENDING),
         description: Optional[str] = Form(None),
         date: date = Form(...),
         budget_for: BudgetAllocation = Form(BudgetAllocation.GENERAL),
@@ -45,7 +42,6 @@ class InflowFinanceRecordCreate(BaseModel):
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            status=status,
             description=description,
             date=date,
             budget_for = budget_for
@@ -56,7 +52,6 @@ class FinanceRecordUpdate(BaseModel):
     transaction_type: Optional[TransactionType] = TransactionType.INFLOW
     counterparty: Optional[str] = None
     amount: Optional[Decimal] = None
-    status: Optional[RecordStatus] = None
     description: Optional[str] = None
     date: Optional[date] = None
     budget_for: Optional[BudgetAllocation] = None
@@ -68,7 +63,6 @@ class FinanceRecordUpdate(BaseModel):
         transaction_type: Optional[TransactionType] = Form(None),   
         counterparty: Optional[str] = Form(None),
         amount: Optional[Decimal] = Form(None),
-        status: Optional[RecordStatus] = Form(None),
         description: Optional[str] = Form(None),
         date: Optional[str] = None,
         budget_for: Optional[BudgetAllocation] = Form(None),
@@ -78,7 +72,6 @@ class FinanceRecordUpdate(BaseModel):
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            status=status,
             description=description,
             date=_parse_date_maybe(date),
             budget_for=budget_for,

@@ -18,14 +18,6 @@ import {
   withSwal
 } from '../../withSwal';
 
-// CAN'T BE IN HELPER BECAUSE OF STATUS DIFFERENCE
-export const normalizeRecordStatus = (status: string | null | undefined) => {
-  const s = (status || "").toUpperCase();
-  if (s === "PENDING") return "PENDING";
-  if (s === "RECEIVED") return "RECEIVED";
-  return "PENDING";
-};
-
 const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   const fd = new FormData();
   if (isUpdate) { fd.append("finance_id", String(form.finance_id)); }
@@ -33,7 +25,6 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   fd.append('transaction_type', normalizeTransactionType("INFLOW"));
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', form.date!); // "YYYY-MM-DD"
-  fd.append('status', normalizeRecordStatus(form.status ?? 'PENDING'));
   if (form.description) fd.append('description', form.description);
   fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
   return fd;
@@ -189,18 +180,6 @@ const InflowModal: React.FC<{
               </div>
             }
 
-            <div className="form-group">
-              <label>Status</label>
-              <select
-                disabled={readOnly}
-                value={form.status || "PENDING"}
-                onChange={e => setForm({ ...form, status: e.target.value as InflowItem['status'] })}
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="RECEIVED">RECEIVED</option>
-              </select>
-            </div>
-
             {mode != "edit" &&
               <div className="form-group">
                 <label>Description</label>
@@ -293,7 +272,6 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
               <th>Amount</th>
               <th>Category</th>
               <th>Date</th>
-              <th>Status</th>
               <th>Description</th>
               <th>Actions</th>
             </tr>
@@ -305,7 +283,6 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
                 <td className="amount positive">{formatCurrency(row.amount)}</td>
                 <td>{row.budget_for}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td><span className={`status-badge ${row.status.toLowerCase()}`}>{row.status}</span></td>
                 <td>{row.description}</td>
                 <td>
                   <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>

@@ -37,7 +37,6 @@ const normalizeRow = (r: any): Finance => ({
   date: r.date ?? r.donation_date ?? r.created_at ?? new Date().toISOString().slice(0, 10),
   budget_for: String(r.budget_for ?? r.allocation_type ?? "—"),
   description: r.description ?? r.notes ?? "—",
-  status: String(r.status ?? "—"),
   transaction_type: String(r.transaction_type ?? r.donation_type ?? r.type ?? "UNKNOWN"),
 });
 
@@ -165,7 +164,6 @@ export async function buildFinanceReportPDFBlob(
     "Date",
     "Budget For",
     "Description",
-    "Status",
     "Transaction Type",
   ]];
 
@@ -179,10 +177,9 @@ export async function buildFinanceReportPDFBlob(
         String(r.description ?? "—").length > 120
           ? String(r.description).slice(0, 117) + "..."
           : String(r.description ?? "—"),
-        r.status,
         String(r.transaction_type || "").replace(/_/g, " "),
       ])
-    : [["No Data Found", "", "", "", "", "", "", ""]];
+    : [["No Data Found", "", "", "", "", "", ""]];
 
   autoTable(doc, {
     head, body,
@@ -394,7 +391,6 @@ export function printFinanceHTMLReportFromRows(
         <td>${fmtDate(r.date)}</td>
         <td>${r.budget_for}</td>
         <td>${r.description ?? "—"}</td>
-        <td>${r.status}</td>
         <td>${String(r.transaction_type || "").replace(/_/g, " ")}</td>
       </tr>
     `).join("")
@@ -414,7 +410,7 @@ export function printFinanceHTMLReportFromRows(
   <table>
     <thead><tr>
       <th>ID</th><th>Counterparty</th><th>Amount</th><th>Date</th>
-      <th>Budget For</th><th>Description</th><th>Status</th><th>Transaction Type</th>
+      <th>Budget For</th><th>Description</th><th>Transaction Type</th>
     </tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>

@@ -101,7 +101,7 @@ const FinanceAdmin: React.FC = () => {
 
         {activeTab === 'exports' && <ReportsExportSection mode="exports" />}
 
-        {activeTab === 'disbursement' && <DisbursementSection mode="disbursement"/>}
+        {activeTab === 'disbursement' && <DisbursementSection />}
       </div>
     </div>
   );

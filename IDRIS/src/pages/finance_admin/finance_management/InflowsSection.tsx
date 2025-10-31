@@ -9,9 +9,9 @@ import {
 import {
   toDateInput,
   normalizeTransactionType,
-  normalizeBudgetAllocationName,
   validate,
-  budgetOptions,
+  inflowSourceOptions,
+  strip_underscores,
 } from './helpers';
 
 import {
@@ -26,7 +26,7 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', form.date!); // "YYYY-MM-DD"
   if (form.description) fd.append('description', form.description);
-  fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
+  fd.append('inflow_source', form.inflow_source!);
   return fd;
 };
 
@@ -41,16 +41,14 @@ const InflowModal: React.FC<{
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
   const readOnly = mode === 'view';
 
-  console.log("received inflow: ", form?.budget_for)
-
   useEffect(() => {
     if (open) {
       setForm({
         ...initial,
-        budget_for:
-          initial?.budget_for == null
+        inflow_source:
+          initial?.inflow_source == null
             ? undefined
-            : String((initial as any).budget_for),
+            : initial.inflow_source as InflowItem["inflow_source"],
         date: toDateInput(initial?.date as any),
       });
     }
@@ -69,7 +67,6 @@ const InflowModal: React.FC<{
     }
 
     const fd = buildFormData(form);
-    console.log(fd);
     try {
       const created = await withSwal('Saving inflow…', () => createInflowFinanceRecord(fd));
       onSave?.(created);
@@ -89,7 +86,6 @@ const InflowModal: React.FC<{
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' '), confirmButtonText: 'OK' });
       return;
     }
-    console.log(form);
     const fd = buildFormData(form, true);
 
     try {
@@ -118,21 +114,21 @@ const InflowModal: React.FC<{
 
             {/* {mode != "edit" && */}
             <div className="form-group">
-              <label>Budget For</label>
+              <label>Inflow Source</label>
               <select
                 disabled={readOnly}
-                value={String(form.budget_for ?? "")}
+                value={String(form.inflow_source ?? "")}
                 onChange={e =>
                   setForm({
                     ...form,
-                    budget_for: e.target.value as InflowItem["budget_for"],
+                    inflow_source: e.target.value as InflowItem["inflow_source"],
                   })
                 }
               >
                 <option value="" disabled>
-                  Select category
+                  Select source
                 </option>
-                {budgetOptions.map(opt => (
+                {inflowSourceOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
@@ -221,9 +217,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
 
   const open = (mode: 'add' | 'edit' | 'view', row?: InflowItem) => {
     setModalMode(mode);
-    console.log("row: ", row);
     setSelected(row);
-    console.log("after row:", selected?.budget_for);
     setModalOpen(true);
   };
 
@@ -268,9 +262,9 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
         <table>
           <thead>
             <tr>
-              <th>Source</th>
+              <th>Inflow Source</th>
               <th>Amount</th>
-              <th>Category</th>
+              {/* <th>Source</th> */}
               <th>Date</th>
               <th>Description</th>
               <th>Actions</th>
@@ -279,9 +273,9 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
           <tbody>
             {rows?.map((row, index) => (
               <tr key={index}>
-                <td>{row.counterparty}</td>
+                <td>{strip_underscores(row.inflow_source)}</td>
                 <td className="amount positive">{formatCurrency(row.amount)}</td>
-                <td>{row.budget_for}</td>
+                {/* <td>{row.counterparty}</td> */}
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td>{row.description}</td>
                 <td>

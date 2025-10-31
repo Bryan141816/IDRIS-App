@@ -1,15 +1,12 @@
 import React from 'react';
 import { InflowItem, OutflowItem, BudgetItem } from './types';
-import { formatCurrency } from '../../helpers';
-import { totalIn, totalOut, toDecimal2 } from './helpers';
+import { formatCurrency, } from '../../helpers';
+import { totalIn, totalOut, toDecimal2, strip_underscores } from './helpers';
 
 const StatsGrid: React.FC<{ inflows: InflowItem[]; outflows: OutflowItem[] }> = ({
   inflows,
   outflows,
 }) => {
-  const pending =
-    inflows.filter((i) => i.status === 'PENDING').length +
-    outflows.filter((o) => o.status === 'PENDING').length;
   return (
     <div className="stats-grid">
       <div className="stat-card inflow">
@@ -33,13 +30,6 @@ const StatsGrid: React.FC<{ inflows: InflowItem[]; outflows: OutflowItem[] }> = 
           <p>Current Balance</p>
         </div>
       </div>
-      <div className="stat-card pending">
-        <div className="stat-icon">⏳</div>
-        <div className="stat-info">
-          <h3>{pending}</h3>
-          <p>Pending Transactions</p>
-        </div>
-      </div>
     </div>
   );
 };
@@ -51,7 +41,7 @@ const BudgetOverview: React.FC<{ data: BudgetItem[] }> = ({ data }) => (
       {data.map((b, i) => (
         <div key={i} className="budget-item">
           <div className="budget-info">
-            <span className="budget-category">{b.budget_for}</span>
+            <span className="budget-category">{strip_underscores(b.budget_for)}</span>
             <span className="budget-amounts">
               {formatCurrency(b.outflow_total)} / {formatCurrency(b.inflow_total)}
             </span>

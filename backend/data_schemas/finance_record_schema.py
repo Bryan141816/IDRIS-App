@@ -8,14 +8,13 @@ from typing import Optional, Literal, Annotated
 from fastapi import Form
 from pydantic import BaseModel, ConfigDict, Field
 
-from models import FinanceRecord, TransactionType, BudgetAllocation
+from models import FinanceRecord, TransactionType, SpendCategory, InflowSource
 
 class FinanceRecordBase(BaseModel):
     counterparty: str
     amount: Decimal
     date: date
     description: Optional[str] = None
-    budget_for: str
 
 
 class InflowFinanceRecordCreate(BaseModel):
@@ -25,7 +24,7 @@ class InflowFinanceRecordCreate(BaseModel):
     amount: Decimal
     description: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
-    budget_for: BudgetAllocation =  Field(default=BudgetAllocation.GENERAL)
+    inflow_source: InflowSource =  Field(default=InflowSource.MONETARY_DONATIONS)
 
     @classmethod
     def as_form(
@@ -35,7 +34,7 @@ class InflowFinanceRecordCreate(BaseModel):
         amount: Decimal = Form(...),
         description: Optional[str] = Form(None),
         date: date = Form(...),
-        budget_for: BudgetAllocation = Form(BudgetAllocation.GENERAL),
+        inflow_source: InflowSource = Form(InflowSource.MONETARY_DONATIONS),
         
     ) -> "InflowFinanceRecordCreate":
         return cls(
@@ -44,7 +43,36 @@ class InflowFinanceRecordCreate(BaseModel):
             amount=amount,
             description=description,
             date=date,
-            budget_for = budget_for
+            inflow_source = inflow_source
+        )
+
+class OutflowFinanceRecordCreate(BaseModel):
+    # finance_id is NOT required for create; DB should generate it
+    counterparty: str
+    transaction_type: TransactionType = TransactionType.OUTFLOW
+    amount: Decimal
+    description: Optional[str] = None
+    date: date  # expects "YYYY-MM-DD" from the form
+    spend_category: SpendCategory =  Field(default=SpendCategory.ADMINISTRATIVE)
+
+    @classmethod
+    def as_form(
+        cls,
+        counterparty: str = Form(...),
+        transaction_type: TransactionType = Form(TransactionType.OUTFLOW),
+        amount: Decimal = Form(...),
+        description: Optional[str] = Form(None),
+        date: date = Form(...),
+        spend_category: SpendCategory = Form(SpendCategory.ADMINISTRATIVE),
+
+    ) -> "OutflowFinanceRecordCreate":
+        return cls(
+            counterparty=counterparty,
+            transaction_type=transaction_type,
+            amount=amount,
+            description=description,
+            date=date,
+            spend_category = spend_category
         )
         
 class FinanceRecordUpdate(BaseModel):
@@ -54,7 +82,8 @@ class FinanceRecordUpdate(BaseModel):
     amount: Optional[Decimal] = None
     description: Optional[str] = None
     date: Optional[date] = None
-    budget_for: Optional[BudgetAllocation] = None
+    inflow_source: Optional[InflowSource] = None
+    spend_category: Optional[SpendCategory] = None
 
     @classmethod
     def as_form(
@@ -65,7 +94,8 @@ class FinanceRecordUpdate(BaseModel):
         amount: Optional[Decimal] = Form(None),
         description: Optional[str] = Form(None),
         date: Optional[str] = None,
-        budget_for: Optional[BudgetAllocation] = Form(None),
+        inflow_source: Optional[InflowSource] = Form(None),
+        spend_category: Optional[SpendCategory] = Form(None),
     ) -> "FinanceRecordUpdate":
         return cls(
             finance_id=finance_id,
@@ -74,12 +104,15 @@ class FinanceRecordUpdate(BaseModel):
             amount=amount,
             description=description,
             date=_parse_date_maybe(date),
-            budget_for=budget_for,
+            inflow_source=inflow_source,
+            spend_category=spend_category,
         )
         
 class FinanceRecordRead(FinanceRecordBase):
     finance_id: str
     date: datetime
+    inflow_source: Optional[InflowSource] = None
+    spend_category: Optional[SpendCategory] = None
 
     model_config = ConfigDict(from_attributes=True)
 

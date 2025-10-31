@@ -9,8 +9,8 @@ import { FilterModal } from './FilterModal';
 import { formatCurrency } from '../../helpers';
 import {
   toDateInput,
-  normalizeBudgetAllocationName,
   validate,
+  spendCategoryOptions,
 } from './helpers';
 
 import { withSwal } from '../../withSwal';
@@ -23,7 +23,7 @@ const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', String(form.date)); // "YYYY-MM-DD"
   if (form.description) fd.append('description', form.description);
-  fd.append('budget_for', normalizeBudgetAllocationName(form.budget_for));
+  fd.append('spend_category', form.spend_category!);
   return fd;
 };
 
@@ -59,7 +59,6 @@ const OutflowModal: React.FC<{
       return;
     }
     const fd = buildFormData(form);
-    console.log("fd: ", fd);
     const created = await withSwal('Saving expense…', () => createOutflowFinanceRecord(fd));
     onSave?.(created);
     onClose();
@@ -70,9 +69,6 @@ const OutflowModal: React.FC<{
 
     const fd = new FormData();
     fd.append('finance_id', String((form as any).finance_id));
-    fd.append('status', normalizeRecordStatus(form.status));
-    console.log(fd);
-
     const updated = await withSwal('Updating expense…', () => UpdateReportData(fd));
     onSave?.(updated);
     onClose();
@@ -90,20 +86,18 @@ const OutflowModal: React.FC<{
 
             {mode != "edit" &&
               <div className="form-group">
-                <label>Budget For</label>
+                <label>Spend Category</label>
                 <select
                   disabled={readOnly}
-                  value={form.budget_for || ''}
-                  onChange={e => setForm({ ...form, budget_for: e.target.value })}
+                  value={form.spend_category || ''}
+                  onChange={e => setForm({ ...form, spend_category: e.target.value as OutflowItem['spend_category'] })}
                 >
                   <option value="" disabled>Select category</option>
-                  <option>Emergency Supplies</option>
-                  <option>Food & Water</option>
-                  <option>Transportation</option>
-                  <option>Equipment</option>
-                  <option>Administrative</option>
-                  <option>Donations</option>
-                  <option>General Expenses</option>
+                  {spendCategoryOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             }
@@ -231,7 +225,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
         <table>
           <thead>
             <tr>
-              <th>Category</th>
+              <th>Spend Category</th>
               <th>Amount</th>
               <th>Vendor</th>
               <th>Date</th>
@@ -242,7 +236,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
           <tbody>
             {rows.map((row, index) => (
               <tr key={(row as any).finance_id ?? index}>
-                <td>{row.budget_for}</td>
+                <td>{row.spend_category}</td>
                 <td className="amount negative">{formatCurrency(row.amount)}</td>
                 <td>{row.counterparty}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>

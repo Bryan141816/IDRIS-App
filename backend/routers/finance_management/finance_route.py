@@ -7,6 +7,7 @@ from routers.role_checker import RoleChecker
 from database import get_db
 from data_schemas.finance_record_schema import (
     InflowFinanceRecordCreate,
+    OutflowFinanceRecordCreate,
     FinanceRecordRead,
     FinanceRecordUpdate,
     # FinanceRecordStatusUpdate,
@@ -31,23 +32,19 @@ router_admin_or_donor = APIRouter(
 )
 
 @router_admin.post("/inflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)
-def create_finance_record(
+def create_inflow_record(
     payload: InflowFinanceRecordCreate = Depends(InflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
 ):
-    payload.transaction_type = TransactionType.INFLOW
-    print(payload)
-    obj = FinanceRecordCRUD.create_finance_record(db, payload)
+    obj = FinanceRecordCRUD.create_inflow_record(db, payload)
     return obj
 
 @router_admin.post("/outflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)
-def create_finance_record(
-    payload: InflowFinanceRecordCreate = Depends(InflowFinanceRecordCreate.as_form),
+def create_outflow_record(
+    payload: OutflowFinanceRecordCreate = Depends(OutflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
 ):
-    payload.transaction_type = TransactionType.OUTFLOW
-    print(payload)
-    obj = FinanceRecordCRUD.create_finance_record(db, payload)
+    obj = FinanceRecordCRUD.create_outflow_record(db, payload)
     return obj
 
 

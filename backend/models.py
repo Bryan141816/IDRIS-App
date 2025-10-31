@@ -1429,14 +1429,19 @@ def create_inventory_item(mapper, connection, target):
 # ================================== FINANCE MODELS =====================================
 
 
-class BudgetAllocation(enum.Enum):
+class SpendCategory(enum.Enum):
     EMERGENCY = "EMERGENCY SUPPLIES"
     FOOD_WATER = "FOOD AND WATER"
     TRANSPORTATION = "TRANSPORTATION"
     EQUIPMENT = "EQUIPMENT"
     ADMINISTRATIVE = "ADMINISTRATIVE"
-    DONATIONS = "DONATIONS"
-    GENERAL = "GENERAL"
+
+class InflowSource(enum.Enum):
+    GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS"
+    PRIVATE_SECTOR_CONTRIBUTIONS = "PRIVATE_SECTOR_CONTRIBUTIONS"
+    COMMUNITY_BASED_INITIATIVE = "COMMUNITY_BASED_INITIATIVE"
+    MONETARY_DONATIONS = "MONETARY_DONATIONS"
+    DONATION = "DONATION"
 
 
 class TransactionType(enum.Enum):
@@ -1459,9 +1464,8 @@ class FinanceRecord(Base):
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
-    budget_for = Column(
-        SqlEnum(BudgetAllocation), nullable=False, default=BudgetAllocation.GENERAL
-    )
+    inflow_source = Column(SqlEnum(InflowSource), nullable=True, index=True)
+    spend_category = Column(SqlEnum(SpendCategory), nullable=True, index=True)
 
     donation_id = Column(
         String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True

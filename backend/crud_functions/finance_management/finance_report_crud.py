@@ -1,17 +1,18 @@
 import calendar
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Iterable, List, Dict, Any, Optional
+from typing import Iterable, List, Dict, Any, Optional, Union
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, case, literal, and_
+from sqlalchemy import select, func, case, literal, and_, or_
 from crud_functions.utils import uid_from_string, random_suffix
-from models import FinanceRecord, TransactionType, BudgetAllocation
+from models import FinanceRecord, TransactionType, InflowSource, SpendCategory
 from data_schemas.finance_record_schema import (
     InflowFinanceRecordCreate,
 )
-from .finance_utils import _to_alloc_enums
+from models import InflowSource, SpendCategory
+from .finance_utils import _to_enums
 
 
 class FinanceReport:
@@ -20,28 +21,58 @@ class FinanceReport:
         db: Session,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
-        allocation_type: Optional[List[BudgetAllocation]] = None,
+        categories: Optional[Iterable[Union[str, InflowSource, SpendCategory]]] = None,
     ):
         """
-        Fetch inflows filtered by date range, statuses, and allocation_type.
+        Fetch finance records filtered by date range and optional category filters.
+        `categories` may contain inflow sources, spend categories, or a mix (as str or enum).
         """
-        query = db.query(FinanceRecord)
 
-        # Filter by date range
+        q = db.query(FinanceRecord)
+
+        # Date range
         if from_date:
-            query = query.filter(FinanceRecord.date >= from_date)
+            q = q.filter(FinanceRecord.date >= from_date)
         if to_date:
-            query = query.filter(FinanceRecord.date <= to_date)
+            q = q.filter(FinanceRecord.date <= to_date)
 
-        # Normalize lists to the strings your DB actually stores
-        norm_allocs   = _to_alloc_enums(allocation_type or [])
+        # Split incoming mixed category list into two buckets
+        inflow_filters: List[InflowSource] = _to_enums(categories, InflowSource)
+        spend_filters: List[SpendCategory] = _to_enums(categories, SpendCategory)
 
-        if norm_allocs:
-            query = query.filter(FinanceRecord.budget_for.in_(norm_allocs))    
-        
-        print(str(query))
-        return query.order_by(FinanceRecord.date.desc()).all()
-            
+        if inflow_filters and spend_filters:
+            # Mixed: match either inflow (by inflow_source) OR outflow (by spend_category)
+            q = q.filter(
+                or_(
+                    and_(
+                        FinanceRecord.transaction_type == TransactionType.INFLOW,
+                        FinanceRecord.inflow_source.in_(inflow_filters),
+                    ),
+                    and_(
+                        FinanceRecord.transaction_type == TransactionType.OUTFLOW,
+                        FinanceRecord.spend_category.in_(spend_filters),
+                    ),
+                )
+            )
+        elif inflow_filters:
+            # Only inflow filters provided
+            q = q.filter(
+                and_(
+                    FinanceRecord.transaction_type == TransactionType.INFLOW,
+                    FinanceRecord.inflow_source.in_(inflow_filters),
+                )
+            )
+        elif spend_filters:
+            # Only spend filters provided
+            q = q.filter(
+                and_(
+                    FinanceRecord.transaction_type == TransactionType.OUTFLOW,
+                    FinanceRecord.spend_category.in_(spend_filters),
+                )
+            )
+
+        q = q.order_by(FinanceRecord.date.desc())
+        return q.all()            
 
     
     @staticmethod
@@ -49,7 +80,7 @@ class FinanceReport:
         db: Session,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
-        allocation_type: Optional[List[BudgetAllocation]] = None,
+        allocation_type: Optional[List[InflowSource]] = None,
     ):
         q = select(FinanceRecord).where(FinanceRecord.transaction_type == TransactionType.INFLOW)
 
@@ -58,10 +89,10 @@ class FinanceReport:
         if to_date:
             q = q.where(FinanceRecord.date <= to_date)
 
-        norm_allocs = _to_alloc_enums(allocation_type or [])
+        norm_allocs = _to_enums(allocation_type or [], InflowSource)
 
         if norm_allocs:
-            q = q.where(FinanceRecord.budget_for.in_(norm_allocs))
+            q = q.where(FinanceRecord.inflow_source.in_(norm_allocs))
 
         q = q.order_by(FinanceRecord.date.desc())
         return list(db.execute(q).scalars().all())
@@ -71,7 +102,7 @@ class FinanceReport:
         db: Session,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
-        allocation_type: Optional[List[BudgetAllocation]] = None,
+        allocation_type: Optional[List[SpendCategory]] = None,
     ):
         q = select(FinanceRecord).where(FinanceRecord.transaction_type == TransactionType.OUTFLOW)
 
@@ -80,10 +111,10 @@ class FinanceReport:
         if to_date:
             q = q.where(FinanceRecord.date <= to_date)
 
-        norm_allocs = _to_alloc_enums(allocation_type or [])
+        norm_allocs = _to_enums(allocation_type or [], SpendCategory)
 
         if norm_allocs:
-            q = q.where(FinanceRecord.budget_for.in_(norm_allocs))
+            q = q.where(FinanceRecord.spend_category.in_(norm_allocs))
 
         q = q.order_by(FinanceRecord.date.desc())
         return list(db.execute(q).scalars().all())
@@ -106,10 +137,10 @@ class FinanceReport:
         # Actual spending by category
         by_category = (
             base_query.with_entities(
-                FinanceRecord.budget_for,
+                FinanceRecord.spend_category,
                 func.coalesce(func.sum(FinanceRecord.amount), 0).label("total_spent"),
             )
-            .group_by(FinanceRecord.budget_for)
+            .group_by(FinanceRecord.spend_category)
             .all()
         )
 
@@ -126,7 +157,7 @@ class FinanceReport:
             "transaction_count": count_txn,
             "by_category": [
                 {
-                    "budget_for": row.budget_for.value,
+                    "spend_category": row.spend_category.value,
                     "spent": float(row.total_spent),
                     "percent_of_total": float((row.total_spent / total_spent * 100) if total_spent else 0),
                 }
@@ -141,7 +172,7 @@ class FinanceReport:
         to_date: Optional[date] = None,
     ) -> Dict[str, Any]:
         """
-        Return aggregated dashboard dict grouped by allocation (budget_for).
+        Return aggregated dashboard dict grouped by allocation (inflow_source/spend_category).
         Only accepts from_date/to_date. If neither provided, defaults to year-to-date.
         Includes all statuses in KPIs and breakdown; pending/denied are still reported separately.
         """
@@ -233,11 +264,17 @@ class FinanceReport:
         ).scalar()
         last_updated_val = max_updated or datetime.utcnow()
 
-        # Breakdown by allocation (always group by budget_for)
+        # Breakdown by allocation (always group by inflow_source/spend_category)
         breakdown_allocation = []
+
+        grouping_key = case(
+            (FinanceRecord.transaction_type == TransactionType.INFLOW, FinanceRecord.inflow_source),
+            (FinanceRecord.transaction_type == TransactionType.OUTFLOW, FinanceRecord.spend_category)
+        ).label("allocation")
+
         grp_query = (
             db.query(
-                FinanceRecord.budget_for.label("allocation"),
+                grouping_key,
                 func.coalesce(
                     func.sum(
                         case(
@@ -290,7 +327,7 @@ class FinanceReport:
                 ).label("denied"),
             )
             .filter(FinanceRecord.date >= from_date, FinanceRecord.date <= to_date)
-            .group_by(FinanceRecord.budget_for)
+            .group_by(grouping_key)
         )
 
         rows = grp_query.all()

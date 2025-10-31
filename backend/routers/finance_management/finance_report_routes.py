@@ -5,9 +5,7 @@ from sqlalchemy.orm import Session
 from routers.role_checker import RoleChecker
 
 from database import get_db
-from data_schemas.finance_record_schema import (
-    BudgetAllocation
-)
+from models import InflowSource, SpendCategory
 from crud_functions.finance_management.finance_report_crud import FinanceReport
 
 router = APIRouter()
@@ -32,8 +30,8 @@ router_admin_or_donor = APIRouter(
 def list_records_all(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
     to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
-    allocation_type_a: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type"),
-    allocation_type_b: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type[]"),
+    allocation_type_a: Optional[List[InflowSource]] = Query(None, alias="allocation_type"),
+    allocation_type_b: Optional[List[InflowSource]] = Query(None, alias="allocation_type[]"),
 
     db: Session = Depends(get_db),
 ):
@@ -58,7 +56,8 @@ def list_records_all(
             "counterparty": rec.counterparty,
             "amount": float(rec.amount),
             "date": rec.date,
-            "budget_for": rec.budget_for.value,
+            "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
+            "spend_category": rec.spend_category.value if rec.spend_category else None,
             "description": rec.description,
             "transaction_type": rec.transaction_type.value,
         }
@@ -70,8 +69,8 @@ def list_records_all(
 def list_inflows(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
     to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
-    allocation_type_a: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type"),
-    allocation_type_b: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type[]"),
+    allocation_type_a: Optional[List[InflowSource]] = Query(None, alias="allocation_type"),
+    allocation_type_b: Optional[List[InflowSource]] = Query(None, alias="allocation_type[]"),
     db: Session = Depends(get_db),
 ):
     """
@@ -95,7 +94,7 @@ def list_inflows(
             "counterparty": rec.counterparty,
             "amount": float(rec.amount),
             "date": rec.date,
-            "budget_for": rec.budget_for.value,
+            "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
             "description": rec.description,
             "transaction_type": rec.transaction_type.value,
         }
@@ -107,8 +106,8 @@ def list_outflows(
     from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
     to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
     # dual aliases for array-style params (same as list_records_all)
-    allocation_type_a: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type"),
-    allocation_type_b: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type[]"),
+    allocation_type_a: Optional[List[SpendCategory]] = Query(None, alias="allocation_type"),
+    allocation_type_b: Optional[List[SpendCategory]] = Query(None, alias="allocation_type[]"),
     db: Session = Depends(get_db),
 ):
     """
@@ -131,7 +130,7 @@ def list_outflows(
             "counterparty": rec.counterparty,
             "amount": float(rec.amount),
             "date": rec.date,
-            "budget_for": rec.budget_for.value,
+            "spend_category": rec.spend_category.value if rec.spend_category else None,
             "description": rec.description,
             "transaction_type": rec.transaction_type.value,
         }

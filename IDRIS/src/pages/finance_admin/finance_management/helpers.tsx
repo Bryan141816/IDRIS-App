@@ -1,4 +1,4 @@
-import { InflowItem, OutflowItem } from './types';
+import { InflowItem, OutflowItem, InflowSource, SpendCategory } from './types';
 import { FinanceRecordType } from "./types";
 import { formatCurrency } from '../../helpers';
 
@@ -45,36 +45,25 @@ export const urlToDataUrl = async (url: string): Promise<string | null> => {
 
 export const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
 
-export const budgetOptions = [
-  { value: "EMERGENCY", label: "Emergency Supplies" },
-  { value: "FOOD_WATER", label: "Food & Water" },
-  { value: "TRANSPORT", label: "Transportation" },
-  { value: "EQUIPMENT", label: "Equipment" },
-  { value: "ADMIN", label: "Administrative" },
-  { value: "DONATIONS", label: "Donations" },
-  { value: "GENERAL", label: "General Expenses" },
-];
+export const inflowSourceOptions = Object.values(InflowSource).map(value => ({
+  value,
+  label: value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+}));
 
-export const normalizeBudgetAllocationName = (input: string | null | undefined) => {
-  if (!input) return "GENERAL";
-  const s = input.trim().toUpperCase().replace(/&/g, "AND");
-  if (s.startsWith("EMERGENCY")) return "EMERGENCY SUPPLIES";
-  if (s.includes("FOOD") || s.includes("WATER")) return "FOOD AND WATER";
-  if (s.startsWith("TRANSPO") || s.includes("TRANSPORT")) return "TRANSPORTATION";
-  if (s.startsWith("EQUIP")) return "EQUIPMENT";
-  if (s.startsWith("ADMIN")) return "ADMINISTRATIVE";
-  if (s.startsWith("DONATIONS") || s.includes("DONATION")) return "DONATIONS";
-  if (s === "GENERAL") return "GENERAL";
-  return "GENERAL";
-};
+export const spendCategoryOptions = Object.values(SpendCategory).map(value => ({
+  value,
+  label: value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+}));
+
+export const strip_underscores = (s: string) => s.replace(/_/g, " ");
 
 export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {
   const errs: string[] = [];
   if (!form.counterparty?.trim()) errs.push('Source is required.');
   if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
-  if (!form.budget_for) errs.push('Category is required.');
+  if ('inflow_source' in form && !form.inflow_source) errs.push('Inflow source is required.');
+  if ('spend_category' in form && !form.spend_category) errs.push('Spend category is required.');
   if (!form.date) errs.push('Date is required.');
-  if (!form.budget_for) errs.push('Budget allocation is required.');
   return errs;
 };
 
@@ -103,6 +92,20 @@ export const toDecimal2 = (value: number | string | null | undefined): number =>
 
   return parseFloat(num.toFixed(2));
 };
+
+export const getTotalPendingTransactions = (data: FinanceRecordType) => {
+  const pendingInflow = parseFloat(data.kpis.pending_inflow);
+  const pendingOutflow = parseFloat(data.kpis.pending_outflow);
+  return pendingInflow + pendingOutflow;
+}
+
+export const getActionRequired = (data: FinanceRecordType) => {
+  const totalPending = getTotalPendingTransactions(data);
+  if (totalPending > 0) {
+    return `${totalPending} transactions require review.`;
+  }
+  return "No actions required at this time.";
+}
 
 
 // export const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {

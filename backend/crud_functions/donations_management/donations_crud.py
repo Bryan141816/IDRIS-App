@@ -19,7 +19,7 @@ from models import (
     Donation_Cash,
     Donation_InKind,
     FinanceRecord,
-    BudgetAllocation,
+    InflowSource,
     TransactionType,
 )
 
@@ -133,7 +133,7 @@ class DonationCRUD:
                     amount=amount_for_finance,    # Decimal
                     date=finance_date,            # date, not datetime
                     description=desc_for_finance,
-                    budget_for=BudgetAllocation.DONATIONS,
+                    inflow_source=InflowSource.DONATION,
                 )
                 db.add(finance)
 
@@ -243,7 +243,7 @@ class DonationCRUD:
                 amount=amount_for_finance,
                 date=finance_date,
                 description=desc_for_finance,
-                budget_for=BudgetAllocation.DONATIONS,
+                inflow_source=InflowSource.DONATION,
             )
             db.add(finance)
 

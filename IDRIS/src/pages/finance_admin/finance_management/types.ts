@@ -1,13 +1,21 @@
 export type ActiveTab = 'dashboard' | 'inflows' | 'outflows' | 'reports' | 'exports';
 
-export type BudgetAllocations =
-  | "EMERGENCY SUPPLIES"
-  | "FOOD AND WATER"
-  | "TRANSPORTATION"
-  | "EQUIPMENT"
-  | "ADMINISTRATIVE"
-  | "DONATIONS"
-  | "GENERAL";
+export enum InflowSource {
+  GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS",
+  PRIVATE_SECTOR_CONTRIBUTIONS = "PRIVATE_SECTOR_CONTRIBUTIONS",
+  COMMUNITY_BASED_INITIATIVE = "COMMUNITY_BASED_INITIATIVE",
+  MONETARY_DONATIONS = "MONETARY_DONATIONS",
+  DONATION = "DONATION",
+}
+
+export enum SpendCategory {
+  EMERGENCY = "EMERGENCY SUPPLIES",
+  FOOD_WATER = "FOOD AND WATER",
+  TRANSPORTATION = "TRANSPORTATION",
+  EQUIPMENT = "EQUIPMENT",
+  ADMINISTRATIVE = "ADMINISTRATIVE",
+}
+
 
 export enum TransactionType {
   INFLOW = 'INFLOW',
@@ -19,7 +27,8 @@ export type Finance = {
   counterparty: string;
   amount: number;
   date: string;       // ISO-like string is fine
-  budget_for: string;
+  inflow_source?: InflowSource;
+  spend_category?: SpendCategory;
   description: string;
   transaction_type: string;
 };
@@ -28,7 +37,7 @@ export type InflowItem = {
   finance_id: string;
   counterparty: string;
   amount: number;
-  budget_for: string;
+  inflow_source: InflowSource;
   date: string;
   description: string;
 };
@@ -37,7 +46,7 @@ export type OutflowItem = {
   finance_id: string;
   counterparty: string;
   amount: number;
-  budget_for: string;
+  spend_category: SpendCategory;
   date: string;
   description: string;
 };

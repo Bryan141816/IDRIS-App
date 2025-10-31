@@ -4,11 +4,12 @@ from typing import Iterable, List, Dict, Any, Optional
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, case, literal, and_
+from sqlalchemy import select, func, case, literal, and_, cast, String
 from crud_functions.utils import uid_from_string, random_suffix
-from models import FinanceRecord, TransactionType, BudgetAllocation, Donation, DonationType
+from models import FinanceRecord, TransactionType, InflowSource, SpendCategory, Donation, DonationType
 from data_schemas.finance_record_schema import (
-    InflowFinanceRecordCreate, 
+    InflowFinanceRecordCreate,
+    OutflowFinanceRecordCreate,
     FinanceRecordUpdate,
 )
 
@@ -20,15 +21,31 @@ def _gen_finance_id() -> str:
 
 class FinanceRecordCRUD:
     @staticmethod
-    def create_finance_record(db: Session, payload: InflowFinanceRecordCreate) -> FinanceRecord:
+    def create_inflow_record(db: Session, payload: InflowFinanceRecordCreate) -> FinanceRecord:
         obj = FinanceRecord(
             finance_id=uid_from_string(f"{payload.date}{random_suffix(6)}"),
             counterparty=payload.counterparty,
-            transaction_type=TransactionType(payload.transaction_type),
+            transaction_type=TransactionType.INFLOW,
             amount=payload.amount,
             date=payload.date,
             description=payload.description,
-            budget_for = BudgetAllocation(payload.budget_for)
+            inflow_source = InflowSource(payload.inflow_source)
+        )
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+
+    @staticmethod
+    def create_outflow_record(db: Session, payload: OutflowFinanceRecordCreate) -> FinanceRecord:
+        obj = FinanceRecord(
+            finance_id=uid_from_string(f"{payload.date}{random_suffix(6)}"),
+            counterparty=payload.counterparty,
+            transaction_type=TransactionType.OUTFLOW,
+            amount=payload.amount,
+            date=payload.date,
+            description=payload.description,
+            spend_category = SpendCategory(payload.spend_category)
         )
         db.add(obj)
         db.commit()
@@ -99,8 +116,10 @@ class FinanceRecordCRUD:
             obj.amount = patch.amount
         if patch.date is not None:
             obj.date = patch.date
-        if patch.budget_for is not None:
-            obj.budget_for = patch.budget_for
+        if patch.inflow_source is not None:
+            obj.inflow_source = patch.inflow_source
+        if patch.spend_category is not None:
+            obj.spend_category = patch.spend_category
         if patch.description is not None:
             obj.description = patch.description
 
@@ -144,7 +163,7 @@ class FinanceRecordCRUD:
         "inflow_total": Decimal("12345.67"),
         "outflow_total": Decimal("890.00"),
         "net_total": Decimal("11455.67"),
-        "percentage_spent": Decimal("7.21")  # outflow / inflow * 100
+        "percentage_spent": Decimal("7.21")
         }
         """
 
@@ -177,49 +196,64 @@ class FinanceRecordCRUD:
             0,
         )
 
-        # percentage_spent = (outflow_total / inflow_total) * 100, guard divide-by-zero
+        # percentage_spent = (outflow_total / inflow_total) * 100 (guard divide-by-zero)
         denom = func.nullif(inflow_sum, 0)
         percentage_spent = func.coalesce((outflow_sum * 100.0) / denom, 0.0)
 
+        # --- KEY FIX: cast enum branches to a single common type (TEXT) ---
+        grouping_key = case(
+            (
+                FinanceRecord.transaction_type == TransactionType.INFLOW,
+                cast(FinanceRecord.inflow_source, String),
+            ),
+            (
+                FinanceRecord.transaction_type == TransactionType.OUTFLOW,
+                cast(FinanceRecord.spend_category, String),
+            ),
+            else_=cast(literal(None), String),
+        ).label("budget_for")
+
         base_select = select(
-            FinanceRecord.budget_for.label("budget_for"),
+            grouping_key,
             inflow_sum.label("inflow_total"),
             outflow_sum.label("outflow_total"),
             (inflow_sum - outflow_sum).label("net_total"),
             percentage_spent.label("percentage_spent"),
         )
 
-        stmt = (base_select.outerjoin(Donation).where(and_(*filters)) if filters else base_select) \
-            .group_by(FinanceRecord.budget_for) \
-            .order_by(FinanceRecord.budget_for)
+        stmt = (
+            base_select.outerjoin(Donation).where(and_(*filters))
+            if filters else base_select
+        ).group_by(grouping_key).order_by(grouping_key)
 
         rows = db.execute(stmt).all()
 
-        # Convert result rows to dicts keyed by enum value (nice for JSON)
-        result_map: Dict[BudgetAllocation, Dict[str, Any]] = {
-            r.budget_for: {
-                "budget_for": r.budget_for.value if hasattr(r.budget_for, "value") else str(r.budget_for),
+        # Use string values for categories
+        all_categories = {cat.value for cat in InflowSource}
+
+        # Convert rows -> dicts; budget_for is now a string (TEXT), not an enum
+        result_map: Dict[str, Dict[str, Any]] = {
+            (r.budget_for or "UNKNOWN"): {
+                "budget_for": (r.budget_for or "UNKNOWN"),
                 "inflow_total": Decimal(r.inflow_total or 0),
                 "outflow_total": Decimal(r.outflow_total or 0),
                 "net_total": Decimal(r.net_total or 0),
-                # Convert to Decimal safely even if DB returns float
                 "percentage_spent": Decimal(str(r.percentage_spent or 0)),
             }
             for r in rows
+            if r.budget_for is not None
         }
 
         if include_zero_rows:
-            # Ensure every enum appears, even if no records
-            for cat in BudgetAllocation:
-                if cat not in result_map:
-                    result_map[cat] = {
-                        "budget_for": cat.value,
+            for cat_value in all_categories:
+                if cat_value not in result_map:
+                    result_map[cat_value] = {
+                        "budget_for": cat_value,
                         "inflow_total": Decimal("0"),
                         "outflow_total": Decimal("0"),
                         "net_total": Decimal("0"),
                         "percentage_spent": Decimal("0"),
                     }
 
-        # Stable order by enum name (or value)
-        ordered = [result_map[cat] for cat in sorted(result_map.keys(), key=lambda c: c.name)]
+        ordered = [result_map[cat] for cat in sorted(result_map.keys())]
         return ordered

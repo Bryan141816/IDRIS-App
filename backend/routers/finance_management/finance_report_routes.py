@@ -28,6 +28,42 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
 )
 
+@router.get("/get-report/all", response_model=List[dict])
+def list_records_all(
+    from_date: Optional[date] = Query(None, description="Start date (yyyy-mm-dd)"),
+    to_date: Optional[date] = Query(None, description="End date (yyyy-mm-dd)"),
+    allocation_type_a: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type"),
+    allocation_type_b: Optional[List[BudgetAllocation]] = Query(None, alias="allocation_type[]"),
+
+    db: Session = Depends(get_db),
+):
+    """
+    Get records with optional filters: date range, status list, and allocation type.
+    """
+    allocation_type = (allocation_type_a or []) + (allocation_type_b or [])
+
+    records = FinanceReport.get_all(
+        db=db,
+        from_date=from_date,
+        to_date=to_date,
+        allocation_type=allocation_type,
+    )
+
+    records = records or []
+    print(records)
+    # Return as dicts (or use Pydantic schema if you already have one)
+    return [
+        {
+            "finance_id": rec.finance_id,
+            "counterparty": rec.counterparty,
+            "amount": float(rec.amount),
+            "date": rec.date,
+            "budget_for": rec.budget_for.value,
+            "description": rec.description,
+            "transaction_type": rec.transaction_type.value,
+        }
+        for rec in records
+    ]
 
 
 @router.get("/get_report/inflows", response_model=List[dict])
@@ -102,6 +138,28 @@ def list_outflows(
         for rec in (outflows or [])
     ]
 
+@router.get("/get/budget_summary", name="budget_summary")
+def budget_summary(
+    from_date: Optional[date] = Query(None, description="YYYY-MM-DD"),
+    to_date: Optional[date] = Query(None, description="YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns aggregated KPIs and breakdown grouped by allocation.
+    Only accepts date_from/date_to. If neither provided, defaults to year-to-date.
+    """
+    print("Date from: ", from_date)
+    print("Date To:", to_date)
+    try:
+        result = FinanceReport.get_budget_summary(
+            db=db,
+            from_date=from_date,
+            to_date=to_date,
+        )
+    except Exception as e:
+        # Surface database/logic errors as 500 (adjust for prod)
+        raise HTTPException(status_code=500, detail=str(e))
+    return result
 
 
 router.include_router(router_admin)

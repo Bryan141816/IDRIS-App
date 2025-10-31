@@ -8,7 +8,7 @@ from typing import Optional, Literal, Annotated
 from fastapi import Form
 from pydantic import BaseModel, ConfigDict, Field
 
-from models import FinanceRecord, TransactionType, RecordStatus, BudgetAllocation
+from models import FinanceRecord, TransactionType, BudgetAllocation
 
 class FinanceRecordBase(BaseModel):
     counterparty: str

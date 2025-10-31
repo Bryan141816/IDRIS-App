@@ -128,3 +128,98 @@ class FinanceRecordCRUD:
     #     db.delete(obj)
     #     db.commit()
     #     return True
+
+    @staticmethod
+    def summarize_by_budget_allocation(
+        db: Session,
+        *,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        include_zero_rows: bool = True,
+    ) -> List[Dict[str, Any]]:
+        """
+        Returns a list of dicts like:
+        {
+        "budget_for": "FOOD AND WATER",
+        "inflow_total": Decimal("12345.67"),
+        "outflow_total": Decimal("890.00"),
+        "net_total": Decimal("11455.67"),
+        "percentage_spent": Decimal("7.21")  # outflow / inflow * 100
+        }
+        """
+
+        filters = [
+            # Exclude INKIND donations from all financial summaries
+            (Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND)
+        ]
+
+        if start_date:
+            filters.append(FinanceRecord.date >= start_date)
+        if end_date:
+            filters.append(FinanceRecord.date <= end_date)
+
+        inflow_sum = func.coalesce(
+            func.sum(
+                case(
+                    (FinanceRecord.transaction_type == TransactionType.INFLOW, FinanceRecord.amount),
+                    else_=literal(0),
+                )
+            ),
+            0,
+        )
+        outflow_sum = func.coalesce(
+            func.sum(
+                case(
+                    (FinanceRecord.transaction_type == TransactionType.OUTFLOW, FinanceRecord.amount),
+                    else_=literal(0),
+                )
+            ),
+            0,
+        )
+
+        # percentage_spent = (outflow_total / inflow_total) * 100, guard divide-by-zero
+        denom = func.nullif(inflow_sum, 0)
+        percentage_spent = func.coalesce((outflow_sum * 100.0) / denom, 0.0)
+
+        base_select = select(
+            FinanceRecord.budget_for.label("budget_for"),
+            inflow_sum.label("inflow_total"),
+            outflow_sum.label("outflow_total"),
+            (inflow_sum - outflow_sum).label("net_total"),
+            percentage_spent.label("percentage_spent"),
+        )
+
+        stmt = (base_select.outerjoin(Donation).where(and_(*filters)) if filters else base_select) \
+            .group_by(FinanceRecord.budget_for) \
+            .order_by(FinanceRecord.budget_for)
+
+        rows = db.execute(stmt).all()
+
+        # Convert result rows to dicts keyed by enum value (nice for JSON)
+        result_map: Dict[BudgetAllocation, Dict[str, Any]] = {
+            r.budget_for: {
+                "budget_for": r.budget_for.value if hasattr(r.budget_for, "value") else str(r.budget_for),
+                "inflow_total": Decimal(r.inflow_total or 0),
+                "outflow_total": Decimal(r.outflow_total or 0),
+                "net_total": Decimal(r.net_total or 0),
+                # Convert to Decimal safely even if DB returns float
+                "percentage_spent": Decimal(str(r.percentage_spent or 0)),
+            }
+            for r in rows
+        }
+
+        if include_zero_rows:
+            # Ensure every enum appears, even if no records
+            for cat in BudgetAllocation:
+                if cat not in result_map:
+                    result_map[cat] = {
+                        "budget_for": cat.value,
+                        "inflow_total": Decimal("0"),
+                        "outflow_total": Decimal("0"),
+                        "net_total": Decimal("0"),
+                        "percentage_spent": Decimal("0"),
+                    }
+
+        # Stable order by enum name (or value)
+        ordered = [result_map[cat] for cat in sorted(result_map.keys(), key=lambda c: c.name)]
+        return ordered

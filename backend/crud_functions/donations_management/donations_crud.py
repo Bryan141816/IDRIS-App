@@ -20,7 +20,6 @@ from models import (
     Donation_InKind,
     FinanceRecord,
     BudgetAllocation,
-    RecordStatus,
     TransactionType,
 )
 
@@ -134,7 +133,6 @@ class DonationCRUD:
                     amount=amount_for_finance,    # Decimal
                     date=finance_date,            # date, not datetime
                     description=desc_for_finance,
-                    status=RecordStatus.PENDING,
                     budget_for=BudgetAllocation.DONATIONS,
                 )
                 db.add(finance)
@@ -245,7 +243,6 @@ class DonationCRUD:
                 amount=amount_for_finance,
                 date=finance_date,
                 description=desc_for_finance,
-                status=RecordStatus.PENDING,
                 budget_for=BudgetAllocation.DONATIONS,
             )
             db.add(finance)
@@ -263,9 +260,6 @@ class DonationCRUD:
                 .filter(Donation.donation_id == donation_id)
                 .one()
             )
-            donation.status = DonationStatus.CANCELLED
-            if donation.finance_record:
-                donation.finance_record.status = RecordStatus.DENIED
 
             db.commit()
             db.refresh(donation)
@@ -283,8 +277,6 @@ class DonationCRUD:
                 .one()
             )
             donation.status = DonationStatus.COMPLETED
-            if donation.finance_record:
-                donation.finance_record.status = RecordStatus.RECEIVED
             
             db.commit()
             db.refresh(donation)
@@ -305,8 +297,6 @@ class DonationCRUD:
                 .one()
             )
             donation.status = DonationStatus.FAILED
-            if donation.finance_record:
-                donation.finance_record.status = RecordStatus.DENIED
 
             db.commit()
             db.refresh(donation)

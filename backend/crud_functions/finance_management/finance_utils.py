@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 from datetime import date
 from sqlalchemy.orm import Session
-from models import BudgetAllocation, FinanceRecord, RecordStatus
+from models import BudgetAllocation, FinanceRecord
 
 # helpers (no switches; supports fuzzy matching with "includes")
 def _to_alloc_enums(items: List[Union[str, BudgetAllocation]]) -> List[BudgetAllocation]:

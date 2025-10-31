@@ -107,6 +107,23 @@ def update_finance_record(patch: FinanceRecordUpdate = Depends(FinanceRecordUpda
 #         raise HTTPException(status_code=404, detail="Finance record not found")
 #     return obj
 
+@router_admin.get("/summary/budget_allocation")
+def get_budget_allocation_summary(
+    start_date: Optional[date] = Query(None, description="Filter start date"),
+    end_date: Optional[date] = Query(None, description="Filter end date"),
+    include_zero_rows: bool = Query(True, description="Include categories with zero totals"),
+    db: Session = Depends(get_db),
+):
+    """
+    Summarize inflows and outflows grouped by budget allocation.
+    """
+    result = FinanceRecordCRUD.summarize_by_budget_allocation(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        include_zero_rows=include_zero_rows,
+    )
+    return result
 
 
 

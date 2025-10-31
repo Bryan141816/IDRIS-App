@@ -128,7 +128,6 @@ class DonorCRUD:
                 donation_data["amount"] = donation.cash.amount
                 donation_data["payment_method"] = donation.cash.payment_method
             elif donation.donation_type == DonationType.INKIND and donation.inkind:
-                donation_data["estimated_value"] = donation.inkind.estimated_value
                 donation_data["item_description"] = donation.inkind.item_description
                 donation_data["quantity"] = donation.inkind.quantity
 
@@ -371,7 +370,6 @@ class DonorCRUD:
                     Donation.donor_id.label("donor_id"),
                     (
                         func.coalesce(func.sum(Donation_Cash.amount), 0)
-                        + func.coalesce(func.sum(Donation_InKind.estimated_value), 0)
                     ).label("total_donation"),
                 )
                 # FROM Donation -> join both children (outer joins; one or the other may be null)

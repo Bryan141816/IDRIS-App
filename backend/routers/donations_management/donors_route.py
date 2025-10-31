@@ -148,7 +148,7 @@ def get_donor_profile(
 # ============================================================================
 
 
-@router.get("/get_all_as_lists", response_model=ListOfDonorsResponse)  # mark used
+@router_admin_or_donor.get("/get_all_as_lists", response_model=ListOfDonorsResponse)  # mark used
 def get_donor_display_info_endpoint(
     search: Optional[str] = Query(None),
     page: int = Query(1, ge=1),

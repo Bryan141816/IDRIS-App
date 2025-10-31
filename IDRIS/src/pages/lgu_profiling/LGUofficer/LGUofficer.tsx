@@ -81,6 +81,18 @@ const LGUofficer: React.FC = () => {
   const [myLGULocation, setMyLGULocation] = useState<LGUOut | null>(null);
   const [loadingLGU, setLoadingLGU] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshMyLGU = async () => {
+  try {
+    setLoadingLGU(true);
+    setError(null);
+    const loc = await getMyLGULocation();
+    setMyLGULocation(loc);
+  } catch (e: any) {
+    setError("Failed to load LGU information.");
+  } finally {
+    setLoadingLGU(false);
+  }
+};
 
   // Barangays
   const [barangayList, setBarangayList] = useState<Barangay[]>([]);
@@ -140,27 +152,22 @@ const LGUofficer: React.FC = () => {
 
   // Init
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setLoadingLGU(true);
-        setError(null);
-        const loc = await getMyLGULocation();
-        if (mounted) setMyLGULocation(loc);
-      } catch (e: any) {
-        if (mounted) setError("Failed to load LGU information.");
-      } finally {
-        if (mounted) setLoadingLGU(false);
-      }
-    })();
+  let mounted = true;
 
-    refreshBarangays();
-    refreshRaffi();
+  (async () => {
+    await refreshMyLGU();
+    if (!mounted) return;
+    // optionally: nothing else here
+  })();
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  refreshBarangays();
+  refreshRaffi();
+
+  return () => {
+    mounted = false;
+  };
+}, []);
+
 
   // Modal openers
   const openModal = (
@@ -247,7 +254,7 @@ const LGUofficer: React.FC = () => {
         />
       )}
       {activeModal === "edit-lgu" && selectedData && isLGUOut(selectedData) && (
-        <MyLGUEditModal closeModal={closeModal} data={selectedData} />
+        <MyLGUEditModal closeModal={closeModal} data={selectedData} onSaved={refreshMyLGU}  />
       )}
 
       {/* ===== MODALS (Barangay) ===== */}
@@ -381,9 +388,9 @@ const LGUofficer: React.FC = () => {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Coordinates</th>
-                  <th>Contact</th>
+                  {/* <th>Coordinates</th> */}
                   <th>Captain</th>
+                  <th>Contact</th>
                   <th>Total Household</th>
                   <th>Total Population</th>
                   <th>Evacuation</th>
@@ -401,9 +408,9 @@ const LGUofficer: React.FC = () => {
                   barangayList.map((item) => (
                     <tr key={item.id}>
                       <td>{item.name}</td>
-                      <td>{item.lat && item.lng ? `${item.lat}, ${item.lng}` : "Not yet assigned"}</td>
-                      <td>{item.contact_info || "Not yet assigned"}</td>
+                      {/* <td>{item.lat && item.lng ? `${item.lat}, ${item.lng}` : "Not yet assigned"}</td> */}
                       <td>{item.barangay_captain || "Not yet assigned"}</td>
+                      <td>{item.contact_info || "Not yet assigned"}</td>
                       <td>{item.household_count ?? "Not yet assigned"}</td>
                       <td>{item.total_population ?? "Not yet assigned"}</td>
                       <td>{item.evacucation_center ? item.evacucation_center?.name : "Not yet assigned"}</td>

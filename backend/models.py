@@ -61,6 +61,7 @@ from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import Enum as SqlEnum
 
+
 # for god sake ayaw e butang sa ubos ang import libog kaau
 
 
@@ -174,11 +175,16 @@ class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
 
     rafi_id = Column(Integer, primary_key=True, index=True, server_default=Identity())
-    rafi_name = Column(String(255), nullable=False)  # <-- must exist
+    lgu_id  = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False, index=True)  # ✅ FK to DB column
+    rafi_name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
     rafi_desc = Column(String(255), nullable=True)
-    rafi_pic = Column(String, nullable=True)  # URL or file path
+    rafi_pic = Column(String, nullable=True)
+
+    # Pair with LGURecords.rafi_points
+    lgu = relationship("LGURecords", back_populates="rafi_points")
+
 
 
 class Hazard(Base):
@@ -279,6 +285,7 @@ class LGURecords(Base):
         passive_deletes=True,
     )
 
+    rafi_points = relationship("RAFIInfrastructure", back_populates="lgu")
 
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"

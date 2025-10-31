@@ -197,7 +197,7 @@
   bottom: -10px; /* nudge below content area */
   padding: 12px 0 4px; /* slimmer internal padding */
   margin-top: 28px; /* a touch more space from content */
-  background: #fff; /* keep it solid over scroll */
+  background: transparent; /* keep it solid over scroll */
   z-index: 1;
 }
 

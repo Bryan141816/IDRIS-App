@@ -737,7 +737,7 @@ function DL({
 /** NEW: shows image or a tidy placeholder */
 function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
   const hasImg = !!src;
-  return (
+  return (  
     <div className="lgu-media">
       <div className="item-details-identifier" style={{ marginBottom: 6 }}>
         {label}

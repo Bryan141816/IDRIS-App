@@ -205,7 +205,7 @@ type Shelter = {
   }
 };
 
-const handleDeleteClick = async (id: string | number) => {
+ const handleDeleteClick = async (id: string | number) => {
   setDropdownOpenId(null);
   const numId = Number(id);
   if (!Number.isFinite(numId)) {
@@ -229,46 +229,10 @@ const handleDeleteClick = async (id: string | number) => {
     await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
     await Swal.fire("Deleted!", "Shelter removed.", "success");
     fetchShelters();
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const detail = err?.response?.data?.detail;
-
-    // Backend guard hit – center is referenced by barangays
-    if (status === 409) {
-      const ask = await Swal.fire({
-        icon: "warning",
-        title: "Center in use",
-        text:
-          detail ||
-          "This evacuation center is linked to one or more barangays. Do you want to detach them and delete the center?",
-        showCancelButton: true,
-        confirmButtonText: "Detach & Delete",
-        cancelButtonText: "Cancel",
-      });
-
-      if (!ask.isConfirmed) return;
-
-      try {
-        await API.post(
-          `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`
-        );
-        await Swal.fire("Deleted", "Center and links removed.", "success");
-        fetchShelters();
-      } catch {
-        await Swal.fire(
-          "Error",
-          "Force delete failed. Please try again.",
-          "error"
-        );
-      }
-      return;
-    }
-
-    // Other errors
+  } catch (err) {
     await Swal.fire("Error", "Failed to delete shelter.", "error");
   }
 };
-
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();

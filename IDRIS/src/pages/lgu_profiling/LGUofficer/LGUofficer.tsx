@@ -380,7 +380,7 @@ const LGUofficer: React.FC = () => {
         {/* === BARANGAY TABLE === */}
         <section className="barangay-section">
           <div className="barangay-header">
-            <h2>Barangays </h2>
+            <h2>Barangays - {myLGULocation?.baranggay_count ?? 0}</h2>
           </div>
           <div className="barangay-table-wrap">
             <table className="barangay-table">

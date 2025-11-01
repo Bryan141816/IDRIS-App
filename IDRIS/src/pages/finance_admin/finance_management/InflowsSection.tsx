@@ -208,13 +208,17 @@ const InflowModal: React.FC<{
             {form.inflow_type === "CHECK" && (
               <div className="form-group">
                 <label>Attachment</label>
-                <input
-                  disabled={readOnly}
-                  type="file"
-                  onChange={(e) =>
-                    setForm({ ...form, attachment: e.target.files?.[0] })
-                  }
-                />
+                {mode === 'view' && form.attachment ? (
+                  <img src={`http://127.0.0.1:8000/${form.attachment}`} alt="Attachment" style={{ maxWidth: '100%' }} />
+                ) : (
+                  <input
+                    disabled={readOnly}
+                    type="file"
+                    onChange={(e) =>
+                      setForm({ ...form, attachment: e.target.files?.[0] })
+                    }
+                  />
+                )}
               </div>
             )}
           </div>

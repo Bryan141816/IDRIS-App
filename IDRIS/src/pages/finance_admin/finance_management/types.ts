@@ -51,6 +51,7 @@ export type OutflowItem = {
   spend_category: SpendCategory;
   date: string;
   purpose: string;
+  inflow_source: string;
 };
 
 export type BudgetItem = {

@@ -43,8 +43,8 @@ def create_inflow_record(
 ):
     if attachment:
         # Save the attachment to the media directory
-        media_dir = Path("media")
-        media_dir.mkdir(exist_ok=True)
+        media_dir = Path("media/finance_checks")
+        media_dir.mkdir(parents=True, exist_ok=True)
 
         # Sanitize and generate a unique filename
         file_extension = Path(attachment.filename).suffix
@@ -63,8 +63,11 @@ def create_outflow_record(
     payload: OutflowFinanceRecordCreate = Depends(OutflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
 ):
-    obj = FinanceRecordCRUD.create_outflow_record(db, payload)
-    return obj
+    try:
+        obj = FinanceRecordCRUD.create_outflow_record(db, payload)
+        return obj
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router_admin.get("/get_lists",response_model=List[FinanceRecordRead])

@@ -93,7 +93,7 @@ const FinanceAdmin: React.FC = () => {
 
         {activeTab === 'inflows' && <InflowsSection inflows={fundInflows} refetchData={fetchAllData} />}
 
-        {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} refetchData={fetchAllData} />}
+        {activeTab === 'outflows' && <OutflowsSection outflows={fundOutflows} refetchData={fetchAllData} budgetData={budgetData} />}
 
         {activeTab === 'reports' && (
           <ReportsExportSection mode="reports"/>

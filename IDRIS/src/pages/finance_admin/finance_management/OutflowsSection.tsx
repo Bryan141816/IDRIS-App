@@ -4,13 +4,14 @@ import {
   createOutflowFinanceRecord,
   UpdateReportData, // make sure this exists in your API handler
 } from '../../../API_Handler/finance_management_handler';
-import { OutflowItem } from './types';
+import { OutflowItem, InflowItem, BudgetItem } from './types';
 import { FilterModal } from './FilterModal';
-import { formatCurrency } from '../../helpers';
+import { formatCurrency, stripToNumber } from '../../helpers';
 import {
   toDateInput,
   validate,
   spendCategoryOptions,
+  inflowSourceOptions,
 } from './helpers';
 
 import { withSwal } from '../../withSwal';
@@ -22,8 +23,9 @@ const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   fd.append('transaction_type', 'OUTFLOW');
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', String(form.date)); // "YYYY-MM-DD"
-  if (form.description) fd.append('description', form.description);
+  if (form.purpose) fd.append('purpose', form.purpose);
   fd.append('spend_category', form.spend_category!);
+  if (form.inflow_source) fd.append('inflow_source', form.inflow_source);
   return fd;
 };
 
@@ -32,11 +34,17 @@ const OutflowModal: React.FC<{
   open: boolean;
   mode: 'add' | 'edit' | 'view';
   initial?: Partial<OutflowItem>;
+  inflows: InflowItem[];
+  budgetData: BudgetItem[];
   onClose: () => void;
   onSave?: (values: OutflowItem | Partial<OutflowItem>) => void;
-}> = ({ open, mode, initial, onClose, onSave }) => {
+}> = ({ open, mode, initial, inflows, budgetData, onClose, onSave }) => {
   const [form, setForm] = useState<Partial<OutflowItem>>(initial || {});
+  const [amountLimit, setAmountLimit] = useState<number>(0);
   const readOnly = mode === 'view';
+  const hasSource = Boolean(form.inflow_source);
+  const [wasClamped, setWasClamped] = useState(false);
+  const lastClampRef = React.useRef(0);
 
   useEffect(() => {
     if (open) {
@@ -48,6 +56,46 @@ const OutflowModal: React.FC<{
     }
   }, [open, initial]);
 
+  useEffect(() => {
+    const match = budgetData.find(x => x.budget_for === form.inflow_source);
+    const limit = match?.inflow_total ?? 0;
+    setAmountLimit(limit);
+
+    let clampedNow = false;
+
+    setForm(prev => {
+      // If no source, force 0 and clear clamped flag
+      if (!form.inflow_source) {
+        if ((prev.amount ?? 0) !== 0) {
+          clampedNow = true; // optional toast if you want when clearing
+        }
+        return { ...prev, amount: 0 };
+      }
+
+      const current = prev.amount ?? 0;
+      if (current > limit) {
+        clampedNow = true;
+        return { ...prev, amount: limit };
+      }
+      return prev;
+    });
+
+    // Notify only when we *actually* clamped and throttle repeats
+    if (clampedNow && Date.now() - lastClampRef.current > 400) {
+      lastClampRef.current = Date.now();
+      setWasClamped(true);
+      Swal.fire({
+        icon: 'info',
+        title: 'Amount adjusted',
+        text: `Amount was reduced to the maximum available (${formatCurrency(limit)}).`,
+        timer: 1800,
+        showConfirmButton: false,
+      });
+    } else if (!clampedNow) {
+      setWasClamped(false);
+    }
+  }, [form.inflow_source, budgetData, form.amount]);
+
   if (!open) return null;
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -56,6 +104,17 @@ const OutflowModal: React.FC<{
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' ') });
+      return;
+    }
+
+    if (form.inflow_source) {
+      const budget = budgetData.find(b => b.budget_for === form.inflow_source);
+      if (budget && form.amount && form.amount > budget.inflow_total) {
+        await Swal.fire({ icon: 'warning', title: 'Invalid amount', text: 'Outflow amount cannot be greater than the total inflow for this category.' });
+        return;
+      }
+    } else {
+      await Swal.fire({ icon: 'warning', title: 'Invalid amount', text: 'Select an Inflow source first.' });
       return;
     }
     const fd = buildFormData(form);
@@ -104,15 +163,55 @@ const OutflowModal: React.FC<{
 
             {mode != "edit" &&
               <div className="form-group">
-                <label>Amount (PHP)</label>
+                <label>Inflow Source</label>
+                <select
+                  disabled={readOnly}
+                  value={form.inflow_source || ''}
+                  onChange={e => setForm({ ...form, inflow_source: e.target.value as InflowItem['inflow_source'] })}
+                >
+                  <option value="" disabled>Select source</option>
+                  {inflowSourceOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            }
+
+            {mode != "edit" &&
+              <div className="form-group">
+                <label>Amount (PHP):</label>
                 <input
                   disabled={readOnly}
-                  type="number"
+                  type="text"
                   min={0}
                   placeholder="Enter amount"
                   value={form.amount ?? ''}
-                  onChange={e => setForm({ ...form, amount: +e.target.value })}
+                  onChange={e => setForm({ ...form, amount: hasSource ? +e.target.value : 0 })}
+                // onFocus={() => {
+                //   if (!hasSource) {
+                //     Swal.fire({
+                //       icon: 'info',
+                //       title: 'Pick an inflow source first',
+                //       text: 'Amount will remain 0 until you choose an inflow source.',
+                //       timer: 1800,
+                //       showConfirmButton: false,
+                //     });
+                //   }
+                // }}
                 />
+                <span
+                  role="status"
+                  aria-live="polite"
+                  className={`hint ${wasClamped ? 'warning' : ''}`}
+                >
+                  {form.inflow_source
+                    ? wasClamped
+                      ? `Amount adjusted to max: ${formatCurrency(amountLimit)}`
+                      : `Max for this source: ${formatCurrency(amountLimit)}`
+                    : 'Amount stays 0 until a source is selected.'}
+                </span>
               </div>
             }
 
@@ -147,11 +246,12 @@ const OutflowModal: React.FC<{
                 <textarea
                   disabled={readOnly}
                   placeholder="Enter description"
-                  value={form.description || ''}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  value={form.purpose || ''}
+                  onChange={e => setForm({ ...form, purpose: e.target.value })}
                 />
               </div>
             }
+
           </div>
 
           <div className="modal-actions">
@@ -169,7 +269,12 @@ const OutflowModal: React.FC<{
 };
 
 // ---------- Section (local rows + refresh on save) ----------
-const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => void }> = ({ outflows = [], refetchData }) => {
+const OutflowsSection: React.FC<{
+  outflows?: OutflowItem[],
+  inflows?: InflowItem[],
+  budgetData?: BudgetItem[],
+  refetchData?: () => void
+}> = ({ outflows = [], inflows = [], budgetData = [], refetchData }) => {
   const [rows, setRows] = useState<OutflowItem[]>(outflows);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
@@ -240,7 +345,7 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
                 <td className="amount negative">{formatCurrency(row.amount)}</td>
                 <td>{row.counterparty}</td>
                 <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td>{row.description}</td>
+                <td>{row.purpose}</td>
                 <td>
                   <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>
                   <button className="action-btn" onClick={() => open('view', row)}>View</button>
@@ -255,6 +360,8 @@ const OutflowsSection: React.FC<{ outflows?: OutflowItem[], refetchData?: () => 
         open={modalOpen}
         mode={modalMode}
         initial={selected}
+        inflows={inflows}
+        budgetData={budgetData}
         onClose={() => setModalOpen(false)}
         onSave={(saved) => {
           setModalOpen(false);

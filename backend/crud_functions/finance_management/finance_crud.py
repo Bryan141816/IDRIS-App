@@ -48,7 +48,8 @@ class FinanceRecordCRUD:
             amount=payload.amount,
             date=payload.date,
             purpose=payload.purpose,
-            spend_category = SpendCategory(payload.spend_category)
+            spend_category = SpendCategory(payload.spend_category),
+            inflow_source=payload.inflow_source,
         )
         db.add(obj)
         db.commit()

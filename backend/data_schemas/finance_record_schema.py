@@ -58,6 +58,7 @@ class OutflowFinanceRecordCreate(BaseModel):
     purpose: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
     spend_category: SpendCategory =  Field(default=SpendCategory.ADMINISTRATIVE)
+    inflow_source: InflowSource = Field(default=InflowSource.MONETARY_DONATIONS)
 
     @classmethod
     def as_form(
@@ -68,6 +69,7 @@ class OutflowFinanceRecordCreate(BaseModel):
         purpose: Optional[str] = Form(None),
         date: date = Form(...),
         spend_category: SpendCategory = Form(SpendCategory.ADMINISTRATIVE),
+        inflow_source: InflowSource = Form(InflowSource.MONETARY_DONATIONS),
 
     ) -> "OutflowFinanceRecordCreate":
         return cls(
@@ -76,7 +78,8 @@ class OutflowFinanceRecordCreate(BaseModel):
             amount=amount,
             purpose=purpose,
             date=date,
-            spend_category = spend_category
+            spend_category = spend_category,
+            inflow_source=inflow_source
         )
         
 class FinanceRecordUpdate(BaseModel):

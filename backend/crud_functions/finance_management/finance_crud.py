@@ -22,14 +22,17 @@ def _gen_finance_id() -> str:
 class FinanceRecordCRUD:
     @staticmethod
     def create_inflow_record(db: Session, payload: InflowFinanceRecordCreate) -> FinanceRecord:
+        from models import InflowType
         obj = FinanceRecord(
             finance_id=uid_from_string(f"{payload.date}{random_suffix(6)}"),
             counterparty=payload.counterparty,
             transaction_type=TransactionType.INFLOW,
             amount=payload.amount,
             date=payload.date,
-            description=payload.description,
-            inflow_source = InflowSource(payload.inflow_source)
+            purpose=payload.purpose,
+            inflow_source = InflowSource(payload.inflow_source),
+            inflow_type=InflowType(payload.inflow_type),
+            attachment=payload.attachment
         )
         db.add(obj)
         db.commit()
@@ -44,7 +47,7 @@ class FinanceRecordCRUD:
             transaction_type=TransactionType.OUTFLOW,
             amount=payload.amount,
             date=payload.date,
-            description=payload.description,
+            purpose=payload.purpose,
             spend_category = SpendCategory(payload.spend_category)
         )
         db.add(obj)
@@ -120,8 +123,8 @@ class FinanceRecordCRUD:
             obj.inflow_source = patch.inflow_source
         if patch.spend_category is not None:
             obj.spend_category = patch.spend_category
-        if patch.description is not None:
-            obj.description = patch.description
+        if patch.purpose is not None:
+            obj.purpose = patch.purpose
 
         db.add(obj)
         db.commit()

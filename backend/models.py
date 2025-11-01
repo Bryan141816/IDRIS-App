@@ -1449,6 +1449,11 @@ class TransactionType(enum.Enum):
     OUTFLOW = "OUTFLOW"
 
 
+class InflowType(enum.Enum):
+    CASH = "CASH"
+    CHECK = "CHECK"
+
+
 class FinanceRecord(Base):
     __tablename__ = "finance_records"
     id = Column(Integer, index=True, server_default=Identity())
@@ -1458,11 +1463,13 @@ class FinanceRecord(Base):
     transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
     amount = Column(Numeric(14, 2), nullable=False)
     date = Column(Date, nullable=False, index=True)
-    description = Column(Text, nullable=True)
+    purpose = Column(Text, nullable=True)
     created_at = Column(DateTime, nullable=False, default=func.now())
     updated_at = Column(
         DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
     )
+    attachment = Column(String, nullable=True)
+    inflow_type = Column(SqlEnum(InflowType), nullable=True)
 
     inflow_source = Column(SqlEnum(InflowSource), nullable=True, index=True)
     spend_category = Column(SqlEnum(SpendCategory), nullable=True, index=True)

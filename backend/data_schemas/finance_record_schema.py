@@ -14,7 +14,7 @@ class FinanceRecordBase(BaseModel):
     counterparty: str
     amount: Decimal
     date: date
-    description: Optional[str] = None
+    purpose: Optional[str] = None
 
 
 class InflowFinanceRecordCreate(BaseModel):
@@ -22,9 +22,11 @@ class InflowFinanceRecordCreate(BaseModel):
     counterparty: str
     transaction_type: TransactionType = TransactionType.INFLOW
     amount: Decimal
-    description: Optional[str] = None
+    purpose: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
     inflow_source: InflowSource =  Field(default=InflowSource.MONETARY_DONATIONS)
+    inflow_type: str
+    attachment: Optional[str] = None
 
     @classmethod
     def as_form(
@@ -32,18 +34,20 @@ class InflowFinanceRecordCreate(BaseModel):
         counterparty: str = Form(...),
         transaction_type: TransactionType = Form(TransactionType.INFLOW),
         amount: Decimal = Form(...),
-        description: Optional[str] = Form(None),
+        purpose: Optional[str] = Form(None),
         date: date = Form(...),
         inflow_source: InflowSource = Form(InflowSource.MONETARY_DONATIONS),
+        inflow_type: str = Form(...),
         
     ) -> "InflowFinanceRecordCreate":
         return cls(
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            description=description,
+            purpose=purpose,
             date=date,
-            inflow_source = inflow_source
+            inflow_source = inflow_source,
+            inflow_type=inflow_type,
         )
 
 class OutflowFinanceRecordCreate(BaseModel):
@@ -51,7 +55,7 @@ class OutflowFinanceRecordCreate(BaseModel):
     counterparty: str
     transaction_type: TransactionType = TransactionType.OUTFLOW
     amount: Decimal
-    description: Optional[str] = None
+    purpose: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
     spend_category: SpendCategory =  Field(default=SpendCategory.ADMINISTRATIVE)
 
@@ -61,7 +65,7 @@ class OutflowFinanceRecordCreate(BaseModel):
         counterparty: str = Form(...),
         transaction_type: TransactionType = Form(TransactionType.OUTFLOW),
         amount: Decimal = Form(...),
-        description: Optional[str] = Form(None),
+        purpose: Optional[str] = Form(None),
         date: date = Form(...),
         spend_category: SpendCategory = Form(SpendCategory.ADMINISTRATIVE),
 
@@ -70,7 +74,7 @@ class OutflowFinanceRecordCreate(BaseModel):
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            description=description,
+            purpose=purpose,
             date=date,
             spend_category = spend_category
         )
@@ -80,7 +84,7 @@ class FinanceRecordUpdate(BaseModel):
     transaction_type: Optional[TransactionType] = TransactionType.INFLOW
     counterparty: Optional[str] = None
     amount: Optional[Decimal] = None
-    description: Optional[str] = None
+    purpose: Optional[str] = None
     date: Optional[date] = None
     inflow_source: Optional[InflowSource] = None
     spend_category: Optional[SpendCategory] = None
@@ -92,7 +96,7 @@ class FinanceRecordUpdate(BaseModel):
         transaction_type: Optional[TransactionType] = Form(None),   
         counterparty: Optional[str] = Form(None),
         amount: Optional[Decimal] = Form(None),
-        description: Optional[str] = Form(None),
+        purpose: Optional[str] = Form(None),
         date: Optional[str] = None,
         inflow_source: Optional[InflowSource] = Form(None),
         spend_category: Optional[SpendCategory] = Form(None),
@@ -102,7 +106,7 @@ class FinanceRecordUpdate(BaseModel):
             counterparty=counterparty,
             transaction_type=transaction_type,
             amount=amount,
-            description=description,
+            purpose=purpose,
             date=_parse_date_maybe(date),
             inflow_source=inflow_source,
             spend_category=spend_category,

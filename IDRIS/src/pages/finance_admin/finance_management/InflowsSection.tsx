@@ -25,8 +25,12 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   fd.append('transaction_type', normalizeTransactionType("INFLOW"));
   fd.append('amount', String(Number(form.amount)));
   fd.append('date', form.date!); // "YYYY-MM-DD"
-  if (form.description) fd.append('description', form.description);
+  if (form.purpose) fd.append('purpose', form.purpose);
   fd.append('inflow_source', form.inflow_source!);
+  fd.append('inflow_type', form.inflow_type!);
+  if (form.attachment) {
+    fd.append('attachment', form.attachment);
+  }
   return fd;
 };
 
@@ -176,17 +180,43 @@ const InflowModal: React.FC<{
               </div>
             }
 
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
+            <div className="form-group">
+              <label>Purpose</label>
+              <textarea
+                disabled={readOnly}
+                placeholder="Enter purpose"
+                value={form.purpose || ""}
+                onChange={e => setForm({ ...form, purpose: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>Inflow Type</label>
+                <select
                   disabled={readOnly}
-                  placeholder="Enter description"
-                  value={form.description || ""}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  value={form.inflow_type || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, inflow_type: e.target.value })
+                  }
+                >
+                  <option value="" disabled>
+                    Select type
+                  </option>
+                  <option value="CASH">Cash</option>
+                  <option value="CHECK">Check</option>
+                </select>
+              </div>
+            {form.inflow_type === "CHECK" && (
+              <div className="form-group">
+                <label>Attachment</label>
+                <input
+                  disabled={readOnly}
+                  type="file"
+                  onChange={(e) =>
+                    setForm({ ...form, attachment: e.target.files?.[0] })
+                  }
                 />
               </div>
-            }
+            )}
           </div>
 
           <div className="modal-actions">
@@ -266,7 +296,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
               <th>Amount</th>
               {/* <th>Source</th> */}
               <th>Date</th>
-              <th>Description</th>
+              <th>Purpose</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -277,7 +307,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
                 <td className="amount positive">{formatCurrency(row.amount)}</td>
                 {/* <td>{row.counterparty}</td> */}
                 <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td>{row.description}</td>
+                <td>{row.purpose}</td>
                 <td>
                   <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>
                   <button className="action-btn" onClick={() => open('view', row)}>View</button>

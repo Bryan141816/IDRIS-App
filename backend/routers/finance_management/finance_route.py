@@ -31,11 +31,30 @@ router_admin_or_donor = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin",  "superuser", "generic","superadmin"]))],
 )
 
+from fastapi import UploadFile, File
+from pathlib import Path
+import shutil
+import uuid
 @router_admin.post("/inflow/create", response_model=FinanceRecordRead, status_code=status.HTTP_201_CREATED)
 def create_inflow_record(
     payload: InflowFinanceRecordCreate = Depends(InflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
+    attachment: Optional[UploadFile] = File(None)
 ):
+    if attachment:
+        # Save the attachment to the media directory
+        media_dir = Path("media")
+        media_dir.mkdir(exist_ok=True)
+
+        # Sanitize and generate a unique filename
+        file_extension = Path(attachment.filename).suffix
+        safe_filename = f"{uuid.uuid4().hex}{file_extension}"
+        file_path = media_dir / safe_filename
+
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(attachment.file, buffer)
+        payload.attachment = str(file_path)
+
     obj = FinanceRecordCRUD.create_inflow_record(db, payload)
     return obj
 

@@ -29,7 +29,7 @@ export type Finance = {
   date: string;       // ISO-like string is fine
   inflow_source?: InflowSource;
   spend_category?: SpendCategory;
-  description: string;
+  purpose: string;
   transaction_type: string;
 };
 
@@ -39,7 +39,9 @@ export type InflowItem = {
   amount: number;
   inflow_source: InflowSource;
   date: string;
-  description: string;
+  purpose: string;
+  inflow_type: string;
+  attachment?: File;
 };
 
 export type OutflowItem = {
@@ -48,10 +50,11 @@ export type OutflowItem = {
   amount: number;
   spend_category: SpendCategory;
   date: string;
-  description: string;
+  purpose: string;
 };
 
 export type BudgetItem = {
+  budget_for: string;
   category: string;
   inflow_total: number;
   outflow_total: number;

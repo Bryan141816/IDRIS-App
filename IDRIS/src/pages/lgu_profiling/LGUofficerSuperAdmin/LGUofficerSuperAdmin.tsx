@@ -279,8 +279,8 @@ const LGUofficerSuperAdmin: React.FC = () => {
       <div className="app-container">
         {/* === LGU TABLE === */}
         <section className="lgu-table-section" style={{ marginBottom: "2rem" }}>
-          <div className="lgu-header">
-            <h2>LGUs</h2>
+          <div className="lgu-header" style={{ padding:"1rem"}}>
+            <h1><b>LGU Records</b></h1>
             {selectedLGU && (
               <span style={{ marginLeft: "auto", fontSize: ".9rem", opacity: 0.8 }}>
                 Selected: <strong>{selectedLGU.lgu_name}</strong>
@@ -375,7 +375,7 @@ const LGUofficerSuperAdmin: React.FC = () => {
         <section className="barangay-section">
           <div className="barangay-header">
             <h2>
-              Barangays {selectedLGU ? `— ${selectedLGU.lgu_name}` : ""}
+             <b>Barangay Records</b> {selectedLGU ? `>  ${selectedLGU.lgu_name}` : "  "}
             </h2>
           </div>
           <div className="barangay-table-wrap">
@@ -463,8 +463,9 @@ const LGUofficerSuperAdmin: React.FC = () => {
         <section className="raffi-section" style={{ marginTop: "2rem" }}>
           <div className="raffi-header">
             <h2>
-              RAFFI {selectedLGU ? `— ${selectedLGU.lgu_name}` : ""}
+           <b>RAFFI Records </b> {selectedLGU ? `> ${selectedLGU.lgu_name}` : ""}
             </h2>
+            <button className="add-raffi">Add</button>
           </div>
           <div className="raffi-table-wrap">
             <table className="barangay-table">

@@ -263,16 +263,44 @@ export const MyLGUEditModal: React.FC<
   const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
- const handleSubmit = async () => {
-  if (isSaving) return; // prevent double-click saves
+ const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
+
+const validateForm = () => {
+  const v: { [key: string]: boolean } = {};
+  v.lgu_name = !form.lgu_name?.trim();
+  v.lgu_classification = !form.lgu_classification;
+  v.mayor = !form.mayor?.trim();
+  v.lgu_contact = !form.lgu_contact?.trim() || lguContactInvalid;
+  v.location = !form.lat || !form.lng || form.lat === -1000000 || form.lng === -1000000;
+  v.population = !form.population && form.population !== 0;
+  v.lgu_majorHazard = !Array.isArray(form.lgu_majorHazard) || !form.lgu_majorHazard.length;
+  v.DRMMpersonel = !form.DRMMpersonel?.trim();
+  v.DRMM_contact = !form.DRMM_contact?.trim() || drrmContactInvalid;
+  v.lgu_critical_facility = !Array.isArray(form.lgu_critical_facility) || !form.lgu_critical_facility.length;
+  v.lgu_pwd = !form.lgu_pwd && form.lgu_pwd !== 0;
+  v.lgu_senior = !form.lgu_senior && form.lgu_senior !== 0;
+  v.lgu_children = !form.lgu_children && form.lgu_children !== 0;
+  setValidation(v);
+  return !Object.values(v).some(Boolean);
+};
+
+const handleSubmit = async () => {
+  if (isSaving) return;
   setIsSaving(true);
 
   try {
-    console.log("FORM before submit:", JSON.stringify(form, null, 2));
+    if (!validateForm()) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Incomplete or Invalid Form",
+        text: "Please fill in all required fields. Fields with red highlight need your attention.",
+        confirmButtonColor: "#f59e0b",
+      });
+      setIsSaving(false);
+      return;
+    }
 
     const response = await API.put("/lgu_profiling/api/update_lgu", form);
-    console.log("API response:", response?.data);
-
     await Swal.fire({
       icon: "success",
       title: "Saved successfully!",
@@ -280,26 +308,20 @@ export const MyLGUEditModal: React.FC<
       confirmButtonColor: "#6d28d9",
     });
 
-    // 🔄 trigger refetch callback if provided
-    if (typeof onSaved === "function") {
-      await onSaved();
-    }
-
+    if (typeof onSaved === "function") await onSaved();
     closeModal();
   } catch (e: any) {
-    console.error("Error updating LGU:", e?.response ?? e);
     Swal.fire({
       icon: "error",
       title: "Update failed!",
-      text:
-        e?.response?.data?.message ??
-        "Something went wrong while saving. Please try again.",
+      text: e?.response?.data?.message ?? "Something went wrong while saving. Please try again.",
       confirmButtonColor: "#ef4444",
     });
   } finally {
     setIsSaving(false);
   }
 };
+
 
 
   const handleContactChange = (key: keyof LGUOut, val: string) => {
@@ -438,6 +460,7 @@ export const MyLGUEditModal: React.FC<
                     }}
                   >
                     <FontAwesomeIcon icon={faMapMarkerAlt} />
+                    
                   </button>
                 </div>
               </Row>
@@ -458,6 +481,7 @@ export const MyLGUEditModal: React.FC<
                   </option>
                   <option value="Municipality">Municipality</option>
                   <option value="City">City</option>
+                  
                 </select>
               </Row>
               <Row label="LGU's Contact">
@@ -467,6 +491,8 @@ export const MyLGUEditModal: React.FC<
                   onChange={(e) =>
                     handleContactChange("lgu_contact", e.target.value)
                   }
+                  className={validation.lgu_contact ? "input-invalid" : ""}
+
                 />
 
                 <label>
@@ -482,6 +508,8 @@ export const MyLGUEditModal: React.FC<
                     accept="image/*"
                     hidden
                     onChange={onImage("lgu_seal")}
+                    className={validation.lgu_seal ? "input-invalid" : ""}
+
                   />
                 </label>
                 {form.lgu_seal && (
@@ -497,14 +525,16 @@ export const MyLGUEditModal: React.FC<
                 <input
                   type="number"
                   min={0}
-                  value={form.population ?? 0}
+                  value={form.population ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      population: Number(e.target.value),
+                      population: e.target.value === "" ? null : Number(e.target.value)
                     }))
                   }
+                  className={validation.population ? "input-invalid" : ""}
+
                 />
               </Row>
 
@@ -515,6 +545,8 @@ export const MyLGUEditModal: React.FC<
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, mayor: e.target.value }))
                   }
+                  className={validation.mayor ? "input-invalid" : ""}
+
                 />
               </Row>
             </Section>
@@ -532,6 +564,8 @@ export const MyLGUEditModal: React.FC<
                   selected={form.lgu_majorHazard ?? []}
                   onToggle={(v) => toggle("lgu_majorHazard", v)}
                   columns={3}
+                  className={validation.major_hazard ? "input-invalid" : ""}
+
                 />
               </Row>
 
@@ -544,6 +578,8 @@ export const MyLGUEditModal: React.FC<
                     accept="image/*"
                     hidden
                     onChange={onImage("hazard_pic")}
+                    className={validation.hazard_pic ? "input-invalid" : ""}
+
                   />
                 </label>
                 {form.hazard_pic && (
@@ -567,6 +603,8 @@ export const MyLGUEditModal: React.FC<
                       DRMMpersonel: e.target.value,
                     }))
                   }
+                  className={validation.DRMMpersonel ? "input-invalid" : ""}
+
                 />
               </Row>
 
@@ -578,6 +616,8 @@ export const MyLGUEditModal: React.FC<
                   onChange={(e) =>
                     handleContactChange("DRMM_contact", e.target.value)
                   }
+                  className={validation.DRMM_contact ? "input-invalid" : ""}
+
                 />
                 <label>
                   {drrmContactInvalid && "Contact number is invalid"}
@@ -606,7 +646,7 @@ export const MyLGUEditModal: React.FC<
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_pwd ?? 0}
+                  value={form.lgu_pwd ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -614,6 +654,7 @@ export const MyLGUEditModal: React.FC<
                       lgu_pwd: Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_pwd ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -621,7 +662,7 @@ export const MyLGUEditModal: React.FC<
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_senior ?? 0}
+                  value={form.lgu_senior ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -629,6 +670,7 @@ export const MyLGUEditModal: React.FC<
                       lgu_senior: Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_senior ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -636,7 +678,7 @@ export const MyLGUEditModal: React.FC<
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_children ?? 0}
+                  value={form.lgu_children ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
@@ -644,6 +686,7 @@ export const MyLGUEditModal: React.FC<
                       lgu_children: Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_children ? "input-invalid" : ""}
                 />
               </Row>
             </Section>

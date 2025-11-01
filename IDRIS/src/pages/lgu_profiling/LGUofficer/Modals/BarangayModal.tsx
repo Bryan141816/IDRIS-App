@@ -244,7 +244,35 @@ export const BarangayEditModal: React.FC<EditProps> = ({
       lng: coordinates[1],
     }));
   };
+  const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
+const validateForm = () => {
+  const v: { [key: string]: boolean } = {};
+  v.name = !form.name?.trim();
+  v.lat = !form.lat || form.lat === -1000000;
+  v.lng = !form.lng || form.lng === -1000000;
+  v.total_population = !form.total_population && form.total_population !== 0;
+  v.household_count = !form.household_count && form.household_count !== 0;
+  v.barangay_captain = !form.barangay_captain?.trim();
+  v.contact_info = !form.contact_info?.trim() || !is11Digits(form.contact_info);
+  v.common_hazards = !Array.isArray(form.common_hazards) || form.common_hazards.length === 0;
+  v.barangay_pwd = !form.barangay_pwd && form.barangay_pwd !== 0;
+  v.barangay_senior = !form.barangay_senior && form.barangay_senior !== 0;
+  v.barangay_children = !form.barangay_children && form.barangay_children !== 0;
+  setValidation(v);
+  return !Object.values(v).some(Boolean);
+};
+
   const handleUpdate = async () => {
+  if (!validateForm()) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Incomplete or Invalid Form",
+      text: "Please fill in all required fields. Fields with red highlight need your attention.",
+      confirmButtonColor: "#f59e0b",
+    });
+    return;
+  }
+
   Swal.fire({
     title: "Saving...",
     text: "Please wait while we save the barangay record.",
@@ -253,7 +281,6 @@ export const BarangayEditModal: React.FC<EditProps> = ({
   });
 
   try {
-    // ⬇️ renamed to 'response' instead of 'updated'
     const response = await API.put("/lgu_profiling/api/update_barangay", form);
 
     await Swal.fire({
@@ -264,9 +291,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
       confirmButtonText: "OK",
     });
 
-    // ✅ trigger parent update instantly
     onSaved?.(form);
-
     closeModal();
   } catch (e: any) {
     console.error("Error updating barangay: " + e.message);
@@ -281,6 +306,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
     });
   }
 };
+
 
 
 
@@ -333,6 +359,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       form.lat && form.lng ? `${form.lat}, ${form.lng}` : ""
                     }
                     style={{ flex: 1 }}
+                    
                   />
 
                   <button
@@ -368,6 +395,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                     accept="image/*"
                     hidden
                     onChange={onImage("baranggay_pic")}
+                    className={validation.barangay_seal ? "input-invalid" : ""}
                   />
                 </label>
                 {form.baranggay_pic && (
@@ -392,6 +420,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       total_population: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.total_population ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -408,6 +437,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       household_count: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.household_count ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -422,6 +452,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       barangay_captain: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.barangay_captain ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -433,6 +464,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                   onChange={(e) =>
                     handleContactChange("contact_info", e.target.value)
                   }
+                  className={validation.contact_info ? "input-invalid" : ""}
                 />
               </Row>
             </Section>
@@ -450,6 +482,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                   selected={form.common_hazards ?? []}
                   onToggle={(v) => toggle("common_hazards", v)}
                   columns={3}
+                  
                 />
               </Row>
             </Section>
@@ -469,6 +502,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       barangay_pwd: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.barangay_pwd ? "input-invalid" : ""}
                 />
               </Row>
               <Row label="Senior">
@@ -485,6 +519,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       barangay_senior: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.barangay_senior ? "input-invalid" : ""}
                 />
               </Row>
               <Row label="Children">
@@ -501,6 +536,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
                       barangay_children: val, // now number | null, not string
                     }));
                   }}
+                  className={validation.barangay_children ? "input-invalid" : ""}
                 />
               </Row>
             </Section>

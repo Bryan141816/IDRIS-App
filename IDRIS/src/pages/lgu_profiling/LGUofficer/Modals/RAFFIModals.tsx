@@ -201,8 +201,28 @@ export const RAFFICreateModal: React.FC<{
       console.error("Failed to read image:", err);
     }
   };
+const [validation, setValidation] = useState<{[key: string]: boolean}>({});
+
+const validateForm = () => {
+  const v: { [key: string]: boolean } = {};
+  v.raffi_name = !form.raffi_name?.trim();
+  v.raffi_desc = !form.raffi_desc?.trim();
+  v.lat = form.lat == null;
+  v.lng = form.lng == null;
+  setValidation(v);
+  return !Object.values(v).some(Boolean);
+};
 
   const handleCreate = async () => {
+    if (!validateForm()) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Incomplete or Invalid Form",
+      text: "Please fill in all required fields. Fields with red highlight need your attention.",
+      confirmButtonColor: "#f59e0b",
+    });
+    return;
+  }
     if (!form.raffi_name.trim()) {
       Swal.fire({ icon: "warning", title: "Please enter a name" });
       return;
@@ -273,6 +293,7 @@ export const RAFFICreateModal: React.FC<{
                   onChange={(e) => setForm((p) => ({ ...p, raffi_name: e.target.value }))}
                   placeholder="Enter RAFFI name"
                   required
+                  className={validation.raffi_name ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -282,6 +303,7 @@ export const RAFFICreateModal: React.FC<{
                   onChange={(e) => setForm((p) => ({ ...p, raffi_desc: e.target.value }))}
                   placeholder="Short description"
                   rows={3}
+                  className={validation.raffi_desc ? "input-invalid" : ""}
                 />
               </Row>
 

@@ -30,7 +30,6 @@ from routers.donations_management import (
 )
 from routers.finance_management import finance_route, finance_report_routes
 from routers.finance_management import disbursement_route
-from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
 from routers.volunteer_management import (
     individual_volunteer_routes,
     organization_volunteer_routes,
@@ -41,6 +40,9 @@ from routers.procurement_management import procurement_management
 from routers.request_procurement import request_procurement
 from routers.notification import notification
 from routers.lgu_profiling.uploadedFiles import router as files_router
+from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
+from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
+from routers.lgu_profiling.LGUSuperAdmin import router as lgu_superadmin_router
 from routers.volunteer_management.assignment_routes import router as assignment_router
 from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
@@ -48,7 +50,6 @@ from routers import notification_donors_route
 import real_time_handler
 
 # ✅ LGU officer location-only router
-from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
 import insert_lgu_info
 
 import models  # ✅ correct import path for User model
@@ -93,6 +94,8 @@ app.include_router(donations_route.router, prefix="/donations", tags=["Donations
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 
 app.include_router(lgu_officer_router)
+app.include_router(lgu_superadmin_router)
+
 
 # ❌ Removed admin/manage LGU routers
 # app.include_router(admin_lgu_router)

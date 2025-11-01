@@ -17,19 +17,46 @@ from models import (
     LGURecords,
     BaranggayRecords,
     EvacuationCenter,
+    RAFIInfrastructure, 
 )
 from routers.auth.authentication import get_current_user_from_access_token
 from schemas import LGURecordsUpdate, LGURecordsOut
 from routers.GetUserId import GetUserId
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.requests import Request
 
+from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 # Prefix matches your logs: /lgu_profiling/...
 router = APIRouter(prefix="/lgu_profiling", tags=["LGU Profiling"])
 DATA_URL_RE = re.compile(r"^data:(image/\w+);base64,(.+)$")
 
+class RAFICreate(BaseModel):
+    raffi_name: str 
+    lat: float
+    lng: float
+    raffi_desc: Optional[str] = None
+    raffi_pic: Optional[str] = None   # data URL or normal URL
+
+class RAFIUpdate(BaseModel):
+    raffi_name: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    raffi_desc: Optional[str] = None
+    raffi_pic: Optional[str] = None   # data URL or normal URL
+
+class RAFIOut(BaseModel):
+    rafi_id: int
+    lgu_id: int
+    rafi_name: str
+    lat: float
+    lng: float
+    rafi_desc: Optional[str] = None
+    rafi_pic: Optional[str] = None
+
+    class Config:
+        orm_mode = True
 
 class BarangayMiniOut(BaseModel):
     id: int
@@ -193,6 +220,147 @@ def lgu_profiling(
 
     return LGUOut.model_validate(payload)
 
+# ---------- Helpers ----------
+def _get_my_lgu_or_404(db: Session, user_id: str) -> LGURecords:
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+    if not admin or not admin.lgu:
+        raise HTTPException(404, "LGU not found")
+    return admin.lgu
+
+# ---------- Endpoints ----------
+
+#  ------------------------------------RAFFI-----------------------------------
+@router.get("/me/raffi_list", response_model=List[RAFIOut])
+def list_my_raffi(
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+    lgu = _get_my_lgu_or_404(db, user_id)
+    rows = (
+        db.query(RAFIInfrastructure)
+        .filter(RAFIInfrastructure.lgu_id == lgu.id)
+        .order_by(RAFIInfrastructure.rafi_name.asc())
+        .all()
+    )
+    # make pic absolute if needed
+    for r in rows:
+        if r.rafi_pic:
+            r.rafi_pic = to_abs_url(r.rafi_pic, request)
+    return rows
+@router.post("/api/raffi", response_model=RAFIOut)
+def create_raffi(
+    payload: RAFICreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+    # 1) Resolve the caller's LGU (404s if none)
+    lgu = _get_my_lgu_or_404(db, user_id)
+
+    # 2) Normalize optional image
+    pic_url = normalize_image_field(
+        payload.raffi_pic,
+        dest_dir="media/raffi",
+        public_base="/media/raffi",
+    )
+
+    # 3) Create with lgu_id set
+    rec = RAFIInfrastructure(
+        lgu_id=lgu.id,                   # ← THIS is the missing piece
+        rafi_name=payload.raffi_name,
+        lat=payload.lat,
+        lng=payload.lng,
+        rafi_desc=payload.raffi_desc,
+        rafi_pic=pic_url,
+    )
+
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    # 4) Make image absolute for the response
+    if rec.rafi_pic:
+        rec.rafi_pic = to_abs_url(rec.rafi_pic, request)
+
+    return rec
+@router.put("/api/raffi/{rafi_id}", response_model=RAFIOut)
+def update_raffi(
+    rafi_id: int,
+    payload: RAFIUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+    # 1️⃣ Get the LGU for this user
+    lgu = _get_my_lgu_or_404(db, user_id)
+
+    # 2️⃣ Find the record
+    rec = (
+        db.query(RAFIInfrastructure)
+        .filter(RAFIInfrastructure.rafi_id == rafi_id, RAFIInfrastructure.lgu_id == lgu.id)
+        .first()
+    )
+    if not rec:
+        raise HTTPException(404, "RAFFI not found")
+
+    # 3️⃣ Get incoming fields
+    data = payload.model_dump(exclude_unset=True)
+    print("Incoming update payload:", data)  # 🪵 debug
+
+    # 4️⃣ Handle either spelling from frontend
+    name_key = "raffi_name" if "raffi_name" in data else "rafi_name" if "rafi_name" in data else None
+    desc_key = "raffi_desc" if "raffi_desc" in data else "rafi_desc" if "rafi_desc" in data else None
+    pic_key  = "raffi_pic" if "raffi_pic" in data else "rafi_pic" if "rafi_pic" in data else None
+
+    if name_key:
+        rec.rafi_name = data.pop(name_key)
+    if desc_key:
+        rec.rafi_desc = data.pop(desc_key)
+    if pic_key:
+        rec.rafi_pic = normalize_image_field(
+            data.pop(pic_key),
+            dest_dir="media/raffi_images",
+            public_base="/media/raffi_images",
+        )
+
+    # 5️⃣ Apply remaining fields (lat, lng, etc.)
+    for k, v in data.items():
+        setattr(rec, k, v)
+
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    # 6️⃣ Make URL absolute for frontend display
+    if rec.rafi_pic:
+        rec.rafi_pic = to_abs_url(rec.rafi_pic, request)
+
+    return rec
+
+@router.delete("/api/raffi/{rafi_id}")
+def delete_raffi(
+    rafi_id: int,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+    lgu = _get_my_lgu_or_404(db, user_id)
+    rec = (
+        db.query(RAFIInfrastructure)
+        .filter(RAFIInfrastructure.rafi_id == rafi_id, RAFIInfrastructure.lgu_id == lgu.id)
+        .first()
+    )
+    if not rec:
+        raise HTTPException(404, "RAFFI not found")
+    db.delete(rec)
+    db.commit()
+    return {"ok": True}
+#  ------------------------------------BARANGAY------------------------------------
 
 @router.get(
     "/me/barangay_list",

@@ -349,7 +349,7 @@ html, body {
 .filter-menu button[aria-pressed="true"] { background: var(--clr-muted); }
 
 /* ===== Barangay + RAFI tables (shared) ===== */
-.barangay-section,
+.barangay-section,.lgu-table-section,
 .raffi-section {
   margin-top: 1rem;
   background: #fff;
@@ -361,7 +361,6 @@ html, body {
 .barangay-header,
 .raffi-header {
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--clr-border);
   background: #f9fafb;
 }
 
@@ -371,6 +370,12 @@ html, body {
   font-size: 1.125rem;
   color: var(--clr-text);
 }
+.raffi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* pushes Add button to the right */
+}
+
 
 .barangay-table-wrap,
 .raffi-table-wrap {
@@ -414,10 +419,8 @@ html, body {
   background: #f8fafc;
 }
 
-.barangay-table .col-action,
-.raffi-table .col-action {
-  width: 120px;
-  text-align: right;
+.raffi-section  th,.raffi-section  td{
+  text-align: center !important;
 }
 
 .empty-cell {
@@ -443,4 +446,123 @@ html, body {
   padding: 6px 12px;
   border-radius: 6px;
   width: fit-content;
+}
+
+.app-container {
+  position: relative; /* so the absolute back-button anchors correctly */
+}
+
+/* Back button styling */
+.back-button {
+  display: inline-block;
+  position: absolute;
+  top: 1.2rem;
+  left: 1.6rem;
+  background-color: #749AB6;
+  color: #fff;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1;
+  transition: background-color 0.2s ease-in-out, transform 0.08s ease-in-out;
+}
+
+.back-button:hover {
+  background-color: #5b88a3;
+}
+
+    .back-button:active {
+      transform: translateY(1px);
+    }
+
+
+
+/* keeps all action buttons in one neat line */
+td.col-action {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center buttons horizontally */
+  gap: 6px;                /* space between buttons */
+  white-space: nowrap;
+}
+
+/* make buttons smaller and consistent */
+.action-btn {
+  padding: 4px 10px;
+  border: 1px solid #b0c4de;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: #e5e7eb;
+}
+
+/* delete stands out */
+.action-btn.delete {
+  border-color: #e57373;
+  color: #c62828;
+}
+
+.action-btn.delete:hover {
+  background-color: #fbe9e7;
+}
+
+
+/* edit stands out (green) */
+.action-btn.edit {
+  border-color: #81c784; 
+  margin:0 5px;  /* light green border */
+  color: #2e7d32;          /* dark green text */
+}
+.action-btn.edits {
+  border-color: #81c784;
+  margin-top: 5px;
+  width: 60px;
+  color: #2e7d32;          /* dark green text */
+}
+.action-btn.edits:hover {
+  background-color: #e8f5e9; /* light green background on hover */
+}
+
+.action-btn.edit:hover {
+  background-color: #e8f5e9; /* light green background on hover */
+}
+
+/* ---------------------raffii table adjust------------------------ */
+
+
+.table-pagination .action-btn[disabled] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.table-pagination .action-btn {
+  padding: .35rem .6rem;
+  font-size: .9rem;
+}
+
+.barangay-table th,td{text-align: center !important;}
+
+tfoot{border:none !important; outline: none !important;}
+
+.add-raffi {
+  margin-left: auto;
+  background: none;
+  color: #16a34a; /* standard green */
+  border: 1px solid #16a34a;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-raffi:hover {
+  background-color: rgba(22, 163, 74, 0.08); /* faint green tint */
 }

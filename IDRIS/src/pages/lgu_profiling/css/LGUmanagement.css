@@ -198,6 +198,29 @@ html, body {
   min-height: 80px;
 }
 
+.raffi-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.add-raffi {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-raffi:hover {
+  background-color: #219150;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .top-controls { flex-wrap: wrap; }

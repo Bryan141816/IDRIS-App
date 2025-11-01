@@ -226,7 +226,9 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
   );
 };
 
-export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
+export const MyLGUEditModal: React.FC<
+  ViewProps & { onSaved?: () => void } // 👈 new optional callback
+> = ({ closeModal, data, onSaved }) => {
   // ===== state =====
   const defaultForm: LGUOut = {
     id: 0,
@@ -261,34 +263,44 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
   const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
- const handleSubmit = () => {
-  const submit = async () => {
-    try {
-      console.log("FORM before submit:", JSON.stringify(form, null, 2));
+ const handleSubmit = async () => {
+  if (isSaving) return; // prevent double-click saves
+  setIsSaving(true);
 
-      const response = await API.put("/lgu_profiling/api/update_lgu", form);
+  try {
+    console.log("FORM before submit:", JSON.stringify(form, null, 2));
 
-      console.log("API response:", response?.data);
-      Swal.fire({
-        icon: "success",
-        title: "Saved successfully!",
-        text: "LGU details have been updated.",
-        confirmButtonColor: "#6d28d9",
-      }).then(() => closeModal());
-    } catch (e: any) {
-      console.error("Error updating lgu:", e?.response ?? e);
-      Swal.fire({
-        icon: "error",
-        title: "Update failed!",
-        text:
-          (e?.response?.data && e.response.data.message) ||
-          "Something went wrong while saving. Please try again.",
-        confirmButtonColor: "#ef4444",
-      });
+    const response = await API.put("/lgu_profiling/api/update_lgu", form);
+    console.log("API response:", response?.data);
+
+    await Swal.fire({
+      icon: "success",
+      title: "Saved successfully!",
+      text: "LGU details have been updated.",
+      confirmButtonColor: "#6d28d9",
+    });
+
+    // 🔄 trigger refetch callback if provided
+    if (typeof onSaved === "function") {
+      await onSaved();
     }
-  };
-  submit();
+
+    closeModal();
+  } catch (e: any) {
+    console.error("Error updating LGU:", e?.response ?? e);
+    Swal.fire({
+      icon: "error",
+      title: "Update failed!",
+      text:
+        e?.response?.data?.message ??
+        "Something went wrong while saving. Please try again.",
+      confirmButtonColor: "#ef4444",
+    });
+  } finally {
+    setIsSaving(false);
+  }
 };
+
 
   const handleContactChange = (key: keyof LGUOut, val: string) => {
     // Allow digits, parentheses, plus sign
@@ -737,7 +749,7 @@ function DL({
 /** NEW: shows image or a tidy placeholder */
 function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
   const hasImg = !!src;
-  return (
+  return (  
     <div className="lgu-media">
       <div className="item-details-identifier" style={{ marginBottom: 6 }}>
         {label}

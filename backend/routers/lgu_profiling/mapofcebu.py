@@ -17,6 +17,10 @@ router = APIRouter(prefix="/lgu_profiling/mapofcebu", tags=["Map of Cebu"])
 # ---------- Helpers ----------
 
 def to_image_url(request: Request, val: Optional[str]) -> Optional[str]:
+    """
+    Convert stored media paths to absolute URLs usable by the FE.
+    Accepts absolute http(s) URLs, '/media/...' paths, or raw stored paths.
+    """
     if not val:
         return None
     v = val.strip()
@@ -96,6 +100,7 @@ class LGUUpdate(BaseModel):
     lgu_senior: Optional[int] = None
     lgu_children: Optional[int] = None
 
+# ---- RAFI ----
 class RafiPointOut(BaseModel):
     id: int
     name: str
@@ -104,6 +109,7 @@ class RafiPointOut(BaseModel):
     description: Optional[str] = None
     imageUrl: Optional[str] = None
 
+# ---- LGU (detail for map) ----
 class LGUDetailOut(BaseModel):
     id: int
 
@@ -139,24 +145,41 @@ class LGUDetailOut(BaseModel):
     class Config:
         from_attributes = True
 
-# ---- Barangay flattened output ----
+# ---- Barangay flattened output (single definition) ----
 class BarangayPointOut(BaseModel):
     id: int
     name: str
     lat: float
     lng: float
-    contact_info: Optional[str] = None
-    population: Optional[Union[int, str]] = None
-    risk_level: Optional[str] = None
+
+    # Basic info
     baranggay_pic: Optional[str] = None
     baranggay_desc: Optional[str] = None
-    resources: List[str] = Field(default_factory=list)
+    contact_info: Optional[str] = None
+    barangay_captain: Optional[str] = None
+
+    # Totals
+    total_population: Optional[int] = None
+    household_count: Optional[int] = None
+
+    # Risk profile
+    common_hazards: List[str] = Field(default_factory=list)
+
+    # Vulnerable groups
+    barangay_pwd: Optional[int] = None
+    barangay_senior: Optional[int] = None
+    barangay_children: Optional[int] = None
+
+    # Relations
     lgu_id: int
     lgu_name: Optional[str] = None
     evacuation_center_id: Optional[int] = None
     evacuation_center_name: Optional[str] = None
 
-# ---- Evacuation Center output (ENHANCED) ----
+    # (compat) if FE still reads `population`
+    population: Optional[Union[int, str]] = None
+
+# ---- Evacuation Center output ----
 class EvacuationCenterOut(BaseModel):
     id: int
     name: str
@@ -176,15 +199,7 @@ class EvacuationCenterOut(BaseModel):
 
 @router.get("/lgu/points", response_model=List[LGUDetailOut])
 def list_lgu_points_for_map(request: Request, db: Session = Depends(get_db)):
-    """
-    Return minimal-but-consistent LGUDetailOut rows for map markers.
-    FE uses: id, lgu_name, lat, lng (others available if needed).
-    """
-    rows = (
-        db.query(LGURecords)
-        .order_by(LGURecords.lgu_name.asc())
-        .all()
-    )
+    rows = db.query(LGURecords).order_by(LGURecords.lgu_name.asc()).all()
     rows = [r for r in rows if has_coords(r)]
 
     def _f(x): return float(x) if x is not None else None
@@ -251,10 +266,6 @@ def update_lgu_location(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """
-    Update lat/lng (and optionally lgu_name) and return LGUDetailOut
-    so the FE can refresh marker + side panel with one shape.
-    """
     r = _query_lgu_by_id(db, id)
     if not r:
         raise HTTPException(status_code=404, detail="LGU not found")
@@ -336,14 +347,77 @@ def update_lgu_partial(
         baranggay_count=len(r.baranggays) if getattr(r, "baranggays", None) else 0,
     )
 
-# ---------- Compat alias if your FE still calls /lgu?id=... ----------
+# Compat alias if FE still calls /lgu?id=...
 @router.get("/lgu", response_model=LGUDetailOut)
 def get_lgu_legacy(id: int = Query(...), request: Request = None, db: Session = Depends(get_db)):
     return get_lgu_detail(id=id, request=request, db=db)
 
 
 # =========================================================
-# =============== NON-LGU (unchanged) =====================
+# =============== Barangay (single route) =================
+# =========================================================
+@router.get("/barangays", response_model=List[BarangayPointOut])
+def list_barangays(
+    request: Request,
+    include: Optional[str] = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    q = db.query(BaranggayRecords)
+    if "relations" in (include or ""):
+        q = q.options(
+            selectinload(BaranggayRecords.lgu),
+            selectinload(BaranggayRecords.evacucation_center),
+        )
+    rows = [b for b in q.all() if has_coords(b)]
+
+    out: List[BarangayPointOut] = []
+    for b in rows:
+        total_pop = getattr(b, "total_population", None)
+        pop_val: Optional[Union[int, str]] = None
+        if isinstance(total_pop, (int, float)):
+            pop_val = int(total_pop)
+        elif total_pop is not None:
+            pop_val = str(total_pop)
+
+        out.append(
+            BarangayPointOut(
+                id=int(b.id),
+                name=b.name,
+                lat=float(b.lat),
+                lng=float(b.lng),
+
+                baranggay_pic=to_image_url(request, getattr(b, "baranggay_pic", None)),
+                baranggay_desc=getattr(b, "baranggay_desc", None),
+                contact_info=getattr(b, "contact_info", None),
+                barangay_captain=getattr(b, "barangay_captain", None),
+
+                total_population=getattr(b, "total_population", None),
+                household_count=getattr(b, "household_count", None),
+
+                common_hazards=normalize_list(getattr(b, "common_hazards", None)),
+
+                barangay_pwd=getattr(b, "barangay_pwd", None),
+                barangay_senior=getattr(b, "barangay_senior", None),
+                barangay_children=getattr(b, "barangay_children", None),
+
+                lgu_id=int(getattr(b, "lgu_id")),
+                lgu_name=getattr(getattr(b, "lgu", None), "lgu_name", None),
+                evacuation_center_id=getattr(
+                    getattr(b, "evacucation_center", None), "evacuation_id", None
+                ),
+                evacuation_center_name=getattr(
+                    getattr(b, "evacucation_center", None), "name", None
+                ),
+
+                # compatibility for existing FE field
+                population=pop_val,
+            )
+        )
+    return out
+
+
+# =========================================================
+# =============== RAFI & Evacuation =======================
 # =========================================================
 
 @router.get("/rafi", response_model=List[RafiPointOut])
@@ -361,53 +435,6 @@ def list_rafi_points(request: Request, db: Session = Depends(get_db)):
         for r in rows
         if has_coords(r)
     ]
-
-@router.get("/barangays", response_model=List[BarangayPointOut])
-def list_barangays(
-    request: Request,
-    include: Optional[str] = Query(default=""),
-    db: Session = Depends(get_db),
-):
-    q = db.query(BaranggayRecords)
-    if "relations" in (include or ""):
-        q = q.options(
-            selectinload(BaranggayRecords.lgu),
-            selectinload(BaranggayRecords.evacucation_center),
-        )
-    rows = [b for b in q.all() if has_coords(b)]
-
-    out: List[BarangayPointOut] = []
-    for b in rows:
-        pop_val: Optional[Union[int, str]] = None
-        if isinstance(b.population, (int, float)):
-            pop_val = int(b.population)
-        elif b.population is not None:
-            pop_val = str(b.population)
-
-        out.append(
-            BarangayPointOut(
-                id=int(b.id),
-                name=b.name,
-                lat=float(b.lat),
-                lng=float(b.lng),
-                contact_info=getattr(b, "contact_info", None),
-                population=pop_val,
-                risk_level=getattr(b, "risk_level", None),
-                baranggay_pic=to_image_url(request, getattr(b, "baranggay_pic", None)),
-                baranggay_desc=getattr(b, "baranggay_desc", None),
-                resources=normalize_list(getattr(b, "resources", None)),
-                lgu_id=int(getattr(b, "lgu_id")),
-                # FIX: use LGURecords.lgu_name instead of .name
-                lgu_name=getattr(getattr(b, "lgu", None), "lgu_name", None),
-                evacuation_center_id=getattr(
-                    getattr(b, "evacucation_center", None), "evacuation_id", None
-                ),
-                evacuation_center_name=getattr(
-                    getattr(b, "evacucation_center", None), "name", None
-                ),
-            )
-        )
-    return out
 
 @router.get("/evacuation-centers", response_model=List[EvacuationCenterOut])
 def list_evacuation_centers(db: Session = Depends(get_db)):

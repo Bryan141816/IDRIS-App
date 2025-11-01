@@ -9,19 +9,28 @@ type MarkerWithPhotos = MarkerType & {
   hazardPhotos?: HazardPhoto[];
   lguId?: number;
 
-  // Evac fields used by MapView + sidebar
+  // Evac fields
   capacity?: number | null;
   occupied?: number | null;
   evacStatus?: string | null;
-  address?: string | null; // optional if your API later adds it
+  address?: string | null;
 
-  // LGU specific fields
+  // LGU
   classification?: string;
   mayor?: string | null;
   drmmPersonnel?: string | null;
   baranggayCount?: number | null;
-  
   hazardPic?: string | null;
+
+  // BARANGAY-SPECIFIC
+  captain?: string | null;
+  contact?: string | null;
+  totalPopulation?: number | string | null;
+  households?: number | string | null;
+  commonHazards?: string[] | null;
+  pwd?: number | null;
+  senior?: number | null;
+  children?: number | null;
 };
 
 type LGUDetail = {
@@ -29,12 +38,12 @@ type LGUDetail = {
   lgu_name: string;
   lgu_classification: string;
   population?: number | null;
-  mayor?: string | null;   
+  mayor?: string | null;
   lgu_contact?: string | null;
   lat: number | string | null;
   lng: number | string | null;
   lgu_seal?: string | null;
-  hazard_pic?: string | null; 
+  hazard_pic?: string | null;
 };
 
 type RafiPoint = {
@@ -52,18 +61,33 @@ type BarangayAPI = {
   name: string;
   lat: number | string;
   lng: number | string;
-  contact_info?: string | null;
-  population?: number | Record<string, unknown> | any[] | string | null;
-  risk_level?: string | null;
 
+  // images & desc
   baranggay_pic?: string | null;
   baranggay_desc?: string | null;
-  resources?: string[] | Record<string, unknown> | null;
 
+  // barangay info
+  contact_info?: string | null;
+  barangay_captain?: string | null;
+  total_population?: number | string | null;
+  household_count?: number | string | null;
+
+  // risk
+  common_hazards?: string[] | null;
+
+  // vulnerable groups
+  barangay_pwd?: number | null;
+  barangay_senior?: number | null;
+  barangay_children?: number | null;
+
+  // relations
   lgu_id: number;
   lgu_name?: string | null;
   evacuation_center_id?: number | null;
   evacuation_center_name?: string | null;
+
+  // (compat)
+  population?: number | string | null;
 };
 
 /** Evacuation Center API shape */
@@ -75,7 +99,7 @@ type EvacAPI = {
   capacity: number | string | null;
   occupied: number | string | null;
   status: string; // "Full" | "Near Full" | "Available" | "Empty" | "Unknown"
-  // address?: string | null; // if you add this server-side later, we'll pick it up
+  // address?: string | null; // optional on server
 };
 
 /* ---------- API Bases ---------- */
@@ -154,59 +178,56 @@ const MapOfCebu = () => {
       setHazardsByLGU((m) => ({ ...m, [lguId]: photos }));
     } catch (e: any) {
       console.error("Hazards fetch error:", e);
-      // non-fatal; we simply show "No photos found."
+      // non-fatal
     } finally {
       setHazardLoading((m) => ({ ...m, [lguId]: false }));
     }
   }
 
   /* ---------- Fetch LGU points ---------- */
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  (async () => {
-    // NEW endpoint that returns LGUDetailOut[]
-    const url = `${API_BASE}/lgu/points`;
-    try {
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error(`GET /lgu/points failed: HTTP ${res.status}`);
-      const data: LGUDetail[] = await res.json();
-      if (cancelled) return;
+    (async () => {
+      const url = `${API_BASE}/lgu/points`;
+      try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) throw new Error(`GET /lgu/points failed: HTTP ${res.status}`);
+        const data: LGUDetail[] = await res.json();
+        if (cancelled) return;
 
-    const mapped: MarkerWithPhotos[] = data
-  .filter((p) => p && p.lat != null && p.lng != null)
-  .map((p) => ({
-    lat: Number(p.lat) || 0,
-    lng: Number(p.lng) || 0,
-    lguName: p.lgu_name,
-    type: "lgu",
-    population: String(p.population ?? ""),
-    image: p.lgu_seal || "/images/lgu/default.jpg",
-    hazardAreas: [],
-    lguId: p.id,
+        const mapped: MarkerWithPhotos[] = data
+          .filter((p) => p && p.lat != null && p.lng != null)
+          .map((p) => ({
+            lat: Number(p.lat) || 0,
+            lng: Number(p.lng) || 0,
+            lguName: p.lgu_name,
+            type: "lgu",
+            population: String(p.population ?? ""),
+            image: p.lgu_seal || "/images/lgu/default.jpg",
+            hazardAreas: [],
+            lguId: p.id,
 
-    // NEW
-    classification: p.lgu_classification,
-    mayor: p.mayor ?? null,
-    drmmPersonnel: (p as any).DRMMpersonel ?? null, // from API
-    baranggayCount: null, // ⬅️ leave blank in UI by request (ignore p.baranggay_count)
-    hazardPic: (p as any).hazard_pic ?? null,
+            classification: p.lgu_classification,
+            mayor: p.mayor ?? null,
+            drmmPersonnel: (p as any).DRMMpersonel ?? null,
+            baranggayCount: null, // intentionally left blank
+            hazardPic: (p as any).hazard_pic ?? null,
+          }));
 
-  }));
+        setLguMarkers(mapped);
+      } catch (e: any) {
+        console.error("LGU fetch error:", e);
+        setError((prev) => prev ?? (e?.message || "Failed to load LGU points."));
+      } finally {
+        setPendingLoads((n) => Math.max(0, n - 1));
+      }
+    })();
 
-      setLguMarkers(mapped);
-    } catch (e: any) {
-      console.error("LGU fetch error:", e);
-      setError((prev) => prev ?? (e?.message || "Failed to load LGU points."));
-    } finally {
-      setPendingLoads((n) => Math.max(0, n - 1));
-    }
-  })();
-
-  return () => {
-    cancelled = true;
-  };
-}, []);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* ---------- Fetch RAFI points ---------- */
   useEffect(() => {
@@ -264,18 +285,28 @@ useEffect(() => {
           lng: Number(b.lng) || 0,
           lguName: b.name,
           type: "barangay",
-          description: b.baranggay_desc || "",
-          population:
-            typeof b.population === "number"
-              ? String(b.population)
-              : typeof b.population === "string"
-              ? b.population
-              : "-",
-          resources: Array.isArray(b.resources)
-            ? b.resources.join(", ")
-            : JSON.stringify(b.resources || "-"),
-          evacuationCenter: b.evacuation_center_name || "-",
+
+          // image + desc
           image: b.baranggay_pic || "/images/baranggay/default.jpg",
+          description: b.baranggay_desc || "",
+
+          // info
+          captain: b.barangay_captain ?? null,
+          contact: b.contact_info ?? null,
+          totalPopulation: b.total_population ?? b.population ?? null, // both supported
+          households: b.household_count ?? null,
+
+          // risk
+          commonHazards: Array.isArray(b.common_hazards) ? b.common_hazards : [],
+
+          // vulnerable groups
+          pwd: b.barangay_pwd ?? null,
+          senior: b.barangay_senior ?? null,
+          children: b.barangay_children ?? null,
+
+          // misc/compat
+          resources: "-",
+          evacuationCenter: b.evacuation_center_name || "-",
           hazardAreas: [],
           lguId: b.lgu_id,
         }));
@@ -285,7 +316,7 @@ useEffect(() => {
         console.error("Barangay fetch error:", e);
         setError((prev) => prev ?? (e?.message || "Failed to load Barangay points."));
       } finally {
-        setPending
+        // FIX: remove stray 'setPending' and keep the counter decrement
         setPendingLoads((n) => Math.max(0, n - 1));
       }
     })();
@@ -406,31 +437,31 @@ useEffect(() => {
   }, [lguMarkers, raffiMarkers, barangayMarkers, evacMarkers, selectedType, evacuationCenter]);
 
   /* ---------- Styles ---------- */
-  const card = {
+  const card: React.CSSProperties = {
     border: "1px solid #e5e7eb",
     borderRadius: 12,
     padding: 16,
     background: "#fff",
     boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
   };
-  const label = { color: "#6b7280", fontSize: 13 };
-  const value = { fontWeight: 700, fontSize: 16 };
-  const row = {
+  const label: React.CSSProperties = { color: "#6b7280", fontSize: 13 };
+  const value: React.CSSProperties = { fontWeight: 700, fontSize: 16 };
+  const row: React.CSSProperties = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     padding: "8px 0",
     borderBottom: "1px solid #f3f4f6",
   };
-  const progressWrap = {
+  const progressWrap: React.CSSProperties = {
     height: 8,
     width: "100%",
     background: "#f3f4f6",
     borderRadius: 9999,
     overflow: "hidden",
   };
-  const small = { fontSize: 13, color: "#6b7280", marginTop: 6 };
-  const statusPill = (s?: string | null) => ({
+  const small: React.CSSProperties = { fontSize: 13, color: "#6b7280", marginTop: 6 };
+  const statusPill = (s?: string | null): React.CSSProperties => ({
     display: "inline-block",
     padding: "2px 8px",
     borderRadius: 9999,
@@ -475,49 +506,11 @@ useEffect(() => {
             <span style={{ ...value, color: "#16a34a" }}>{utilPct.toFixed(1)}%</span>
           </div>
           <div style={{ ...progressWrap, marginTop: 8 }}>
-            <div style={{ width: `${utilPct}%`, height: "100%", background: "#16a34a" }} />
+            <div style={{ width: `${utilPct}%`, height: "100%" }} />
           </div>
         </div>
       </div>
     );
-  };
-
-  /* ---------- Hazard Image Styles ---------- */
-  const headerImg: React.CSSProperties = {
-    width: "100%",
-    height: "auto",
-    display: "block",
-    borderRadius: 8,
-    objectFit: "cover",
-    maxHeight: 320,
-  };
-
-  const hazardsList: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-  };
-  const hazardItem: React.CSSProperties = {
-    display: "block",
-    width: "100%",
-    border: "1px solid #e5e7eb",
-    borderRadius: 10,
-    overflow: "hidden",
-    background: "#fff",
-  };
-  const hazardImg: React.CSSProperties = {
-    width: "100%",
-    height: "auto",
-    maxHeight: 360,
-    objectFit: "cover",
-    display: "block",
-  };
-  const hazardCaption: React.CSSProperties = {
-    padding: "8px 10px",
-    fontSize: 13,
-    color: "#374151",
-    lineHeight: 1.35,
-    wordBreak: "break-word",
   };
 
   /* ---------- Render ---------- */
@@ -570,100 +563,218 @@ useEffect(() => {
         <div className="sidebar">
           <button className="close-sidebar" onClick={handleCloseSidebar}>x</button>
 
-          {selectedMarker.type === "evacuation" && renderEvacCard(selectedMarker)}
-
-          {selectedMarker.type !== "evacuation" && (
-            <>
+          {/* Barangay sidebar */}
+          {selectedMarker.type === "barangay" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {selectedMarker.image && (
-                <img src={selectedMarker.image} alt={selectedMarker.lguName} 
-    className="lgu-header-img" />
+                <img
+                  src={selectedMarker.image}
+                  alt={selectedMarker.lguName}
+                  className="lgu-header-img"
+                />
               )}
 
-              <h2><center><b>{selectedMarker.lguName}</b> </center></h2>
-              {selectedMarker.type === "lgu" && (
-  <>
-    <div style={{ ...card, padding: 12, marginTop: 8 }}>
-      <div style={row}>
-        <span style={label}>Classification</span>
-        <span style={value}>
-          {selectedMarker.classification || "-"}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={label}>Mayor</span>
-        <span style={value}>
-          {selectedMarker.mayor || "-"}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={label}>Population</span>
-        <span style={value}>
-          {(() => {
-            const n = Number(selectedMarker.population);
-            return Number.isFinite(n) ? n.toLocaleString() : (selectedMarker.population || "-");
-          })()}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={label}>No. of Barangay</span>
-        <span style={value}>{"" /* intentionally left blank */}</span>
-      </div>
-      <div style={{ ...row, borderBottom: "none" }}>
-        <span style={label}>DRMM Personnel</span>
-        <span style={value}>
-          {selectedMarker.drmmPersonnel || "-"}
-        </span>
-      </div>
-    </div>
+              <h2 style={{ margin: "4px 0 0 0", textAlign: "center" }}>
+                <b>{selectedMarker.lguName}</b>
+              </h2>
 
-    {/* Optional: link + hazards, kept from your original */}
-    {selectedMarker.lguId != null && (
-      <>
-        <Link
-          to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
-          className="see-more-link"
-          style={{ display: "inline-block", marginTop: 10 }}
-        >
-          See More
-        </Link>
+              {/* Barangay Information Details */}
+              <div style={card}>
+                <h3 style={{ marginTop: 0, marginBottom: 8 }}>Barangay Information Details</h3>
+                <div style={row}>
+                  <span style={label}>Captain</span>
+                  <span style={value}>{selectedMarker.captain || "-"}</span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Contact</span>
+                  <span style={value}>{selectedMarker.contact || "-"}</span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Total Population</span>
+                  <span style={value}>
+                    {(() => {
+                      const n = Number(selectedMarker.totalPopulation);
+                      return Number.isFinite(n)
+                        ? n.toLocaleString()
+                        : (selectedMarker.totalPopulation ?? "-");
+                    })()}
+                  </span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>Number of Household</span>
+                  <span style={value}>
+                    {(() => {
+                      const n = Number(selectedMarker.households);
+                      return Number.isFinite(n)
+                        ? n.toLocaleString()
+                        : (selectedMarker.households ?? "-");
+                    })()}
+                  </span>
+                </div>
+              </div>
 
-        <div style={{ marginTop: 12 }}>
-  <h4 style={{ margin: "8px 0" }}>Hazard Photo</h4>
+              {/* Disaster Risk Profile */}
+              <div style={card}>
+                <h3 style={{ marginTop: 0, marginBottom: 8 }}>Disaster Risk Profile</h3>
+                <div style={row}>
+                  <span style={label}>Common Hazard</span>
+                  <span style={{ ...value, fontWeight: 600 }}>
+                    {selectedMarker.commonHazards?.length
+                      ? selectedMarker.commonHazards.join(", ")
+                      : "-"}
+                  </span>
+                </div>
 
-  {hazardLoading[selectedMarker.lguId!] && (
-    <div style={{ fontSize: 13, color: "#6b7280" }}>
-      Loading photos…
-    </div>
-  )}
+                <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    className="map-button"
+                    onClick={handleNearestEvacuation}
+                    title="Compute nearest evacuation center (no database write)"
+                  >
+                    Nearest Evacuation
+                  </button>
+                </div>
+              </div>
 
-  {!hazardLoading[selectedMarker.lguId!] && (() => {
-    
+              {/* Vulnerable Groups */}
+              <div style={card}>
+                <h3 style={{ marginTop: 0, marginBottom: 8 }}>Vulnerable Groups</h3>
+                <div style={row}>
+                  <span style={label}>PWD</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.pwd as number)
+                      ? (selectedMarker.pwd as number).toLocaleString()
+                      : (selectedMarker.pwd ?? "-")}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Seniors</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.senior as number)
+                      ? (selectedMarker.senior as number).toLocaleString()
+                      : (selectedMarker.senior ?? "-")}
+                  </span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>Children</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.children as number)
+                      ? (selectedMarker.children as number).toLocaleString()
+                      : (selectedMarker.children ?? "-")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
-    // ⬇️ Fallback: show single hazard_pic from backend if available
-    if (selectedMarker.hazardPic) {
-  return (
+          {/* Barangay sidebar */}
+{/* RAFI sidebar */}
+{selectedMarker.type === "raffi" && (
+  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    {/* Header image */}
+    {selectedMarker.image && (
       <img
-        src={selectedMarker.hazardPic}
-        alt="Hazard"
-        className="hazard-pic"
+        src={selectedMarker.image}
+        alt={selectedMarker.lguName}
+        className="lgu-header-img"
       />
-  );
-}
-
-
-    return (
-      <div style={{ fontSize: 13, color: "#6b7280" }}>
-        No photos found.
-      </div>
-    );
-  })()}
-</div>
-
-      </>
     )}
-  </>
+
+    {/* Name */}
+    <h2 style={{ margin: "4px 0 0 0", textAlign: "center" }}>
+      <b>{selectedMarker.lguName}</b>
+    </h2>
+
+    {/* Description card */}
+    <div style={card}>
+      <h3 style={{ marginTop: 0, marginBottom: 8 }}>Description</h3>
+      <div style={{ fontSize: 14, color: "#111827", lineHeight: 1.45 }}>
+        {selectedMarker.description || "-"}
+      </div>
+    </div>
+  </div>
 )}
 
+
+          {/* Evacuation card */}
+          {selectedMarker.type === "evacuation" && renderEvacCard(selectedMarker)}
+
+          {/* LGU sidebar */}
+          {selectedMarker.type === "lgu" && (
+            <>
+              {selectedMarker.image && (
+                <img
+                  src={selectedMarker.image}
+                  alt={selectedMarker.lguName}
+                  className="lgu-header-img"
+                />
+              )}
+
+              <h2 style={{ textAlign: "center", marginTop: 8 }}>
+                <b>{selectedMarker.lguName}</b>
+              </h2>
+
+              <div style={{ ...card, padding: 12, marginTop: 8 }}>
+                <div style={row}>
+                  <span style={label}>Classification</span>
+                  <span style={value}>{selectedMarker.classification || "-"}</span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Mayor</span>
+                  <span style={value}>{selectedMarker.mayor || "-"}</span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Population</span>
+                  <span style={value}>
+                    {(() => {
+                      const n = Number(selectedMarker.population);
+                      return Number.isFinite(n) ? n.toLocaleString() : (selectedMarker.population || "-");
+                    })()}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>No. of Barangay</span>
+                  <span style={value}>{"" /* intentionally blank */}</span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>DRMM Personnel</span>
+                  <span style={value}>{selectedMarker.drmmPersonnel || "-"}</span>
+                </div>
+              </div>
+
+              {selectedMarker.lguId != null && (
+                <>
+                  <Link
+                    to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
+                    className="see-more-link"
+                    style={{ display: "inline-block", marginTop: 10 }}
+                  >
+                    See More
+                  </Link>
+
+                  <div style={{ marginTop: 12 }}>
+                    <h4 style={{ margin: "8px 0" }}>Hazard Photo</h4>
+
+                    {hazardLoading[selectedMarker.lguId!] && (
+                      <div style={{ fontSize: 13, color: "#6b7280" }}>Loading photos…</div>
+                    )}
+
+                    {!hazardLoading[selectedMarker.lguId!] && (() => {
+                      // Fallback: single hazard_pic if available
+                      if (selectedMarker.hazardPic) {
+                        return (
+                          <img
+                            src={selectedMarker.hazardPic}
+                            alt="Hazard"
+                            className="hazard-pic"
+                          />
+                        );
+                      }
+                      return <div style={{ fontSize: 13, color: "#6b7280" }}>No photos found.</div>;
+                    })()}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

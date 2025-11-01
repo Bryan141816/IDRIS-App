@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import {
   WarehouseZone,
@@ -50,6 +50,11 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
   const [openDeliveryPicker, setOpenDeliveryPicker] = useState(false);
   const [selectedRequest, setSelectedRequest] =
     useState<ProcurementRequest | null>(null);
+
+  const [requestList, setRequestList] = useState<
+    (requestItemsType & StorageInfo)[]
+  >([]);
+
   const handleMapSubmit = (address: string, coordinates: [number, number]) => {
     setFormData((prev) => ({
       ...prev,
@@ -69,6 +74,9 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
     );
     setSelectedRequest(request);
     setRequestItems(request.items);
+  };
+  const onHandlSubmit = () => {
+    console.log(requestList);
   };
   return (
     <>
@@ -145,7 +153,7 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
                 <label>Request Items:</label>
                 <RequestItemsHandler
                   requestItems={requestItems}
-                  onSubmit={() => {}}
+                  setRequestListState={setRequestList}
                 ></RequestItemsHandler>
               </div>
             )}
@@ -154,7 +162,9 @@ export const AddRouteModal: React.FC<AddRouteModalProp> = ({
             <button className="secondary-btn" onClick={onClose}>
               Cancel
             </button>
-            <button className="primary-btn">Create Route</button>
+            <button className="primary-btn" onClick={onHandlSubmit}>
+              Create Route
+            </button>
           </div>
         </div>
       </div>
@@ -285,12 +295,14 @@ type StorageInfo = {
 };
 interface RequestItemsHandlerProp {
   requestItems: requestItemsType[];
-  onSubmit: () => void;
+  setRequestListState: React.Dispatch<
+    React.SetStateAction<(requestItemsType & StorageInfo)[]>
+  >;
 }
 
 const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
   requestItems,
-  onSubmit,
+  setRequestListState,
 }) => {
   const [requestList, setRequestList] = useState<
     (requestItemsType & StorageInfo)[]
@@ -329,7 +341,7 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
     }));
 
     setRequestList(mapped); // ✅ set all at once
-  }, []);
+  }, [requestItems]);
   const handlePickInventorySubmit = (index: number, inventory: StorageInfo) => {
     setRequestList((prev) =>
       prev.map((item, i) =>
@@ -345,6 +357,9 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
       ),
     );
   };
+  useEffect(() => {
+    setRequestListState(requestList);
+  }, [requestList]);
   return (
     <>
       {openPickInventory && selectedRequest && (
@@ -364,7 +379,6 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
             }}
           >
             <tr>
-              <th style={{ textAlign: "start", padding: "10px" }}></th>
               <th style={{ textAlign: "start", padding: "10px" }}>Items</th>
               <th style={{ textAlign: "start", padding: "10px" }}>
                 Quantity Needed
@@ -381,9 +395,6 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
             {requestList.length > 0 &&
               requestList.map((item, index) => (
                 <tr key={index}>
-                  <td style={{ padding: "10px" }}>
-                    <input type="checkbox" />
-                  </td>
                   <td style={{ padding: "10px" }}>{item.name}</td>
                   <td style={{ padding: "10px" }}>{item.quantity}</td>
                   <td style={{ padding: "10px" }}>{item.inventory_name}</td>

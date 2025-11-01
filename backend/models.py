@@ -1136,6 +1136,12 @@ class ProcurementRequest(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    routes = relationship(
+        "DistributionRoute",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class ReliefRequestItem(Base):
@@ -1149,6 +1155,11 @@ class ReliefRequestItem(Base):
 
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="relief_items")
+    distributions = relationship(
+        "DistributedItems",
+        back_populates="relief_item",
+        cascade="all, delete-orphan",
+    )
 
 
 class ProcurementRequestItem(Base):
@@ -1162,6 +1173,11 @@ class ProcurementRequestItem(Base):
 
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="procurement_items")
+    distributions = relationship(
+        "DistributedItems",
+        back_populates="procurement_item",
+        cascade="all, delete-orphan",
+    )
 
 
 class WarehouseZones(Base):
@@ -1179,10 +1195,6 @@ class WarehouseZones(Base):
     manager = Column(String(255), nullable=False)
 
     assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
-    routes = relationship(
-        "DistributionRoute",
-        back_populates="start_zone",
-    )
 
 
 class InventoryItems(Base):
@@ -1197,7 +1209,6 @@ class InventoryItems(Base):
     status = Column(String(255), nullable=False)
 
     assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
-    distributed_items = relationship("DistributedItems", back_populates="item_info")
 
 
 class AssignedStorage(Base):
@@ -1219,31 +1230,38 @@ class AssignedStorage(Base):
     # Relationships
     warehouse = relationship("WarehouseZones", back_populates="assigned_storages")
     inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
+    distributed_items = relationship(
+        "DistributedItems",
+        back_populates="assigned_storage_rec",
+        cascade="all, delete-orphan",
+        # foreign_keys is optional here; if you want to be explicit:
+        # foreign_keys="DistributedItems.assigned_storage",
+    )
 
 
-@event.listens_for(Session, "before_flush")
-def delete_zero_quantity_assigned_storage(session: Session, flush_context, instances):
-    """
-    Before the session flushes updates/inserts, delete any AssignedStorage rows
-    whose quantity is <= 0 so they don't get persisted.
-    """
-    # Updated rows
-    for obj in list(session.dirty):
-        if (
-            isinstance(obj, AssignedStorage)
-            and (obj.quantity is not None)
-            and (obj.quantity <= 0)
-        ):
-            session.delete(obj)
-
-    # New rows that ended up with 0 or negative (just in case)
-    for obj in list(session.new):
-        if (
-            isinstance(obj, AssignedStorage)
-            and (obj.quantity is not None)
-            and (obj.quantity <= 0)
-        ):
-            session.expunge(obj)
+# @event.listens_for(Session, "before_flush")
+# def delete_zero_quantity_assigned_storage(session: Session, flush_context, instances):
+#     """
+#     Before the session flushes updates/inserts, delete any AssignedStorage rows
+#     whose quantity is <= 0 so they don't get persisted.
+#     """
+#     # Updated rows
+#     for obj in list(session.dirty):
+#         if (
+#             isinstance(obj, AssignedStorage)
+#             and (obj.quantity is not None)
+#             and (obj.quantity <= 0)
+#         ):
+#             session.delete(obj)
+#
+#     # New rows that ended up with 0 or negative (just in case)
+#     for obj in list(session.new):
+#         if (
+#             isinstance(obj, AssignedStorage)
+#             and (obj.quantity is not None)
+#             and (obj.quantity <= 0)
+#         ):
+#             session.expunge(obj)
 
 
 class TeamMembers(Base):
@@ -1296,32 +1314,64 @@ class DistributionRoute(Base):
 
     route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     route_name = Column(String(255), nullable=False)
-    start_location = Column(
-        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    gathering_area = Column(String(255), nullable=True)
+    gathering_lat = Column(Float, nullable=True)
+    gathering_lng = Column(Float, nullable=True)
+    request_id = Column(
+        Integer, ForeignKey("procurement_request.request_id"), nullable=False
     )
-    end_location_id = Column(Integer, nullable=False)
-    end_location = Column(String(255), nullable=False)
-    status = Column(String(255), default="Pending")
-    schedule = Column(DateTime)
+    status = Column(String(255), default="Waiting for Additional Action")
+    start_schedule = Column(Date)
+    end_schedule = Column(Date)
     team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
     date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    start_zone = relationship("WarehouseZones", back_populates="routes")
+
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")
 
     # New relationship for logs
     logs = relationship("DistributionRouteLogs", back_populates="route")
+    request = relationship(
+        "ProcurementRequest",
+        back_populates="routes",
+        foreign_keys=[request_id],
+    )
 
 
 class DistributedItems(Base):
     __tablename__ = "distributed_items"
     item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    item = Column(Integer, ForeignKey("inventory_items.inventory_id"), nullable=False)
+    assigned_storage = Column(
+        Integer, ForeignKey("assigned_storage.assigned_id"), nullable=True
+    )
+    relief_id = Column(
+        Integer, ForeignKey("relief_request_item.item_id"), nullable=True
+    )
+    procurement_request_id = Column(
+        Integer, ForeignKey("procurement_request_item.item_id"), nullable=True
+    )
+
     route = Column(Integer, ForeignKey("distribution_route.route_id"), nullable=False)
     quantity = Column(Integer, nullable=False)
 
-    item_info = relationship("InventoryItems", back_populates="distributed_items")
     route_info = relationship("DistributionRoute", back_populates="distributed_items")
+
+    assigned_storage_rec = relationship(
+        "AssignedStorage",
+        back_populates="distributed_items",
+        foreign_keys=[assigned_storage],
+    )
+
+    relief_item = relationship(
+        "ReliefRequestItem",
+        back_populates="distributions",
+        foreign_keys=[relief_id],
+    )
+    procurement_item = relationship(
+        "ProcurementRequestItem",
+        back_populates="distributions",
+        foreign_keys=[procurement_request_id],
+    )
 
 
 class InKindInventoryItem(Base):
@@ -1436,11 +1486,13 @@ class FinanceAudit(Base):
 
     record = relationship("FinanceRecord", back_populates="audits")
 
+
 class DisbursementStatus(enum.Enum):
     SUBMITTED = "SUBMITTED"
     APPROVED = "APPROVED"
     PAID = "PAID"
     REJECTED = "REJECTED"
+
 
 class Disbursement(Base):
     __tablename__ = "disbursement"
@@ -1452,7 +1504,11 @@ class Disbursement(Base):
     origin_id = Column(Integer, nullable=False)
     attachment = Column(String, nullable=True)
     remarks = Column(String, nullable=True)
-    status = Column(SqlEnum(DisbursementStatus), nullable=False, default = DisbursementStatus.SUBMITTED)
+    status = Column(
+        SqlEnum(DisbursementStatus),
+        nullable=False,
+        default=DisbursementStatus.SUBMITTED,
+    )
     date_created = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -1469,6 +1525,7 @@ class Disbursement(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
 
 class DisbursementItem(Base):
     __tablename__ = "disbursement_item"

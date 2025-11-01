@@ -13,6 +13,7 @@ interface ModalProps {
   onReject?: () => void | null;
   onSubmit?: () => void | Promise<void> | null;
   zIndex?: number;
+  minWidth?: string;
 }
 export const ModalOverlay: React.FC<ModalProps> = ({
   children,
@@ -21,10 +22,11 @@ export const ModalOverlay: React.FC<ModalProps> = ({
   onSubmit,
   onReject,
   zIndex = 900,
+  minWidth = "60vw",
 }) => {
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div className="modal">
+      <div className="modal" style={{ minWidth }}>
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
             ×

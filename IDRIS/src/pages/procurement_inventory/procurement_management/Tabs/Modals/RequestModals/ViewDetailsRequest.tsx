@@ -8,21 +8,63 @@ import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { ModalOverlay } from "../ProcurementModalsDefault";
 import { ModalType } from "../ProcurementDefaults";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
-
+import React, { useState, useEffect } from "react";
 interface ViewDetailsProps extends ProcurementDefaultModalProps {
   selectedItem: ProcurementRequest | null;
   mode?: Exclude<ModalType, null>;
 }
+type requestItemsType = {
+  item_id: number;
+  name: string;
+  category?: string;
+  quantity: number;
+  unit?: string;
+};
+type AssignedStorageItem = {
+  assigned_id: number;
+  quantity: number;
+  inventory_item_name: string;
+  inventory_category: string;
+  warehouse_zone_name: string;
+};
 
 export const ViewDetails: React.FC<ViewDetailsProps> = ({
   onClose,
   selectedItem,
   mode = "view",
 }) => {
+  const [requestList, setRequestList] = useState<
+    (requestItemsType & StorageInfo)[]
+  >([]);
+
+  useEffect(() => {
+    if (selectedItem?.request_type === "relief") {
+      const mapped = selectedItem?.items.map((item) => ({
+        item_id: item.item_id,
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        unit: item.unit,
+        assigned_id: -1,
+        inventory_name: "",
+        warehouse_name: "",
+        quantity_assigned: -1,
+      }));
+      setRequestList(mapped);
+    }
+  }, []);
   const handleApproval = async (type: string) => {
     try {
+      const cleanedList = requestList
+        ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
+        .map(({ item_id, assigned_id, quantity_assigned }) => ({
+          item_id,
+          assigned_id,
+          quantity_assigned,
+        }));
       const response = await API.post(
         `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
+        cleanedList,
       );
     } catch (e: any) {
       console.error(
@@ -42,6 +84,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
       modalType={mode}
       onSubmit={onApprove}
       onReject={onReject}
+      minWidth={"75vw"}
     >
       <div className="modal-content">
         <h3>Request Details - {selectedItem?.request_ref_num}</h3>
@@ -121,40 +164,10 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
               <strong>Request:</strong>
               <div style={{ background: "white", width: "100%" }}>
                 {selectedItem?.items_source === "relief" ? (
-                  <table style={{ width: "100%" }}>
-                    <thead
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
-                        color: "white",
-                      }}
-                    >
-                      <tr>
-                        <th style={{ textAlign: "start", padding: "10px" }}>
-                          Name
-                        </th>
-                        <th style={{ textAlign: "start", padding: "10px" }}>
-                          Category
-                        </th>
-                        <th style={{ textAlign: "start", padding: "10px" }}>
-                          Quantity
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedItem?.items &&
-                        selectedItem.items.length > 0 &&
-                        selectedItem.items.map((item, index) => (
-                          <tr key={index}>
-                            <td style={{ padding: "10px" }}>{item.name}</td>
-                            <td style={{ padding: "10px" }}>
-                              {item.category ?? "—"}
-                            </td>
-                            <td style={{ padding: "10px" }}>{item.quantity}</td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                  <RequestItemsHandler
+                    requestItems={requestList}
+                    setRequestListState={setRequestList}
+                  ></RequestItemsHandler>
                 ) : (
                   <table style={{ width: "100%" }}>
                     <thead
@@ -197,5 +210,296 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
         </div>
       </div>
     </ModalOverlay>
+  );
+};
+
+type StorageInfo = {
+  assigned_id: number;
+  inventory_name: string;
+  warehouse_name: string;
+  quantity_assigned: number;
+};
+interface RequestItemsHandlerProp {
+  requestItems: (requestItemsType & StorageInfo)[];
+  setRequestListState: React.Dispatch<
+    React.SetStateAction<(requestItemsType & StorageInfo)[]>
+  >;
+}
+
+const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
+  requestItems,
+  setRequestListState,
+}) => {
+  const [selectedRequest, setSelectedRequest] = useState<
+    (requestItemsType & StorageInfo) | null
+  >(null);
+  const [openPickInventory, setOpenPickInventory] = useState(false);
+  const [requestIndexPicked, setRequestIndexPicked] = useState(-1);
+
+  const openInventory = (
+    item: requestItemsType & StorageInfo,
+    index: number,
+  ) => {
+    setOpenPickInventory(true);
+    setSelectedRequest(item);
+    setRequestIndexPicked(index);
+  };
+  const closeInventory = () => {
+    setOpenPickInventory(false);
+    setSelectedRequest(null);
+    setRequestIndexPicked(-1);
+  };
+
+  const handlePickInventorySubmit = (index: number, inventory: StorageInfo) => {
+    setRequestListState((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              assigned_id: inventory.assigned_id,
+              inventory_name: inventory.inventory_name,
+              warehouse_name: inventory.warehouse_name,
+              quantity_assigned: inventory.quantity_assigned,
+            }
+          : item,
+      ),
+    );
+  };
+  const clearInventory = (index: number) => {
+    setRequestListState((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              assigned_id: -1,
+              inventory_name: "",
+              warehouse_name: "",
+              quantity_assigned: -1,
+            }
+          : item,
+      ),
+    );
+  };
+
+  return (
+    <>
+      {openPickInventory && selectedRequest && (
+        <PickInventoryModal
+          onClose={closeInventory}
+          item={selectedRequest}
+          index={requestIndexPicked}
+          onSubmit={handlePickInventorySubmit}
+        ></PickInventoryModal>
+      )}
+      <div style={{ background: "white", width: "100%" }}>
+        <table style={{ width: "100%" }}>
+          <thead
+            style={{
+              background: "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
+              color: "white",
+            }}
+          >
+            <tr>
+              <th style={{ textAlign: "start", padding: "10px" }}>Items</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Category</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>
+                Quantity Needed
+              </th>
+              <th style={{ textAlign: "start", padding: "10px" }}>
+                Inventory Name
+              </th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Quantity</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Warehouse</th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requestItems.length > 0 &&
+              requestItems.map((item, index) => (
+                <tr key={index}>
+                  <td style={{ padding: "10px" }}>{item.name}</td>
+                  <td style={{ padding: "10px" }}>{item.category}</td>
+                  <td style={{ padding: "10px" }}>{item.quantity}</td>
+                  <td style={{ padding: "10px" }}>{item.inventory_name}</td>
+                  <td style={{ padding: "10px" }}>
+                    {item.quantity_assigned !== -1
+                      ? item.quantity_assigned
+                      : ""}
+                  </td>
+                  <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
+                  <td style={{ padding: "10px", width: "fit-content" }}>
+                    <button
+                      className="action-btn"
+                      style={{ width: "fit-content" }}
+                      onClick={() => clearInventory(index)}
+                    >
+                      Clear Selected
+                    </button>
+                    <button
+                      className="action-btn"
+                      style={{ width: "fit-content" }}
+                      onClick={() => openInventory(item, index)}
+                    >
+                      Pick from inventory
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+
+interface PickInventoryModalProp {
+  onClose: () => void;
+  item: requestItemsType & StorageInfo;
+  index: number;
+  onSubmit: (index: number, inventory: StorageInfo) => void;
+}
+
+const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
+  onClose,
+  item,
+  index,
+  onSubmit,
+}) => {
+  const [responseData, setResponseData] = useState<AssignedStorageItem[]>([]);
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const response = await API.get(
+          `/distribution_planning/get_assigned?category=${item.category}`,
+        );
+        setResponseData(response.data);
+      } catch (e: any) {
+        console.error("Error fetching inventory: " + e.message);
+      }
+    };
+    fetch();
+  }, []);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [quantityInput, setQuantityInput] = useState(-1);
+
+  const handlCheckChange = (index: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIndex(index);
+    } else {
+      setSelectedIndex(-1);
+      setQuantityInput(-1);
+    }
+  };
+  const handleSubmit = () => {
+    const selected = responseData[selectedIndex];
+    onSubmit(index, {
+      assigned_id: selected.assigned_id,
+      inventory_name: selected.inventory_item_name,
+      warehouse_name: selected.warehouse_zone_name,
+      quantity_assigned: quantityInput,
+    });
+    onClose();
+  };
+  return (
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+      <div className="modal " style={{ minWidth: "50vw" }}>
+        <div className="modal-header">
+          <h3>Pick Inventory Item</h3>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="modal-content">
+          <div style={{ background: "white", width: "100%" }}>
+            <table style={{ width: "100%" }}>
+              <thead
+                style={{
+                  background:
+                    "linear-gradient(135deg, #749ab6 0%, #5a8aa8 100%)",
+                  color: "white",
+                }}
+              >
+                <tr>
+                  <th style={{ textAlign: "start", padding: "10px" }}></th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Items Name
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Category
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Available Quantity
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Warehouse
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Quantity
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {responseData.length > 0 &&
+                  responseData.map((item, index) => (
+                    <tr key={index}>
+                      <td style={{ padding: "10px" }}>
+                        <input
+                          type="checkbox"
+                          checked={index === selectedIndex}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            handlCheckChange(index, e.target.checked)
+                          }
+                        />
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {item.inventory_item_name}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        {item.inventory_category}
+                      </td>
+                      <td style={{ padding: "10px" }}>{item.quantity}</td>
+                      <td style={{ padding: "10px" }}>
+                        {item.warehouse_zone_name}
+                      </td>
+                      <td style={{ padding: "10px" }}>
+                        <input
+                          type="number"
+                          value={
+                            quantityInput !== -1 && selectedIndex === index
+                              ? quantityInput
+                              : ""
+                          }
+                          onChange={(
+                            e: React.ChangeEvent<HTMLInputElement>,
+                          ) => {
+                            const value =
+                              e.target.value === ""
+                                ? -1
+                                : Number(e.target.value);
+                            if (value >= item.quantity) {
+                              setQuantityInput(item.quantity);
+                              return;
+                            }
+                            setQuantityInput(value);
+                          }}
+                          disabled={selectedIndex !== index}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button className="secondary-btn" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="primary-btn" onClick={handleSubmit}>
+            Select Item
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

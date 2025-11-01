@@ -75,15 +75,15 @@ const EvacuationAndShelter = () => {
     lng: number;
     baranggay_pic: string;
   };
-  type Shelter = {
-    id: string | number;
-    name: string;
-    lat: number;
-    lng: number;
-    capacity: number;
-    occupied: number;
-    barangay?: barangayminiinfo[] | null;
-  };
+type Shelter = {
+  id: number; // ← numeric and reliable for URLs
+  name: string;
+  lat: number;
+  lng: number;
+  capacity: number;
+  occupied: number;
+  barangay?: barangayminiinfo[] | null;
+};
 
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(
@@ -129,14 +129,16 @@ const EvacuationAndShelter = () => {
   const handleDropdownToggle = (id: string | number) =>
     setDropdownOpenId(id === dropdownOpenId ? null : id);
 
-  const handleEditClick = (
-    id: string | number,
-    occupied: number,
-    capacity: number,
-  ) => {
-    setEditModal({ id, occupied, capacity });
-    setDropdownOpenId(null);
-  };
+ const handleEditClick = (id: string | number, occupied: number, capacity: number) => {
+  const numId = Number(id);
+  if (!Number.isFinite(numId)) {
+    console.warn("Invalid shelter id on edit:", id);
+    return;
+  }
+  setEditModal({ id: numId, occupied, capacity });
+  setDropdownOpenId(null);
+};
+
 
   const handleEditInput = (e: { target: { value: any } }) =>
     setEditModal((modal) =>
@@ -167,66 +169,106 @@ const EvacuationAndShelter = () => {
     }
   }, [isRegisterModalOpen]);
   const handleEditSave = async () => {
-    if (!editModal) return;
+  if (!editModal) return;
 
-    if (editModal.occupied < 0 || editModal.occupied > editModal.capacity) {
-      await Swal.fire({
-        icon: "error",
-        title: "Invalid Value",
-        text: "Evacuee count must be between 0 and capacity.",
-      });
-      return;
-    }
-
-    // Find the shelter object by id
-    const shelterToUpdate = shelters.find(
-      (shelter) => shelter.id === editModal.id,
-    );
-    if (!shelterToUpdate) {
-      await Swal.fire("Error", "Shelter not found.", "error");
-      return;
-    }
-
-    try {
-      await API.put(
-        `/lgu_profiling/manage_lgu/update_evacuation/${editModal.id}`,
-        {
-          name: shelterToUpdate.name,
-          lat: shelterToUpdate.lat,
-          lng: shelterToUpdate.lng,
-          capacity: shelterToUpdate.capacity,
-          occupied: editModal.occupied, // use updated value
-        },
-      );
-      setEditModal(null);
-      await Swal.fire("Success", "Evacuee count updated!", "success");
-      fetchShelters();
-    } catch (err) {
-      await Swal.fire("Error", "Failed to update evacuees.", "error");
-    }
-  };
-
-  const handleDeleteClick = async (id: string | number) => {
-    setDropdownOpenId(null);
-    const result = await Swal.fire({
-      title: "Delete shelter?",
-      text: "This action cannot be undone!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#e64949",
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+  if (editModal.occupied < 0 || editModal.occupied > editModal.capacity) {
+    await Swal.fire({
+      icon: "error",
+      title: "Invalid Value",
+      text: "Evacuee count must be between 0 and capacity.",
     });
-    if (result.isConfirmed) {
-      try {
-        await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${id}`);
-        await Swal.fire("Deleted!", "Shelter removed.", "success");
-        fetchShelters();
-      } catch (err) {
-        await Swal.fire("Error", "Failed to delete shelter.", "error");
+    return;
+  }
+
+  const shelterToUpdate = shelters.find((s) => s.id === Number(editModal.id));
+  if (!shelterToUpdate) {
+    await Swal.fire("Error", "Shelter not found.", "error");
+    return;
+  }
+
+  try {
+    await API.put(
+      `/lgu_profiling/manage_lgu/update_evacuation/${Number(editModal.id)}`,
+      {
+        name: shelterToUpdate.name,
+        lat: shelterToUpdate.lat,
+        lng: shelterToUpdate.lng,
+        capacity: shelterToUpdate.capacity,
+        occupied: editModal.occupied,
       }
+    );
+    setEditModal(null);
+    await Swal.fire("Success", "Evacuee count updated!", "success");
+    fetchShelters();
+  } catch (err) {
+    await Swal.fire("Error", "Failed to update evacuees.", "error");
+  }
+};
+
+const handleDeleteClick = async (id: string | number) => {
+  setDropdownOpenId(null);
+  const numId = Number(id);
+  if (!Number.isFinite(numId)) {
+    await Swal.fire("Error", "Invalid shelter ID.", "error");
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: "Delete shelter?",
+    text: "This action cannot be undone!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#e64949",
+    confirmButtonText: "Delete",
+    cancelButtonText: "Cancel",
+  });
+
+  if (!result.isConfirmed) return;
+
+  try {
+    await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
+    await Swal.fire("Deleted!", "Shelter removed.", "success");
+    fetchShelters();
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const detail = err?.response?.data?.detail;
+
+    // Backend guard hit – center is referenced by barangays
+    if (status === 409) {
+      const ask = await Swal.fire({
+        icon: "warning",
+        title: "Center in use",
+        text:
+          detail ||
+          "This evacuation center is linked to one or more barangays. Do you want to detach them and delete the center?",
+        showCancelButton: true,
+        confirmButtonText: "Detach & Delete",
+        cancelButtonText: "Cancel",
+      });
+
+      if (!ask.isConfirmed) return;
+
+      try {
+        await API.post(
+          `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`
+        );
+        await Swal.fire("Deleted", "Center and links removed.", "success");
+        fetchShelters();
+      } catch {
+        await Swal.fire(
+          "Error",
+          "Force delete failed. Please try again.",
+          "error"
+        );
+      }
+      return;
     }
-  };
+
+    // Other errors
+    await Swal.fire("Error", "Failed to delete shelter.", "error");
+  }
+};
+
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -294,14 +336,31 @@ const EvacuationAndShelter = () => {
   }
 
   async function fetchShelters() {
-    try {
-      const response = await API.get("/lgu_profiling/api/get_evacuation");
+  try {
+    const response = await API.get("/lgu_profiling/api/get_evacuation");
 
-      setShelters(response.data);
-    } catch {
-      // swallow for now; you can add toast/log if needed
-    }
+    const normalized: Shelter[] = (Array.isArray(response.data) ? response.data : []).map((r: any) => {
+      // Accept either `evacuation_id` or `id` from the backend
+      const rawId = r?.evacuation_id ?? r?.id;
+      const id = Number(rawId);
+
+      return {
+        id: Number.isFinite(id) ? id : -1, // fallback to -1 so bad IDs are obvious
+        name: r?.name ?? "",
+        lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
+        lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
+        capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
+        occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
+        barangay: Array.isArray(r?.barangay) ? r.barangay : null,
+      };
+    });
+
+    setShelters(normalized);
+  } catch (e) {
+    console.error("Failed to fetch shelters", e);
+    // optional toast
   }
+}
 
   const getBarangayCoordinate = (id: number): [number, number] | null => {
     const b = barangayList.find((b) => b.id === id);

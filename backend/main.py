@@ -40,6 +40,7 @@ from routers.procurement_management import procurement_management
 from routers.request_procurement import request_procurement
 from routers.notification import notification
 from routers.lgu_profiling.uploadedFiles import router as files_router
+from routers.lgu_profiling import manage_lgu as manage_lgu_router
 from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
 from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
 from routers.lgu_profiling.LGUSuperAdmin import router as lgu_superadmin_router
@@ -95,7 +96,7 @@ app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 
 app.include_router(lgu_officer_router)
 app.include_router(lgu_superadmin_router)
-
+app.include_router(manage_lgu_router.router, prefix="/lgu_profiling", tags=["Manage LGU"])
 
 # ❌ Removed admin/manage LGU routers
 # app.include_router(admin_lgu_router)

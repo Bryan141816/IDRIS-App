@@ -345,6 +345,14 @@ class EvacuationCenterOut(BaseModel):
     capacity: int
     occupied: int
 
+class EvacuationCenterUpdate(BaseModel):
+    # allow partial updates
+    name: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    capacity: int | None = None
+    occupied: int | None = None
+
 
 # ---------- Base ----------
 class HazardBase(BaseModel):

@@ -35,6 +35,7 @@ from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     ErrorResponse,
     EvacuationCenterOut,
+    EvacuationCenterUpdate,
     EvacuationCenterCreate,
     RafiInfrastructureCreate,
     RafiInfrastructureUpdate,
@@ -604,6 +605,17 @@ def delete_barangay(record_id: int, db: Session = Depends(get_db)):
 
 
 # ---------------- Evacuation ----------------
+def _get_evac_by_id(db: Session, record_id: int) -> EvacuationCenter | None:
+    return (
+        db.query(EvacuationCenter)
+        .filter(
+            (getattr(EvacuationCenter, "evacuation_id", None) == record_id)
+            if hasattr(EvacuationCenter, "evacuation_id")
+            else (EvacuationCenter.id == record_id)
+        )
+        .first()
+    )
+
 @router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
 def get_evacuation(
     db: Session = Depends(get_db),
@@ -716,28 +728,32 @@ def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)
     return db_record
 
 
-@router.put("/lgu_profiling/manage_lgu/update_evacuation/{record_id}")
+@router.put("/manage_lgu/update_evacuation/{record_id}")
 def update_evacuation(
-    record_id: int, payload: EvacuationCenterCreate, db: Session = Depends(get_db)
+    record_id: int, payload: EvacuationCenterUpdate, db: Session = Depends(get_db)
 ):
-    record = db.query(EvacuationCenter).get(record_id)
+    # PK is evacuation_id (not id)
+    record = (
+        db.query(EvacuationCenter)
+        .filter(EvacuationCenter.evacuation_id == record_id)
+        .first()
+    )
     if not record:
-        raise HTTPException(status_code=404, detail="Response record doesn't exist")
+        raise HTTPException(status_code=404, detail="Evacuation center not found")
 
-    if payload.name is not None:
-        record.name = payload.name
-    if payload.lat is not None:
-        record.lat = payload.lat
-    if payload.lng is not None:
-        record.lng = payload.lng
-    if payload.capacity is not None:
-        record.capacity = payload.capacity
-    if payload.occupied is not None:
-        record.occupied = payload.occupied
+    data = payload.model_dump(exclude_unset=True)
 
+    if "name" in data: record.name = data["name"]
+    if "lat" in data: record.lat = data["lat"]
+    if "lng" in data: record.lng = data["lng"]
+    if "capacity" in data: record.capacity = data["capacity"]
+    if "occupied" in data: record.occupied = data["occupied"]
+
+    db.add(record)
     db.commit()
     db.refresh(record)
-    return {"detail": "Record updated succesfully", "record": record}
+    return {"detail": "Record updated successfully"}
+
 
 
 @router.get(
@@ -754,10 +770,10 @@ def get_linked_barangays(record_id: int, db: Session = Depends(get_db)):
     return {"count": len(rows), "names": names}
 
 
-@router.delete(
-    "/lgu_profiling/manage_lgu/delete_evacuation/{record_id}", response_model=dict
-)
+
+@router.delete("/manage_lgu/delete_evacuation/{record_id}", response_model=dict)
 def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
+    # block delete if referenced by barangays
     refs = (
         db.query(BaranggayRecords)
         .filter(BaranggayRecords.evacucation_center_id == record_id)
@@ -766,13 +782,54 @@ def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     if refs > 0:
         raise HTTPException(
             status_code=409,
-            detail="Cannot delete: this evacuation center is linked to one or more barangay records. Please detach or reassign first.",
+            detail=(
+                "Cannot delete: this evacuation center is linked to one or more "
+                "barangay records. Please detach or reassign first."
+            ),
         )
-    deleted_report = delete(db, EvacuationCenter, record_id)
-    if not deleted_report:
-        raise HTTPException(status_code=400, detail="Record not found.")
+
+    record = (
+        db.query(EvacuationCenter)
+        .filter(EvacuationCenter.evacuation_id == record_id)
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Evacuation center not found")
+
+    db.delete(record)
+    db.commit()
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
+# ---- Force delete: detach linked barangays, then delete the center ----
+@router.post("/lgu_profiling/manage_lgu/evacuation/{record_id}/force_delete", response_model=dict)
+def force_delete_evacuation(record_id: int, db: Session = Depends(get_db)):
+    # 1) Detach any barangays referencing this center
+    linked = (
+        db.query(BaranggayRecords)
+        .filter(BaranggayRecords.evacucation_center_id == record_id)
+        .all()
+    )
+    for b in linked:
+        b.evacucation_center_id = None
+        db.add(b)
+    db.commit()
+
+    # 2) Delete the evacuation center by its real PK column (evacuation_id)
+    rec = (
+        db.query(EvacuationCenter)
+        .filter(EvacuationCenter.evacuation_id == record_id)
+        .first()
+    )
+    if not rec:
+        raise HTTPException(status_code=404, detail="Record not found.")
+
+    db.delete(rec)
+    db.commit()
+
+    return {
+        "message": "Evacuation center deleted. Detached barangays first.",
+        "detached_count": len(linked),
+    }
 
 # ---------------- RAFI ----------------
 MEDIA_DIR = Path("media")

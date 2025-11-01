@@ -755,19 +755,14 @@ def update_evacuation(
     return {"detail": "Record updated successfully"}
 
 
-
-@router.get(
-    "/lgu_profiling/manage_lgu/evacuation/{record_id}/linked_barangays",
-    response_model=dict,
-)
-def get_linked_barangays(record_id: int, db: Session = Depends(get_db)):
-    rows = (
+@router.get("/evacuation/{record_id}/linked_barangays", response_model=dict)
+def linked_barangays(record_id: int, db: Session = Depends(get_db)):
+    brgys = (
         db.query(BaranggayRecords)
         .filter(BaranggayRecords.evacucation_center_id == record_id)
         .all()
     )
-    names: List[str] = [r.name for r in rows]
-    return {"count": len(rows), "names": names}
+    return {"barangays": [{"id": b.id, "name": b.name} for b in brgys]}
 
 
 

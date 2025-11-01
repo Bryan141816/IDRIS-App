@@ -207,18 +207,28 @@ type Shelter = {
 };
 
 
-const handleDeleteClick = async (id: string | number) => {
+const handleDeleteClick = async (shelter: {
+  id: number;
+  name: string;
+  barangay?: { name: string }[] | null;
+}) => {
   setDropdownOpenId(null);
 
-  const numId = Number(id);
+  const numId = Number(shelter.id);
+  const shelterName = shelter.name || "this shelter";
+  const barangayName =
+    shelter.barangay && shelter.barangay.length > 0
+      ? shelter.barangay[0].name
+      : "no assigned barangay";
+
   if (!Number.isFinite(numId)) {
     await Swal.fire("Error", "Invalid shelter ID.", "error");
     return;
   }
 
-  // Confirm delete first
+  // First confirmation
   const result = await Swal.fire({
-    title: "Delete shelter?",
+    title: `Delete "${shelterName}" ?`,
     text: "This action cannot be undone!",
     icon: "warning",
     showCancelButton: true,
@@ -230,22 +240,20 @@ const handleDeleteClick = async (id: string | number) => {
   if (!result.isConfirmed) return;
 
   try {
-    // Try normal delete
+    // Normal delete first
     await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
-    await Swal.fire("Deleted!", "Shelter removed.", "success");
+    await Swal.fire("Deleted!", `"${shelterName}" has been removed.`, "success");
     fetchShelters();
   } catch (e) {
     const err = e as AxiosError<any>;
     const status = err?.response?.status;
     const detail = (err?.response?.data as any)?.detail;
 
-    // If backend prevents delete because it's linked to barangays
+    // If backend returns conflict (linked to barangay)
     if (status === 409) {
       const detachConfirm = await Swal.fire({
-        title: "Shelter is linked to barangays",
-        html:
-          "Some barangays are linked to this evacuation center.<br/>" +
-          "Do you want to <b>detach</b> them and delete the shelter record?",
+        title: `"${shelterName}" is linked to Barangay ${barangayName}`,
+        html: `Do you want to <b>detach</b> it from Barangay <b>${barangayName}</b> and delete <b>${shelterName}</b> ?`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: "Detach & Delete",
@@ -256,15 +264,15 @@ const handleDeleteClick = async (id: string | number) => {
       if (!detachConfirm.isConfirmed) return;
 
       try {
-        // Force delete = detach all barangays and remove center record
+        // Force delete = detach barangay + delete evacuation
         const resp = await API.post(
           `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`
         );
-
         const count = resp?.data?.detached_count ?? 0;
+
         await Swal.fire(
-          "Deleted!",
-          `Shelter deleted. Detached ${count} barangay link${count === 1 ? "" : "s"}.`,
+              "Deleted!",
+              `"${shelterName}" was successfully deleted and unlinked from Barangay ${barangayName}.`,
           "success"
         );
         fetchShelters();
@@ -273,18 +281,16 @@ const handleDeleteClick = async (id: string | number) => {
         const detail2 = (err2?.response?.data as any)?.detail;
         await Swal.fire(
           "Error",
-          detail2 || "Failed to detach and delete shelter.",
+          detail2 || `Failed to detach and delete "${shelterName}".`,
           "error"
         );
       }
       return;
     }
 
-    // Other errors
     await Swal.fire("Error", detail || "Failed to delete shelter.", "error");
   }
 };
-
 
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
@@ -565,12 +571,14 @@ const handleDeleteClick = async (id: string | number) => {
                                   >
                                     <i className="fas fa-edit"></i> Edit
                                   </button>
-                                  <button
-                                    className="kebab-dropdown-item danger"
-                                    onClick={() => handleDeleteClick(id)}
-                                  >
-                                    <i className="fas fa-trash"></i> Delete
-                                  </button>
+                                <button
+  className="kebab-dropdown-item danger"
+  onClick={() => handleDeleteClick({ id, name, barangay })}
+>
+  <i className="fas fa-trash-alt" /> Delete
+</button>
+
+
                                 </div>
                               )}
                             </>
@@ -597,7 +605,7 @@ const handleDeleteClick = async (id: string | number) => {
                         Status: {statusLabel}
                       </span>
                       <span>
-                        Barrangay Assigned:{" "}
+                        Barangay Assigned:{" "}
                         {barangay && String(barangay[0].name)}
                       </span>
                     </div>

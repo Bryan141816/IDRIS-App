@@ -801,7 +801,7 @@ def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
 # ---- Force delete: detach linked barangays, then delete the center ----
-@router.post("/lgu_profiling/manage_lgu/evacuation/{record_id}/force_delete", response_model=dict)
+@router.post("/manage_lgu/evacuation/{record_id}/force_delete", response_model=dict)
 def force_delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     # 1) Detach any barangays referencing this center
     linked = (

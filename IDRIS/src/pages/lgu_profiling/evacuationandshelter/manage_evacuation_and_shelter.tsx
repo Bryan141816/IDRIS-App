@@ -9,6 +9,7 @@ import LocationPickerModal from "../../../components/Page_Furniture/LocationPick
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import { Empty } from "antd";
+import type { AxiosError } from "axios";
 import { Barangay } from "../LGUofficer/LGUofficer";
 import { MapViewWithSearch } from "../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 /* ---------- helpers ---------- */
@@ -205,14 +206,17 @@ type Shelter = {
   }
 };
 
- const handleDeleteClick = async (id: string | number) => {
+
+const handleDeleteClick = async (id: string | number) => {
   setDropdownOpenId(null);
+
   const numId = Number(id);
   if (!Number.isFinite(numId)) {
     await Swal.fire("Error", "Invalid shelter ID.", "error");
     return;
   }
 
+  // Confirm delete first
   const result = await Swal.fire({
     title: "Delete shelter?",
     text: "This action cannot be undone!",
@@ -226,13 +230,62 @@ type Shelter = {
   if (!result.isConfirmed) return;
 
   try {
+    // Try normal delete
     await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
     await Swal.fire("Deleted!", "Shelter removed.", "success");
     fetchShelters();
-  } catch (err) {
-    await Swal.fire("Error", "Failed to delete shelter.", "error");
+  } catch (e) {
+    const err = e as AxiosError<any>;
+    const status = err?.response?.status;
+    const detail = (err?.response?.data as any)?.detail;
+
+    // If backend prevents delete because it's linked to barangays
+    if (status === 409) {
+      const detachConfirm = await Swal.fire({
+        title: "Shelter is linked to barangays",
+        html:
+          "Some barangays are linked to this evacuation center.<br/>" +
+          "Do you want to <b>detach</b> them and delete the shelter record?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Detach & Delete",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#2563eb",
+      });
+
+      if (!detachConfirm.isConfirmed) return;
+
+      try {
+        // Force delete = detach all barangays and remove center record
+        const resp = await API.post(
+          `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`
+        );
+
+        const count = resp?.data?.detached_count ?? 0;
+        await Swal.fire(
+          "Deleted!",
+          `Shelter deleted. Detached ${count} barangay link${count === 1 ? "" : "s"}.`,
+          "success"
+        );
+        fetchShelters();
+      } catch (e2) {
+        const err2 = e2 as AxiosError<any>;
+        const detail2 = (err2?.response?.data as any)?.detail;
+        await Swal.fire(
+          "Error",
+          detail2 || "Failed to detach and delete shelter.",
+          "error"
+        );
+      }
+      return;
+    }
+
+    // Other errors
+    await Swal.fire("Error", detail || "Failed to delete shelter.", "error");
   }
 };
+
+
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();

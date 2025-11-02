@@ -616,7 +616,17 @@ def _get_evac_by_id(db: Session, record_id: int) -> EvacuationCenter | None:
         .first()
     )
 
-@router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
+router = APIRouter(prefix="/manage_lgu", tags=["Manage LGU"])
+def _ec_pk(rec) -> str:
+    # Try common PK field names; extend if yours is different
+    return (
+        str(getattr(rec, "id", None))
+        or str(getattr(rec, "evacuation_id", None))
+        or str(getattr(rec, "evac_id", None))
+        or ""  # fallback to empty string so Cell.text is str
+    )
+
+@router.get("/get_evacuation", response_model=TableResponse)
 def get_evacuation(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -634,10 +644,14 @@ def get_evacuation(
         {"text": "Action", "width": "150px"},
     ]
 
-    order = (
-        EvacuationCenter.name.desc() if Name == "desc" else EvacuationCenter.name.asc()
+    order = EvacuationCenter.name.desc() if Name == "desc" else EvacuationCenter.name.asc()
+    records = (
+        db.query(EvacuationCenter)
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
     )
-    records = db.query(EvacuationCenter).order_by(order).limit(100).offset(offset).all()
 
     table_datas: List[dict] = []
     pageCount = page
@@ -649,49 +663,17 @@ def get_evacuation(
             pageCount += 1
             pages = {"page": pageCount, "row": []}
 
+        # Handle possible NULLs for lat/lng to avoid format crash
+        lat_txt = f"{record.lat:.6f}" if getattr(record, "lat", None) is not None else ""
+        lng_txt = f"{record.lng:.6f}" if getattr(record, "lng", None) is not None else ""
+
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=record.name,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=f"{record.lat:.6f}",
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=f"{record.lng:.6f}",
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.capacity),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.occupied),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
+            Cell(type="Hidden", text=_ec_pk(record), font_weight=0, color="#000", width="0px"),
+            Cell(type="Text", text=(record.name or ""), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=lat_txt, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=lng_txt, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(getattr(record, "capacity", 0)), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(getattr(record, "occupied", 0)), font_weight=500, color="#000", width="150px"),
             Cell(
                 type="Button",
                 text="View",
@@ -709,8 +691,6 @@ def get_evacuation(
 
     count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
-
 @router.post(
     "/lgu_profiling/manage_lgu/add_evacuation", response_model=EvacuationCenterOut
 )

@@ -466,11 +466,29 @@ const EvacuationAndShelter = () => {
                 <i className="fas fa-map-marked-alt"></i>View Shelter Status
               </button>
               <button
-                className="action-btn secondary"
-                onClick={() => navigate("/lgu_profiling/shelter_report_dashboard")}
-              >
-                <i className="fas fa-file-alt"></i>Generate Reports
-              </button>
+  className="action-btn secondary"
+  onClick={() => {
+    if (isSuperAdmin) {
+      // show all reports
+      navigate("/lgu_profiling/shelter_report_dashboard", {
+        state: { scope: "all" },
+      });
+    } else if (isLGUOfficer) {
+      // filter to my barangays
+      navigate("/lgu_profiling/shelter_report_dashboard", {
+        state: { scope: "mine", barangayIds: myBarangayIds },
+      });
+    } else {
+      // no access or empty by default
+      navigate("/lgu_profiling/shelter_report_dashboard", {
+        state: { scope: "none" },
+      });
+    }
+  }}
+>
+  <i className="fas fa-file-alt"></i>Generate Reports
+</button>
+
             </div>
           </section>
         )}

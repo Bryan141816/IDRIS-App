@@ -9,6 +9,7 @@ from data_schemas.distribution_planning import (
     RouteCreate,
     AssignTeam,
     UpdateRoute,
+    FinalizeRoute,
 )
 from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
@@ -19,6 +20,7 @@ import asyncio
 from create_notification import send_notifications_bulk, send_notification
 from datetime import datetime
 from models import (
+    DistributionRoute,
     TeamMembers,
     DistributionTeam,
     IndividualVolunteer,
@@ -28,12 +30,19 @@ from models import (
     InventoryItems,
     WarehouseZones,
 )
+from datetime import datetime, timezone
 
 
 router = APIRouter(
     tags=["distribution_planning"],
     dependencies=[
-        Depends(RoleChecker(["logistics admin", "superadmin", "generic"])),
+        Depends(RoleChecker(["logistics admin", "superadmin"])),
+    ],
+)
+router_generic = APIRouter(
+    tags=["distribution_planning"],
+    dependencies=[
+        Depends(RoleChecker(["generic", "superadmin"])),
     ],
 )
 
@@ -69,7 +78,6 @@ def send_team_notifications(team_data: dict):
                     "title": "New Team Assignment - Action Required",
                     "message": (
                         f"You have been assigned to {team_data['team_name']} as {team_member.role}. "
-                        f"Deployment Area: {team_data['deployment_area']}. "
                         f"Please accept or decline this assignment."
                     ),
                     # Include members_id in URL for easy extraction
@@ -160,7 +168,7 @@ def get_all_response(db: Session = Depends(get_db)):
 
 
 # New endpoints for volunteer responses
-@router.get("/distribution_planning/pending_assignments/{volunteer_id}")
+@router_generic.get("/distribution_planning/pending_assignments/{volunteer_id}")
 def get_pending_assignments(volunteer_id: int, db: Session = Depends(get_db)):
     """Get all pending team assignments for a volunteer"""
     pending = (
@@ -178,19 +186,13 @@ def get_pending_assignments(volunteer_id: int, db: Session = Depends(get_db)):
                 "team_id": team.team_id,
                 "team_name": team.team_name,
                 "role": member.role,
-                "deployment_area": team.deployment_area,
-                "assignment_duration": team.assignment_duration,
-                "starting_date": str(team.starting_date),
-                "assigned_at": (
-                    member.assigned_at.isoformat() if member.assigned_at else None
-                ),
             }
         )
 
     return results
 
 
-@router.put("/distribution_planning/respond_to_assignment/{members_id}")
+@router_generic.put("/distribution_planning/respond_to_assignment/{members_id}")
 async def respond_to_assignment(
     members_id: int, status: str, db: Session = Depends(get_db)
 ):
@@ -208,14 +210,13 @@ async def respond_to_assignment(
     if not team_member:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    if team_member.status != "pending":
+    if team_member.status == "accepted":
         raise HTTPException(
             status_code=400, detail=f"Assignment already {team_member.status}"
         )
 
     # Update team member status
     team_member.status = status
-    team_member.responded_at = datetime.now()
 
     # Update volunteer availability status
     volunteer = (
@@ -226,43 +227,51 @@ async def respond_to_assignment(
 
     if volunteer:
         if status == "accepted":
-            volunteer.availability_status = "assigned"  # Update to assigned
+            volunteer.availability_status = "assigned"
         elif status == "rejected":
-            volunteer.availability_status = "available"  # Keep or set back to available
+            volunteer.availability_status = "available"
 
     db.commit()
 
-    # Get team details for notification
+    # Get team details
     team = (
         db.query(DistributionTeam)
         .filter(DistributionTeam.team_id == team_member.team_id)
         .first()
     )
 
-    # Get volunteer name for the message
+    # ✅ Check if all team members accepted
+    all_accepted = (
+        db.query(TeamMembers)
+        .filter(
+            TeamMembers.team_id == team_member.team_id, TeamMembers.status != "accepted"
+        )
+        .count()
+        == 0
+    )
+
+    if all_accepted:
+
+        route = (
+            db.query(DistributionRoute)
+            .filter(DistributionRoute.team == team_member.team_id)
+            .first()
+        )
+
+        if route and route.status != "Active":
+            route.status = "Active"
+
+        db.commit()
+
     volunteer_name = (
         f"{volunteer.first_name} {volunteer.last_name}" if volunteer else "A volunteer"
     )
-
-    # Notify the admin who assigned them
-    if team_member.assigned_by:
-
-        admin_notification = {
-            "to": str(team_member.assigned_by),
-            "from_origin": "Volunteer Response",
-            "title": f"Assignment {status.title()}",
-            "message": f"{volunteer_name} has {status} the assignment to {team.team_name}.",
-            "url_redirect": f"/admin/distribution/teams/{team_member.team_id}",
-            "date": datetime.now(),
-            "isRead": False,
-        }
-
-        await send_notification(db, admin_notification)
 
     return {
         "message": f"Assignment {status} successfully",
         "status": status,
         "availability_status": volunteer.availability_status if volunteer else None,
+        "team_ready": all_accepted,
     }
 
 
@@ -438,3 +447,45 @@ def list_assigned_storage_by_category(
     ]
 
     return results
+
+
+@router.post("/distribution_planning/finalize_route")
+def finalize_route(
+    payload: FinalizeRoute,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    now = datetime.now(timezone.utc)
+    formatted = f"{now.month}{now.day}{str(now.year)[-2:]}"
+
+    route = (
+        db.query(DistributionRoute)
+        .filter(DistributionRoute.route_id == payload.route_id)
+        .first()
+    )
+    if not route:
+        raise HTTPException(status_code=400, detail="Route not found")
+
+    team = DistributionTeam(team_name=f"TEAM{formatted}")
+    db.add(team)
+    db.flush()
+    team_member = [
+        TeamMembers(team_id=team.team_id, member=i.volunteer_id, role=i.role)
+        for i in payload.team_members
+    ]
+    route.gathering_area = payload.gathering_area_name
+    route.gathering_lat = payload.gathering_area_lat
+    route.gathering_lng = payload.gathering_area_lng
+    route.team = team.team_id
+    route.status = "Waiting for volunteer acceptance"
+    db.add_all(team_member)
+    db.commit()
+
+    background_tasks.add_task(
+        send_team_notifications,
+        {"team_id": team.team_id, "team_name": team.team_name},
+    )
+
+    return {
+        "message": "Route is completed successfully",
+    }

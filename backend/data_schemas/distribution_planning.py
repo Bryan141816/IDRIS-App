@@ -25,7 +25,7 @@ class Volunteer(BaseModel):
 
 class VolunteerRecordOut(BaseModel):
     role: str
-    status: str  
+    status: str
     volunteer: Volunteer
 
 
@@ -65,3 +65,16 @@ class UpdateRoute(BaseModel):
     route_id: int
     status: str
     schedule: datetime
+
+
+class TeamMembers(BaseModel):
+    volunteer_id: int
+    role: str
+
+
+class FinalizeRoute(BaseModel):
+    route_id: int
+    gathering_area_name: str
+    gathering_area_lat: float
+    gathering_area_lng: float
+    team_members: List[TeamMembers]

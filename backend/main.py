@@ -90,13 +90,15 @@ app.include_router(real_time_handler.router)
 app.include_router(notification.router)
 app.include_router(ManageUsers.router)
 app.include_router(distributionAndplanning.router)
-
+app.include_router(distributionAndplanning.router_generic)
 app.include_router(donations_route.router, prefix="/donations", tags=["Donations"])
 app.include_router(donors_route.router, prefix="/donors", tags=["Donors"])
 
 app.include_router(lgu_officer_router)
 app.include_router(lgu_superadmin_router)
-app.include_router(manage_lgu_router.router, prefix="/lgu_profiling", tags=["Manage LGU"])
+app.include_router(
+    manage_lgu_router.router, prefix="/lgu_profiling", tags=["Manage LGU"]
+)
 
 # ❌ Removed admin/manage LGU routers
 # app.include_router(admin_lgu_router)

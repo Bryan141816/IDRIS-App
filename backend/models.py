@@ -175,7 +175,9 @@ class RAFIInfrastructure(Base):
     __tablename__ = "rafi_infrastructure"
 
     rafi_id = Column(Integer, primary_key=True, index=True, server_default=Identity())
-    lgu_id  = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False, index=True)  # ✅ FK to DB column
+    lgu_id = Column(
+        Integer, ForeignKey("lgu_records.lgu_id"), nullable=False, index=True
+    )  # ✅ FK to DB column
     rafi_name = Column(String(255), nullable=False)
     lat = Column(Float, nullable=False)
     lng = Column(Float, nullable=False)
@@ -184,7 +186,6 @@ class RAFIInfrastructure(Base):
 
     # Pair with LGURecords.rafi_points
     lgu = relationship("LGURecords", back_populates="rafi_points")
-
 
 
 class Hazard(Base):
@@ -286,6 +287,7 @@ class LGURecords(Base):
     )
 
     rafi_points = relationship("RAFIInfrastructure", back_populates="lgu")
+
 
 class BaranggayRecords(Base):
     __tablename__ = "baranggay_records"
@@ -1280,9 +1282,6 @@ class TeamMembers(Base):
     )
     role = Column(String(255), nullable=False)
     status = Column(String(20), default="pending", nullable=False)
-    assigned_at = Column(DateTime, server_default=func.now(), nullable=False)
-    responded_at = Column(DateTime, nullable=True)
-    assigned_by = Column(String(255), ForeignKey("users.user_id"), nullable=True)
 
     # Relationships
     team = relationship("DistributionTeam", back_populates="team_members")
@@ -1292,12 +1291,9 @@ class TeamMembers(Base):
 class DistributionTeam(Base):
     __tablename__ = "distribution_team"
     team_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    team_name = Column(String(255), nullable=False)
-    deployment_area = Column(String(255), nullable=False)
-    assignment_duration = Column(Integer, nullable=False)
-    starting_date = Column(Date)
+    team_name = Column(String(255))
     isActive = Column(Boolean, default=True)
-    status = Column(String(255), default="unassigned")
+    status = Column(String(255), default="waiting")
     team_members = relationship("TeamMembers", back_populates="team")
     routes = relationship("DistributionRoute", back_populates="assigned_team")
 

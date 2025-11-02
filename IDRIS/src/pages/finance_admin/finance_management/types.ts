@@ -52,6 +52,7 @@ export type OutflowItem = {
   date: string;
   purpose: string;
   inflow_source: string;
+  attachment?: File | string | null;
 };
 
 export type BudgetItem = {

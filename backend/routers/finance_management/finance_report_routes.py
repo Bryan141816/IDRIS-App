@@ -65,6 +65,7 @@ def list_records_all(
             "spend_category": rec.spend_category.value if rec.spend_category else None,
             "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
+            "attachment": rec.attachment,
         }
         for rec in records
     ]
@@ -102,6 +103,7 @@ def list_inflows(
             "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
             "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
+            "attachment": rec.attachment,
         }
         for rec in (inflows or [])
     ]
@@ -138,6 +140,7 @@ def list_outflows(
             "spend_category": rec.spend_category.value if rec.spend_category else None,
             "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
+            "attachment": rec.attachment,
         }
         for rec in (outflows or [])
     ]

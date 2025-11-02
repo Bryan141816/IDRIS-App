@@ -103,7 +103,7 @@ export default function FinanceReport({
           formatCurrency(r.amount),
           formatDateOnly(r.date),
           r.inflow_source || r.spend_category || "—",
-          r.description,
+          r.purpose,
           r.transaction_type,
         ])
       : [["No Data Found", "", "", "", "", "", ""]];
@@ -207,7 +207,7 @@ export default function FinanceReport({
                   <td className={`${styles.tableCell} ${styles.amount}`}>{formatCurrency(f.amount)}</td>
                   <td className={styles.tableCell}>{formatDateOnly(f.date)}</td>
                   <td className={styles.tableCell}>{f.inflow_source || f.spend_category || "—"}</td>
-                  <td className={styles.tableCell}>{f.description}</td>
+                  <td className={styles.tableCell}>{f.purpose}</td>
                   <td className={styles.tableCell}>{f.transaction_type}</td>
                 </tr>
               ))}

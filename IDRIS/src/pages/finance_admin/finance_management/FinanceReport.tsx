@@ -37,7 +37,7 @@ const normalizeRow = (r: any): Finance => ({
   date: r.date ?? r.donation_date ?? r.created_at ?? new Date().toISOString().slice(0, 10),
   inflow_source: r.inflow_source,
   spend_category: r.spend_category,
-  description: r.description ?? r.notes ?? "—",
+  purpose: r.description ?? r.notes ?? "—",
   transaction_type: String(r.transaction_type ?? r.donation_type ?? r.type ?? "UNKNOWN"),
 });
 
@@ -175,9 +175,9 @@ export async function buildFinanceReportPDFBlob(
         fmtMoney(r.amount, currency),
         fmtDate(r.date),
         r.inflow_source || r.spend_category || "—",
-        String(r.description ?? "—").length > 120
-          ? String(r.description).slice(0, 117) + "..."
-          : String(r.description ?? "—"),
+        String(r.purpose ?? "—").length > 120
+          ? String(r.purpose).slice(0, 117) + "..."
+          : String(r.purpose ?? "—"),
         String(r.transaction_type || "").replace(/_/g, " "),
       ])
     : [["No Data Found", "", "", "", "", "", ""]];
@@ -391,7 +391,7 @@ export function printFinanceHTMLReportFromRows(
         <td class="right">${new Intl.NumberFormat("en-PH", { style: "currency", currency }).format(r.amount || 0)}</td>
         <td>${fmtDate(r.date)}</td>
         <td>${r.inflow_source || r.spend_category || "—"}</td>
-        <td>${r.description ?? "—"}</td>
+        <td>${r.purpose ?? "—"}</td>
         <td>${String(r.transaction_type || "").replace(/_/g, " ")}</td>
       </tr>
     `).join("")

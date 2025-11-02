@@ -50,6 +50,7 @@ class FinanceRecordCRUD:
             purpose=payload.purpose,
             spend_category = SpendCategory(payload.spend_category),
             inflow_source=payload.inflow_source,
+            attachment=payload.attachment,
         )
         db.add(obj)
         db.commit()
@@ -126,6 +127,8 @@ class FinanceRecordCRUD:
             obj.spend_category = patch.spend_category
         if patch.purpose is not None:
             obj.purpose = patch.purpose
+        if patch.attachment is not None:
+            obj.attachment = patch.attachment
 
         db.add(obj)
         db.commit()

@@ -12,6 +12,8 @@ import {
   validate,
   inflowSourceOptions,
   strip_underscores,
+  normalizeInflowType,
+  getAttachmentSrc,
 } from './helpers';
 
 import {
@@ -20,15 +22,15 @@ import {
 
 const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
   const fd = new FormData();
-  if (isUpdate) { fd.append("finance_id", String(form.finance_id)); }
-  fd.append('counterparty', form.counterparty!);
+  if (isUpdate && form.finance_id != null) fd.append("finance_id", String(form.finance_id));
+  if (form.counterparty) fd.append('counterparty', form.counterparty);
   fd.append('transaction_type', normalizeTransactionType("INFLOW"));
-  fd.append('amount', String(Number(form.amount)));
-  fd.append('date', form.date!); // "YYYY-MM-DD"
+  fd.append('amount', String(Number(form.amount ?? 0)));
+  if (form.date) fd.append('date', String(form.date)); // "YYYY-MM-DD"
   if (form.purpose) fd.append('purpose', form.purpose);
-  fd.append('inflow_source', form.inflow_source!);
-  fd.append('inflow_type', form.inflow_type!);
-  if (form.attachment) {
+  if (form.inflow_source) fd.append('inflow_source', form.inflow_source);
+  if (form.inflow_type) fd.append('inflow_type', form.inflow_type);
+  if (form.attachment instanceof File) {
     fd.append('attachment', form.attachment);
   }
   return fd;
@@ -52,11 +54,21 @@ const InflowModal: React.FC<{
         inflow_source:
           initial?.inflow_source == null
             ? undefined
-            : initial.inflow_source as InflowItem["inflow_source"],
+            : (initial.inflow_source as InflowItem["inflow_source"]),
+        inflow_type: normalizeInflowType(initial?.inflow_type as any), // ← add this
         date: toDateInput(initial?.date as any),
       });
     }
   }, [open, initial]);
+
+  const [previewSrc, setPreviewSrc] = useState<string>('');
+  useEffect(() => {
+    const src = getAttachmentSrc?.(form.attachment) ?? '';
+    setPreviewSrc(src);
+    return () => {
+      if (src && src.startsWith('blob:')) URL.revokeObjectURL(src);
+    };
+  }, [form.attachment]);
 
   if (!open) return null;
 
@@ -116,115 +128,135 @@ const InflowModal: React.FC<{
               {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
             </h3>
 
-            {/* {mode != "edit" && */}
-            <div className="form-group">
-              <label>Inflow Source</label>
-              <select
-                disabled={readOnly}
-                value={String(form.inflow_source ?? "")}
-                onChange={e =>
-                  setForm({
-                    ...form,
-                    inflow_source: e.target.value as InflowItem["inflow_source"],
-                  })
-                }
-              >
-                <option value="" disabled>
-                  Select source
-                </option>
-                {inflowSourceOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* } */}
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Source</label>
-                <input
-                  disabled={readOnly}
-                  type="text"
-                  placeholder="Enter funding source"
-                  value={form.counterparty || ""}
-                  onChange={e => setForm({ ...form, counterparty: e.target.value })}
-                />
-              </div>
-            }
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Amount (PHP)</label>
-                <input
-                  disabled={readOnly}
-                  type="number"
-                  min={0}
-                  placeholder="Enter amount"
-                  value={form.amount ?? ""}
-                  onChange={e => setForm({ ...form, amount: +e.target.value })}
-                />
-              </div>
-            }
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Date Received</label>
-                <input
-                  disabled={readOnly}
-                  type="date"
-                  value={form.date || ""}
-                  onChange={e => setForm({ ...form, date: e.target.value })}
-                />
-              </div>
-            }
-
-            <div className="form-group">
-              <label>Purpose</label>
-              <textarea
-                disabled={readOnly}
-                placeholder="Enter purpose"
-                value={form.purpose || ""}
-                onChange={e => setForm({ ...form, purpose: e.target.value })}
-              />
-            </div>
-            <div className="form-group">
-              <label>Inflow Type</label>
-                <select
-                  disabled={readOnly}
-                  value={form.inflow_type || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, inflow_type: e.target.value })
-                  }
-                >
-                  <option value="" disabled>
-                    Select type
-                  </option>
-                  <option value="CASH">Cash</option>
-                  <option value="CHECK">Check</option>
-                </select>
-              </div>
-            {form.inflow_type === "CHECK" && (
+            {/* ========= VIEW-ONLY: show just the attachment ========== */}
+            {mode === 'view' ? (
               <div className="form-group">
                 <label>Attachment</label>
-                {mode === 'view' && form.attachment ? (
-                  <img src={`http://127.0.0.1:8000/${form.attachment}`} alt="Attachment" style={{ maxWidth: '100%' }} />
+                {form.attachment ? (
+                  <div className="attachment-preview">
+                    <img
+                      src={previewSrc}
+                      alt="Attachment preview"
+                      style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                    />
+                    {previewSrc && (
+                      <a
+                        href={previewSrc}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="download-link"
+                        style={{ display: 'inline-block', marginTop: 8 }}
+                      >
+                        Open full size
+                      </a>
+                    )}
+                  </div>
                 ) : (
+                  <span>No attachment</span>
+                )}
+              </div>
+            ) : (
+              /* ========= ADD/EDIT: original fields ========= */
+              <>
+                <div className="form-group">
+                  <label>Inflow Source</label>
+                  <select
+                    disabled={readOnly}
+                    value={String(form.inflow_source ?? "")}
+                    onChange={e =>
+                      setForm({
+                        ...form,
+                        inflow_source: e.target.value as InflowItem["inflow_source"],
+                      })
+                    }
+                  >
+                    <option value="" disabled>Select source</option>
+                    {inflowSourceOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Source</label>
+                  <input
+                    disabled={readOnly}
+                    type="text"
+                    placeholder="Enter funding source"
+                    value={form.counterparty || ""}
+                    onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Amount (PHP)</label>
+                  <input
+                    disabled={readOnly}
+                    type="number"
+                    min={0}
+                    placeholder="Enter amount"
+                    value={form.amount ?? ""}
+                    onChange={e => setForm({ ...form, amount: +e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Date Received</label>
+                  <input
+                    disabled={readOnly}
+                    type="date"
+                    value={form.date || ""}
+                    onChange={e => setForm({ ...form, date: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Purpose</label>
+                  <textarea
+                    disabled={readOnly}
+                    placeholder="Enter purpose"
+                    value={form.purpose || ""}
+                    onChange={e => setForm({ ...form, purpose: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Inflow Type</label>
+                  <select
+                    disabled={readOnly}
+                    value={form.inflow_type || ""}
+                    onChange={(e) =>
+                      setForm({ ...form, inflow_type: e.target.value })
+                    }
+                  >
+                    <option value="" disabled>Select type</option>
+                    <option value="CASH">Cash</option>
+                    <option value="CHECK">Check</option>
+                  </select>
+                </div>
+
+                {/* Attachment input ONLY for add/edit */}
+                <div className="form-group">
+                  <label>Attachment</label>
                   <input
                     disabled={readOnly}
                     type="file"
+                    accept="image/*"
                     onChange={(e) =>
-                      setForm({ ...form, attachment: e.target.files?.[0] })
+                      setForm({ ...form, attachment: e.target.files?.[0] || undefined })
                     }
                   />
-                )}
-              </div>
+                </div>
+              </>
             )}
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="secondary-btn" onClick={onClose}>Cancel</button>
+            <button type="button" className="secondary-btn" onClick={onClose}>
+              {mode === 'view' ? 'Close' : 'Cancel'}
+            </button>
             {mode !== 'view' && (
               <button type="submit" className="primary-btn">
                 {mode === 'edit' ? 'Update' : 'Save'}
@@ -313,8 +345,8 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td>{row.purpose}</td>
                 <td>
-                  <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>
-                  <button className="action-btn" onClick={() => open('view', row)}>View</button>
+                  {/* <button className="action-btn" onClick={() => open('edit', row)}>Edit</button> */}
+                  <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
                 </td>
               </tr>
             ))}

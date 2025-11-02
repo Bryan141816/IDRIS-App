@@ -2,16 +2,17 @@ import React, { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import {
   createOutflowFinanceRecord,
-  UpdateReportData, // make sure this exists in your API handler
+  UpdateReportData, // still available if you use it elsewhere
 } from '../../../API_Handler/finance_management_handler';
 import { OutflowItem, InflowItem, BudgetItem } from './types';
 import { FilterModal } from './FilterModal';
-import { formatCurrency, stripToNumber } from '../../helpers';
+import { formatCurrency } from '../../helpers';
 import {
   toDateInput,
   validate,
   spendCategoryOptions,
   inflowSourceOptions,
+  getAttachmentSrc,
 } from './helpers';
 
 import { withSwal } from '../../withSwal';
@@ -26,13 +27,16 @@ const buildFormData = (form: Partial<OutflowItem>, isUpdate = false) => {
   if (form.purpose) fd.append('purpose', form.purpose);
   fd.append('spend_category', form.spend_category!);
   if (form.inflow_source) fd.append('inflow_source', form.inflow_source);
+  if (form.attachment instanceof File) {
+    fd.append('attachment', form.attachment);
+  }
   return fd;
 };
 
 // ---------- Modal ----------
 const OutflowModal: React.FC<{
   open: boolean;
-  mode: 'add' | 'edit' | 'view';
+  mode: 'add' | 'view';            // <-- no 'edit'
   initial?: Partial<OutflowItem>;
   inflows: InflowItem[];
   budgetData: BudgetItem[];
@@ -64,10 +68,9 @@ const OutflowModal: React.FC<{
     let clampedNow = false;
 
     setForm(prev => {
-      // If no source, force 0 and clear clamped flag
       if (!form.inflow_source) {
         if ((prev.amount ?? 0) !== 0) {
-          clampedNow = true; // optional toast if you want when clearing
+          clampedNow = true;
         }
         return { ...prev, amount: 0 };
       }
@@ -80,7 +83,6 @@ const OutflowModal: React.FC<{
       return prev;
     });
 
-    // Notify only when we *actually* clamped and throttle repeats
     if (clampedNow && Date.now() - lastClampRef.current > 400) {
       lastClampRef.current = Date.now();
       setWasClamped(true);
@@ -96,11 +98,22 @@ const OutflowModal: React.FC<{
     }
   }, [form.inflow_source, budgetData, form.amount]);
 
+  useEffect(() => {
+    let objectUrl = '';
+    if (form.attachment instanceof File) {
+      objectUrl = URL.createObjectURL(form.attachment);
+    }
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [form.attachment]);
+
   if (!open) return null;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readOnly) return;
+
     const errors = validate(form);
     if (errors.length) {
       await Swal.fire({ icon: 'warning', title: 'Check the form', text: errors.join(' ') });
@@ -117,23 +130,14 @@ const OutflowModal: React.FC<{
       await Swal.fire({ icon: 'warning', title: 'Invalid amount', text: 'Select an Inflow source first.' });
       return;
     }
+
     const fd = buildFormData(form);
     const created = await withSwal('Saving expense…', () => createOutflowFinanceRecord(fd));
     onSave?.(created);
     onClose();
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const fd = new FormData();
-    fd.append('finance_id', String((form as any).finance_id));
-    const updated = await withSwal('Updating expense…', () => UpdateReportData(fd));
-    onSave?.(updated);
-    onClose();
-  };
-
-  const onSubmit = mode === 'edit' ? handleUpdate : handleCreate;
+  const onSubmit = mode === 'add' ? handleCreate : undefined;
 
   return (
     <div className="modal-overlay">
@@ -141,125 +145,143 @@ const OutflowModal: React.FC<{
         <div className="modal-header"><button className="close-btn" onClick={onClose}>×</button></div>
         <form onSubmit={onSubmit}>
           <div className="modal-content">
-            <h3>{mode === 'add' ? 'Record New Expense' : mode === 'edit' ? 'Edit Expense' : 'View Expense'}</h3>
+            <h3>
+              {mode === 'add' ? 'Record New Expense' : 'View Attachment'}
+            </h3>
 
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Spend Category</label>
-                <select
-                  disabled={readOnly}
-                  value={form.spend_category || ''}
-                  onChange={e => setForm({ ...form, spend_category: e.target.value as OutflowItem['spend_category'] })}
-                >
-                  <option value="" disabled>Select category</option>
-                  {spendCategoryOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            }
+            {/* ADD mode: full form */}
+            {mode === 'add' && (
+              <>
+                <div className="form-group">
+                  <label>Spend Category</label>
+                  <select
+                    disabled={readOnly}
+                    value={form.spend_category || ''}
+                    onChange={e => setForm({ ...form, spend_category: e.target.value as OutflowItem['spend_category'] })}
+                  >
+                    <option value="" disabled>Select category</option>
+                    {spendCategoryOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Inflow Source</label>
-                <select
-                  disabled={readOnly}
-                  value={form.inflow_source || ''}
-                  onChange={e => setForm({ ...form, inflow_source: e.target.value as InflowItem['inflow_source'] })}
-                >
-                  <option value="" disabled>Select source</option>
-                  {inflowSourceOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            }
+                <div className="form-group">
+                  <label>Inflow Source</label>
+                  <select
+                    disabled={readOnly}
+                    value={form.inflow_source || ''}
+                    onChange={e => setForm({ ...form, inflow_source: e.target.value as InflowItem['inflow_source'] })}
+                  >
+                    <option value="" disabled>Select source</option>
+                    {inflowSourceOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Amount (PHP):</label>
+                <div className="form-group">
+                  <label>Amount (PHP):</label>
+                  <input
+                    disabled={readOnly}
+                    type="text"
+                    min={0}
+                    placeholder="Enter amount"
+                    value={form.amount ?? ''}
+                    onChange={e => setForm({ ...form, amount: hasSource ? +e.target.value : 0 })}
+                  />
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className={`hint ${wasClamped ? 'warning' : ''}`}
+                  >
+                    {form.inflow_source
+                      ? wasClamped
+                        ? `Amount adjusted to max: ${formatCurrency(amountLimit)}`
+                        : `Max for this source: ${formatCurrency(amountLimit)}`
+                      : 'Amount stays 0 until a source is selected.'}
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label>Vendor/Supplier</label>
+                  <input
+                    disabled={readOnly}
+                    type="text"
+                    placeholder="Enter vendor name"
+                    value={form.counterparty || ''}
+                    onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Date</label>
+                  <input
+                    disabled={readOnly}
+                    type="date"
+                    value={form.date || ''}
+                    onChange={e => setForm({ ...form, date: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    disabled={readOnly}
+                    placeholder="Enter description"
+                    value={form.purpose || ''}
+                    onChange={e => setForm({ ...form, purpose: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* ATTACHMENT: view-only shows preview; add shows file input */}
+            <div className="form-group">
+              <label>Attachment</label>
+
+              {mode === 'view' ? (
+                form.attachment ? (
+                  <div className="attachment-preview">
+                    <img
+                      src={getAttachmentSrc(form.attachment)}
+                      alt="Attachment preview"
+                      style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                    />
+                    <a
+                      href={getAttachmentSrc(form.attachment)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="download-link"
+                      style={{ display: 'inline-block', marginTop: 8 }}
+                    >
+                      Open full size
+                    </a>
+                  </div>
+                ) : (
+                  <span>No attachment</span>
+                )
+              ) : (
                 <input
                   disabled={readOnly}
-                  type="text"
-                  min={0}
-                  placeholder="Enter amount"
-                  value={form.amount ?? ''}
-                  onChange={e => setForm({ ...form, amount: hasSource ? +e.target.value : 0 })}
-                // onFocus={() => {
-                //   if (!hasSource) {
-                //     Swal.fire({
-                //       icon: 'info',
-                //       title: 'Pick an inflow source first',
-                //       text: 'Amount will remain 0 until you choose an inflow source.',
-                //       timer: 1800,
-                //       showConfirmButton: false,
-                //     });
-                //   }
-                // }}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setForm({ ...form, attachment: e.target.files?.[0] || null })
+                  }
                 />
-                <span
-                  role="status"
-                  aria-live="polite"
-                  className={`hint ${wasClamped ? 'warning' : ''}`}
-                >
-                  {form.inflow_source
-                    ? wasClamped
-                      ? `Amount adjusted to max: ${formatCurrency(amountLimit)}`
-                      : `Max for this source: ${formatCurrency(amountLimit)}`
-                    : 'Amount stays 0 until a source is selected.'}
-                </span>
-              </div>
-            }
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Vendor/Supplier</label>
-                <input
-                  disabled={readOnly}
-                  type="text"
-                  placeholder="Enter vendor name"
-                  value={form.counterparty || ''}
-                  onChange={e => setForm({ ...form, counterparty: e.target.value })}
-                />
-              </div>
-            }
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  disabled={readOnly}
-                  type="date"
-                  value={form.date || ''}
-                  onChange={e => setForm({ ...form, date: e.target.value })}
-                />
-              </div>
-            }
-
-            {mode != "edit" &&
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  disabled={readOnly}
-                  placeholder="Enter description"
-                  value={form.purpose || ''}
-                  onChange={e => setForm({ ...form, purpose: e.target.value })}
-                />
-              </div>
-            }
-
+              )}
+            </div>
           </div>
 
           <div className="modal-actions">
             <button className="secondary-btn" type="button" onClick={onClose}>Cancel</button>
             {mode !== 'view' && (
-              <button className="primary-btn" type="submit">
-                {mode === 'edit' ? 'Update' : 'Save'}
-              </button>
+              <button className="primary-btn" type="submit">Save</button>
             )}
           </div>
         </form>
@@ -277,13 +299,13 @@ const OutflowsSection: React.FC<{
 }> = ({ outflows = [], inflows = [], budgetData = [], refetchData }) => {
   const [rows, setRows] = useState<OutflowItem[]>(outflows);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
+  const [modalMode, setModalMode] = useState<'add' | 'view'>('add');   // <-- no 'edit'
   const [selected, setSelected] = useState<OutflowItem | undefined>();
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
   useEffect(() => { setRows(outflows); }, [outflows]);
 
-  const open = (mode: 'add' | 'edit' | 'view', row?: OutflowItem) => {
+  const open = (mode: 'add' | 'view', row?: OutflowItem) => {
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
@@ -303,7 +325,6 @@ const OutflowsSection: React.FC<{
     }
   };
 
-  // same upsert pattern as InflowSection
   const upsertRow = (item: OutflowItem) => {
     setRows(prev => {
       const idx = prev.findIndex(r => String((r as any).finance_id) === String((item as any).finance_id));
@@ -347,8 +368,8 @@ const OutflowsSection: React.FC<{
                 <td>{new Date(row.date).toLocaleDateString()}</td>
                 <td>{row.purpose}</td>
                 <td>
-                  <button className="action-btn" onClick={() => open('edit', row)}>Edit</button>
-                  <button className="action-btn" onClick={() => open('view', row)}>View</button>
+                  {/* Only view (attachment) */}
+                  <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
                 </td>
               </tr>
             ))}
@@ -365,10 +386,8 @@ const OutflowsSection: React.FC<{
         onClose={() => setModalOpen(false)}
         onSave={(saved) => {
           setModalOpen(false);
-          upsertRow(saved as OutflowItem);
-          if (refetchData) {
-            refetchData();
-          }
+          if (saved) upsertRow(saved as OutflowItem);
+          if (refetchData) refetchData();
         }}
       />
       <FilterModal

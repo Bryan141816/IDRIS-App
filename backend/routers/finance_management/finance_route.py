@@ -62,7 +62,22 @@ def create_inflow_record(
 def create_outflow_record(
     payload: OutflowFinanceRecordCreate = Depends(OutflowFinanceRecordCreate.as_form),
     db: Session = Depends(get_db),
+    attachment: Optional[UploadFile] = File(None),
 ):
+    if attachment:
+        # Save the attachment to the media directory
+        media_dir = Path("media/finance_checks")
+        media_dir.mkdir(parents=True, exist_ok=True)
+
+        # Sanitize and generate a unique filename
+        file_extension = Path(attachment.filename).suffix
+        safe_filename = f"{uuid.uuid4().hex}{file_extension}"
+        file_path = media_dir / safe_filename
+
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(attachment.file, buffer)
+        payload.attachment = str(file_path)
+        
     try:
         obj = FinanceRecordCRUD.create_outflow_record(db, payload)
         return obj
@@ -104,7 +119,25 @@ def get_outflows(page: int = 0, limit: int = 100, db: Session = Depends(get_db))
     return outflows
 
 @router_admin.patch( "/update_record", response_model=FinanceRecordRead, summary="Update editable fields of a finance record" )
-def update_finance_record(patch: FinanceRecordUpdate = Depends(FinanceRecordUpdate.as_form), db: Session = Depends(get_db)):
+def update_finance_record(
+    patch: FinanceRecordUpdate = Depends(FinanceRecordUpdate.as_form), 
+    db: Session = Depends(get_db),
+    attachment: Optional[UploadFile] = File(None),
+):
+    if attachment:
+        # Save the attachment to the media directory
+        media_dir = Path("media/finance_checks")
+        media_dir.mkdir(parents=True, exist_ok=True)
+
+        # Sanitize and generate a unique filename
+        file_extension = Path(attachment.filename).suffix
+        safe_filename = f"{uuid.uuid4().hex}{file_extension}"
+        file_path = media_dir / safe_filename
+
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(attachment.file, buffer)
+        patch.attachment = str(file_path)
+
     obj = FinanceRecordCRUD.update(db, patch.finance_id, patch)
     if not obj:
         raise HTTPException(status_code=404, detail="Finance record not found")

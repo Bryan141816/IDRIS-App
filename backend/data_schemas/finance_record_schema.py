@@ -59,6 +59,7 @@ class OutflowFinanceRecordCreate(BaseModel):
     date: date  # expects "YYYY-MM-DD" from the form
     spend_category: SpendCategory =  Field(default=SpendCategory.ADMINISTRATIVE)
     inflow_source: InflowSource = Field(default=InflowSource.MONETARY_DONATIONS)
+    attachment: Optional[str] = None
 
     @classmethod
     def as_form(
@@ -91,6 +92,7 @@ class FinanceRecordUpdate(BaseModel):
     date: Optional[date] = None
     inflow_source: Optional[InflowSource] = None
     spend_category: Optional[SpendCategory] = None
+    attachment: Optional[str] = None
 
     @classmethod
     def as_form(
@@ -113,6 +115,7 @@ class FinanceRecordUpdate(BaseModel):
             date=_parse_date_maybe(date),
             inflow_source=inflow_source,
             spend_category=spend_category,
+            attachment=None, # Attachment is handled separately as a file upload
         )
         
 class FinanceRecordRead(FinanceRecordBase):
@@ -120,6 +123,7 @@ class FinanceRecordRead(FinanceRecordBase):
     date: datetime
     inflow_source: Optional[InflowSource] = None
     spend_category: Optional[SpendCategory] = None
+    attachment: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

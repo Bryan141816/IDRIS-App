@@ -45,6 +45,11 @@ export const urlToDataUrl = async (url: string): Promise<string | null> => {
 
 export const normalizeTransactionType = (_: string | null | undefined) => "INFLOW";
 
+export const normalizeInflowType = (
+  t?: string | null
+): InflowItem["inflow_type"] | undefined =>
+  t ? (String(t).trim().toUpperCase() as InflowItem["inflow_type"]) : undefined;
+
 export const inflowSourceOptions = Object.values(InflowSource).map(value => ({
   value,
   label: value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -108,47 +113,21 @@ export const getActionRequired = (data: FinanceRecordType) => {
 }
 
 
-// export const withSwal = async <T,>(loadingTitle: string, task: () => Promise<T>) => {
-//   try {
-//     // show loading
-//     void Swal.fire({
-//       title: loadingTitle,
-//       allowOutsideClick: false,
-//       didOpen: () => Swal.showLoading(),
-//       showConfirmButton: false,
-//     });
+const API_BASE =
+  (import.meta as any)?.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
-//     const result = await task();
-
-//     // switch to success (clear spinner first)
-//     Swal.hideLoading();
-//     await Swal.fire({
-//       icon: 'success',
-//       title: 'Success',
-//       text: 'Operation completed.',
-//       confirmButtonText: 'Great!',
-//       allowOutsideClick: true,
-//       showConfirmButton: true,
-//     });
-
-//     return result;
-//   } catch (error: any) {
-//     const message =
-//       error?.response?.data?.detail ||
-//       error?.message ||
-//       'An unexpected error occurred.';
-
-//     Swal.hideLoading();
-//     await Swal.fire({
-//       icon: 'error',
-//       title: 'Operation failed',
-//       text: message,
-//       confirmButtonText: 'OK',
-//       allowOutsideClick: true,
-//       showConfirmButton: true,
-//     });
-
-//     throw error;
-//   }
-//   // IMPORTANT: no 'finally Swal.close()' here
-// };
+export const getAttachmentSrc = (att: OutflowItem['attachment']) => {
+  if (!att) return '';
+  // If it's already a URL string
+  if (typeof att === 'string') {
+    // absolute URL already?
+    if (/^https?:\/\//i.test(att)) return att;
+    // otherwise prefix with API base
+    return `${API_BASE}/${att.replace(/^\/+/, '')}`;
+  }
+  // If it's a File (e.g., freshly selected but not uploaded)
+  if (att instanceof File) {
+    return URL.createObjectURL(att);
+  }
+  return '';
+};

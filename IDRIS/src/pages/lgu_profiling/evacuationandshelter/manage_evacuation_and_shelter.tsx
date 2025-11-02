@@ -37,6 +37,9 @@ const greenPinIcon = new L.Icon({
   popupAnchor: [1, -34],
 });
 
+/* ---------- local types ---------- */
+type LGUMin = { id: number; name: string };
+
 const EvacuationAndShelter = () => {
   const navigate = useNavigate();
   const evacuationCenterRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
@@ -161,22 +164,116 @@ const EvacuationAndShelter = () => {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [barangayList, setBarangayList] = useState<Barangay[]>([]);
 
+  // ===== Super Admin additions =====
+  const [lguList, setLguList] = useState<LGUMin[]>([]);
+  const [selectedLGUId, setSelectedLGUId] = useState<number | null>(null);
+  const [loadingBarangays, setLoadingBarangays] = useState<boolean>(false);
+
   // Keep your existing effect for when the register modal opens
+  // ---- NEW: utility to load LGUs ----
+const fetchLGUs = async () => {
+  try {
+    // ✅ new backend path
+    const res = await API.get<LGUMin[]>("/lgu_profiling/manage_lgu/lgu/list");
+    setLguList(res.data ?? []);
+  } catch (err: any) {
+    // optional fallback
+    if (err?.response?.status === 404) {
+      try {
+        const res2 = await API.get<LGUMin[]>("/lgu_profiling/lgu/list");
+        setLguList(res2.data ?? []);
+        return;
+      } catch (e2) {
+        console.error("LGU list (fallback) failed:", e2);
+      }
+    }
+    console.error("LGU list failed:", err);
+  }
+};
+
+// Keep your existing effect for when the register modal opens
+useEffect(() => {
+  if (isRegisterModalOpen) {
+    const fetch = async () => {
+      try {
+        if (isSuperAdmin) {
+          if (selectedLGUId != null) {
+            setLoadingBarangays(true);
+            const res = await API.get("/lgu_profiling/barangays", { params: { lgu_id: selectedLGUId } });
+            setBarangayList(res.data);
+            setLoadingBarangays(false);
+          } else {
+            // ✅ use helper instead of the old API call
+            await fetchLGUs();
+            setBarangayList([]);
+          }
+        } else {
+          const response = await API.get("/lgu_profiling/me/barangay_list");
+          setBarangayList(response.data);
+        }
+      } catch (e: any) {
+        console.error("Error fetching barangay / lgu: " + (e?.message || e));
+        setLoadingBarangays(false);
+      }
+    };
+    fetch();
+  }
+}, [isRegisterModalOpen, isSuperAdmin, selectedLGUId]);
+
   useEffect(() => {
     if (isRegisterModalOpen) {
       const fetch = async () => {
         try {
-          const response = await API.get("/lgu_profiling/me/barangay_list");
-        setBarangayList(response.data);
+          if (isSuperAdmin) {
+            // For Super Admin, if an LGU is already selected fetch its barangays
+            if (selectedLGUId != null) {
+              setLoadingBarangays(true);
+              const res = await API.get("/lgu_profiling/barangays", { params: { lgu_id: selectedLGUId } });
+              setBarangayList(res.data);
+              setLoadingBarangays(false);
+            } else {
+              // Load LGU list to allow selection
+              const lgus = await fetchLGUs(); 
+              setBarangayList([]); // wait until LGU is chosen
+            }
+          } else {
+            // LGU Officer flow (unchanged)
+            const response = await API.get("/lgu_profiling/me/barangay_list");
+            setBarangayList(response.data);
+          }
         } catch (e: any) {
-          console.error("Error fetching barangay: " + (e?.message || e));
+          console.error("Error fetching barangay / lgu: " + (e?.message || e));
+          setLoadingBarangays(false);
         }
       };
       fetch();
     }
-  }, [isRegisterModalOpen]);
+  }, [isRegisterModalOpen, isSuperAdmin, selectedLGUId]);
 
-  // NEW: fetch barangays on mount (so filtering works immediately)
+  // When Super Admin changes LGU while modal is open, refetch barangays
+  useEffect(() => {
+    const run = async () => {
+      if (!isRegisterModalOpen) return;
+      if (!isSuperAdmin) return;
+      if (selectedLGUId == null) {
+        setBarangayList([]);
+        return;
+      }
+      try {
+        setLoadingBarangays(true);
+        const res = await API.get("/lgu_profiling/manage_lgu/barangays", { params: { lgu_id: selectedLGUId } })
+
+        setBarangayList(res.data);
+      } catch (e) {
+        console.error("Error fetching barangays by LGU", e);
+      } finally {
+        setLoadingBarangays(false);
+      }
+    };
+    run();
+  }, [selectedLGUId, isRegisterModalOpen, isSuperAdmin]);
+
+  // NEW: fetch barangays on mount (so filtering works immediately for LGU Officer)
   useEffect(() => {
     const fetchMine = async () => {
       try {
@@ -188,8 +285,9 @@ const EvacuationAndShelter = () => {
         console.error("Error fetching my barangays:", e?.message || e);
       }
     };
-    fetchMine();
-  }, []);
+    // Only necessary for non-superadmin to drive filtering
+    if (!isSuperAdmin) fetchMine();
+  }, [isSuperAdmin]);
 
   const handleEditSave = async () => {
     if (!editModal) return;
@@ -466,29 +564,28 @@ const EvacuationAndShelter = () => {
                 <i className="fas fa-map-marked-alt"></i>View Shelter Status
               </button>
               <button
-  className="action-btn secondary"
-  onClick={() => {
-    if (isSuperAdmin) {
-      // show all reports
-      navigate("/lgu_profiling/shelter_report_dashboard", {
-        state: { scope: "all" },
-      });
-    } else if (isLGUOfficer) {
-      // filter to my barangays
-      navigate("/lgu_profiling/shelter_report_dashboard", {
-        state: { scope: "mine", barangayIds: myBarangayIds },
-      });
-    } else {
-      // no access or empty by default
-      navigate("/lgu_profiling/shelter_report_dashboard", {
-        state: { scope: "none" },
-      });
-    }
-  }}
->
-  <i className="fas fa-file-alt"></i>Generate Reports
-</button>
-
+                className="action-btn secondary"
+                onClick={() => {
+                  if (isSuperAdmin) {
+                    // show all reports
+                    navigate("/lgu_profiling/shelter_report_dashboard", {
+                      state: { scope: "all" },
+                    });
+                  } else if (isLGUOfficer) {
+                    // filter to my barangays
+                    navigate("/lgu_profiling/shelter_report_dashboard", {
+                      state: { scope: "mine", barangayIds: myBarangayIds },
+                    });
+                  } else {
+                    // no access or empty by default
+                    navigate("/lgu_profiling/shelter_report_dashboard", {
+                      state: { scope: "none" },
+                    });
+                  }
+                }}
+              >
+                <i className="fas fa-file-alt"></i>Generate Reports
+              </button>
             </div>
           </section>
         )}
@@ -631,6 +728,29 @@ const EvacuationAndShelter = () => {
               </div>
 
               <form className="center-form" onSubmit={handleSubmit}>
+                {/* SUPER ADMIN: LGU SELECTOR */}
+                {isSuperAdmin && (
+                  <div className="form-group">
+                    <label>LGU</label>
+                    <select
+                      value={selectedLGUId ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value ? Number(e.target.value) : NaN;
+                        setSelectedLGUId(Number.isFinite(v) ? v : null);
+                        // reset barangay selection when LGU changes
+                        setCenterForm((prev) => ({ ...prev, baranggay_id: -1 }));
+                      }}
+                    >
+                      <option value="">Select LGU</option>
+                      {lguList.map((lgu) => (
+                        <option key={lgu.id} value={lgu.id}>
+                          {lgu.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Center Name</label>
                   <input
@@ -647,7 +767,7 @@ const EvacuationAndShelter = () => {
                     <label>Barangay</label>
 
                     <select
-                      style={{ width: "210%" }}
+                      style={{ width: "205%" }}
                       value={centerForm.baranggay_id ?? ""}
                       onChange={(e) =>
                         setCenterForm((prev) => ({
@@ -655,10 +775,15 @@ const EvacuationAndShelter = () => {
                           baranggay_id: Number(e.target.value), // ✅ cast to number if your ID is numeric
                         }))
                       }
+                      disabled={isSuperAdmin && selectedLGUId == null}
                     >
-                      {barangayList.length === 0 ? (
+                      {loadingBarangays ? (
+                        <option disabled value="">
+                          Loading barangays...
+                        </option>
+                      ) : barangayList.length === 0 ? (
                         <option disabled value={-1}>
-                          Fetching data...
+                          {isSuperAdmin && selectedLGUId == null ? "Select an LGU first" : "Fetching data..."}
                         </option>
                       ) : (
                         <>

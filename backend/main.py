@@ -98,6 +98,7 @@ app.include_router(lgu_officer_router)
 app.include_router(lgu_superadmin_router)
 app.include_router(manage_lgu_router.router, prefix="/lgu_profiling", tags=["Manage LGU"])
 
+
 # ❌ Removed admin/manage LGU routers
 # app.include_router(admin_lgu_router)
 # app.include_router(manage_lgu.router)

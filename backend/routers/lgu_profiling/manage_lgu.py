@@ -29,8 +29,9 @@ from models import (
     EvacuationCenter,
     RAFIInfrastructure,
     LGURecords,
-    Hazard,
+    Hazard
 )
+from pydantic import BaseModel
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     ErrorResponse,
@@ -617,6 +618,23 @@ def _get_evac_by_id(db: Session, record_id: int) -> EvacuationCenter | None:
     )
 
 router = APIRouter(prefix="/manage_lgu", tags=["Manage LGU"])
+
+class LGUListOut(BaseModel):
+    id: int
+    name: str
+
+@router.get("/lgu/list", response_model=list[LGUListOut])
+def get_all_lgus(db: Session = Depends(get_db)):
+    # local import = fewer circular import headaches
+    from models import LGURecords
+
+    # pick the columns you need; order by name for UX
+    stmt = select(LGURecords.id, LGURecords.lgu_name).order_by(LGURecords.lgu_name.asc())
+    rows = db.execute(stmt).all()
+
+    # rows are tuples; map to your DTO
+    return [LGUListOut(id=row[0], name=row[1]) for row in rows]
+
 def _ec_pk(rec) -> str:
     # Try common PK field names; extend if yours is different
     return (
@@ -626,6 +644,49 @@ def _ec_pk(rec) -> str:
         or ""  # fallback to empty string so Cell.text is str
     )
 
+class BarangayMiniOut(BaseModel):
+    id: int
+    name: str
+    lat: float | None = None
+    lng: float | None = None
+    baranggay_pic: str | None = None
+    # keep key that your frontend expects for filtering:
+    evacucation_center_id: int | None = None  # (spelling preserved to match FE)
+
+@router.get("/barangays", response_model=list[BarangayMiniOut])
+def list_barangays_by_lgu(
+    lgu_id: int = Query(..., description="LGU id to filter barangays"),
+    db: Session = Depends(get_db),
+):
+    from models import BaranggayRecords  # local import avoids circulars
+
+    stmt = (
+        select(
+            BaranggayRecords.id,
+            BaranggayRecords.name,
+            BaranggayRecords.lat,
+            BaranggayRecords.lng,
+            BaranggayRecords.baranggay_pic,
+            BaranggayRecords.evacucation_center_id,
+        )
+        .where(BaranggayRecords.lgu_id == lgu_id)
+        .order_by(BaranggayRecords.name.asc())
+    )
+    rows = db.execute(stmt).all()
+
+    out: list[BarangayMiniOut] = []
+    for r in rows:
+        out.append(
+            BarangayMiniOut(
+                id=r[0],
+                name=r[1],
+                lat=float(r[2]) if r[2] is not None else None,
+                lng=float(r[3]) if r[3] is not None else None,
+                baranggay_pic=r[4],
+                evacucation_center_id=r[5],
+            )
+        )
+    return out
 @router.get("/get_evacuation", response_model=TableResponse)
 def get_evacuation(
     db: Session = Depends(get_db),

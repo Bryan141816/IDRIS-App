@@ -1,7 +1,16 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, ZoomControl } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Polyline,
+  ZoomControl,
+  CircleMarker,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 export interface MarkerType {
   lat: number;
@@ -35,7 +44,6 @@ const getIconByType = (type?: string) => {
   else if (type === "barangay") iconUrl = "/images/icons/baranggay.png";
   else if (type === "raffi") iconUrl = "/images/icons/raffi.png";
   else if (type === "hazard") iconUrl = "/images/icons/hazard.png";
-  // ✅ Use your green evac pin here
   else if (type === "evacuation") iconUrl = "/images/icons/evac.png";
 
   return L.icon({
@@ -59,6 +67,46 @@ const FitBounds: React.FC<{ markers: MarkerType[] }> = ({ markers }) => {
   return null;
 };
 
+/* ---------- FLY TO NEW CENTER ON CHANGE ---------- */
+const CenterOnChange: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!center) return;
+    map.flyTo(center, map.getZoom(), { duration: 0.75 });
+  }, [center, map]);
+  return null;
+};
+
+/* ---------- SUBTLE HALO TO EMPHASIZE FOCUS ---------- */
+const FocusHalo: React.FC<{ center: [number, number] }> = ({ center }) => {
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    setShow(true);
+    const t = setTimeout(() => setShow(false), 1200);
+    return () => clearTimeout(t);
+  }, [center[0], center[1]]);
+
+  if (!show) return null;
+
+  return (
+    <>
+      {/* inner dot */}
+      <CircleMarker
+        center={center}
+        radius={6}
+        pathOptions={{ color: "#3b82f6", weight: 2, fillOpacity: 0.9 }}
+      />
+      {/* soft outer ring */}
+      <CircleMarker
+        center={center}
+        radius={18}
+        pathOptions={{ color: "#3b82f6", weight: 2, opacity: 0.6, fillOpacity: 0.15 }}
+      />
+    </>
+  );
+};
+
 /* ---------- MAIN MAP COMPONENT ---------- */
 const MapView: React.FC<MapViewProps> = ({
   center = [0, 0],
@@ -72,11 +120,10 @@ const MapView: React.FC<MapViewProps> = ({
     <MapContainer
       center={center}
       zoom={9}
-      zoomControl={false} // disable default top-left zoom control
+      zoomControl={false}
       style={{ height: "100%", width: "100%" }}
       attributionControl={false}
     >
-      {/* ✅ Add Zoom Buttons to bottom-right */}
       <ZoomControl position="bottomright" />
 
       <TileLayer
@@ -84,10 +131,13 @@ const MapView: React.FC<MapViewProps> = ({
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
       />
 
-      {/* Auto-fit map if enabled */}
       {fitBounds && <FitBounds markers={markers} />}
 
-      {/* Render markers */}
+      {/* animate + emphasize when parent updates center */}
+      <CenterOnChange center={center} />
+      <FocusHalo center={center} />
+
+      {/* Markers */}
       {markers.map((point, index) => (
         <Marker
           key={index}
@@ -100,7 +150,6 @@ const MapView: React.FC<MapViewProps> = ({
           <Popup>
             <div>
               <strong>{point.lguName || point.name || "Unnamed Location"}</strong>
-              {/* ✅ Show capacity only for evacuation centers */}
               {point.type === "evacuation" && (
                 <>
                   <br />
@@ -112,7 +161,7 @@ const MapView: React.FC<MapViewProps> = ({
         </Marker>
       ))}
 
-      {/* ✅ Draw connecting line from barangay to nearest evacuation center */}
+      {/* route line from barangay to nearest evac center */}
       {pathCoordinates && <Polyline positions={pathCoordinates} color="red" />}
     </MapContainer>
   );

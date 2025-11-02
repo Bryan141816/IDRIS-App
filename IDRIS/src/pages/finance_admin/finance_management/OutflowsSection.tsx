@@ -208,7 +208,7 @@ const OutflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Vendor/Supplier</label>
+                  <label>Vendor / Counterparty</label>
                   <input
                     disabled={readOnly}
                     type="text"
@@ -219,7 +219,7 @@ const OutflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Date</label>
+                  <label>Date Spent</label>
                   <input
                     disabled={readOnly}
                     type="date"
@@ -229,7 +229,7 @@ const OutflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Description</label>
+                  <label>Description / Remarks</label>
                   <textarea
                     disabled={readOnly}
                     placeholder="Enter description"

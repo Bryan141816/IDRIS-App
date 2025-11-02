@@ -10,11 +10,18 @@ def _normalize(s: str) -> str:
 def _fuzzy_match(enum_class: Type[T], sn: str) -> Optional[T]:
     # Use enum names so we don't need to import the specific classes
     if enum_class.__name__ == "SpendCategory":
-        if "emergency" in sn:   return enum_class["EMERGENCY"]
-        if "food" in sn or "water" in sn: return enum_class["FOOD_WATER"]
-        if "transport" in sn:   return enum_class["TRANSPORTATION"]
-        if "equip" in sn:       return enum_class["EQUIPMENT"]
-        if "admin" in sn:       return enum_class["ADMINISTRATIVE"]
+        if "relief" in sn: return enum_class["RELIEF_SUPPLIES"]
+        if "medical" in sn: return enum_class["MEDICAL_NEEDS"]
+        if "search" in sn or "rescue" in sn: return enum_class["SEARCH_RESCUE"]
+        if "shelter" in sn or "housing" in sn: return enum_class["SHELTER_HOUSING"]
+        if "transport" in sn: return enum_class["TRANSPORTATION"]
+        if "equipment" in sn: return enum_class["EQUIPMENT"]
+        if "rental" in sn or "purchase" in sn: return enum_class["RENTAL_PURCHASE"]
+        if "volunteer" in sn: return enum_class["VOLUNTEER_SUPPORT"]
+        if "cleanup" in sn or "debris" in sn: return enum_class["CLEANUP_DEBRIS_REMOVAL"]
+        if "security" in sn: return enum_class["SECURITY_SERVICES"]
+        if "infrastructure" in sn or "repairs" in sn: return enum_class["INFRASTRUCTURE_REPAIRS"]  
+          
     elif enum_class.__name__ == "InflowSource":
         if "government" in sn:  return enum_class["GOVERNMENT_GRANTS_AND_FUNDS"]
         if "private" in sn:     return enum_class["PRIVATE_SECTOR_CONTRIBUTIONS"]

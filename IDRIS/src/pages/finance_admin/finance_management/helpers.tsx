@@ -57,7 +57,7 @@ export const inflowSourceOptions = Object.values(InflowSource).map(value => ({
 
 export const spendCategoryOptions = Object.values(SpendCategory).map(value => ({
   value,
-  label: value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+  label: value,
 }));
 
 export const strip_underscores = (s: string) => s.replace(/_/g, " ");

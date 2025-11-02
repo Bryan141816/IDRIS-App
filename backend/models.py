@@ -1430,11 +1430,17 @@ def create_inventory_item(mapper, connection, target):
 
 
 class SpendCategory(enum.Enum):
-    EMERGENCY = "EMERGENCY SUPPLIES"
-    FOOD_WATER = "FOOD AND WATER"
-    TRANSPORTATION = "TRANSPORTATION"
-    EQUIPMENT = "EQUIPMENT"
-    ADMINISTRATIVE = "ADMINISTRATIVE"
+    RELIEF_SUPPLIES = "Relief Supplies"
+    MEDICAL_NEEDS = "Medical Needs"
+    SEARCH_RESCUE = "Search & Rescue"
+    SHELTER_HOUSING = "Shelter & Housing"
+    TRANSPORTATION = "Transportation"
+    EQUIPMENT = "Equipment"
+    RENTAL_PURCHASE = "Rental/Purchase"
+    VOLUNTEER_SUPPORT = "Volunteer Support"
+    CLEANUP_DEBRIS_REMOVAL = "Clean-up & Debris Removal"
+    SECURITY_SERVICES = "Security Services"
+    INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs"
 
 class InflowSource(enum.Enum):
     GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS"

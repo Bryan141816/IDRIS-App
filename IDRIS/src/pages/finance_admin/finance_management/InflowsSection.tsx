@@ -159,7 +159,7 @@ const InflowModal: React.FC<{
               /* ========= ADD/EDIT: original fields ========= */
               <>
                 <div className="form-group">
-                  <label>Inflow Source</label>
+                  <label>Budget Source</label>
                   <select
                     disabled={readOnly}
                     value={String(form.inflow_source ?? "")}
@@ -180,7 +180,7 @@ const InflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Source</label>
+                  <label>Payee (recipient)</label>
                   <input
                     disabled={readOnly}
                     type="text"
@@ -213,7 +213,7 @@ const InflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Purpose</label>
+                  <label>Remarks / Description</label>
                   <textarea
                     disabled={readOnly}
                     placeholder="Enter purpose"
@@ -223,7 +223,7 @@ const InflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Inflow Type</label>
+                  <label>Payment Method</label>
                   <select
                     disabled={readOnly}
                     value={form.inflow_type || ""}

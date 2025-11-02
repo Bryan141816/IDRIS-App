@@ -57,7 +57,7 @@ class OutflowFinanceRecordCreate(BaseModel):
     amount: Decimal
     purpose: Optional[str] = None
     date: date  # expects "YYYY-MM-DD" from the form
-    spend_category: SpendCategory =  Field(default=SpendCategory.ADMINISTRATIVE)
+    spend_category: SpendCategory =  Field(default=SpendCategory.RELIEF_SUPPLIES)
     inflow_source: InflowSource = Field(default=InflowSource.MONETARY_DONATIONS)
     attachment: Optional[str] = None
 
@@ -69,7 +69,7 @@ class OutflowFinanceRecordCreate(BaseModel):
         amount: Decimal = Form(...),
         purpose: Optional[str] = Form(None),
         date: date = Form(...),
-        spend_category: SpendCategory = Form(SpendCategory.ADMINISTRATIVE),
+        spend_category: SpendCategory = Form(SpendCategory.RELIEF_SUPPLIES),
         inflow_source: InflowSource = Form(InflowSource.MONETARY_DONATIONS),
 
     ) -> "OutflowFinanceRecordCreate":

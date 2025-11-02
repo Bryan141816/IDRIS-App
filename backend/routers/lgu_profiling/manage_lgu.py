@@ -53,7 +53,7 @@ from schemas import (
 
 # ---------------- Router & (optional) local app for dev ----------------
 router = APIRouter(tags=["manage_lgu"])
-
+    
 # If you mount this router from a separate main.py, DELETE the block below.
 app = FastAPI()
 app.add_middleware(
@@ -708,7 +708,7 @@ def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)
     return db_record
 
 
-@router.put("/manage_lgu/update_evacuation/{record_id}")
+@router.put("/update_evacuation/{record_id}")
 def update_evacuation(
     record_id: int, payload: EvacuationCenterUpdate, db: Session = Depends(get_db)
 ):
@@ -746,7 +746,7 @@ def linked_barangays(record_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.delete("/manage_lgu/delete_evacuation/{record_id}", response_model=dict)
+@router.delete("/delete_evacuation/{record_id}", response_model=dict)
 def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     # block delete if referenced by barangays
     refs = (
@@ -776,7 +776,7 @@ def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
 # ---- Force delete: detach linked barangays, then delete the center ----
-@router.post("/manage_lgu/evacuation/{record_id}/force_delete", response_model=dict)
+@router.post("/evacuation/{record_id}/force_delete", response_model=dict)
 def force_delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     # 1) Detach any barangays referencing this center
     linked = (

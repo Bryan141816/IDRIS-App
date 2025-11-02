@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 from pathlib import Path
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile, HTTPException
 from typing import Optional, List, Union
 import shutil
@@ -12,6 +12,8 @@ from models import (
     IndividualVolunteer,
     VolunteerCertificate,
     VolunteerStatus,
+    User,
+    UserProfile,
 )
 from data_schemas.individual_volunteer_schema import (
     IndividualVolunteerCreate,
@@ -128,24 +130,48 @@ class IndividualVolunteerCRUD:
 
     @staticmethod
     def get_all_volunteers(db: Session) -> List[IndividualVolunteer]:
+        """
+        Get all volunteers with their user profile images eagerly loaded.
+        Uses joinedload to prevent N+1 query issues.
+        """
         try:
-            return db.query(IndividualVolunteer).all()
+            return (
+                db.query(IndividualVolunteer)
+                .options(
+                    joinedload(IndividualVolunteer.user)
+                    .joinedload(User.user_profile)
+                )
+                .all()
+            )
         except Exception:
             raise HTTPException(status_code=500, detail="Error fetching volunteers")
 
     @staticmethod
     def get_volunteer_by_id(db: Session, volunteer_id: int) -> Optional[IndividualVolunteer]:
+        """
+        Get volunteer by ID with user profile eagerly loaded.
+        """
         return (
             db.query(IndividualVolunteer)
+            .options(
+                joinedload(IndividualVolunteer.user)
+                .joinedload(User.user_profile)
+            )
             .filter(IndividualVolunteer.volunteer_id == volunteer_id)
             .first()
         )
 
     @staticmethod
     def get_volunteer_by_user_id(db: Session, user_id: int) -> Optional[IndividualVolunteer]:
-        """Get volunteer profile by user_id (most recent)."""
+        """
+        Get volunteer profile by user_id (most recent) with user profile eagerly loaded.
+        """
         return (
             db.query(IndividualVolunteer)
+            .options(
+                joinedload(IndividualVolunteer.user)
+                .joinedload(User.user_profile)
+            )
             .filter(IndividualVolunteer.user_id == user_id)
             .order_by(IndividualVolunteer.created_at.desc().nullslast())
             .first()

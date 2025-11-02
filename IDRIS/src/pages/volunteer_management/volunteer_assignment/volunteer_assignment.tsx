@@ -832,11 +832,11 @@ const VolunteerAssignmentPage: React.FC = () => {
                     return {
                         id: String(area.id),
                         name: area.title,
-                        description: area.description ?? '',
+                        description: area.description ?? "",
                         requiredSkills: reqSkills,
                         maxVolunteers: Number(area.max_volunteers) || 0,
                         currentVolunteers: 0,
-                        location: area.location ?? '',
+                        location: area.location ?? "",
                         start_at: startISO,
                         end_at: endISO,
                         lifecycle,
@@ -846,12 +846,16 @@ const VolunteerAssignmentPage: React.FC = () => {
 
                 setAreas(mappedAreas);
 
+                // ✅ UPDATED: Calculate volunteer count by summing volunteer_count
                 const perArea = await Promise.all(
                     mappedAreas.map(async (area) => {
                         try {
                             const rows = await listTaskAssignments(Number(area.id));
                             const map: Record<string, number> = {};
                             const assignedKeys: string[] = [];
+
+                            // ✅ NEW: Sum up the volunteer_count for each assignment
+                            let totalVolunteerCount = 0;
 
                             rows.forEach((r) => {
                                 const key =
@@ -860,11 +864,25 @@ const VolunteerAssignmentPage: React.FC = () => {
                                         : `org-${r.organization_volunteer_id}`;
                                 map[key] = r.id;
                                 assignedKeys.push(key);
+
+                                // ✅ NEW: Add the volunteer_count to total
+                                const volunteerCount = r.volunteer_count || 1;
+                                totalVolunteerCount += volunteerCount;
                             });
 
-                            return { id: area.id, map, assignedKeys };
+                            return {
+                                id: area.id,
+                                map,
+                                assignedKeys,
+                                totalVolunteerCount,  // ✅ NEW: Return the sum
+                            };
                         } catch {
-                            return { id: area.id, map: {}, assignedKeys: [] as string[] };
+                            return {
+                                id: area.id,
+                                map: {},
+                                assignedKeys: [] as string[],
+                                totalVolunteerCount: 0,  // ✅ NEW: Default to 0
+                            };
                         }
                     })
                 );
@@ -875,6 +893,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                 });
                 setAssignmentMap(newAssignmentMap);
 
+                // ✅ UPDATED: Use totalVolunteerCount instead of assignedKeys.length
                 setAreas((prev) =>
                     prev.map((a) => {
                         const found = perArea.find((x) => x.id === a.id);
@@ -882,7 +901,7 @@ const VolunteerAssignmentPage: React.FC = () => {
                         return {
                             ...a,
                             assignedVolunteers: found.assignedKeys,
-                            currentVolunteers: found.assignedKeys.length,
+                            currentVolunteers: found.totalVolunteerCount,  // ✅ CHANGED: Use totalVolunteerCount instead of length
                         };
                     })
                 );
@@ -893,6 +912,7 @@ const VolunteerAssignmentPage: React.FC = () => {
 
         fetchPrograms();
     }, []);
+
 
 
     const removeSkillChip = (skill: string) => {
@@ -1134,18 +1154,21 @@ const VolunteerAssignmentPage: React.FC = () => {
                                                 </button>
                                             </div>
 
+                                            {/* Volunteers Assigned */}
                                             <div className="mb-3">
                                                 <div className="flex justify-between text-sm mb-1">
                                                     <span>Volunteers Assigned</span>
-                                                    <span className={area.currentVolunteers >= area.maxVolunteers ? 'text-red-600' : 'text-gray-600'}>
+                                                    <span className={area.currentVolunteers >= area.maxVolunteers ? "text-red-600" : "text-gray-600"}>
                                                         {area.currentVolunteers} / {area.maxVolunteers}
                                                     </span>
                                                 </div>
                                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                                     <div
-                                                        className={`h-2 rounded-full transition-all ${area.currentVolunteers >= area.maxVolunteers ? 'bg-red-500' : 'bg-blue-600'
+                                                        className={`h-2 rounded-full transition-all ${area.currentVolunteers >= area.maxVolunteers ? "bg-red-500" : "bg-blue-600"
                                                             }`}
-                                                        style={{ width: `${Math.min((area.currentVolunteers / area.maxVolunteers) * 100, 100)}%` }}
+                                                        style={{
+                                                            width: `${Math.min((area.currentVolunteers / area.maxVolunteers) * 100, 100)}%`,
+                                                        }}
                                                     />
                                                 </div>
                                             </div>

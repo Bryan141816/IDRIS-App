@@ -12,14 +12,11 @@ import { Empty } from "antd";
 import type { AxiosError } from "axios";
 import { Barangay } from "../LGUofficer/LGUofficer";
 import { MapViewWithSearch } from "../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
+
 /* ---------- helpers ---------- */
 const toL = (v?: string | null) => (v ?? "").toLowerCase();
 
-const deriveStatus = (
-  occupied: number,
-  capacity: number,
-  provided?: string,
-) => {
+const deriveStatus = (occupied: number, capacity: number, provided?: string) => {
   // prefer provided status if present
   const s = (provided ?? "").trim();
   if (s) return s;
@@ -42,18 +39,10 @@ const greenPinIcon = new L.Icon({
 
 const EvacuationAndShelter = () => {
   const navigate = useNavigate();
-  const evacuationCenterRef = useRef<HTMLDivElement>(
-    null,
-  ) as React.RefObject<HTMLDivElement>;
-  const statusSectionRef = useRef<HTMLDivElement>(
-    null,
-  ) as React.RefObject<HTMLDivElement>;
-  const barangayAssignmentRef = useRef<HTMLDivElement>(
-    null,
-  ) as React.RefObject<HTMLDivElement>;
-  const reportsRef = useRef<HTMLDivElement>(
-    null,
-  ) as React.RefObject<HTMLDivElement>;
+  const evacuationCenterRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const statusSectionRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const barangayAssignmentRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const reportsRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
 
@@ -61,13 +50,19 @@ const EvacuationAndShelter = () => {
     name: "",
     capacity: "",
     occupied: 0,
-    baranggay_id: 0,
+    baranggay_id: -1, // use -1 consistently for "no selection"
     lat: 0,
     lng: 0,
   });
 
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+
+  const isSuperAdmin = userType === "superadmin" || userRoles.includes("superadmin");
+  const isLGUOfficer = userType === "lguofficer" || userRoles.includes("lgu officer");
+
+  // We'll keep your existing barangayList, but also store quick lookup IDs
+  const [myBarangayIds, setMyBarangayIds] = useState<number[]>([]);
 
   type barangayminiinfo = {
     id: number;
@@ -76,20 +71,33 @@ const EvacuationAndShelter = () => {
     lng: number;
     baranggay_pic: string;
   };
-type Shelter = {
-  id: number; // ← numeric and reliable for URLs
-  name: string;
-  lat: number;
-  lng: number;
-  capacity: number;
-  occupied: number;
-  barangay?: barangayminiinfo[] | null;
-};
+
+  type Shelter = {
+    id: number; // ← numeric and reliable for URLs
+    name: string;
+    lat: number;
+    lng: number;
+    capacity: number;
+    occupied: number;
+    barangay?: barangayminiinfo[] | null;
+  };
 
   const [shelters, setShelters] = useState<Shelter[]>([]);
-  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(
-    null,
-  );
+  const displayedShelters = React.useMemo(() => {
+    if (isSuperAdmin) return shelters;
+
+    // LGU Officer: show shelters assigned to *any* of my barangays
+    if (isLGUOfficer && myBarangayIds.length > 0) {
+      return shelters.filter(
+        (s) => Array.isArray(s.barangay) && s.barangay?.some((b) => myBarangayIds.includes(b.id)),
+      );
+    }
+
+    // Default: if not superadmin and not LGU officer, show none
+    return [];
+  }, [isSuperAdmin, isLGUOfficer, myBarangayIds, shelters]);
+
+  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(null);
 
   type EditModalType = {
     id: string | number;
@@ -99,8 +107,7 @@ type Shelter = {
   const [editModal, setEditModal] = useState<EditModalType>(null);
 
   const isLguAdmin =
-    (userType === "admin" && userRoles.includes("lgu officer")) ||
-    userRoles.includes("superadmin");
+    (userType === "admin" && userRoles.includes("lgu officer")) || userRoles.includes("superadmin");
 
   const scrollToSection = (ref: React.RefObject<HTMLDivElement>) =>
     ref.current?.scrollIntoView({
@@ -109,9 +116,7 @@ type Shelter = {
       inline: "nearest",
     });
 
-  const handleFormChange = (e: {
-    target: { name: any; value: any; type: any };
-  }) => {
+  const handleFormChange = (e: { target: { name: any; value: any; type: any } }) => {
     const { name, value, type } = e.target;
     setCenterForm((prev) => ({
       ...prev,
@@ -130,16 +135,15 @@ type Shelter = {
   const handleDropdownToggle = (id: string | number) =>
     setDropdownOpenId(id === dropdownOpenId ? null : id);
 
- const handleEditClick = (id: string | number, occupied: number, capacity: number) => {
-  const numId = Number(id);
-  if (!Number.isFinite(numId)) {
-    console.warn("Invalid shelter id on edit:", id);
-    return;
-  }
-  setEditModal({ id: numId, occupied, capacity });
-  setDropdownOpenId(null);
-};
-
+  const handleEditClick = (id: string | number, occupied: number, capacity: number) => {
+    const numId = Number(id);
+    if (!Number.isFinite(numId)) {
+      console.warn("Invalid shelter id on edit:", id);
+      return;
+    }
+    setEditModal({ id: numId, occupied, capacity });
+    setDropdownOpenId(null);
+  };
 
   const handleEditInput = (e: { target: { value: any } }) =>
     setEditModal((modal) =>
@@ -156,142 +160,147 @@ type Shelter = {
 
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [barangayList, setBarangayList] = useState<Barangay[]>([]);
+
+  // Keep your existing effect for when the register modal opens
   useEffect(() => {
     if (isRegisterModalOpen) {
       const fetch = async () => {
         try {
           const response = await API.get("/lgu_profiling/me/barangay_list");
-          setBarangayList(response.data);
+        setBarangayList(response.data);
         } catch (e: any) {
-          console.error("Error fetching barangay: " + e.mesasge);
+          console.error("Error fetching barangay: " + (e?.message || e));
         }
       };
       fetch();
     }
   }, [isRegisterModalOpen]);
+
+  // NEW: fetch barangays on mount (so filtering works immediately)
+  useEffect(() => {
+    const fetchMine = async () => {
+      try {
+        const response = await API.get("/lgu_profiling/me/barangay_list");
+        const list: Barangay[] = Array.isArray(response.data) ? response.data : [];
+        setBarangayList(list); // keeps UI dropdown happy too
+        setMyBarangayIds(list.map((b) => b.id));
+      } catch (e: any) {
+        console.error("Error fetching my barangays:", e?.message || e);
+      }
+    };
+    fetchMine();
+  }, []);
+
   const handleEditSave = async () => {
-  if (!editModal) return;
+    if (!editModal) return;
 
-  if (editModal.occupied < 0 || editModal.occupied > editModal.capacity) {
-    await Swal.fire({
-      icon: "error",
-      title: "Invalid Value",
-      text: "Evacuee count must be between 0 and capacity.",
-    });
-    return;
-  }
+    if (editModal.occupied < 0 || editModal.occupied > editModal.capacity) {
+      await Swal.fire({
+        icon: "error",
+        title: "Invalid Value",
+        text: "Evacuee count must be between 0 and capacity.",
+      });
+      return;
+    }
 
-  const shelterToUpdate = shelters.find((s) => s.id === Number(editModal.id));
-  if (!shelterToUpdate) {
-    await Swal.fire("Error", "Shelter not found.", "error");
-    return;
-  }
+    const shelterToUpdate = shelters.find((s) => s.id === Number(editModal.id));
+    if (!shelterToUpdate) {
+      await Swal.fire("Error", "Shelter not found.", "error");
+      return;
+    }
 
-  try {
-    await API.put(
-      `/lgu_profiling/manage_lgu/update_evacuation/${Number(editModal.id)}`,
-      {
+    try {
+      await API.put(`/lgu_profiling/manage_lgu/update_evacuation/${Number(editModal.id)}`, {
         name: shelterToUpdate.name,
         lat: shelterToUpdate.lat,
         lng: shelterToUpdate.lng,
         capacity: shelterToUpdate.capacity,
         occupied: editModal.occupied,
-      }
-    );
-    setEditModal(null);
-    await Swal.fire("Success", "Evacuee count updated!", "success");
-    fetchShelters();
-  } catch (err) {
-    await Swal.fire("Error", "Failed to update evacuees.", "error");
-  }
-};
-
-
-const handleDeleteClick = async (shelter: {
-  id: number;
-  name: string;
-  barangay?: { name: string }[] | null;
-}) => {
-  setDropdownOpenId(null);
-
-  const numId = Number(shelter.id);
-  const shelterName = shelter.name || "this shelter";
-  const barangayName =
-    shelter.barangay && shelter.barangay.length > 0
-      ? shelter.barangay[0].name
-      : "no assigned barangay";
-
-  if (!Number.isFinite(numId)) {
-    await Swal.fire("Error", "Invalid shelter ID.", "error");
-    return;
-  }
-
-  // First confirmation
-  const result = await Swal.fire({
-    title: `Delete "${shelterName}" ?`,
-    text: "This action cannot be undone!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#e64949",
-    confirmButtonText: "Delete",
-    cancelButtonText: "Cancel",
-  });
-
-  if (!result.isConfirmed) return;
-
-  try {
-    // Normal delete first
-    await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
-    await Swal.fire("Deleted!", `"${shelterName}" has been removed.`, "success");
-    fetchShelters();
-  } catch (e) {
-    const err = e as AxiosError<any>;
-    const status = err?.response?.status;
-    const detail = (err?.response?.data as any)?.detail;
-
-    // If backend returns conflict (linked to barangay)
-    if (status === 409) {
-      const detachConfirm = await Swal.fire({
-        title: `"${shelterName}" is linked to Barangay ${barangayName}`,
-        html: `Do you want to <b>detach</b> it from Barangay <b>${barangayName}</b> and delete <b>${shelterName}</b> ?`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Detach & Delete",
-        cancelButtonText: "Cancel",
-        confirmButtonColor: "#2563eb",
       });
+      setEditModal(null);
+      await Swal.fire("Success", "Evacuee count updated!", "success");
+      fetchShelters();
+    } catch (err) {
+      await Swal.fire("Error", "Failed to update evacuees.", "error");
+    }
+  };
 
-      if (!detachConfirm.isConfirmed) return;
+  const handleDeleteClick = async (shelter: {
+    id: number;
+    name: string;
+    barangay?: { name: string }[] | null;
+  }) => {
+    setDropdownOpenId(null);
 
-      try {
-        // Force delete = detach barangay + delete evacuation
-        const resp = await API.post(
-          `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`
-        );
-        const count = resp?.data?.detached_count ?? 0;
+    const numId = Number(shelter.id);
+    const shelterName = shelter.name || "this shelter";
+    const barangayName =
+      shelter.barangay && shelter.barangay.length > 0 ? shelter.barangay[0].name : "no assigned barangay";
 
-        await Swal.fire(
-              "Deleted!",
-              `"${shelterName}" was successfully deleted and unlinked from Barangay ${barangayName}.`,
-          "success"
-        );
-        fetchShelters();
-      } catch (e2) {
-        const err2 = e2 as AxiosError<any>;
-        const detail2 = (err2?.response?.data as any)?.detail;
-        await Swal.fire(
-          "Error",
-          detail2 || `Failed to detach and delete "${shelterName}".`,
-          "error"
-        );
-      }
+    if (!Number.isFinite(numId)) {
+      await Swal.fire("Error", "Invalid shelter ID.", "error");
       return;
     }
 
-    await Swal.fire("Error", detail || "Failed to delete shelter.", "error");
-  }
-};
+    // First confirmation
+    const result = await Swal.fire({
+      title: `Delete "${shelterName}" ?`,
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e64949",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+    });
 
+    if (!result.isConfirmed) return;
+
+    try {
+      // Normal delete first
+      await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
+      await Swal.fire("Deleted!", `"${shelterName}" has been removed.`, "success");
+      fetchShelters();
+    } catch (e) {
+      const err = e as AxiosError<any>;
+      const status = err?.response?.status;
+      const detail = (err?.response?.data as any)?.detail;
+
+      // If backend returns conflict (linked to barangay)
+      if (status === 409) {
+        const detachConfirm = await Swal.fire({
+          title: `"${shelterName}" is linked to Barangay ${barangayName}`,
+          html: `Do you want to <b>detach</b> it from Barangay <b>${barangayName}</b> and delete <b>${shelterName}</b>?`,
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Detach & Delete",
+          cancelButtonText: "Cancel",
+          confirmButtonColor: "#2563eb",
+        });
+
+        if (!detachConfirm.isConfirmed) return;
+
+        try {
+          // Force delete = detach barangay + delete evacuation
+          const resp = await API.post(`/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`);
+          const count = resp?.data?.detached_count ?? 0;
+
+          await Swal.fire(
+            "Deleted!",
+            `"${shelterName}" was successfully deleted and unlinked from Barangay ${barangayName}.`,
+            "success",
+          );
+          fetchShelters();
+        } catch (e2) {
+          const err2 = e2 as AxiosError<any>;
+          const detail2 = (err2?.response?.data as any)?.detail;
+          await Swal.fire("Error", detail2 || `Failed to detach and delete "${shelterName}".`, "error");
+        }
+        return;
+      }
+
+      await Swal.fire("Error", detail || "Failed to delete shelter.", "error");
+    }
+  };
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
@@ -302,19 +311,11 @@ const handleDeleteClick = async (shelter: {
         return;
       }
       if (!payload.lat || !payload.lng) {
-        await Swal.fire(
-          "Required",
-          "Please pick a location on the map.",
-          "warning",
-        );
+        await Swal.fire("Required", "Please pick a location on the map.", "warning");
         return;
       }
       if (Number(payload.occupied) < 0 || Number(payload.capacity) < 0) {
-        await Swal.fire(
-          "Error",
-          "Capacity and occupied must be non-negative.",
-          "error",
-        );
+        await Swal.fire("Error", "Capacity and occupied must be non-negative.", "error");
         return;
       }
       if (Number(payload.occupied) > Number(payload.capacity)) {
@@ -359,31 +360,31 @@ const handleDeleteClick = async (shelter: {
   }
 
   async function fetchShelters() {
-  try {
-    const response = await API.get("/lgu_profiling/api/get_evacuation");
+    try {
+      const response = await API.get("/lgu_profiling/api/get_evacuation");
 
-    const normalized: Shelter[] = (Array.isArray(response.data) ? response.data : []).map((r: any) => {
-      // Accept either `evacuation_id` or `id` from the backend
-      const rawId = r?.evacuation_id ?? r?.id;
-      const id = Number(rawId);
+      const normalized: Shelter[] = (Array.isArray(response.data) ? response.data : []).map((r: any) => {
+        // Accept either `evacuation_id` or `id` from the backend
+        const rawId = r?.evacuation_id ?? r?.id;
+        const id = Number(rawId);
 
-      return {
-        id: Number.isFinite(id) ? id : -1, // fallback to -1 so bad IDs are obvious
-        name: r?.name ?? "",
-        lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
-        lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
-        capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
-        occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
-        barangay: Array.isArray(r?.barangay) ? r.barangay : null,
-      };
-    });
+        return {
+          id: Number.isFinite(id) ? id : -1, // fallback to -1 so bad IDs are obvious
+          name: r?.name ?? "",
+          lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
+          lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
+          capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
+          occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
+          barangay: Array.isArray(r?.barangay) ? r.barangay : null,
+        };
+      });
 
-    setShelters(normalized);
-  } catch (e) {
-    console.error("Failed to fetch shelters", e);
-    // optional toast
+      setShelters(normalized);
+    } catch (e) {
+      console.error("Failed to fetch shelters", e);
+      // optional toast
+    }
   }
-}
 
   const getBarangayCoordinate = (id: number): [number, number] | null => {
     const b = barangayList.find((b) => b.id === id);
@@ -393,10 +394,8 @@ const handleDeleteClick = async (shelter: {
   useEffect(() => {
     fetchShelters();
   }, []);
-  const onLocationSelectSubmit = (
-    address: string,
-    coordinates: [number, number],
-  ) => {
+
+  const onLocationSelectSubmit = (address: string, coordinates: [number, number]) => {
     setCenterForm((prev) => ({
       ...prev,
       lat: coordinates[0],
@@ -416,8 +415,7 @@ const handleDeleteClick = async (shelter: {
             <div className="status-content">
               <h3>Shelters Occupied</h3>
               <p className="status-number">
-                {shelters.filter((s) => s.occupied > 0).length}/
-                {shelters.length}
+                {displayedShelters.filter((s) => s.occupied > 0).length}/{displayedShelters.length}
               </p>
               <span className="status-label">Assigned to shelters</span>
             </div>
@@ -429,11 +427,9 @@ const handleDeleteClick = async (shelter: {
             <div className="status-content">
               <h3>People in Shelters</h3>
               <p className="status-number">
-                {shelters.reduce((total, s) => total + s.occupied, 0)}
+                {displayedShelters.reduce((total, s) => total + s.occupied, 0)}
               </p>
-              <span className="status-label">
-                Across {shelters.length} locations
-              </span>
+              <span className="status-label">Across {displayedShelters.length} locations</span>
             </div>
           </div>
           <div className="status-card info">
@@ -444,20 +440,14 @@ const handleDeleteClick = async (shelter: {
               <h3>Available Capacity</h3>
               <p className="status-number">
                 {Math.round(
-                  (shelters.reduce(
-                    (total, s) => total + (s.capacity - s.occupied),
-                    0,
-                  ) /
-                    shelters.reduce((total, s) => total + s.capacity, 1)) *
+                  (displayedShelters.reduce((total, s) => total + (s.capacity - s.occupied), 0) /
+                    Math.max(1, displayedShelters.reduce((total, s) => total + s.capacity, 0))) *
                     100,
                 )}
                 %
               </p>
               <span className="status-label">
-                {shelters.reduce(
-                  (total, s) => total + (s.capacity - s.occupied),
-                  0,
-                )}{" "}
+                {displayedShelters.reduce((total, s) => total + (s.capacity - s.occupied), 0)}{" "}
                 available capacity
               </span>
             </div>
@@ -469,24 +459,15 @@ const handleDeleteClick = async (shelter: {
           <section className="quick-actions">
             <h2>Quick Actions</h2>
             <div className="action-buttons">
-              <button
-                className="action-btn primary"
-                onClick={() => setIsRegisterModalOpen(true)}
-              >
-                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation
-                Center
+              <button className="action-btn primary" onClick={() => setIsRegisterModalOpen(true)}>
+                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation Center
               </button>
-              <button
-                className="action-btn secondary"
-                onClick={() => scrollToSection(statusSectionRef)}
-              >
+              <button className="action-btn secondary" onClick={() => scrollToSection(statusSectionRef)}>
                 <i className="fas fa-map-marked-alt"></i>View Shelter Status
               </button>
               <button
                 className="action-btn secondary"
-                onClick={() =>
-                  navigate("/lgu_profiling/shelter_report_dashboard")
-                }
+                onClick={() => navigate("/lgu_profiling/shelter_report_dashboard")}
               >
                 <i className="fas fa-file-alt"></i>Generate Reports
               </button>
@@ -499,15 +480,14 @@ const handleDeleteClick = async (shelter: {
             <section className="map-section">
               <div className="section-header">
                 <h2>
-                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps
-                  and Occupancy
+                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps and Occupancy
                 </h2>
               </div>
               <div className="map-container">
                 <div className="maps-placeholder">
                   <MapView
                     center={[10.313924, 123.887082]}
-                    markers={shelters.map(({ lat, lng, name, capacity }) => ({
+                    markers={displayedShelters.map(({ lat, lng, name, capacity }) => ({
                       lat,
                       lng,
                       name,
@@ -529,89 +509,67 @@ const handleDeleteClick = async (shelter: {
           </div>
 
           <div className="shelter-list">
-            {shelters.length === 0 ? (
+            {displayedShelters.length === 0 ? (
               <Empty description="No shelters added yet" />
             ) : (
-              shelters.map(
-                ({ id, name, capacity, occupied, lat, lng, barangay }) => {
-                  const capacityPercent =
-                    capacity === 0
-                      ? 0
-                      : Math.min(100, Math.round((occupied / capacity) * 100));
-                  const statusLabel = deriveStatus(occupied, capacity);
+              displayedShelters.map(({ id, name, capacity, occupied, lat, lng, barangay }) => {
+                const capacityPercent =
+                  capacity === 0 ? 0 : Math.min(100, Math.round((occupied / capacity) * 100));
+                const statusLabel = deriveStatus(occupied, capacity);
 
-                  return (
-                    <div
-                      className="shelter-item"
-                      key={id}
-                      style={{ position: "relative" }}
-                    >
-                      <div className="shelter-info">
-                        <h4 className="shelter-title-row">
-                          <span>
-                            {name} ({lat}, {lng})
-                          </span>
-                          {isLguAdmin && (
-                            <>
-                              <button
-                                className="kebab-menu-btn"
-                                aria-label="Options"
-                                onClick={() => handleDropdownToggle(id)}
-                                type="button"
-                              >
-                                <span className="kebab-menu-icon">⋮</span>
-                              </button>
-                              {dropdownOpenId === id && (
-                                <div className="kebab-dropdown">
-                                  <button
-                                    className="kebab-dropdown-item"
-                                    onClick={() =>
-                                      handleEditClick(id, occupied, capacity)
-                                    }
-                                  >
-                                    <i className="fas fa-edit"></i> Edit
-                                  </button>
+                return (
+                  <div className="shelter-item" key={id} style={{ position: "relative" }}>
+                    <div className="shelter-info">
+                      <h4 className="shelter-title-row">
+                        <span>
+                          {name} ({lat}, {lng})
+                        </span>
+                        {isLguAdmin && (
+                          <>
+                            <button
+                              className="kebab-menu-btn"
+                              aria-label="Options"
+                              onClick={() => handleDropdownToggle(id)}
+                              type="button"
+                            >
+                              <span className="kebab-menu-icon">⋮</span>
+                            </button>
+                            {dropdownOpenId === id && (
+                              <div className="kebab-dropdown">
                                 <button
-  className="kebab-dropdown-item danger"
-  onClick={() => handleDeleteClick({ id, name, barangay })}
->
-  <i className="fas fa-trash-alt" /> Delete
-</button>
-
-
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </h4>
-                      </div>
-
-                      <div className="shelter-stats">
-                        <div className="capacity-bar">
-                          <div
-                            className="capacity-fill"
-                            style={{ width: `${capacityPercent}%` }}
-                          />
-                        </div>
-                        <span className="capacity-text">
-                          {occupied}/{capacity} people
-                        </span>
-                        <span className="capacity-percent">
-                          {capacityPercent}%
-                        </span>
-                      </div>
-
-                      <span className={`shelter-badge ${toL(statusLabel)}`}>
-                        Status: {statusLabel}
-                      </span>
-                      <span>
-                        Barangay Assigned:{" "}
-                        {barangay && String(barangay[0].name)}
-                      </span>
+                                  className="kebab-dropdown-item"
+                                  onClick={() => handleEditClick(id, occupied, capacity)}
+                                >
+                                  <i className="fas fa-edit"></i> Edit
+                                </button>
+                                <button
+                                  className="kebab-dropdown-item danger"
+                                  onClick={() => handleDeleteClick({ id, name, barangay })}
+                                >
+                                  <i className="fas fa-trash-alt" /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </h4>
                     </div>
-                  );
-                },
-              )
+
+                    <div className="shelter-stats">
+                      <div className="capacity-bar">
+                        <div className="capacity-fill" style={{ width: `${capacityPercent}%` }} />
+                      </div>
+                      <span className="capacity-text">
+                        {occupied}/{capacity} people
+                      </span>
+                      <span className="capacity-percent">{capacityPercent}%</span>
+                    </div>
+
+                    <span className={`shelter-badge ${toL(statusLabel)}`}>Status: {statusLabel}</span>
+                    <span>Barangay Assigned: {barangay && String(barangay[0]?.name)}</span>
+                  </div>
+                );
+              })
             )}
           </div>
         </section>
@@ -631,10 +589,7 @@ const handleDeleteClick = async (shelter: {
                 className="modal-input"
               />
               <div className="modal-actions">
-                <button
-                  onClick={handleEditModalClose}
-                  className="modal-btn cancel"
-                >
+                <button onClick={handleEditModalClose} className="modal-btn cancel">
                   Cancel
                 </button>
                 <button onClick={handleEditSave} className="modal-btn save">
@@ -650,13 +605,9 @@ const handleDeleteClick = async (shelter: {
             <div className="modal">
               <div className="modal-header">
                 <h3>
-                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation
-                  Center
+                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation Center
                 </h3>
-                <button
-                  className="modal-close"
-                  onClick={() => setIsRegisterModalOpen(false)}
-                >
+                <button className="modal-close" onClick={() => setIsRegisterModalOpen(false)}>
                   &times;
                 </button>
               </div>
@@ -698,15 +649,9 @@ const handleDeleteClick = async (shelter: {
                           {barangayList
                             .filter((item) => !item.evacucation_center_id) // show only barangays without evac center
                             .map((item) => (
-                              <option
-                                key={item.id}
-                                value={item.id}
-                                disabled={!(item.lat && item.lng)} // disable if no location
-                              >
+                              <option key={item.id} value={item.id} disabled={!(item.lat && item.lng)}>
                                 {item.name}
-                                {!item.lat || !item.lng
-                                  ? " (Missing some info)"
-                                  : ""}
+                                {!item.lat || !item.lng ? " (Missing some info)" : ""}
                               </option>
                             ))}
                         </>
@@ -722,18 +667,9 @@ const handleDeleteClick = async (shelter: {
                       type="text"
                       readOnly
                       placeholder="Select a location"
-                      value={
-                        centerForm.lat
-                          ? `${centerForm.lat}, ${centerForm.lng}`
-                          : ""
-                      }
+                      value={centerForm.lat ? `${centerForm.lat}, ${centerForm.lng}` : ""}
                     />
-                    <button
-                      type="button"
-                      className="map-btn"
-                      onClick={openPicker}
-                      title="Pick location on map"
-                    >
+                    <button type="button" className="map-btn" onClick={openPicker} title="Pick location on map">
                       <i className="fas fa-map-marker-alt" />
                     </button>
                   </div>
@@ -754,23 +690,14 @@ const handleDeleteClick = async (shelter: {
                   </div>
                 </div>
 
-                {editingId && (
-                  <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>
-                )}
+                {editingId && <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>}
 
                 <div className="modal-actions">
-                  <button
-                    type="button"
-                    className="modal-btn cancel"
-                    onClick={() => setIsRegisterModalOpen(false)}
-                  >
+                  <button type="button" className="modal-btn cancel" onClick={() => setIsRegisterModalOpen(false)}>
                     Cancel
                   </button>
                   <button type="submit" className="modal-btn save">
-                    <i className="fas fa-save"></i>{" "}
-                    {editingId
-                      ? "Update Evacuation Center"
-                      : "Save Evacuation Center"}
+                    <i className="fas fa-save"></i> {editingId ? "Update Evacuation Center" : "Save Evacuation Center"}
                   </button>
                 </div>
               </form>
@@ -786,9 +713,7 @@ const handleDeleteClick = async (shelter: {
               address: ``,
               coordinates: [-1000000, -1000000],
             }}
-            customCenter={
-              getBarangayCoordinate(centerForm.baranggay_id) ?? null
-            }
+            customCenter={getBarangayCoordinate(centerForm.baranggay_id) ?? null}
           ></MapViewWithSearch>
         )}
       </main>

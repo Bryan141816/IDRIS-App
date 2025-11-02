@@ -1221,3 +1221,11 @@ body.lgu-role .role-indicator.admin {
   background: #2563eb;
   color: #fff;
 }
+
+
+
+
+.shelter-status{
+
+  border:2px solid red !important;
+}

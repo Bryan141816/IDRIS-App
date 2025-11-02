@@ -29,8 +29,9 @@ from models import (
     EvacuationCenter,
     RAFIInfrastructure,
     LGURecords,
-    Hazard,
+    Hazard
 )
+from pydantic import BaseModel
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import (
     ErrorResponse,
@@ -53,7 +54,7 @@ from schemas import (
 
 # ---------------- Router & (optional) local app for dev ----------------
 router = APIRouter(tags=["manage_lgu"])
-
+    
 # If you mount this router from a separate main.py, DELETE the block below.
 app = FastAPI()
 app.add_middleware(
@@ -616,7 +617,77 @@ def _get_evac_by_id(db: Session, record_id: int) -> EvacuationCenter | None:
         .first()
     )
 
-@router.get("/lgu_profiling/manage_lgu/get_evacuation", response_model=TableResponse)
+router = APIRouter(prefix="/manage_lgu", tags=["Manage LGU"])
+
+class LGUListOut(BaseModel):
+    id: int
+    name: str
+
+@router.get("/lgu/list", response_model=list[LGUListOut])
+def get_all_lgus(db: Session = Depends(get_db)):
+    # local import = fewer circular import headaches
+    from models import LGURecords
+
+    # pick the columns you need; order by name for UX
+    stmt = select(LGURecords.id, LGURecords.lgu_name).order_by(LGURecords.lgu_name.asc())
+    rows = db.execute(stmt).all()
+
+    # rows are tuples; map to your DTO
+    return [LGUListOut(id=row[0], name=row[1]) for row in rows]
+
+def _ec_pk(rec) -> str:
+    # Try common PK field names; extend if yours is different
+    return (
+        str(getattr(rec, "id", None))
+        or str(getattr(rec, "evacuation_id", None))
+        or str(getattr(rec, "evac_id", None))
+        or ""  # fallback to empty string so Cell.text is str
+    )
+
+class BarangayMiniOut(BaseModel):
+    id: int
+    name: str
+    lat: float | None = None
+    lng: float | None = None
+    baranggay_pic: str | None = None
+    # keep key that your frontend expects for filtering:
+    evacucation_center_id: int | None = None  # (spelling preserved to match FE)
+
+@router.get("/barangays", response_model=list[BarangayMiniOut])
+def list_barangays_by_lgu(
+    lgu_id: int = Query(..., description="LGU id to filter barangays"),
+    db: Session = Depends(get_db),
+):
+    from models import BaranggayRecords  # local import avoids circulars
+
+    stmt = (
+        select(
+            BaranggayRecords.id,
+            BaranggayRecords.name,
+            BaranggayRecords.lat,
+            BaranggayRecords.lng,
+            BaranggayRecords.baranggay_pic,
+            BaranggayRecords.evacucation_center_id,
+        )
+        .where(BaranggayRecords.lgu_id == lgu_id)
+        .order_by(BaranggayRecords.name.asc())
+    )
+    rows = db.execute(stmt).all()
+
+    out: list[BarangayMiniOut] = []
+    for r in rows:
+        out.append(
+            BarangayMiniOut(
+                id=r[0],
+                name=r[1],
+                lat=float(r[2]) if r[2] is not None else None,
+                lng=float(r[3]) if r[3] is not None else None,
+                baranggay_pic=r[4],
+                evacucation_center_id=r[5],
+            )
+        )
+    return out
+@router.get("/get_evacuation", response_model=TableResponse)
 def get_evacuation(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
@@ -634,10 +705,14 @@ def get_evacuation(
         {"text": "Action", "width": "150px"},
     ]
 
-    order = (
-        EvacuationCenter.name.desc() if Name == "desc" else EvacuationCenter.name.asc()
+    order = EvacuationCenter.name.desc() if Name == "desc" else EvacuationCenter.name.asc()
+    records = (
+        db.query(EvacuationCenter)
+        .order_by(order)
+        .limit(100)
+        .offset(offset)
+        .all()
     )
-    records = db.query(EvacuationCenter).order_by(order).limit(100).offset(offset).all()
 
     table_datas: List[dict] = []
     pageCount = page
@@ -649,49 +724,17 @@ def get_evacuation(
             pageCount += 1
             pages = {"page": pageCount, "row": []}
 
+        # Handle possible NULLs for lat/lng to avoid format crash
+        lat_txt = f"{record.lat:.6f}" if getattr(record, "lat", None) is not None else ""
+        lng_txt = f"{record.lng:.6f}" if getattr(record, "lng", None) is not None else ""
+
         row_data = [
-            Cell(
-                type="Hidden",
-                text=str(record.id),
-                font_weight=0,
-                color="#000",
-                width="0px",
-            ),
-            Cell(
-                type="Text",
-                text=record.name,
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=f"{record.lat:.6f}",
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=f"{record.lng:.6f}",
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.capacity),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
-            Cell(
-                type="Text",
-                text=str(record.occupied),
-                font_weight=500,
-                color="#000",
-                width="150px",
-            ),
+            Cell(type="Hidden", text=_ec_pk(record), font_weight=0, color="#000", width="0px"),
+            Cell(type="Text", text=(record.name or ""), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=lat_txt, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=lng_txt, font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(getattr(record, "capacity", 0)), font_weight=500, color="#000", width="150px"),
+            Cell(type="Text", text=str(getattr(record, "occupied", 0)), font_weight=500, color="#000", width="150px"),
             Cell(
                 type="Button",
                 text="View",
@@ -709,8 +752,6 @@ def get_evacuation(
 
     count = db.query(EvacuationCenter).count()
     return TableResponse(table_head=table_head, table_datas=table_datas, count=count)
-
-
 @router.post(
     "/lgu_profiling/manage_lgu/add_evacuation", response_model=EvacuationCenterOut
 )
@@ -728,7 +769,7 @@ def add_evacuation(record: EvacuationCenterCreate, db: Session = Depends(get_db)
     return db_record
 
 
-@router.put("/manage_lgu/update_evacuation/{record_id}")
+@router.put("/update_evacuation/{record_id}")
 def update_evacuation(
     record_id: int, payload: EvacuationCenterUpdate, db: Session = Depends(get_db)
 ):
@@ -766,7 +807,7 @@ def linked_barangays(record_id: int, db: Session = Depends(get_db)):
 
 
 
-@router.delete("/manage_lgu/delete_evacuation/{record_id}", response_model=dict)
+@router.delete("/delete_evacuation/{record_id}", response_model=dict)
 def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     # block delete if referenced by barangays
     refs = (
@@ -796,7 +837,7 @@ def delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     return {"message": f"Record with ID {record_id} deleted successfully."}
 
 # ---- Force delete: detach linked barangays, then delete the center ----
-@router.post("/manage_lgu/evacuation/{record_id}/force_delete", response_model=dict)
+@router.post("/evacuation/{record_id}/force_delete", response_model=dict)
 def force_delete_evacuation(record_id: int, db: Session = Depends(get_db)):
     # 1) Detach any barangays referencing this center
     linked = (

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import styles from "../css/ShelterReportDashboard.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
@@ -29,14 +30,22 @@ const monthNames = Array.from({ length: 12 }, (_, i) =>
 );
 
 // Reverse geocode to get address & extract barangay
-async function fetchAddress(lat: number, lng: number): Promise<{ fullAddress: string; barangay: string | null }> {
+async function fetchAddress(
+  lat: number,
+  lng: number
+): Promise<{ fullAddress: string; barangay: string | null }> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
     );
     const json = await res.json();
     const fullAddress = json.display_name || "";
-    const barangay = json.address?.hamlet || json.address?.suburb || json.address?.neighbourhood || json.address?.village || null;
+    const barangay =
+      json.address?.hamlet ||
+      json.address?.suburb ||
+      json.address?.neighbourhood ||
+      json.address?.village ||
+      null;
     return { fullAddress, barangay };
   } catch {
     return { fullAddress: "", barangay: null };
@@ -74,6 +83,29 @@ export default function ShelterReportDashboard({
   companyInfo?: CompanyInfo;
   reportTitle?: string;
 }) {
+  const location = useLocation() as {
+    state?: { scope?: "all" | "mine" | "none"; barangayIds?: number[] };
+  };
+  const [searchParams] = useSearchParams();
+
+  // Read scope + barangayIds from state, with query param fallbacks
+  const scopeFromState = location.state?.scope ?? null;
+  const idsFromState = location.state?.barangayIds ?? null;
+
+  const scope: "all" | "mine" | "none" =
+    scopeFromState ??
+    ((searchParams.get("scope") as "all" | "mine" | "none" | null) ?? "all");
+
+  const barangayIds: number[] =
+    idsFromState ??
+    (searchParams.get("barangayIds")
+      ? searchParams
+          .get("barangayIds")!
+          .split(",")
+          .map((s) => Number(s))
+          .filter((n) => Number.isFinite(n))
+      : []);
+
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,11 +116,11 @@ export default function ShelterReportDashboard({
   const monthLabel = monthNames[month - 1] ?? "—";
 
   useEffect(() => {
-    async function fetchShelters() {
-      setLoading(true);
-      try {
-        const response = await API.get("/lgu_profiling/manage_lgu/get_evacuation");
-        const evacDataRaw = response.data.table_datas.flatMap((page: { row: any[] }) =>
+    async function fetchForAll() {
+      // original table-based endpoint
+      const response = await API.get("/lgu_profiling/manage_lgu/get_evacuation");
+      const evacDataRaw = response.data.table_datas.flatMap(
+        (page: { row: any[] }) =>
           page.row.map((row: any) => {
             const cells = row.data;
             return {
@@ -100,44 +132,117 @@ export default function ShelterReportDashboard({
               occupied: parseInt(cells[5].text, 10),
             };
           })
-        );
+      );
 
-        const enriched = await Promise.all(
-          evacDataRaw.map(async (shelter: { lat: number; lng: number }) => {
-            const { fullAddress, barangay } = await fetchAddress(shelter.lat, shelter.lng);
-            return {
-              ...shelter,
-              address: fullAddress,
-              barangay,
-            };
-          })
-        );
+      // Add address + barangay (text)
+      const enriched = await Promise.all(
+        evacDataRaw.map(async (shelter: { lat: number; lng: number }) => {
+          const { fullAddress, barangay } = await fetchAddress(
+            shelter.lat,
+            shelter.lng
+          );
+          return {
+            ...shelter,
+            address: fullAddress,
+            barangay,
+          };
+        })
+      );
 
-        setShelters(enriched);
+      return enriched as Shelter[];
+    }
+
+    async function fetchForMine() {
+      // richer endpoint that includes barangay linkage
+      const response = await API.get("/lgu_profiling/api/get_evacuation");
+      const list = Array.isArray(response.data) ? response.data : [];
+
+      // Normalize → filter by my barangayIds → map to Shelter
+      const filtered = list
+        .filter((r: any) =>
+          Array.isArray(r?.barangay)
+            ? r.barangay.some((b: any) => barangayIds.includes(Number(b.id)))
+            : false
+        )
+        .map((r: any) => ({
+          id: Number(r?.evacuation_id ?? r?.id) || -1,
+          name: r?.name ?? "",
+          lat:
+            typeof r?.lat === "number" ? r.lat : Number(r?.lat ?? 0) || 0,
+          lng:
+            typeof r?.lng === "number" ? r.lng : Number(r?.lng ?? 0) || 0,
+          capacity:
+            typeof r?.capacity === "number"
+              ? r.capacity
+              : Number(r?.capacity ?? 0) || 0,
+          occupied:
+            typeof r?.occupied === "number"
+              ? r.occupied
+              : Number(r?.occupied ?? 0) || 0,
+          // we'll still enrich with address text below
+        }));
+
+      // Enrich with reverse geocode like before
+      const enriched = await Promise.all(
+        filtered.map(async (shelter: Shelter) => {
+          const { fullAddress, barangay } = await fetchAddress(
+            shelter.lat,
+            shelter.lng
+          );
+          return { ...shelter, address: fullAddress, barangay };
+        })
+      );
+
+      return enriched as Shelter[];
+    }
+
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        if (scope === "mine") {
+          if (!barangayIds || barangayIds.length === 0) {
+            setShelters([]);
+          } else {
+            const data = await fetchForMine();
+            setShelters(data);
+          }
+        } else if (scope === "none") {
+          setShelters([]);
+        } else {
+          const data = await fetchForAll();
+          setShelters(data);
+        }
       } catch (err) {
+        console.error(err);
         setError("Failed to load shelter data.");
       } finally {
         setLoading(false);
       }
-    }
+    })();
+  }, [scope, JSON.stringify(barangayIds)]);
 
-    fetchShelters();
-  }, []);
-
-  // Calculate metrics
+  // ===== Metrics =====
   const totalRegistered = shelters.length;
-  const sheltersOccupiedCount = shelters.filter(s => s.occupied > 0).length;
+  const sheltersOccupiedCount = shelters.filter((s) => s.occupied > 0).length;
   const totalCapacity = shelters.reduce((sum, s) => sum + s.capacity, 0);
   const totalOccupied = shelters.reduce((sum, s) => sum + s.occupied, 0);
   const availableCapacity = totalCapacity - totalOccupied;
-  const availableCapacityPercent = totalCapacity ? ((availableCapacity / totalCapacity) * 100).toFixed(2) : "0.00";
-  const uniqueBarangays = Array.from(new Set(shelters.map(s => s.barangay).filter(Boolean)));
+  const availableCapacityPercent = totalCapacity
+    ? ((availableCapacity / totalCapacity) * 100).toFixed(2)
+    : "0.00";
+  const uniqueBarangays = Array.from(
+    new Set(shelters.map((s) => s.barangay).filter(Boolean))
+  );
 
   const handleDownloadPDF = async () => {
     const doc = new jsPDF({ orientation: "p", unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const left = 15, right = 15, top = 18, bottom = 15;
+    const left = 15,
+      right = 15,
+      top = 18,
+      bottom = 15;
 
     const logo = await urlToDataUrl(RAFI_Shield);
 
@@ -146,18 +251,22 @@ export default function ShelterReportDashboard({
       let x = left;
 
       if (logo) {
-        const w = 12, h = 12;
+        const w = 12,
+          h = 12;
         doc.addImage(logo, "PNG", left, y - 8, w, h);
         x += w + 4;
       }
 
-      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
       doc.text(companyInfo.name, x, y);
 
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
       doc.text(companyInfo.tagline, x, y + 5);
 
-      doc.setFontSize(8); doc.setTextColor(80);
+      doc.setFontSize(8);
+      doc.setTextColor(80);
       const rx = pageWidth - right;
       [
         companyInfo.name,
@@ -165,15 +274,21 @@ export default function ShelterReportDashboard({
         `${companyInfo.address.city}, ${companyInfo.address.state} ${companyInfo.address.zip}`,
         `Phone: ${companyInfo.contact.phone}`,
         `Email: ${companyInfo.contact.email}`,
-      ].forEach((line, i) => doc.text(line, rx, y - 2 + i * 4, { align: "right" }));
+      ].forEach((line, i) =>
+        doc.text(line, rx, y - 2 + i * 4, { align: "right" })
+      );
 
       doc.setTextColor(0);
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
       doc.text(reportTitle, left, y + 18);
 
-      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
       doc.text(
-        `Generated on: ${new Date().toLocaleDateString()}  •  Total Shelters: ${totalRegistered}`,
+        `Generated on: ${new Date().toLocaleDateString()}  •  Total Shelters: ${totalRegistered}  •  Scope: ${
+          scope === "mine" ? "My LGU" : scope === "none" ? "None" : "All LGUs"
+        }`,
         left,
         y + 24
       );
@@ -184,12 +299,17 @@ export default function ShelterReportDashboard({
 
     const drawFooter = () => {
       const y = pageHeight - 8;
-      doc.setFontSize(8); doc.setTextColor(100);
+      doc.setFontSize(8);
+      doc.setTextColor(100);
       doc.text(`${companyInfo.name}  •  Confidential Document`, left, y);
-      doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - right, y, { align: "right" });
+      doc.text(`Page ${doc.getNumberOfPages()}`, pageWidth - right, y, {
+        align: "right",
+      });
     };
 
-    const head = [["Shelter Name", "Barangay", "Capacity", "Occupied", "Available", "Utilization"]];
+    const head = [
+      ["Shelter Name", "Barangay", "Capacity", "Occupied", "Available", "Utilization"],
+    ];
     const body = shelters.map((s) => [
       s.name,
       s.barangay || "N/A",
@@ -207,46 +327,88 @@ export default function ShelterReportDashboard({
       theme: "grid",
       styles: { fontSize: 9, cellPadding: 2 },
       headStyles: { fillColor: [243, 244, 246], textColor: 0 },
-      didDrawPage: () => { drawHeader(); drawFooter(); },
+      didDrawPage: () => {
+        drawHeader();
+        drawFooter();
+      },
     });
 
     const lastTable: any = (doc as any).lastAutoTable;
     let sumY: number = (lastTable?.finalY ?? top + 40) + 8;
-    const boxX = left, boxW = pageWidth - left - right, boxH = 32;
+    const boxX = left,
+      boxW = pageWidth - left - right,
+      boxH = 32;
     if (sumY + boxH > pageHeight - bottom) {
       doc.addPage();
-      drawHeader(); drawFooter();
+      drawHeader();
+      drawFooter();
       sumY = top + 36;
     }
     doc.setFillColor(249, 250, 251);
     doc.setDrawColor(220);
     doc.roundedRect(boxX, sumY, boxW, boxH, 2, 2, "FD");
 
-    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(30);
     doc.text("Summary", boxX + 4, sumY + 7);
 
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
-    doc.text(`Total Registered Shelters: ${totalRegistered}`, boxX + 4, sumY + 13);
-    doc.text(`Shelters Occupied: ${sheltersOccupiedCount}`, boxX + 4, sumY + 19);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    doc.text(
+      `Total Registered Shelters: ${totalRegistered}`,
+      boxX + 4,
+      sumY + 13
+    );
+    doc.text(
+      `Shelters Occupied: ${sheltersOccupiedCount}`,
+      boxX + 4,
+      sumY + 19
+    );
     doc.text(`Total Capacity: ${totalCapacity}`, boxX + 4, sumY + 25);
-    doc.text(`Total Occupied: ${totalOccupied}`, boxX + 4 + 90, sumY + 13);
-    doc.text(`Available Capacity: ${availableCapacity} (${availableCapacityPercent}%)`, boxX + 4 + 90, sumY + 19);
-    doc.text(`Barangays: ${uniqueBarangays.length}`, boxX + 4 + 90, sumY + 25);
+    doc.text(
+      `Total Occupied: ${totalOccupied}`,
+      boxX + 4 + 90,
+      sumY + 13
+    );
+    doc.text(
+      `Available Capacity: ${availableCapacity} (${availableCapacityPercent}%)`,
+      boxX + 4 + 90,
+      sumY + 19
+    );
+    doc.text(
+      `Barangays: ${uniqueBarangays.length}`,
+      boxX + 4 + 90,
+      sumY + 25
+    );
 
-    doc.save(`shelter_report_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(
+      `shelter_report_${new Date().toISOString().split("T")[0]}.pdf`
+    );
   };
 
-  const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
+  const years = Array.from(
+    { length: 10 },
+    (_, i) => new Date().getFullYear() - i
+  );
 
   if (loading) return <div>Loading…</div>;
-  if (error) return <div style={{ color: 'red', padding: '20px' }}>{error}</div>;
+  if (error)
+    return (
+      <div style={{ color: "red", padding: "20px" }}>{error}</div>
+    );
 
   return (
     <div className={styles.donationReport}>
       <div className={styles.reportHeader}>
         <div className={styles.horizontalflex}>
           <div className={styles.companyBranding}>
-            <img src={RAFI_Shield} alt="rafi-shield" className={styles.companyLogo} />
+            <img
+              src={RAFI_Shield}
+              alt="rafi-shield"
+              className={styles.companyLogo}
+            />
             <div className={styles.companyTitle}>
               <h1 className={styles.companyName}>{companyInfo.name}</h1>
               <p className={styles.companyTagline}>{companyInfo.tagline}</p>
@@ -256,7 +418,10 @@ export default function ShelterReportDashboard({
           <div className={styles.companyInfo}>
             <p className={styles.companyLegalName}>{companyInfo.name}</p>
             <p>{companyInfo.address.street}</p>
-            <p>{companyInfo.address.city}, {companyInfo.address.state} {companyInfo.address.zip}</p>
+            <p>
+              {companyInfo.address.city}, {companyInfo.address.state}{" "}
+              {companyInfo.address.zip}
+            </p>
             <p>Phone: {companyInfo.contact.phone}</p>
             <p>Email: {companyInfo.contact.email}</p>
           </div>
@@ -268,123 +433,148 @@ export default function ShelterReportDashboard({
             <span>Generated on: {new Date().toLocaleDateString()}</span>
 
             <div className={styles.printSection} style={{ gap: 8 }}>
-              <button onClick={() => window.print()} className={styles.printButton}>Print Report</button>
-              <button onClick={handleDownloadPDF} className={styles.printButton}>Download PDF</button>
+              <button onClick={() => window.print()} className={styles.printButton}>
+                Print Report
+              </button>
+              <button onClick={handleDownloadPDF} className={styles.printButton}>
+                Download PDF
+              </button>
             </div>
 
             <span>Total Shelters: {totalRegistered}</span>
+            <span style={{ marginLeft: 12, opacity: 0.8 }}>
+              Scope: {scope === "mine" ? "My LGU" : scope === "none" ? "None" : "All LGUs"}
+            </span>
           </div>
         </div>
       </div>
 
       <main className={styles.reportMain}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: "20px",
+            marginBottom: "30px",
+          }}
+        >
           {shelters.map((shelter) => {
             const available = shelter.capacity - shelter.occupied;
-            const utilization = shelter.capacity ? ((shelter.occupied / shelter.capacity) * 100).toFixed(1) : "0";
+            const utilization = shelter.capacity
+              ? ((shelter.occupied / shelter.capacity) * 100).toFixed(1)
+              : "0";
             const isHighOccupancy = parseFloat(utilization) > 80;
 
             return (
               <div
                 key={shelter.id}
                 style={{
-                  background: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  background: "white",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  padding: "20px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 6px rgba(0,0,0,0.1)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 3px rgba(0,0,0,0.1)";
                 }}
               >
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  marginBottom: '12px',
-                  color: '#1f2937'
-                }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    marginBottom: "12px",
+                    color: "#1f2937",
+                  }}
+                >
                   {shelter.name}
                 </h3>
 
-                <div style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '16px',
-                  paddingBottom: '16px',
-                  borderBottom: '1px solid #f3f4f6'
-                }}>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#6b7280",
+                    marginBottom: "16px",
+                    paddingBottom: "16px",
+                    borderBottom: "1px solid #f3f4f6",
+                  }}
+                >
                   {shelter.address && (
-                    <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+                    <div style={{ fontSize: "12px", color: "#9ca3af" }}>
                       {shelter.address}
                     </div>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#6b7280', fontSize: '14px' }}>Capacity:</span>
-                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#1f2937' }}>{shelter.capacity}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#6b7280", fontSize: "14px" }}>Capacity:</span>
+                    <span style={{ fontWeight: "600", fontSize: "16px", color: "#1f2937" }}>
+                      {shelter.capacity}
+                    </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#6b7280', fontSize: '14px' }}>Occupied:</span>
-                    <span style={{
-                      fontWeight: '600',
-                      fontSize: '16px',
-                      color: isHighOccupancy ? '#ef4444' : '#10b981'
-                    }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#6b7280", fontSize: "14px" }}>Occupied:</span>
+                    <span
+                      style={{
+                        fontWeight: "600",
+                        fontSize: "16px",
+                        color: isHighOccupancy ? "#ef4444" : "#10b981",
+                      }}
+                    >
                       {shelter.occupied}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: '#6b7280', fontSize: '14px' }}>Available:</span>
-                    <span style={{ fontWeight: '600', fontSize: '16px', color: '#1f2937' }}>{available}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ color: "#6b7280", fontSize: "14px" }}>Available:</span>
+                    <span style={{ fontWeight: "600", fontSize: "16px", color: "#1f2937" }}>
+                      {available}
+                    </span>
                   </div>
 
-                  <div style={{
-                    marginTop: '8px',
-                    paddingTop: '12px',
-                    borderTop: '1px solid #f3f4f6'
-                  }}>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '8px'
-                    }}>
-                      <span style={{ fontSize: '13px', color: '#6b7280' }}>Utilization:</span>
-                      <span style={{
-                        fontWeight: '700',
-                        fontSize: '18px',
-                        color: isHighOccupancy ? '#ef4444' : '#10b981'
-                      }}>
+                  <div style={{ marginTop: "8px", paddingTop: "12px", borderTop: "1px solid #f3f4f6" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "13px", color: "#6b7280" }}>Utilization:</span>
+                      <span
+                        style={{
+                          fontWeight: "700",
+                          fontSize: "18px",
+                          color: isHighOccupancy ? "#ef4444" : "#10b981",
+                        }}
+                      >
                         {utilization}%
                       </span>
                     </div>
 
-                    <div style={{
-                      width: '100%',
-                      height: '8px',
-                      background: '#f3f4f6',
-                      borderRadius: '4px',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        width: `${utilization}%`,
-                        height: '100%',
-                        background: isHighOccupancy
-                          ? 'linear-gradient(90deg, #ef4444, #dc2626)'
-                          : 'linear-gradient(90deg, #10b981, #059669)',
-                        transition: 'width 0.3s ease'
-                      }} />
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "8px",
+                        background: "#f3f4f6",
+                        borderRadius: "4px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${utilization}%`,
+                          height: "100%",
+                          background: isHighOccupancy
+                            ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                            : "linear-gradient(90deg, #10b981, #059669)",
+                          transition: "width 0.3s ease",
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -394,13 +584,17 @@ export default function ShelterReportDashboard({
         </div>
 
         {shelters.length === 0 && (
-          <div style={{
-            textAlign: 'center',
-            padding: '40px',
-            color: '#6b7280',
-            fontSize: '16px'
-          }}>
-            No shelter data available
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px",
+              color: "#6b7280",
+              fontSize: "16px",
+            }}
+          >
+            {scope === "mine" && (!barangayIds || barangayIds.length === 0)
+              ? "No barangays assigned to your account."
+              : "No shelter data available"}
           </div>
         )}
 
@@ -436,16 +630,15 @@ export default function ShelterReportDashboard({
               <p className={styles.summaryLabel}>Available Capacity %:</p>
               <p className={`${styles.summaryValue} ${styles.donorCount}`}>{availableCapacityPercent}%</p>
             </div>
-
-
-
-
           </div>
         </div>
       </main>
 
       <div className={styles.printFooter}>
-        <p>This report was generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}</p>
+        <p>
+          This report was generated on {new Date().toLocaleDateString()} at{" "}
+          {new Date().toLocaleTimeString()}
+        </p>
         <p>{companyInfo.name} - Confidential Document</p>
       </div>
     </div>

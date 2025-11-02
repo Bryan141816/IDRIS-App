@@ -78,7 +78,7 @@ class IndividualVolunteerRead(IndividualVolunteerBase):
     active_tasks_joined: int = 0
     events_joined: int = 0
     active_events_joined: int = 0
-
+    profile_image: Optional[str] = None
     class Config:
         orm_mode = True
         use_enum_values = True

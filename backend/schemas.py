@@ -1,7 +1,24 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
-from typing import List, Optional, Union
+from typing import List, Optional, Union,Literal, Dict, Any
 
+class Cell(BaseModel):
+    type: Literal["Hidden", "Text", "Button"]
+    text: str
+    font_weight: int = 400
+    color: str = "#000"
+    width: Optional[str] = None
+
+    # button-specific (optional)
+    background_color: Optional[str] = None
+    container_width: Optional[str] = None
+    button_width: Optional[str] = None
+
+class TableResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)  # pydantic v2
+    table_head: List[Dict[str, Any]]
+    table_datas: List[Dict[str, Any]]
+    count: int
 
 class ErrorResponse(BaseModel):
     success: bool

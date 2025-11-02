@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -6,7 +7,7 @@ from routers.role_checker import RoleChecker
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from create_notification import send_notification
-from models import IndividualVolunteer, OrganizationVolunteer, Task
+from models import IndividualVolunteer, OrganizationVolunteer, Task, Assignment
 
 from data_schemas.assignment_schema import (
     TaskCreate, TaskReadWithStats,
@@ -65,7 +66,6 @@ async def _notify_assignment(db: Session, a, title: str, message_tmpl: str, url_
 @router_admin.post("/programs", tags=["Programs/Events"], response_model=TaskReadWithStats)
 def create_program(task: TaskCreate, db: Session = Depends(get_db)):
     task_obj = CRUD.create_task_with_event(db, task)
-    # New task has zero assignments; build a TaskReadWithStats payload
     return {
         "id": task_obj.id,
         "event_id": task_obj.event_id,
@@ -86,7 +86,51 @@ def create_program(task: TaskCreate, db: Session = Depends(get_db)):
 
 @router_admin.get("/programs", tags=["Programs/Events"], response_model=List[TaskReadWithStats])
 def list_programs(db: Session = Depends(get_db)):
-    return CRUD.list_tasks_with_stats(db)
+    tasks = CRUD.list_tasks_with_stats(db)
+
+    result = []
+    for task in tasks:
+        assignments = db.query(Assignment).filter(Assignment.task_id == task["id"]).all()
+
+        total_volunteers = sum(
+            getattr(a, "volunteer_count", None) or 1
+            for a in assignments
+        )
+
+        task_dict = dict(task)
+        task_dict["current_count"] = total_volunteers
+        task_dict["slot_count"] = len(assignments)
+        task_dict["is_full"] = total_volunteers >= task_dict.get("max_volunteers", 0)
+
+        assignments_list = [
+            {
+                "id": a.id,
+                "task_id": a.task_id,
+                "volunteer_count": getattr(a, "volunteer_count", None) or 1,
+                "organization_volunteer_id": a.organization_volunteer_id,
+                "individual_volunteer_id": a.individual_volunteer_id,
+                "status": a.status.value if hasattr(a.status, "value") else a.status,
+                "notes": a.notes,
+                "created_at": a.created_at.isoformat() if isinstance(a.created_at, datetime) else str(a.created_at),
+                "updated_at": a.updated_at.isoformat() if isinstance(a.updated_at, datetime) else str(a.updated_at),
+            }
+            for a in assignments
+        ]
+
+        task_dict["assignments"] = assignments_list
+
+        result.append(task_dict)
+
+    # ✅ ADD DEBUG LOGGING
+    print("\n=== FINAL RESULT TO BE RETURNED ===")
+    print(f"Result length: {len(result)}")
+    if result:
+        print(f"First program assignments: {json.dumps(result[0].get('assignments', []), indent=2, default=str)}")
+    print("=== END DEBUG ===\n")
+
+    return result
+
+
 
 @router_admin.post(
     "/programs/{task_id}/assignments",
@@ -94,11 +138,13 @@ def list_programs(db: Session = Depends(get_db)):
     response_model=AssignmentRead
 )
 async def create_assignment(task_id: int, req: AssignmentCreate, db: Session = Depends(get_db)):
+    # ✅ Pass volunteer_count to CRUD function
     a = CRUD.assign_to_task(
         db,
         task_id=task_id,
         individual_volunteer_id=req.individual_volunteer_id,
         organization_volunteer_id=req.organization_volunteer_id,
+        volunteer_count=req.volunteer_count,  # ✅ Add this
         status=req.status,
     )
 
@@ -106,7 +152,7 @@ async def create_assignment(task_id: int, req: AssignmentCreate, db: Session = D
         db,
         a,
         title="You have been assigned",
-         message_tmpl="Hi {name}, you have been assigned to {task_title}."
+        message_tmpl="Hi {name}, you have been assigned to {task_title}."
     )
 
     return {
@@ -114,6 +160,7 @@ async def create_assignment(task_id: int, req: AssignmentCreate, db: Session = D
         "task_id": a.task_id,
         "individual_volunteer_id": a.individual_volunteer_id,
         "organization_volunteer_id": a.organization_volunteer_id,
+        "volunteer_count": getattr(a, "volunteer_count", None),  # ✅ Add this
         "status": a.status.value if hasattr(a.status, "value") else a.status,
         "notes": a.notes,
         "created_at": a.created_at,
@@ -141,6 +188,7 @@ async def update_assignment_status(assignment_id: int, payload: AssignmentStatus
         "task_id": a.task_id,
         "individual_volunteer_id": a.individual_volunteer_id,
         "organization_volunteer_id": a.organization_volunteer_id,
+        "volunteer_count": getattr(a, "volunteer_count", None),  # ✅ Add this
         "status": new_status,
         "notes": a.notes,
         "created_at": a.created_at,
@@ -161,6 +209,7 @@ def list_task_assignments(task_id: int, db: Session = Depends(get_db)):
             "task_id": a.task_id,
             "individual_volunteer_id": a.individual_volunteer_id,
             "organization_volunteer_id": a.organization_volunteer_id,
+            "volunteer_count": getattr(a, "volunteer_count", None),  # ✅ Add this
             "status": a.status.value if hasattr(a.status, "value") else a.status,
             "notes": a.notes,
             "created_at": a.created_at,

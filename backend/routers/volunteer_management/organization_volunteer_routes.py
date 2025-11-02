@@ -176,7 +176,8 @@ async def update_organization_volunteer_status(
 
     db.commit()
     db.refresh(ov)
-     # Send approval notification
+
+    # ✅ FIXED: Use correct field names for organization
     if payload.status == "approved":
         ph_tz = ZoneInfo("Asia/Manila")
         now_ph = datetime.now(ph_tz)
@@ -184,13 +185,16 @@ async def update_organization_volunteer_status(
             "to": str(ov.user_id),
             "from_origin": "organization_volunteer",
             "title": "Volunteer application approved",
-            "message": f"Hi {ov.first_name}, your organization volunteer application (ID {ov.volunteer_id}) is approved. You can now volunteer.",
+            # ✅ Use organization_name or contact_person_name instead of first_name
+            "message": f"Hi {ov.organization_name}, your organization volunteer application (ID {ov.volunteer_id}) is approved. You can now volunteer.",
             "url_redirect": "/volunteer/my_profile",
             "isRead": False,
             "date": now_ph,
         }
         await send_notification(db, notif_payload)
+
     return ov
+
 
 # ---------------- READ CURRENT USER'S PROFILE ----------------
 @router_authenticated.get("/my_profile", response_model=OrganizationVolunteerRead)

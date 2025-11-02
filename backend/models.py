@@ -60,8 +60,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import Enum as SqlEnum
-
-
+import string
+from sqlalchemy.exc import IntegrityError
 # for god sake ayaw e butang sa ubos ang import libog kaau
 
 
@@ -680,10 +680,16 @@ class TaskLifecycle(str, enum.Enum):
 
 class IndividualVolunteer(Base):
     __tablename__ = "individual_volunteer"
-    __random_pk_field__ = "volunteer_id"
+
     id = Column(Integer, index=True, server_default=Identity())
 
-    volunteer_id = Column(Integer, primary_key=True)
+    # Change to String type and add default generator
+    volunteer_id = Column(
+        Integer,
+        primary_key=True,
+        unique=True,
+        autoincrement=True,
+    )
 
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
     user = relationship("User", back_populates="volunteers")
@@ -717,14 +723,28 @@ class IndividualVolunteer(Base):
         primaryjoin="VolunteerCertificate.individual_volunteer_id==IndividualVolunteer.volunteer_id",
         passive_deletes=True,
     )
+    @property
+    def profile_image(self):
+        """Get profile image from associated user profile"""
+        if self.user and self.user.user_profile:
+            return self.user.user_profile.profile_image
+        return None
 
 
 class OrganizationVolunteer(Base):
     __tablename__ = "organization_volunteer"
-    __random_pk_field__ = "volunteer_id"
+
     id = Column(Integer, index=True, server_default=Identity())
 
-    volunteer_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    # Change to String type and add default generator
+    volunteer_id = Column(
+        Integer,
+        primary_key=True,
+        unique=True,
+        index=True,
+        autoincrement=True,
+    )
+
     user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
     user = relationship("User", back_populates="OrganizationVolunteer")
 
@@ -738,12 +758,8 @@ class OrganizationVolunteer(Base):
     contact_person_phone_number = Column(String(20), nullable=True)
     contact_person_email = Column(String(100), nullable=False)
     availability = Column(String(255), nullable=True)
-    organization_picture = Column(
-        String(255), nullable=True
-    )  # URL or path to the picture
-    organization_certificate = Column(
-        String(255), nullable=True
-    )  # URL or path to the certificate
+    organization_picture = Column(String(255), nullable=True)
+    organization_certificate = Column(String(255), nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -759,6 +775,7 @@ class OrganizationVolunteer(Base):
         primaryjoin="VolunteerCertificate.organization_volunteer_id==OrganizationVolunteer.volunteer_id",
         passive_deletes=True,
     )
+
 
 
 class VolunteerCertificate(Base):
@@ -897,13 +914,13 @@ class Assignment(Base):
 
     # Assign EITHER an individual OR an organization (XOR)
     individual_volunteer_id = Column(
-        Integer,
+        Integer,  # Changed from Integer
         ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
         nullable=True,
         index=True,
     )
     organization_volunteer_id = Column(
-        Integer,
+        Integer,  # Changed from Integer
         ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
         nullable=True,
         index=True,
@@ -915,7 +932,7 @@ class Assignment(Base):
         server_default=AssignmentStatus.applied.value,
     )
     notes = Column(Text)
-
+    volunteer_count = Column(Integer, nullable=True, default=1)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -1276,7 +1293,9 @@ class TeamMembers(Base):
     members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     team_id = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=False)
     member = Column(
-        Integer, ForeignKey("individual_volunteer.volunteer_id"), nullable=False
+        Integer,
+        ForeignKey("individual_volunteer.volunteer_id"),
+        nullable=False
     )
     role = Column(String(255), nullable=False)
     status = Column(String(20), default="pending", nullable=False)

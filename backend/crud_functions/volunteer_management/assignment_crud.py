@@ -1,5 +1,3 @@
-# app/crud_functions/volunteer_management/assignment_crud.py
-
 from typing import Dict, List, Optional
 from datetime import datetime
 from fastapi import HTTPException
@@ -117,10 +115,10 @@ class AssignmentCRUD:
     def list_tasks_with_stats(db: Session) -> List[dict]:
         """
         Returns an array of dicts with:
-          - current_count: UI headcount (applied+invited+accepted+checked_in+completed)
-          - slot_count: number occupying slots (accepted+checked_in)
-          - is_full: slot_count >= max_volunteers
-          - assigned_volunteer_ids: list of assigned individual ids (extend as needed)
+          - current_count: UI headcount with volunteer_count considered
+          - slot_count: number of assignment records (accepted+checked_in)
+          - is_full: current_count >= max_volunteers
+          - assigned_volunteer_ids: list of assigned individual ids
           - lifecycle (computed hybrid)
           - start_at / end_at (if present) or task_date (legacy)
         """
@@ -130,12 +128,14 @@ class AssignmentCRUD:
 
         task_ids = [t.id for t in tasks]
 
+        # ✅ Fetch volunteer_count along with other assignment data
         assigns = (
             db.query(
                 Assignment.task_id,
                 Assignment.individual_volunteer_id,
                 Assignment.organization_volunteer_id,
                 Assignment.status,
+                Assignment.volunteer_count,  # ✅ Add this
             )
             .filter(Assignment.task_id.in_(task_ids))
             .all()
@@ -145,11 +145,15 @@ class AssignmentCRUD:
         slot_counts: Dict[int, int] = {tid: 0 for tid in task_ids}
         ids_map: Dict[int, List[int]] = {tid: [] for tid in task_ids}
 
-        for (task_id, iv_id, _ov_id, status) in assigns:
+        # ✅ Calculate counts properly with volunteer_count
+        for (task_id, iv_id, _ov_id, status, vol_count) in assigns:
+            # Use volunteer_count if present, otherwise default to 1
+            count = vol_count if vol_count is not None else 1
+
             if status in _UI_ACTIVE_STATUSES:
-                ui_counts[task_id] += 1
+                ui_counts[task_id] += count  # ✅ Add the actual volunteer count
             if status in _SLOT_STATUSES:
-                slot_counts[task_id] += 1
+                slot_counts[task_id] += 1  # Still count assignment records for slot tracking
             if iv_id:
                 ids_map[task_id].append(iv_id)
 
@@ -168,9 +172,9 @@ class AssignmentCRUD:
                 "max_volunteers": t.max_volunteers,
                 "required_skills": t.required_skills,
                 "created_at": t.created_at,
-                "current_count": ui_counts.get(t.id, 0),
+                "current_count": ui_counts.get(t.id, 0),  # ✅ Now properly sums volunteer_count
                 "slot_count": slot_counts.get(t.id, 0),
-                "is_full": slot_counts.get(t.id, 0) >= (t.max_volunteers or 0),
+                "is_full": ui_counts.get(t.id, 0) >= (t.max_volunteers or 0),  # ✅ Use ui_counts instead of slot_counts
                 "assigned_volunteer_ids": ids_map.get(t.id, []),
                 "lifecycle": getattr(t, "lifecycle", None),
             }
@@ -219,6 +223,7 @@ class AssignmentCRUD:
         task_id: int,
         individual_volunteer_id: Optional[int] = None,
         organization_volunteer_id: Optional[int] = None,
+        volunteer_count: Optional[int] = 1,  # ✅ Add this parameter
         status: AssignmentStatus = AssignmentStatus.accepted,
     ) -> Assignment:
         # XOR guard
@@ -237,14 +242,23 @@ class AssignmentCRUD:
         if organization_volunteer_id is not None and db.get(OrganizationVolunteer, organization_volunteer_id) is None:
             raise HTTPException(status_code=404, detail="Organization volunteer not found")
 
-        # capacity check: slots consumed by accepted/checked_in
-        slot_count = (
-            db.query(Assignment)
+        # ✅ Force volunteer_count to 1 for individual volunteers
+        if individual_volunteer_id is not None:
+            volunteer_count = 1
+
+        # ✅ Updated capacity check: sum existing volunteer_count
+        current_volunteer_total = (
+            db.query(func.coalesce(func.sum(Assignment.volunteer_count), 0))
             .filter(Assignment.task_id == task_id, Assignment.status.in_(_SLOT_STATUSES))
-            .count()
+            .scalar()
         )
-        if slot_count >= (task.max_volunteers or 0):
-            raise HTTPException(status_code=409, detail="Task is already full")
+
+        if current_volunteer_total + volunteer_count > (task.max_volunteers or 0):
+            available = (task.max_volunteers or 0) - current_volunteer_total
+            raise HTTPException(
+                status_code=409,
+                detail=f"Task capacity exceeded. Only {available} slot(s) available, but you requested {volunteer_count}."
+            )
 
         # time overlap check (if datetimes exist)
         if hasattr(task, "start_at") and hasattr(task, "end_at") and task.start_at and task.end_at:
@@ -257,10 +271,12 @@ class AssignmentCRUD:
             ):
                 raise HTTPException(status_code=409, detail="Volunteer has an overlapping assignment")
 
+        # ✅ Add volunteer_count to Assignment creation
         a = Assignment(
             task_id=task_id,
             individual_volunteer_id=individual_volunteer_id,
             organization_volunteer_id=organization_volunteer_id,
+            volunteer_count=volunteer_count,  # ✅ Add this
             status=status,
         )
         try:

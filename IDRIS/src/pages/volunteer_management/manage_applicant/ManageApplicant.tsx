@@ -260,19 +260,18 @@ const ManageApplicant: React.FC = () => {
 
     const isOrg = (v: Volunteer) => !!v.organization_name;
 
-    async function setStatus(
-        v: Volunteer,
-        status?: VolunteerStatus,
-        availability?: Availability
-    ) {
+    async function setStatus(v: Volunteer, status?: VolunteerStatus, availability?: Availability) {
         if (isOrg(v)) {
-            // ORG endpoint
+            // ✅ Make sure this is being called for organization volunteers
+            console.log("Updating ORG volunteer:", v.volunteer_id, status, availability);
             return updateOrganizationVolunteerStatus(v.volunteer_id, status!, availability);
         } else {
-            // INDIVIDUAL endpoint
+            // ✅ And this for individual volunteers
+            console.log("Updating INDIVIDUAL volunteer:", v.volunteer_id, status, availability);
             return updateVolunteerStatus(v.volunteer_id, status!, availability);
         }
     }
+
 
     // -------- Derived values --------
     const middleInitial = selectedVolunteer?.middle_name ? selectedVolunteer.middle_name.charAt(0) + '. ' : '';
@@ -282,10 +281,14 @@ const ManageApplicant: React.FC = () => {
         return parts.filter(Boolean).join(' ');
     }
 
-    const HIDE_STATUS = new Set<string>(['approved', 'rejected']);
+    // ✅ UPDATED: Hide approved, rejected, and accepted applicants
+    const HIDESTATUS = new Set<string>(["approved", "rejected", "accepted"]);
 
-    const isVisible = (v: Volunteer) =>
-        !HIDE_STATUS.has(statusOf(v)) && (v.availability_status ?? 'unavailable') !== 'assigned';
+    const isVisible = (v: Volunteer): boolean => {
+        // ✅ Only show applicants that are NOT in HIDESTATUS
+        return !HIDESTATUS.has(statusOf(v));
+    };
+
 
     const visibleVolunteers: Volunteer[] = volunteers.filter(isVisible);
 
@@ -422,39 +425,61 @@ const ManageApplicant: React.FC = () => {
         const prevStatus = volunteer.status;
         const prevAvail = volunteer.availability_status;
 
-        const allowedFrom = new Set(['verifying']);
+        const allowedFrom = new Set(["verifying"]);
         if (!allowedFrom.has(statusOf(volunteer))) {
-            message.warning('Only applications in "verifying" can be accepted.');
+            message.warning("Only applications in verifying can be accepted.");
             return;
         }
 
-        // optimistic
-        setVolunteers(prev =>
-            prev.map(v =>
-                v.volunteer_id === id ? { ...v, status: 'approved', availability_status: 'available' } : v
+        // ✅ Add debug logging
+        console.log("Accepting volunteer:", {
+            id,
+            name: getDisplayName(volunteer),
+            isOrg: isOrg(volunteer),
+            status: prevStatus,
+            availability: prevAvail,
+        });
+
+        // Optimistic update
+        setVolunteers((prev) =>
+            prev.map((v) =>
+                v.volunteer_id === id
+                    ? { ...v, status: "approved", availability_status: "available" }
+                    : v
             )
         );
+
         if (selectedVolunteer?.volunteer_id === id) {
-            setSelectedVolunteer({ ...volunteer, status: 'approved', availability_status: 'available' });
+            setSelectedVolunteer(pickNextVisible(id));
         }
-        setSelectedVolunteer(pickNextVisible(id));
 
         try {
-            await setStatus(volunteer, 'approved', 'available');  // <-- 🔁 unified API call
+            const result = await setStatus(volunteer, "approved", "available");
+            console.log("Accept result:", result); // ✅ Add logging
             showAlert();
         } catch (err: any) {
-            // rollback
-            setVolunteers(prev =>
-                prev.map(v =>
-                    v.volunteer_id === id ? { ...v, status: prevStatus, availability_status: prevAvail } : v
+            console.error("Accept error:", err); // ✅ Add logging
+            // Rollback
+            setVolunteers((prev) =>
+                prev.map((v) =>
+                    v.volunteer_id === id
+                        ? { ...v, status: prevStatus, availability_status: prevAvail }
+                        : v
                 )
             );
+
             if (selectedVolunteer?.volunteer_id === id) {
-                setSelectedVolunteer({ ...volunteer, status: prevStatus, availability_status: prevAvail });
+                setSelectedVolunteer({
+                    ...volunteer,
+                    status: prevStatus,
+                    availability_status: prevAvail,
+                });
             }
-            message.error(err?.message || 'Failed to accept applicant.');
+
+            message.error(err?.message ?? "Failed to accept applicant.");
         }
     };
+
 
 
     const handleAcceptClick = async (e: React.MouseEvent<HTMLSpanElement>, volunteer: Volunteer) => {

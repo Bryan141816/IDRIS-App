@@ -27,6 +27,20 @@ export interface MarkerType {
   hazardAreas?: MarkerType[];
 }
 
+export function ViewEvents({ onViewChange }: { onViewChange?: (lat: number, lng: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!onViewChange) return;
+    const handler = () => {
+      const c = map.getCenter();
+      onViewChange(c.lat, c.lng); // 👈 keep React in sync with Leaflet view
+    };
+    map.on("moveend", handler);return () => {
+  map.off("moveend", handler);  // return type is now void
+};
+  }, [map, onViewChange]);
+  return null;
+}
 interface MapViewProps {
   center?: [number, number];
   markers: MarkerType[];

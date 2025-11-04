@@ -1,6 +1,8 @@
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
 )
+import random
+import string
 from fastapi import APIRouter, Query, Body
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -13,7 +15,11 @@ from models import (
     InventoryItems,
     AssignedStorage,
     DistributionRouteLogs,
+    ProcurementRequestItem,
+    Disbursement,
+    DisbursementItem
 )
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone, time
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
@@ -139,33 +145,29 @@ def get_request(db: Session = Depends(get_db)):
     rows: List[ProcurementRequest] = query.all()
     return [serialize_request(r) for r in rows]
 
+def generate_short_id(length=6):
+    """Generate a random alphanumeric string of given length."""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-def create_disbursement_with_items(db: Session, request_data: dict):
-    # Create disbursement item_data
-    print(request_data)
-    """
-    disbursement_id = str(uuid4())
+def create_disbursement_with_items(db: Session, request_data: dict, items: List[dict]):
+    # Generate 6-character alphanumeric disbursement_id
+    disbursement_id = generate_short_id()
 
     # Create the main disbursement record
     disbursement = Disbursement(
         disbursement_id=disbursement_id,
-        disbursement_name=disbursement_data.get("disbursement_name", "No title"),
-        origin_name=disbursement_data.get("origin_name", "No origin"),
-        origin_id=disbursement_data["origin_id"],
-        attachment=disbursement_data.get("attachment"),
-        remarks=disbursement_data.get("remarks"),
-        status=disbursement_data.get("status", DisbursementStatus.SUBMITTED),
+        disbursement_name=request_data.get("request_title", "No title"),
+        origin_name=request_data.get("procurement", "No origin"),
+        origin_id=request_data["request_id"],
     )
 
     # Add items
-    for item_data in items_data:
+    for item_data in items:
         item = DisbursementItem(
-            item_id=str(uuid4()),
+            item_id=generate_short_id(),
             item_name=item_data.get("item_name", "Item name"),
             quantity=item_data.get("quantity", 0),
             unit=item_data.get("unit", "pcs"),
-            unit_cost=item_data.get("unit_cost", 0),
-            vendor=item_data.get("vendor", "Vendor name"),
             disbursement_id=disbursement_id,
         )
         disbursement.items.append(item)
@@ -175,7 +177,7 @@ def create_disbursement_with_items(db: Session, request_data: dict):
     db.commit()
     db.refresh(disbursement)
 
-    return disbursement"""
+    return disbursement
 
 class Inventory(BaseModel):
     item_id: int
@@ -293,8 +295,10 @@ def approve_reject_request(
 
         else:
             request_data = to_dict(query)
-            create_disbursement_with_items(db, request_data)
-            return {"message": "Test"}
+            procurement_items = db.query(ProcurementRequestItem).filter(ProcurementRequestItem.request_id == query.request_id).all()
+            items = [to_dict(item) for item in procurement_items]
+
+            create_disbursement_with_items(db, request_data, items)
 
 
         # --- Update request status ---

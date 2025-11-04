@@ -1167,6 +1167,7 @@ class ProcurementRequest(Base):
         back_populates="request",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        uselist=False,
     )
 
 

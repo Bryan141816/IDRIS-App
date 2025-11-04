@@ -6,7 +6,7 @@ from data_schemas.report_schema import TableResponse, Cell
 from schemas import DemandAndResponseOut, DemandAndResponseCreate
 from database import get_db
 from crud import delete, create_demand_and_response_record
-from models import DemandAndResponse, ProcurementRequest
+from models import DemandAndResponse, ProcurementRequest, DistributionRoute
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -32,11 +32,13 @@ def get_markers(db: Session = Depends(get_db)):
     requests = (
         db.query(ProcurementRequest)
         .filter(ProcurementRequest.request_type == "relief")
+        .filter(ProcurementRequest.routes.has(DistributionRoute.status == "Completed"))
         .options(
             joinedload(ProcurementRequest.lgu),
             joinedload(ProcurementRequest.barangay),
             joinedload(ProcurementRequest.evacuation_center),
             joinedload(ProcurementRequest.relief_items),
+            joinedload(ProcurementRequest.routes),
         )
         .all()
     )
@@ -72,17 +74,8 @@ def get_markers(db: Session = Depends(get_db)):
             address = f"{req.lgu.lgu_name}, Cebu"
             contact_name = str(req.lgu.mayor)
             contact_phone = str(req.lgu.lgu_contact)
-    
-        if not req.routes or len(req.routes) == 0:
-            computed_status = "no response"
-        else:
-            route_statuses = [r.status for r in req.routes]
-            if any(status == "Complete" for status in route_statuses):
-                computed_status = "complete"
-            elif any(status == "In Transit" for status in route_statuses):
-                computed_status = "responded"
-            else:
-                computed_status = "no response"
+ 
+          
 
         # Build needs (relief it
         needs = [
@@ -107,7 +100,7 @@ def get_markers(db: Session = Depends(get_db)):
                 "name": contact_name,
                 "phone": contact_phone,
             },
-            "status": computed_status,
+            "status": "completed",
             "priority": req.priority.lower() if req.priority else "medium",
             "submitted_at": req.date_requested.isoformat()
             if req.date_requested

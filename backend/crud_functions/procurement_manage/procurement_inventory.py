@@ -342,7 +342,7 @@ class ProcurementInventoryCRUD:
             .filter(InventoryItems.quantity > 0)
             .filter(
                 InventoryItems.category.in_(
-                    ["food", "medical", "clothing", "beverages"]
+                    ["food item", "hygiene & sanitation", "shelter materials", "medical supplies", "clothing items"]
                 )
             )
             .group_by(InventoryItems.category)
@@ -353,7 +353,7 @@ class ProcurementInventoryCRUD:
         category_totals = {r.category: r.total_quantity for r in results}
 
         # Ensure all categories exist in the output even if they have no entries
-        for category in ["food", "medical", "clothing", "beverages"]:
+        for category in ["food item", "hygiene & sanitation", "shelter materials", "medical supplies", "clothing items"]:
             category_totals.setdefault(category, 0)
 
         return category_totals

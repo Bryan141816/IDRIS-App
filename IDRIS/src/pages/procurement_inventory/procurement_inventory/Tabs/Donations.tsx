@@ -244,9 +244,7 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
                         <option value="medical supplies">
                           Medical Supplies
                         </option>
-                        <option value="personal care items">
-                          Personal Care Items
-                        </option>
+                        <option value="clothing items">Clothing Items</option>
                       </select>
                     </td>
 

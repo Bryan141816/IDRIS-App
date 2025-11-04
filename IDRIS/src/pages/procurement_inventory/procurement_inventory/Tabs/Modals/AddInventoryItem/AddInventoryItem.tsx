@@ -100,7 +100,7 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               <option value="hygiene & sanitation">Hygiene & Sanitation</option>
               <option value="shelter materials">Shelter Materials</option>
               <option value="medical supplies">Medical Supplies</option>
-              <option value="personal care items">Personal Care Items</option>
+              <option value="clothing items">Clothing Items</option>
             </select>
           </div>
 

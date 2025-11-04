@@ -1,14 +1,11 @@
 import { ProcurementRequest } from "../ProcurementDefaults";
-import {
-  getPriorityColor,
-  getStatusColor,
-  formatCurrency,
-} from "../ProcurementDefaults";
+
 import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { ModalOverlay } from "../ProcurementModalsDefault";
 import { ModalType } from "../ProcurementDefaults";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 interface ViewDetailsProps extends ProcurementDefaultModalProps {
   selectedItem: ProcurementRequest | null;
   mode?: Exclude<ModalType, null>;
@@ -30,6 +27,7 @@ type AssignedStorageItem = {
 
 export const ViewDetails: React.FC<ViewDetailsProps> = ({
   onClose,
+  refreshData,
   selectedItem,
   mode = "view",
 }) => {
@@ -66,6 +64,12 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
         `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
         cleanedList,
       );
+      Swal.fire({
+        title: `Request has been ${type.toLowerCase() === "approve" ? "Approved" : "Rejected"}`,
+        icon: "success",
+      });
+      refreshData();
+      onClose();
     } catch (e: any) {
       console.error(
         `Error ${type} in request ${selectedItem?.request_ref_num}`,

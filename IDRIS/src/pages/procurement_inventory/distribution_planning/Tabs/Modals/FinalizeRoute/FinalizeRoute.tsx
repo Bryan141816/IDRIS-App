@@ -1,8 +1,7 @@
-import React, { useState, ChangeEvent, useEffect } from "react";
-import { WarehouseZone } from "../../../../procurement_inventory/Tabs/Modals/ModalDefault";
+import React, { useState, useEffect } from "react";
 import { MapViewWithSearch } from "../../../../procurement_inventory/Tabs/MapViewWithSearch";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
-
+import Swal from "sweetalert2";
 interface FinalizeRouteSetupProp {
   onClose: () => void;
   refreshData: () => void;
@@ -92,6 +91,10 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
           "/distribution_planning/finalize_route",
           formatted,
         );
+        Swal.fire({
+          title: "Route has been finalized",
+          icon: "success",
+        });
         refreshData();
         onClose();
       } catch (e: any) {

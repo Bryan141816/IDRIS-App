@@ -31,11 +31,11 @@ def get_disbursements(db: Session, skip: int = 0, limit: int = 100):
 def get_disbursement(db: Session, disbursement_id: str):
     return db.query(Disbursement).filter(Disbursement.disbursement_id == disbursement_id).first()
 
-def update_disbursement_status(db: Session, disbursement_id: str, disbursement_update: DisbursementUpdate):
-    db_disbursement = get_disbursement(db, disbursement_id)
+def update_disbursement_status(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate):
+    db_disbursement = get_disbursement(db, disbursementId)
     if db_disbursement:
         if disbursement_update.status is not None:
-            db_disbursement.status = disbursement_update.status
+            db_disbursement.status = disbursement_update.status.upper()
         db.commit()
         db.refresh(db_disbursement)
     return db_disbursement

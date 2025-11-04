@@ -338,9 +338,7 @@ export const SubmitProcurementRequest: React.FC<
                         Shelter Materials
                       </option>
                       <option value="medical supplies">Medical Supplies</option>
-                      <option value="personal care items">
-                        Personal Care Items
-                      </option>
+                      <option value="clothing items">Clothing Items</option>
                     </select>
                   )}
                   <input

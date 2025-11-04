@@ -105,7 +105,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         "shelter materials zone": "shelter materials",
         "health & hygiene supplies zone": [
           "hygiene & sanitation",
-          "personal care items",
+          "clothing items",
         ],
       };
 

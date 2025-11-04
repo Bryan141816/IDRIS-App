@@ -31,8 +31,8 @@ def read_disbursement(disbursement_id: str, db: Session = Depends(get_db)):
     return db_disbursement
 
 @router_admin.patch("/disbursements/update/", response_model=Disbursement)
-def update_disbursement_status(disbursement_id: str, disbursement: DisbursementUpdate, db: Session = Depends(get_db)):
-    db_disbursement = disbursement_crud.update_disbursement_status(db, disbursement_id=disbursement_id, disbursement_update=disbursement)
+def update_disbursement_status(disbursementId: str, disbursement: DisbursementUpdate, db: Session = Depends(get_db)):
+    db_disbursement = disbursement_crud.update_disbursement_status(db, disbursementId=disbursementId, disbursement_update=disbursement)
     if db_disbursement is None:
         raise HTTPException(status_code=404, detail="Disbursement not found")
     return db_disbursement

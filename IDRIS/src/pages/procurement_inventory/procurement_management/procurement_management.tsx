@@ -108,48 +108,11 @@ const ProcurementManagement = () => {
             <p>Approved</p>
           </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon">💰</div>
-          <div className="stat-info">
-            <h3>
-              {requestCounterData
-                ? formatCurrency(requestCounterData.total_value)
-                : "loading data"}
-            </h3>
-            <p>Total Value</p>
-          </div>
-        </div>
       </div>
 
       <div className="dashboard-grid">
         <div className="chart-container">
-          <h3>Resource Usage Overview</h3>
-          <div className="resource-usage">
-            {requestCounterData?.resource_usage.map((resource, index) => (
-              <div key={index} className="resource-item">
-                <div className="resource-info">
-                  <span className="resource-category">{resource.category}</span>
-                  <span className="resource-amounts">
-                    {formatCurrency(resource.used)} /{" "}
-                    {formatCurrency(requestCounterData?.total_value)}
-                  </span>
-                </div>
-                <div className="resource-bar">
-                  <div
-                    className="resource-fill"
-                    style={{ width: `${resource.percentage}%` }}
-                  ></div>
-                </div>
-                <div className="resource-percentage">
-                  {resource.percentage}% utilized
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="chart-container">
-          <h3>Recent Notifications</h3>
+          <h3>Recent Activity</h3>
           <div className="notifications-list">
             <div className="expiry-alerts">
               {requestCounterData?.recent_notification.map((item) => (

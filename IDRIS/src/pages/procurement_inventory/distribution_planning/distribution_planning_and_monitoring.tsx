@@ -115,18 +115,6 @@ const FinanceAdmin = () => {
         >
           🗺️ Routes & Schedules
         </button>
-        <button
-          className={`nav-btn ${activeTab === "assignment" ? "active" : ""}`}
-          onClick={() => setActiveTab("assignment")}
-        >
-          👥 Volunteer Assignment
-        </button>
-        <button
-          className={`nav-btn ${activeTab === "movements" ? "active" : ""}`}
-          onClick={() => setActiveTab("movements")}
-        >
-          📦 Movement Logs
-        </button>
       </div>
 
       <div className="distribution-planning-active-section">
@@ -139,7 +127,7 @@ const FinanceAdmin = () => {
                   <h3>
                     {dashboardData?.active_routes
                       ? dashboardData.active_routes
-                      : "No Data"}
+                      : "0"}
                   </h3>
                   <p>Active Route</p>
                 </div>
@@ -150,7 +138,7 @@ const FinanceAdmin = () => {
                   <h3>
                     {dashboardData?.deployed_volunteers
                       ? dashboardData.deployed_volunteers
-                      : "No Data"}
+                      : "0"}
                   </h3>
                   <p>Deployed Volunteers</p>
                 </div>
@@ -162,7 +150,7 @@ const FinanceAdmin = () => {
                     {" "}
                     {dashboardData?.items_distributed
                       ? dashboardData.items_distributed
-                      : "No Data"}
+                      : "0"}
                   </h3>
                   <p>Items Distributed</p>
                 </div>

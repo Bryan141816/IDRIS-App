@@ -1,6 +1,7 @@
 import React, { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { DistributionRouteDTO } from "../../RoutesAndPlanning";
+import Swal from "sweetalert2";
 interface EditRouteProp {
   onClose: () => void;
   refreshData: () => void;
@@ -33,6 +34,11 @@ export const EditRoute: React.FC<EditRouteProp> = ({
           status: route.status,
         });
         if (response.data) {
+          Swal.fire({
+            title: "Route has been updated",
+            icon: "success",
+          });
+
           refreshData();
           onClose();
         }

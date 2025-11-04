@@ -14,15 +14,10 @@ export function formatDatePretty(dateString: string): string {
 }
 const ProcurementManagement = () => {
   type RequestCounts = {
-    total_requests: number;
-    total_pending: number;
-    total_approved: number;
-    total_value: number;
-    resource_usage: {
-      category: string;
-      used: number;
-      percentage: number;
-    }[];
+    total: number;
+    pending: number;
+    approved: number;
+
     recent_notification: {
       notification_id: number;
       from_origin: string;
@@ -79,9 +74,7 @@ const ProcurementManagement = () => {
           <div className="stat-icon">📋</div>
           <div className="stat-info">
             <h3>
-              {requestCounterData
-                ? requestCounterData.total_requests
-                : "loading data"}
+              {requestCounterData ? requestCounterData.total : "loading data"}
             </h3>
             <p>Total Requests</p>
           </div>
@@ -90,9 +83,7 @@ const ProcurementManagement = () => {
           <div className="stat-icon">⏳</div>
           <div className="stat-info">
             <h3>
-              {requestCounterData
-                ? requestCounterData.total_pending
-                : "loading data"}
+              {requestCounterData ? requestCounterData.pending : "loading data"}
             </h3>
             <p>Pending Approval</p>
           </div>
@@ -102,7 +93,7 @@ const ProcurementManagement = () => {
           <div className="stat-info">
             <h3>
               {requestCounterData
-                ? requestCounterData.total_approved
+                ? requestCounterData.approved
                 : "loading data"}
             </h3>
             <p>Approved</p>
@@ -115,15 +106,15 @@ const ProcurementManagement = () => {
           <h3>Recent Activity</h3>
           <div className="notifications-list">
             <div className="expiry-alerts">
-              {requestCounterData?.recent_notification.map((item) => (
-                <div key={item.notification_id} className={`expiry-item good`}>
-                  <div className="expiry-info">
-                    <strong>{item.title}</strong>
-                    <span>Message: {item.message}</span>
-                    <span>Date: {formatDatePretty(item.date)}</span>
-                  </div>
-                </div>
-              ))}
+              {/* {requestCounterData?.recent_notification.map((item) => ( */}
+              {/*   <div key={item.notification_id} className={`expiry-item good`}> */}
+              {/*     <div className="expiry-info"> */}
+              {/*       <strong>{item.title}</strong> */}
+              {/*       <span>Message: {item.message}</span> */}
+              {/*       <span>Date: {formatDatePretty(item.date)}</span> */}
+              {/*     </div> */}
+              {/*   </div> */}
+              {/* ))} */}
             </div>
           </div>
         </div>

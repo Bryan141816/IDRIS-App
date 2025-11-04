@@ -28,6 +28,8 @@ from models import (
     DistributionRoute,
     TeamMembers,
     DistributionTeam,
+    AssignedStorage,
+    ProcurementRequest
 )
 from crud_functions.procurement_manage.procurement_inventory import (
     ProcurementInventoryCRUD,
@@ -291,7 +293,8 @@ def get_in_kind_monitoring(db: Session = Depends(get_db)):
     "/response_dashboard/in_kind_monitoring_detailed",
 )
 def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
-    categories = ["food", "medical", "clothing", "beverages", "hygiene"]
+    categories =["food item", "hygiene & sanitation", "shelter materials", "medical supplies", "clothing items"]
+
 
     # Initialize the final result dictionary
     result = {
@@ -315,16 +318,18 @@ def get_in_kind_monitoring_detailed(db: Session = Depends(get_db)):
         # Add item quantity to category available total
         result[item.category]["available"] += item.quantity
 
-        # Get distributed info for this item
+            # Get distributed info for this item
         distributed = (
             db.query(DistributedItems, DistributionRoute.status)
-            .join(
-                DistributionRoute, DistributedItems.route == DistributionRoute.route_id
-            )
-            .filter(DistributedItems.item == item.inventory_id)
+            .join(DistributionRoute, DistributedItems.route == DistributionRoute.route_id)
+            .join(AssignedStorage, DistributedItems.assigned_storage == AssignedStorage.assigned_id)
+            .join(ProcurementRequest, DistributionRoute.request_id == ProcurementRequest.request_id)
+            .filter(AssignedStorage.inventory_id == item.inventory_id)
+            .filter(ProcurementRequest.request_type == "relief")
             .filter(DistributionRoute.status.in_(["In Transit", "Completed"]))
             .all()
         )
+
 
         for dist_item, status in distributed:
             if status == "In Transit":

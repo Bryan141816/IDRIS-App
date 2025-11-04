@@ -614,19 +614,19 @@ const ResponseDashboard = () => {
 
   // Updated helper function to match your categories
   const getCategoryStyle = (category: string) => {
-    const styles = {
-      food: { color: "#28a745", icon: "🍚" },
-      medical: { color: "#dc3545", icon: "⚕️" },
-      clothing: { color: "#6f42c1", icon: "👕" },
-      beverages: { color: "#007bff", icon: "🥤" },
-      hygiene: { color: "#20c997", icon: "🧼" },
+    // Normalize for flexible matching
+    const key = category.toLowerCase();
+
+    const styles: Record<string, { color: string; icon: string }> = {
+      "food item": { color: "#28a745", icon: "🍚" },
+      "hygiene & sanitation": { color: "#20c997", icon: "🧼" },
+      "shelter materials": { color: "#fd7e14", icon: "🏠" },
+      "medical supplies": { color: "#dc3545", icon: "⚕️" },
+      "clothing items": { color: "#6f42c1", icon: "👕" },
     };
-    return (
-      styles[category as keyof typeof styles] || {
-        color: "#6c757d",
-        icon: "📦",
-      }
-    );
+
+    // Default fallback
+    return styles[key] || { color: "#6c757d", icon: "📦" };
   };
 
   // Helper function to check if item is low stock
@@ -985,9 +985,7 @@ const ResponseDashboard = () => {
               gap: "15px",
             }}
           >
-            <h3 style={{ gridColumn: "span 3", height: "0px", margin: "0" }}>
-              Key Metrics
-            </h3>
+            <h3 style={{ gridColumn: "span 3", margin: "0" }}>Key Metrics</h3>
 
             {/* Active Incidents - Most Critical */}
             <div className="sub-item-content-big-data-inverted">
@@ -1150,165 +1148,165 @@ const ResponseDashboard = () => {
           </div>
 
           {/* Recent Map Activity - Simple Header Without Action Button */}
-          <div id="recent-activity-container">
-            <div className="horizontal-container">
-              <h3>Recent Map Activity</h3>
-            </div>
-            <div
-              className="recent-activity"
-              style={{
-                maxHeight: "300px",
-                overflowY: "auto",
-                backgroundColor: "#fff",
-                border: "1px solid #e9ecef",
-                borderRadius: "6px",
-                padding: "12px",
-              }}
-            >
-              {recentMapActivity ? (
-                recentMapActivity.length > 0 ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    {recentMapActivity.slice(0, 5).map((activity) => {
-                      const activityStyle = getActivityTypeStyle(
-                        activity.activity_type,
-                      );
-                      const priorityStyle = getPriorityStyle(activity.priority);
-
-                      return (
-                        <div
-                          key={activity.id}
-                          style={{
-                            padding: "10px 12px",
-                            backgroundColor: priorityStyle.bg,
-                            border: `1px solid ${priorityStyle.color}20`,
-                            borderRadius: "6px",
-                            borderLeft: `4px solid ${activityStyle.color}`,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              marginBottom: "6px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                              }}
-                            >
-                              <FontAwesomeIcon
-                                icon={activityStyle.icon}
-                                style={{
-                                  color: activityStyle.color,
-                                  fontSize: "0.9rem",
-                                }}
-                              />
-                              <span
-                                style={{
-                                  fontSize: "0.85rem",
-                                  fontWeight: "600",
-                                  color: activityStyle.color,
-                                }}
-                              >
-                                {activityStyle.label}
-                              </span>
-                              <span
-                                style={{
-                                  fontSize: "0.7rem",
-                                  fontWeight: "500",
-                                  color: priorityStyle.color,
-                                  backgroundColor: `${priorityStyle.color}20`,
-                                  padding: "2px 6px",
-                                  borderRadius: "10px",
-                                  textTransform: "uppercase",
-                                }}
-                              >
-                                {activity.priority}
-                              </span>
-                            </div>
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "#6c757d",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "3px",
-                              }}
-                            >
-                              <FontAwesomeIcon icon={faClock} />
-                              {formatTimeAgo(activity.timestamp)}
-                            </span>
-                          </div>
-
-                          <div style={{ marginBottom: "4px" }}>
-                            <span
-                              style={{
-                                fontSize: "0.8rem",
-                                fontWeight: "500",
-                                color: "#495057",
-                              }}
-                            >
-                              📍 {activity.location.name}
-                            </span>
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: "0.75rem",
-                              color: "#6c757d",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            {activity.description}
-                          </div>
-
-                          {activity.assigned_team && (
-                            <div
-                              style={{ fontSize: "0.7rem", color: "#007bff" }}
-                            >
-                              Team: {activity.assigned_team}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      color: "#6c757d",
-                      padding: "2rem",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    No recent activity
-                  </div>
-                )
-              ) : (
-                <div
-                  style={{
-                    textAlign: "center",
-                    color: "#6c757d",
-                    padding: "2rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Loading activity...
-                </div>
-              )}
-            </div>
-          </div>
+          {/* <div id="recent-activity-container"> */}
+          {/*   <div className="horizontal-container"> */}
+          {/*     <h3>Recent Map Activity</h3> */}
+          {/*   </div> */}
+          {/*   <div */}
+          {/*     className="recent-activity" */}
+          {/*     style={{ */}
+          {/*       maxHeight: "300px", */}
+          {/*       overflowY: "auto", */}
+          {/*       backgroundColor: "#fff", */}
+          {/*       border: "1px solid #e9ecef", */}
+          {/*       borderRadius: "6px", */}
+          {/*       padding: "12px", */}
+          {/*     }} */}
+          {/*   > */}
+          {/*     {recentMapActivity ? ( */}
+          {/*       recentMapActivity.length > 0 ? ( */}
+          {/*         <div */}
+          {/*           style={{ */}
+          {/*             display: "flex", */}
+          {/*             flexDirection: "column", */}
+          {/*             gap: "12px", */}
+          {/*           }} */}
+          {/*         > */}
+          {/*           {recentMapActivity.slice(0, 5).map((activity) => { */}
+          {/*             const activityStyle = getActivityTypeStyle( */}
+          {/*               activity.activity_type, */}
+          {/*             ); */}
+          {/*             const priorityStyle = getPriorityStyle(activity.priority); */}
+          {/**/}
+          {/*             return ( */}
+          {/*               <div */}
+          {/*                 key={activity.id} */}
+          {/*                 style={{ */}
+          {/*                   padding: "10px 12px", */}
+          {/*                   backgroundColor: priorityStyle.bg, */}
+          {/*                   border: `1px solid ${priorityStyle.color}20`, */}
+          {/*                   borderRadius: "6px", */}
+          {/*                   borderLeft: `4px solid ${activityStyle.color}`, */}
+          {/*                 }} */}
+          {/*               > */}
+          {/*                 <div */}
+          {/*                   style={{ */}
+          {/*                     display: "flex", */}
+          {/*                     justifyContent: "space-between", */}
+          {/*                     alignItems: "flex-start", */}
+          {/*                     marginBottom: "6px", */}
+          {/*                   }} */}
+          {/*                 > */}
+          {/*                   <div */}
+          {/*                     style={{ */}
+          {/*                       display: "flex", */}
+          {/*                       alignItems: "center", */}
+          {/*                       gap: "6px", */}
+          {/*                     }} */}
+          {/*                   > */}
+          {/*                     <FontAwesomeIcon */}
+          {/*                       icon={activityStyle.icon} */}
+          {/*                       style={{ */}
+          {/*                         color: activityStyle.color, */}
+          {/*                         fontSize: "0.9rem", */}
+          {/*                       }} */}
+          {/*                     /> */}
+          {/*                     <span */}
+          {/*                       style={{ */}
+          {/*                         fontSize: "0.85rem", */}
+          {/*                         fontWeight: "600", */}
+          {/*                         color: activityStyle.color, */}
+          {/*                       }} */}
+          {/*                     > */}
+          {/*                       {activityStyle.label} */}
+          {/*                     </span> */}
+          {/*                     <span */}
+          {/*                       style={{ */}
+          {/*                         fontSize: "0.7rem", */}
+          {/*                         fontWeight: "500", */}
+          {/*                         color: priorityStyle.color, */}
+          {/*                         backgroundColor: `${priorityStyle.color}20`, */}
+          {/*                         padding: "2px 6px", */}
+          {/*                         borderRadius: "10px", */}
+          {/*                         textTransform: "uppercase", */}
+          {/*                       }} */}
+          {/*                     > */}
+          {/*                       {activity.priority} */}
+          {/*                     </span> */}
+          {/*                   </div> */}
+          {/*                   <span */}
+          {/*                     style={{ */}
+          {/*                       fontSize: "0.75rem", */}
+          {/*                       color: "#6c757d", */}
+          {/*                       display: "flex", */}
+          {/*                       alignItems: "center", */}
+          {/*                       gap: "3px", */}
+          {/*                     }} */}
+          {/*                   > */}
+          {/*                     <FontAwesomeIcon icon={faClock} /> */}
+          {/*                     {formatTimeAgo(activity.timestamp)} */}
+          {/*                   </span> */}
+          {/*                 </div> */}
+          {/**/}
+          {/*                 <div style={{ marginBottom: "4px" }}> */}
+          {/*                   <span */}
+          {/*                     style={{ */}
+          {/*                       fontSize: "0.8rem", */}
+          {/*                       fontWeight: "500", */}
+          {/*                       color: "#495057", */}
+          {/*                     }} */}
+          {/*                   > */}
+          {/*                     📍 {activity.location.name} */}
+          {/*                   </span> */}
+          {/*                 </div> */}
+          {/**/}
+          {/*                 <div */}
+          {/*                   style={{ */}
+          {/*                     fontSize: "0.75rem", */}
+          {/*                     color: "#6c757d", */}
+          {/*                     marginBottom: "4px", */}
+          {/*                   }} */}
+          {/*                 > */}
+          {/*                   {activity.description} */}
+          {/*                 </div> */}
+          {/**/}
+          {/*                 {activity.assigned_team && ( */}
+          {/*                   <div */}
+          {/*                     style={{ fontSize: "0.7rem", color: "#007bff" }} */}
+          {/*                   > */}
+          {/*                     Team: {activity.assigned_team} */}
+          {/*                   </div> */}
+          {/*                 )} */}
+          {/*               </div> */}
+          {/*             ); */}
+          {/*           })} */}
+          {/*         </div> */}
+          {/*       ) : ( */}
+          {/*         <div */}
+          {/*           style={{ */}
+          {/*             textAlign: "center", */}
+          {/*             color: "#6c757d", */}
+          {/*             padding: "2rem", */}
+          {/*             fontSize: "0.9rem", */}
+          {/*           }} */}
+          {/*         > */}
+          {/*           No recent activity */}
+          {/*         </div> */}
+          {/*       ) */}
+          {/*     ) : ( */}
+          {/*       <div */}
+          {/*         style={{ */}
+          {/*           textAlign: "center", */}
+          {/*           color: "#6c757d", */}
+          {/*           padding: "2rem", */}
+          {/*           fontSize: "0.9rem", */}
+          {/*         }} */}
+          {/*       > */}
+          {/*         Loading activity... */}
+          {/*       </div> */}
+          {/*     )} */}
+          {/*   </div> */}
+          {/* </div> */}
         </div>
 
         {/* Essential Visual Components */}
@@ -1321,14 +1319,14 @@ const ResponseDashboard = () => {
           >
             <div className="horizontal-container space-between-container">
               <h3>Relief Activity Map</h3>
-              {adminAccess && (
-                <Link
-                  to="/response_dashboard/demand_and_response_map"
-                  className="manage-button"
-                >
-                  <FontAwesomeIcon icon={faListUl} /> Manage
-                </Link>
-              )}
+              {/* {adminAccess && ( */}
+              {/*   <Link */}
+              {/*     to="/response_dashboard/demand_and_response_map" */}
+              {/*     className="manage-button" */}
+              {/*   > */}
+              {/*     <FontAwesomeIcon icon={faListUl} /> Manage */}
+              {/*   </Link> */}
+              {/* )} */}
             </div>
             <div
               style={{
@@ -1431,90 +1429,92 @@ const ResponseDashboard = () => {
                 <div
                   style={{ display: "grid", gap: "8px", marginBottom: "15px" }}
                 >
-                  {Object.entries(inKindMonitoring).map(([category, data]) => {
-                    <p>
-                      Category: {category}, data: {data}
-                    </p>;
-                    const style = getCategoryStyle(category);
-                    const categoryDisplayNames = {
-                      food: "Food",
-                      medical: "Medical",
-                      clothing: "Clothing",
-                      beverages: "Beverages",
-                      hygiene: "Hygiene",
-                    };
+                  {Object.entries(inKindMonitoring)
+                    .filter(([key]) => key !== "staff_status")
+                    .map(([category, data]) => {
+                      <p>
+                        Category: {category}, data: {data}
+                      </p>;
+                      const style = getCategoryStyle(category);
+                      const categoryDisplayNames = {
+                        "food item": "Food Item",
+                        "hygiene & sanitation": "Hygiene & Sanitation",
+                        "shelter materials": "Shelter Materials",
+                        "medical supplies": "Medical Supplies",
+                        "clothing items": "Clothing",
+                      };
 
-                    return (
-                      <div
-                        key={category}
-                        onClick={() =>
-                          setSelectedCategory(
-                            selectedCategory === category
-                              ? null
-                              : (category as Category),
-                          )
-                        }
-                        style={{
-                          padding: "10px 12px",
-                          backgroundColor:
-                            selectedCategory === category
-                              ? `${style.color}15`
-                              : "white",
-                          border: `2px solid ${style.color}`,
-                          borderRadius: "8px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          fontSize: "0.85rem",
-                          boxShadow:
-                            selectedCategory === category
-                              ? `0 2px 8px ${style.color}25`
-                              : "none",
-                        }}
-                      >
+                      return (
                         <div
+                          key={category}
+                          onClick={() =>
+                            setSelectedCategory(
+                              selectedCategory === category
+                                ? null
+                                : (category as Category),
+                            )
+                          }
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            padding: "10px 12px",
+                            backgroundColor:
+                              selectedCategory === category
+                                ? `${style.color}15`
+                                : "white",
+                            border: `2px solid ${style.color}`,
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            fontSize: "0.85rem",
+                            boxShadow:
+                              selectedCategory === category
+                                ? `0 2px 8px ${style.color}25`
+                                : "none",
                           }}
                         >
-                          <span
-                            style={{ fontWeight: "600", color: style.color }}
-                          >
-                            {style.icon}{" "}
-                            {
-                              categoryDisplayNames[
-                                category as keyof typeof categoryDisplayNames
-                              ]
-                            }
-                          </span>
                           <div
                             style={{
                               display: "flex",
-                              flexDirection: "column",
-                              alignItems: "flex-end",
-                              gap: "2px",
+                              justifyContent: "space-between",
+                              alignItems: "center",
                             }}
                           >
                             <span
+                              style={{ fontWeight: "600", color: style.color }}
+                            >
+                              {style.icon}{" "}
+                              {
+                                categoryDisplayNames[
+                                  category as keyof typeof categoryDisplayNames
+                                ]
+                              }
+                            </span>
+                            <div
                               style={{
-                                fontSize: "0.75rem",
-                                color: "#6c757d",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                gap: "2px",
                               }}
                             >
-                              Available: {data.available}
-                            </span>
-                            <span
-                              style={{ fontSize: "0.7rem", color: "#adb5bd" }}
-                            >
-                              Transit: {data.transit} | Distributed:{" "}
-                              {data.distributed}
-                            </span>
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#6c757d",
+                                }}
+                              >
+                                Available: {data.available}
+                              </span>
+                              <span
+                                style={{ fontSize: "0.7rem", color: "#adb5bd" }}
+                              >
+                                Transit: {data.transit} | Distributed:{" "}
+                                {data.distributed}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
 
                 {/* Detailed Item List for Selected Category */}

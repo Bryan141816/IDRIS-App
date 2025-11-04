@@ -1,12 +1,12 @@
 from crud import delete
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import DemandAndResponseOut, DemandAndResponseCreate
 from database import get_db
 from crud import delete, create_demand_and_response_record
-from models import DemandAndResponse  # no Role import datetime
+from models import DemandAndResponse, ProcurementRequest
 from datetime import datetime, timezone
 from pydantic import BaseModel
 from typing import List, Dict, Any
@@ -29,30 +29,95 @@ router_admin = APIRouter(
     response_model=List[Dict[str, Any]],
 )
 def get_markers(db: Session = Depends(get_db)):
-    records = db.query(DemandAndResponse).all()
+    requests = (
+        db.query(ProcurementRequest)
+        .filter(ProcurementRequest.request_type == "relief")
+        .options(
+            joinedload(ProcurementRequest.lgu),
+            joinedload(ProcurementRequest.barangay),
+            joinedload(ProcurementRequest.evacuation_center),
+            joinedload(ProcurementRequest.relief_items),
+        )
+        .all()
+    )
 
-    markers = []
-    for record in records:
-        marker = {
-            "demand_id": str(record.demand_id),
-            "type": "demand",  # Hardcoded as per frontend's MapPin type
-            "title_label": record.title_label,  # Renamed from title_label
-            "lat": record.lat,
-            "lng": record.lng,
-            "address": record.address,
-            "last_updated": record.last_updated.isoformat(),
-            "contact": {  # Added placeholder as it's not in the DB model
-                "name": "N/A",
-                "phone": "N/A",
+    result = []
+
+    for req in requests:
+        # Determine address and coordinates
+        if req.use_different_end:
+            if req.different_end_type == "barangay" and req.barangay:
+                lat = req.barangay.lat
+                lng = req.barangay.lng
+                address = f"{req.barangay.name}, {req.lgu.lgu_name}, Cebu"
+                contact_name = req.barangay.barangay_captain or "N/A"
+                contact_phone = req.barangay.contact_info or "N/A"
+            elif req.different_end_type == "evacuation" and req.evacuation_center:
+                lat = req.evacuation_center.lat
+                lng = req.evacuation_center.lng
+                address = f"{req.evacuation_center.name}, {req.lgu.lgu_name}, Cebu"
+                # fallback to barangay contact if available
+                contact_name = req.barangay.barangay_captain if req.barangay else "N/A"
+                contact_phone = req.barangay.contact_info if req.barangay else "N/A"
+            else:
+                lat = req.lgu.lat
+                lng = req.lgu.lng
+                address = f"{req.lgu.lgu_name}, Cebu"
+                contact_name = str(req.lgu.mayor)
+                contact_phone = str(req.lgu.lgu_contact)
+        else:
+            # Default: use LGU as the end location
+            lat = req.lgu.lat
+            lng = req.lgu.lng
+            address = f"{req.lgu.lgu_name}, Cebu"
+            contact_name = str(req.lgu.mayor)
+            contact_phone = str(req.lgu.lgu_contact)
+    
+        if not req.routes or len(req.routes) == 0:
+            computed_status = "no response"
+        else:
+            route_statuses = [r.status for r in req.routes]
+            if any(status == "Complete" for status in route_statuses):
+                computed_status = "complete"
+            elif any(status == "In Transit" for status in route_statuses):
+                computed_status = "responded"
+            else:
+                computed_status = "no response"
+
+        # Build needs (relief it
+        needs = [
+            {
+                "id": item.item_id,
+                "need": item.item_name,
+                "amount": str(item.quantity),
+            }
+            for item in req.relief_items
+        ]
+
+        # Construct main object
+        data = {
+            "demand_id": str(req.request_id),
+            "type": "demand",
+            "title_label": req.request_title,
+            "lat": lat,
+            "lng": lng,
+            "address": address,
+            "last_updated": datetime.now().isoformat(),
+            "contact": {
+                "name": contact_name,
+                "phone": contact_phone,
             },
-            "status": record.status,
-            "priority": record.priority,
-            "submitted_at": record.submitted_at.isoformat(),
-            "needs": record.needs,
+            "status": computed_status,
+            "priority": req.priority.lower() if req.priority else "medium",
+            "submitted_at": req.date_requested.isoformat()
+            if req.date_requested
+            else None,
+            "needs": needs,
         }
-        markers.append(marker)
 
-    return markers
+        result.append(data)
+
+    return result
 
 
 def getDefaultPage(page):

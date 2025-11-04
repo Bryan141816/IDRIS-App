@@ -25,7 +25,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from routers.role_checker import RoleChecker
 from fastapi import Request
-from sqlalchemy import func, desc, select, literal, and_
+from sqlalchemy import func, desc, select, literal, and_, case
 from zoneinfo import ZoneInfo
 from data_schemas.procurement_management_schema import (
     ProcurementRequestCreate,
@@ -44,6 +44,27 @@ router = APIRouter(
     tags=["procurement_management"],
     dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
 )
+
+@router.get("/procurement_management/get_dashboard_data")
+def get_dashboard(db: Session = Depends(get_db)):
+    counts = (
+        db.query(
+            func.count(ProcurementRequest.request_id).label("total"),
+            func.sum(
+                case((ProcurementRequest.status == "APPROVED", 1), else_=0)
+            ).label("approved"),
+            func.sum(
+                case((ProcurementRequest.status != "APPROVED", 1), else_=0)
+            ).label("not_approved"),
+        )
+        .one()
+    )
+
+    return {
+        "total": counts.total or 0,
+        "approved": counts.approved or 0,
+        "pending": counts.not_approved or 0,
+    } 
 
 
 def serialize_request(r: ProcurementRequest) -> dict:

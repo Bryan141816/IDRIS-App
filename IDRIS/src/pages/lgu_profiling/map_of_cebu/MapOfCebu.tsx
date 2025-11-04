@@ -526,6 +526,7 @@ const submitSearch = () => {
   const handleMarkerClick = (marker: MarkerWithPhotos) => {
     setSelectedMarker(marker);
     setSidebarOpen(true);
+  setSearchVisible(false)
     setPathCoordinates(null);
     setEvacuationCenter(null);
 
@@ -729,28 +730,37 @@ const submitSearch = () => {
       )}
 
       <div className="map-buttons">
-        <button className="map-button" onClick={() => setSelectedType(null)}>
-          Show All
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("lgu")}>
-          LGU
-        </button>
-        <button
-          className="map-button"
-          onClick={() => setSelectedType("barangay")}
-        >
-          Barangay
-        </button>
-        <button className="map-button" onClick={() => setSelectedType("raffi")}>
-          RAFI Infrastructure
-        </button>
-        <button
-          className="map-button"
-          onClick={() => setSelectedType("evacuation")}
-        >
-          Evacuation Centers
-        </button>
-      </div>
+  <button
+    className={`map-button ${selectedType === null ? "active" : ""}`}
+    onClick={() => setSelectedType(null)}
+  >
+    Show All
+  </button>
+  <button
+    className={`map-button ${selectedType === "lgu" ? "active" : ""}`}
+    onClick={() => setSelectedType("lgu")}
+  >
+    LGU
+  </button>
+  <button
+    className={`map-button ${selectedType === "barangay" ? "active" : ""}`}
+    onClick={() => setSelectedType("barangay")}
+  >
+    Barangay
+  </button>
+  <button
+    className={`map-button ${selectedType === "raffi" ? "active" : ""}`}
+    onClick={() => setSelectedType("raffi")}
+  >
+    RAFI Infrastructure
+  </button>
+  <button
+    className={`map-button ${selectedType === "evacuation" ? "active" : ""}`}
+    onClick={() => setSelectedType("evacuation")}
+  >
+    Evacuation Centers
+  </button>
+</div>
 
       <div className="legend-box">
         <h4>Legend</h4>

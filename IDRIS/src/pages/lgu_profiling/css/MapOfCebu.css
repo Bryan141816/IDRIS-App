@@ -32,6 +32,17 @@
   right: 480px; /* Move the buttons left to make space for the sidebar */
 }
 
+
+.map-button.active {
+  background-color: #4f8df5 !important; /* modern blue accent */
+  color: #ffffff !important;
+  border-color: transparent !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 6px rgba(79, 141, 245, 0.3) !important; /* soft glow */
+  transform: translateY(-1px) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
 /* Map button styling */
 .map-of-cebu-container .map-button {
   padding: 8px 16px;
@@ -314,10 +325,12 @@
   color: #1f2937;
   transition: background 0.15s ease;
 }
-
 .map-search__item:hover,
 .map-search__item.is-active {
-  background: #f3f4f6;
+  background: #e5f0ff !important; /* same soft modern blue tint */
+  color: #1e3a8a !important; /* deep blue text for contrast */
+  border-color: #4f8df5 !important;
+  transition: all 0.2s ease-in-out !important;
 }
 
 /* label tag */

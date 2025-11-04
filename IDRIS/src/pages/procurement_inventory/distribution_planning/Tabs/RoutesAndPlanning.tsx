@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { WarehouseZone } from "../../procurement_inventory/Tabs/Modals/ModalDefault";
 import { AddRouteModal } from "./Modals/AddRoute/AddRoute";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
-import { EditRoute } from "./Modals/EditRoute/EditRoute";
 import { FinalizeRouteSetup } from "./Modals/FinalizeRoute/FinalizeRoute";
-
+import { EditRoute } from "./Modals/EditRoute/EditRoute";
+import { ViewRoute } from "./Modals/ViewRoute/ViewRoute";
 // Helpers
 export type ISODate = string;
 export type Maybe<T> = T | null;
@@ -236,6 +236,19 @@ export const RoutesAndPlanning = () => {
           route_id={selectedRoute.route_id}
         ></FinalizeRouteSetup>
       )}
+      {activeModal === "update" && selectedRoute && (
+        <EditRoute
+          onClose={closeModal}
+          refreshData={fetchData}
+          selectedRoute={selectedRoute}
+        ></EditRoute>
+      )}
+      {activeModal === "view" && selectedRoute && (
+        <ViewRoute
+          onClose={closeModal}
+          selectedRoute={selectedRoute}
+        ></ViewRoute>
+      )}
       <div className="routes-content">
         <div className="section-header">
           <h2>Distribution Routes & Schedules</h2>
@@ -281,8 +294,21 @@ export const RoutesAndPlanning = () => {
                       Finalize Route Setup
                     </button>
                   )}
-                  {/* <button className="secondary-btn">Update</button> */}
-                  {/* <button className="primary-btn">View</button> */}
+                  {route.status.toLowerCase() === "active" ||
+                    (route.status.toLowerCase() === "in transit" && (
+                      <button
+                        className="secondary-btn"
+                        onClick={() => openModal("update", route)}
+                      >
+                        Update
+                      </button>
+                    ))}
+                  <button
+                    className="primary-btn"
+                    onClick={() => openModal("view", route)}
+                  >
+                    View
+                  </button>
                 </div>
               </div>
             </div>

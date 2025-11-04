@@ -64,7 +64,7 @@ class AssignTeam(BaseModel):
 class UpdateRoute(BaseModel):
     route_id: int
     status: str
-    schedule: datetime
+
 
 
 class TeamMembers(BaseModel):

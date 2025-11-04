@@ -33,7 +33,7 @@ from crud_functions.procurement_manage.procurement_management import (
 from routers.GetUserId import GetUserId
 from create_notification import send_notification
 from sqlalchemy.exc import SQLAlchemyError
-
+from sqlalchemy.inspection import inspect
 router = APIRouter(
     tags=["procurement_management"],
     dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
@@ -140,12 +140,50 @@ def get_request(db: Session = Depends(get_db)):
     return [serialize_request(r) for r in rows]
 
 
+def create_disbursement_with_items(db: Session, request_data: dict):
+    # Create disbursement item_data
+    print(request_data)
+    """
+    disbursement_id = str(uuid4())
+
+    # Create the main disbursement record
+    disbursement = Disbursement(
+        disbursement_id=disbursement_id,
+        disbursement_name=disbursement_data.get("disbursement_name", "No title"),
+        origin_name=disbursement_data.get("origin_name", "No origin"),
+        origin_id=disbursement_data["origin_id"],
+        attachment=disbursement_data.get("attachment"),
+        remarks=disbursement_data.get("remarks"),
+        status=disbursement_data.get("status", DisbursementStatus.SUBMITTED),
+    )
+
+    # Add items
+    for item_data in items_data:
+        item = DisbursementItem(
+            item_id=str(uuid4()),
+            item_name=item_data.get("item_name", "Item name"),
+            quantity=item_data.get("quantity", 0),
+            unit=item_data.get("unit", "pcs"),
+            unit_cost=item_data.get("unit_cost", 0),
+            vendor=item_data.get("vendor", "Vendor name"),
+            disbursement_id=disbursement_id,
+        )
+        disbursement.items.append(item)
+
+    # Add and commit
+    db.add(disbursement)
+    db.commit()
+    db.refresh(disbursement)
+
+    return disbursement"""
+
 class Inventory(BaseModel):
     item_id: int
     assigned_id: int
     quantity_assigned: int
 
-
+def to_dict(obj):
+    return {c.key: getattr(obj, c.key) for c in inspect(obj).mapper.column_attrs}
 @router.post("/procurement_management/approve_reject_request")
 def approve_reject_request(
     db: Session = Depends(get_db),
@@ -252,6 +290,12 @@ def approve_reject_request(
 
                 if distributed:
                     db.add_all(distributed)
+
+        else:
+            request_data = to_dict(query)
+            create_disbursement_with_items(db, request_data)
+            return {"message": "Test"}
+
 
         # --- Update request status ---
         if type == "approve":

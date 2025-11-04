@@ -2,12 +2,10 @@ import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { useState } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { ModalOverlay } from "../ProcurementModalsDefault";
-import { RequestItem } from "../ProcurementDefaults";
-import { RequestItemManager } from "./RequestItemManager";
-import { v4 as uuidv4 } from "uuid";
 import { SelectBarangayEvacuation } from "./SelectBarangayEvacuation";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Swal from "sweetalert2";
 export const SubmitProcurementRequest: React.FC<
   ProcurementDefaultModalProps
 > = ({ onClose, refreshData, apiUrl }) => {
@@ -94,6 +92,13 @@ export const SubmitProcurementRequest: React.FC<
           "/request_procurement/add_request",
           payload,
         );
+        Swal.fire({
+          title: "Add Request",
+          text: "Your request has been added successfully",
+          icon: "success",
+        });
+        refreshData();
+        onClose();
       } catch (e: any) {
         console.error("Error adding procurement request: " + e.message);
       }

@@ -448,38 +448,14 @@ class DistributionAndPlanningCRUD:
             return None
 
         log_message = None
-        if route.status != payload.status and route.schedule != payload.schedule:
-            log_message = (
-                f"{route.route_name}'s status has been updated and rescheduled"
-            )
-        elif route.status != payload.status:
-            log_message = f"{route.route_name}'s status has been updated"
-        elif route.schedule != payload.schedule:
-            log_message = f"{route.route_name}'s has been rescheduled"
+
         route.status = payload.status
-        route.schedule = payload.schedule
         if log_message and route.status != "Pending":
 
             log_entry = DistributionRouteLogs(
                 route_id=route.route_id, log_message=log_message, date=datetime.now()
             )
             db.add(log_entry)
-
-        demand_response = (
-            db.query(DemandAndResponse)
-            .filter(DemandAndResponse.id == route.end_location_id)
-            .first()
-        )
-
-        if demand_response:
-            demand_response.status = "responded"
-            demand_response.last_updated = datetime.now()
-        if route.status == "Completed":
-            demand_response.status = "completed"
-            demand_response.last_updated = datetime.now()
-        elif route.status == "Cancelled":
-            demand_response.status = "no response"
-            demand_response.last_updated = datetime.now()
 
         db.commit()
         db.refresh(route)

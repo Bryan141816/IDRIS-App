@@ -6,11 +6,10 @@ import {
   useMap,
   Polyline,
   ZoomControl,
-  CircleMarker,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 export interface MarkerType {
   lat: number;
@@ -43,17 +42,20 @@ export function ViewEvents({ onViewChange }: { onViewChange?: (lat: number, lng:
 }
 interface MapViewProps {
   center?: [number, number];
+  shouldFlyToCenter?: boolean;                 // 👈 new
+  onViewChange?: (lat: number, lng: number) => void; 
   markers: MarkerType[];
   onMarkerClick?: (marker: MarkerType) => void;
   fitBounds?: boolean;
   pathCoordinates?: [number, number][] | null;
   customIcon?: L.Icon;
+  focusZoom?: number;       // zoom to use when recentering (search/click)
+  flyDurationSec?: number;  // animation duration
 }
 
 /* ---------- ICONS BY TYPE ---------- */
 const getIconByType = (type?: string) => {
   let iconUrl = "/images/default.png";
-
   if (type === "lgu") iconUrl = "/images/icons/lgu.png";
   else if (type === "barangay") iconUrl = "/images/icons/baranggay.png";
   else if (type === "raffi") iconUrl = "/images/icons/raffi.png";
@@ -71,54 +73,47 @@ const getIconByType = (type?: string) => {
 /* ---------- FIT TO BOUNDS WHEN ENABLED ---------- */
 const FitBounds: React.FC<{ markers: MarkerType[] }> = ({ markers }) => {
   const map = useMap();
-
   useEffect(() => {
     if (markers.length === 0) return;
     const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng]));
     map.fitBounds(bounds, { padding: [30, 30] });
   }, [markers, map]);
-
   return null;
 };
 
-/* ---------- FLY TO NEW CENTER ON CHANGE ---------- */
-const CenterOnChange: React.FC<{ center: [number, number] }> = ({ center }) => {
+/* ---------- FLY TO NEW CENTER ON CHANGE (skip initial) ---------- */
+const CenterOnChange: React.FC<{
+  center: [number, number];
+  zoom?: number;
+  duration?: number;
+  skipFirst?: boolean;
+}> = ({ center, zoom, duration, skipFirst = true }) => {
   const map = useMap();
+  const didInit = useRef(false);
+  const prev = useRef<[number, number] | null>(null);
+
   useEffect(() => {
-    if (!center) return;
-    map.flyTo(center, map.getZoom(), { duration: 0.75 });
-  }, [center, map]);
+    // Skip the very first render to keep initial overview
+    if (skipFirst && !didInit.current) {
+      didInit.current = true;
+      prev.current = center;
+      return;
+    }
+
+    // No-op if center didn't change
+    if (prev.current && prev.current[0] === center[0] && prev.current[1] === center[1]) {
+      return;
+    }
+    prev.current = center;
+
+    const requested = typeof zoom === "number" ? zoom : 18; // default close zoom
+    const maxTileZoom = (map as any)._layersMaxZoom ?? map.getMaxZoom() ?? 19;
+    const targetZoom = Math.min(requested, maxTileZoom);
+
+    map.flyTo(center, targetZoom, { duration: duration ?? 1.6 });
+  }, [center, zoom, duration, map, skipFirst]);
+
   return null;
-};
-
-/* ---------- SUBTLE HALO TO EMPHASIZE FOCUS ---------- */
-const FocusHalo: React.FC<{ center: [number, number] }> = ({ center }) => {
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
-    setShow(true);
-    const t = setTimeout(() => setShow(false), 1200);
-    return () => clearTimeout(t);
-  }, [center[0], center[1]]);
-
-  if (!show) return null;
-
-  return (
-    <>
-      {/* inner dot */}
-      <CircleMarker
-        center={center}
-        radius={6}
-        pathOptions={{ color: "#3b82f6", weight: 2, fillOpacity: 0.9 }}
-      />
-      {/* soft outer ring */}
-      <CircleMarker
-        center={center}
-        radius={18}
-        pathOptions={{ color: "#3b82f6", weight: 2, opacity: 0.6, fillOpacity: 0.15 }}
-      />
-    </>
-  );
 };
 
 /* ---------- MAIN MAP COMPONENT ---------- */
@@ -129,11 +124,15 @@ const MapView: React.FC<MapViewProps> = ({
   fitBounds = false,
   pathCoordinates,
   customIcon,
+  focusZoom = 18,      // close-up when recentering
+  flyDurationSec = 1.6 // smooth but not too slow
 }) => {
   return (
     <MapContainer
       center={center}
       zoom={9}
+      maxZoom={20}        // allow building-level zoom
+      minZoom={9}         // keep Cebu overview, avoid zooming too far out
       zoomControl={false}
       style={{ height: "100%", width: "100%" }}
       attributionControl={false}
@@ -142,24 +141,24 @@ const MapView: React.FC<MapViewProps> = ({
 
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={20}
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
       />
 
       {fitBounds && <FitBounds markers={markers} />}
+      <CenterOnChange
+        center={center}
+        zoom={focusZoom}
+        duration={flyDurationSec}
+        skipFirst   // keep initial view as-is
+      />
 
-      {/* animate + emphasize when parent updates center */}
-      <CenterOnChange center={center} />
-      <FocusHalo center={center} />
-
-      {/* Markers */}
       {markers.map((point, index) => (
         <Marker
           key={index}
           position={[point.lat, point.lng]}
           icon={customIcon || getIconByType(point.type)}
-          eventHandlers={{
-            click: () => onMarkerClick && onMarkerClick(point),
-          }}
+          eventHandlers={{ click: () => onMarkerClick && onMarkerClick(point) }}
         >
           <Popup>
             <div>
@@ -175,7 +174,6 @@ const MapView: React.FC<MapViewProps> = ({
         </Marker>
       ))}
 
-      {/* route line from barangay to nearest evac center */}
       {pathCoordinates && <Polyline positions={pathCoordinates} color="red" />}
     </MapContainer>
   );

@@ -294,15 +294,15 @@ export const RoutesAndPlanning = () => {
                       Finalize Route Setup
                     </button>
                   )}
-                  {route.status.toLowerCase() === "active" ||
-                    (route.status.toLowerCase() === "in transit" && (
-                      <button
-                        className="secondary-btn"
-                        onClick={() => openModal("update", route)}
-                      >
-                        Update
-                      </button>
-                    ))}
+                  {(route.status.toLowerCase() === "active" ||
+                    route.status.toLowerCase() === "in transit") && (
+                    <button
+                      className="secondary-btn"
+                      onClick={() => openModal("update", route)}
+                    >
+                      Update
+                    </button>
+                  )}
                   <button
                     className="primary-btn"
                     onClick={() => openModal("view", route)}

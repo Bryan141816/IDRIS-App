@@ -288,129 +288,124 @@ const MapView: React.FC<{
         </Marker>
       ))}
     </MapContainer>
-
-    {/* Legend Overlay */}
-    <div
-      style={{
-        position: "absolute",
-        bottom: "10px",
-        right: "10px",
-        backgroundColor: "rgba(255, 255, 255, 0.95)",
-        backdropFilter: "blur(8px)",
-        padding: "12px 16px",
-        borderRadius: "8px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        border: "1px solid rgba(0, 0, 0, 0.1)",
-        zIndex: 1000,
-        fontSize: "0.85rem",
-        minWidth: "160px",
-      }}
-    >
-      <div
-        style={{
-          fontWeight: "600",
-          marginBottom: "8px",
-          color: "#495057",
-          fontSize: "0.9rem",
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-        }}
-      >
-        <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: "#6c757d" }} />
-        Status Legend
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        {/* No Response */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRadius: "50%",
-              backgroundColor: "#dc3545",
-              border: "2px solid white",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              flexShrink: 0,
-            }}
-          ></div>
-          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
-            No Response
-          </span>
-        </div>
-
-        {/* Responded */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRadius: "50%",
-              backgroundColor: "#ffc107",
-              border: "2px solid white",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              flexShrink: 0,
-            }}
-          ></div>
-          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
-            Responded
-          </span>
-        </div>
-
-        {/* Completed */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
-            style={{
-              width: "12px",
-              height: "12px",
-              borderRadius: "50%",
-              backgroundColor: "#28a745",
-              border: "2px solid white",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-              flexShrink: 0,
-            }}
-          ></div>
-          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
-            Completed
-          </span>
-        </div>
-      </div>
-
-      {/* Separator line */}
-      <div
-        style={{
-          height: "1px",
-          backgroundColor: "#e9ecef",
-          margin: "8px 0",
-        }}
-      ></div>
-
-      {/* Summary stats */}
-      <div
-        style={{
-          fontSize: "0.75rem",
-          color: "#6c757d",
-          lineHeight: "1.4",
-        }}
-      >
-        <div>Total Points: {markers.length}</div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: "2px",
-          }}
-        >
-          <span>
-            Active: {markers.filter((m) => m.status !== "completed").length}
-          </span>
-          <span>
-            Done: {markers.filter((m) => m.status === "completed").length}
-          </span>
-        </div>
-      </div>
-    </div>
+    {/**/}
+    {/* }
+    {/* <div */}
+    {/*   style={{ */}
+    {/*     position: "absolute", */}
+    {/*     bottom: "10px", */}
+    {/*     right: "10px", */}
+    {/*     backgroundColor: "rgba(255, 255, 255, 0.95)", */}
+    {/*     backdropFilter: "blur(8px)", */}
+    {/*     padding: "12px 16px", */}
+    {/*     borderRadius: "8px", */}
+    {/*     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)", */}
+    {/*     border: "1px solid rgba(0, 0, 0, 0.1)", */}
+    {/*     zIndex: 1000, */}
+    {/*     fontSize: "0.85rem", */}
+    {/*     minWidth: "160px", */}
+    {/*   }} */}
+    {/* > */}
+    {/*   <div */}
+    {/*     style={{ */}
+    {/*       fontWeight: "600", */}
+    {/*       marginBottom: "8px", */}
+    {/*       color: "#495057", */}
+    {/*       fontSize: "0.9rem", */}
+    {/*       display: "flex", */}
+    {/*       alignItems: "center", */}
+    {/*       gap: "6px", */}
+    {/*     }} */}
+    {/*   > */}
+    {/*     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: "#6c757d" }} /> */}
+    {/*     Status Legend */}
+    {/*   </div> */}
+    {/**/}
+    {/*   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}> */}
+    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
+    {/*       <div */}
+    {/*         style={{ */}
+    {/*           width: "12px", */}
+    {/*           height: "12px", */}
+    {/*           borderRadius: "50%", */}
+    {/*           backgroundColor: "#dc3545", */}
+    {/*           border: "2px solid white", */}
+    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
+    {/*           flexShrink: 0, */}
+    {/*         }} */}
+    {/*       ></div> */}
+    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
+    {/*         No Response */}
+    {/*       </span> */}
+    {/*     </div> */}
+    {/**/}
+    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
+    {/*       <div */}
+    {/*         style={{ */}
+    {/*           width: "12px", */}
+    {/*           height: "12px", */}
+    {/*           borderRadius: "50%", */}
+    {/*           backgroundColor: "#ffc107", */}
+    {/*           border: "2px solid white", */}
+    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
+    {/*           flexShrink: 0, */}
+    {/*         }} */}
+    {/*       ></div> */}
+    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
+    {/*         Responded */}
+    {/*       </span> */}
+    {/*     </div> */}
+    {/**/}
+    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
+    {/*       <div */}
+    {/*         style={{ */}
+    {/*           width: "12px", */}
+    {/*           height: "12px", */}
+    {/*           borderRadius: "50%", */}
+    {/*           backgroundColor: "#28a745", */}
+    {/*           border: "2px solid white", */}
+    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
+    {/*           flexShrink: 0, */}
+    {/*         }} */}
+    {/*       ></div> */}
+    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
+    {/*         Completed */}
+    {/*       </span> */}
+    {/*     </div> */}
+    {/*   </div> */}
+    {/**/}
+    {/*   <div */}
+    {/*     style={{ */}
+    {/*       height: "1px", */}
+    {/*       backgroundColor: "#e9ecef", */}
+    {/*       margin: "8px 0", */}
+    {/*     }} */}
+    {/*   ></div> */}
+    {/**/}
+    {/*   <div */}
+    {/*     style={{ */}
+    {/*       fontSize: "0.75rem", */}
+    {/*       color: "#6c757d", */}
+    {/*       lineHeight: "1.4", */}
+    {/*     }} */}
+    {/*   > */}
+    {/*     <div>Total Points: {markers.length}</div> */}
+    {/*     <div */}
+    {/*       style={{ */}
+    {/*         display: "flex", */}
+    {/*         justifyContent: "space-between", */}
+    {/*         marginTop: "2px", */}
+    {/*       }} */}
+    {/*     > */}
+    {/*       <span> */}
+    {/*         Active: {markers.filter((m) => m.status !== "completed").length} */}
+    {/*       </span> */}
+    {/*       <span> */}
+    {/*         Done: {markers.filter((m) => m.status === "completed").length} */}
+    {/*       </span> */}
+    {/*     </div> */}
+    {/*   </div> */}
+    {/* </div> */}
   </div>
 );
 

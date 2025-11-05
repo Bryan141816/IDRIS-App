@@ -391,7 +391,7 @@ const LGUofficer: React.FC = () => {
                   {/* <th>Coordinates</th> */}
                   <th>Captain</th>
                   <th>Contact</th>
-                  <th>Total Household</th>
+                  {/* <th>Total Household</th> */}
                   <th>Total Population</th>
                   <th>Evacuation</th>
                   <th className="col-action">Action</th>
@@ -411,7 +411,7 @@ const LGUofficer: React.FC = () => {
                       {/* <td>{item.lat && item.lng ? `${item.lat}, ${item.lng}` : "Not yet assigned"}</td> */}
                       <td>{item.barangay_captain || "Not yet assigned"}</td>
                       <td>{item.contact_info || "Not yet assigned"}</td>
-                      <td>{item.household_count ?? "Not yet assigned"}</td>
+                      {/* <td>{item.household_count ?? "Not yet assigned"}</td> */}
                       <td>{item.total_population ?? "Not yet assigned"}</td>
                       <td>{item.evacucation_center ? item.evacucation_center?.name : "Not yet assigned"}</td>
                       <td>

@@ -1,83 +1,16 @@
-// LGUModals.tsx (frontend-only modal; no backend calls)
-import React, { useEffect, useMemo, useState } from "react";
+// LGUModals.tsx (frontend-only modal; no direct backend calls)
+import React, { useEffect, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
-import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faImage,
-  faLock,
-  faMapMarkerAlt,
-} from "@fortawesome/free-solid-svg-icons";
+import { faImage, faLock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
+import Swal from "sweetalert2";
 import defaultpicture from "../../../../../public/images/defaultpicture.jpg";
-export interface LGUOut {
-  id: number;
-  lgu_name: string;
-  lgu_seal?: string | null;
-  lgu_classification: string;
-  lat?: number | null;
-  lng?: number | null;
-  population?: number | null;
-  mayor?: string | null;
-  lgu_contact?: string | null;
-  lgu_majorHazard?: string[] | null;
-  DRMMpersonel?: string | null;
-  DRMM_contact?: string | null;
-  hazard_pic?: string | null;
-  lgu_critical_facility?: string[] | null;
-  lgu_pwd?: number | null;
-  lgu_senior?: number | null;
-  lgu_children?: number | null;
-  baranggay_count?: number | null;
-}
+import { SuperAdminLGU, type LGUDetail as LGUOut } from "../../../../API_Handler/lguprofiling/SuperAdminLGU";
 import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
-import { API } from "../../../../API_Handler/Axio_API_Handler";
-/* ========= Types ========= */
-export type LGUEditForm = {
-  // LGU information Details
-  lgu_name: string; // locked (prefetch)
-  classification: "Municipality" | "City" | "";
-  lgu_seal?: string; // dataUrl preview
-  population?: number | "";
-  barangay_count?: number | ""; // locked (prefetch)
-  mayor?: string;
-  contact?: string; // 11 digits
-
-  // Coordinates
-  lat?: number;
-  lng?: number;
-
-  // Disaster Risk Profile
-  major_hazard: Array<
-    "Typhoon" | "Flood" | "Earthquake" | "Fire" | "Landslide"
-  >;
-  hazard_picture?: string; // dataUrl preview
-
-  // DRRMO
-  drmm_personnel?: string;
-  drmm_contact?: string; // 11 digits
-  evacuation_center?: string; // locked (prefetch text)
-  critical_facilities: Array<
-    | "Municipal Hall"
-    | "Barangay Hall"
-    | "Hospital/Health Center"
-    | "Evacuation Center"
-    | "Police Station"
-    | "Fire Station"
-    | "School"
-  >;
-
-  // Vulnerable Population
-  pwd?: number | "";
-  senior?: number | "";
-  children?: number | "";
-};
-
-export type MyLGU = LGUEditForm;
 
 /* ========= Helpers ========= */
-const is11Digits = (v?: string) => !!v && /^[0-9]{11}$/.test(v);
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -102,12 +35,10 @@ function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
 }
 
 /* =========================================================================
-   VIEW
+  VIEW
 ===========================================================================*/
-
 type ViewProps = {
   closeModal: () => void;
-
   data: LGUOut;
   onOpenEdit?: () => void;
 };
@@ -118,7 +49,24 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
   data,
 }) => {
   const d = data;
-
+    const [brgyCount, setBrgyCount] = useState<number | null>(
+    d.baranggay_count ?? null
+  );
+  useEffect(() => {
+    let alive = true;
+    if (brgyCount == null && d?.id) {
+      (async () => {
+        try {
+          const { barangays } = await SuperAdminLGU.getLGUSummary(d.id);
+          if (alive) setBrgyCount(barangays.length);
+        } catch (err) {
+          console.error("Failed to load barangay count:", err);
+        }
+      })();
+    } return () => {
+      alive = false;
+    };
+  }, [d?.id]);
   return (
     <Modal
       isOpen={true}
@@ -142,19 +90,11 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
             <>
               <Section title="LGU information Details">
                 <DL label="LGU Name" value={d.lgu_name || "—"} locked />
-                <DL
-                  label="Classification"
-                  value={d.lgu_classification || "—"}
-                />
+                <DL label="Classification" value={d.lgu_classification || "—"} />
                 <DL label="Total Population" value={fmtNum(d.population)} />
-                <DL
-                  label="No. of Barangay"
-                  value={fmtNum(d.baranggay_count)}
-                  locked
-                />
+                <DL label="No. of Barangay" value={fmtNum(brgyCount ?? d.baranggay_count)} locked />
                 <DL label="Mayor" value={d.mayor || "—"} />
                 <DL label="Coordinates" value={fmtLL(d.lat, d.lng)} />
-                {/* moved images out of this section */}
               </Section>
 
               <Section title="Disaster Risk Profile">
@@ -162,20 +102,11 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
                   label="Major Hazard"
                   value={d.lgu_majorHazard?.join(", ") || "—"}
                 />
-                {/* moved image out of this section */}
               </Section>
 
               <Section title="Disaster Risk Reduction & Management Office">
-                <DL
-                  label="DRMM local personnel"
-                  value={d.DRMMpersonel || "—"}
-                />
-
-                <DL
-                  label="DRMM contact"
-                  value={d.DRMM_contact || "—"}
-                  invalid={!!d.DRMM_contact && !is11Digits(d.DRMM_contact)}
-                />
+                <DL label="DRMM local personnel" value={d.DRMMpersonel || "—"} />
+                <DL label="DRMM contact" value={d.DRMM_contact || "—"} />
                 <DL
                   label="Critical Facilities"
                   value={d.lgu_critical_facility?.join(", ") || "—"}
@@ -188,7 +119,7 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
                 <DL label="Children" value={fmtNum(d.lgu_children)} />
               </Section>
 
-              {/* --- NEW: Images at the very bottom --- */}
+              {/* Images */}
               <Section title="Images">
                 <div className="lgu-media-row">
                   <ImgOrPlaceholder
@@ -225,13 +156,15 @@ export const MyLGUViewModal: React.FC<ViewProps> = ({
   );
 };
 
-export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
+export const MyLGUEditModal: React.FC<
+  ViewProps & { onSaved?: () => void }
+> = ({ closeModal, data, onSaved }) => {
   // ===== state =====
   const defaultForm: LGUOut = {
     id: 0,
     lgu_name: "",
-    lat: 0,
-    lng: 0,
+    lat: -1000000,
+    lng: -1000000,
     lgu_classification: "",
     lgu_seal: "",
     population: 0,
@@ -243,98 +176,181 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
     lgu_children: 0,
     hazard_pic: "",
     lgu_majorHazard: [],
+    lgu_critical_facility: [],
+    lgu_contact: "",
+    baranggay_count: null,
   };
+
   const [form, setForm] = useState<LGUOut>(data ?? defaultForm);
 
   useEffect(() => {
-    if (data) {
-      // merge with defaults so missing keys get default values
-      setForm({ ...defaultForm, ...data });
-    }
+    if (data) setForm({ ...defaultForm, ...data });
   }, [data]);
 
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const openLocationPicker = () => setLocationPickerIsOpen(true);
   const closeLocationPicker = () => setLocationPickerIsOpen(false);
+
   const [lguContactInvalid, setLguContactInvalid] = useState(false);
   const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmit = () => {
-    const submit = async () => {
-      try {
-        const response = await API.put("/lgu_profiling/api/update_lgu", form);
-        console.log(response.data);
-      } catch (e: any) {
-        console.error("Error updating lgu: " + e.message);
-      }
-    };
-    submit();
+  const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
+
+  const validateForm = () => {
+    const v: { [key: string]: boolean } = {};
+    v.lgu_name = !form.lgu_name?.trim();
+    v.lgu_classification = !form.lgu_classification;
+    v.mayor = !form.mayor?.trim();
+    v.lgu_contact = !form.lgu_contact?.trim() || lguContactInvalid;
+    v.location =
+      !form.lat ||
+      !form.lng ||
+      form.lat === -1000000 ||
+      form.lng === -1000000;
+    v.population = !Number.isFinite(form.population as number);
+    v.lgu_majorHazard =
+      !Array.isArray(form.lgu_majorHazard) || !form.lgu_majorHazard.length;
+    v.DRMMpersonel = !form.DRMMpersonel?.trim();
+    v.DRMM_contact = !form.DRMM_contact?.trim() || drrmContactInvalid;
+    v.lgu_critical_facility =
+      !Array.isArray(form.lgu_critical_facility) ||
+      !form.lgu_critical_facility.length;
+    v.lgu_pwd = form.lgu_pwd == null || form.lgu_pwd < 0;
+    v.lgu_senior = form.lgu_senior == null || form.lgu_senior < 0;
+    v.lgu_children = form.lgu_children == null || form.lgu_children < 0;
+
+    setValidation(v);
+    return !Object.values(v).some(Boolean);
   };
+
+  const handleSubmit = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    try {
+      if (!validateForm()) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Incomplete or Invalid Form",
+          text: "Please fill in all required fields. Fields with red highlight need your attention.",
+          confirmButtonColor: "#f59e0b",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      // Build a PATCH-like payload so you don’t blank out fields with ""
+      const toNull = (v: any) => (v === "" ? null : v);
+      const sanitizeArray = (a?: string[] | null) =>
+        Array.isArray(a) ? a : null;
+
+      const payload: Partial<LGUOut> = {
+        lgu_name: toNull(form.lgu_name),
+        lgu_classification: toNull(form.lgu_classification),
+        mayor: toNull(form.mayor),
+        lgu_contact: toNull(form.lgu_contact),
+        population:
+          form.population === null || form.population === undefined
+            ? null
+            : Number(form.population),
+
+        ...(form.lat !== -1000000 && form.lng !== -1000000
+          ? { lat: form.lat ?? null, lng: form.lng ?? null }
+          : {}),
+
+        lgu_seal: toNull(form.lgu_seal),
+        hazard_pic: toNull(form.hazard_pic),
+        lgu_majorHazard: sanitizeArray(form.lgu_majorHazard),
+        lgu_critical_facility: sanitizeArray(form.lgu_critical_facility),
+        DRMMpersonel: toNull(form.DRMMpersonel),
+        DRMM_contact: toNull(form.DRMM_contact),
+        lgu_pwd:
+          form.lgu_pwd === null || form.lgu_pwd === undefined
+            ? null
+            : Number(form.lgu_pwd),
+        lgu_senior:
+          form.lgu_senior === null || form.lgu_senior === undefined
+            ? null
+            : Number(form.lgu_senior),
+        lgu_children:
+          form.lgu_children === null || form.lgu_children === undefined
+            ? null
+            : Number(form.lgu_children),
+        // baranggay_count is view-only; do not send
+      };
+
+      await SuperAdminLGU.updateLGU(form.id, payload);
+
+      await Swal.fire({
+        icon: "success",
+        title: "Saved successfully!",
+        text: "LGU details have been updated.",
+        confirmButtonColor: "#6d28d9",
+      });
+
+      onSaved?.();
+      closeModal();
+    } catch (e: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Update failed!",
+        text:
+          e?.response?.data?.detail ||
+          e?.response?.data?.message ||
+          "Something went wrong while saving.",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleContactChange = (key: keyof LGUOut, val: string) => {
     // Allow digits, parentheses, plus sign
     const cleaned = val.replace(/[^\d()+]/g, "");
 
-    // Philippine mobile or landline pattern
+    // PH mobile or landline
     const validPattern =
       /^(?:\+639\d{9}|09\d{9}|0\d{1,2}\d{7}|\(\d{2,3}\)\d{7})$/;
 
     setForm((prev) => ({ ...prev, [key]: cleaned }));
 
-    // Check validity
     const setIsInvalid =
       key === "lgu_contact" ? setLguContactInvalid : setDrrmContactInvalid;
-    if (cleaned === "" || validPattern.test(cleaned)) {
-      setIsInvalid(false);
-    } else {
-      setIsInvalid(true);
-    }
+    if (cleaned === "" || validPattern.test(cleaned)) setIsInvalid(false);
+    else setIsInvalid(true);
   };
 
   const toggle = (key: keyof LGUOut, val: string) => {
     setForm((prev) => {
-      // Convert existing field to a Set (handles undefined/null gracefully)
       const current = Array.isArray(prev[key]) ? (prev[key] as string[]) : [];
       const next = new Set(current);
-
-      // Toggle logic
-      if (next.has(val)) {
-        next.delete(val);
-      } else {
-        next.add(val);
-      }
-
-      // Return updated form
-      return {
-        ...prev,
-        [key]: Array.from(next),
-      };
+      if (next.has(val)) next.delete(val);
+      else next.add(val);
+      return { ...prev, [key]: Array.from(next) };
     });
   };
+
   const onImage =
     (key: keyof LGUOut) => async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
       try {
-        const url = await readAsDataUrl(file); // your existing helper
-        setForm((prev) => ({
-          ...prev,
-          [key]: url as string, // ensure type is string
-        }));
+        const url = await readAsDataUrl(file);
+        setForm((prev) => ({ ...prev, [key]: url as string }));
       } catch (err) {
         console.error("Failed to read image file:", err);
       }
     };
+
   const onLocationSelectSubmit = (
-    address: string,
-    coordinates: [number, number],
+    _address: string,
+    coordinates: [number, number]
   ) => {
-    setForm((prev) => ({
-      ...prev,
-      lat: coordinates[0],
-      lng: coordinates[1],
-    }));
+    setForm((prev) => ({ ...prev, lat: coordinates[0], lng: coordinates[1] }));
   };
+
   return (
     <>
       {locationPickerIsOpen && (
@@ -342,13 +358,17 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
           onClose={closeLocationPicker}
           defaultValue={{
             address: form.lgu_name,
-            coordinates: [form.lat ?? 0, form.lng ?? 0],
+            coordinates: [form.lat ?? -1000000, form.lng ?? -1000000],
           }}
           onSubmit={onLocationSelectSubmit}
           changeAddressOnclik={false}
-          autoSearch={form.lng === 0 && form.lat === 0}
-        ></MapViewWithSearch>
-      )}{" "}
+          autoSearch={
+            (form.lat === null && form.lng === null) ||
+            (form.lat === -1000000 && form.lng === -1000000)
+          }
+        />
+      )}
+
       <Modal
         isOpen={true}
         onClose={closeModal}
@@ -371,17 +391,16 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                     display: "flex",
                     alignItems: "center",
                     width: "100%",
-                    gap: "8px", // optional spacing
+                    gap: "8px",
                   }}
                 >
                   <input
                     type="text"
                     readOnly
                     placeholder="Pick on map"
-                    value={
-                      form.lat && form.lng ? `${form.lat}, ${form.lng}` : ""
-                    }
+                    value={form.lat && form.lng ? `${form.lat}, ${form.lng}` : ""}
                     style={{ flex: 1 }}
+                    className={validation.location ? "input-invalid" : ""}
                   />
 
                   <button
@@ -409,7 +428,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
 
               <Row label="Classification">
                 <select
-                  value={form.lgu_classification}
+                  value={form.lgu_classification || ""}
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
@@ -417,6 +436,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                     }))
                   }
                   required
+                  className={validation.lgu_classification ? "input-invalid" : ""}
                 >
                   <option value="" disabled>
                     Select classification
@@ -425,19 +445,19 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   <option value="City">City</option>
                 </select>
               </Row>
+
               <Row label="LGU's Contact">
                 <input
                   type="tel"
                   value={form.lgu_contact ?? ""}
-                  onChange={(e) =>
-                    handleContactChange("lgu_contact", e.target.value)
-                  }
+                  onChange={(e) => handleContactChange("lgu_contact", e.target.value)}
+                  className={validation.lgu_contact ? "input-invalid" : ""}
                 />
-
-                <label>
-                  {lguContactInvalid && "Contact number is invalid"}
-                </label>
+                {validation.lgu_contact && (
+                  <label>Contact number is invalid</label>
+                )}
               </Row>
+
               <Row label="LGU Seal">
                 <label className="filelike">
                   <FontAwesomeIcon icon={faImage} />
@@ -450,11 +470,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   />
                 </label>
                 {form.lgu_seal && (
-                  <img
-                    src={form.lgu_seal}
-                    alt="LGU Seal"
-                    className="img-thumb"
-                  />
+                  <img src={form.lgu_seal} alt="LGU Seal" className="img-thumb" />
                 )}
               </Row>
 
@@ -462,14 +478,16 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                 <input
                   type="number"
                   min={0}
-                  value={form.population ?? 0}
+                  value={form.population ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      population: Number(e.target.value),
+                      population:
+                        e.target.value === "" ? null : Number(e.target.value),
                     }))
                   }
+                  className={validation.population ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -480,6 +498,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, mayor: e.target.value }))
                   }
+                  className={validation.mayor ? "input-invalid" : ""}
                 />
               </Row>
             </Section>
@@ -487,17 +506,14 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
             <Section title="Disaster Risk Profile">
               <Row label="Major Hazard">
                 <CheckGroup
-                  options={[
-                    "Typhoon",
-                    "Flood",
-                    "Earthquake",
-                    "Fire",
-                    "Landslide",
-                  ]}
+                  options={["Typhoon", "Flood", "Earthquake", "Fire", "Landslide"]}
                   selected={form.lgu_majorHazard ?? []}
                   onToggle={(v) => toggle("lgu_majorHazard", v)}
                   columns={3}
                 />
+                {validation.lgu_majorHazard && (
+                  <label className="inline-warn">Select at least one.</label>
+                )}
               </Row>
 
               <Row label="Hazard Picture">
@@ -512,11 +528,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   />
                 </label>
                 {form.hazard_pic && (
-                  <img
-                    src={form.hazard_pic}
-                    alt="Hazard"
-                    className="img-thumb"
-                  />
+                  <img src={form.hazard_pic} alt="Hazard" className="img-thumb" />
                 )}
               </Row>
             </Section>
@@ -532,6 +544,7 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                       DRMMpersonel: e.target.value,
                     }))
                   }
+                  className={validation.DRMMpersonel ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -540,14 +553,14 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   type="tel"
                   value={form.DRMM_contact ?? ""}
                   placeholder="09XXXXXXXXX"
-                  onChange={(e) =>
-                    handleContactChange("DRMM_contact", e.target.value)
-                  }
+                  onChange={(e) => handleContactChange("DRMM_contact", e.target.value)}
+                  className={validation.DRMM_contact ? "input-invalid" : ""}
                 />
-                <label>
-                  {drrmContactInvalid && "Contact number is invalid"}
-                </label>
+                {validation.DRMM_contact && (
+                  <label>Contact number is invalid</label>
+                )}
               </Row>
+
               <Row label="Critical Facilities">
                 <CheckGroup
                   options={[
@@ -563,6 +576,9 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                   onToggle={(v) => toggle("lgu_critical_facility", v)}
                   columns={3}
                 />
+                {validation.lgu_critical_facility && (
+                  <label className="inline-warn">Select at least one.</label>
+                )}
               </Row>
             </Section>
 
@@ -571,14 +587,15 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_pwd ?? 0}
+                  value={form.lgu_pwd ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      lgu_pwd: Number(e.target.value),
+                      lgu_pwd: e.target.value === "" ? null : Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_pwd ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -586,14 +603,16 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_senior ?? 0}
+                  value={form.lgu_senior ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      lgu_senior: Number(e.target.value),
+                      lgu_senior:
+                        e.target.value === "" ? null : Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_senior ? "input-invalid" : ""}
                 />
               </Row>
 
@@ -601,14 +620,16 @@ export const MyLGUEditModal: React.FC<ViewProps> = ({ closeModal, data }) => {
                 <input
                   type="number"
                   min={0}
-                  value={form.lgu_children ?? 0}
+                  value={form.lgu_children ?? ""}
                   placeholder="0"
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      lgu_children: Number(e.target.value),
+                      lgu_children:
+                        e.target.value === "" ? null : Number(e.target.value),
                     }))
                   }
+                  className={validation.lgu_children ? "input-invalid" : ""}
                 />
               </Row>
             </Section>
@@ -671,7 +692,6 @@ function Row({
         {hint ? ` — ${hint}` : ""}
       </div>
 
-      {/* content column */}
       <div
         style={{
           display: "flex",
@@ -683,7 +703,6 @@ function Row({
         {children}
       </div>
 
-      {/* lock column (single source of truth) */}
       {locked ? <LockIcon /> : <span />}
     </div>
   );
@@ -711,7 +730,6 @@ function DL({
   );
 }
 
-/** NEW: shows image or a tidy placeholder */
 function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
   const hasImg = !!src;
   return (

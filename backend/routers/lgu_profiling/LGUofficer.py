@@ -131,7 +131,7 @@ class LGUPayload(BaseModel):
     population: Optional[int] = None
     mayor: Optional[str] = None
     DRMMpersonel: Optional[str] = None
-    DRRM_contact: Optional[str] = None
+    DRMM_contact: Optional[str] = None
     lgu_pwd: Optional[int] = None
     lgu_senior: Optional[int] = None
     lgu_children: Optional[int] = None
@@ -158,7 +158,7 @@ class BarangayRecordsOut(BaseModel):
     barangay_senior: Optional[int] = None
     barangay_children: Optional[int] = None
     evacucation_center_id: Optional[int] = None
-    evacucation_center: Optional[EvacuationOut] = None
+    evacuation_center: Optional[EvacuationOut] = None
 
 
 def to_abs_url(path: Optional[str], request: Request) -> Optional[str]:
@@ -440,47 +440,6 @@ def normalize_image_field(
     return val  # already a URL
 
 
-@router.put("/api/update_lgu")
-def patch_lgu(p: LGUPayload, db: Session = Depends(get_db)):
-    # 1) Load the row
-    lgu_id = p.id
-    rec = db.query(LGURecords).filter(LGURecords.id == lgu_id).first()
-    if not rec:
-        raise HTTPException(404, f"LGU with id={lgu_id} not found")
-
-    # 2) Only the fields sent by client
-    updates: Dict[str, Any] = p.model_dump(exclude_unset=True)
-
-    updates.pop("id")
-    # 3) Special handling for images
-    if "lgu_seal" in updates:
-        updates["lgu_seal"] = normalize_image_field(updates["lgu_seal"])
-
-    if "hazard_pic" in updates:
-        updates["hazard_pic"] = normalize_image_field(updates["hazard_pic"])
-
-    # 4) (Optional) Coerce/validate arrays if needed
-    # e.g., ensure lists for ARRAY(String) columns
-    if "lgu_majorHazard" in updates and updates["lgu_majorHazard"] is None:
-        updates["lgu_majorHazard"] = None  # explicit clear is allowed
-    if "lgu_critical_facility" in updates and updates["lgu_critical_facility"] is None:
-        updates["lgu_critical_facility"] = None
-
-    # 5) Apply updates
-    for k, v in updates.items():
-        setattr(rec, k, v)
-
-    db.add(rec)
-    db.commit()
-    db.refresh(rec)
-
-    return {
-        "ok": True,
-        "message": "LGU record updated",
-        "id": rec.id,
-    }
-
-
 @router.put("/api/update_barangay")
 def update_barangay(p: BarangayRecordsOut, db: Session = Depends(get_db)):
     barangay_id = p.id
@@ -576,3 +535,80 @@ def list_evac_centers_with_barangays(
                 b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
 
     return evac_list
+
+
+
+
+# -------------------------------------super admin------------------------------
+
+
+
+
+@router.get("/admin/lgu_list", response_model=List[LGUOut])
+def admin_lgu_list(request: Request, db: Session = Depends(get_db)):
+    rows = db.query(LGURecords).order_by(LGURecords.lgu_name.asc()).all()
+
+    out: List[dict] = []
+    for lgu in rows:
+        baranggay_count = (
+            db.query(func.count(BaranggayRecords.id))
+              .filter(BaranggayRecords.lgu_id == lgu.id)
+              .scalar()
+        ) or 0
+
+        out.append({
+            "id": lgu.id,
+            "lgu_name": lgu.lgu_name,
+            "lat": float(lgu.lat) if lgu.lat is not None else None,
+            "lng": float(lgu.lng) if lgu.lng is not None else None,
+            "lgu_classification": lgu.lgu_classification,
+            "lgu_seal": to_abs_url(lgu.lgu_seal, request),
+            "hazard_pic": to_abs_url(lgu.hazard_pic, request),
+            "lgu_majorHazard": lgu.lgu_majorHazard,
+            "lgu_contact": lgu.lgu_contact,
+            "lgu_critical_facility": lgu.lgu_critical_facility,
+            "mayor": lgu.mayor,
+            "DRMMpersonel": lgu.DRMMpersonel,
+            "DRMM_contact": lgu.DRMM_contact,
+            "population": lgu.population,
+            "lgu_pwd": lgu.lgu_pwd,
+            "lgu_children": lgu.lgu_children,
+            "lgu_senior": lgu.lgu_senior,
+            "baranggay_count": baranggay_count,
+        })
+    return [LGUOut.model_validate(p) for p in out]
+
+
+@router.get("/admin/lgu/{lgu_id}", response_model=LGUOut)
+def admin_lgu_get(lgu_id: int, request: Request, db: Session = Depends(get_db)):
+    lgu = db.query(LGURecords).filter(LGURecords.id == lgu_id).first()
+    if not lgu:
+        raise HTTPException(404, "LGU not found")
+
+    baranggay_count = (
+        db.query(func.count(BaranggayRecords.id))
+          .filter(BaranggayRecords.lgu_id == lgu.id)
+          .scalar()
+    ) or 0
+
+    payload = {
+        "id": lgu.id,
+        "lgu_name": lgu.lgu_name,
+        "lat": float(lgu.lat) if lgu.lat is not None else None,
+        "lng": float(lgu.lng) if lgu.lng is not None else None,
+        "lgu_classification": lgu.lgu_classification,
+        "lgu_seal": to_abs_url(lgu.lgu_seal, request),
+        "hazard_pic": to_abs_url(lgu.hazard_pic, request),
+        "lgu_majorHazard": lgu.lgu_majorHazard,
+        "lgu_contact": lgu.lgu_contact,
+        "lgu_critical_facility": lgu.lgu_critical_facility,
+        "mayor": lgu.mayor,
+        "DRMMpersonel": lgu.DRMMpersonel,
+        "DRMM_contact": lgu.DRMM_contact,
+        "population": lgu.population,
+        "lgu_pwd": lgu.lgu_pwd,
+        "lgu_children": lgu.lgu_children,
+        "lgu_senior": lgu.lgu_senior,
+        "baranggay_count": baranggay_count,
+    }
+    return LGUOut.model_validate(payload)

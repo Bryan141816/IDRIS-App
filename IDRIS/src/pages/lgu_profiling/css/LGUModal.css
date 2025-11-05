@@ -291,3 +291,13 @@
   transition: border-color 0.2s, background 0.2s;
 }
   
+/* LGUModal.css (or your global stylesheet) */
+.inline-warn {
+  color: #b91c1c;          /* red-700 */
+  font-size: 0.875rem;     /* 14px, tweak as you like */
+  margin-top: 4px;
+}
+.inline-warn::before {
+  content: "⚠ ";
+  font-size: 0.9em;
+}

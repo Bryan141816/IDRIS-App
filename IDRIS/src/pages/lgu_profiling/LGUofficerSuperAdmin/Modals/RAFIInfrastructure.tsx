@@ -1,24 +1,42 @@
-// RAFFIModals.tsx (frontend-only; no backend calls)
+// Modals/RAFIInfrastructure.tsx
+// - Pure frontend modals (no API calls here)
+// - Emits onCreated / onSaved / onDeleted to parent
+// - Uses SweetAlert2 for validation + confirmations
+
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
-import type { BaseModalProps } from "../ModalProps";
-import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
+import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faImage, faLock, faMapMarkerAlt, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faImage, faLock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
+import defaultpicture from "../../../../../public/images/defaultpicture.jpg";
+import Swal from "sweetalert2";
 
-/* ========= Types ========= */
-export type RAFFIForm = {
-  raffi_name: string;
-  raffi_description?: string;
-  lat?: number;
-  lng?: number;
-  raffi_picture?: string; // dataUrl preview
+/* ===============================================================
+   Types (frontend only)
+================================================================*/
+// RAFIInfrastructure.tsx
+
+export type RAFFIEditForm = {
+  rafi_name: string;
+  lat?: number | null;
+  lng?: number | null;
+  rafi_desc?: string | null;   // allow null
+  rafi_pic?: string | null;    // allow null
 };
 
-export type RAFFIRecord = RAFFIForm;
+export type RAFFIRow = RAFFIEditForm & { rafi_id?: number; lgu_id?: number };
 
-/* ========= Helpers ========= */
+export type LGUMin = {
+  id: number;
+  lgu_name: string;
+  lat?: number | null;
+  lng?: number | null;
+};
+
+/* ===============================================================
+   Helpers
+================================================================*/
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const r = new FileReader();
@@ -27,57 +45,60 @@ const readAsDataUrl = (file: File) =>
     r.readAsDataURL(file);
   });
 
-function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
-  if (lat === "" || lng === "" || lat == null || lng == null) return "—";
+function fmtLL(lat?: number | null, lng?: number | null) {
+  if (lat == null || lng == null) return "—";
   const f = (n: number) => Number(n).toFixed(6);
   return `${f(Number(lat))}, ${f(Number(lng))}`;
 }
 
-/* =========================================================================
-   VIEW
-===========================================================================*/
-type ViewProps = BaseModalProps & {
-  data?: RAFFIRecord | null;
-  onOpenEdit?: () => void;
-  onOpenDelete?: () => void;
-};
+function toTuple(v?: [number, number] | null): [number, number] | null {
+  if (!Array.isArray(v) || v.length !== 2) return null;
+  const a = Number(v[0]);
+  const b = Number(v[1]);
+  return Number.isFinite(a) && Number.isFinite(b) ? [a, b] : null;
+}
 
-export const RAFFIViewModal: React.FC<ViewProps> = ({
-  isModalOpen,
-  closeModal,
-  data,
-  onOpenDelete,
-  onOpenEdit,
-}) => {
-  if (!isModalOpen) return null;
-  const d = data ?? null;
+const CEBU_FALLBACK: [number, number] = [10.3157, 123.8854];
+
+/* ===============================================================
+   VIEW MODAL
+================================================================*/
+export const RAFFIViewModal: React.FC<{
+  isOpen?: boolean;
+  onClose: () => void;
+  data?: RAFFIRow | null;
+}> = ({ isOpen = true, onClose, data }) => {
+  const norm: RAFFIRow = {
+    rafi_id: data?.rafi_id,
+    lgu_id: data?.lgu_id,
+    rafi_name: data?.rafi_name || "",
+    rafi_desc: data?.rafi_desc || "",
+    rafi_pic: data?.rafi_pic || null,
+    lat: data?.lat ?? null,
+    lng: data?.lng ?? null,
+  };
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="80vh">
+    <Modal isOpen={isOpen} onClose={onClose} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
       <div className="modal-container lgu-modal">
         <div className="horizontal-container">
-          <span className="title-modal-text">RAFFI Details</span>
+          <span className="title-modal-text">RAFFI Infrastructure</span>
         </div>
 
         <div className="lgu-scroll">
-          {!d ? (
-            <div style={{ padding: 12, color: "#6b7280" }}>
-              No data yet. Click <b>Edit</b> or <b>Create</b> to fill this in.
-            </div>
+          {!data ? (
+            <div style={{ padding: 12, color: "#6b7280" }}>No data.</div>
           ) : (
             <>
-              <Section title="Core Information">
-                <DL label="RAFFI Name" value={d.raffi_name || "—"} />
-                <DL label="RAFFI Description" value={d.raffi_description || "—"} />
+              <Section title="RAFFI Details">
+                <DL label="Name" value={norm.rafi_name || "—"} />
+                <DL label="Description" value={norm.rafi_desc || "—"} />
+                <DL label="Location" value={fmtLL(norm.lat, norm.lng)} />
               </Section>
 
-              <Section title="Location">
-                <DL label="Coordinates (Lat, Lng)" value={fmtLL(d.lat, d.lng)} />
-              </Section>
-
-              <Section title="Attachments">
+              <Section title="Image">
                 <div className="lgu-media-row">
-                  <ImgOrPlaceholder label="RAFFI Picture" src={d.raffi_picture} />
+                  <ImgOrPlaceholder label="RAFFI Picture" src={norm.rafi_pic || defaultpicture} />
                 </div>
               </Section>
             </>
@@ -85,13 +106,10 @@ export const RAFFIViewModal: React.FC<ViewProps> = ({
         </div>
 
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={onOpenDelete}>
-            Delete
-          </button>
-          <button style={{ backgroundColor: "#749AB6", color: "#fff" }} onClick={onOpenEdit}>
-            Edit
-          </button>
-          <button style={{ backgroundColor: "#9CA3AF", color: "#fff" }} onClick={closeModal}>
+          <button
+            style={{ background: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }}
+            onClick={onClose}
+          >
             Close
           </button>
         </div>
@@ -100,389 +118,350 @@ export const RAFFIViewModal: React.FC<ViewProps> = ({
   );
 };
 
-/* =========================================================================
-   CREATE (frontend-only)
-===========================================================================*/
-type CreateProps = BaseModalProps & {
-  onCreate?: (data: RAFFIRecord | null) => void;
-  prefill?: {
-    lat?: number;
-    lng?: number;
-  };
-};
-
-export const RAFFICreateModal: React.FC<CreateProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  onCreate,
-  prefill,
-}) => {
-  const [form, setForm] = useState<RAFFIForm>({
-    raffi_name: "",
-    raffi_description: "",
-    lat: prefill?.lat,
-    lng: prefill?.lng,
-    raffi_picture: "",
+/* ===============================================================
+   CREATE MODAL
+================================================================*/
+export const RAFFICreateModal: React.FC<{
+  isOpen?: boolean;
+  onClose: () => void;
+  onCreated?: (created: RAFFIRow) => void;
+  lgu?: LGUMin | null;                     // pass LGU for center
+  lguCoordinate?: [number, number] | null; // or a tuple
+}> = ({ isOpen = true, onClose, onCreated, lgu, lguCoordinate }) => {
+  const [form, setForm] = useState<RAFFIEditForm>({
+    rafi_name: "",
+    lat: null,
+    lng: null,
+    rafi_desc: "",
+    rafi_pic: null,
   });
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const lguCenter = useMemo<[number, number]>(() => {
+    const fromTuple = toTuple(lguCoordinate);
+    const lat = Number(lgu?.lat);
+    const lng = Number(lgu?.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
+    if (fromTuple) return fromTuple;
+    return CEBU_FALLBACK;
+  }, [lgu, lguCoordinate]);
 
   useEffect(() => {
-    if (!isModalOpen) return;
-    setForm((p) => ({
-      ...p,
-      lat: prefill?.lat ?? p.lat,
-      lng: prefill?.lng ?? p.lng,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen]);
+    setForm((p) => ({ ...p, lat: lguCenter[0], lng: lguCenter[1] }));
+  }, [lguCenter]);
+const onImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const url = await readAsDataUrl(file);
+  setForm((prev) => ({ ...prev, rafi_pic: url }));  // ✅ correct key
+};
 
-  const invalids = useMemo(
-    () => ({
-      name: !form.raffi_name?.trim(),
-    }),
-    [form.raffi_name]
-  );
 
-  const onText =
-    (key: keyof RAFFIForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const onImage =
-    (key: keyof RAFFIForm) =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const url = await readAsDataUrl(f);
-      setForm((p) => ({ ...p, [key]: url }));
-    };
-
-  const save = () => {
-    if (invalids.name) {
-      setMessageBox?.((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "RAFFI Name is required.",
-      }));
-      return;
-    }
-    if ((form.lat == null) !== (form.lng == null)) {
-      setMessageBox?.((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Please pick a valid location (both latitude and longitude).",
-      }));
-      return;
-    }
-    onCreate?.(form);
-    closeModal();
+  const onLocationSelectSubmit = (_addr: string, coords: [number, number]) => {
+    setForm((prev) => ({ ...prev, lat: coords[0], lng: coords[1] }));
   };
 
-  if (!isModalOpen) return null;
+  const validate = () => {
+    const errors: string[] = [];
+    if (!form.rafi_name?.trim()) errors.push("• Name is required");
+    if (form.lat == null || form.lng == null) errors.push("• Location is required");
+    if (errors.length) {
+      Swal.fire({
+        icon: "warning",
+        title: "Please complete the form",
+        html: errors.join("<br/>"),
+        confirmButtonText: "OK",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleCreate = () => {
+    if (!validate()) return;
+    const created: RAFFIRow = {
+      rafi_id: undefined, // parent will set from API response
+      rafi_name: form.rafi_name.trim(),
+      rafi_desc: form.rafi_desc || "",
+      rafi_pic: form.rafi_pic || null,
+      lat: form.lat ?? null,
+      lng: form.lng ?? null,
+    };
+    onCreated?.(created);
+    onClose();
+  };
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="80vh">
-      {pickerOpen && (
-        <LocationPickerModal
-          isOpenProp={pickerOpen}
-          onCloseProp={() => setPickerOpen(false)}
-          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
-            setForm((p) => ({ ...p, lat, lng }))
-          }
-          lat={Number(form.lat) || 0}
-          lng={Number(form.lng) || 0}
+    <>
+      {locationPickerIsOpen && (
+        <MapViewWithSearch
+          onClose={() => setLocationPickerIsOpen(false)}
+          defaultValue={{
+            address: form.rafi_name || lgu?.lgu_name || "RAFFI (LGU center)",
+            coordinates: lguCenter,
+          }}
+          onSubmit={onLocationSelectSubmit}
+          changeAddressOnclik={false}
+          autoSearch={false}
         />
       )}
 
-      <div className="modal-container lgu-modal">
-        <div className="horizontal-container">
-          <span className="details-title">Create RAFFI</span>
+      <Modal isOpen={isOpen} onClose={onClose} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
+        <div className="modal-container lgu-modal">
+          <div className="horizontal-container">
+            <span className="details-title">Create RAFFI</span>
+          </div>
+
+          <div className="lgu-scroll">
+            <Section title="Basic Information">
+              <Row label="Name">
+                <input
+                  type="text"
+                  value={form.rafi_name}
+                  onChange={(e) => setForm((p) => ({ ...p, rafi_name: e.target.value }))}
+                  placeholder="Enter RAFFI name"
+                  required
+                />
+              </Row>
+
+              <Row label="Description">
+                <textarea
+                  value={form.rafi_desc ?? ""}
+                  onChange={(e) => setForm((p) => ({ ...p, rafi_desc: e.target.value }))}
+                  placeholder="Short description"
+                  rows={3}
+                />
+              </Row>
+
+              <Row label="Location">
+                <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 8 }}>
+                  <input type="text" readOnly value={fmtLL(form.lat, form.lng)} style={{ flex: 1 }} />
+                  <button
+                    type="button"
+                    onClick={() => setLocationPickerIsOpen(true)}
+                    title="Pick location on map"
+                    style={pinBtnStyle}
+                  >
+                    <FontAwesomeIcon icon={faMapMarkerAlt} />
+                  </button>
+                </div>
+              </Row>
+
+              <Row label="RAFFI Picture">
+                <label className="filelike">
+                  <FontAwesomeIcon icon={faImage} />
+                  <span>Choose image</span>
+                  <input type="file" accept="image/*" hidden onChange={onImage} />
+                </label>
+                {form.rafi_pic && <img src={form.rafi_pic} alt="RAFFI" className="img-thumb" />}
+              </Row>
+            </Section>
+          </div>
+
+          <div className="action-button">
+            <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleCreate}>ADD</button>
+            <button style={{ background: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }} onClick={onClose}>Cancel</button>
+          </div>
         </div>
-
-        <div className="lgu-scroll">
-          <Section title="Core Information">
-            <Row label="RAFFI Name">
-              <input
-                type="text"
-                value={form.raffi_name}
-                onChange={onText("raffi_name")}
-                placeholder="Enter name"
-              />
-            </Row>
-            <Row label="RAFFI Description">
-              <textarea
-                value={form.raffi_description}
-                onChange={onText("raffi_description")}
-                placeholder="Short description"
-                rows={3}
-                style={{ width: "100%", resize: "vertical" }}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Location">
-            <Row label="Coordinates">
-              <input
-                type="text"
-                readOnly
-                placeholder="Pick on map"
-                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
-                style={{ width: 260 }}
-              />
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                title="Pick location on map"
-                style={pinBtnStyle}
-              >
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-              </button>
-            </Row>
-          </Section>
-
-          <Section title="Attachment">
-            <Row label="RAFFI Picture">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("raffi_picture")} hidden />
-              </label>
-              {!!form.raffi_picture && (
-                <img src={form.raffi_picture} alt="RAFFI" className="img-thumb" />
-              )}
-            </Row>
-          </Section>
-        </div>
-
-        <div className="action-button">
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
-            Save
-          </button>
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
+      </Modal>
+    </>
   );
 };
 
-/* =========================================================================
-   EDIT (frontend-only)
-===========================================================================*/
-type EditProps = BaseModalProps & {
-  data: RAFFIRecord;
-  onSaved?: (data: RAFFIRecord | null) => void;
-};
-
-export const RAFFIEditModal: React.FC<EditProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  data,
-  onSaved,
-}) => {
-  const [form, setForm] = useState<RAFFIForm>({ ...data });
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isModalOpen) return;
-    setForm({ ...data });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen]);
-
-  const invalids = useMemo(
-    () => ({
-      name: !form.raffi_name?.trim(),
-    }),
-    [form.raffi_name]
-  );
-
-  const onText =
-    (key: keyof RAFFIForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const onImage =
-    (key: keyof RAFFIForm) =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const url = await readAsDataUrl(f);
-      setForm((p) => ({ ...p, [key]: url }));
-    };
-
-  const save = () => {
-    if (invalids.name) {
-      setMessageBox?.((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "RAFFI Name is required.",
-      }));
-      return;
-    }
-    if ((form.lat == null) !== (form.lng == null)) {
-      setMessageBox?.((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Please pick a valid location (both latitude and longitude).",
-      }));
-      return;
-    }
-    onSaved?.(form);
-    closeModal();
+/* ===============================================================
+   EDIT MODAL
+================================================================*/
+export const RAFFIEditModal: React.FC<{
+  isOpen?: boolean;
+  onClose: () => void;
+  data?: RAFFIRow | null;
+  onSaved?: (updated: RAFFIRow) => void;
+  onDeleted?: (id: number) => void;
+  lgu?: LGUMin | null;
+  lguCoordinate?: [number, number] | null;
+}> = ({ isOpen = true, onClose, data, onSaved, onDeleted, lgu, lguCoordinate }) => {
+  const defaults: RAFFIRow = {
+    rafi_id: undefined,
+    lgu_id: lgu?.id,
+    rafi_name: "",
+    lat: null,
+    lng: null,
+    rafi_desc: "",
+    rafi_pic: null,
   };
 
-  if (!isModalOpen) return null;
+  const [form, setForm] = useState<RAFFIRow>({ ...defaults, ...(data || {}) });
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
+
+  useEffect(() => {
+    setForm({ ...defaults, ...(data || {}) });
+  }, [data]);
+
+  const center = useMemo<[number, number]>(() => {
+    if (form.lat != null && form.lng != null && Number.isFinite(+form.lat) && Number.isFinite(+form.lng)) {
+      return [Number(form.lat), Number(form.lng)];
+    }
+    const lat = Number(lgu?.lat);
+    const lng = Number(lgu?.lng);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
+    return toTuple(lguCoordinate) ?? CEBU_FALLBACK;
+  }, [form.lat, form.lng, lgu, lguCoordinate]);
+
+  const onLocationSelectSubmit = (_addr: string, coords: [number, number]) => {
+    setForm((prev) => ({ ...prev, lat: coords[0], lng: coords[1] }));
+  };
+
+ 
+const onImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const url = await readAsDataUrl(file);
+  setForm(prev => ({ ...prev, rafi_pic: url }));  // <-- use rafi_pic (not 'pic')
+};
+
+
+  const validate = () => {
+    const errors: string[] = [];
+    if (!form.rafi_name?.trim()) errors.push("• Name is required");
+    if (form.lat == null || form.lng == null) errors.push("• Location is required");
+    if (errors.length) {
+      Swal.fire({
+        icon: "warning",
+        title: "Please complete the form",
+        html: errors.join("<br/>"),
+        confirmButtonText: "OK",
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+    const updated: RAFFIRow = {
+      rafi_id: form.rafi_id ?? data?.rafi_id,
+      lgu_id: form.lgu_id ?? data?.lgu_id ?? lgu?.id,
+      rafi_name: form.rafi_name.trim(),
+      rafi_desc: form.rafi_desc || "",
+      rafi_pic: form.rafi_pic || null,
+      lat: form.lat ?? null,
+      lng: form.lng ?? null,
+    };
+    onSaved?.(updated);
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    const id = Number(form.rafi_id || data?.rafi_id);
+    if (!id) return onClose();
+    const res = await Swal.fire({
+      icon: "question",
+      title: "Delete this RAFFI?",
+      text: "This action cannot be undone.",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      confirmButtonColor: "#F84B4D",
+    });
+    if (res.isConfirmed) {
+      onDeleted?.(id);
+      onClose();
+    }
+  };
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="80vh">
-      {pickerOpen && (
-        <LocationPickerModal
-          isOpenProp={pickerOpen}
-          onCloseProp={() => setPickerOpen(false)}
-          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
-            setForm((p) => ({ ...p, lat, lng }))
-          }
-          lat={Number(form.lat) || 0}
-          lng={Number(form.lng) || 0}
+    <>
+      {locationPickerIsOpen && (
+        <MapViewWithSearch
+          onClose={() => setLocationPickerIsOpen(false)}
+          defaultValue={{ address: form.rafi_name || lgu?.lgu_name || "RAFFI Location", coordinates: center }}
+          onSubmit={onLocationSelectSubmit}
+          changeAddressOnclik={false}
+          autoSearch={false}
         />
       )}
 
-      <div className="modal-container lgu-modal">
-        <div className="horizontal-container">
-          <span className="details-title">Edit RAFFI</span>
+      <Modal isOpen={isOpen} onClose={onClose} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
+        <div className="modal-container lgu-modal">
+          <div className="horizontal-container">
+            <span className="details-title">Edit RAFFI Details</span>
+          </div>
+
+          <div className="lgu-scroll">
+            <Section title="Basic Information">
+              <Row label="Name">
+                <input
+                  type="text"
+                  value={form.rafi_name}
+                  onChange={(e) => setForm((p) => ({ ...p, rafi_name: e.target.value }))}
+                  placeholder="Enter RAFFI name"
+                  required
+                />
+              </Row>
+
+              <Row label="Description">
+                <textarea
+                  value={form.rafi_desc ?? ""}
+                  onChange={(e) => setForm((p) => ({ ...p, rafi_desc: e.target.value }))}
+                  placeholder="Short description"
+                  rows={3}
+                />
+              </Row>
+
+              <Row label="Location">
+                <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 8 }}>
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="Pick on map"
+                    value={form.lat != null && form.lng != null ? `${form.lat}, ${form.lng}` : ""}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setLocationPickerIsOpen(true)}
+                    title="Pick location on map"
+                    style={pinBtnStyle}
+                  >
+                    <FontAwesomeIcon icon={faMapMarkerAlt} />
+                  </button>
+                </div>
+              </Row>
+
+              <Row label="RAFFI Picture">
+                <label className="filelike">
+                  <FontAwesomeIcon icon={faImage} />
+                  <span>Choose image</span>
+                  <input type="file" accept="image/*" hidden onChange={onImage} />
+                </label>
+                {form.rafi_pic && <img src={form.rafi_pic} alt="RAFFI" className="img-thumb" />}
+              </Row>
+            </Section>
+          </div>
+
+          <div className="action-button">
+            <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleSave}>Save</button>
+            <button style={{ background: "#F84B4D", color: "#fff" }} onClick={handleDelete}>Delete</button>
+            <button style={{ background: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }} onClick={onClose}>Cancel</button>
+          </div>
         </div>
-
-        <div className="lgu-scroll">
-          <Section title="Core Information">
-            <Row label="RAFFI Name">
-              <input type="text" value={form.raffi_name} onChange={onText("raffi_name")} />
-            </Row>
-            <Row label="RAFFI Description">
-              <textarea
-                value={form.raffi_description}
-                onChange={onText("raffi_description")}
-                rows={3}
-                style={{ width: "100%", resize: "vertical" }}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Location">
-            <Row label="Coordinates">
-              <input
-                type="text"
-                readOnly
-                placeholder="Pick on map"
-                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
-                style={{ width: 260 }}
-              />
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                title="Pick location on map"
-                style={pinBtnStyle}
-              >
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-              </button>
-            </Row>
-          </Section>
-
-          <Section title="Attachment">
-            <Row label="RAFFI Picture">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("raffi_picture")} hidden />
-              </label>
-              {!!form.raffi_picture && (
-                <img src={form.raffi_picture} alt="RAFFI" className="img-thumb" />
-              )}
-            </Row>
-          </Section>
-        </div>
-
-        <div className="action-button">
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
-            Save
-          </button>
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
+      </Modal>
+    </>
   );
 };
 
-/* =========================================================================
-   DELETE (frontend-only)
-===========================================================================*/
-type DeleteProps = BaseModalProps & {
-  targetName?: string;
-  onConfirm?: () => void;
-};
-
-export const RAFFIDeleteModal: React.FC<DeleteProps> = ({
-  isModalOpen,
-  closeModal,
-  targetName,
-  onConfirm,
-}) => {
-  if (!isModalOpen) return null;
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={999} width="min(520px, 92vw)" height="auto">
-      <div className="modal-container lgu-modal" style={{ padding: 24 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
-          <FontAwesomeIcon icon={faTriangleExclamation} style={{ color: "#b91c1c" }} />
-          <span className="details-title">Delete RAFFI</span>
-        </div>
-        <p style={{ color: "#374151", marginBottom: 16 }}>
-          Are you sure you want to delete <b>{targetName ?? "this RAFFI record"}</b>? This action cannot be undone.
-        </p>
-        <div className="action-button">
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={onConfirm}>
-            Delete
-          </button>
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-/* ========= Presentational helpers ========= */
+/* ===============================================================
+   Presentational helpers
+================================================================*/
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="section-block" style={{ marginTop: 12 }}>
-      <h3 className="section-title" style={{ marginBottom: 8 }}>
-        {title}
-      </h3>
+      <h3 className="section-title" style={{ marginBottom: 8 }}>{title}</h3>
       <div className="lgu-modal-form">{children}</div>
     </div>
   );
 }
 
-function Row({
-  label,
-  children,
-  locked,
-  hint,
-}: {
-  label: string;
-  children: React.ReactNode;
-  locked?: boolean;
-  hint?: string;
-}) {
+function Row({ label, children, locked, hint }: { label: string; children: React.ReactNode; locked?: boolean; hint?: string }) {
   return (
     <div className="lgu-row">
       <div className="item-details-identifier" style={{ fontWeight: 700 }}>
@@ -495,38 +474,22 @@ function Row({
   );
 }
 
-function DL({
-  label,
-  value,
-  locked,
-  invalid,
-}: {
-  label: string;
-  value: React.ReactNode;
-  locked?: boolean;
-  invalid?: boolean;
-}) {
+function DL({ label, value, locked, invalid }: { label: string; value: React.ReactNode; locked?: boolean; invalid?: boolean }) {
   return (
     <div className="lgu-row" style={{ padding: "4px 0" }}>
-      <div className="item-details-identifier" style={{ fontWeight: 700 }}>
-        {label}
-      </div>
+      <div className="item-details-identifier" style={{ fontWeight: 700 }}>{label}</div>
       <div style={{ color: invalid ? "#b91c1c" : "#111827" }}>{value}</div>
       {locked ? <LockIcon /> : <span />}
     </div>
   );
 }
 
-function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
+function ImgOrPlaceholder({ label, src }: { label: string; src?: string | null }) {
   const hasImg = !!src;
   return (
     <div className="lgu-media">
       <div className="item-details-identifier" style={{ marginBottom: 6 }}>{label}</div>
-      {hasImg ? (
-        <img src={src} alt={label} className="img-thumb" />
-      ) : (
-        <div className="img-placeholder">No image</div>
-      )}
+      {hasImg ? <img src={src as string} alt={label} className="img-thumb" /> : <div className="img-placeholder">No image</div>}
     </div>
   );
 }
@@ -539,14 +502,13 @@ function LockIcon() {
   );
 }
 
-/* Small inline style for the pin/map button */
 const pinBtnStyle: React.CSSProperties = {
   backgroundColor: "transparent",
   border: "1px solid  #ddd",
   outline: "none",
   color: "#3b82f6",
-  width: 35,
-  height: 32,
+  width: 44,
+  height: 44,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

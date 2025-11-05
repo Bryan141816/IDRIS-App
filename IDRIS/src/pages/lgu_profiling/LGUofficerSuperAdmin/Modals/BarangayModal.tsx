@@ -1,50 +1,61 @@
-// BarangayModals.tsx (frontend-only; no backend calls)
-import React, { useEffect, useMemo, useState } from "react";
+
+import React, { useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import type { BaseModalProps } from "../ModalProps";
-import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLock, faMapMarkerAlt, faTriangleExclamation, faImage } from "@fortawesome/free-solid-svg-icons";
-import "../../css/LGUModal.css"; // reuse same styles
+import {
+  faLock,
+  faMapMarkerAlt,
+  faTriangleExclamation,
+  faImage,
+} from "@fortawesome/free-solid-svg-icons";
+import LocationPickerModal from "../../../../components/Page_Furniture/LocationPickerModal";
+import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
+import defaultPicture from "../../../../../public/images/defaultpicture.jpg";
+import "../../css/LGUModal.css";
+import type { BarangaySummary } from "../../../../API_Handler/lguprofiling/SuperAdminLGU";
+import Swal from "sweetalert2";
 
-/* ========= Types ========= */
-export type BarangayForm = {
-  // Barangay Information Details
-  barangay_name: string;
-  lat?: number;
-  lng?: number;
-  total_population?: number | "";
-  households?: number | "";
-  barangay_captain?: string;
-  contact?: string; // 11 digits
-  barangay_seal?: string; // dataUrl preview
+/* ===============================================================
+   Types
+================================================================*/
+export type HazardOption =
+  | "Typhoon"
+  | "Flood"
+  | "Earthquake"
+  | "Fire"
+  | "Landslide";
 
-  // Disaster Risk Profile
-  common_hazards: Array<"Typhoons" | "Flooding" | "Earthquakes" | "Landslides" | "Fire">;
-  nearest_evacuation?: string; // prefetch, locked
+export interface Barangay {
+  id?: number;
+  name: string;
+  lat?: number | null;
+  lng?: number | null;
+  total_population?: number | null;
+  household_count?: number | null;
+  barangay_captain?: string | null;
+  contact_info?: string | null; // Ex: 09XXXXXXXXX
+  baranggay_pic?: string | null; // data URL or http
 
-  // Vulnerable Groups
-  pwd?: number | "";
-  senior?: number | "";
-  children?: number | "";
-};
+  // Disaster profile
+  common_hazards?: HazardOption[];
+  evacucation_center?: { id?: number; name: string } | null;
 
-export type MyBarangay = BarangayForm;
-
-/* ========= Helpers ========= */
-const is11Digits = (v?: string) => !!v && /^[0-9]{11}$/.test(v);
-function fmtNum(v?: number | "" | null) {
-  if (v === "" || v == null || Number.isNaN(v as number)) return "—";
-  try {
-    return Number(v).toLocaleString();
-  } catch {
-    return String(v);
-  }
+  // Vulnerable groups
+  barangay_pwd?: number | null;
+  barangay_senior?: number | null;
+  barangay_children?: number | null;
 }
-function fmtLL(lat?: number | "" | null, lng?: number | "" | null) {
-  if (lat === "" || lng === "" || lat == null || lng == null) return "—";
+
+/* ===============================================================
+   Helpers
+================================================================*/
+const is11Digits = (v?: string | null) => !!v && /^\d{11}$/.test(v);
+const fmtNum = (v?: number | null) => (v == null ? "—" : Number(v).toLocaleString());
+function fmtLL(lat?: number | null, lng?: number | null) {
+  if (lat == null || lng == null) return "—";
   const f = (n: number) => Number(n).toFixed(6);
-  return `${f(Number(lat))}, ${f(Number(lng))}`;
+  return `${f(lat)}, ${f(lng)}`;
 }
 const readAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -54,68 +65,78 @@ const readAsDataUrl = (file: File) =>
     r.readAsDataURL(file);
   });
 
-/* =========================================================================
-   VIEW
-===========================================================================*/
-type ViewProps = BaseModalProps & {
-  data?: MyBarangay | null;
-  onOpenEdit?: () => void;
-  onOpenDelete?: () => void;
+/* ===============================================================
+   VIEW MODAL (read-only)
+================================================================*/
+type ViewProps = {
+  isOpen?: boolean;
+  onClose: () => void;
+  data: BarangaySummary | null;
+  loading?: boolean;
+  error?: string | null;
 };
 
 export const BarangayViewModal: React.FC<ViewProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox, // parity (kept for BaseModalProps)
-  onOpenDelete,
-  onOpenEdit,
+  isOpen = true,
+  onClose,
   data,
+  loading,
+  error,
 }) => {
-  if (!isModalOpen) return null;
-  const d = data ?? null;
-
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      zIndex={998}
+      width="clamp(560px,56vw,840px)"
+      height="86vh"
+    >
       <div className="modal-container lgu-modal">
         <div className="horizontal-container">
           <span className="title-modal-text">Barangay Information</span>
         </div>
 
         <div className="lgu-scroll">
-          {!d ? (
-            <div style={{ padding: 12, color: "#6b7280" }}>
-              No data yet. Click <b>Edit</b> or <b>Create</b> to fill this in.
-            </div>
+          {loading ? (
+            <div style={{ padding: 16 }}>Loading…</div>
+          ) : error ? (
+            <div style={{ padding: 16, color: "#b91c1c" }}>{error}</div>
+          ) : !data ? (
+            <div style={{ padding: 16 }}>No data.</div>
           ) : (
             <>
               <Section title="Barangay Information Details">
-                <DL label="Barangay Name" value={d.barangay_name || "—"} />
-                <DL label="Location (Lat, Lng)" value={fmtLL(d.lat, d.lng)} />
-                <DL label="Total Population" value={fmtNum(d.total_population)} />
-                <DL label="Number of Households" value={fmtNum(d.households)} />
-                <DL label="Barangay Captain" value={d.barangay_captain || "—"} />
+                <DL label="Barangay Name" value={data.name || "—"} />
+                <DL label="Location (Lat, Lng)" value={fmtLL(data.lat, data.lng)} />
+                <DL label="Total Population" value={fmtNum(data.total_population)} />
+                <DL label="Number of Households" value={fmtNum(data.household_count)} />
+                <DL label="Barangay Captain" value={data.barangay_captain || "—"} />
                 <DL
                   label="Contact Number"
-                  value={d.contact || "—"}
-                  invalid={!!d.contact && !is11Digits(d.contact)}
+                  value={data.contact_info || "—"}
+                  invalid={!!data.contact_info && !is11Digits(data.contact_info)}
                 />
               </Section>
 
               <Section title="Disaster Risk Profile">
-                <DL label="Common Hazards" value={d.common_hazards?.join(", ") || "—"} />
-                <DL label="Nearest Evacuation" value={d.nearest_evacuation || "—"} locked />
+                <DL
+                  label="Common Hazards"
+                  value={data.common_hazards?.join(", ") || "—"}
+                />
               </Section>
 
               <Section title="Vulnerable Groups">
-                <DL label="PWD" value={fmtNum(d.pwd)} />
-                <DL label="Senior" value={fmtNum(d.senior)} />
-                <DL label="Children" value={fmtNum(d.children)} />
+                <DL label="PWD" value={fmtNum(data.barangay_pwd)} />
+                <DL label="Senior" value={fmtNum(data.barangay_senior)} />
+                <DL label="Children" value={fmtNum(data.barangay_children)} />
               </Section>
 
-              {/* Dedicated, read-only Barangay Seal section */}
               <Section title="Barangay Seal">
                 <div className="lgu-media-row">
-                  <ImgOrPlaceholder label="Barangay Seal" src={d.barangay_seal} />
+                  <ImgOrPlaceholder
+                    label="Barangay Seal"
+                    src={data.baranggay_pic || defaultPicture}
+                  />
                 </div>
               </Section>
             </>
@@ -123,525 +144,343 @@ export const BarangayViewModal: React.FC<ViewProps> = ({
         </div>
 
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={onOpenDelete}>
-            Delete
-          </button>
-          <button style={{ backgroundColor: "#749AB6", color: "#fff" }} onClick={onOpenEdit}>
-            Edit
-          </button>
-          <button style={{ backgroundColor: "#9CA3AF", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
+          <button
+  style={{ background: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }}
+  onClick={onClose}
+>
+  Close
+</button>
+
         </div>
       </div>
     </Modal>
   );
 };
 
-/* =========================================================================
-   CREATE (frontend-only)
-===========================================================================*/
-type CreateProps = BaseModalProps & {
-  onCreate?: (data: MyBarangay | null) => void;
-  prefetch?: {
-    nearest_evacuation?: string; // locked
-    lat?: number;
-    lng?: number;
-  };
-};
-
-export const BarangayCreateModal: React.FC<CreateProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
-  onCreate,
-  prefetch,
-}) => {
-  const [form, setForm] = useState<MyBarangay>({
-    barangay_name: "",
-    lat: prefetch?.lat,
-    lng: prefetch?.lng,
-    total_population: "",
-    households: "",
-    barangay_captain: "",
-    contact: "",
-    barangay_seal: "",
-    common_hazards: [],
-    nearest_evacuation: prefetch?.nearest_evacuation || "",
-    pwd: "",
-    senior: "",
-    children: "",
-  });
-
-  const [pickerOpen, setPickerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isModalOpen) return;
-    setForm((p) => ({
-      ...p,
-      nearest_evacuation: prefetch?.nearest_evacuation ?? p.nearest_evacuation,
-      lat: prefetch?.lat ?? p.lat,
-      lng: prefetch?.lng ?? p.lng,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen]);
-
-  const invalids = useMemo(
-    () => ({
-      contact: !!form.contact && !is11Digits(form.contact),
-      name: !form.barangay_name?.trim(),
-    }),
-    [form.contact, form.barangay_name]
-  );
-
-  const onText =
-    (key: keyof MyBarangay) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-
-  const onNum =
-    (key: keyof MyBarangay) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      setForm((p) => ({ ...p, [key]: v === "" ? "" : Number(v) }));
-    };
-
-  const onImage =
-    (key: keyof MyBarangay) =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const url = await readAsDataUrl(f);
-      setForm((p) => ({ ...p, [key]: url }));
-    };
-
-  const toggle = (val: MyBarangay["common_hazards"][number]) =>
-    setForm((prev) => {
-      const s = new Set(prev.common_hazards ?? []);
-      s.has(val) ? s.delete(val) : s.add(val);
-      return { ...prev, common_hazards: Array.from(s) as MyBarangay["common_hazards"] };
-    });
-
-  const save = () => {
-    if (invalids.name) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Barangay Name is required.",
-      }));
-      return;
-    }
-    if (invalids.contact) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Contact Number must be exactly 11 digits.",
-      }));
-      return;
-    }
-    if ((form.lat == null) !== (form.lng == null)) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Please pick a valid location (both latitude and longitude).",
-      }));
-      return;
-    }
-    onCreate?.(form);
-    closeModal();
-  };
-
-  if (!isModalOpen) return null;
-
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
-      {pickerOpen && (
-        <LocationPickerModal
-          isOpenProp={pickerOpen}
-          onCloseProp={() => setPickerOpen(false)}
-          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
-            setForm((p) => ({ ...p, lat, lng }))
-          }
-          lat={Number(form.lat) || 0}
-          lng={Number(form.lng) || 0}
-        />
-      )}
-
-      <div className="modal-container lgu-modal">
-        <div className="horizontal-container">
-          <span className="details-title">Create Barangay</span>
-        </div>
-
-        <div className="lgu-scroll">
-          <Section title="Barangay Information Details">
-            <Row label="Barangay Name">
-              <input
-                type="text"
-                value={form.barangay_name}
-                onChange={onText("barangay_name")}
-                placeholder="Enter barangay name"
-              />
-            </Row>
-
-            <Row label="Location">
-              <input
-                type="text"
-                readOnly
-                placeholder="Pick on map"
-                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
-                style={{ width: 260 }}
-              />
-              <button
-                type="button"
-                onClick={() => setPickerOpen(true)}
-                title="Pick location on map"
-                style={pinBtnStyle}
-              >
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-              </button>
-            </Row>
-
-            {/* Barangay Seal upload with small preview */}
-            <Row label="Barangay Seal">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("barangay_seal")} hidden />
-              </label>
-              {!!form.barangay_seal && (
-                <img src={form.barangay_seal} alt="Barangay Seal" className="img-thumb" />
-              )}
-            </Row>
-
-            <Row label="Total Population">
-              <input type="number" min={0} value={form.total_population ?? ""} onChange={onNum("total_population")} />
-            </Row>
-
-            <Row label="Number of Households">
-              <input type="number" min={0} value={form.households ?? ""} onChange={onNum("households")} />
-            </Row>
-
-            <Row label="Barangay Captain">
-              <input type="text" value={form.barangay_captain ?? ""} onChange={onText("barangay_captain")} />
-            </Row>
-
-            <Row label="Contact Number" hint="11 digits">
-              <input
-                type="tel"
-                value={form.contact ?? ""}
-                onChange={onText("contact")}
-                placeholder="09XXXXXXXXX"
-                className={invalids.contact ? "input-invalid" : undefined}
-                maxLength={11}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Disaster Risk Profile">
-            <Row label="Common Hazards">
-              <CheckGroup
-                options={["Typhoons", "Flooding", "Earthquakes", "Landslides", "Fire"] as const}
-                selected={form.common_hazards}
-                onToggle={toggle}
-                columns={3}
-              />
-            </Row>
-
-            <Row label="Nearest Evacuation" locked>
-              <input type="text" value={form.nearest_evacuation || ""} readOnly disabled placeholder="(prefetch)" />
-            </Row>
-          </Section>
-
-          <Section title="Vulnerable Groups">
-            <Row label="PWD">
-              <input type="number" min={0} value={form.pwd ?? ""} onChange={onNum("pwd")} placeholder="0" />
-            </Row>
-            <Row label="Senior">
-              <input type="number" min={0} value={form.senior ?? ""} onChange={onNum("senior")} placeholder="0" />
-            </Row>
-            <Row label="Children">
-              <input type="number" min={0} value={form.children ?? ""} onChange={onNum("children")} placeholder="0" />
-            </Row>
-          </Section>
-
-          {/* (Removed the bottom preview section for Create; preview is inline with the upload row) */}
-        </div>
-
-        <div className="action-button">
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
-            Save
-          </button>
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-/* =========================================================================
-   EDIT (frontend-only)
-===========================================================================*/
-type EditProps = BaseModalProps & {
-  data: MyBarangay;
-  onSaved?: (data: MyBarangay | null) => void;
-  prefetch?: {
-    nearest_evacuation?: string; // locked
-    lat?: number;
-    lng?: number;
-  };
+/* ===============================================================
+   EDIT MODAL (frontend-only; emits onSaved)
+================================================================*/
+type EditProps = {
+  isOpen?: boolean;
+  onClose: () => void;
+  data: Barangay; // initial snapshot
+  lgu_name: string;
+  lgu_coordinate: [number, number];
+  onSaved?: (updated: Barangay) => void; // parent will persist
 };
 
 export const BarangayEditModal: React.FC<EditProps> = ({
-  isModalOpen,
-  closeModal,
-  setMessageBox,
+  isOpen = true,
+  onClose,
   data,
+  lgu_name,
+  lgu_coordinate,
   onSaved,
-  prefetch,
 }) => {
-  const [form, setForm] = useState<MyBarangay>({ ...data });
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [form, setForm] = useState<Barangay>({ ...data });
+  const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isModalOpen) return;
-    setForm((p) => ({
-      ...p,
-      nearest_evacuation: prefetch?.nearest_evacuation ?? p.nearest_evacuation,
-      lat: prefetch?.lat ?? p.lat,
-      lng: prefetch?.lng ?? p.lng,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isModalOpen]);
-
-  const invalids = useMemo(
-    () => ({
-      contact: !!form.contact && !is11Digits(form.contact),
-      name: !form.barangay_name?.trim(),
-    }),
-    [form.contact, form.barangay_name]
+  const hazards = useMemo<readonly HazardOption[]>(
+    () => ["Typhoon", "Flood", "Earthquake", "Fire", "Landslide"],
+    []
   );
 
-  const onText =
-    (key: keyof MyBarangay) =>
-    (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((p) => ({ ...p, [key]: e.target.value }));
+  // Validation flags
+  const [validation, setValidation] = useState<Record<string, boolean>>({});
 
-  const onNum =
-    (key: keyof MyBarangay) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const v = e.target.value;
-      setForm((p) => ({ ...p, [key]: v === "" ? "" : Number(v) }));
-    };
+  const openLocationPicker = () => setLocationPickerIsOpen(true);
+  const closeLocationPicker = () => setLocationPickerIsOpen(false);
 
-  const onImage =
-    (key: keyof MyBarangay) =>
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const url = await readAsDataUrl(f);
-      setForm((p) => ({ ...p, [key]: url }));
-    };
-
-  const toggle = (val: MyBarangay["common_hazards"][number]) =>
-    setForm((prev) => {
-      const s = new Set(prev.common_hazards ?? []);
-      s.has(val) ? s.delete(val) : s.add(val);
-      return { ...prev, common_hazards: Array.from(s) as MyBarangay["common_hazards"] };
-    });
-
-  const save = () => {
-    if (invalids.name) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Barangay Name is required.",
-      }));
-      return;
-    }
-    if (invalids.contact) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Contact Number must be exactly 11 digits.",
-      }));
-      return;
-    }
-    if ((form.lat == null) !== (form.lng == null)) {
-      setMessageBox((p: any) => ({
-        ...p,
-        isOpen: true,
-        type: "message",
-        message: "Please pick a valid location (both latitude and longitude).",
-      }));
-      return;
-    }
-
-    onSaved?.(form);
-    closeModal();
+  const onLocationSelectSubmit = (address: string, coordinates: [number, number]) => {
+    setForm((prev) => ({ ...prev, lat: coordinates[0], lng: coordinates[1] }));
   };
 
-  if (!isModalOpen) return null;
+  const onImage =
+    (key: keyof Barangay) => async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const url = await readAsDataUrl(file);
+        setForm((prev) => ({ ...prev, [key]: url as string }));
+      } catch (err) {
+        console.error("Failed to read image file:", err);
+      }
+    };
+
+  const handleContactChange = (value: string) => {
+    const cleaned = value.replace(/[^\d]/g, "");
+    setForm((prev) => ({ ...prev, contact_info: cleaned }));
+  };
+
+  const toggleHazard = (val: HazardOption) => {
+    setForm((prev) => {
+      const next = new Set(prev.common_hazards || []);
+      next.has(val) ? next.delete(val) : next.add(val);
+      return { ...prev, common_hazards: Array.from(next) };
+    });
+  };
+
+  const validateForm = () => {
+    const v: Record<string, boolean> = {};
+    v.name = !form.name?.trim();
+    v.lat = form.lat == null;
+    v.lng = form.lng == null;
+    v.total_population = form.total_population == null;
+    v.household_count = form.household_count == null;
+    v.barangay_captain = !form.barangay_captain?.trim();
+    v.contact_info = !form.contact_info?.trim() || !is11Digits(form.contact_info);
+    v.common_hazards =
+      !Array.isArray(form.common_hazards) || form.common_hazards.length === 0;
+    v.barangay_pwd = form.barangay_pwd == null;
+    v.barangay_senior = form.barangay_senior == null;
+    v.barangay_children = form.barangay_children == null;
+    setValidation(v);
+    return !Object.values(v).some(Boolean);
+  };
+
+const handleSave = () => {
+  if (!validateForm()) {
+    Swal.fire({
+      icon: "warning",
+      title: "Incomplete Fields",
+      text: "Please complete all required fields. Fields with red highlight need attention.",
+      confirmButtonColor: "#3B82F6",
+    });
+    return;
+  }
+
+  // Proceed with saving
+  onSaved?.({ ...form });
+  Swal.fire({
+    icon: "success",
+    title: "Barangay Updated",
+    text: "The barangay details have been successfully saved.",
+    timer: 2000,
+    showConfirmButton: false,
+  });
+  onClose();
+};
+
 
   return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={998} width="clamp(560px,56vw,840px)" height="86vh">
-      {pickerOpen && (
-        <LocationPickerModal
-          isOpenProp={pickerOpen}
-          onCloseProp={() => setPickerOpen(false)}
-          onSubmit={({ lat, lng }: { lat: number; lng: number }) =>
-            setForm((p) => ({ ...p, lat, lng }))
-          }
-          lat={Number(form.lat) || 0}
-          lng={Number(form.lng) || 0}
+    <>
+      {locationPickerIsOpen && (
+        <MapViewWithSearch
+          onClose={closeLocationPicker}
+          defaultValue={{
+            address: `${form.name}`,
+            coordinates: [form.lat ?? -1000000, form.lng ?? -1000000],
+          }}
+          onSubmit={onLocationSelectSubmit}
+          changeAddressOnclik={false}
+          customCenter={lgu_coordinate}
         />
       )}
 
-      <div className="modal-container lgu-modal">
-        <div className="horizontal-container">
-          <span className="details-title">Edit Barangay</span>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        zIndex={998}
+        width="clamp(560px,56vw,840px)"
+        height="86vh"
+      >
+        <div className="modal-container lgu-modal">
+          <div className="horizontal-container">
+            <span className="details-title">Edit Barangay</span>
+          </div>
+
+          <div className="lgu-scroll">
+            <Section title="Barangay Information Details">
+              <Row label="Barangay Name">
+                <input type="text" value={form.name} disabled />
+              </Row>
+
+              <Row label="Location">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: 8,
+                  }}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    placeholder="Pick on map"
+                    value={
+                      form.lat != null && form.lng != null
+                        ? `${form.lat}, ${form.lng}`
+                        : ""
+                    }
+                    style={{ flex: 1 }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={openLocationPicker}
+                    title="Pick location on map"
+                    style={pinBtnStyle}
+                  >
+                    <FontAwesomeIcon icon={faMapMarkerAlt} />
+                  </button>
+                </div>
+              </Row>
+
+              <Row label="Barangay Seal">
+                <label className="filelike">
+                  <FontAwesomeIcon icon={faImage} />
+                  <span>Choose image</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={onImage("baranggay_pic")}
+                  />
+                </label>
+                {form.baranggay_pic && (
+                  <img
+                    src={form.baranggay_pic}
+                    alt="baranggay_pic"
+                    className="img-thumb"
+                  />
+                )}
+              </Row>
+
+              <Row label="Total Population">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.total_population ?? ""}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      total_population:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={validation.total_population ? "input-invalid" : ""}
+                />
+              </Row>
+
+              <Row label="Number of Households">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.household_count ?? ""}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      household_count:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={validation.household_count ? "input-invalid" : ""}
+                />
+              </Row>
+
+              <Row label="Barangay Captain">
+                <input
+                  type="text"
+                  value={form.barangay_captain ?? ""}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, barangay_captain: e.target.value }))
+                  }
+                  className={validation.barangay_captain ? "input-invalid" : ""}
+                />
+              </Row>
+
+              <Row label="Contact Number" hint="11 digits">
+                <input
+                  type="tel"
+                  value={form.contact_info ?? ""}
+                  placeholder="09XXXXXXXXX"
+                  onChange={(e) => handleContactChange(e.target.value)}
+                  className={validation.contact_info ? "input-invalid" : ""}
+                />
+              </Row>
+            </Section>
+
+            <Section title="Disaster Risk Profile">
+              <Row label="Common Hazards">
+                <CheckGroup
+                  options={hazards}
+                  selected={form.common_hazards || []}
+                  onToggle={toggleHazard}
+                  columns={3}
+                />
+              </Row>
+            </Section>
+
+            <Section title="Vulnerable Groups">
+              <Row label="PWD">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.barangay_pwd ?? ""}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      barangay_pwd:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={validation.barangay_pwd ? "input-invalid" : ""}
+                />
+              </Row>
+              <Row label="Senior">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.barangay_senior ?? ""}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      barangay_senior:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={validation.barangay_senior ? "input-invalid" : ""}
+                />
+              </Row>
+              <Row label="Children">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.barangay_children ?? ""}
+                  placeholder="0"
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      barangay_children:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    }))
+                  }
+                  className={validation.barangay_children ? "input-invalid" : ""}
+                />
+              </Row>
+            </Section>
+          </div>
+
+          <div className="action-button">
+            <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleSave}>
+              Save
+            </button>
+            <button style={{ background: "#F84B4D", color: "#fff" }} onClick={onClose}>
+              Cancel
+            </button>
+          </div>
         </div>
-
-        <div className="lgu-scroll">
-          <Section title="Barangay Information Details">
-            <Row label="Barangay Name">
-              <input type="text" value={form.barangay_name} onChange={onText("barangay_name")} />
-            </Row>
-
-            <Row label="Location">
-              <input
-                type="text"
-                readOnly
-                placeholder="Pick on map"
-                value={form.lat != null && form.lng != null ? fmtLL(form.lat, form.lng) : ""}
-                style={{ width: 260 }}
-              />
-              <button type="button" onClick={() => setPickerOpen(true)} title="Pick location on map" style={pinBtnStyle}>
-                <FontAwesomeIcon icon={faMapMarkerAlt} />
-              </button>
-            </Row>
-
-            {/* Edit: keep attachment, remove preview */}
-            <Row label="Barangay Seal">
-              <label className="filelike">
-                <FontAwesomeIcon icon={faImage} />
-                <span>Choose image</span>
-                <input type="file" accept="image/*" onChange={onImage("barangay_seal")} hidden />
-              </label>
-            </Row>
-
-            <Row label="Total Population">
-              <input type="number" min={0} value={form.total_population ?? ""} onChange={onNum("total_population")} />
-            </Row>
-
-            <Row label="Number of Households">
-              <input type="number" min={0} value={form.households ?? ""} onChange={onNum("households")} />
-            </Row>
-
-            <Row label="Barangay Captain">
-              <input type="text" value={form.barangay_captain ?? ""} onChange={onText("barangay_captain")} />
-            </Row>
-
-            <Row label="Contact Number" hint="11 digits">
-              <input
-                type="tel"
-                value={form.contact ?? ""}
-                onChange={onText("contact")}
-                placeholder="09XXXXXXXXX"
-                className={invalids.contact ? "input-invalid" : undefined}
-                maxLength={11}
-              />
-            </Row>
-          </Section>
-
-          <Section title="Disaster Risk Profile">
-            <Row label="Common Hazards">
-              <CheckGroup
-                options={["Typhoons", "Flooding", "Earthquakes", "Landslides", "Fire"] as const}
-                selected={form.common_hazards}
-                onToggle={toggle}
-                columns={3}
-              />
-            </Row>
-
-            <Row label="Nearest Evacuation" locked>
-              <input type="text" value={form.nearest_evacuation || ""} readOnly disabled placeholder="(prefetch)" />
-            </Row>
-          </Section>
-
-          <Section title="Vulnerable Groups">
-            <Row label="PWD">
-              <input type="number" min={0} value={form.pwd ?? ""} onChange={onNum("pwd")} placeholder="0" />
-            </Row>
-            <Row label="Senior">
-              <input type="number" min={0} value={form.senior ?? ""} onChange={onNum("senior")} placeholder="0" />
-            </Row>
-            <Row label="Children">
-              <input type="number" min={0} value={form.children ?? ""} onChange={onNum("children")} placeholder="0" />
-            </Row>
-          </Section>
-
-          {/* (Removed the bottom Images preview section for Edit) */}
-        </div>
-
-        <div className="action-button">
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={save}>
-            Save
-          </button>
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
+      </Modal>
+    </>
   );
 };
 
-/* =========================================================================
-   DELETE CONFIRMATION (frontend-only)
-===========================================================================*/
-type DeleteProps = BaseModalProps & {
-  targetName?: string;
-  onConfirm?: () => void;
-};
-
-export const BarangayDeleteModal: React.FC<DeleteProps> = ({
-  isModalOpen,
-  closeModal,
-  targetName,
-  onConfirm,
-}) => {
-  if (!isModalOpen) return null;
-  return (
-    <Modal isOpen={isModalOpen} onClose={closeModal} zIndex={999} width="min(520px, 92vw)" height="auto">
-      <div className="modal-container lgu-modal" style={{ padding: 24 }}>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
-          <FontAwesomeIcon icon={faTriangleExclamation} style={{ color: "#b91c1c" }} />
-          <span className="details-title">Delete Barangay</span>
-        </div>
-        <p style={{ color: "#374151", marginBottom: 16 }}>
-          Are you sure you want to delete <b>{targetName ?? "this barangay"}</b>? This action cannot be undone.
-        </p>
-        <div className="action-button">
-          <button style={{ background: "#F84B4D", color: "#fff" }} onClick={onConfirm}>
-            Delete
-          </button>
-          <button style={{ background: "#749AB6", color: "#fff" }} onClick={closeModal}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-/* ========= Presentational helpers ========= */
+/* ===============================================================
+   Presentational building blocks
+================================================================*/
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="section-block" style={{ marginTop: 12 }}>
@@ -698,14 +537,15 @@ function DL({
   );
 }
 
-/** shows image or a tidy placeholder (matches your LGU modal pattern) */
-function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
+function ImgOrPlaceholder({ label, src }: { label: string; src?: string | null }) {
   const hasImg = !!src;
   return (
     <div className="lgu-media">
-      <div className="item-details-identifier" style={{ marginBottom: 6 }}>{label}</div>
+      <div className="item-details-identifier" style={{ marginBottom: 6 }}>
+        {label}
+      </div>
       {hasImg ? (
-        <img src={src} alt={label} className="img-thumb" />
+        <img src={src!} alt={label} className="img-thumb" />
       ) : (
         <div className="img-placeholder">No image</div>
       )}
@@ -725,13 +565,21 @@ function CheckGroup<T extends string>({
   columns?: number;
 }) {
   return (
-    <div className="lgu-checkgrid" style={{ "--cols": String(columns) } as React.CSSProperties}>
+    <div
+      className="lgu-checkgrid"
+      style={{ "--cols": String(columns) } as React.CSSProperties}
+    >
       {options.map((opt) => {
         const id = `chk_${String(opt).replace(/\s+/g, "_")}`;
         const checked = selected?.includes(opt);
         return (
           <label key={id} htmlFor={id} className="lgu-check">
-            <input id={id} type="checkbox" checked={!!checked} onChange={() => onToggle(opt)} />
+            <input
+              id={id}
+              type="checkbox"
+              checked={!!checked}
+              onChange={() => onToggle(opt)}
+            />
             <span className="lgu-check-text">{opt}</span>
           </label>
         );
@@ -748,14 +596,13 @@ function LockIcon() {
   );
 }
 
-/* Small inline style for the pin/map button (matches LGU modals) */
 const pinBtnStyle: React.CSSProperties = {
   backgroundColor: "transparent",
   border: "1px solid  #ddd",
   outline: "none",
   color: "#3b82f6",
-  width: 35,
-  height: 32,
+  width: 44,
+  height: 44,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

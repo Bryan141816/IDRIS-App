@@ -538,6 +538,7 @@ td.col-action {
 }
 .action-btn.edits {
   border-color: #81c784;
+  margin-left: 8px;
   margin-top: 5px;
   width: 60px;
   color: #2e7d32;          /* dark green text */

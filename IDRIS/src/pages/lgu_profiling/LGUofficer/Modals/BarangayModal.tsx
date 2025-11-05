@@ -121,7 +121,7 @@ export const BarangayViewModal: React.FC<ViewProps> = ({
               value={data?.common_hazards?.join(", ") || "—"}
             />
             <DL
-              label="Nearest Evacuation"
+              label="Evacuation Center"
               value={data?.evacucation_center?.name || "—"}
               locked
             />
@@ -339,7 +339,7 @@ const validateForm = () => {
           <div className="lgu-scroll">
             <Section title="Barangay Information Details">
               <Row label="Barangay Name">
-                <input type="text" value={form.name} />
+                <input type="text" value={form.name} disabled/>
               </Row>
 
               <Row label="Location">

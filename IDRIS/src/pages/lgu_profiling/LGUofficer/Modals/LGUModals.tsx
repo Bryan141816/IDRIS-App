@@ -57,7 +57,7 @@ export type LGUEditForm = {
 
   // DRRMO
   drmm_personnel?: string;
-  drmm_contact?: string; // 11 digits
+  DRMM_contact?: string; // 11 digits
   evacuation_center?: string; // locked (prefetch text)
   critical_facilities: Array<
     | "Municipal Hall"

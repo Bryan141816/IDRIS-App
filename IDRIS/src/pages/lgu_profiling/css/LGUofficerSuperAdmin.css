@@ -417,7 +417,27 @@ html, body {
 .raffi-table tbody tr:hover,
 .barangay-section .barangay-table tbody tr:hover {
   background: #f8fafc;
+  
 }
+
+/* Highlight selected LGU row */
+#lgu-specific tr.is-selected {
+  background-color: #e0f2fe;   /* Light blue highlight */
+  transition: background-color 0.2s ease;
+}
+
+/* Optional: keep text darker for contrast */
+#lgu-specific tr.is-selected td {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Optional: hover effect for other rows */
+#lgu-specific tr:hover:not(.is-selected) {
+  background-color: #f1f5f9;
+}
+
+
 
 .raffi-section  th,.raffi-section  td{
   text-align: center !important;
@@ -566,3 +586,6 @@ tfoot{border:none !important; outline: none !important;}
 .add-raffi:hover {
   background-color: rgba(22, 163, 74, 0.08); /* faint green tint */
 }
+
+
+.is-sele

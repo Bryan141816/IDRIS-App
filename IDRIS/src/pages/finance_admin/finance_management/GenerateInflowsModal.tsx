@@ -145,7 +145,7 @@ const GenerateInflowsModal: React.FC<Props> = ({
         </div>
 
         <div className="modal-content">
-          <h3>Generate Inflows</h3>
+          <h3>Generate { isInflows ? "Inflows" : "Outflows"}</h3>
 
           {/* Report Type */}
           <div className="form-group">

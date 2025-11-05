@@ -142,8 +142,12 @@ const DashboardSection: React.FC<{
       </div>
 
       {(activeModal == "report-selection") &&
-        <div className="modalOverlay">
-          <div id="report-selection" onClick={closeModal}>
+        <div className="modalOverlay" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            closeModal();
+          }
+        }}>
+          <div id="report-selection">
             <ReportsExportsSection mode={(activeModal == "report-selection") ? "reports" : "exports"} />
           </div>
         </div>

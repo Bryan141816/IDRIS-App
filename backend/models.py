@@ -1466,7 +1466,7 @@ class FinanceRecord(Base):
     id = Column(Integer, index=True, server_default=Identity())
 
     finance_id = Column(String, primary_key=True)
-    counterparty = Column(String(255), nullable=False)
+    counterparty = Column(String(255), nullable=True)
     transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
     amount = Column(Numeric(14, 2), nullable=False)
     date = Column(Date, nullable=False, index=True)

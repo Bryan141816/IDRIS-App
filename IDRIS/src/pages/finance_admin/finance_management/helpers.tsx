@@ -64,7 +64,7 @@ export const strip_underscores = (s: string) => s.replace(/_/g, " ");
 
 export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {
   const errs: string[] = [];
-  if (!form.counterparty?.trim()) errs.push('Source is required.');
+  // if (!form.counterparty?.trim()) errs.push('Source is required.');
   if (form.amount == null || Number(form.amount) <= 0) errs.push('Amount must be greater than 0.');
   if ('inflow_source' in form && !form.inflow_source) errs.push('Inflow source is required.');
   if ('spend_category' in form && !form.spend_category) errs.push('Spend category is required.');

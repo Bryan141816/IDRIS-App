@@ -159,7 +159,7 @@ const InflowModal: React.FC<{
               /* ========= ADD/EDIT: original fields ========= */
               <>
                 <div className="form-group">
-                  <label>Budget Source</label>
+                  <label>Inflow Source</label>
                   <select
                     disabled={readOnly}
                     value={String(form.inflow_source ?? "")}
@@ -179,7 +179,7 @@ const InflowModal: React.FC<{
                   </select>
                 </div>
 
-                <div className="form-group">
+                {/* <div className="form-group">
                   <label>Payee (recipient)</label>
                   <input
                     disabled={readOnly}
@@ -188,7 +188,7 @@ const InflowModal: React.FC<{
                     value={form.counterparty || ""}
                     onChange={e => setForm({ ...form, counterparty: e.target.value })}
                   />
-                </div>
+                </div> */}
 
                 <div className="form-group">
                   <label>Amount (PHP)</label>

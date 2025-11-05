@@ -18,7 +18,7 @@ import {
   getRetentionRate,
 } from "../../../API_Handler/donations_donation_handler";
 
-import { sampleFundingProposals } from './dummy_data';
+// import { sampleFundingProposals } from './dummy_data';
 
 export interface FundingProposalInterface {
   funding_id: number;
@@ -123,13 +123,15 @@ const DonationsDashboard = () => {
 
         if (records.length === 0) {
           // Use dummy programs and lock pagination to 1 page
-          setFundingProposals(sampleFundingProposals);
+          // setFundingProposals(sampleFundingProposals);
+          return;
         } else {
           setFundingProposals(records);
         }
       } catch (error) {
         console.error("Failed to fetch funding proposals:", error);
-        setFundingProposals(sampleFundingProposals); // fallback to dummy on error
+        // setFundingProposals(sampleFundingProposals); // fallback to dummy on error
+        return;
       } finally {
         setLoading(false);
       }

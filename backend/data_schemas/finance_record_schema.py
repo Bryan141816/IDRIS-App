@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from models import FinanceRecord, TransactionType, SpendCategory, InflowSource
 
 class FinanceRecordBase(BaseModel):
-    counterparty: str
+    counterparty: Optional[str] = None
     amount: Decimal
     date: date
     purpose: Optional[str] = None
@@ -19,7 +19,7 @@ class FinanceRecordBase(BaseModel):
 
 class InflowFinanceRecordCreate(BaseModel):
     # finance_id is NOT required for create; DB should generate it
-    counterparty: str
+    counterparty: Optional[str] = None
     transaction_type: TransactionType = TransactionType.INFLOW
     amount: Decimal
     purpose: Optional[str] = None
@@ -31,7 +31,7 @@ class InflowFinanceRecordCreate(BaseModel):
     @classmethod
     def as_form(
         cls,
-        counterparty: str = Form(...),
+        counterparty: Optional[str] = Form(None),
         transaction_type: TransactionType = Form(TransactionType.INFLOW),
         amount: Decimal = Form(...),
         purpose: Optional[str] = Form(None),

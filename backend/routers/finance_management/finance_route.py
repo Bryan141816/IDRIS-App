@@ -41,6 +41,7 @@ def create_inflow_record(
     db: Session = Depends(get_db),
     attachment: Optional[UploadFile] = File(None)
 ):
+    print(payload)
     if attachment:
         # Save the attachment to the media directory
         media_dir = Path("media/finance_checks")

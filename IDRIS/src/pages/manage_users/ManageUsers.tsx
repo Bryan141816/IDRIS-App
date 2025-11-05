@@ -117,9 +117,9 @@ const ViewReportModal = ({
 
   // ✅ Parse admin profile data (index 2)
   const adminProfileData =
-    isViewModalSelected.data[2].text !== "{}"
-      ? JSON.parse(isViewModalSelected.data[2].text.replace(/'/g, '"'))
-      : null;
+  isViewModalSelected.data[2].text !== "{}"
+    ? JSON.parse(isViewModalSelected.data[2].text.replace(/'/g, '"').replace(/\bNone\b/g, "null"))
+    : null;
 
   // ✅ Parse user profile data (index 3)
   const userProfileData =

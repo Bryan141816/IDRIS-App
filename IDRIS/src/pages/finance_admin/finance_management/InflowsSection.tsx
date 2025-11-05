@@ -49,6 +49,7 @@ const InflowModal: React.FC<{
 
   useEffect(() => {
     if (open) {
+      const isAdd = mode == 'add';
       setForm({
         ...initial,
         inflow_source:
@@ -56,10 +57,12 @@ const InflowModal: React.FC<{
             ? undefined
             : (initial.inflow_source as InflowItem["inflow_source"]),
         inflow_type: normalizeInflowType(initial?.inflow_type as any), // ← add this
-        date: toDateInput(initial?.date as any),
+        date: isAdd
+          ? toDateInput(new Date())
+          : toDateInput(initial?.date as any),
       });
     }
-  }, [open, initial]);
+  }, [open, initial, mode]);
 
   const [previewSrc, setPreviewSrc] = useState<string>('');
   useEffect(() => {

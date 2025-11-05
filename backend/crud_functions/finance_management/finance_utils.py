@@ -26,8 +26,7 @@ def _fuzzy_match(enum_class: Type[T], sn: str) -> Optional[T]:
         if "government" in sn:  return enum_class["GOVERNMENT_GRANTS_AND_FUNDS"]
         if "private" in sn:     return enum_class["PRIVATE_SECTOR_CONTRIBUTIONS"]
         if "community" in sn:   return enum_class["COMMUNITY_BASED_INITIATIVE"]
-        if "monetary" in sn:    return enum_class["MONETARY_DONATIONS"]
-        if "donation" in sn:    return enum_class["DONATION"]
+        if "monetary" in sn or "donation" in sn:    return enum_class["MONETARY_DONATIONS"]
     return None
 
 def _to_enums(

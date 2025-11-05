@@ -52,13 +52,16 @@ const OutflowModal: React.FC<{
 
   useEffect(() => {
     if (open) {
+      const isAdd = mode == 'add';
       setForm({
         ...initial,
         finance_id: (initial as any)?.finance_id,
-        date: toDateInput(initial?.date as any),
+        date: isAdd
+          ? toDateInput(new Date())
+          : toDateInput(initial?.date as any),
       });
     }
-  }, [open, initial]);
+  }, [open, initial, mode]);
 
   useEffect(() => {
     const match = budgetData.find(x => x.budget_for === form.inflow_source);

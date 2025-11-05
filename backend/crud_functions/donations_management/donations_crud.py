@@ -133,7 +133,7 @@ class DonationCRUD:
                     amount=amount_for_finance,    # Decimal
                     date=finance_date,            # date, not datetime
                     purpose=desc_for_finance,
-                    inflow_source=InflowSource.DONATION,
+                    inflow_source=InflowSource.MONETARY_DONATIONS,
                 )
                 db.add(finance)
 
@@ -243,7 +243,7 @@ class DonationCRUD:
                 amount=amount_for_finance,
                 date=finance_date,
                 description=desc_for_finance,
-                inflow_source=InflowSource.DONATION,
+                inflow_source=InflowSource.MONETARY_DONATIONS,
             )
             db.add(finance)
 

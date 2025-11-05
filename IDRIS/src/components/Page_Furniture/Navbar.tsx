@@ -4,7 +4,7 @@ import { Volunteer, LGU, Response, Donations } from "./Icons";
 import { useUserContext } from "../../UserContext";
 import { useUserRoleContext } from "../../UserRoleContext";
 import React, { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface NavbarProps {
   isVisible: boolean;
@@ -14,7 +14,14 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
   const { userType } = useUserContext();
   const { userRoles } = useUserRoleContext();
+  const location = useLocation(); // Add this hook
   const [activeNav, setActiveNav] = useState<string | null>(null);
+  
+  // Helper function to check if a route is active
+  const isRouteActive = (path: string) => {
+    return location.pathname.startsWith(path);
+  };
+
   const toggleNav = (id: string) =>
     setActiveNav((prev) => (prev === id ? null : id));
 
@@ -57,45 +64,60 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
       </div>
 
       <div id="nav-links">
-       {(userRoles.includes("lgu officer") || userRoles.includes("generic")) && (
-  <div className="nav-items" id="lgu-profiling">
-    <div
-      className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
-      onClick={() => toggleNav("lgu")}
-    >
-      <LGU width={14} height={14} className="sidebar-icons" />
-      <a href="#" className="non-redirect">LGU PROFILING</a>
-    </div>
-    <div className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}>
-      <Link to="/lgu_profiling/map_of_cebu" className="nav-sub-item" onClick={onClose}>
-        Map of Cebu
-      </Link>
-      
-      <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
-        Evacuation and Shelter Management
-      </Link>
-      
-      {userRoles.includes("lgu officer") && (
-        <Link to="/lgu_profiling/LGUofficermanagement" className="nav-sub-item" onClick={onClose}>
-          LGU Officer Management
-        </Link>
-      )}
-    </div>
-  </div>
-)}
-
-
-        {userRoles.includes("superadmin") && (
+        {(userRoles.includes("lgu officer") || userRoles.includes("generic")) && (
           <div className="nav-items" id="lgu-profiling">
             <div
-              className={`flex-control ${activeNav === "lgu" ? "active" : ""}`}
+              className={`flex-control ${activeNav === "lgu" || isRouteActive("/lgu_profiling") ? "active" : ""}`}
               onClick={() => toggleNav("lgu")}
             >
               <LGU width={14} height={14} className="sidebar-icons" />
               <a href="#" className="non-redirect">LGU PROFILING</a>
             </div>
             <div className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}>
-              <Link to="/lgu_profiling/map_of_cebu" className="nav-sub-item" onClick={onClose}>
+              <Link 
+                to="/lgu_profiling/map_of_cebu" 
+                className={`nav-sub-item ${location.pathname === "/lgu_profiling/map_of_cebu" ? "active" : ""}`}
+                onClick={onClose}
+              >
+                Map of Cebu
+              </Link>
+              
+              <Link 
+                to="/lgu_profiling/evacuationandshelter" 
+                className={`nav-sub-item ${location.pathname === "/lgu_profiling/evacuationandshelter" ? "active" : ""}`}
+                onClick={onClose}
+              >
+                Evacuation and Shelter Management
+              </Link>
+              
+              {userRoles.includes("lgu officer") && (
+                <Link 
+                  to="/lgu_profiling/LGUofficermanagement" 
+                  className={`nav-sub-item ${location.pathname === "/lgu_profiling/LGUofficermanagement" ? "active" : ""}`}
+                  onClick={onClose}
+                >
+                  LGU Officer Management
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
+        {userRoles.includes("superadmin") && (
+          <div className="nav-items" id="lgu-profiling">
+            <div
+              className={`flex-control ${activeNav === "lgu" || isRouteActive("/lgu_profiling") ? "active" : ""}`}
+              onClick={() => toggleNav("lgu")}
+            >
+              <LGU width={14} height={14} className="sidebar-icons" />
+              <a href="#" className="non-redirect">LGU PROFILING</a>
+            </div>
+            <div className={`nav-sub-items ${activeNav === "lgu" ? "active" : ""}`}>
+              <Link 
+                to="/lgu_profiling/map_of_cebu" 
+                className={`nav-sub-item ${location.pathname === "/lgu_profiling/map_of_cebu" ? "active" : ""}`}
+                onClick={onClose}
+              >
                 Map of Cebu
               </Link>
               {(
@@ -103,18 +125,26 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                   (userRoles.includes("lgu officer") || userRoles.includes("superadmin"))) ||
                 (userType === "user" && userRoles.includes("generic"))
               ) && (
-                  <Link to="/lgu_profiling/evacuationandshelter" className="nav-sub-item" onClick={onClose}>
-                    Evacuation and Shelter Management
-                  </Link>
-                )}
+                <Link 
+                  to="/lgu_profiling/evacuationandshelter" 
+                  className={`nav-sub-item ${location.pathname === "/lgu_profiling/evacuationandshelter" ? "active" : ""}`}
+                  onClick={onClose}
+                >
+                  Evacuation and Shelter Management
+                </Link>
+              )}
               {userType === "admin" &&
                 (userRoles.includes("lgu officer") ||
                   userRoles.includes("disaster response admin") ||
                   userRoles.includes("superadmin")) && (
-                  <Link to="/lgu_profiling/LGUofficerSuperAdmin" className="nav-sub-item" onClick={onClose}>
-                    Pin Location Management
-                  </Link>
-                )}
+                <Link 
+                  to="/lgu_profiling/LGUofficerSuperAdmin" 
+                  className={`nav-sub-item ${location.pathname === "/lgu_profiling/LGUofficerSuperAdmin" ? "active" : ""}`}
+                  onClick={onClose}
+                >
+                  Pin Location Management
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -126,7 +156,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           userRoles.includes("superadmin")) && (
             <div className="nav-items" id="volunteer">
               <div
-                className={`flex-control ${activeNav === "volunteer" ? "active" : ""}`}
+                className={`flex-control ${activeNav === "volunteer" || isRouteActive("/volunteer_management") ? "active" : ""}`}
                 onClick={() => toggleNav("volunteer")}
               >
                 <Volunteer width={14} height={14} className="sidebar-icons" />
@@ -140,7 +170,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 <Link
                   to="/volunteer_management/volunteer_dashboard"
                   prefetch-link="/volunteer_management/volunteer_dashboard"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/volunteer_management/volunteer_dashboard" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Volunteer Dashboard
@@ -156,7 +186,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           userRoles.includes("superadmin")) && (
             <div className="nav-items" id="donations">
               <div
-                className={`flex-control ${activeNav === "donations" ? "active" : ""}`}
+                className={`flex-control ${activeNav === "donations" || isRouteActive("/donations_management") ? "active" : ""}`}
                 onClick={() => toggleNav("donations")}
               >
                 <Donations width={14} height={14} className="sidebar-icons" />
@@ -168,23 +198,28 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               </div>
               <div className={`nav-sub-items ${activeNav === "donations" ? "active" : ""}`}>
                 {(userRoles.includes("donor") || userRoles.includes("generic")) && (
-                  <Link to="/donations_management/donor_profile" prefetch-link="/donations_management/donor_profile" className="nav-sub-item" onClick={onClose}>
+                  <Link 
+                    to="/donations_management/donor_profile" 
+                    prefetch-link="/donations_management/donor_profile" 
+                    className={`nav-sub-item ${location.pathname === "/donations_management/donor_profile" ? "active" : ""}`}
+                    onClick={onClose}
+                  >
                     Donor Profile
                   </Link>
                 )}
                 <Link
                   to="/donations_management/donations_dashboard"
                   prefetch-link="/donations_management/donations_dashboard"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/donations_management/donations_dashboard" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Donations Dashboard
                 </Link>
-                { (userRoles.includes("operations admin") || userRoles.includes("superadmin")) && 
+                {(userRoles.includes("operations admin") || userRoles.includes("superadmin")) && 
                   <Link
                     to="/donations_management/list_of_rafi_donors"
                     prefetch-link="/donations_management/list_of_rafi_donors"
-                    className="nav-sub-item"
+                    className={`nav-sub-item ${location.pathname === "/donations_management/list_of_rafi_donors" ? "active" : ""}`}
                     onClick={onClose}
                   >
                     List of RAFI Donors
@@ -193,7 +228,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
                 <Link
                   to="/donations_management/funding_proposals"
                   prefetch-link="/donations_management/funding_proposals"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/donations_management/funding_proposals" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Funding Proposals
@@ -204,7 +239,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
 
         <div className="nav-items" id="response">
           <div
-            className={`flex-control ${activeNav === "response" ? "active" : ""}`}
+            className={`flex-control ${location.pathname === "/response_dashboard" ? "active" : ""}`}
             onClick={() => toggleNav("response")}
           >
             <Response width={14} height={14} className="sidebar-icons" />
@@ -219,7 +254,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           (userRoles.includes("logistics admin") || userRoles.includes("superadmin"))) && (
             <div className="nav-items" id="procurement-inventory">
               <div
-                className={`flex-control ${activeNav === "procurement" ? "active" : ""}`}
+                className={`flex-control ${activeNav === "procurement" || isRouteActive("/procurement_inventory") ? "active" : ""}`}
                 onClick={() => toggleNav("procurement")}
               >
                 <Response width={14} height={14} className="sidebar-icons" />
@@ -228,7 +263,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
                 <Link
                   to="/procurement_inventory/procurement_inventory"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/procurement_inventory/procurement_inventory" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Inventory and Warehousing
@@ -237,7 +272,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
                 <Link
                   to="/procurement_inventory/procurement_management"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/procurement_inventory/procurement_management" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Procurement Management
@@ -246,7 +281,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               <div className={`nav-sub-items ${activeNav === "procurement" ? "active" : ""}`}>
                 <Link
                   to="/procurement_inventory/distribution_planning"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/procurement_inventory/distribution_planning" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Distribution Planning &amp; Monitoring
@@ -258,7 +293,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
         {(userRoles.includes("lgu officer")) && (
           <div className="nav-items" id="procurement_request">
             <div
-              className={`flex-control ${activeNav === "procurement_request" ? "active" : ""}`}
+              className={`flex-control ${location.pathname === "/request_procurement" ? "active" : ""}`}
               onClick={() => toggleNav("procurement_request")}
             >
               <Response width={14} height={14} className="sidebar-icons" />
@@ -274,7 +309,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
           (userRoles.includes("finance admin") || userRoles.includes("superadmin"))) && (
             <div className="nav-items" id="finance-admin">
               <div
-                className={`flex-control ${activeNav === "finance" ? "active" : ""}`}
+                className={`flex-control ${activeNav === "finance" || isRouteActive("/finance&admin") ? "active" : ""}`}
                 onClick={() => toggleNav("finance")}
               >
                 <Response width={14} height={14} className="sidebar-icons" />
@@ -283,7 +318,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
               <div className={`nav-sub-items ${activeNav === "finance" ? "active" : ""}`}>
                 <Link
                   to="/finance&admin/finance_management"
-                  className="nav-sub-item"
+                  className={`nav-sub-item ${location.pathname === "/finance&admin/finance_management" ? "active" : ""}`}
                   onClick={onClose}
                 >
                   Finance Management
@@ -295,7 +330,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVisible, onClose }) => {
         {(userType === "admin" && userRoles.includes("superadmin")) && (
           <div className="nav-items" id="user_management">
             <div
-              className={`flex-control ${activeNav === "user_management" ? "active" : ""}`}
+              className={`flex-control ${location.pathname === "/manage_users" ? "active" : ""}`}
               onClick={() => toggleNav("user_management")}
             >
               <Volunteer width={14} height={14} className="sidebar-icons" />

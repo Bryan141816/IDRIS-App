@@ -80,28 +80,38 @@
 
 .flex-control {
   width: 100%;
+  border-radius: 5px;
+  position: relative;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 15px;
+  transition:
+    background 0.19s,
+    color 0.19s,
+    border 0.19s,
+    box-shadow 0.19s;
 
   &:hover {
     background-color: $semi-light;
     color: $primary-color;
-
-    a,
-    svg {
-      color: $primary-color;
-    }
+    a, svg { color: $primary-color; }
   }
 
   &.active {
-    background-color: $semi-light;
-    color: $primary-color;
-    border-right: 5px solid $primary-color;
+    // Use a color with much higher contrast
+    background-color: $primary-color; // or darken($primary-color, 10%)
+    color: white;
+    font-weight: 700;
+    border-right: 1px solid $primary-color;
+    box-shadow: none;
 
-    a,
-    svg {
-      color: $primary-color;
+    a, svg {
+      color: white;
     }
   }
 }
+
+
 
 .nav-sub-items {
   display: flex;
@@ -117,12 +127,39 @@
 .nav-sub-item {
   padding: 10px 8px 10px 40px;
   color: white;
+  border-radius: 20px 0 0 20px;
+  margin-bottom: 2px;
+  position: relative;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+
+  &:hover {
+    color: $primary-color;
+    background-color: $semi-light;
+  }
+
+  &.active {
+    color: $primary-color;
+    background-color: lighten($semi-light, 6%);
+    font-weight: 600;
+    border-left: 5px solid $primary-color;
+    box-shadow: 0 2px 8px rgba($primary-color, 0.10);
+    z-index: 2;
+
+    // Optional: add decorative accent icon
+    &::before {
+      content: '●';
+      color: $primary-color;
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1em;
+      opacity: 0.7;
+    }
+  }
 }
 
-.nav-sub-item:hover {
-  color: $primary-color;
-  background-color: $semi-light;
-}
+
 
 .nav-sub-items.active {
   max-height: fit-content;

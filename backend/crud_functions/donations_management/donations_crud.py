@@ -132,7 +132,7 @@ class DonationCRUD:
                     transaction_type=TransactionType.INFLOW,
                     amount=amount_for_finance,    # Decimal
                     date=finance_date,            # date, not datetime
-                    description=desc_for_finance,
+                    purpose=desc_for_finance,
                     inflow_source=InflowSource.DONATION,
                 )
                 db.add(finance)

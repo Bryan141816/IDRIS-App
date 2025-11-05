@@ -1,38 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { InflowItem, OutflowItem, BudgetItem } from './types';
 import { formatCurrency, } from '../../helpers';
 import { totalIn, totalOut, toDecimal2, strip_underscores } from './helpers';
+import { Modal } from '../../../components/Page_Furniture/Modals';
+import { ReportsExportsSection } from './ReportsExportSection';
 
-const StatsGrid: React.FC<{ inflows: InflowItem[]; outflows: OutflowItem[] }> = ({
-  inflows,
-  outflows,
-}) => {
-  return (
-    <div className="stats-grid">
-      <div className="stat-card inflow">
-        <div className="stat-icon">💰</div>
-        <div className="stat-info">
-          <h3>{formatCurrency(totalIn(inflows))}</h3>
-          <p>Total Inflow</p>
+const StatsGrid: React.FC<
+  {
+    inflows: InflowItem[];
+    outflows: OutflowItem[],
+    onOpenReportSelection: () => void,
+    // onOpenGenerateReport: () => void
+  }> = ({
+    inflows,
+    outflows,
+    onOpenReportSelection,
+    // onOpenGenerateReport,
+  }) => {
+
+    return (
+      <div className="stats-grid">
+        <div className="stat-card inflow" onClick={onOpenReportSelection}>
+          <div className="stat-icon">📊</div>
+          <div className="stat-info">
+            <h3>Request Reports</h3>
+          </div>
+        </div>      <div className="stat-card inflow">
+          <div className="stat-icon">💰</div>
+          <div className="stat-info">
+            <h3>{formatCurrency(totalIn(inflows))}</h3>
+            <p>Total Inflow</p>
+          </div>
+        </div>
+        <div className="stat-card outflow">
+          <div className="stat-icon">💸</div>
+          <div className="stat-info">
+            <h3>{formatCurrency(totalOut((outflows)))}</h3>
+            <p>Total Outflow</p>
+          </div>
+        </div>
+        <div className="stat-card balance">
+          <div className="stat-icon">💳</div>
+          <div className="stat-info">
+            <h3>{formatCurrency(totalIn(inflows) - totalOut(outflows))}</h3>
+            <p>Current Balance</p>
+          </div>
         </div>
       </div>
-      <div className="stat-card outflow">
-        <div className="stat-icon">💸</div>
-        <div className="stat-info">
-          <h3>{formatCurrency(totalOut((outflows)))}</h3>
-          <p>Total Outflow</p>
-        </div>
-      </div>
-      <div className="stat-card balance">
-        <div className="stat-icon">💳</div>
-        <div className="stat-info">
-          <h3>{formatCurrency(totalIn(inflows) - totalOut(outflows))}</h3>
-          <p>Current Balance</p>
-        </div>
-      </div>
-    </div>
-  );
-};
+    );
+  };
 
 const BudgetOverview: React.FC<{ data: BudgetItem[] }> = ({ data }) => (
   <div className="chart-container">
@@ -87,7 +103,7 @@ const RecentTransactions: React.FC<{
             >
               <div className="transaction-info">
                 <strong>{isIn ? t.counterparty : t.counterparty}</strong>
-                <span>{t.description}</span>
+                <span>{t.purpose}</span>
                 <small>{new Date(t.date).toLocaleDateString()}</small>
               </div>
               <div
@@ -109,14 +125,32 @@ const DashboardSection: React.FC<{
   outflows: OutflowItem[];
   budgetData: BudgetItem[];
 }> = ({ inflows, outflows, budgetData }) => {
+  const [activeModal, setActiveModal] = useState<string>("");
+
+  const closeModal = () => setActiveModal("");
+
+  const openReportSelectionModal = () => {
+    setActiveModal("report-selection")
+  }
+
   return (
     <div className="dashboard-content">
-      <StatsGrid inflows={inflows} outflows={outflows} />
+      <StatsGrid inflows={inflows} outflows={outflows} onOpenReportSelection={openReportSelectionModal} />
       <div className="dashboard-grid">
         <BudgetOverview data={budgetData} />
         <RecentTransactions inflows={inflows} outflows={outflows} />
       </div>
+
+      {(activeModal == "report-selection") &&
+        <div className="modalOverlay">
+          <div id="report-selection" onClick={closeModal}>
+            <ReportsExportsSection mode={(activeModal == "report-selection") ? "reports" : "exports"} />
+          </div>
+        </div>
+      }
     </div>
   );
 };
 export default DashboardSection;
+
+

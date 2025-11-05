@@ -234,13 +234,12 @@ const GenerateReportModal: React.FC<Props> = ({ open, onClose, isSummary = false
           </div>
 
           {/* Output format */}
-          <div className="form-group">
+          {/* <div className="form-group">
             <label>Format</label>
             <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
-              {/* <option>PDF Report</option> */}
               <option selected>Print</option>
             </select>
-          </div>
+          </div> */}
         </div>
 
         <div className="modal-actions">

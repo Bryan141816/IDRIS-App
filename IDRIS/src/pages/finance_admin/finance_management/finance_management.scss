@@ -179,7 +179,87 @@
       &:hover { background: rgba(116,154,182,0.1); border-color: #749ab6; color: #5a8aa8; }
     }
   }
+
+  .modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(116, 154, 182, 0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+
+    #reports-content-header{
+      height: 50px;
+
+      #modalOverlayClose{
+        position: absolute;
+        right: 1%;
+        top: 10px;
+        background-color: red;
+        width: 30px;
+        height: auto;
+        aspect-ratio: 1/1;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 50%;
+
+        &:hover{
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+        }
+      }
+    }
+
+    #reports-content-footer{
+      display: flex;
+      flex-direction: row;
+      justify-content: end;
+      padding: 0 20px;
+      width: 100%;
+      height: auto;
+    }
+
+    .finance-report-cancel{      
+      background: #ffffff;
+      color: #749ab6;
+      border: 2px solid #749ab6;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+
+      &:hover{
+        background: #749ab6;
+        color: #ffffff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(116, 154, 182, 0.3);
+      }
+    }
+
   }
+
+  #report-selection{
+    width: 60%;
+    height: auto;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: auto;
+    max-height: 90%;
+    border-radius: 20px;
+    background-color: white;
+  }
+}
   
   
   /* Header Styles */
@@ -707,12 +787,12 @@
   /* Export Options */
   .export-options {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(2, minmax(200px, 2fr));
     gap: 1.5rem;
    
     .export-card {
       background: #ffffff;
-      padding: 2rem;
+      padding: 1rem;
       border-radius: 1rem;
       box-shadow: 0 4px 12px rgba(116, 154, 182, 0.15);
       text-align: center;

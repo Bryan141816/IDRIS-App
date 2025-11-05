@@ -17,7 +17,11 @@ const ReportsView: React.FC<{
 
   return (
     <div className="reports-content">
-      <div className="section-header">
+      <div id='reports-content-header'>
+        <button id="modalOverlayClose">X</button>
+      </div>
+
+      {/* <div className="section-header">
         <h2>Review Financial Reports</h2>
         <div className="header-actions">
           <button className="secondary-btn" onClick={onOpenGenerateSummary}>
@@ -27,9 +31,18 @@ const ReportsView: React.FC<{
             + Generate Report
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="export-options">
+        <div className="export-card">
+          <div className="export-icon">📊</div>
+          <h3>Generate Budget Summary</h3>
+          <p>Overall Graphical Summary of Inflows and Outflows</p>
+          <button className="export-btn" onClick={onOpenGenerateSummary}>
+            Export
+          </button>
+        </div>
+
         <div className="export-card">
           <div className="export-icon">💰</div>
           <h3>Inflow Summary</h3>
@@ -49,7 +62,21 @@ const ReportsView: React.FC<{
             onOpenGenerateInflowsOrOutflows();
           }}>Export Expenses</button>
         </div>
+
+        <div className="export-card">
+          <div className="export-icon">💰 + 💸</div>
+          <h3>Inflows and Outflows Report</h3>
+          <p>Export all Inflows and Outflows</p>
+          <button className="export-btn" onClick={() => {
+            onInflowReportSelect(false);
+            onOpenGenerateInflowsOrOutflows();
+          }}>Export</button>
+        </div>
       </div>
+      <div id='reports-content-footer'>
+        <button className="finance-report-cancel">Cancel</button>
+      </div>
+
     </div>
   );
 };
@@ -99,7 +126,7 @@ const ExportsView: React.FC<{
   </div>
 );
 
-const ReportsExportsSection: React.FC<{
+export const ReportsExportsSection: React.FC<{
   mode: Mode;
 }> = ({ mode = [] }) => {
   const [openGen, setOpenGen] = useState(false);

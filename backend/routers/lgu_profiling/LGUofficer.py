@@ -343,6 +343,9 @@ def update_raffi(
 
     return rec
 
+
+
+
 @router.delete("/api/raffi/{rafi_id}")
 def delete_raffi(
     rafi_id: int,
@@ -612,3 +615,46 @@ def admin_lgu_get(lgu_id: int, request: Request, db: Session = Depends(get_db)):
         "baranggay_count": baranggay_count,
     }
     return LGUOut.model_validate(payload)
+
+
+
+@router.put("/api/update_lgu")
+def patch_lgu(p: LGUPayload, db: Session = Depends(get_db)):
+    # 1) Load the row
+    lgu_id = p.id
+    rec = db.query(LGURecords).filter(LGURecords.id == lgu_id).first()
+    if not rec:
+        raise HTTPException(404, f"LGU with id={lgu_id} not found")
+
+    # 2) Only the fields sent by client
+    updates: Dict[str, Any] = p.model_dump(exclude_unset=True)
+
+    updates.pop("id")
+    # 3) Special handling for images
+    if "lgu_seal" in updates:
+        updates["lgu_seal"] = normalize_image_field(updates["lgu_seal"])
+
+    if "hazard_pic" in updates:
+        updates["hazard_pic"] = normalize_image_field(updates["hazard_pic"])
+
+    # 4) (Optional) Coerce/validate arrays if needed
+    # e.g., ensure lists for ARRAY(String) columns
+    if "lgu_majorHazard" in updates and updates["lgu_majorHazard"] is None:
+        updates["lgu_majorHazard"] = None  # explicit clear is allowed
+    if "lgu_critical_facility" in updates and updates["lgu_critical_facility"] is None:
+        updates["lgu_critical_facility"] = None
+
+    # 5) Apply updates
+    for k, v in updates.items():
+        setattr(rec, k, v)
+
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+
+    return {
+        "ok": True,
+        "message": "LGU record updated",
+        "id": rec.id,
+    }
+

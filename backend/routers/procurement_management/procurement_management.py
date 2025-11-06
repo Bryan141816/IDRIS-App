@@ -244,7 +244,7 @@ def approve_reject_request(
             if starting_dt <= now:
                 starting_dt = now + timedelta(days=1)
 
-            route = DistributionRoute(
+            route = DistributionRoute( 
                 route_name=query.request_ref_num,
                 request_id=request_id,
                 start_schedule=starting_dt,

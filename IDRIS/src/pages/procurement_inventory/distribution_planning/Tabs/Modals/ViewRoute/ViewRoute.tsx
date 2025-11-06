@@ -188,17 +188,11 @@ export const ViewRoute: React.FC<ViewRouteProp> = ({
                 </thead>
 
                 <tbody>
-                  {selectedRoute.distributed_items.map((item) => (
+                  {selectedRoute.request?.procurement_items.map((item) => (
                     <tr key={item.item_id}>
-                      <td style={{ padding: "10px" }}>
-                        {item.procurement_item?.item_name}
-                      </td>
-                      <td style={{ padding: "10px" }}>
-                        {item.procurement_item?.quantity}
-                      </td>
-                      <td style={{ padding: "10px" }}>
-                        {item.procurement_item?.unit}
-                      </td>
+                      <td style={{ padding: "10px" }}>{item.item_name}</td>
+                      <td style={{ padding: "10px" }}>{item.quantity}</td>
+                      <td style={{ padding: "10px" }}>{item.unit}</td>
                     </tr>
                   ))}
                 </tbody>

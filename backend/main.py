@@ -44,6 +44,7 @@ from routers.lgu_profiling import manage_lgu as manage_lgu_router
 from routers.lgu_profiling import mapofcebu  # ✅ keep map routes if used elsewhere
 from routers.lgu_profiling.LGUofficer import router as lgu_officer_router
 from routers.lgu_profiling.LGUSuperAdmin import router as lgu_superadmin_router
+from routers.lgu_profiling.evacuation_scope import router as evacuation_scope_router
 from routers.volunteer_management.assignment_routes import router as assignment_router
 from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
@@ -99,7 +100,7 @@ app.include_router(lgu_superadmin_router)
 app.include_router(
     manage_lgu_router.router, prefix="/lgu_profiling", tags=["Manage LGU"]
 )
-
+app.include_router(evacuation_scope_router)
 
 # ❌ Removed admin/manage LGU routers
 # app.include_router(admin_lgu_router)

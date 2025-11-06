@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import L from "leaflet";
 import MapView from "../../../components/MapView/MapView";
 import "../css/manage_evacuation_and_shelter.css";
@@ -13,8 +13,32 @@ import type { AxiosError } from "axios";
 import { Barangay } from "../LGUofficer/LGUofficer";
 import { MapViewWithSearch } from "../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 
+
+
+export type LGUMin = { id: number; name: string };
+
+export type BarangayMiniInfo = {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  baranggay_pic: string;
+};
+
+export type Shelter = {
+  id: number;
+  name: string;
+  lat: number;
+  lng: number;
+  capacity: number;
+  occupied: number;
+  barangay?: BarangayMiniInfo[] | null;
+};
+
 /* ---------- helpers ---------- */
 const toL = (v?: string | null) => (v ?? "").toLowerCase();
+// ⬇️ put near your other helpers/types
+
 
 const deriveStatus = (occupied: number, capacity: number, provided?: string) => {
   // prefer provided status if present
@@ -38,7 +62,6 @@ const greenPinIcon = new L.Icon({
 });
 
 /* ---------- local types ---------- */
-type LGUMin = { id: number; name: string };
 
 const EvacuationAndShelter = () => {
   const navigate = useNavigate();
@@ -49,6 +72,7 @@ const EvacuationAndShelter = () => {
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
 
+const isRolesReady = userType != null && Array.isArray(userRoles);
   const [centerForm, setCenterForm] = useState({
     name: "",
     capacity: "",
@@ -67,38 +91,36 @@ const EvacuationAndShelter = () => {
   // We'll keep your existing barangayList, but also store quick lookup IDs
   const [myBarangayIds, setMyBarangayIds] = useState<number[]>([]);
 
-  type barangayminiinfo = {
-    id: number;
-    name: string;
-    lat: number;
-    lng: number;
-    baranggay_pic: string;
-  };
+/* ---------- local types ---------- */
 
-  type Shelter = {
-    id: number; // ← numeric and reliable for URLs
-    name: string;
-    lat: number;
-    lng: number;
-    capacity: number;
-    occupied: number;
-    barangay?: barangayminiinfo[] | null;
-  };
-
+const normalizeShelters = (rows: any[]): Shelter[] =>
+  (Array.isArray(rows) ? rows : []).map((r: any) => {
+    const rawId = r?.evacuation_id ?? r?.id;
+    const id = Number(rawId);
+    return {
+      id: Number.isFinite(id) ? id : -1,
+      name: r?.name ?? "",
+      lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
+      lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
+      capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
+      occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
+      barangay: Array.isArray(r?.barangay) ? r.barangay : null,
+    };
+  });
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const displayedShelters = React.useMemo(() => {
-    if (isSuperAdmin) return shelters;
+  if (isSuperAdmin) return shelters;
 
-    // LGU Officer: show shelters assigned to *any* of my barangays
-    if (isLGUOfficer && myBarangayIds.length > 0) {
-      return shelters.filter(
-        (s) => Array.isArray(s.barangay) && s.barangay?.some((b) => myBarangayIds.includes(b.id)),
-      );
-    }
+  if (isLGUOfficer && myBarangayIds.length > 0) {
+    return shelters.filter(
+      (s) => Array.isArray(s.barangay) && s.barangay?.some((b) => myBarangayIds.includes(b.id)),
+    );
+  }
 
-    // Default: if not superadmin and not LGU officer, show none
-    return [];
-  }, [isSuperAdmin, isLGUOfficer, myBarangayIds, shelters]);
+  // Normal users: backend already scoped the data
+  return shelters;
+}, [isSuperAdmin, isLGUOfficer, myBarangayIds, shelters]);
+
 
   const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(null);
 
@@ -275,19 +297,26 @@ useEffect(() => {
 
   // NEW: fetch barangays on mount (so filtering works immediately for LGU Officer)
   useEffect(() => {
-    const fetchMine = async () => {
-      try {
-        const response = await API.get("/lgu_profiling/me/barangay_list");
-        const list: Barangay[] = Array.isArray(response.data) ? response.data : [];
-        setBarangayList(list); // keeps UI dropdown happy too
-        setMyBarangayIds(list.map((b) => b.id));
-      } catch (e: any) {
+  const fetchMine = async () => {
+    try {
+      const response = await API.get("/lgu_profiling/me/barangay_list");
+      const list: Barangay[] = Array.isArray(response.data) ? response.data : [];
+      setBarangayList(list);
+      setMyBarangayIds(list.map((b) => b.id));
+    } catch (e: any) {
+      // Only log non-404s; ignore 404 since route may not exist for your deploy
+      if (e?.response?.status !== 404) {
         console.error("Error fetching my barangays:", e?.message || e);
       }
-    };
-    // Only necessary for non-superadmin to drive filtering
-    if (!isSuperAdmin) fetchMine();
-  }, [isSuperAdmin]);
+    }
+  };
+
+  // ✅ Only LGU officers need this list for client-side filtering
+  if (!isSuperAdmin && isLGUOfficer) {
+    fetchMine();
+  }
+}, [isSuperAdmin, isLGUOfficer]);
+
 
   const handleEditSave = async () => {
     if (!editModal) return;
@@ -456,42 +485,37 @@ useEffect(() => {
       return "";
     }
   }
-
-  async function fetchShelters() {
-    try {
+const fetchShelters = useCallback(async () => {
+  try {
+    if (isSuperAdmin || isLGUOfficer) {
       const response = await API.get("/lgu_profiling/api/get_evacuation");
-
-      const normalized: Shelter[] = (Array.isArray(response.data) ? response.data : []).map((r: any) => {
-        // Accept either `evacuation_id` or `id` from the backend
-        const rawId = r?.evacuation_id ?? r?.id;
-        const id = Number(rawId);
-
-        return {
-          id: Number.isFinite(id) ? id : -1, // fallback to -1 so bad IDs are obvious
-          name: r?.name ?? "",
-          lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
-          lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
-          capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
-          occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
-          barangay: Array.isArray(r?.barangay) ? r.barangay : null,
-        };
-      });
-
-      setShelters(normalized);
-    } catch (e) {
-      console.error("Failed to fetch shelters", e);
-      // optional toast
+      setShelters(normalizeShelters(response.data));
+    } else {
+      const response = await API.get("/evacuation/my_centers");
+      const centers: any[] = response?.data?.centers ?? [];
+      setShelters(normalizeShelters(centers));
+      const brgyId = response?.data?.scope?.barangay?.id;
+      if (brgyId) setMyBarangayIds([brgyId]);
     }
+  } catch (e) {
+    console.error("Failed to fetch shelters", e);
   }
+}, [isSuperAdmin, isLGUOfficer]); 
 
   const getBarangayCoordinate = (id: number): [number, number] | null => {
     const b = barangayList.find((b) => b.id === id);
     return b && b.lat != null && b.lng != null ? [b.lat, b.lng] : null;
   };
+// React 18 guard + role-aware fetch
+const fetchedRef = useRef(false);
 
-  useEffect(() => {
-    fetchShelters();
-  }, []);
+useEffect(() => {
+  if (!isRolesReady) return;         // wait until roles are known
+  if (fetchedRef.current) return;    // prevent dev double-fetch
+  fetchedRef.current = true;
+
+  fetchShelters();                   // now safely fetch based on role
+}, [isRolesReady, fetchShelters]);
 
   const onLocationSelectSubmit = (address: string, coordinates: [number, number]) => {
     setCenterForm((prev) => ({

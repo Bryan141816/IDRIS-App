@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getDisbursements, updateDisbursementStatus } from "../../../API_Handler/finance_disbursement_handler";
+import { getDisbursements, updateDisbursement } from "../../../API_Handler/finance_disbursement_handler";
 
 const BUDGET_SOURCES = [
   "Government Grants and Funds",
@@ -87,16 +87,30 @@ const DisbursementSection: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedIdx === null) return;
+    if (selectedIdx === null || !form.attachment) return;
 
     const disbursementToUpdate = requests[selectedIdx];
+    
+    const formData = new FormData();
+    formData.append("disbursementId", disbursementToUpdate.disbursement_id);
+    formData.append("status", "approved");
+    formData.append("remarks", form.remarks);
+    formData.append("attachment", form.attachment);
+    
+    // Serialize the items array to a JSON string
+    const itemsData = form.items.map(item => ({
+      item_id: item.item_id,
+      unit_cost: item.unit_cost,
+      vendor: item.vendor,
+    }));
+    formData.append("items", JSON.stringify(itemsData));
 
     try {
-      await updateDisbursementStatus(disbursementToUpdate.disbursement_id, "approved");
+      await updateDisbursement(disbursementToUpdate.disbursement_id, formData);
       setShowModal(false);
       fetchDisbursements();
     } catch (error) {
-      console.error("Failed to update disbursement status:", error);
+      console.error("Failed to update disbursement:", error);
     }
   };
 

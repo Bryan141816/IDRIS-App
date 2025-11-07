@@ -7,9 +7,11 @@ from decimal import Decimal
 from datetime import datetime, date, timezone, timedelta
 from calendar import monthrange
 from crud_functions.utils import random_suffix, uid_from_string, _to_enum, uid_from_string, rand_alnum
-
+from crud_functions.donations_management.helpers import generate_donation_receipt
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
 from data_schemas.donation_schema import DonationHistoryResponse
+from pathlib import Path
+
 from models import (
     Donor,
     Donation,
@@ -117,9 +119,9 @@ class DonationCRUD:
 
             # --- FinanceRecord in the SAME transaction, NO extra commit ---
             # try:
-            #     budget_for_value = BudgetAllocation.DONATION
+            #     budget_for_value = BudgetAllocation.MONETARY_DONATIONS
             # except Exception:
-            #     budget_for_value = BudgetAllocation("DONATION")
+            #     budget_for_value = BudgetAllocation("MONETARY_DONATIONS")
 
             # FinanceRecord.date is a DATE in your Pydantic model; use today() to match
             finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
@@ -136,6 +138,17 @@ class DonationCRUD:
                     inflow_source=InflowSource.MONETARY_DONATIONS,
                 )
                 db.add(finance)
+                db.flush()
+
+                # Generate and attach receipt
+                donation_details = {
+                    "donation_id": donation.donation_id,
+                    "donor_name": donor_name,
+                    "amount": amount_for_finance,
+                    "date": finance_date.strftime("%Y-%m-%d"),
+                }
+                receipt_path = generate_donation_receipt(donation_details)
+                finance.attachment = receipt_path
 
             # --- Commit all together ---
             db.commit()
@@ -242,10 +255,21 @@ class DonationCRUD:
                 transaction_type=TransactionType.INFLOW,
                 amount=amount_for_finance,
                 date=finance_date,
-                description=desc_for_finance,
+                purpose=desc_for_finance,
                 inflow_source=InflowSource.MONETARY_DONATIONS,
             )
             db.add(finance)
+            db.flush()
+
+            # Generate and attach receipt
+            donation_details = {
+                "donation_id": donation.donation_id,
+                "donor_name": donor_name,
+                "amount": amount_for_finance,
+                "date": finance_date.strftime("%Y-%m-%d"),
+            }
+            receipt_path = generate_donation_receipt(donation_details)
+            finance.attachment = receipt_path
 
         db.commit()
         db.refresh(donation)

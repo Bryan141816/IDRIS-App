@@ -65,9 +65,21 @@ const InflowModal: React.FC<{
   }, [open, initial, mode]);
 
   const [previewSrc, setPreviewSrc] = useState<string>('');
+  const [isPdf, setIsPdf] = useState<boolean>(false);
+
   useEffect(() => {
     const src = getAttachmentSrc?.(form.attachment) ?? '';
     setPreviewSrc(src);
+    // detect pdf by MIME or filename/URL
+    const att: any = form.attachment;
+    const mime = typeof att?.type === 'string' ? att.type : '';
+    const name = typeof att?.name === 'string' ? att.name : '';
+    const looksPdf =
+      (mime && mime.toLowerCase().includes('application/pdf')) ||
+      /\.pdf($|\?)/i.test(src || name);
+
+    setIsPdf(!!looksPdf);
+
     return () => {
       if (src && src.startsWith('blob:')) URL.revokeObjectURL(src);
     };
@@ -135,23 +147,45 @@ const InflowModal: React.FC<{
             {mode === 'view' ? (
               <div className="form-group">
                 <label>Attachment</label>
-                {form.attachment ? (
+                {previewSrc ? (
                   <div className="attachment-preview">
-                    <img
-                      src={previewSrc}
-                      alt="Attachment preview"
-                      style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
-                    />
-                    {previewSrc && (
-                      <a
-                        href={previewSrc}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="download-link"
-                        style={{ display: 'inline-block', marginTop: 8 }}
-                      >
-                        Open full size
-                      </a>
+                    {isPdf ? (
+                      <>
+                        <button
+                          type="button"
+                          className="primary-btn"
+                          onClick={() => window.open(previewSrc, '_blank', 'noopener,noreferrer')}
+                        >
+                          Show receipt (PDF)
+                        </button>
+                        {/* <div style={{ marginTop: 8 }}>
+                          <a
+                            href={previewSrc}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="download-link"
+                          >
+                            Open in new tab
+                          </a>
+                        </div> */}
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src={previewSrc}
+                          alt="Attachment preview"
+                          style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                        />
+                        <a
+                          href={previewSrc}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="download-link"
+                          style={{ display: 'inline-block', marginTop: 8 }}
+                        >
+                          Open full size
+                        </a>
+                      </>
                     )}
                   </div>
                 ) : (

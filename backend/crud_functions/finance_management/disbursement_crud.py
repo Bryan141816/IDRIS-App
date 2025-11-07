@@ -7,7 +7,7 @@ from models import Disbursement, DisbursementItem
 from data_schemas.finance_disbursement import DisbursementCreate, DisbursementUpdate
 from crud_functions.utils import uid_from_string, random_suffix
 
-UPLOAD_DIR = "backend/media/disbursement_attachments"
+UPLOAD_DIR = "/media/disbursement_attachments"
 
 def create_disbursement(db: Session, disbursement: DisbursementCreate):
     disbursement_id = uid_from_string(f"{disbursement.title}{random_suffix(10)}")

@@ -23,6 +23,7 @@ from models import (
     Donation_InKind,
     Donation,
     Donor,
+    VolunteerStatus
 )
 from calendar import month_abbr
 from zoneinfo import ZoneInfo
@@ -30,7 +31,7 @@ import asyncio
 from real_time_handler import send_real_time
 from typing import List, Optional
 from fastapi import HTTPException, status
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class DistributionAndPlanningCRUD:
@@ -435,6 +436,8 @@ class DistributionAndPlanningCRUD:
 
         return [DistributionAndPlanningCRUD.serialize_route(r) for r in routes]
 
+
+
     @staticmethod
     def update_route(payload: UpdateRoute, db: Session):
         route = (
@@ -447,19 +450,61 @@ class DistributionAndPlanningCRUD:
             print(f"Route with ID {payload.route_id} not found.")
             return None
 
-        log_message = None
-
+        # Update the route status
         route.status = payload.status
-        if log_message and route.status != "Pending":
+        status = str(payload.status).strip().lower()
 
+        log_message = None
+        if status == "in transit":
+            log_message = f"Route {route.route_name} is In Transit"
+        elif status == "cancelled":
+            log_message = f"Route {route.route_name} has been Cancelled"
+        elif status == "completed":
+            log_message = f"Route {route.route_name} has been Completed"
+
+        # ✅ If route is cancelled — restore quantities
+        if status == "cancelled":
+            for distributed_item in route.distributed_items:
+
+                try:
+
+                    assigned_storage = distributed_item.assigned_storage_rec
+                    # Restore to Assigned Storage
+                    if assigned_storage:
+                        assigned_storage.quantity += distributed_item.quantity
+
+                        # Also restore to Inventory Item
+                        inventory_item = assigned_storage.inventory_item
+                        if inventory_item:
+                            inventory_item.quantity += distributed_item.quantity
+
+                    # Optionally: mark the distributed item as "reversed" or delete it
+                    # db.delete(distributed_item)
+
+                except Exception as e:
+                    print(f"Error restoring distributed item {distributed_item.item_id}: {e}")
+
+        # ✅ If cancelled or completed — set volunteers to available
+        if status in ["completed", "cancelled"] and route.assigned_team:
+            for member in route.assigned_team.team_members:
+                volunteer = member.volunteer
+                if volunteer:
+                    volunteer.availability_status = VolunteerStatus.available
+
+        # ✅ Log message
+        if log_message:
             log_entry = DistributionRouteLogs(
-                route_id=route.route_id, log_message=log_message, date=datetime.now()
+                route_id=route.route_id,
+                log_message=log_message,
+                date=datetime.now(timezone.utc)
             )
             db.add(log_entry)
 
         db.commit()
         db.refresh(route)
         return route
+
+
 
     @staticmethod
     def assign_team(payload: AssignTeam, db: Session):

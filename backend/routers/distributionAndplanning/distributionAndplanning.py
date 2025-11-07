@@ -29,6 +29,7 @@ from models import (
     AssignedStorage,
     InventoryItems,
     WarehouseZones,
+    DistributedItems
 )
 from datetime import datetime, timezone
 
@@ -251,17 +252,14 @@ async def respond_to_assignment(
     )
 
     if all_accepted:
-
         route = (
             db.query(DistributionRoute)
             .filter(DistributionRoute.team == team_member.team_id)
             .first()
         )
-
         if route and route.status != "Active":
-            route.status = "Active"
-
-        db.commit()
+                route.status = "Active"
+                db.commit()
 
     volunteer_name = (
         f"{volunteer.first_name} {volunteer.last_name}" if volunteer else "A volunteer"
@@ -415,6 +413,7 @@ def list_assigned_storage_by_category(
     db: Session = Depends(get_db),
 ):
     # Build query
+    print(category)
     rows = (
         db.query(
             AssignedStorage.assigned_id,
@@ -478,6 +477,62 @@ def finalize_route(
     route.gathering_lng = payload.gathering_area_lng
     route.team = team.team_id
     route.status = "Waiting for volunteer acceptance"
+
+    distributed = []
+    if payload:
+        # Skip any client-side placeholders (assigned_id == -1)
+        cleaned = [item for item in payload.inventory if item.assigned_id != -1]
+
+        for item in cleaned:
+            assigned_inventory = (
+                db.query(AssignedStorage)
+                .options(selectinload(AssignedStorage.inventory_item))
+                .filter(
+                    AssignedStorage.assigned_id == item.assigned_id
+                )  # <-- correct use
+                .first()
+            )
+            if not assigned_inventory:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Assigned storage {item.assigned_id} not found",
+                )
+            if not assigned_inventory.inventory_item:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Inventory item for assigned {item.assigned_id} not found",
+                )
+
+            # Stock validations
+            if assigned_inventory.quantity < item.quantity_assigned:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient assigned stock for assigned_id {item.assigned_id}",
+                )
+            if (
+                assigned_inventory.inventory_item.quantity
+                < item.quantity_assigned
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Insufficient warehouse stock for item_id {item.item_id}",
+                )
+
+            assigned_inventory.quantity -= item.quantity_assigned
+            assigned_inventory.inventory_item.quantity -= item.quantity_assigned
+
+            obj = DistributedItems(
+                assigned_storage=item.assigned_id,
+                relief_id=item.item_id,
+                route=route.route_id,
+                quantity=item.quantity_assigned,
+            )
+            distributed.append(obj)
+
+        if distributed:
+            db.add_all(distributed)
+
+
     db.add_all(team_member)
     db.commit()
 

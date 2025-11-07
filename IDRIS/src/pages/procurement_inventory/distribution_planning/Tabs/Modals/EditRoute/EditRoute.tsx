@@ -76,7 +76,7 @@ export const EditRoute: React.FC<EditRouteProp> = ({
                 {selectedRoute.status === "In Transit" && (
                   <>
                     <option value="Completed">Completed</option>
-                    <option value="Canceled">Canceled</option>
+                    <option value="Cancelled">Cancelled</option>
                   </>
                 )}
               </select>

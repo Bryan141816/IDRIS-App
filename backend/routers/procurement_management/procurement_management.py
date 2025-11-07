@@ -210,7 +210,7 @@ def to_dict(obj):
 @router.post("/procurement_management/approve_reject_request")
 def approve_reject_request(
     db: Session = Depends(get_db),
-    payload: Optional[List[Inventory]] = Body(None),
+
     request_id: Optional[int] = Query(None),
     type: Optional[str] = Query(None),
 ):
@@ -260,59 +260,59 @@ def approve_reject_request(
             db.add(log)
 
             # --- Apply payload updates safely ---
-            distributed = []
-            if payload:
-                # Skip any client-side placeholders (assigned_id == -1)
-                cleaned = [item for item in payload if item.assigned_id != -1]
-
-                for item in cleaned:
-                    assigned_inventory = (
-                        db.query(AssignedStorage)
-                        .options(selectinload(AssignedStorage.inventory_item))
-                        .filter(
-                            AssignedStorage.assigned_id == item.assigned_id
-                        )  # <-- correct use
-                        .first()
-                    )
-                    if not assigned_inventory:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Assigned storage {item.assigned_id} not found",
-                        )
-                    if not assigned_inventory.inventory_item:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Inventory item for assigned {item.assigned_id} not found",
-                        )
-
-                    # Stock validations
-                    if assigned_inventory.quantity < item.quantity_assigned:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Insufficient assigned stock for assigned_id {item.assigned_id}",
-                        )
-                    if (
-                        assigned_inventory.inventory_item.quantity
-                        < item.quantity_assigned
-                    ):
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Insufficient warehouse stock for item_id {item.item_id}",
-                        )
-
-                    assigned_inventory.quantity -= item.quantity_assigned
-                    assigned_inventory.inventory_item.quantity -= item.quantity_assigned
-
-                    obj = DistributedItems(
-                        assigned_storage=item.assigned_id,
-                        relief_id=item.item_id,
-                        route=route.route_id,
-                        quantity=item.quantity_assigned,
-                    )
-                    distributed.append(obj)
-
-                if distributed:
-                    db.add_all(distributed)
+            # distributed = []
+            # if payload:
+            #     # Skip any client-side placeholders (assigned_id == -1)
+            #     cleaned = [item for item in payload if item.assigned_id != -1]
+            #
+            #     for item in cleaned:
+            #         assigned_inventory = (
+            #             db.query(AssignedStorage)
+            #             .options(selectinload(AssignedStorage.inventory_item))
+            #             .filter(
+            #                 AssignedStorage.assigned_id == item.assigned_id
+            #             )  # <-- correct use
+            #             .first()
+            #         )
+            #         if not assigned_inventory:
+            #             raise HTTPException(
+            #                 status_code=400,
+            #                 detail=f"Assigned storage {item.assigned_id} not found",
+            #             )
+            #         if not assigned_inventory.inventory_item:
+            #             raise HTTPException(
+            #                 status_code=400,
+            #                 detail=f"Inventory item for assigned {item.assigned_id} not found",
+            #             )
+            #
+            #         # Stock validations
+            #         if assigned_inventory.quantity < item.quantity_assigned:
+            #             raise HTTPException(
+            #                 status_code=400,
+            #                 detail=f"Insufficient assigned stock for assigned_id {item.assigned_id}",
+            #             )
+            #         if (
+            #             assigned_inventory.inventory_item.quantity
+            #             < item.quantity_assigned
+            #         ):
+            #             raise HTTPException(
+            #                 status_code=400,
+            #                 detail=f"Insufficient warehouse stock for item_id {item.item_id}",
+            #             )
+            #
+            #         assigned_inventory.quantity -= item.quantity_assigned
+            #         assigned_inventory.inventory_item.quantity -= item.quantity_assigned
+            #
+            #         obj = DistributedItems(
+            #             assigned_storage=item.assigned_id,
+            #             relief_id=item.item_id,
+            #             route=route.route_id,
+            #             quantity=item.quantity_assigned,
+            #         )
+            #         distributed.append(obj)
+            #
+            #     if distributed:
+            #         db.add_all(distributed)
 
         else:
             request_data = to_dict(query)

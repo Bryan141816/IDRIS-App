@@ -62,7 +62,6 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
         }));
       const response = await API.post(
         `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
-        cleanedList,
       );
       Swal.fire({
         title: `Request has been ${type.toLowerCase() === "approve" ? "Approved" : "Rejected"}`,
@@ -171,6 +170,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
                   <RequestItemsHandler
                     requestItems={requestList}
                     setRequestListState={setRequestList}
+                    status={selectedItem.status}
                   ></RequestItemsHandler>
                 ) : (
                   <table style={{ width: "100%" }}>
@@ -228,10 +228,12 @@ interface RequestItemsHandlerProp {
   setRequestListState: React.Dispatch<
     React.SetStateAction<(requestItemsType & StorageInfo)[]>
   >;
+  status: string;
 }
 
-const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
+export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
   requestItems,
+  status,
   setRequestListState,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<
@@ -293,6 +295,11 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
           item={selectedRequest}
           index={requestIndexPicked}
           onSubmit={handlePickInventorySubmit}
+          type={
+            status.toLowerCase() === "waiting for additional action"
+              ? "add"
+              : "check"
+          }
         ></PickInventoryModal>
       )}
       <div style={{ background: "white", width: "100%" }}>
@@ -309,11 +316,19 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
               <th style={{ textAlign: "start", padding: "10px" }}>
                 Quantity Needed
               </th>
-              <th style={{ textAlign: "start", padding: "10px" }}>
-                Inventory Name
-              </th>
-              <th style={{ textAlign: "start", padding: "10px" }}>Quantity</th>
-              <th style={{ textAlign: "start", padding: "10px" }}>Warehouse</th>
+              {status.toLowerCase() !== "pending approval" && (
+                <>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Inventory Name
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Quantity
+                  </th>
+                  <th style={{ textAlign: "start", padding: "10px" }}>
+                    Warehouse
+                  </th>
+                </>
+              )}
               <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
             </tr>
           </thead>
@@ -324,28 +339,55 @@ const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <td style={{ padding: "10px" }}>{item.name}</td>
                   <td style={{ padding: "10px" }}>{item.category}</td>
                   <td style={{ padding: "10px" }}>{item.quantity}</td>
-                  <td style={{ padding: "10px" }}>{item.inventory_name}</td>
-                  <td style={{ padding: "10px" }}>
-                    {item.quantity_assigned !== -1
-                      ? item.quantity_assigned
-                      : ""}
-                  </td>
-                  <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
+                  {status.toLowerCase() !== "pending approval" && (
+                    <>
+                      <td style={{ padding: "10px" }}>{item.inventory_name}</td>
+                      <td style={{ padding: "10px" }}>
+                        {item.quantity_assigned !== -1
+                          ? item.quantity_assigned
+                          : ""}
+                      </td>
+                      <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
+                    </>
+                  )}
                   <td style={{ padding: "10px", width: "fit-content" }}>
-                    <button
-                      className="action-btn"
-                      style={{ width: "fit-content" }}
-                      onClick={() => clearInventory(index)}
-                    >
-                      Clear Selected
-                    </button>
-                    <button
-                      className="action-btn"
-                      style={{ width: "fit-content" }}
-                      onClick={() => openInventory(item, index)}
-                    >
-                      Pick from inventory
-                    </button>
+                    {status.toLowerCase() === "pending approval" && (
+                      <>
+                        <button
+                          className="action-btn"
+                          style={{ width: "fit-content" }}
+                          onClick={() => openInventory(item, index)}
+                        >
+                          Check Availability
+                        </button>
+                      </>
+                    )}
+                    {status.toLowerCase() ===
+                      "waiting for additional action" && (
+                      <>
+                        <button
+                          className="action-btn"
+                          style={{ width: "fit-content" }}
+                          onClick={() => openInventory(item, index)}
+                        >
+                          Pick From Inventory
+                        </button>
+                        <button
+                          className="action-btn"
+                          style={{ width: "fit-content" }}
+                          onClick={() => clearInventory(index)}
+                        >
+                          Clear Selected
+                        </button>
+                      </>
+                    )}
+                    {/* <button */}
+                    {/*   className="action-btn" */}
+                    {/*   style={{ width: "fit-content" }} */}
+                    {/*   onClick={() => clearInventory(index)} */}
+                    {/* > */}
+                    {/*   Clear Selected */}
+                    {/* </button> */}
                   </td>
                 </tr>
               ))}
@@ -361,6 +403,7 @@ interface PickInventoryModalProp {
   item: requestItemsType & StorageInfo;
   index: number;
   onSubmit: (index: number, inventory: StorageInfo) => void;
+  type?: string;
 }
 
 const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
@@ -368,13 +411,14 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
   item,
   index,
   onSubmit,
+  type = "check",
 }) => {
   const [responseData, setResponseData] = useState<AssignedStorageItem[]>([]);
   useEffect(() => {
     const fetch = async () => {
       try {
         const response = await API.get(
-          `/distribution_planning/get_assigned?category=${item.category}`,
+          `/distribution_planning/get_assigned?category=${encodeURIComponent(item.category)}`,
         );
         setResponseData(response.data);
       } catch (e: any) {
@@ -424,7 +468,9 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
                 }}
               >
                 <tr>
-                  <th style={{ textAlign: "start", padding: "10px" }}></th>
+                  {type !== "check" && (
+                    <th style={{ textAlign: "start", padding: "10px" }}></th>
+                  )}
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Items Name
                   </th>
@@ -437,24 +483,28 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Warehouse
                   </th>
-                  <th style={{ textAlign: "start", padding: "10px" }}>
-                    Quantity
-                  </th>
+                  {type !== "check" && (
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Quantity
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {responseData.length > 0 &&
                   responseData.map((item, index) => (
                     <tr key={index}>
-                      <td style={{ padding: "10px" }}>
-                        <input
-                          type="checkbox"
-                          checked={index === selectedIndex}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            handlCheckChange(index, e.target.checked)
-                          }
-                        />
-                      </td>
+                      {type !== "check" && (
+                        <td style={{ padding: "10px" }}>
+                          <input
+                            type="checkbox"
+                            checked={index === selectedIndex}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => handlCheckChange(index, e.target.checked)}
+                          />
+                        </td>
+                      )}
                       <td style={{ padding: "10px" }}>
                         {item.inventory_item_name}
                       </td>
@@ -465,30 +515,32 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
                       <td style={{ padding: "10px" }}>
                         {item.warehouse_zone_name}
                       </td>
-                      <td style={{ padding: "10px" }}>
-                        <input
-                          type="number"
-                          value={
-                            quantityInput !== -1 && selectedIndex === index
-                              ? quantityInput
-                              : ""
-                          }
-                          onChange={(
-                            e: React.ChangeEvent<HTMLInputElement>,
-                          ) => {
-                            const value =
-                              e.target.value === ""
-                                ? -1
-                                : Number(e.target.value);
-                            if (value >= item.quantity) {
-                              setQuantityInput(item.quantity);
-                              return;
+                      {type !== "check" && (
+                        <td style={{ padding: "10px" }}>
+                          <input
+                            type="number"
+                            value={
+                              quantityInput !== -1 && selectedIndex === index
+                                ? quantityInput
+                                : ""
                             }
-                            setQuantityInput(value);
-                          }}
-                          disabled={selectedIndex !== index}
-                        />
-                      </td>
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => {
+                              const value =
+                                e.target.value === ""
+                                  ? -1
+                                  : Number(e.target.value);
+                              if (value >= item.quantity) {
+                                setQuantityInput(item.quantity);
+                                return;
+                              }
+                              setQuantityInput(value);
+                            }}
+                            disabled={selectedIndex !== index}
+                          />
+                        </td>
+                      )}
                     </tr>
                   ))}
               </tbody>
@@ -499,9 +551,11 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
           <button className="secondary-btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="primary-btn" onClick={handleSubmit}>
-            Select Item
-          </button>
+          {type !== "check" && (
+            <button className="primary-btn" onClick={handleSubmit}>
+              Select Item
+            </button>
+          )}
         </div>
       </div>
     </div>

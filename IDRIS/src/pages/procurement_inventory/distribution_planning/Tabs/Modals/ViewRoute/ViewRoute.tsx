@@ -24,7 +24,7 @@ export const ViewRoute: React.FC<ViewRouteProp> = ({
     <div className="modal-overlay" style={{ zIndex: 900 }}>
       <div className="modal" style={{ minWidth: "65vw" }}>
         <div className="modal-header">
-          <h3>Create New Route</h3>
+          <h3>View Route</h3>
           <button className="close-btn" onClick={onClose}>
             ×
           </button>
@@ -155,7 +155,7 @@ export const ViewRoute: React.FC<ViewRouteProp> = ({
                   {selectedRoute.distributed_items.map((item) => (
                     <tr key={item.item_id}>
                       <td style={{ padding: "10px" }}>
-                        {item.relief_item?.item_name}
+                        {item.assigned_storage_rec?.inventory_item?.item_name}
                       </td>
                       <td style={{ padding: "10px" }}>
                         {item.relief_item?.category}

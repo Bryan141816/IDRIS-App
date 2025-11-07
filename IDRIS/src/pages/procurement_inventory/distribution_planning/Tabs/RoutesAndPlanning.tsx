@@ -234,6 +234,7 @@ export const RoutesAndPlanning = () => {
           onClose={closeModal}
           refreshData={fetchData}
           route_id={selectedRoute.route_id}
+          selectedRoute={selectedRoute}
         ></FinalizeRouteSetup>
       )}
       {activeModal === "update" && selectedRoute && (

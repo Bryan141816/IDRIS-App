@@ -70,7 +70,10 @@ class UpdateRoute(BaseModel):
 class TeamMembers(BaseModel):
     volunteer_id: int
     role: str
-
+class Inventory(BaseModel):
+    item_id: int
+    assigned_id: int
+    quantity_assigned: int
 
 class FinalizeRoute(BaseModel):
     route_id: int
@@ -78,3 +81,4 @@ class FinalizeRoute(BaseModel):
     gathering_area_lat: float
     gathering_area_lng: float
     team_members: List[TeamMembers]
+    inventory: List[Inventory]

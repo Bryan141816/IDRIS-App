@@ -2,10 +2,28 @@ import React, { useState, useEffect } from "react";
 import { MapViewWithSearch } from "../../../../procurement_inventory/Tabs/MapViewWithSearch";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import Swal from "sweetalert2";
+import { DistributionRouteDTO } from "../../RoutesAndPlanning";
+import { RequestItemsHandler } from "../../../../procurement_management/Tabs/Modals/RequestModals/ViewDetailsRequest";
+
+type requestItemsType = {
+  item_id: number;
+  name: string;
+  category?: string;
+  quantity: number;
+  unit?: string;
+};
+type StorageInfo = {
+  assigned_id: number;
+  inventory_name: string;
+  warehouse_name: string;
+  quantity_assigned: number;
+};
+
 interface FinalizeRouteSetupProp {
   onClose: () => void;
   refreshData: () => void;
   route_id: number;
+  selectedRoute: DistributionRouteDTO;
 }
 type Volunteer = {
   volunteer_id: number;
@@ -31,6 +49,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
   onClose,
   refreshData,
   route_id,
+  selectedRoute,
 }) => {
   type formDataType = {
     gathering_area_name: string;
@@ -49,7 +68,25 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
 
   const [isEditMember, setIsEditMember] = useState(false);
   const [teamMember, setTeamMember] = useState<Volunteer[]>([]);
+  const [requestList, setRequestList] = useState<
+    (requestItemsType & StorageInfo)[]
+  >([]);
 
+  useEffect(() => {
+    if (selectedRoute.request?.request_type === "relief") {
+      const mapped = selectedRoute.request.relief_items.map((item) => ({
+        item_id: item.item_id,
+        name: item.item_name,
+        category: item.category,
+        quantity: item.quantity,
+        assigned_id: -1,
+        inventory_name: "",
+        warehouse_name: "",
+        quantity_assigned: -1,
+      }));
+      setRequestList(mapped);
+    }
+  }, []);
   const handleSelect = (volunteers: Volunteer[]) => {
     const merged = volunteers.map((v) => {
       const existing = teamMember.find(
@@ -76,6 +113,14 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
     }));
   };
   const handleSubmit = () => {
+    const cleaned_items = requestList
+      ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
+      .map(({ item_id, assigned_id, quantity_assigned }) => ({
+        item_id,
+        assigned_id,
+        quantity_assigned,
+      }));
+
     const cleaned_team = teamMember.map(({ volunteer_id, role }) => ({
       volunteer_id,
       role,
@@ -84,6 +129,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
       ...formData,
       route_id: route_id,
       team_members: cleaned_team,
+      inventory: cleaned_items,
     };
     const submit = async () => {
       try {
@@ -150,6 +196,16 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
                 Select Location
               </button>
             </div>
+            {selectedRoute.request?.request_type === "relief" && (
+              <div className="form-group">
+                <label>Pick from Inventory</label>
+                <RequestItemsHandler
+                  requestItems={requestList}
+                  setRequestListState={setRequestList}
+                  status={selectedRoute.status}
+                ></RequestItemsHandler>
+              </div>
+            )}
             <div className="form-group">
               <label>Team Members</label>
               <button

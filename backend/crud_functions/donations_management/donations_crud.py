@@ -132,6 +132,7 @@ class DonationCRUD:
                     finance_id=uid_from_string(f"DON{random_suffix(8)}"),
                     counterparty=donor_name,
                     transaction_type=TransactionType.INFLOW,
+                    donation_id=donation.donation_id,
                     amount=amount_for_finance,    # Decimal
                     date=finance_date,            # date, not datetime
                     purpose=desc_for_finance,

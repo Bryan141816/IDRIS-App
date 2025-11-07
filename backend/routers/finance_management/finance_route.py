@@ -14,8 +14,6 @@ from data_schemas.finance_record_schema import (
     TransactionType,
 )
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
-from crud_functions.finance_management.finance_receipt_crud import get_finance_receipt_data
-from data_schemas.finance_receipt_schema import FinanceReceiptSchema
 
 router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["finance admin", "operations admin","superadmin"]))],
@@ -181,12 +179,6 @@ def get_budget_allocation_summary(
     return result
 
 
-@router_admin.get("/receipt/{finance_id}", response_model=FinanceReceiptSchema)
-def get_finance_receipt(finance_id: str, db: Session = Depends(get_db)):
-    receipt_data = get_finance_receipt_data(db, finance_id)
-    if not receipt_data:
-        raise HTTPException(status_code=404, detail="Finance record not found")
-    return receipt_data
 
 
 router = APIRouter()

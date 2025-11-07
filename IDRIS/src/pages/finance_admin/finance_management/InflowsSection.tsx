@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { FilterModal } from './FilterModal';
 import { PhilippinePesoIcon } from 'lucide-react';
@@ -43,13 +42,13 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
 // ---- Modal -------------------------------------------------------
 const InflowModal: React.FC<{
   open: boolean;
-  mode: 'add' | 'edit';
+  mode: 'add' | 'edit' | 'view';
   initial?: Partial<InflowItem>;
   onClose: () => void;
   onSave?: (values: InflowItem | Partial<InflowItem>) => void;
 }> = ({ open, mode, initial, onClose, onSave }) => {
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
-  const readOnly = false;
+  const readOnly = mode === 'view';
 
   useEffect(() => {
     if (open) {
@@ -144,11 +143,62 @@ const InflowModal: React.FC<{
         <form onSubmit={onSubmit}>
           <div className="modal-content">
             <h3>
-              {mode === 'add' ? 'Record New Inflow' : 'Edit Inflow'}
+              {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
             </h3>
 
-            {/* ========= ADD/EDIT: original fields ========= */}
-
+            {/* ========= VIEW-ONLY: show just the attachment ========== */}
+            {mode === 'view' ? (
+              <div className="form-group">
+                <label>Attachment</label>
+                {previewSrc ? (
+                  <div className="attachment-preview">
+                    {isPdf ? (
+                      <>
+                        <button
+                          type="button"
+                          className="primary-btn"
+                          onClick={() => window.open(previewSrc, '_blank', 'noopener,noreferrer')}
+                        >
+                          Show receipt (PDF)
+                        </button>
+                        {/* <div style={{ marginTop: 8 }}>
+                          <a
+                            href={previewSrc}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="download-link"
+                          >
+                            Open in new tab
+                          </a>
+                        </div> */}
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src={previewSrc}
+                          alt="Attachment preview"
+                          style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                        />
+                        <a
+                          href={previewSrc}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="download-link"
+                          style={{ display: 'inline-block', marginTop: 8 }}
+                        >
+                          Open full size
+                        </a>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <span>No attachment</span>
+                )}
+              </div>
+            ) : (
+              /* ========= ADD/EDIT: original fields ========= */
+              <>
+                <div className="form-group">
                   <label>Inflow Source</label>
                   <select
                     disabled={readOnly}
@@ -168,6 +218,17 @@ const InflowModal: React.FC<{
                     ))}
                   </select>
                 </div>
+
+                {/* <div className="form-group">
+                  <label>Payee (recipient)</label>
+                  <input
+                    disabled={readOnly}
+                    type="text"
+                    placeholder="Enter funding source"
+                    value={form.counterparty || ""}
+                    onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                  />
+                </div> */}
 
                 <div className="form-group">
                   <label>Amount (PHP)</label>
@@ -232,6 +293,10 @@ const InflowModal: React.FC<{
                     }
                   />
                 </div>
+              </>
+            )}
+          </div>
+
           <div className="modal-actions">
             <button type="button" className="secondary-btn" onClick={onClose}>
               {mode === 'view' ? 'Close' : 'Cancel'}
@@ -250,10 +315,9 @@ const InflowModal: React.FC<{
 
 // ---- Section -----------------------------------------------------
 const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => void }> = ({ inflows = [], refetchData }) => {
-  const navigate = useNavigate();
   const [rows, setRows] = useState<InflowItem[]>(inflows);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
   const [selected, setSelected] = useState<InflowItem | undefined>();
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
@@ -261,7 +325,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
     setRows(inflows);
   }, [inflows]);
 
-  const open = (mode: 'add' | 'edit', row?: InflowItem) => {
+  const open = (mode: 'add' | 'edit' | 'view', row?: InflowItem) => {
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
@@ -326,7 +390,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
                 <td>{row.purpose}</td>
                 <td>
                   {/* <button className="action-btn" onClick={() => open('edit', row)}>Edit</button> */}
-                  <button className="action-btn" onClick={() => navigate(`/finance/receipt/${row.finance_id}`)}>View Receipt</button>
+                  <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
                 </td>
               </tr>
             ))}

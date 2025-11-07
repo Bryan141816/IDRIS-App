@@ -229,6 +229,11 @@ const DonationReceipt = () =>
     Component: m.default,
   }));
 
+const FinanceReceipt = () =>
+  import("./pages/finance_admin/finance_management/FinanceReceipt").then(
+    (m) => ({ Component: m.default }),
+  );
+
 // Response Dashboard
 const ResponseDashboard = () =>
   import("./pages/response_dashboard/ResponseDashboard").then((m) => ({
@@ -540,6 +545,10 @@ export const router = createBrowserRouter([
   {
     path: "/donation/receipt/:donationId",
     lazy: DonationReceipt,
+  },
+  {
+    path: "/finance/receipt/:financeId",
+    lazy: FinanceReceipt,
   },
 ]);
 

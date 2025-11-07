@@ -1,6 +1,6 @@
 # routers/lgu_profiling/evacuation_scope.py
 from __future__ import annotations
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Set
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -50,7 +50,7 @@ class EvacuationOut(BaseModel):
 
 class ScopeOut(BaseModel):
     lgu: Optional[Dict[str, Any]] = None
-    barangay: Optional[Dict[str, Any]] = None
+    # barangay intentionally omitted for LGU-wide scope
 
 
 class MyCentersOut(BaseModel):
@@ -99,47 +99,6 @@ def _resolve_lgu(db: Session, lgu_name: Optional[str]) -> Optional[LGURecords]:
     )
 
 
-def _resolve_barangay(
-    db: Session,
-    brgy_name: Optional[str],
-    lgu: Optional[LGURecords],
-) -> Optional[BaranggayRecords]:
-    if not brgy_name:
-        return None
-    q = _norm(brgy_name)
-
-    base = db.query(BaranggayRecords)
-
-    # 🔧 SAFE PK lookup (LGURecords may use `id` or `lgu_id`)
-    if lgu is not None:
-        lgu_pk = getattr(lgu, "id", None)
-        if lgu_pk is None:
-            lgu_pk = getattr(lgu, "lgu_id", None)
-        if lgu_pk is not None:
-            base = base.filter(BaranggayRecords.lgu_id == lgu_pk)
-
-    row = base.filter(func.lower(func.trim(BaranggayRecords.name)) == q).first()
-    if row:
-        return row
-
-    return base.filter(func.lower(BaranggayRecords.name).ilike(f"%{q}%")).first()
-
-
-def _centers_from_barangay_link(db: Session, brgy: BaranggayRecords) -> List[EvacuationCenter]:
-    """
-    Your barangay model has `evacucation_center_id` (FK) → `evacuation_center.evacuation_id`.
-    Fetch the single linked center if present.
-    """
-    ev_id = getattr(brgy, "evacucation_center_id", None)  # keep original column spelling
-    if not ev_id:
-        return []
-    return (
-        db.query(EvacuationCenter)
-        .filter(getattr(EvacuationCenter, "evacuation_id") == ev_id)
-        .all()
-    )
-
-
 def _pack_centers(rows: List[EvacuationCenter]) -> List[EvacuationOut]:
     packed: List[EvacuationOut] = []
     for r in rows:
@@ -174,42 +133,82 @@ def _pack_centers(rows: List[EvacuationCenter]) -> List[EvacuationOut]:
     return packed
 
 
-# ---------------------------
-# Core resolver
-# ---------------------------
+def _centers_for_lgu(db: Session, lgu: LGURecords) -> List[EvacuationCenter]:
+    """
+    Return ALL evacuation centers within the given LGU.
 
-def _resolve_scope_for_user(
-    db: Session,
-    user: User,
-) -> Tuple[Optional[LGURecords], Optional[BaranggayRecords]]:
+    Supports two schemas:
+      A) EvacuationCenter has a direct FK 'lgu_id' (preferred if present)
+      B) Evacuation centers are referenced by barangays:
+           BaranggayRecords.evacucation_center_id -> EvacuationCenter.evacuation_id
+         and barangays belong to an LGU via BaranggayRecords.lgu_id
     """
-    Resolve user's LGU + Barangay using:
-    1) Explicit normalized columns on UserProfile if present
-    2) Parse free-form address like 'Lamacan, Argao, Cebu, Philippines'
+    centers: List[EvacuationCenter] = []
+
+    # Try direct FK first, if model has it
+    lgu_pk = getattr(lgu, "id", getattr(lgu, "lgu_id", None))
+    has_center_lgu_fk = hasattr(EvacuationCenter, "lgu_id")
+
+    if has_center_lgu_fk and lgu_pk is not None:
+        direct = (
+            db.query(EvacuationCenter)
+            .filter(getattr(EvacuationCenter, "lgu_id") == lgu_pk)
+            .all()
+        )
+        centers.extend(direct)
+
+    # Also collect via barangays -> centers relationship
+    if lgu_pk is not None:
+        # Get distinct center ids from barangays within this LGU
+        brgy_q = (
+            db.query(BaranggayRecords)
+            .filter(BaranggayRecords.lgu_id == lgu_pk)
+            .filter(getattr(BaranggayRecords, "evacucation_center_id") != None)  # noqa: E711
+            .all()
+        )
+        center_ids: Set[int] = set()
+        for b in brgy_q:
+            cid = getattr(b, "evacucation_center_id", None)  # keep original spelling
+            if cid:
+                center_ids.add(int(cid))
+
+        if center_ids:
+            # EvacuationCenter PK could be 'evacuation_id' or 'id'
+            pk_attr = "evacuation_id" if hasattr(EvacuationCenter, "evacuation_id") else "id"
+            via_brgy = (
+                db.query(EvacuationCenter)
+                .filter(getattr(EvacuationCenter, pk_attr).in_(center_ids))
+                .all()
+            )
+            centers.extend(via_brgy)
+
+    # Deduplicate by PK
+    def _key(c: EvacuationCenter) -> int:
+        return int(getattr(c, "evacuation_id", getattr(c, "id", 0)) or 0)
+
+    unique = { _key(c): c for c in centers if _key(c) is not None }
+    return list(unique.values())
+
+
+def _resolve_lgu_for_user(db: Session, user: User) -> Optional[LGURecords]:
     """
-    # Your FK to user is a string field `user_id`
+    Resolve user's LGU using normalized columns if present, else parse free-form address.
+    """
     prof = db.query(UserProfile).filter(UserProfile.user_id == user.user_id).first()
 
-    brgy_name: Optional[str] = None
     lgu_name: Optional[str] = None
-
     if prof:
-        # If later you add normalized columns (e.g., prof.barangay_name, prof.lgu_name), prefer those
-        brgy_name = getattr(prof, "barangay_name", None)
-        lgu_name  = getattr(prof, "lgu_name", None)
+        # Prefer normalized column if you have it
+        lgu_name = getattr(prof, "lgu_name", None)
+        if not lgu_name:
+            # Fallback to parsing the address
+            _, parsed_lgu, _ = _split_address(getattr(prof, "address", "") or "")
+            lgu_name = parsed_lgu
 
-        if not (brgy_name and lgu_name):
-            addr = getattr(prof, "address", "") or ""
-            a_brgy, a_lgu, _ = _split_address(addr)
-            brgy_name = brgy_name or a_brgy
-            lgu_name  = lgu_name  or a_lgu
+    if not lgu_name:
+        return None
 
-    if not (brgy_name and lgu_name):
-        return None, None
-
-    lgu = _resolve_lgu(db, lgu_name)
-    brgy = _resolve_barangay(db, brgy_name, lgu)
-    return lgu, brgy
+    return _resolve_lgu(db, lgu_name)
 
 
 # ---------------------------
@@ -221,23 +220,18 @@ def get_my_centers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    lgu, brgy = _resolve_scope_for_user(db, current_user)
+    # LGU-wide scope only
+    lgu = _resolve_lgu_for_user(db, current_user)
 
-    if not lgu and not brgy:
-        # No scope resolved, return empty set (avoid 404 for frontend simplicity)
-        return MyCentersOut(scope=ScopeOut(lgu=None, barangay=None), centers=[])
+    if not lgu:
+        # No LGU resolved → empty set to keep frontend simple
+        return MyCentersOut(scope=ScopeOut(lgu=None), centers=[])
 
-    centers: List[EvacuationCenter] = []
-    if brgy:
-        centers = _centers_from_barangay_link(db, brgy)
+    centers = _centers_for_lgu(db, lgu)
 
-    lgu_id_safe = None
-    if lgu is not None:
-        lgu_id_safe = getattr(lgu, "id", getattr(lgu, "lgu_id", None))
-
+    lgu_id_safe = getattr(lgu, "id", getattr(lgu, "lgu_id", None))
     scope = ScopeOut(
-        lgu={"id": lgu_id_safe, "name": lgu.lgu_name} if lgu else None,
-        barangay={"id": brgy.id, "name": brgy.name} if brgy else None,
+        lgu={"id": lgu_id_safe, "name": lgu.lgu_name}
     )
     return MyCentersOut(scope=scope, centers=_pack_centers(centers))
 
@@ -247,5 +241,5 @@ def get_scope_address(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Reuse logic; frontend can read `scope` for lgu/brgy names
+    # Same as /my_centers — returns LGU-wide scope and centers
     return get_my_centers(db=db, current_user=current_user)

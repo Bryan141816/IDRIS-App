@@ -2,14 +2,17 @@ import os
 import uuid
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
-
-from models import Disbursement, DisbursementItem
+from datetime import datetime
+from models import Disbursement, DisbursementItem, SpendCategory, InflowSource
 from data_schemas.finance_disbursement import DisbursementCreate, DisbursementUpdate
 from crud_functions.utils import uid_from_string, random_suffix
+from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
+from data_schemas.finance_record_schema import OutflowFinanceRecordCreate
 
-UPLOAD_DIR = "/media/disbursement_attachments"
+UPLOAD_DIR = "media/disbursement_attachments"
 
 def create_disbursement(db: Session, disbursement: DisbursementCreate):
+    # Reverted to original to avoid out-of-scope changes
     disbursement_id = uid_from_string(f"{disbursement.title}{random_suffix(10)}")
     db_disbursement = Disbursement(
         disbursement_id=disbursement_id,
@@ -37,15 +40,14 @@ def get_disbursements(db: Session, skip: int = 0, limit: int = 100):
 def get_disbursement(db: Session, disbursement_id: str):
     return db.query(Disbursement).filter(Disbursement.disbursement_id == disbursement_id).first()
 
-def update_disbursement(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate, attachment: UploadFile):
+def update_disbursement(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate, attachment: UploadFile, dateOfPayment: str, budgetSource: str):
     db_disbursement = get_disbursement(db, disbursementId)
     if db_disbursement:
-        # Handle file upload
+        file_path = None
         if attachment:
             if not os.path.exists(UPLOAD_DIR):
                 os.makedirs(UPLOAD_DIR)
             
-            # Sanitize filename and create a unique path
             file_extension = os.path.splitext(attachment.filename)[1]
             unique_filename = f"{uuid.uuid4()}{file_extension}"
             file_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -55,7 +57,6 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
             
             db_disbursement.attachment = file_path
 
-        # Update other fields
         if disbursement_update.status is not None:
             db_disbursement.status = disbursement_update.status.upper()
         
@@ -68,6 +69,24 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
                 if db_item:
                     db_item.unit_cost = item_update.unit_cost
                     db_item.vendor = item_update.vendor
+
+        if disbursement_update.status.upper() == 'APPROVED':
+            # Correctly calculate total and vendors from the updated disbursement items
+            total_amount = sum(item.unit_cost * item.quantity for item in db_disbursement.items)
+            vendor_names = {item.vendor for item in db_disbursement.items if item.vendor}
+
+            inflow_source_enum = InflowSource[budgetSource.replace(" ", "_").upper()]
+            
+            outflow_payload = OutflowFinanceRecordCreate(
+                counterparty=", ".join(vendor_names),
+                amount=total_amount,
+                date=datetime.strptime(dateOfPayment, "%Y-%m-%d").date(),
+                purpose=db_disbursement.disbursement_name,
+                spend_category=SpendCategory.DISBURSEMENT,
+                inflow_source=inflow_source_enum,
+                attachment=file_path
+            )
+            FinanceRecordCRUD.create_outflow_record(db, outflow_payload)
 
         db.commit()
         db.refresh(db_disbursement)

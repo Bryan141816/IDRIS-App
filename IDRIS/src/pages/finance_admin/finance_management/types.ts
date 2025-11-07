@@ -19,6 +19,7 @@ export enum SpendCategory {
   CLEANUP_DEBRIS_REMOVAL = "Clean-up & Debris Removal",
   SECURITY_SERVICES = "Security Services",
   INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs",
+  DISBURSEMENT = "Disbursement",
 }
 
 

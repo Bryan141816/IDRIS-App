@@ -96,6 +96,8 @@ const DisbursementSection: React.FC = () => {
     formData.append("status", "approved");
     formData.append("remarks", form.remarks);
     formData.append("attachment", form.attachment);
+    formData.append("dateOfPayment", form.dateOfPayment);
+    formData.append("budgetSource", form.budgetSource);
     
     // Serialize the items array to a JSON string
     const itemsData = form.items.map(item => ({

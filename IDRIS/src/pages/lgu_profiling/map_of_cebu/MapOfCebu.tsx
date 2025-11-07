@@ -9,20 +9,30 @@ type MarkerWithPhotos = MarkerType & {
   hazardPhotos?: HazardPhoto[];
   lguId?: number;
 
-  // Evac fields
+  /* ---------- Evac fields ---------- */
   capacity?: number | null;
   occupied?: number | null;
   evacStatus?: string | null;
   address?: string | null;
 
-  // LGU
-  classification?: string;
+  /* ---------- LGU ---------- */
+  classification?: string | null;
+  population?: number | string | null;   // ← used in JSX
+  baranggayCount?: number | null;
   mayor?: string | null;
   drmmPersonnel?: string | null;
-  baranggayCount?: number | null;
+  drmmContact?: string | null;           // ← missing
+  majorHazards?: string[] | null;        // ← missing
+  criticalFacilities?: string[] | null;  // ← missing
+  pwdCount?: number | null;              // ← missing
+  seniorCount?: number | null;           // ← missing
+  childrenCount?: number | null;         // ← missing
   hazardPic?: string | null;
 
-  // BARANGAY-SPECIFIC
+  // Header seal image (your JSX currently references `image`)
+  image?: string | null;
+
+  /* ---------- Barangay ---------- */
   captain?: string | null;
   contact?: string | null;
   totalPopulation?: number | string | null;
@@ -31,7 +41,13 @@ type MarkerWithPhotos = MarkerType & {
   pwd?: number | null;
   senior?: number | null;
   children?: number | null;
+
+  /* ---------- Misc ---------- */
+  description?: string | null;
+  resources?: string | null;
+  type?: string; // "lgu" | "barangay" | "raffi" | "evacuation"
 };
+
 
 type LGUDetail = {
   id: number;

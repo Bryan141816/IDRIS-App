@@ -1228,3 +1228,39 @@
 textarea{
   resize: none;
 }
+
+.input-with-icon {
+  position: relative;
+  width: 100%;
+
+  &__icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-family: inherit;
+    transition: all 0.15s ease-in-out;
+
+    &:focus {
+      outline: none;
+      // ring: 2px;
+      // ring-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+}

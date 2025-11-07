@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { FilterModal } from './FilterModal';
+import { PhilippinePesoIcon } from 'lucide-react';
 import Swal from "sweetalert2";
 import { formatCurrency } from '../../helpers';
 import {
@@ -14,6 +15,8 @@ import {
   strip_underscores,
   normalizeInflowType,
   getAttachmentSrc,
+  formatAmount,
+  parseAmount,
 } from './helpers';
 
 import {
@@ -229,14 +232,18 @@ const InflowModal: React.FC<{
 
                 <div className="form-group">
                   <label>Amount (PHP)</label>
-                  <input
-                    disabled={readOnly}
-                    type="number"
-                    min={0}
-                    placeholder="Enter amount"
-                    value={form.amount ?? ""}
-                    onChange={e => setForm({ ...form, amount: +e.target.value })}
-                  />
+                  <div className="input-with-icon">
+                    <PhilippinePesoIcon className="input-with-icon__icon" />
+                    <input
+                      disabled={readOnly}
+                      type="text"
+                      min={0}
+                      className={`input-with-icon__input  `}
+                      placeholder="Enter amount"
+                      value={formatAmount(form.amount)}
+                      onChange={e => setForm({ ...form, amount: parseAmount(e.target.value) })}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">

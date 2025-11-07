@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { PhilippinePesoIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
 import {
   createOutflowFinanceRecord,
@@ -13,6 +14,8 @@ import {
   spendCategoryOptions,
   inflowSourceOptions,
   getAttachmentSrc,
+  formatAmount,
+  parseAmount,
 } from './helpers';
 
 import { withSwal } from '../../withSwal';
@@ -188,15 +191,19 @@ const OutflowModal: React.FC<{
                 </div>
 
                 <div className="form-group">
-                  <label>Amount (PHP):</label>
-                  <input
-                    disabled={readOnly}
-                    type="text"
-                    min={0}
-                    placeholder="Enter amount"
-                    value={form.amount ?? ''}
-                    onChange={e => setForm({ ...form, amount: hasSource ? +e.target.value : 0 })}
-                  />
+                  <label>Amount (PHP)</label>
+                  <div className="input-with-icon">
+                    <PhilippinePesoIcon className="input-with-icon__icon" />
+                    <input
+                      disabled={readOnly}
+                      type="text"
+                      min={0}
+                      className={`input-with-icon__input  `}
+                      placeholder="Enter amount"
+                      value={formatAmount(form.amount)}
+                      onChange={e => setForm({ ...form, amount: parseAmount(e.target.value) })}
+                    />
+                  </div>
                   <span
                     role="status"
                     aria-live="polite"

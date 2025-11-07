@@ -1,8 +1,14 @@
+import os
+import uuid
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
-from models import Disbursement, DisbursementItem, ProcurementRequest,DistributionRoute,DistributionRouteLogs
+
+from models import Disbursement, DisbursementItem
 from data_schemas.finance_disbursement import DisbursementCreate, DisbursementUpdate
 from crud_functions.utils import uid_from_string, random_suffix
-from datetime import datetime, time, timedelta, timezone
+
+UPLOAD_DIR = "backend/media/disbursement_attachments"
+
 def create_disbursement(db: Session, disbursement: DisbursementCreate):
     disbursement_id = uid_from_string(f"{disbursement.title}{random_suffix(10)}")
     db_disbursement = Disbursement(
@@ -31,44 +37,38 @@ def get_disbursements(db: Session, skip: int = 0, limit: int = 100):
 def get_disbursement(db: Session, disbursement_id: str):
     return db.query(Disbursement).filter(Disbursement.disbursement_id == disbursement_id).first()
 
-def add_distribution_route(request_id: int, db:Session):
-    request = db.query(ProcurementRequest).filter(ProcurementRequest.request_id == request_id).first()
-    request.status = "Approved"
-    delivery_dt = datetime.combine(
-                request.date_needed, time(9, 0, tzinfo=timezone.utc)
-            )
-    starting_dt = delivery_dt - timedelta(days=3)
-
-    now = datetime.now(timezone.utc)
-    if starting_dt <= now:
-        starting_dt = now + timedelta(days=1)
-
-    route = DistributionRoute(
-        route_name=request.request_ref_num,
-        request_id=request_id,
-        start_schedule=starting_dt,
-        end_schedule=delivery_dt,
-    )
-    db.add(route)
-    db.flush()  # ensure route_id is populated before we reference it
-
-    log = DistributionRouteLogs(
-        route_id=route.route_id,
-        log_message=f"{request.request_ref_num} has been created",
-    )
-    db.add(log)
-
-    
-
-def update_disbursement_status(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate):
+def update_disbursement(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate, attachment: UploadFile):
     db_disbursement = get_disbursement(db, disbursementId)
-    if disbursement_update.status is not None and disbursement_update.status.lower() == "approved":
-        add_distribution_route(db_disbursement.origin_id, db)
     if db_disbursement:
+        # Handle file upload
+        if attachment:
+            if not os.path.exists(UPLOAD_DIR):
+                os.makedirs(UPLOAD_DIR)
+            
+            # Sanitize filename and create a unique path
+            file_extension = os.path.splitext(attachment.filename)[1]
+            unique_filename = f"{uuid.uuid4()}{file_extension}"
+            file_path = os.path.join(UPLOAD_DIR, unique_filename)
+            
+            with open(file_path, "wb") as buffer:
+                buffer.write(attachment.file.read())
+            
+            db_disbursement.attachment = file_path
+
+        # Update other fields
         if disbursement_update.status is not None:
             db_disbursement.status = disbursement_update.status.upper()
+        
+        if disbursement_update.remarks is not None:
+            db_disbursement.remarks = disbursement_update.remarks
+
+        if disbursement_update.items is not None:
+            for item_update in disbursement_update.items:
+                db_item = db.query(DisbursementItem).filter(DisbursementItem.item_id == item_update.item_id).first()
+                if db_item:
+                    db_item.unit_cost = item_update.unit_cost
+                    db_item.vendor = item_update.vendor
+
         db.commit()
         db.refresh(db_disbursement)
     return db_disbursement
-
-

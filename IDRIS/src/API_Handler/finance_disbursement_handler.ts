@@ -31,19 +31,19 @@ export async function getDisbursement(id: string): Promise<any> {
   }
 };
 
-export async function updateDisbursementStatus(id: string, status: string): Promise<any> {
+export async function updateDisbursement(id: string, formData: FormData): Promise<any> {
   try {
-    const response = await API.patch(`/finance/disbursements/update/`,
-      { status },
-      {
-        params: {
-          disbursementId: id,
-        }
+    const response = await API.patch(`/finance/disbursements/update/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      params: {
+        disbursementId: id,
       }
-    );
+    });
     return response.data;
   } catch (error) {
-    console.error(`Error updating disbursement status for ${id}:`, error);
+    console.error(`Error updating disbursement for ${id}:`, error);
     throw error;
   }
-};
+}

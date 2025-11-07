@@ -44,5 +44,13 @@ class Disbursement(DisbursementBase):
     class Config:
         from_attributes = True
 
+class DisbursementItemUpdate(BaseModel):
+    item_id: str
+    unit_cost: Decimal
+    vendor: str
+
 class DisbursementUpdate(BaseModel):
     status: Optional[str] = None
+    remarks: Optional[str] = None
+    items: Optional[List[DisbursementItemUpdate]] = None
+    attachment: Optional[str] = None

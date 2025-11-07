@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
 
 from database import get_db
-from data_schemas.finance_disbursement import Disbursement, DisbursementCreate, DisbursementUpdate
+from data_schemas.finance_disbursement import Disbursement, DisbursementCreate, DisbursementUpdate, DisbursementItemUpdate
 from crud_functions.finance_management import disbursement_crud
 from routers.role_checker import RoleChecker
 
@@ -31,8 +32,32 @@ def read_disbursement(disbursement_id: str, db: Session = Depends(get_db)):
     return db_disbursement
 
 @router_admin.patch("/disbursements/update/", response_model=Disbursement)
-def update_disbursement_status(disbursementId: str, disbursement: DisbursementUpdate, db: Session = Depends(get_db)):
-    db_disbursement = disbursement_crud.update_disbursement_status(db, disbursementId=disbursementId, disbursement_update=disbursement)
+def update_disbursement(
+    db: Session = Depends(get_db),
+    disbursementId: str = Form(...),
+    status: str = Form(...),
+    remarks: str = Form(None),
+    items: str = Form(...),
+    attachment: UploadFile = File(...)
+):
+    try:
+        items_data = json.loads(items)
+        items_update = [DisbursementItemUpdate(**item) for item in items_data]
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON format for items")
+
+    disbursement_update = DisbursementUpdate(
+        status=status,
+        remarks=remarks,
+        items=items_update
+    )
+
+    db_disbursement = disbursement_crud.update_disbursement(
+        db, 
+        disbursementId=disbursementId, 
+        disbursement_update=disbursement_update,
+        attachment=attachment
+    )
     if db_disbursement is None:
         raise HTTPException(status_code=404, detail="Disbursement not found")
     return db_disbursement

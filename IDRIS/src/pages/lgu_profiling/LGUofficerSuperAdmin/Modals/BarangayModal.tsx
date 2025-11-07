@@ -237,7 +237,7 @@ export const BarangayEditModal: React.FC<EditProps> = ({
     setValidation(v);
     return !Object.values(v).some(Boolean);
   };
-
+// inside BarangayEditModal
 const handleSave = () => {
   if (!validateForm()) {
     Swal.fire({
@@ -248,17 +248,7 @@ const handleSave = () => {
     });
     return;
   }
-
-  // Proceed with saving
-  onSaved?.({ ...form });
-  Swal.fire({
-    icon: "success",
-    title: "Barangay Updated",
-    text: "The barangay details have been successfully saved.",
-    timer: 2000,
-    showConfirmButton: false,
-  });
-  onClose();
+  onSaved?.({ ...form }); // parent does API + alerts + close
 };
 
 

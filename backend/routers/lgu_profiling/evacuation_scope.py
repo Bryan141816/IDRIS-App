@@ -49,8 +49,7 @@ class EvacuationOut(BaseModel):
 
 
 class ScopeOut(BaseModel):
-    lgu: Optional[Dict[str, Any]] = None
-    # barangay intentionally omitted for LGU-wide scope
+    lgu: Optional[Dict[str, Any]] = None  # LGU-wide scope only
 
 
 class MyCentersOut(BaseModel):
@@ -99,13 +98,50 @@ def _resolve_lgu(db: Session, lgu_name: Optional[str]) -> Optional[LGURecords]:
     )
 
 
-def _pack_centers(rows: List[EvacuationCenter]) -> List[EvacuationOut]:
+def _brgy_map_for_lgu(db: Session, lgu_pk: int) -> Dict[int, List[BaranggayRecords]]:
+    """
+    For an LGU, return { evacuation_center_id: [barangay records...] }.
+    Uses DB spelling 'evacucation_center_id'.
+    """
+    brgys = (
+        db.query(BaranggayRecords)
+        .filter(BaranggayRecords.lgu_id == lgu_pk)
+        .filter(getattr(BaranggayRecords, "evacucation_center_id") != None)  # noqa: E711
+        .all()
+    )
+    m: Dict[int, List[BaranggayRecords]] = {}
+    for b in brgys:
+        cid = getattr(b, "evacucation_center_id", None)
+        if cid is None:
+            continue
+        cid = int(cid)
+        m.setdefault(cid, []).append(b)
+    return m
+
+
+def _pack_centers(
+    rows: List[EvacuationCenter],
+    brgy_map: Optional[Dict[int, List[BaranggayRecords]]] = None,
+) -> List[EvacuationOut]:
     packed: List[EvacuationOut] = []
     for r in rows:
-        # Attach barangay info if relationship exists
+        center_pk = int(getattr(r, "evacuation_id", getattr(r, "id", 0)) or 0)
+
+        # Attach barangay info from the provided map (preferred), or fallback to ORM relation if present
         brgys: List[BarangayMiniOut] = []
-        if hasattr(r, "barangay") and r.barangay is not None:
-            b = r.barangay  # relationship if defined on EvacuationCenter
+        if brgy_map and center_pk in brgy_map:
+            for b in brgy_map[center_pk]:
+                brgys.append(
+                    BarangayMiniOut(
+                        id=int(getattr(b, "id")),
+                        name=str(getattr(b, "name")),
+                        lat=getattr(b, "lat", None),
+                        lng=getattr(b, "lng", None),
+                        baranggay_pic=getattr(b, "baranggay_pic", None),
+                    )
+                )
+        elif hasattr(r, "barangay") and r.barangay is not None:
+            b = r.barangay
             try:
                 brgys.append(
                     BarangayMiniOut(
@@ -121,7 +157,7 @@ def _pack_centers(rows: List[EvacuationCenter]) -> List[EvacuationOut]:
 
         packed.append(
             EvacuationOut(
-                id=int(getattr(r, "evacuation_id", getattr(r, "id", 0)) or 0),
+                id=center_pk,
                 name=str(getattr(r, "name", "") or ""),
                 lat=float(getattr(r, "lat", 0.0) or 0.0),
                 lng=float(getattr(r, "lng", 0.0) or 0.0),
@@ -145,7 +181,6 @@ def _centers_for_lgu(db: Session, lgu: LGURecords) -> List[EvacuationCenter]:
     """
     centers: List[EvacuationCenter] = []
 
-    # Try direct FK first, if model has it
     lgu_pk = getattr(lgu, "id", getattr(lgu, "lgu_id", None))
     has_center_lgu_fk = hasattr(EvacuationCenter, "lgu_id")
 
@@ -157,9 +192,7 @@ def _centers_for_lgu(db: Session, lgu: LGURecords) -> List[EvacuationCenter]:
         )
         centers.extend(direct)
 
-    # Also collect via barangays -> centers relationship
     if lgu_pk is not None:
-        # Get distinct center ids from barangays within this LGU
         brgy_q = (
             db.query(BaranggayRecords)
             .filter(BaranggayRecords.lgu_id == lgu_pk)
@@ -173,7 +206,6 @@ def _centers_for_lgu(db: Session, lgu: LGURecords) -> List[EvacuationCenter]:
                 center_ids.add(int(cid))
 
         if center_ids:
-            # EvacuationCenter PK could be 'evacuation_id' or 'id'
             pk_attr = "evacuation_id" if hasattr(EvacuationCenter, "evacuation_id") else "id"
             via_brgy = (
                 db.query(EvacuationCenter)
@@ -186,7 +218,7 @@ def _centers_for_lgu(db: Session, lgu: LGURecords) -> List[EvacuationCenter]:
     def _key(c: EvacuationCenter) -> int:
         return int(getattr(c, "evacuation_id", getattr(c, "id", 0)) or 0)
 
-    unique = { _key(c): c for c in centers if _key(c) is not None }
+    unique = {_key(c): c for c in centers if _key(c) is not None}
     return list(unique.values())
 
 
@@ -198,10 +230,8 @@ def _resolve_lgu_for_user(db: Session, user: User) -> Optional[LGURecords]:
 
     lgu_name: Optional[str] = None
     if prof:
-        # Prefer normalized column if you have it
         lgu_name = getattr(prof, "lgu_name", None)
         if not lgu_name:
-            # Fallback to parsing the address
             _, parsed_lgu, _ = _split_address(getattr(prof, "address", "") or "")
             lgu_name = parsed_lgu
 
@@ -230,10 +260,11 @@ def get_my_centers(
     centers = _centers_for_lgu(db, lgu)
 
     lgu_id_safe = getattr(lgu, "id", getattr(lgu, "lgu_id", None))
-    scope = ScopeOut(
-        lgu={"id": lgu_id_safe, "name": lgu.lgu_name}
-    )
-    return MyCentersOut(scope=scope, centers=_pack_centers(centers))
+    # Build barangay->center map so frontend can show "Barangay Assigned"
+    brgy_map = _brgy_map_for_lgu(db, int(lgu_id_safe)) if lgu_id_safe is not None else None
+
+    scope = ScopeOut(lgu={"id": lgu_id_safe, "name": lgu.lgu_name})
+    return MyCentersOut(scope=scope, centers=_pack_centers(centers, brgy_map))
 
 
 @router.get("/scope_address", response_model=MyCentersOut)

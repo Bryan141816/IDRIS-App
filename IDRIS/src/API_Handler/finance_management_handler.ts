@@ -8,6 +8,11 @@ export async function createInflowFinanceRecord(form: FormData): Promise<any> {
   return data;
 }
 
+export async function getFinanceReceipt(financeId: string): Promise<any> {
+  const { data } = await API.get(`/finance/receipt/${financeId}`);
+  return data;
+}
+
 export async function createOutflowFinanceRecord(form: FormData): Promise<any> {
   const { data } = await API.post('/finance/outflow/create', form, {
     headers: { 'Content-Type': 'multipart/form-data' },

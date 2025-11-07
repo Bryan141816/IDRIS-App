@@ -379,32 +379,31 @@ setRaffi(normalized);
   };
 }
 
-  function computeBrgyPatch(oldB: BarangaySummary, nextB: Partial<BarangaySummary>) {
-    const patch: Partial<BarangaySummary> = {};
-    ([
-      "name",
-      "lat",
-      "lng",
-      "baranggay_pic",
-      "contact_info",
-      "barangay_captain",
-      "household_count",
-      "total_population",
-      "evacucation_center_id",
-      "evacucation_center_name",
-      "common_hazards",
-      "barangay_pwd",
-      "barangay_senior",
-      "barangay_children",
-      "lgu_id",
-    ] as const).forEach((k) => {
-      if (JSON.stringify(oldB[k]) !== JSON.stringify(nextB[k])) {
-        // @ts-expect-error index type ok here
-        patch[k] = nextB[k];
-      }
-    });
-    return patch;
-  }
+function computeBrgyPatch(oldB: BarangaySummary, nextB: Partial<BarangaySummary>) {
+  const patch: Partial<BarangaySummary> = {};
+  ([
+    "name",
+    "lat",
+    "lng",
+    "baranggay_pic",
+    "contact_info",
+    "barangay_captain",
+    "household_count",
+    "total_population",
+    "evacucation_center_id",
+    "common_hazards",
+    "barangay_pwd",
+    "barangay_senior",
+    "barangay_children",
+    "lgu_id",
+  ] as const).forEach((k) => {
+    if (JSON.stringify(oldB[k]) !== JSON.stringify(nextB[k])) {
+     
+      patch[k] = nextB[k] as any;
+    }
+  });
+  return patch;
+}
 
   /* ========================= EFFECTS ========================= */
   useEffect(() => {
@@ -458,19 +457,38 @@ setRaffi(normalized);
         />
       )}
 
-      {activeModal === "edit-barangay" && selectedData && (
-        <BarangayEditModal
-          onClose={closeModal}
-          data={selectedData}
-          lgu_name={selectedLGU?.lgu_name ?? ""}
-          lgu_coordinate={[selectedLGU?.lat ?? 0, selectedLGU?.lng ?? 0]}
-          onSaved={(updated) => {
-            setBarangays((prev) =>
-              prev.map((x) => (x.id === updated.id ? { ...x, ...updated } : x))
-            );
-          }}
-        />
-      )}
+{activeModal === "edit-barangay" && selectedData && (
+  <BarangayEditModal
+    onClose={closeModal}
+    data={selectedData}
+    lgu_name={selectedLGU?.lgu_name ?? ""}
+    lgu_coordinate={[selectedLGU?.lat ?? 0, selectedLGU?.lng ?? 0]}
+    onSaved={async (updated) => {
+      try {
+        // 1) Build a minimal patch of changed fields
+        const id = Number(updated.id ?? selectedData.id);
+        const patch = computeBrgyPatch(selectedData as BarangaySummary, updated as Partial<BarangaySummary>);
+
+        // 2) Call the API (PUT /lgu_profiling/barangays/{id})
+        const saved = await SuperAdminLGU.updateBarangay(id, patch);
+
+        // 3) Update local table state with what the server actually saved
+        setBarangays((prev) => prev.map((x) => (x.id === saved.id ? { ...x, ...saved } : x)));
+
+        // 4) Notify and close
+        await Swal.fire({ icon: "success", title: "Barangay updated" });
+        closeModal();
+      } catch (e: any) {
+        Swal.fire({
+          icon: "error",
+          title: "Update failed",
+          text: e?.response?.data?.detail ?? e?.message ?? "Unknown error",
+        });
+      }
+    }}
+  />
+)}
+
 
       {/* ✅ RAFFI MODALS */}
       {/* Create */}

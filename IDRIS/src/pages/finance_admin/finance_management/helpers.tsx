@@ -131,3 +131,17 @@ export const getAttachmentSrc = (att: OutflowItem['attachment']) => {
   }
   return '';
 };
+
+export const formatAmount = (value: number | string | null | undefined): string => {
+  if (value == null || value === '') return '';
+  const num = typeof value === 'string' ? parseAmount(value) : value;
+  if (isNaN(num)) return '';
+  return num.toLocaleString('en-US');
+};
+
+export const parseAmount = (value: string | null | undefined): number => {
+  if (value == null || value === '') return 0;
+  const numString = String(value).replace(/[^0-9.]/g, '');
+  const num = parseFloat(numString);
+  return isNaN(num) ? 0 : num;
+};

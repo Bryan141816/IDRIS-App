@@ -9,20 +9,30 @@ type MarkerWithPhotos = MarkerType & {
   hazardPhotos?: HazardPhoto[];
   lguId?: number;
 
-  // Evac fields
+  /* ---------- Evac fields ---------- */
   capacity?: number | null;
   occupied?: number | null;
   evacStatus?: string | null;
   address?: string | null;
 
-  // LGU
-  classification?: string;
+  /* ---------- LGU ---------- */
+  classification?: string | null;
+  population?: number | string | null;   // ← used in JSX
+  baranggayCount?: number | null;
   mayor?: string | null;
   drmmPersonnel?: string | null;
-  baranggayCount?: number | null;
+  drmmContact?: string | null;           // ← missing
+  majorHazards?: string[] | null;        // ← missing
+  criticalFacilities?: string[] | null;  // ← missing
+  pwdCount?: number | null;              // ← missing
+  seniorCount?: number | null;           // ← missing
+  childrenCount?: number | null;         // ← missing
   hazardPic?: string | null;
 
-  // BARANGAY-SPECIFIC
+  // Header seal image (your JSX currently references `image`)
+  image?: string | null;
+
+  /* ---------- Barangay ---------- */
   captain?: string | null;
   contact?: string | null;
   totalPopulation?: number | string | null;
@@ -31,7 +41,13 @@ type MarkerWithPhotos = MarkerType & {
   pwd?: number | null;
   senior?: number | null;
   children?: number | null;
+
+  /* ---------- Misc ---------- */
+  description?: string | null;
+  resources?: string | null;
+  type?: string; // "lgu" | "barangay" | "raffi" | "evacuation"
 };
+
 
 type LGUDetail = {
   id: number;
@@ -335,23 +351,33 @@ const submitSearch = () => {
         if (cancelled) return;
 
         const mapped: MarkerWithPhotos[] = data
-          .filter((p) => p && p.lat != null && p.lng != null)
-          .map((p) => ({
-            lat: Number(p.lat) || 0,
-            lng: Number(p.lng) || 0,
-            lguName: p.lgu_name,
-            type: "lgu",
-            population: String(p.population ?? ""),
-            image: p.lgu_seal || "/images/lgu/default.jpg",
-            hazardAreas: [],
-            lguId: p.id,
+  .filter((p) => p && p.lat != null && p.lng != null)
+  .map((p) => ({
+    lat: Number(p.lat) || 0,
+    lng: Number(p.lng) || 0,
+    lguName: p.lgu_name,
+    type: "lgu",
+    population: String(p.population ?? ""),
+    image: p.lgu_seal || "/images/lgu/default.jpg", // LGU Seal
+    hazardAreas: [],
+    lguId: p.id,
 
-            classification: p.lgu_classification,
-            mayor: p.mayor ?? null,
-            drmmPersonnel: (p as any).DRMMpersonel ?? null,
-            baranggayCount: null, // intentionally left blank
-            hazardPic: (p as any).hazard_pic ?? null,
-          }));
+    classification: p.lgu_classification,
+    mayor: p.mayor ?? null,
+
+    // NEW:
+    drmmPersonnel: (p as any).DRMMpersonel ?? null,
+    drmmContact: (p as any).DRMM_contact ?? (p as any).lgu_contact ?? null,
+    majorHazards: (p as any).lgu_majorHazard ?? null,
+    criticalFacilities: (p as any).lgu_critical_facility ?? null,
+    baranggayCount: (p as any).baranggay_count ?? null,
+    pwdCount: (p as any).lgu_pwd ?? null,
+    seniorCount: (p as any).lgu_senior ?? null,
+    childrenCount: (p as any).lgu_children ?? null,
+
+    hazardPic: (p as any).hazard_pic ?? null,
+  }));
+
 
         setLguMarkers(mapped);
       } catch (e: any) {
@@ -1019,95 +1045,179 @@ const submitSearch = () => {
 
           {/* LGU sidebar */}
           {selectedMarker.type === "lgu" && (
-            <>
-              {selectedMarker.image && (
-                <img
-                  src={selectedMarker.image}
-                  alt={selectedMarker.lguName}
-                  className="lgu-header-img"
-                />
-              )}
+  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    {/* LGU Seal (header) */}
+    {selectedMarker.image && (
+      <img
+        src={selectedMarker.image}
+        alt={`${selectedMarker.lguName} Seal`}
+        className="lgu-header-img"
+      />
+    )}
 
-              <h2 style={{ textAlign: "center", marginTop: 8 }}>
-                <b>{selectedMarker.lguName}</b>
-              </h2>
+    {/* LGU name */}
+    <h2 style={{ textAlign: "center", marginTop: 8 }}>
+      <b>{selectedMarker.lguName}</b>
+    </h2>
 
-              <div style={{ ...card, padding: 12, marginTop: 8 }}>
-                <div style={row}>
-                  <span style={label}>Classification</span>
-                  <span style={value}>
-                    {selectedMarker.classification || "-"}
-                  </span>
-                </div>
-                <div style={row}>
-                  <span style={label}>Mayor</span>
-                  <span style={value}>{selectedMarker.mayor || "-"}</span>
-                </div>
-                <div style={row}>
-                  <span style={label}>Population</span>
-                  <span style={value}>
-                    {(() => {
-                      const n = Number(selectedMarker.population);
-                      return Number.isFinite(n)
-                        ? n.toLocaleString()
-                        : selectedMarker.population || "-";
-                    })()}
-                  </span>
-                </div>
-                <div style={row}>
-                  <span style={label}>No. of Barangay</span>
-                  <span style={value}>{"" /* intentionally blank */}</span>
-                </div>
-                <div style={{ ...row, borderBottom: "none" }}>
-                  <span style={label}>DRMM Personnel</span>
-                  <span style={value}>
-                    {selectedMarker.drmmPersonnel || "-"}
-                  </span>
-                </div>
-              </div>
+    {/* LGU Information Details */}
+    <div style={{ ...card, padding: 12 }}>
+      <h3 style={{ margin: 0, marginBottom: 8 }}>LGU Information Details</h3>
+      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+        <span style={label}>Classification</span>
+        <span style={value}>{selectedMarker.classification || "-"}</span>
+      </div>
+      <div style={row}>
+        <span style={label}>Total Population</span>
+        <span style={value}>
+          {(() => {
+            const n = Number(selectedMarker.population);
+            return Number.isFinite(n) ? n.toLocaleString() : (selectedMarker.population || "-");
+          })()}
+        </span>
+      </div>
+      <div style={row}>
+        <span style={label}>No. of Barangay</span>
+        <span style={value}>
+          {Number.isFinite(selectedMarker.baranggayCount as number)
+            ? (selectedMarker.baranggayCount as number).toLocaleString()
+            : selectedMarker.baranggayCount ?? "-"}
+        </span>
+      </div>
+      <div style={{ ...row, borderBottom: "none" }}>
+        <span style={label}>Mayor</span>
+        <span style={value}>{selectedMarker.mayor || "-"}</span>
+      </div>
+    </div>
 
-              {selectedMarker.lguId != null && (
-                <>
-                  <Link
-                    to={`/lgu_profiling/LGUSeeMore/${selectedMarker.lguId}`}
-                    className="see-more-link"
-                    style={{ display: "inline-block", marginTop: 10 }}
-                  >
-                    See More
-                  </Link>
+    {/* DRRM Office */}
+    <div style={{ ...card, padding: 12 }}>
+      <h3 style={{ margin: 0, marginBottom: 8 }}>
+        Disaster Risk Reduction &amp; Management Office
+      </h3>
+      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+        <span style={label}>DRMM local personnel</span>
+        <span style={value}>{selectedMarker.drmmPersonnel || "-"}</span>
+      </div>
+      <div style={row}>
+        <span style={label}>DRMM contact</span>
+        <span style={value}>{selectedMarker.drmmContact || "-"}</span>
+      </div>
+      <div style={row}>
+        <span style={label}>Major Hazard</span>
+        <span style={{ ...value, fontWeight: 600 }}>
+          {selectedMarker.majorHazards?.length
+            ? selectedMarker.majorHazards.join(", ")
+            : "-"}
+        </span>
+      </div>
+      <div style={{ ...row, borderBottom: "none" }}>
+        <span style={label}>Critical Facilities</span>
+        <span style={{ ...value, fontWeight: 600 }}>
+          {selectedMarker.criticalFacilities?.length
+            ? selectedMarker.criticalFacilities.join(", ")
+            : "-"}
+        </span>
+      </div>
+    </div>
 
-                  <div style={{ marginTop: 12 }}>
-                    <h4 style={{ margin: "8px 0" }}>Hazard Photo</h4>
+    {/* Vulnerable Population */}
+    <div style={{ ...card, padding: 12 }}>
+      <h3 style={{ margin: 0, marginBottom: 8 }}>Vulnerable Population</h3>
+      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+        <span style={label}>PWD</span>
+        <span style={value}>
+          {Number.isFinite(selectedMarker.pwdCount as number)
+            ? (selectedMarker.pwdCount as number).toLocaleString()
+            : selectedMarker.pwdCount ?? "-"}
+        </span>
+      </div>
+      <div style={row}>
+        <span style={label}>Senior Citizen</span>
+        <span style={value}>
+          {Number.isFinite(selectedMarker.seniorCount as number)
+            ? (selectedMarker.seniorCount as number).toLocaleString()
+            : selectedMarker.seniorCount ?? "-"}
+        </span>
+      </div>
+      <div style={{ ...row, borderBottom: "none" }}>
+        <span style={label}>Children</span>
+        <span style={value}>
+          {Number.isFinite(selectedMarker.childrenCount as number)
+            ? (selectedMarker.childrenCount as number).toLocaleString()
+            : selectedMarker.childrenCount ?? "-"}
+        </span>
+      </div>
+    </div>
 
-                    {hazardLoading[selectedMarker.lguId!] && (
-                      <div style={{ fontSize: 13, color: "#6b7280" }}>
-                        Loading photos…
-                      </div>
+    {/* Images section: LGU Seal + Hazard Picture */}
+    <div style={{ ...card, padding: 12 }}>
+      <h3 style={{ margin: 0, marginBottom: 8 }}>Hazard Picture</h3>
+
+      {/* Hazard Picture (prefer loaded gallery; fallback to single hazardPic) */}
+      <div>
+        {hazardLoading[selectedMarker.lguId!] && (
+          <div style={{ fontSize: 13, color: "#6b7280" }}>Loading photos…</div>
+        )}
+        {!hazardLoading[selectedMarker.lguId!] && (() => {
+          const photos = hazardsByLGU[selectedMarker.lguId!] || [];
+          if (photos.length) {
+            return (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {photos.map((p, i) => (
+                  <figure key={`${p.src}-${i}`} style={{ margin: 0 }}>
+                    <img
+                      src={p.src}
+                      alt={p.label || `Hazard ${i + 1}`}
+                      style={{
+                        width: "100%",
+                        height: 120,
+                        objectFit: "cover",
+                        borderRadius: 8,
+                        border: "1px solid #eee",
+                      }}
+                    />
+                    {p.label && (
+                      <figcaption
+                        style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}
+                        title={p.label}
+                      >
+                        {p.label}
+                      </figcaption>
                     )}
+                  </figure>
+                ))}
+              </div>
+            );
+          }
+          if (selectedMarker.hazardPic) {
+            return (
+              <img
+                src={selectedMarker.hazardPic}
+                alt="Hazard"
+                style={{
+                  width: "100%",
+                  maxHeight: 240,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                  border: "1px solid #eee",
+                }}
+              />
+            );
+          }
+          return <div style={{ fontSize: 13, color: "#6b7280" }}>No photos found.</div>;
+        })()}
+      </div>
+    </div>
+  </div>
+)}
 
-                    {!hazardLoading[selectedMarker.lguId!] &&
-                      (() => {
-                        // Fallback: single hazard_pic if available
-                        if (selectedMarker.hazardPic) {
-                          return (
-                            <img
-                              src={selectedMarker.hazardPic}
-                              alt="Hazard"
-                              className="hazard-pic"
-                            />
-                          );
-                        }
-                        return (
-                          <div style={{ fontSize: 13, color: "#6b7280" }}>
-                            No photos found.
-                          </div>
-                        );
-                      })()}
-                  </div>
-                </>
-              )}
-            </>
-          )}
         </div>
       )}
     </div>

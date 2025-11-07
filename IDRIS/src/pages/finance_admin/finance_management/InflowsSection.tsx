@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createInflowFinanceRecord, UpdateReportData } from '../../../API_Handler/finance_management_handler';
 import { FilterModal } from './FilterModal';
+import { PhilippinePesoIcon } from 'lucide-react';
 import Swal from "sweetalert2";
 import { formatCurrency } from '../../helpers';
 import {
@@ -14,6 +16,8 @@ import {
   strip_underscores,
   normalizeInflowType,
   getAttachmentSrc,
+  formatAmount,
+  parseAmount,
 } from './helpers';
 
 import {
@@ -39,13 +43,13 @@ const buildFormData = (form: Partial<InflowItem>, isUpdate = false) => {
 // ---- Modal -------------------------------------------------------
 const InflowModal: React.FC<{
   open: boolean;
-  mode: 'add' | 'edit' | 'view';
+  mode: 'add' | 'edit';
   initial?: Partial<InflowItem>;
   onClose: () => void;
   onSave?: (values: InflowItem | Partial<InflowItem>) => void;
 }> = ({ open, mode, initial, onClose, onSave }) => {
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
-  const readOnly = mode === 'view';
+  const readOnly = false;
 
   useEffect(() => {
     if (open) {
@@ -65,9 +69,21 @@ const InflowModal: React.FC<{
   }, [open, initial, mode]);
 
   const [previewSrc, setPreviewSrc] = useState<string>('');
+  const [isPdf, setIsPdf] = useState<boolean>(false);
+
   useEffect(() => {
     const src = getAttachmentSrc?.(form.attachment) ?? '';
     setPreviewSrc(src);
+    // detect pdf by MIME or filename/URL
+    const att: any = form.attachment;
+    const mime = typeof att?.type === 'string' ? att.type : '';
+    const name = typeof att?.name === 'string' ? att.name : '';
+    const looksPdf =
+      (mime && mime.toLowerCase().includes('application/pdf')) ||
+      /\.pdf($|\?)/i.test(src || name);
+
+    setIsPdf(!!looksPdf);
+
     return () => {
       if (src && src.startsWith('blob:')) URL.revokeObjectURL(src);
     };
@@ -128,40 +144,11 @@ const InflowModal: React.FC<{
         <form onSubmit={onSubmit}>
           <div className="modal-content">
             <h3>
-              {mode === 'add' ? 'Record New Inflow' : mode === 'edit' ? 'Edit Inflow' : 'View Inflow'}
+              {mode === 'add' ? 'Record New Inflow' : 'Edit Inflow'}
             </h3>
 
-            {/* ========= VIEW-ONLY: show just the attachment ========== */}
-            {mode === 'view' ? (
-              <div className="form-group">
-                <label>Attachment</label>
-                {form.attachment ? (
-                  <div className="attachment-preview">
-                    <img
-                      src={previewSrc}
-                      alt="Attachment preview"
-                      style={{ maxWidth: '100%', borderRadius: 8, display: 'block' }}
-                    />
-                    {previewSrc && (
-                      <a
-                        href={previewSrc}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="download-link"
-                        style={{ display: 'inline-block', marginTop: 8 }}
-                      >
-                        Open full size
-                      </a>
-                    )}
-                  </div>
-                ) : (
-                  <span>No attachment</span>
-                )}
-              </div>
-            ) : (
-              /* ========= ADD/EDIT: original fields ========= */
-              <>
-                <div className="form-group">
+            {/* ========= ADD/EDIT: original fields ========= */}
+
                   <label>Inflow Source</label>
                   <select
                     disabled={readOnly}
@@ -182,27 +169,20 @@ const InflowModal: React.FC<{
                   </select>
                 </div>
 
-                {/* <div className="form-group">
-                  <label>Payee (recipient)</label>
-                  <input
-                    disabled={readOnly}
-                    type="text"
-                    placeholder="Enter funding source"
-                    value={form.counterparty || ""}
-                    onChange={e => setForm({ ...form, counterparty: e.target.value })}
-                  />
-                </div> */}
-
                 <div className="form-group">
                   <label>Amount (PHP)</label>
-                  <input
-                    disabled={readOnly}
-                    type="number"
-                    min={0}
-                    placeholder="Enter amount"
-                    value={form.amount ?? ""}
-                    onChange={e => setForm({ ...form, amount: +e.target.value })}
-                  />
+                  <div className="input-with-icon">
+                    <PhilippinePesoIcon className="input-with-icon__icon" />
+                    <input
+                      disabled={readOnly}
+                      type="text"
+                      min={0}
+                      className={`input-with-icon__input  `}
+                      placeholder="Enter amount"
+                      value={formatAmount(form.amount)}
+                      onChange={e => setForm({ ...form, amount: parseAmount(e.target.value) })}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -252,10 +232,6 @@ const InflowModal: React.FC<{
                     }
                   />
                 </div>
-              </>
-            )}
-          </div>
-
           <div className="modal-actions">
             <button type="button" className="secondary-btn" onClick={onClose}>
               {mode === 'view' ? 'Close' : 'Cancel'}
@@ -274,9 +250,10 @@ const InflowModal: React.FC<{
 
 // ---- Section -----------------------------------------------------
 const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => void }> = ({ inflows = [], refetchData }) => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<InflowItem[]>(inflows);
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [selected, setSelected] = useState<InflowItem | undefined>();
   const [filterModalOpen, setFilterModalOpen] = useState(false);
 
@@ -284,7 +261,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
     setRows(inflows);
   }, [inflows]);
 
-  const open = (mode: 'add' | 'edit' | 'view', row?: InflowItem) => {
+  const open = (mode: 'add' | 'edit', row?: InflowItem) => {
     setModalMode(mode);
     setSelected(row);
     setModalOpen(true);
@@ -349,7 +326,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
                 <td>{row.purpose}</td>
                 <td>
                   {/* <button className="action-btn" onClick={() => open('edit', row)}>Edit</button> */}
-                  <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
+                  <button className="action-btn" onClick={() => navigate(`/finance/receipt/${row.finance_id}`)}>View Receipt</button>
                 </td>
               </tr>
             ))}

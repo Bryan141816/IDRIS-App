@@ -68,7 +68,7 @@ const OutflowModal: React.FC<{
 
   useEffect(() => {
     const match = budgetData.find(x => x.budget_for === form.inflow_source);
-    const limit = match?.inflow_total ?? 0;
+    const limit = match?.net_total ?? 0;
     setAmountLimit(limit);
 
     let clampedNow = false;
@@ -128,8 +128,8 @@ const OutflowModal: React.FC<{
 
     if (form.inflow_source) {
       const budget = budgetData.find(b => b.budget_for === form.inflow_source);
-      if (budget && form.amount && form.amount > budget.inflow_total) {
-        await Swal.fire({ icon: 'warning', title: 'Invalid amount', text: 'Outflow amount cannot be greater than the total inflow for this category.' });
+      if (budget && form.amount && form.amount > budget.net_total) {
+        await Swal.fire({ icon: 'warning', title: 'Invalid amount', text: 'Outflow amount cannot be greater than the available budget for this category.' });
         return;
       }
     } else {

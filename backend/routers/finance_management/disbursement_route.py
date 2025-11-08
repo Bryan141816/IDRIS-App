@@ -38,7 +38,9 @@ def update_disbursement(
     status: str = Form(...),
     remarks: str = Form(None),
     items: str = Form(...),
-    attachment: UploadFile = File(...)
+    attachment: UploadFile = File(...),
+    dateOfPayment: str = Form(...),
+    budgetSource: str = Form(...)
 ):
     try:
         items_data = json.loads(items)
@@ -53,10 +55,12 @@ def update_disbursement(
     )
 
     db_disbursement = disbursement_crud.update_disbursement(
-        db, 
-        disbursementId=disbursementId, 
+        db,
+        disbursementId=disbursementId,
         disbursement_update=disbursement_update,
-        attachment=attachment
+        attachment=attachment,
+        dateOfPayment=dateOfPayment,
+        budgetSource=budgetSource
     )
     if db_disbursement is None:
         raise HTTPException(status_code=404, detail="Disbursement not found")

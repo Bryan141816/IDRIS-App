@@ -60,6 +60,11 @@ export const spendCategoryOptions = Object.values(SpendCategory).map(value => ({
   label: value,
 }));
 
+spendCategoryOptions.push({
+  value: SpendCategory.DISBURSEMENT,
+  label: SpendCategory.DISBURSEMENT,
+});
+
 export const strip_underscores = (s: string) => s.replace(/_/g, " ");
 
 export const validate = (form: Partial<InflowItem> | Partial<OutflowItem>) => {

@@ -207,18 +207,8 @@ class FinanceRecordCRUD:
         denom = func.nullif(inflow_sum, 0)
         percentage_spent = func.coalesce((outflow_sum * 100.0) / denom, 0.0)
 
-        # --- KEY FIX: cast enum branches to a single common type (TEXT) ---
-        grouping_key = case(
-            (
-                FinanceRecord.transaction_type == TransactionType.INFLOW,
-                cast(FinanceRecord.inflow_source, String),
-            ),
-            (
-                FinanceRecord.transaction_type == TransactionType.OUTFLOW,
-                cast(FinanceRecord.spend_category, String),
-            ),
-            else_=cast(literal(None), String),
-        ).label("budget_for")
+        # --- KEY FIX: group by the budget source (inflow_source) for BOTH transaction types ---
+        grouping_key = cast(FinanceRecord.inflow_source, String).label("budget_for")
 
         base_select = select(
             grouping_key,

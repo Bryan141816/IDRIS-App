@@ -1442,6 +1442,7 @@ class SpendCategory(enum.Enum):
     CLEANUP_DEBRIS_REMOVAL = "Clean-up & Debris Removal"
     SECURITY_SERVICES = "Security Services"
     INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs"
+    DISBURSEMENT = "Disbursement"
 
 class InflowSource(enum.Enum):
     GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS"
@@ -1574,3 +1575,4 @@ class DisbursementItem(Base):
         "Disbursement",
         back_populates="items",
     )
+    

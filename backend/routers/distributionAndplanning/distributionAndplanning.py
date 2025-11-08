@@ -413,7 +413,6 @@ def list_assigned_storage_by_category(
     db: Session = Depends(get_db),
 ):
     # Build query
-    print(category)
     rows = (
         db.query(
             AssignedStorage.assigned_id,

@@ -37,14 +37,6 @@ type Volunteer = {
   availability_status?: string;
 };
 
-type TeamData = {
-  team_name: string;
-  team_members: { volunteer_id: number; role: string | undefined }[];
-  deployment_area: string;
-  assignment_duration: number;
-  starting_date: string;
-  assigned_by?: string; // Add this field
-};
 export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
   onClose,
   refreshData,

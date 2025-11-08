@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { WarehouseZone } from "../../procurement_inventory/Tabs/Modals/ModalDefault";
-import { AddRouteModal } from "./Modals/AddRoute/AddRoute";
+
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { FinalizeRouteSetup } from "./Modals/FinalizeRoute/FinalizeRoute";
 import { EditRoute } from "./Modals/EditRoute/EditRoute";
@@ -20,7 +19,7 @@ export interface VolunteerRef {
   phone_number: string;
   address: string;
   gender: string;
-  age: string;
+  age: number;
 }
 
 export interface TeamMember {
@@ -28,18 +27,12 @@ export interface TeamMember {
   member: number;
   role: string;
   status: string;
-  assigned_at: Maybe<ISODate>;
-  responded_at: Maybe<ISODate>;
-  assigned_by: Maybe<string>;
-  volunteer: Maybe<VolunteerRef>;
+  volunteer: VolunteerRef;
 }
 
 export interface AssignedTeam {
   team_id: number;
   team_name: string;
-  deployment_area: string;
-  assignment_duration: number;
-  starting_date: Maybe<ISODate>;
   isActive: boolean;
   status: string;
   team_members: TeamMember[];

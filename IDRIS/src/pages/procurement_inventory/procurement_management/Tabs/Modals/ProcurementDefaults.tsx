@@ -5,11 +5,113 @@ export type ModalType =
   | "approve"
   | "reject"
   | "update"
+  | "track"
   | null;
 
 export type User = {
   user_id: number;
   username: string;
+};
+type Volunteer = {
+  volunteer_id: number;
+  first_name: string;
+  middle_name: string;
+  full_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  address: string;
+  gender: string;
+  age: number;
+};
+
+type TeamMember = {
+  members_id: number;
+  member: number;
+  role: string;
+  status: string;
+  volunteer: Volunteer;
+};
+
+type AssignedTeam = {
+  team_id: number;
+  team_name: string;
+  isActive: boolean;
+  status: string;
+  team_members: TeamMember[];
+};
+
+type Warehouse = {
+  warehouse_id: number;
+  address: string;
+  lat: number;
+  long: number;
+  status: string;
+  zone_name: string;
+  zone_type: string;
+  capacity: number;
+  manager: string;
+};
+
+type InventoryItem = {
+  inventory_id: number;
+  item_name: string;
+  quantity: number;
+  category: string;
+  batch: string;
+  expiry: string;
+  status: string;
+};
+
+type AssignedStorageRecord = {
+  assigned_id: number;
+  quantity: number;
+  warehouse: Warehouse;
+  inventory_item: InventoryItem;
+};
+
+type ReliefItemRoute = {
+  item_id: number;
+  request_id: number;
+  item_name: string;
+  category: string;
+  quantity: number;
+};
+
+type DistributedItem = {
+  item_id: number;
+  assigned_storage: number;
+  relief_id: number;
+  procurement_request_id: number | null;
+  route: number;
+  quantity: number;
+  assigned_storage_rec: AssignedStorageRecord;
+  relief_item: ReliefItemRoute;
+  procurement_item: any | null;
+};
+
+type Log = {
+  log_id: number;
+  route_id: number;
+  log_message: string;
+  date: string | null;
+};
+
+type Route = {
+  route_id: number;
+  route_name: string;
+  gathering_area: string;
+  gathering_lat: number;
+  gathering_lng: number;
+  request_id: number;
+  status: string;
+  start_schedule: string;
+  end_schedule: string;
+  team_id: number;
+  date_added: string;
+  assigned_team: AssignedTeam;
+  distributed_items: DistributedItem[];
+  logs: Log[];
 };
 
 export interface ProcurementRequest {
@@ -17,6 +119,8 @@ export interface ProcurementRequest {
   lgu: {
     id: number;
     name: string;
+    lat: number;
+    lng: number;
   };
   request_type: "relief" | "procurement" | string; // Allow flexibility
   request_ref_num: string;
@@ -45,6 +149,8 @@ export interface ProcurementRequest {
 
   // Items themselves
   items: (ReliefItem | ProcurementItem)[];
+
+  route: Route;
 }
 
 export interface EndTarget {

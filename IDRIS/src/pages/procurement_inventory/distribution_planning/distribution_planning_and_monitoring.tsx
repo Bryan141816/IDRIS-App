@@ -17,8 +17,6 @@ import {
 import "./distribution_palling.scss";
 import { useState, useEffect } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
-import { VolunteerAssignmentTab } from "./Tabs/VolunteerAssignmentTab";
-import { MovementLogsTab } from "./Tabs/MovementLogs";
 
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
@@ -211,12 +209,6 @@ const FinanceAdmin = () => {
         )}
 
         {activeTab == "routes" && <RoutesAndPlanning></RoutesAndPlanning>}
-
-        {activeTab == "assignment" && (
-          <VolunteerAssignmentTab></VolunteerAssignmentTab>
-        )}
-
-        {activeTab == "movements" && <MovementLogsTab></MovementLogsTab>}
       </div>
     </div>
   );

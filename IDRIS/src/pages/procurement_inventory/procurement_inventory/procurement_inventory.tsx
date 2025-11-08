@@ -1,4 +1,5 @@
 import React, { act, useEffect, useState } from "react";
+import "../ProcurementInventory.scss";
 import "./procurement_inventory.scss";
 import WarehouseZone from "./Tabs/Warehousezones";
 import InventoryItems from "./Tabs/InventoryItems";

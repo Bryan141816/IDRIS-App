@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import "./ProcurementManagement.scss";
+import "../ProcurementInventory.scss";
 import RequestTab from "./Tabs/Request";
-import { formatCurrency } from "./Tabs/Modals/ProcurementDefaults";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import { useNavigate, useParams } from "react-router-dom";
 export function formatDatePretty(dateString: string): string {

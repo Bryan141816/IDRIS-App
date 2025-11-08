@@ -13,7 +13,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
+import "../ProcurementInventory.scss";
 import "./distribution_palling.scss";
 import { useState, useEffect } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";

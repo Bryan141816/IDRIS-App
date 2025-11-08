@@ -4,7 +4,6 @@
 .procurement-management {
   padding-top: 20px;
   min-height: calc(100vh - 60px);
-  background: $backgroundColor;
   overflow-y: auto;
 
   @media (max-width: 1024px) {
@@ -1186,3 +1185,85 @@ textarea:focus {
     page-break-inside: avoid;
   }
 }
+
+
+/* Loading and Error States */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #749ab6;
+
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #c5d7e5;
+    border-top: 3px solid #749ab6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 1rem;
+  }
+}
+
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
+.error-state {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #ef4444;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* Focus States for Accessibility */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #749ab6;
+  outline-offset: 2px;
+}
+
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+
+  .stat-card,
+  .route-card,
+  .chart-container {
+    border: 2px solid #374151;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    border-width: 2px;
+  }
+
+  .status-badge {
+    border: 1px solid currentColor;
+  }
+}
+

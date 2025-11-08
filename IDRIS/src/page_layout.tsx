@@ -136,7 +136,9 @@ function PageLayout() {
   }
 
   return (
-    <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
+    <RealTimeDataProvider
+      url={`https://idris-app.onrender.com/real_time/${userId}`}
+    >
       <NotificationProvider>
         {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />

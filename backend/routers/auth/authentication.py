@@ -229,7 +229,7 @@ async def auth_callback_login(
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="Lax",
+        samesite="none",
         secure=False,
     )
 
@@ -354,7 +354,7 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="Lax",
+        samesite="none",
         secure=False,
     )
 

@@ -119,7 +119,8 @@ type EvacAPI = {
 };
 
 /* ---------- API Bases ---------- */
-const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const RAW_API =
+  import.meta.env.VITE_API_URL || "https://idris-app.onrender.com";
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
 const API_BASE = `${RAW_API.replace(/\/+$/, "")}${MAPOFCEBU_BASE}`;
 

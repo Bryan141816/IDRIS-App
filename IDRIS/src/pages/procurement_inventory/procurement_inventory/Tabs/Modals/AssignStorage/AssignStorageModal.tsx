@@ -106,6 +106,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         "health & hygiene supplies zone": [
           "hygiene & sanitation",
           "clothing items",
+          "medical supplies",
         ],
       };
 
@@ -116,6 +117,17 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
             category: categoryList[selectedData.zone_type],
             exclude_fully_assigned: true,
             is_for_assignment: true,
+          },
+          paramsSerializer: (params) => {
+            return Object.entries(params)
+              .map(([key, value]) => {
+                if (Array.isArray(value))
+                  return value
+                    .map((v) => `${key}=${encodeURIComponent(v)}`)
+                    .join("&");
+                return `${key}=${encodeURIComponent(value)}`;
+              })
+              .join("&");
           },
         },
       );

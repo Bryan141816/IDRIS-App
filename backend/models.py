@@ -1108,7 +1108,7 @@ class ProcurementRequest(Base):
     request_type = Column(String(255))
     request_ref_num = Column(String(255), nullable=False)
     request_title = Column(String(255), nullable=False)
-    request_description = Column(String(255), nullable=False)
+    request_description = Column(Text, nullable=False)
     use_different_end = Column(Boolean, default=False)
 
     different_end_type = Column(String(255), nullable=True)

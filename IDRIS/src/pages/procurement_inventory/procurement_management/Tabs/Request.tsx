@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
-import "../ProcurementManagement.scss";
-
+import "../../ProcurementInventory.scss";
+import "../../ProcurementModal.scss";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import {
   ProcurementRequest,

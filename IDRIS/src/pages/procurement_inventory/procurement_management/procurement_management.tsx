@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../ProcurementInventory.scss";
+import "../ProcurementModal.scss";
+import "./ProcurementManagement.scss";
 import RequestTab from "./Tabs/Request";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import { useNavigate, useParams } from "react-router-dom";

@@ -253,7 +253,9 @@ export const RoutesAndPlanning = () => {
             <div key={route.route_id} className="route-card">
               <div className="route-header">
                 <h3>{route.route_name}</h3>
-                <span className={`status-badge ${route.status.toLowerCase()}`}>
+                <span
+                  className={`status-badge ${route.status.toLowerCase().split(" ")[0]}`}
+                >
                   {route.status}
                 </span>
               </div>

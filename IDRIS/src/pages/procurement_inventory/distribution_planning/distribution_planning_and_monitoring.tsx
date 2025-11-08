@@ -21,7 +21,10 @@ import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
 type DashboardData = {
-  active_routes: number;
+  total_route: number;
+  active_route: number;
+  in_transit: number;
+  pending_routes: number;
   deployed_volunteers: number;
   items_distributed: number;
   distribution_performance: {
@@ -118,16 +121,47 @@ const FinanceAdmin = () => {
       <div className="distribution-planning-active-section">
         {activeTab === "dashboard" && (
           <div className="dashboard-content">
-            <div className="stats-grid">
+            <div className="stats-grid-new">
+              <div className="stat-card">
+                <div className="stat-icon">📊</div>
+                <div className="stat-info">
+                  <h3>
+                    {dashboardData?.total_route
+                      ? dashboardData.total_route
+                      : "0"}
+                  </h3>
+                  <p>Total Route</p>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">🚚</div>
+                <div className="stat-info">
+                  <h3>
+                    {dashboardData?.active_route
+                      ? dashboardData.active_route
+                      : "0"}
+                  </h3>
+                  <p>Active Route</p>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-icon">⏳</div>
+                <div className="stat-info">
+                  <h3>
+                    {dashboardData?.pending_routes
+                      ? dashboardData.pending_routes
+                      : "0"}
+                  </h3>
+                  <p>Pending Route</p>
+                </div>
+              </div>
               <div className="stat-card">
                 <div className="stat-icon">🚛</div>
                 <div className="stat-info">
                   <h3>
-                    {dashboardData?.active_routes
-                      ? dashboardData.active_routes
-                      : "0"}
+                    {dashboardData?.in_transit ? dashboardData.in_transit : "0"}
                   </h3>
-                  <p>Active Route</p>
+                  <p>In Transit</p>
                 </div>
               </div>
               <div className="stat-card">

@@ -7,7 +7,7 @@ from data_schemas.distribution_planning import (
 )
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import func, select, distinct, extract, case
+from sqlalchemy import func, select, distinct, extract, case, or_
 from models import (
     IndividualVolunteer,
     DistributionTeam,
@@ -640,9 +640,35 @@ class DistributionAndPlanningCRUD:
         """Count all routes with status 'Assigned'."""
         return (
             db.query(func.count(DistributionRoute.route_id))
-            .filter(DistributionRoute.status == "Assigned")
+            .filter(
+                
+
+                    DistributionRoute.status == "In Transit"
+                
+            )
             .scalar()
         )
+
+
+    @staticmethod
+    def count_total_route(db:Session) -> int:
+        return (
+            db.query(func.count(DistributionRoute.request_id))
+              .scalar()
+        )
+    @staticmethod
+    def count_pending_route(db: Session) -> int:
+        return (
+            db.query(func.count(DistributionRoute.route_id))
+            .filter(
+                or_(
+                    DistributionRoute.status == "Waiting for Additional Action",
+                    DistributionRoute.status == "Waiting for volunteer acceptance"
+                )
+            )
+            .scalar()
+        )
+
 
     @staticmethod
     def count_unique_members(db: Session) -> int:
@@ -660,6 +686,14 @@ class DistributionAndPlanningCRUD:
             .filter(DistributionRoute.status == "Completed")
             .scalar()
         )
+    @staticmethod
+    def count_active_route(db: Session)-> int:
+        return (
+            db.query(func.count(DistributionRoute.request_id))
+            .filter(DistributionRoute.status == "Active")
+            .scalar()
+        )
+
 
     @staticmethod
     def monthly_route_counts(db: Session):
@@ -708,7 +742,10 @@ class DistributionAndPlanningCRUD:
     @staticmethod
     def get_dashboard(db: Session):
         return {
-            "active_routes": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "total_route": DistributionAndPlanningCRUD.count_total_route(db),
+            "active_route": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "in_transit": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "pending_routes": DistributionAndPlanningCRUD.count_pending_route(db),
             "deployed_volunteers": DistributionAndPlanningCRUD.count_unique_members(db),
             "items_distributed": DistributionAndPlanningCRUD.count_items_with_completed_routes(
                 db

@@ -51,12 +51,12 @@ def get_dashboard(db: Session = Depends(get_db)):
         db.query(
             func.count(ProcurementRequest.request_id).label("total"),
             func.sum(
-                case((ProcurementRequest.status == "APPROVED", 1), else_=0)
+                case((ProcurementRequest.status == "Approved", 1), else_=0)
             ).label("approved"),
             func.sum(
-                case((ProcurementRequest.status != "APPROVED", 1), else_=0)
+                case((ProcurementRequest.status != "Approved", 1), else_=0)
             ).label("not_approved"),
-        )
+        )       
         .one()
     )
 

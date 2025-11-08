@@ -25,7 +25,7 @@ import { API } from "../../API_Handler/Axio_API_Handler";
 
 interface MapPinBase {
   id: string;
-  type: "demand";
+  type: string;
   label: string;
   lat: number;
   lng: number;
@@ -42,9 +42,14 @@ interface DemandPin extends MapPinBase {
   priority: "low" | "medium" | "high" | "urgent";
   submitted_at: string;
   needs: {
-    id: number;
-    need: string;
-    amount: number | "critical";
+    type: string;
+    updated_at: string;
+    items: {
+      id: number;
+      need: string;
+      amount: number | "critical";
+      unit: string;
+    }[];
   }[];
 }
 
@@ -133,16 +138,17 @@ interface ReportData {
   };
 }
 
-const getIconByStatus = (status: DemandPin["status"]) => {
+const getIconByStatus = (type: DemandPin["type"]) => {
+  console.log(type);
   let iconUrl = "";
   let iconColor = "#6c757d"; // Default gray
 
-  if (status === "no response") {
-    iconColor = "#dc3545"; // Red for urgent/no response
-  } else if (status === "responded") {
+  if (type === "relief") {
     iconColor = "#ffc107"; // Yellow for responded
-  } else if (status === "completed") {
+  } else if (type === "procurement") {
     iconColor = "#28a745"; // Green for completed
+  } else if (type === "both") {
+    iconColor = "#2D00A9";
   }
 
   // Create a custom pin-shaped marker
@@ -182,7 +188,14 @@ const getIconByStatus = (status: DemandPin["status"]) => {
     popupAnchor: [0, -38], // Popup appears above the pin
   });
 };
-
+function formatShortDate(isoString: string) {
+  const date = new Date(isoString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 const FitBounds: React.FC<{ markers: MapPin[] }> = ({ markers }) => {
   const map = useMap();
 
@@ -216,7 +229,7 @@ const MapView: React.FC<{
         <Marker
           key={point.id}
           position={[point.lat, point.lng]}
-          icon={getIconByStatus(point.status)}
+          icon={getIconByStatus(point.type)}
         >
           <Popup>
             <div style={{ minWidth: "200px" }}>
@@ -238,23 +251,23 @@ const MapView: React.FC<{
                   {point.status}
                 </span>
               </p>
-              <p style={{ margin: "4px 0", fontSize: "0.9rem" }}>
-                <strong>Priority:</strong>{" "}
-                <span
-                  style={{
-                    color:
-                      point.priority === "urgent"
-                        ? "#dc3545"
-                        : point.priority === "high"
-                          ? "#fd7e14"
-                          : point.priority === "medium"
-                            ? "#ffc107"
-                            : "#28a745",
-                  }}
-                >
-                  {point.priority}
-                </span>
-              </p>
+              {/* <p style={{ margin: "4px 0", fontSize: "0.9rem" }}> */}
+              {/*   <strong>Priority:</strong>{" "} */}
+              {/*   <span */}
+              {/*     style={{ */}
+              {/*       color: */}
+              {/*         point.priority === "urgent" */}
+              {/*           ? "#dc3545" */}
+              {/*           : point.priority === "high" */}
+              {/*             ? "#fd7e14" */}
+              {/*             : point.priority === "medium" */}
+              {/*               ? "#ffc107" */}
+              {/*               : "#28a745", */}
+              {/*     }} */}
+              {/*   > */}
+              {/*     {point.priority} */}
+              {/*   </span> */}
+              {/* </p> */}
               <p style={{ margin: "4px 0", fontSize: "0.9rem" }}>
                 <strong>Address:</strong> {point.address}
               </p>
@@ -264,23 +277,54 @@ const MapView: React.FC<{
               </p>
               {point.needs && point.needs.length > 0 && (
                 <div style={{ marginTop: "8px" }}>
-                  <strong style={{ fontSize: "0.9rem" }}>Needs:</strong>
-                  <ul
-                    style={{
-                      margin: "4px 0",
-                      paddingLeft: "16px",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    {point.needs.slice(0, 3).map((need) => (
-                      <li key={need.id}>
-                        {need.need}: {need.amount}
-                      </li>
-                    ))}
-                    {point.needs.length > 3 && (
-                      <li>... and {point.needs.length - 3} more</li>
-                    )}
-                  </ul>
+                  {point.needs && point.needs.length > 0 && (
+                    <div style={{ marginTop: "8px" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>Needs:</strong>
+                      {point.needs.map((need) => (
+                        <div key={need.type} style={{ marginTop: "4px" }}>
+                          {/* Type + Updated At */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "0.9rem",
+                              fontWeight: 500,
+                            }}
+                          >
+                            <span>{need.type.toUpperCase()}</span>
+                            <span>{formatShortDate(need.updated_at)}</span>
+                          </div>
+
+                          {/* Items under this need */}
+                          <ul
+                            style={{
+                              margin: "2px 0 0 16px",
+                              padding: 0,
+                              listStyleType: "disc",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            {need.items.map((item) => (
+                              <li
+                                key={item.id}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  padding: "2px 0",
+                                  borderBottom: "1px dashed #ccc", // optional separator
+                                }}
+                              >
+                                <span>{item.need}</span>
+                                <span>
+                                  {item.amount} {item.unit}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -475,6 +519,7 @@ type ReportSummary = {
   active_incidents: number;
   high_priority: number;
   response_time_avg: number;
+  completed_response: number;
 };
 
 // Enhanced supply item structure for detailed tracking - Updated categories
@@ -989,7 +1034,7 @@ const ResponseDashboard = () => {
                   icon={faExclamationTriangle}
                   style={{ marginRight: "8px", color: "#fff" }}
                 />
-                Active Response Activity
+                Completed Response Activity
               </h1>
               <div className="horizontal-container full-width space-between-container">
                 {reportSummary ? (
@@ -1000,7 +1045,7 @@ const ResponseDashboard = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {reportSummary.active_incidents}
+                    {reportSummary.completed_response}
                   </span>
                 ) : (
                   <span>Loading Data</span>
@@ -1012,7 +1057,7 @@ const ResponseDashboard = () => {
                     color: "rgba(255,255,255,0.8)",
                   }}
                 >
-                  High: {reportSummary?.high_priority || 0}
+                  {/* High: {reportSummary?.high_priority || 0} */}
                 </span>
               </div>
             </div>

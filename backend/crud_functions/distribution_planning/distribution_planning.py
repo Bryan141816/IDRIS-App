@@ -431,6 +431,16 @@ class DistributionAndPlanningCRUD:
                     # (optional) if you later add routes backref here, avoid cycles in serialization
                 ),
             )
+            .order_by(
+                case(
+                    (DistributionRoute.status == "Waiting for Additional Action",0),
+                    (DistributionRoute.status == "Waiting for volunteer acceptance",1),
+                    (DistributionRoute.status == "Active",2),
+                    (DistributionRoute.status == "In Transit",3),
+                    (DistributionRoute.status.in_(["Completed", "Cancelled"]),2),
+                ),
+                DistributionRoute.date_added.asc()
+            )
             .all()
         )
 

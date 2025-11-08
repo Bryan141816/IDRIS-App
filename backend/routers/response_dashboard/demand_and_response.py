@@ -1,4 +1,5 @@
 from crud import delete
+from crud_functions.procurement_manage import procurement_inventory
 from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
@@ -12,7 +13,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from routers.role_checker import RoleChecker
 import math
-
+from collections import defaultdict
 router = APIRouter(
     tags=["demand_and_response"],
 )
@@ -29,24 +30,26 @@ router_admin = APIRouter(
     response_model=List[Dict[str, Any]],
 )
 def get_markers(db: Session = Depends(get_db)):
+
     requests = (
         db.query(ProcurementRequest)
-        .filter(ProcurementRequest.request_type == "relief")
         .filter(ProcurementRequest.routes.has(DistributionRoute.status == "Completed"))
         .options(
             joinedload(ProcurementRequest.lgu),
             joinedload(ProcurementRequest.barangay),
             joinedload(ProcurementRequest.evacuation_center),
             joinedload(ProcurementRequest.relief_items),
+            joinedload(ProcurementRequest.procurement_items),
             joinedload(ProcurementRequest.routes),
         )
         .all()
     )
 
-    result = []
+
+    grouped = defaultdict(list)
 
     for req in requests:
-        # Determine address and coordinates
+        # Determine coordinates, address, and contact info
         if req.use_different_end:
             if req.different_end_type == "barangay" and req.barangay:
                 lat = req.barangay.lat
@@ -58,7 +61,6 @@ def get_markers(db: Session = Depends(get_db)):
                 lat = req.evacuation_center.lat
                 lng = req.evacuation_center.lng
                 address = f"{req.evacuation_center.name}, {req.lgu.lgu_name}, Cebu"
-                # fallback to barangay contact if available
                 contact_name = req.barangay.barangay_captain if req.barangay else "N/A"
                 contact_phone = req.barangay.contact_info if req.barangay else "N/A"
             else:
@@ -68,46 +70,84 @@ def get_markers(db: Session = Depends(get_db)):
                 contact_name = str(req.lgu.mayor)
                 contact_phone = str(req.lgu.lgu_contact)
         else:
-            # Default: use LGU as the end location
             lat = req.lgu.lat
             lng = req.lgu.lng
             address = f"{req.lgu.lgu_name}, Cebu"
             contact_name = str(req.lgu.mayor)
             contact_phone = str(req.lgu.lgu_contact)
- 
-          
 
-        # Build needs (relief it
+        # Collect needs
+        items = []
+        if req.relief_items:
+            for item in req.relief_items:
+                items.append({
+                    "id": item.item_id,
+                    "need": item.item_name,
+                    "amount": str(item.quantity),
+                    "unit": "pcs"
+                })
+        elif req.procurement_items:
+            for item in req.procurement_items:
+                items.append({
+                    "id": item.item_id,
+                    "need": item.item_name,
+                    "amount": str(item.quantity),
+                    "unit": item.unit
+                })
+
+        # Store all needed info in the grouped dict
+        grouped[(lat, lng)].append({
+            "request_id": req.request_id,
+            "type": req.request_type,
+            "items": items,
+            "address": address,
+            "contact_name": contact_name,
+            "contact_phone": contact_phone,
+            "priority": req.priority.lower() if req.priority else "medium",
+            "submitted_at": req.date_requested.isoformat() if req.date_requested else None,
+            "title_label": req.request_title,
+            # include route updated_at
+       
+            "updated_at": req.routes.updated_at.isoformat() if req.routes else None
+
+        })
+
+    result = []
+    for (lat, lng), demands in grouped.items():
+        # Determine overall type
+        types = {d["type"] for d in demands}
+        overall_type = "both" if len(types) > 1 else types.pop()
+
+        # Flatten needs and attach updated_at
         needs = [
             {
-                "id": item.item_id,
-                "need": item.item_name,
-                "amount": str(item.quantity),
+                "type": d["type"],
+                "items": d["items"],
+                "updated_at": d.get("updated_at")
             }
-            for item in req.relief_items
+            for d in demands
         ]
 
-        # Construct main object
+        # Use first request's address/contact/priority/title
+        first_req = demands[0]
+
         data = {
-            "demand_id": str(req.request_id),
-            "type": "demand",
-            "title_label": req.request_title,
+            "demand_id": ", ".join(str(d["request_id"]) for d in demands),
+            "type": overall_type,
+            "title_label": first_req["title_label"],
             "lat": lat,
             "lng": lng,
-            "address": address,
+            "address": first_req["address"],
             "last_updated": datetime.now().isoformat(),
             "contact": {
-                "name": contact_name,
-                "phone": contact_phone,
+                "name": first_req["contact_name"],
+                "phone": first_req["contact_phone"],
             },
             "status": "completed",
-            "priority": req.priority.lower() if req.priority else "medium",
-            "submitted_at": req.date_requested.isoformat()
-            if req.date_requested
-            else None,
+            "priority": first_req["priority"],
+            "submitted_at": first_req["submitted_at"],
             "needs": needs,
         }
-
         result.append(data)
 
     return result

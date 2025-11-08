@@ -160,7 +160,15 @@ def get_request(db: Session = Depends(get_db)):
             selectinload(ProcurementRequest.relief_items),  # items (relief)
             selectinload(ProcurementRequest.procurement_items),  # items (procurement)
         )
-        .order_by(ProcurementRequest.date_requested.desc())  # optional: newest first
+        .order_by(
+           case(
+                (ProcurementRequest.status == "Pending Approval",0),
+                (ProcurementRequest.status == "Approved", 1),
+                (ProcurementRequest.status == "Rejected", 2),
+                else_=3
+            ), 
+            ProcurementRequest.date_requested.asc()
+        )
     )
 
     rows: List[ProcurementRequest] = query.all()

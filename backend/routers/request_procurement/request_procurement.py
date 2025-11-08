@@ -37,7 +37,9 @@ from crud_functions.procurement_manage.procurement_management import (
     ProcurementRequestCRUD,
     UpdateProcurementRequest,
 )
-from sqlalchemy import select, literal, and_
+
+from sqlalchemy import select, literal, and_, case
+
 from routers.GetUserId import GetUserId
 from create_notification import send_notifications_bulk
 import asyncio
@@ -320,7 +322,15 @@ def list_requests(
             .selectinload(DistributionRoute.logs),
         )
         .filter(ProcurementRequest.lgu_id == lgu_id)
-        .order_by(ProcurementRequest.date_requested.desc())
+        .order_by(
+           case(
+                (ProcurementRequest.status == "Pending Approval",0),
+                (ProcurementRequest.status == "Approved", 1),
+                (ProcurementRequest.status == "Rejected", 2),
+                else_=3
+            ), 
+            ProcurementRequest.date_requested.asc()
+        )
     )
 
     rows: list[ProcurementRequest] = query.all()

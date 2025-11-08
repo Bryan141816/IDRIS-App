@@ -220,10 +220,13 @@ const FinanceAdmin = () => {
 
               <div className="chart-container">
                 <h3>Delivery Status</h3>
+
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={deliveryStatusData}
+                      data={deliveryStatusData.filter(
+                        (entry) => entry.value > 0,
+                      )} // filter out zero values
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -231,9 +234,11 @@ const FinanceAdmin = () => {
                       dataKey="value"
                       label={({ name, value }) => `${name}: ${value}%`}
                     >
-                      {deliveryStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                      {deliveryStatusData
+                        .filter((entry) => entry.value > 0) // also filter for the cells
+                        .map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
                     </Pie>
                     <Tooltip />
                   </PieChart>

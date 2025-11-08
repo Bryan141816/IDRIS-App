@@ -160,6 +160,8 @@ def get_report_summary(db: Session = Depends(get_db)):
         else 0
     )
 
+    completed_response = db.query(func.count(DistributionRoute.route_id)).filter(DistributionRoute.status == "Completed").scalar()
+
     return {
         "total_reports": total_reports or 0,
         "completed": completed or 0,
@@ -167,6 +169,7 @@ def get_report_summary(db: Session = Depends(get_db)):
         "active_incidents": active_incidents or 0,
         "high_priority": high_priority or 0,
         "response_time_avg": response_time_avg,
+        "completed_response": completed_response or 0
     }
 
 

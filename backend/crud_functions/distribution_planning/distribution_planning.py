@@ -437,7 +437,7 @@ class DistributionAndPlanningCRUD:
                     (DistributionRoute.status == "Waiting for volunteer acceptance",1),
                     (DistributionRoute.status == "Active",2),
                     (DistributionRoute.status == "In Transit",3),
-                    (DistributionRoute.status.in_(["Completed", "Cancelled"]),2),
+                    (DistributionRoute.status.in_(["Completed", "Cancelled"]),4),
                 ),
                 DistributionRoute.date_added.asc()
             )

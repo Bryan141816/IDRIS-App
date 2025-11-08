@@ -35,7 +35,7 @@ function PageLayout() {
   const navigate = useNavigate();
 
   const userData = useLoaderData() as {
-    id: number;
+    user_id: number;
     user_type: string;
     email: string;
     username: string;
@@ -62,7 +62,7 @@ function PageLayout() {
       }
       setUserType(userData.user_type);
       setEmail(userData.email);
-      setUserId(userData.id);
+      setUserId(userData.user_id);
       setUsername(userData.username);
       setUserRoles(userData.roles);
       if (userData.user_profile) {

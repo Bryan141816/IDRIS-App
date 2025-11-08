@@ -17,6 +17,7 @@ export async function authLoader({ request }: LoaderFunctionArgs) {
       userData["roles"] &&
       userData["roles"].length > 0
     ) {
+      console.log(userData)
       return userData;
     } else {
       return null; // handle as unauthenticated

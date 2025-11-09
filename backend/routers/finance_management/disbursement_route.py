@@ -39,7 +39,7 @@ def update_disbursement(
     remarks: str = Form(None),
     items: str = Form(...),
     attachment: UploadFile = File(...),
-    date_updated: str = Form(...),
+    resolved_at: str = Form(...),
     budgetSource: str = Form(...)
 ):
     try:
@@ -53,6 +53,7 @@ def update_disbursement(
         status=status,
         remarks=remarks,
         items=items_update,
+        resolved_at = resolved_at,
         budgetSource=budget_source_data
     )
 
@@ -61,7 +62,7 @@ def update_disbursement(
         disbursementId=disbursementId,
         disbursement_update=disbursement_update,
         attachment=attachment,
-        date_updated=date_updated,
+        resolved_at=resolved_at,
         budgetSource=budgetSource
     )
     if db_disbursement is None:

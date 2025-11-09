@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import MultiSelect from "./MultiSelect";
+import './finance_management.scss';
 import {
   getDisbursements,
   updateDisbursement,
@@ -12,7 +13,7 @@ import Swal from "sweetalert2";
 
 interface FormState {
   origin_name: string;
-  date_updated: string;
+  resolved_at: string;
   budgetSource: string[];
   items: DisbursementItem[];
   remarks: string;
@@ -30,7 +31,7 @@ const StatusBadge = ({ status }: { status: string }) => (
   </span>
 );
 
-const DisbursementSection: React.FC<{ 
+const DisbursementSection: React.FC<{
   budgetData?: BudgetItem[],
   refetchData?: () => void
 }> = ({ budgetData = [], refetchData }) => {
@@ -40,7 +41,7 @@ const DisbursementSection: React.FC<{
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [form, setForm] = useState<FormState>({
     origin_name: "",
-    date_updated: "",
+    resolved_at: "",
     budgetSource: [],
     items: [],
     remarks: "",
@@ -69,7 +70,7 @@ const DisbursementSection: React.FC<{
     if (disbursement.status.toLocaleLowerCase() === "approved") {
       setForm({
         origin_name: disbursement.origin_name || "",
-        date_updated: disbursement.date_updated || "",
+        resolved_at: disbursement.resolved_at || "",
         budgetSource: disbursement.budgetSource ? [disbursement.budgetSource] : [],
         items: disbursement.items.map(item => ({
           ...item,
@@ -85,7 +86,7 @@ const DisbursementSection: React.FC<{
     } else {
       setForm({
         origin_name: disbursement.origin_name,
-        date_updated: "",
+        resolved_at: "",
         budgetSource: [],
         items: disbursement.items.map((i) => ({
           ...i,
@@ -142,7 +143,7 @@ const DisbursementSection: React.FC<{
     formData.append("status", "approved");
     formData.append("remarks", form.remarks);
     formData.append("attachment", form.attachment);
-    formData.append("date_updated", form.date_updated);
+    formData.append("resolved_at", form.resolved_at);
     formData.append("budgetSource", JSON.stringify(form.budgetSource));
 
     // Serialize the items array to a JSON string
@@ -170,44 +171,48 @@ const DisbursementSection: React.FC<{
       <div className="section-header">
         <h2>Disbursement</h2>
       </div>
-      <div className="outflows-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Title</th>
-              <th>Date Requested</th>
-              <th>Status</th>
-              <th>Origin Name</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((row, idx) => (
-              <tr key={row.disbursement_id}>
-                <td>{row.disbursement_id}</td>
-                <td>{row.disbursement_name}</td>
-                <td>{row.date_created}</td>
-                <td>
-                  <StatusBadge status={row.status} />
-                </td>
-                <td>{row.origin_name}</td>
-                <td>
-                  <button
-                    className="action-btn"
-                    onClick={() => handleDisburseClick(idx)}
-                    disabled={row.status === "approved"}
-                  >
-                    {row.status.toLocaleLowerCase() === "approved"
-                      ? "View Attachment"
-                      : "Disburse"}
-                  </button>
-                </td>
+      {requests.length === 0 ? (
+        <p id="no-data">No Data Found</p>
+      ) : (
+        <div className="outflows-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Title</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Origin Name</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {requests.map((row, idx) => (
+                <tr key={row.disbursement_id}>
+                  <td>{row.disbursement_id}</td>
+                  <td>{row.disbursement_name}</td>
+                  <td>{row.date_created}</td>
+                  <td>
+                    <StatusBadge status={row.status} />
+                  </td>
+                  <td>{row.origin_name}</td>
+                  <td>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleDisburseClick(idx)}
+                      disabled={row.status === "approved"}
+                    >
+                      {row.status.toLocaleLowerCase() === "approved"
+                        ? "View Attachment"
+                        : "Disburse"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {showModal && selectedIdx !== null && (
         <div className="modal-overlay">
           <div className="modal compact-modal">
@@ -218,100 +223,112 @@ const DisbursementSection: React.FC<{
             </div>
             <div className="modal-content compact-content">
               <h3>
-                {isReadOnly ? "View Disbursement" : "Disburse Request"} #
+                {!isReadOnly ? "View Disbursement" : "Disburse Request"} #
                 {requests[selectedIdx].disbursement_id}
               </h3>
               <form onSubmit={handleSubmit}>
-                <div className="form-row">
-                  <label>Request Title</label>
-                  <input
-                    disabled
-                    value={requests[selectedIdx].disbursement_name}
-                  />
-                </div>
-                <div className="form-row">
-                  <label>Date of Payment</label>
-                  <input
-                    type="date"
-                    value={toDateInputValue(form.date_updated)}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, date_updated: e.target.value }))
-                    }
-                    required
-                    disabled={isReadOnly}
-                  />
-                </div>
-                <div className="form-row">
-                  <label>Origin Name</label>
-                  <input disabled value={requests[selectedIdx].origin_name} />
-                </div>
-                <div className="form-row">
-                  <label>Budget Source</label>
-                  <MultiSelect
-                    options={budgetData.map(b => ({ value: b.budget_for, label: b.budget_for }))}
-                    selected={form.budgetSource}
-                    onChange={handleBudgetSourceChange}
-                    isDisabled={isReadOnly}
-                  />
-                </div>
-                <div className="form-row available-amount">
-                  <label>Available Amount:</label>
-                  <span>{formatCurrency(availableAmount)}</span>
-                </div>
-                <label>Items</label>
-                <table className="modal-items-table">
-                  <thead>
-                    <tr>
-                      <th>Item Name</th>
-                      <th>Qty</th>
-                      <th>Unit</th>
-                      <th>Unit Cost</th>
-                      <th>Total Cost</th>
-                      <th>Vendor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.items.map((item, idx) => (
-                      <tr key={item.item_id}>
-                        <td>{item.item_name}</td>
-                        <td>{item.quantity}</td>
-                        <td>{item.unit}</td>
-                        <td>
-                          <input
-                            type="number"
-                            value={item.unit_cost}
-                            min="0"
-                            onChange={(e) =>
-                              onItemChange(
-                                idx,
-                                "unit_cost",
-                                Number(e.target.value),
-                              )
-                            }
-                            required
-                            disabled={isReadOnly}
-                          />
-                        </td>
-                        <td className="amount">
-                          ₱{(item.unit_cost * item.quantity).toLocaleString()}
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.vendor}
-                            onChange={(e) =>
-                              onItemChange(idx, "vendor", e.target.value)
-                            }
-                            required
-                            disabled={isReadOnly}
-                          />
-                        </td>
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Request Title</label>
+                    <input
+                      disabled
+                      value={requests[selectedIdx].disbursement_name}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Date of Payment</label>
+                    <input
+                      type="date"
+                      value={toDateInputValue(form.resolved_at)}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, resolved_at: e.target.value }))
+                      }
+                      required
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Origin Name</label>
+                    <input disabled value={requests[selectedIdx].origin_name} />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Budget Source</label>
+                    <MultiSelect
+                      options={budgetData.map(b => ({ value: b.budget_for, label: b.budget_for }))}
+                      selected={form.budgetSource}
+                      onChange={handleBudgetSourceChange}
+                      isDisabled={isReadOnly}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row available-amount">
+                    <label>Available Amount:</label>
+                    <span>{formatCurrency(availableAmount)}</span>
+                  </div>
+                }
+                {!isReadOnly && <label>Items</label>}
+                {!isReadOnly &&
+                  <table className="modal-items-table">
+                    <thead>
+                      <tr>
+                        <th>Item Name</th>
+                        <th>Qty</th>
+                        <th>Unit</th>
+                        <th>Unit Cost</th>
+                        <th>Total Cost</th>
+                        <th>Vendor</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {form.items.map((item, idx) => (
+                        <tr key={item.item_id}>
+                          <td>{item.item_name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>
+                            <input
+                              type="number"
+                              value={item.unit_cost}
+                              min="0"
+                              onChange={(e) =>
+                                onItemChange(
+                                  idx,
+                                  "unit_cost",
+                                  Number(e.target.value),
+                                )
+                              }
+                              required
+                              disabled={isReadOnly}
+                            />
+                          </td>
+                          <td className="amount">
+                            ₱{(item.unit_cost * item.quantity).toLocaleString()}
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.vendor}
+                              onChange={(e) =>
+                                onItemChange(idx, "vendor", e.target.value)
+                              }
+                              required
+                              disabled={isReadOnly}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                }
                 <div className="form-row">
-                  <label>Attachments (Receipts)</label>
+                  <label>Attachment (Receipts)</label>
                   {!isReadOnly && (
                     <input
                       required={!isReadOnly}
@@ -357,17 +374,19 @@ const DisbursementSection: React.FC<{
                     )
                   ) : null}
                 </div>
-                <div className="form-row">
-                  <label>Remarks</label>
-                  <textarea
-                    value={form.remarks}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, remarks: e.target.value }))
-                    }
-                    rows={2}
-                    disabled={isReadOnly}
-                  />
-                </div>
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Remarks</label>
+                    <textarea
+                      value={form.remarks}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, remarks: e.target.value }))
+                      }
+                      rows={2}
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                }
                 <div className="modal-actions">
                   {isReadOnly ? (
                     <button

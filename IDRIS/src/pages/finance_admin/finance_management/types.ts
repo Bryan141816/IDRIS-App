@@ -35,7 +35,7 @@ export interface Disbursement {
   disbursement_name: string;
   status: "pending" | "approved" | "disapproved";
   date_created: string;
-  date_updated: string;
+  resolved_at: string;
   origin_name: string;
   items: DisbursementItem[];
   remarks?: string;

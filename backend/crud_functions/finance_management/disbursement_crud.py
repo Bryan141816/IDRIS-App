@@ -74,7 +74,7 @@ def update_disbursement(
     disbursementId: str, 
     disbursement_update: DisbursementUpdate, 
     attachment: UploadFile, 
-    date_updated: str,
+    resolved_at: str,
     budgetSource: str
     ):
     db_disbursement = get_disbursement(db, disbursementId)
@@ -134,7 +134,7 @@ def update_disbursement(
                     outflow_payload = OutflowFinanceRecordCreate(
                         counterparty=", ".join(vendor_names),
                         amount=disburse_amount,
-                        date=datetime.strptime(date_updated, "%Y-%m-%d").date(),
+                        date=datetime.strptime(resolved_at, "%Y-%m-%d").date(),
                         purpose=db_disbursement.disbursement_name,
                         spend_category=SpendCategory.DISBURSEMENT,
                         inflow_source=inflow_source_enum,

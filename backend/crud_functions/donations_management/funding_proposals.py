@@ -66,7 +66,10 @@ class FundingProposalCRUD:
             db.add(db_proposal)
             db.commit()
             db.refresh(db_proposal)
-            return db_proposal
+            return {
+                **db_proposal.__dict__,
+                "total_donated": 0.0
+            }
         except Exception as e:
             db.rollback()
             print(f"Database error: {e}")
@@ -134,24 +137,25 @@ class FundingProposalCRUD:
                     .group_by(Donation.funding_id)
                     .all()
                 )
-                inkind_rows = (
-                    db.query(
-                        Donation.funding_id.label("funding_id"),
-                    )
-                    .join(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
-                    .filter(
-                        Donation.funding_id.in_(funding_ids),
-                        Donation.status == DonationStatus.COMPLETED,
-                        Donation.donation_type == DonationType.INKIND,
-                    )
-                    .group_by(Donation.funding_id)
-                    .all()
-                )
+                # inkind_rows = (
+                #     db.query(
+                #         Donation.funding_id.label("funding_id"),
+                #         func.coalesce(func.sum(Donation_InKind.value), 0).label("inkind_total"),
+                #     )
+                #     .join(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
+                #     .filter(
+                #         Donation.funding_id.in_(funding_ids),
+                #         Donation.status == DonationStatus.COMPLETED,
+                #         Donation.donation_type == DonationType.INKIND,
+                #     )
+                #     .group_by(Donation.funding_id)
+                #     .all()
+                # )
 
                 for r in cash_rows:
                     donation_map[r.funding_id] = float(r.cash_total or 0)
-                for r in inkind_rows:
-                    donation_map[r.funding_id] = donation_map.get(r.funding_id, 0.0) + float(r.inkind_total or 0)
+                # for r in inkind_rows:
+                #     donation_map[r.funding_id] = donation_map.get(r.funding_id, 0.0) + float(r.inkind_total or 0)
 
             records = [
                 FundingProposalGet(
@@ -192,14 +196,21 @@ class FundingProposalCRUD:
             db.commit()
             db.refresh(proposal)
 
-        total_amount = (
+        cash_total = (
             db.query(func.coalesce(func.sum(Donation_Cash.amount), 0))
             .join(Donation, Donation.donation_id == Donation_Cash.donation_id)
             .filter(Donation.funding_id == funding_id, Donation.status == DonationStatus.COMPLETED)
             .scalar()
         )
 
-        total_amount = Decimal(total_amount or "0.00")
+        # inkind_total = (
+        #     db.query(func.coalesce(func.sum(Donation_InKind.value), 0))
+        #     .join(Donation, Donation.donation_id == Donation_InKind.donation_id)
+        #     .filter(Donation.funding_id == funding_id, Donation.status == DonationStatus.COMPLETED)
+        #     .scalar()
+        # )
+
+        total_amount = Decimal(cash_total or "0.00") # + Decimal(inkind_total or "0.00")
 
         result = {
             "funding_id": proposal.funding_id,
@@ -272,7 +283,26 @@ class FundingProposalCRUD:
         try:
             db.commit()
             db.refresh(proposal)
-            return proposal
+            cash_total = (
+                db.query(func.coalesce(func.sum(Donation_Cash.amount), 0))
+                .join(Donation, Donation.donation_id == Donation_Cash.donation_id)
+                .filter(Donation.funding_id == funding_id, Donation.status == DonationStatus.COMPLETED)
+                .scalar()
+            )
+
+            # inkind_total = (
+            #     db.query(func.coalesce(func.sum(Donation_InKind.value), 0))
+            #     .join(Donation, Donation.donation_id == Donation_InKind.donation_id)
+            #     .filter(Donation.funding_id == funding_id, Donation.status == DonationStatus.COMPLETED)
+            #     .scalar()
+            # )
+
+            total_amount = Decimal(cash_total or "0.00") # + Decimal(inkind_total or "0.00")
+
+            return {
+                **proposal.__dict__,
+                "total_donated": float(total_amount)
+            }
         except Exception as e:
             db.rollback()
             print(f"Database error: {e}")

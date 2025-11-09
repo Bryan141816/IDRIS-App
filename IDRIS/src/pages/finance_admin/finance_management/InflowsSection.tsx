@@ -6,6 +6,7 @@ import { PhilippinePesoIcon } from 'lucide-react';
 import Swal from "sweetalert2";
 import { formatCurrency } from '../../helpers';
 import { type InflowItem } from './types';
+
 import {
   toDateInput,
   normalizeTransactionType,
@@ -321,46 +322,49 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
         </div>
       </div>
 
-      <div className="inflows-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Inflow Source</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Purpose</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows?.map((row, index) => (
-              <tr key={index}>
-                <td>{strip_underscores(row.inflow_source)}</td>
-                <td className="amount positive">{formatCurrency(row.amount)}</td>
-                <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td>{row.purpose}</td>
-                <td>
-                  <button
-                    className="action-btn"
-                    onClick={() => {
-                      if (row.inflow_source === "MONETARY_DONATIONS") {
-                        // Open receipt on a blank page for monetary donations
-                        window.open(`/finance/receipt/${row.finance_id}`, '_blank', 'noopener,noreferrer');
-                      } else {
-                        // Show attachment in modal for non-monetary inflows
-                        open('view', row);
-                      }
-                    }}
-                  >
-                    View Attachment
-                  </button>
-                </td>
+      {rows.length === 0 ? (
+        <p id="no-data">No Data Found</p>
+      ) : (
+        <div className="inflows-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Inflow Source</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Purpose</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+            </thead>
+            <tbody>
+              {rows?.map((row, index) => (
+                <tr key={index}>
+                  <td>{strip_underscores(row.inflow_source)}</td>
+                  <td className="amount positive">{formatCurrency(row.amount)}</td>
+                  <td>{new Date(row.date).toLocaleDateString()}</td>
+                  <td>{row.purpose}</td>
+                  <td>
+                    <button
+                      className="action-btn"
+                      onClick={() => {
+                        if (row.inflow_source === "MONETARY_DONATIONS") {
+                          // Open receipt on a blank page for monetary donations
+                          window.open(`/finance/receipt/${row.finance_id}`, '_blank', 'noopener,noreferrer');
+                        } else {
+                          // Show attachment in modal for non-monetary inflows
+                          open('view', row);
+                        }
+                      }}
+                    >
+                      View Attachment
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <InflowModal
         open={modalOpen}
         mode={modalMode}

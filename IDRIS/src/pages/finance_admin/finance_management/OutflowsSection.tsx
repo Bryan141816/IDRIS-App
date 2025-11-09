@@ -357,36 +357,39 @@ const OutflowsSection: React.FC<{
         </div>
       </div>
 
-      <div className="outflows-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Spend Category</th>
-              <th>Amount</th>
-              <th>Vendor</th>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => (
-              <tr key={(row as any).finance_id ?? index}>
-                <td>{row.spend_category}</td>
-                <td className="amount negative">{formatCurrency(row.amount)}</td>
-                <td>{row.counterparty}</td>
-                <td>{new Date(row.date).toLocaleDateString()}</td>
-                <td>{row.purpose}</td>
-                <td>
-                  {/* Only view (attachment) */}
-                  <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
-                </td>
+      { rows.length === 0 ? (
+        <p id="no-data">No Data Found</p>
+      ) : (
+        <div className="outflows-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Spend Category</th>
+                <th>Amount</th>
+                <th>Vendor</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={(row as any).finance_id ?? index}>
+                  <td>{row.spend_category}</td>
+                  <td className="amount negative">{formatCurrency(row.amount)}</td>
+                  <td>{row.counterparty}</td>
+                  <td>{new Date(row.date).toLocaleDateString()}</td>
+                  <td>{row.purpose}</td>
+                  <td>
+                    {/* Only view (attachment) */}
+                    <button className="action-btn" onClick={() => open('view', row)}>View Attachment</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <OutflowModal
         open={modalOpen}
         mode={modalMode}

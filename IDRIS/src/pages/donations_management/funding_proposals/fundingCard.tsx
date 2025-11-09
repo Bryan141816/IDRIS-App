@@ -7,7 +7,7 @@ import { useUserRoleContext } from "../../../UserRoleContext";
 import { useUserContext } from "../../../UserContext";
 import { formatCurrency } from "../helpers";
 import Swal from "sweetalert2";
-import { getDaysRemaining, getCardClass } from "./cardUtils";
+import { getDaysRemaining } from "./cardUtils";
 
 const backendUrl = "http://127.0.0.1:8000";
 
@@ -16,7 +16,7 @@ type FundingProp = {
   title?: string;
   image?: string;
   description?: string;
-  donated?: number;
+  total_donated?: number;
   target?: number;
   starting_date?: string;
   end_date?: string;
@@ -28,7 +28,7 @@ const FundingCard: React.FC<FundingProp> = ({
   title = "Title",
   image,
   description,
-  donated = 0,
+  total_donated = 0,
   target = 100,
   starting_date,
   end_date,
@@ -87,6 +87,13 @@ const FundingCard: React.FC<FundingProp> = ({
   );
   const atStart = is_active && Math.round(percentage) === 100;
 
+  const getCardClass = (percentage: number | null) => {
+    if (percentage === null) return '';
+    if (percentage > 50) return styles.safe;
+    if (percentage >= 25) return styles.warning;
+    return styles.danger;
+  };
+
   return (
     <div className={`${styles.fundingCard} ${getCardClass(daysRemainingPercentage)}`}>
       {/* HEADER */}
@@ -139,6 +146,9 @@ const FundingCard: React.FC<FundingProp> = ({
             aria-label={`${starting_date} to ${end_date}`}
           />
         </div>
+        <p className={styles.amountRaised}>
+          {formatCurrency(total_donated || 0)} raised of {formatCurrency(target || 0)}
+        </p>
         {userRoles.includes("donor") && proposalId != null && is_active && !atStart && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate

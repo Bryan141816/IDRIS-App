@@ -55,3 +55,4 @@ class DisbursementUpdate(BaseModel):
     items: Optional[List[DisbursementItemUpdate]] = None
     attachment: Optional[str] = None
     budgetSource: Optional[List[str]] = None
+    resolved_at: Optional[datetime] = None

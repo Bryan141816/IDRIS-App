@@ -256,12 +256,6 @@ export const DonorDashboard: React.FC = () => {
         </div>
         <div className="stat-card">
           <div className="stat-content">
-            <h3 className="stat-title">In‑kind (est. value)</h3>
-            <p className="stat-value">{currency(totals.totalInKind)}</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-content">
             <h3 className="stat-title">Completed Donations</h3>
             <p className="stat-value">{totals.completed}</p>
           </div>

@@ -45,13 +45,15 @@ def update_disbursement(
     try:
         items_data = json.loads(items)
         items_update = [DisbursementItemUpdate(**item) for item in items_data]
+        budget_source_data = json.loads(budgetSource)
     except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON format for items")
+        raise HTTPException(status_code=400, detail="Invalid JSON format for items or budgetSource")
 
     disbursement_update = DisbursementUpdate(
         status=status,
         remarks=remarks,
-        items=items_update
+        items=items_update,
+        budgetSource=budget_source_data
     )
 
     db_disbursement = disbursement_crud.update_disbursement(
@@ -59,7 +61,7 @@ def update_disbursement(
         disbursementId=disbursementId,
         disbursement_update=disbursement_update,
         attachment=attachment,
-        dateOfPayment=date_updated,
+        date_updated=date_updated,
         budgetSource=budgetSource
     )
     if db_disbursement is None:

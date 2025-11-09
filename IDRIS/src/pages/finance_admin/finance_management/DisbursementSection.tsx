@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from "react";
+import MultiSelect from "./MultiSelect";
 import {
   getDisbursements,
   updateDisbursement,
   getDisbursement,
 } from "../../../API_Handler/finance_disbursement_handler";
-import { Disbursement as DisbursementType, DisbursementItem } from "./types";
+import { Disbursement as DisbursementType, DisbursementItem, BudgetItem } from "./types";
 import { getAttachmentSrc, toDateInputValue } from "./helpers";
-
-const BUDGET_SOURCES = [
-  "Government Grants and Funds",
-  "Private Sector Contributions",
-  "Community-Based Initiatives",
-  "Monetary Donations",
-];
+import { formatCurrency } from "../../helpers";
+import Swal from "sweetalert2";
 
 interface FormState {
   origin_name: string;
   date_updated: string;
-  budgetSource: string;
+  budgetSource: string[];
   items: DisbursementItem[];
   remarks: string;
   attachment?: File | string;
 }
+
+type DisbursementSectionProps = {
+  budgetData?: BudgetItem[];
+  refetchData: () => Promise<void>;
+};
 
 const StatusBadge = ({ status }: { status: string }) => (
   <span className={`status-badge ${status.toLowerCase()}`}>
@@ -29,7 +30,10 @@ const StatusBadge = ({ status }: { status: string }) => (
   </span>
 );
 
-const DisbursementSection: React.FC = () => {
+const DisbursementSection: React.FC<{ 
+  budgetData?: BudgetItem[],
+  refetchData?: () => void
+}> = ({ budgetData = [], refetchData }) => {
   const [requests, setRequests] = useState<DisbursementType[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -37,7 +41,7 @@ const DisbursementSection: React.FC = () => {
   const [form, setForm] = useState<FormState>({
     origin_name: "",
     date_updated: "",
-    budgetSource: BUDGET_SOURCES[0],
+    budgetSource: [],
     items: [],
     remarks: "",
     attachment: undefined,
@@ -55,6 +59,7 @@ const DisbursementSection: React.FC = () => {
   useEffect(() => {
     fetchDisbursements();
   }, []);
+  const [availableAmount, setAvailableAmount] = useState(0);
 
   const handleDisburseClick = (idx: number) => {
     setSelectedIdx(idx);
@@ -65,8 +70,8 @@ const DisbursementSection: React.FC = () => {
       setForm({
         origin_name: disbursement.origin_name || "",
         date_updated: disbursement.date_updated || "",
-        budgetSource: disbursement.budgetSource || "",
-        items: disbursement.items.map((item) => ({
+        budgetSource: disbursement.budgetSource ? [disbursement.budgetSource] : [],
+        items: disbursement.items.map(item => ({
           ...item,
           unit_cost:
             typeof item.unit_cost === "number"
@@ -81,8 +86,7 @@ const DisbursementSection: React.FC = () => {
       setForm({
         origin_name: disbursement.origin_name,
         date_updated: "",
-        budgetSource:
-          disbursement.budgetSource ?? "Government Grants and Funds",
+        budgetSource: [],
         items: disbursement.items.map((i) => ({
           ...i,
           unit_cost: 0,
@@ -96,12 +100,16 @@ const DisbursementSection: React.FC = () => {
     setShowModal(true);
   };
 
-  const onItemChange = <K extends keyof DisbursementItem>(
-    idx: number,
-    field: K,
-    value: DisbursementItem[K],
-  ) => {
-    setForm((prev) => ({
+  useEffect(() => {
+    const selectedSources = form.budgetSource;
+    const total = budgetData
+      .filter(b => selectedSources.includes(b.budget_for))
+      .reduce((acc, b) => acc + b.net_total, 0);
+    setAvailableAmount(total);
+  }, [form.budgetSource, budgetData]);
+
+  const onItemChange = <K extends keyof DisbursementItem>(idx: number, field: K, value: DisbursementItem[K]) => {
+    setForm(prev => ({
       ...prev,
       items: prev.items.map((item, i) =>
         i === idx ? { ...item, [field]: value } : item,
@@ -109,9 +117,23 @@ const DisbursementSection: React.FC = () => {
     }));
   };
 
+  const handleBudgetSourceChange = (selected: string[]) => {
+    setForm(f => ({ ...f, budgetSource: selected }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedIdx === null || !form.attachment) return;
+
+    const totalCost = form.items.reduce((acc, item) => acc + item.unit_cost * item.quantity, 0);
+    if (totalCost > availableAmount) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Exceeds Budget',
+        text: `The total cost of items (₱${totalCost.toLocaleString()}) exceeds the available amount (₱${availableAmount.toLocaleString()}).`,
+      });
+      return;
+    }
 
     const disbursementToUpdate = requests[selectedIdx];
 
@@ -121,7 +143,7 @@ const DisbursementSection: React.FC = () => {
     formData.append("remarks", form.remarks);
     formData.append("attachment", form.attachment);
     formData.append("date_updated", form.date_updated);
-    formData.append("budgetSource", form.budgetSource);
+    formData.append("budgetSource", JSON.stringify(form.budgetSource));
 
     // Serialize the items array to a JSON string
     const itemsData = form.items.map((item) => ({
@@ -134,7 +156,10 @@ const DisbursementSection: React.FC = () => {
     try {
       await updateDisbursement(disbursementToUpdate.disbursement_id, formData);
       setShowModal(false);
-      fetchDisbursements();
+      await Promise.allSettled([
+        fetchDisbursements(),
+        Promise.resolve().then(() => refetchData?.())
+      ]);
     } catch (error) {
       console.error("Failed to update disbursement:", error);
     }
@@ -222,20 +247,16 @@ const DisbursementSection: React.FC = () => {
                 </div>
                 <div className="form-row">
                   <label>Budget Source</label>
-                  <select
-                    value={form.budgetSource}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, budgetSource: e.target.value }))
-                    }
-                    required
-                    disabled={isReadOnly}
-                  >
-                    {BUDGET_SOURCES.map((bs) => (
-                      <option key={bs} value={bs}>
-                        {bs}
-                      </option>
-                    ))}
-                  </select>
+                  <MultiSelect
+                    options={budgetData.map(b => ({ value: b.budget_for, label: b.budget_for }))}
+                    selected={form.budgetSource}
+                    onChange={handleBudgetSourceChange}
+                    isDisabled={isReadOnly}
+                  />
+                </div>
+                <div className="form-row available-amount">
+                  <label>Available Amount:</label>
+                  <span>{formatCurrency(availableAmount)}</span>
                 </div>
                 <label>Items</label>
                 <table className="modal-items-table">

@@ -26,8 +26,8 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy import event, func, case, literal, select
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import event, func, case, literal, select, inspect
+from sqlalchemy.orm import relationship, Session, object_session
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
 from sqlalchemy.exc import IntegrityError
@@ -1026,8 +1026,6 @@ def create_inventory_item(mapper, connection, target):
         )
     )
 
-
-# ================================== FINANCE MODELS =====================================
 
 
 class SpendCategory(enum.Enum):

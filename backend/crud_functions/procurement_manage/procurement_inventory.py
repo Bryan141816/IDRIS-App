@@ -155,16 +155,21 @@ class ProcurementInventoryCRUD:
         db.refresh(item)
         return item
 
+    
     @staticmethod
     def create_inventory_items_bulk(db: Session, payload: AddInventoryDonationCreate):
         items_to_create = []
         now = datetime.now(timezone.utc)
         formatted = f"{now.month}{now.day}{str(now.year)[-2:]}"
+        
         for item_payload in payload.items:
-            expiry_value = item_payload.expiry or None
+            expiry_value = None
+            if item_payload.expiry:
+                expiry_value = datetime.fromisoformat(item_payload.expiry).date()  # convert string to date
+
             item = InventoryItems(
                 item_name=item_payload.item_name,
-                quantity=item_payload.quantity,
+                quantity=int(item_payload.quantity),  # ensure integer
                 category=item_payload.category,
                 batch=f"BATCH={formatted}",
                 expiry=expiry_value,
@@ -172,19 +177,24 @@ class ProcurementInventoryCRUD:
             )
             items_to_create.append(item)
 
-        db.add_all(items_to_create)
-        db.commit()
+        try:
+            db.add_all(items_to_create)
+            db.flush()  # assign IDs
 
-        # Refresh to load IDs
-        for item in items_to_create:
-            db.refresh(item)
+            # Update InKindInventoryItem status
+            inkind_item = db.query(InKindInventoryItem).filter(
+                InKindInventoryItem.id == payload.inkind_id
+            ).first()
+            if inkind_item:
+                inkind_item.status = "added"
+                inkind_item.inkind.donation.status = "COMPLETED"
 
-        # ✅ Update the corresponding InKindInventoryItem status to "added"
-        db.query(InKindInventoryItem).filter(
-            InKindInventoryItem.id == payload.inkind_id
-        ).update({"status": "added"}, synchronize_session=False)
-
-        db.commit()
+            for item in items_to_create:
+                db.refresh(item)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            raise e
 
         return items_to_create
 

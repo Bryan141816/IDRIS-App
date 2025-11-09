@@ -75,7 +75,7 @@ API.interceptors.request.use(async (config) => {
   if (token === "" || isTokenExpired(token)) {
     try {
       console.log("Token expired or missing, refreshing...");
-      const res = await axios.post("http://localhost:8000/refresh", null, {
+      const res = await axios.post(API.defaults.baseURL + "/refresh", null, {
         withCredentials: true,
       });
       token = res.data.access_token;

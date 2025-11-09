@@ -117,9 +117,13 @@ const ViewReportModal = ({
 
   // ✅ Parse admin profile data (index 2)
   const adminProfileData =
-  isViewModalSelected.data[2].text !== "{}"
-    ? JSON.parse(isViewModalSelected.data[2].text.replace(/'/g, '"').replace(/\bNone\b/g, "null"))
-    : null;
+    isViewModalSelected.data[2].text !== "{}"
+      ? JSON.parse(
+          isViewModalSelected.data[2].text
+            .replace(/'/g, '"')
+            .replace(/\bNone\b/g, "null"),
+        )
+      : null;
 
   // ✅ Parse user profile data (index 3)
   const userProfileData =
@@ -262,7 +266,7 @@ const ViewReportModal = ({
               >
                 <span className="item-details-identifier">Government ID:</span>
                 <img
-                  src={`http://localhost:8000/${adminProfileData.employee_id}`}
+                  src={`${API.defaults.baseURL}/${adminProfileData.employee_id}`}
                   alt="Employee ID"
                   style={{
                     maxWidth: "300px",
@@ -319,7 +323,7 @@ const ViewReportModal = ({
                   Profile Picture:
                 </span>
                 <img
-                  src={`http://localhost:8000/${userProfileData.profile_image}`}
+                  src={`${API.defaults.baseURL}/${userProfileData.profile_image}`}
                   alt="Profile"
                   style={{
                     maxWidth: "200px",

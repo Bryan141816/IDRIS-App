@@ -1003,7 +1003,7 @@ const ResponseDashboard = () => {
                 />
                 Completed Response Activity
               </h1>
-              <div className="horizontal-container full-width space-between-container">
+              <div className="horizontal-container full-width text-center">
                 {reportSummary ? (
                   <span
                     style={{

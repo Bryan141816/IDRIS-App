@@ -173,7 +173,8 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
           mode={
             userRoles.includes("lgu officer") ||
             selectedItem?.status === "Approved" ||
-            selectedItem?.status === "Rejected"
+            selectedItem?.status === "Rejected" ||
+            selectedItem?.status === "Waiting for Budget Approval"
               ? "view"
               : "review"
           }
@@ -254,7 +255,8 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                   >
                     {userRoles.includes("lgu officer") ||
                     request.status === "Approved" ||
-                    request.status === "Rejected"
+                    request.status === "Rejected" ||
+                    request.status === "Waiting for Budget Approval"
                       ? "View Details"
                       : "Review Request"}
                   </button>

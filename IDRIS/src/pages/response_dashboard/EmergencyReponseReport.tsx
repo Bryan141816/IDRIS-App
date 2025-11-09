@@ -51,9 +51,34 @@ const companyInfo = {
   },
 };
 
+// Type for each item in the distributed_report
+type DistributedReportItem = {
+  ResourceType: string;
+  Distributed: number;
+  Percent: number;
+};
+
+// Main emergency response report type
+type EmergencyResponseReport = {
+  generatedDate: string;
+  range: string;
+  total_relief_activities: number;
+  completed_routes: number;
+  completed_team_members_count: number;
+  distributed_count: number;
+  completed_procurement_items_count: number;
+  low_priority_count: number;
+  medium_priority_count: number;
+  high_priority_count: number;
+  total_request_count: number;
+  distributed_report: DistributedReportItem[];
+};
+
 const EmergencyReportResponse = () => {
   const [filterPeriod, setFilterPeriod] = useState("monthly");
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportData, setReportData] = useState<EmergencyResponseReport | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,7 +152,7 @@ const EmergencyReportResponse = () => {
         </div>
 
         <div className="erc-report-info">
-          <h2 className="erc-report-title">{reportData.reportTitle}</h2>
+          <h2 className="erc-report-title">{"Emergency Response Report"}</h2>
           <div className="erc-report-metadata">
             <span>
               Generated on:{" "}
@@ -155,8 +180,8 @@ const EmergencyReportResponse = () => {
             </div>
 
             <span>
-              Reporting Period: {reportData.dateRange} • Records:{" "}
-              {reportData.totalRecords}
+              Reporting Period: {reportData.range} • Records:{" "}
+              {reportData.total_relief_activities}
             </span>
           </div>
         </div>
@@ -170,39 +195,29 @@ const EmergencyReportResponse = () => {
           <div className="erc-metrics-grid">
             <div className="erc-metric-card">
               <p className="erc-metric-value">
-                {reportData.summary.totalIncidents}
+                {reportData.total_relief_activities}
               </p>
               <p className="erc-metric-label">Total Relief Activities</p>
             </div>
+
             <div className="erc-metric-card">
-              <p className="erc-metric-value">
-                {reportData.summary.activeIncidents}
-              </p>
-              <p className="erc-metric-label">Active Relief Activities</p>
-            </div>
-            <div className="erc-metric-card">
-              <p className="erc-metric-value">
-                {reportData.summary.completedIncidents}
-              </p>
+              <p className="erc-metric-value">{reportData.completed_routes}</p>
               <p className="erc-metric-label">Completed</p>
             </div>
 
             <div className="erc-metric-card">
-              <p className="erc-metric-value">
-                {reportData.summary.totalStaffDeployed}
-              </p>
+              <p className="erc-metric-value">{reportData.completed_routes}</p>
               <p className="erc-metric-label">Staff Deployed</p>
             </div>
             <div className="erc-metric-card">
-              <p className="erc-metric-value">
-                {reportData.summary.totalResourcesDistributed}
-              </p>
+              <p className="erc-metric-value">{reportData.distributed_count}</p>
               <p className="erc-metric-label">Resources Distributed</p>
             </div>
           </div>
         </div>
 
         {/* Relief Activities by Priority Table */}
+
         <div className="erc-table-container">
           <h3 className="erc-section-title">Relief Activities by Priority</h3>
           <table className="erc-table">
@@ -215,24 +230,12 @@ const EmergencyReportResponse = () => {
             </thead>
             <tbody>
               <tr>
-                <td className="priority-urgent">Urgent</td>
-                <td>{reportData.incidentsByPriority.urgent}</td>
-                <td>
-                  {(
-                    (reportData.incidentsByPriority.urgent /
-                      reportData.summary.totalIncidents) *
-                    100
-                  ).toFixed(1)}
-                  %
-                </td>
-              </tr>
-              <tr>
                 <td className="priority-high">High</td>
-                <td>{reportData.incidentsByPriority.high}</td>
+                <td>{reportData.high_priority_count}</td>
                 <td>
                   {(
-                    (reportData.incidentsByPriority.high /
-                      reportData.summary.totalIncidents) *
+                    (reportData.high_priority_count /
+                      (reportData.completed_routes || 1)) *
                     100
                   ).toFixed(1)}
                   %
@@ -240,11 +243,11 @@ const EmergencyReportResponse = () => {
               </tr>
               <tr>
                 <td className="priority-medium">Medium</td>
-                <td>{reportData.incidentsByPriority.medium}</td>
+                <td>{reportData.medium_priority_count}</td>
                 <td>
                   {(
-                    (reportData.incidentsByPriority.medium /
-                      reportData.summary.totalIncidents) *
+                    (reportData.medium_priority_count /
+                      (reportData.completed_routes || 1)) *
                     100
                   ).toFixed(1)}
                   %
@@ -252,11 +255,11 @@ const EmergencyReportResponse = () => {
               </tr>
               <tr>
                 <td className="priority-low">Low</td>
-                <td>{reportData.incidentsByPriority.low}</td>
+                <td>{reportData.low_priority_count}</td>
                 <td>
                   {(
-                    (reportData.incidentsByPriority.low /
-                      reportData.summary.totalIncidents) *
+                    (reportData.low_priority_count /
+                      (reportData.completed_routes || 1)) *
                     100
                   ).toFixed(1)}
                   %
@@ -266,7 +269,6 @@ const EmergencyReportResponse = () => {
           </table>
         </div>
 
-        {/* Resource Distribution Table */}
         <div className="erc-table-container">
           <h3 className="erc-section-title">Resource Distribution</h3>
           <table className="erc-table">
@@ -278,20 +280,18 @@ const EmergencyReportResponse = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(reportData.resourceDistribution).map(
-                ([type, count]) => (
-                  <tr key={type}>
-                    <td style={{ textTransform: "capitalize" }}>{type}</td>
-                    <td>{count}</td>
-                    <td>
-                      {(
-                        (count / reportData.summary.totalResourcesDistributed) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </td>
+              {reportData && reportData.distributed_report.length > 0 ? (
+                reportData.distributed_report.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.ResourceType}</td>
+                    <td>{item.Distributed}</td>
+                    <td>{item.Percent}%</td>
                   </tr>
-                ),
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3}>No Data</td>
+                </tr>
               )}
             </tbody>
           </table>

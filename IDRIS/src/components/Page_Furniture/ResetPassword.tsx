@@ -8,6 +8,7 @@ import Logo1 from "../../media/Logo1.png";
 import { Modal } from "./Modals";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import { API } from "../../API_Handler/Axio_API_Handler";
 const UpdatePassword = () => {
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -17,7 +18,7 @@ const UpdatePassword = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
-
+  const API_URL = API.defaults.baseURL;
   const [passwordValidation, setPasswordValidation] = useState({
     length: false,
     uppercase: false,
@@ -79,7 +80,7 @@ const UpdatePassword = () => {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:8000/reset_password", {
+      const res = await fetch(API_URL + "/reset_password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

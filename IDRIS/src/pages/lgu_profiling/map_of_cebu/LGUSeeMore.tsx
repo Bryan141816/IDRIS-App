@@ -3,13 +3,19 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../css/LGUSeeMore.css";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+import { API } from "../../../API_Handler/Axio_API_Handler";
+const API_URL = API.defaults.baseURL;
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu"; // ✅ same prefix as backend
 
 // Keep your original shape if you want; this works fine.
 // (You can later simplify arrays to string[] if you prefer.)
-type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [k: string]: JsonValue };
 
 interface LGUInfo {
   id: number;
@@ -53,7 +59,9 @@ const LGUSeeMore: React.FC = () => {
       .then((res) => {
         // guard against 404 payloads like {"detail":"LGU not found"}
         if (!res.data || typeof res.data !== "object" || "detail" in res.data) {
-          throw new Error((res.data && (res.data as any).detail) || "Invalid LGU response");
+          throw new Error(
+            (res.data && (res.data as any).detail) || "Invalid LGU response",
+          );
         }
         setData(res.data as LGUInfo);
       })
@@ -63,10 +71,21 @@ const LGUSeeMore: React.FC = () => {
   const renderJson = (value?: JsonValue) => {
     if (value == null) return <span>-</span>;
 
-    if (Array.isArray(value) && value.every(v => ["string","number","boolean"].includes(typeof v) || v === null)) {
+    if (
+      Array.isArray(value) &&
+      value.every(
+        (v) => ["string", "number", "boolean"].includes(typeof v) || v === null,
+      )
+    ) {
       const arr = value as (string | number | boolean | null)[];
       if (arr.length === 0) return <span>-</span>;
-      return <ul>{arr.map((v, i) => <li key={i}>{String(v ?? "")}</li>)}</ul>;
+      return (
+        <ul>
+          {arr.map((v, i) => (
+            <li key={i}>{String(v ?? "")}</li>
+          ))}
+        </ul>
+      );
     }
 
     if (Array.isArray(value)) {
@@ -83,7 +102,9 @@ const LGUSeeMore: React.FC = () => {
                       <div className="lgu-list-row" key={k}>
                         <span className="lgu-list-key">{k}:</span>{" "}
                         <span className="lgu-list-value">
-                          {typeof v === "object" ? JSON.stringify(v) : String(v ?? "")}
+                          {typeof v === "object"
+                            ? JSON.stringify(v)
+                            : String(v ?? "")}
                         </span>
                       </div>
                     ))}
@@ -91,7 +112,13 @@ const LGUSeeMore: React.FC = () => {
                 </li>
               );
             }
-            return <li key={i}>{typeof item === "object" ? JSON.stringify(item) : String(item ?? "")}</li>;
+            return (
+              <li key={i}>
+                {typeof item === "object"
+                  ? JSON.stringify(item)
+                  : String(item ?? "")}
+              </li>
+            );
           })}
         </ul>
       );
@@ -107,7 +134,9 @@ const LGUSeeMore: React.FC = () => {
             <div className="lgu-list-row" key={k}>
               <span className="lgu-list-key">{k}:</span>{" "}
               <span className="lgu-list-value">
-                {typeof obj[k] === "object" ? JSON.stringify(obj[k]) : String(obj[k] ?? "")}
+                {typeof obj[k] === "object"
+                  ? JSON.stringify(obj[k])
+                  : String(obj[k] ?? "")}
               </span>
             </div>
           ))}
@@ -136,7 +165,10 @@ const LGUSeeMore: React.FC = () => {
 
   return (
     <div className="lgu-container">
-      <button className="back-button" onClick={() => navigate("/lgu_profiling/map_of_cebu")}>
+      <button
+        className="back-button"
+        onClick={() => navigate("/lgu_profiling/map_of_cebu")}
+      >
         ← Back
       </button>
 
@@ -149,7 +181,9 @@ const LGUSeeMore: React.FC = () => {
         <div className="lgu-value">{data.classification}</div>
 
         <div className="lgu-key">Population:</div>
-        <div className="lgu-value">{data.population?.toLocaleString?.() ?? data.population}</div>
+        <div className="lgu-value">
+          {data.population?.toLocaleString?.() ?? data.population}
+        </div>
 
         <div className="lgu-key">Contact Info:</div>
         <div className="lgu-value">{data.contact_info}</div>

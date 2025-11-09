@@ -7,7 +7,7 @@ import {
   getDisbursement,
 } from "../../../API_Handler/finance_disbursement_handler";
 import { Disbursement as DisbursementType, DisbursementItem, BudgetItem } from "./types";
-import { getAttachmentSrc, toDateInputValue } from "./helpers";
+import { getAttachmentSrc, toDateInputValue, formatDateOnly } from "./helpers";
 import { formatCurrency } from "../../helpers";
 import Swal from "sweetalert2";
 
@@ -191,7 +191,7 @@ const DisbursementSection: React.FC<{
                 <tr key={row.disbursement_id}>
                   <td>{row.disbursement_id}</td>
                   <td>{row.disbursement_name}</td>
-                  <td>{row.date_created}</td>
+                  <td>{formatDateOnly(row.date_created)}</td>
                   <td>
                     <StatusBadge status={row.status} />
                   </td>
@@ -273,8 +273,8 @@ const DisbursementSection: React.FC<{
                     <span>{formatCurrency(availableAmount)}</span>
                   </div>
                 }
-                {!isReadOnly && <label>Items</label>}
-                {!isReadOnly &&
+                <label>Items</label>
+                
                   <table className="modal-items-table">
                     <thead>
                       <tr>
@@ -326,7 +326,7 @@ const DisbursementSection: React.FC<{
                       ))}
                     </tbody>
                   </table>
-                }
+                
                 <div className="form-row">
                   <label>Attachment (Receipts)</label>
                   {!isReadOnly && (

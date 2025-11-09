@@ -7,6 +7,8 @@ from database import get_db
 from data_schemas.finance_disbursement import Disbursement, DisbursementCreate, DisbursementUpdate, DisbursementItemUpdate
 from crud_functions.finance_management import disbursement_crud
 from routers.role_checker import RoleChecker
+from .helper import parse_resolved_at
+from typing import Optional
 
 router = APIRouter()
 
@@ -38,8 +40,8 @@ def update_disbursement(
     status: str = Form(...),
     remarks: str = Form(None),
     items: str = Form(...),
-    attachment: UploadFile = File(...),
-    resolved_at: str = Form(...),
+    attachment: Optional[UploadFile] = File(None),
+    resolved_at: Optional[str] = Form(None),
     budgetSource: str = Form(...)
 ):
     try:
@@ -48,7 +50,7 @@ def update_disbursement(
         budget_source_data = json.loads(budgetSource)
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format for items or budgetSource")
-
+    print("resolved at", resolved_at)
     disbursement_update = DisbursementUpdate(
         status=status,
         remarks=remarks,

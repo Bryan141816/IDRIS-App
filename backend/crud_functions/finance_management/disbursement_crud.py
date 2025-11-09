@@ -104,6 +104,15 @@ def update_disbursement(
         if disbursement_update.remarks is not None:
             db_disbursement.remarks = disbursement_update.remarks
 
+        if resolved_at:
+            resolved_date_obj = datetime.strptime(resolved_at, "%Y-%m-%d")
+            now_utc = datetime.now(timezone.utc)
+            db_disbursement.resolved_at = now_utc.replace(
+                year=resolved_date_obj.year,
+                month=resolved_date_obj.month,
+                day=resolved_date_obj.day,
+            )           
+             
         if disbursement_update.items is not None:
             for item_update in disbursement_update.items:
                 db_item = db.query(DisbursementItem).filter(DisbursementItem.item_id == item_update.item_id).first()

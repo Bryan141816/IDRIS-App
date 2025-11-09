@@ -40,6 +40,8 @@ const FundingCard: React.FC<FundingProp> = ({
   const { userRoles } = useUserRoleContext();
   const navigate = useNavigate();
 
+  const adminAccess = userRoles.includes("superadmin") || userRoles.includes("operations admin");
+
   const [activeStatus, setActive] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +131,7 @@ const FundingCard: React.FC<FundingProp> = ({
         <div className={styles.daysRemainingContainer}>
           <p>{daysRemainingText}</p>
           <p className={styles.statusIndicator}>
-            { atStart ? (
+            {atStart ? (
               <span className={styles.not_started}>Not Started</span>
             ) : is_active ? (
               <span className={styles.active}>Active</span>
@@ -140,15 +142,17 @@ const FundingCard: React.FC<FundingProp> = ({
         </div>
         <div className={styles.progressBarContainer}>
           <div
-            className={`${styles.progressBar} ${ atStart ? styles.progressBar__notStarted : getCardClass(daysRemainingPercentage)}`}
+            className={`${styles.progressBar} ${atStart ? styles.progressBar__notStarted : getCardClass(daysRemainingPercentage)}`}
             style={{ width: `${percentage}%` }}
             title={`${starting_date} to ${end_date}`}
             aria-label={`${starting_date} to ${end_date}`}
           />
         </div>
-        <p className={styles.amountRaised}>
-          {formatCurrency(total_donated || 0)} raised of {formatCurrency(target || 0)}
-        </p>
+        {adminAccess &&
+          <p className={styles.amountRaised}>
+            {formatCurrency(total_donated || 0)} raised of {formatCurrency(target || 0)}
+          </p>
+        }
         {userRoles.includes("donor") && proposalId != null && is_active && !atStart && (
           <button className={styles.donateButton} onClick={() => handleDonateButton(proposalId)}>
             Donate

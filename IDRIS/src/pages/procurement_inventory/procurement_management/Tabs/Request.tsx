@@ -17,6 +17,7 @@ import { useUserRoleContext } from "../../../../UserRoleContext";
 import { RealTimeDataContext } from "../../../../RealTimeDataContext";
 import { DistributionRouteDTO } from "../../distribution_planning/Tabs/RoutesAndPlanning";
 import { ViewRoute } from "../../distribution_planning/Tabs/Modals/ViewRoute/ViewRoute";
+import { TrackDelivery } from "./Modals/RequestModals/TrackModal";
 interface RequestTabProps {
   apiUrl: string;
 }
@@ -178,11 +179,11 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
           }
         ></ViewDetails>
       )}
-      {activeModal === "track" && selectedRoute && (
-        <ViewRoute
+      {activeModal === "track" && selectedItem && (
+        <TrackDelivery
           onClose={closeModal}
-          selectedRoute={selectedRoute}
-        ></ViewRoute>
+          selectedData={selectedItem}
+        ></TrackDelivery>
       )}
 
       {activeModal === "update" && userRoles.includes("logistics admin") && (

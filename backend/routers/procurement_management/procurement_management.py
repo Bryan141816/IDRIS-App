@@ -264,6 +264,7 @@ def approve_reject_request(
             log = DistributionRouteLogs(
                 route_id=route.route_id,
                 log_message=f"{query.request_ref_num} has been created",
+                date = now,
             )
             db.add(log)
 

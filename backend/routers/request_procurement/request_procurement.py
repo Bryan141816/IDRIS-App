@@ -135,7 +135,7 @@ def serialize_request(r: ProcurementRequest) -> dict:
     route_list = None 
     if r.status == "Approved" and r.routes:
         route = r.routes
-        if route.status == "Active": 
+        if route: 
             route_list ={
                 "route_id": route.route_id,
                 "route_name": route.route_name,
@@ -228,7 +228,7 @@ def serialize_request(r: ProcurementRequest) -> dict:
                         "route_id": log.route_id,
                         "log_message": log.log_message,
                         "date": log.date.isoformat() if log.date else None
-                    } for log in (route.logs or [])
+                    } for log in reversed(route.logs or [])
                 ],
         }
 
@@ -319,7 +319,7 @@ def list_requests(
             .joinedload(DistributedItems.procurement_item),
 
             selectinload(ProcurementRequest.routes)
-            .selectinload(DistributionRoute.logs),
+            .selectinload(DistributionRoute.logs)
         )
         .filter(ProcurementRequest.lgu_id == lgu_id)
         .order_by(

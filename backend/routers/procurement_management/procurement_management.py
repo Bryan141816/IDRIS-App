@@ -20,7 +20,8 @@ from models import (
     DisbursementItem,
     TeamMembers,
     DistributionTeam,
-    TeamMembers
+    TeamMembers,
+    ProcurementRequestLog
 )
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone, time
@@ -62,11 +63,17 @@ def get_dashboard(db: Session = Depends(get_db)):
         )       
         .one()
     )
+    logs = (db.query(ProcurementRequestLog)
+        .order_by(ProcurementRequestLog.date_created.desc())
+        .limit(5)
+        .all()
+            )
 
     return {
         "total": counts.total or 0,
         "approved": counts.approved or 0,
         "pending": counts.not_approved or 0,
+        "recent_log": logs
     } 
 
 
@@ -301,6 +308,7 @@ def list_requests(db: Session = Depends(get_db)):
         .order_by(
             case(
                 (ProcurementRequest.status == "Pending Approval", 0),
+                (ProcurementRequest.status == "Waiting for Budget Approval", 0),
                 (ProcurementRequest.status == "Approved", 1),
                 (ProcurementRequest.status == "Rejected", 2),
                 else_=3

@@ -728,6 +728,48 @@ class ProcurementRequest(Base):
         uselist=False,
     )
 
+class ProcurementRequestLog(Base):
+    __tablename__ = "procurement_request_log"
+    log_type = Column(String(255))
+    log_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    log_message = Column(Text)
+    date_created = Column(DateTime, default=func.now(), onupdate=func.now())
+
+# Listener for creation
+def log_procurement_request_insert(mapper, connection, target):
+    """Triggered after a new ProcurementRequest is created."""
+    connection.execute(
+        ProcurementRequestLog.__table__.insert(),
+        {
+            "log_type": "Added",
+            "log_message": f"Procurement Request {target.request_ref_num} has been created.",
+            "date_created": datetime.utcnow()
+        }
+    )
+
+# Listener for updates
+def log_procurement_request_update(mapper, connection, target):
+    """Triggered after a ProcurementRequest is updated."""
+    # Only log if status is Approved or Rejected
+    if target.status in ["Approved", "Rejected", "Waiting for Budget Approval"]:
+        log_message = f"Procurement Request {target.request_ref_num} has been {target.status}."
+        log_type = target.status
+        if target.status == "Waiting for Budget Approval":
+            log_message = f"Procurement Request {target.request_ref_num} has been moved to Budget Approval."
+            log_type = "Moved to Budget Approval"
+        
+        connection.execute(
+            ProcurementRequestLog.__table__.insert(),
+            {
+                "log_type": log_type,
+                "log_message": log_message,
+                "date_created": datetime.utcnow()
+            }
+        )
+
+# Attach listeners
+event.listen(ProcurementRequest, "after_insert", log_procurement_request_insert)
+event.listen(ProcurementRequest, "after_update", log_procurement_request_update)
 
 class ReliefRequestItem(Base):
     __tablename__ = "relief_request_item"

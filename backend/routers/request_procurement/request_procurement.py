@@ -325,6 +325,7 @@ def list_requests(
         .order_by(
            case(
                 (ProcurementRequest.status == "Pending Approval",0),
+                (ProcurementRequest.status == "Waiting for Budget Approval", 0),
                 (ProcurementRequest.status == "Approved", 1),
                 (ProcurementRequest.status == "Rejected", 2),
                 else_=3

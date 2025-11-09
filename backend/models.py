@@ -1351,7 +1351,7 @@ class DistributionRoute(Base):
 
     distributed_items = relationship("DistributedItems", back_populates="route_info")
     assigned_team = relationship("DistributionTeam", back_populates="routes")
-
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     # New relationship for logs
     logs = relationship("DistributionRouteLogs", back_populates="route")
     request = relationship(

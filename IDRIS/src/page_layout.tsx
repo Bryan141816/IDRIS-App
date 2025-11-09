@@ -136,7 +136,7 @@ function PageLayout() {
   }
 
   return (
-    <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
+    <RealTimeDataProvider>
       <NotificationProvider>
         {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />

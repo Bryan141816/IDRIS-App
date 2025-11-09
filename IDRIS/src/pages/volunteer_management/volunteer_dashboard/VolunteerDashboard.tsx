@@ -41,6 +41,7 @@ interface IndividualVolunteerRead {
     tasks_joined?: number;
     active_tasks_joined?: number;
     events_joined?: number;
+    distributionprogramsjoined?: number;
     active_events_joined?: number;
     profile_image?: string | null;
 }
@@ -139,7 +140,7 @@ export default function IDRISDashboard() {
     const top3ActiveVolunteers = useMemo(() => {
         const approved = volunteers.filter((v) => statusOf(v) === "approved");
         const withCount = approved
-            .map((v) => ({ ...v, _events: Number(v.events_joined ?? 0) }))
+            .map((v) => ({ ...v, _events: Number((v.events_joined ?? 0) + (v.distributionprogramsjoined ?? 0)) }))
             .filter((v) => v._events > 0);
         withCount.sort((a, b) => b._events - a._events);
         return withCount.slice(0, 3);
@@ -509,9 +510,7 @@ export default function IDRISDashboard() {
                         if (myVolunteer) {
                             // Check all possible field names for individual volunteers
                             const individualId =
-                                assignment.individual_volunteer_id ||
-                                assignment.individualvolunteerid ||
-                                assignment.individualVolunteerId;
+                                assignment.individual_volunteer_id
 
                             console.log("Individual volunteer ID in assignment:", individualId);
 
@@ -523,9 +522,7 @@ export default function IDRISDashboard() {
                         } else if (myOrgVolunteer) {
                             // Check all possible field names for organization volunteers
                             const orgId =
-                                assignment.organization_volunteer_id ||
-                                assignment.organizationvolunteerid ||
-                                assignment.organizationVolunteerId;
+                                assignment.organization_volunteer_id
 
                             console.log("Organization volunteer ID in assignment:", orgId);
 
@@ -545,9 +542,6 @@ export default function IDRISDashboard() {
             console.error("❌ Failed to fetch joined programs:", error);
         }
     };
-
-
-
 
     useEffect(() => {
         // try fetch "my"  individual/org volunteer profiles (requires auth)

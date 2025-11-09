@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { getDisbursements, updateDisbursement } from "../../../API_Handler/finance_disbursement_handler";
+import { getDisbursements, updateDisbursement, getDisbursement } from "../../../API_Handler/finance_disbursement_handler";
+import { Disbursement as DisbursementType, DisbursementItem } from "./types";
+import { getAttachmentSrc, toDateInputValue } from "./helpers";
 
 const BUDGET_SOURCES = [
   "Government Grants and Funds",
@@ -8,48 +10,33 @@ const BUDGET_SOURCES = [
   "Monetary Donations",
 ];
 
-interface Item {
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  unit: string;
-  unit_cost: number;
-  vendor: string;
-}
-
-interface DisbursementData {
-  disbursement_id: string;
-  disbursement_name: string;
-  status: "pending" | "approved";
-  date_created: string;
-  origin_name: string;
-  items: Item[];
-}
-
 interface FormState {
-  dateOfPayment: string;
+  origin_name: string;
+  date_updated: string;
   budgetSource: string;
-  items: Item[];
+  items: DisbursementItem[];
   remarks: string;
-  attachment?: File;
+  attachment?: File | string;
 }
 
-const StatusBadge = ({ status }: { status:string }) => (
+const StatusBadge = ({ status }: { status: string }) => (
   <span className={`status-badge ${status.toLowerCase()}`}>{status.toUpperCase()}</span>
 );
 
 const DisbursementSection: React.FC = () => {
-  const [requests, setRequests] = useState<DisbursementData[]>([]);
+  const [requests, setRequests] = useState<DisbursementType[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [form, setForm] = useState<FormState>({
-    dateOfPayment: "",
+    origin_name: "",
+    date_updated: "",
     budgetSource: BUDGET_SOURCES[0],
-    items: [],            // now typed as Item[]
+    items: [],
     remarks: "",
     attachment: undefined,
   });
-  
+
   const fetchDisbursements = async () => {
     try {
       const data = await getDisbursements();
@@ -66,17 +53,39 @@ const DisbursementSection: React.FC = () => {
 
   const handleDisburseClick = (idx: number) => {
     setSelectedIdx(idx);
-    setForm({
-      dateOfPayment: "",
-      budgetSource: requests[idx].origin_name,
-      items: requests[idx].items.map(i => ({ ...i, unitCost: 0, vendor: "" })), // Item[]
-      remarks: "",
-      attachment: undefined,
-    });
+    const disbursement = requests[idx];
+    console.log("selected disbursement", disbursement);
+
+    if (disbursement.status.toLocaleLowerCase() === "approved") {
+      setForm({
+        origin_name: disbursement.origin_name || "",
+        date_updated: disbursement.date_updated || "",
+        budgetSource: disbursement.budgetSource || "",
+        items: disbursement.items.map(item => ({
+          ...item,
+          unit_cost: typeof item.unit_cost === 'number'
+            ? item.unit_cost
+            : parseFloat(item.unit_cost),
+        })),
+        remarks: disbursement.remarks || "",
+        attachment: disbursement.attachment,
+      });
+      setIsReadOnly(true);
+    } else {
+      setForm({
+        origin_name: disbursement.origin_name,
+        date_updated: "",
+        budgetSource: disbursement.origin_name,
+        items: disbursement.items.map(i => ({ ...i, unit_cost: 0, vendor: "" })),
+        remarks: "",
+        attachment: undefined,
+      });
+      setIsReadOnly(false);
+    }
     setShowModal(true);
   };
 
-  const onItemChange = <K extends keyof Item>(idx: number, field: K, value: Item[K]) => {
+  const onItemChange = <K extends keyof DisbursementItem>(idx: number, field: K, value: DisbursementItem[K]) => {
     setForm(prev => ({
       ...prev,
       items: prev.items.map((item, i) =>
@@ -90,15 +99,15 @@ const DisbursementSection: React.FC = () => {
     if (selectedIdx === null || !form.attachment) return;
 
     const disbursementToUpdate = requests[selectedIdx];
-    
+
     const formData = new FormData();
     formData.append("disbursementId", disbursementToUpdate.disbursement_id);
     formData.append("status", "approved");
     formData.append("remarks", form.remarks);
     formData.append("attachment", form.attachment);
-    formData.append("dateOfPayment", form.dateOfPayment);
+    formData.append("date_updated", form.date_updated);
     formData.append("budgetSource", form.budgetSource);
-    
+
     // Serialize the items array to a JSON string
     const itemsData = form.items.map(item => ({
       item_id: item.item_id,
@@ -129,7 +138,7 @@ const DisbursementSection: React.FC = () => {
               <th>Title</th>
               <th>Date Requested</th>
               <th>Status</th>
-              <th>Budget Source</th>
+              <th>Origin Name</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -149,7 +158,7 @@ const DisbursementSection: React.FC = () => {
                     onClick={() => handleDisburseClick(idx)}
                     disabled={row.status === "approved"}
                   >
-                    Disburse
+                    {row.status.toLocaleLowerCase() === "approved" ? "View Attachment" : "Disburse"}
                   </button>
                 </td>
               </tr>
@@ -166,7 +175,7 @@ const DisbursementSection: React.FC = () => {
               </button>
             </div>
             <div className="modal-content compact-content">
-              <h3>Disburse Request #{requests[selectedIdx].disbursement_id}</h3>
+              <h3>{isReadOnly ? "View Disbursement" : "Disburse Request"} #{requests[selectedIdx].disbursement_id}</h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <label>Request Title</label>
@@ -176,17 +185,23 @@ const DisbursementSection: React.FC = () => {
                   <label>Date of Payment</label>
                   <input
                     type="date"
-                    value={form.dateOfPayment}
-                    onChange={e => setForm(f => ({ ...f, dateOfPayment: e.target.value }))}
+                    value={toDateInputValue(form.date_updated)}
+                    onChange={e => setForm(f => ({ ...f, date_updated: e.target.value }))}
                     required
+                    disabled={isReadOnly}
                   />
+                </div>
+                <div className="form-row">
+                  <label>Origin Name</label>
+                  <input disabled value={requests[selectedIdx].origin_name} />
                 </div>
                 <div className="form-row">
                   <label>Budget Source</label>
                   <select
-                    value={form.budgetSource}
-                    onChange={e => setForm(f => ({ ...f, budgetSource: e.target.value }))}
+                    value={form.origin_name}
+                    onChange={e => setForm(f => ({ ...f, origin_name: e.target.value }))}
                     required
+                    disabled={isReadOnly}
                   >
                     {BUDGET_SOURCES.map(bs => (
                       <option key={bs} value={bs}>{bs}</option>
@@ -218,6 +233,7 @@ const DisbursementSection: React.FC = () => {
                             min="0"
                             onChange={e => onItemChange(idx, "unit_cost", Number(e.target.value))}
                             required
+                            disabled={isReadOnly}
                           />
                         </td>
                         <td className="amount">
@@ -229,6 +245,7 @@ const DisbursementSection: React.FC = () => {
                             value={item.vendor}
                             onChange={e => onItemChange(idx, "vendor", e.target.value)}
                             required
+                            disabled={isReadOnly}
                           />
                         </td>
                       </tr>
@@ -237,15 +254,34 @@ const DisbursementSection: React.FC = () => {
                 </table>
                 <div className="form-row">
                   <label>Attachments (Receipts)</label>
-                  <input
-                  required
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={e =>
-                      e.target.files && setForm(f => ({ ...f, attachment: e.target.files![0] }))
-                    }
-                  />
-                  {form.attachment && <span>{form.attachment.name}</span>}
+                  {!isReadOnly &&
+                    <input
+                      required={!isReadOnly}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={e =>
+                        e.target.files && setForm(f => ({ ...f, attachment: e.target.files![0] }))
+                      }
+                      disabled={isReadOnly}
+                    />
+                  }
+                  {form.attachment && typeof form.attachment === 'object' ? (
+                    <span>{form.attachment.name}</span>
+                  ) : form.attachment && typeof form.attachment === 'string' ? (
+                    isReadOnly ? (
+                      <div>
+                        {form.attachment.endsWith('.pdf') ? (
+                          <iframe src={getAttachmentSrc(form.attachment)} width="100%" height="500px" />
+                        ) : (
+                          <img src={getAttachmentSrc(form.attachment)} alt="Attachment" style={{ maxWidth: '100%' }} />
+                        )}
+                      </div>
+                    ) : (
+                      <a href={getAttachmentSrc(form.attachment)} target="_blank" rel="noopener noreferrer">
+                        View Attachment
+                      </a>
+                    )
+                  ) : null}
                 </div>
                 <div className="form-row">
                   <label>Remarks</label>
@@ -253,11 +289,18 @@ const DisbursementSection: React.FC = () => {
                     value={form.remarks}
                     onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))}
                     rows={2}
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div className="modal-actions">
-                  <button type="submit" className="primary-btn">Disburse</button>
-                  <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Cancel</button>
+                  {isReadOnly ? (
+                    <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Close</button>
+                  ) : (
+                    <>
+                      <button type="submit" className="primary-btn">Disburse</button>
+                      <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Cancel</button>
+                    </>
+                  )}
                 </div>
               </form>
             </div>

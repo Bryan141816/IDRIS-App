@@ -120,10 +120,12 @@ class FinanceRecordUpdate(BaseModel):
         
 class FinanceRecordRead(FinanceRecordBase):
     finance_id: str
-    date: datetime
+    date: date
     inflow_source: Optional[InflowSource] = None
     spend_category: Optional[SpendCategory] = None
     attachment: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

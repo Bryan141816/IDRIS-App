@@ -87,6 +87,7 @@ class FinanceRecordCRUD:
                 (FinanceRecord.transaction_type == TransactionType.INFLOW) &
                 ((Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND))
             )
+            .order_by(FinanceRecord.updated_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
@@ -102,6 +103,7 @@ class FinanceRecordCRUD:
                 (FinanceRecord.transaction_type == TransactionType.OUTFLOW) &
                 ((Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND))
             )
+            .order_by(FinanceRecord.updated_at.desc())
             .offset(skip)
             .limit(limit)
             .all()

@@ -63,7 +63,7 @@ def list_records_all(
             "date": rec.date,
             "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
             "spend_category": rec.spend_category.value if rec.spend_category else None,
-            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
+            "purpose": (rec.purpose if rec.purpose and rec.purpose.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
             "attachment": rec.attachment,
         }
@@ -97,11 +97,11 @@ def list_inflows(
     return [
         {
             "finance_id": rec.finance_id,
-            "counterparty": rec.counterparty,
+            "counterparty": rec.counterparty if rec.counterparty is not None else "N/A",
             "amount": float(rec.amount),
             "date": rec.date,
             "inflow_source": rec.inflow_source.value if rec.inflow_source else None,
-            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
+            "purpose": (rec.purpose if rec.purpose and rec.purpose.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
             "attachment": rec.attachment,
         }
@@ -138,7 +138,7 @@ def list_outflows(
             "amount": float(rec.amount),
             "date": rec.date,
             "spend_category": rec.spend_category.value if rec.spend_category else None,
-            "description": (rec.description if rec.description and rec.description.strip() else "N/A"),
+            "purpose": (rec.purpose if rec.purpose and rec.purpose.strip() else "N/A"),
             "transaction_type": rec.transaction_type.value,
             "attachment": rec.attachment,
         }

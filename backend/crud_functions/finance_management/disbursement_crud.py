@@ -3,7 +3,7 @@ import uuid
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from datetime import datetime, time, timezone, timedelta
-from models import Disbursement, DisbursementItem, SpendCategory, InflowSource, ProcurementRequest,DistributionRoute,DistributionRouteLogs
+from models import Disbursement, DisbursementItem, SpendCategory, InflowSource, ProcurementRequest,DistributionRoute,DistributionRouteLogs, DisbursementStatus
 from data_schemas.finance_disbursement import DisbursementCreate, DisbursementUpdate
 from crud_functions.utils import uid_from_string, random_suffix
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
@@ -35,14 +35,15 @@ def create_disbursement(db: Session, disbursement: DisbursementCreate):
     return db_disbursement
 
 def get_disbursements(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Disbursement).offset(skip).limit(limit).all()
+    return db.query(Disbursement).order_by(Disbursement.date_updated.desc()).offset(skip).limit(limit).all()
 
 def get_disbursement(db: Session, disbursement_id: str):
     return db.query(Disbursement).filter(Disbursement.disbursement_id == disbursement_id).first()
 
 def add_distribution_route(request_id: int, db:Session):
     request = db.query(ProcurementRequest).filter(ProcurementRequest.request_id == request_id).first()
-    request.status = "Approved"
+    if not request:
+        return
     delivery_dt = datetime.combine(
                 request.date_needed, time(9, 0, tzinfo=timezone.utc)
             )
@@ -85,8 +86,9 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
             db_disbursement.attachment = file_path
   
 
-        if disbursement_update.status is not None and disbursement_update.status.lower() == "approved":
+        if disbursement_update.status is not None and disbursement_update.status == DisbursementStatus.APPROVED:
             add_distribution_route(db_disbursement.origin_id, db)
+            
         if disbursement_update.status is not None:
             db_disbursement.status = disbursement_update.status.upper()
         

@@ -69,7 +69,14 @@ def add_distribution_route(request_id: int, db:Session):
     )
     db.add(log)
 
-def update_disbursement(db: Session, disbursementId: str, disbursement_update: DisbursementUpdate, attachment: UploadFile, dateOfPayment: str, budgetSource: str):
+def update_disbursement(
+    db: Session, 
+    disbursementId: str, 
+    disbursement_update: DisbursementUpdate, 
+    attachment: UploadFile, 
+    date_updated: str,
+    budgetSource: str
+    ):
     db_disbursement = get_disbursement(db, disbursementId)
     if db_disbursement:
         file_path = None
@@ -103,24 +110,38 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
                 if db_item:
                     db_item.unit_cost = item_update.unit_cost
                     db_item.vendor = item_update.vendor
-
-        if disbursement_update.status.upper() == 'APPROVED':
-            # Correctly calculate total and vendors from the updated disbursement items
+                    
+        status_val = (disbursement_update.status or db_disbursement.status or "").upper()
+        
+        if status_val == 'APPROVED':
             total_amount = sum(item.unit_cost * item.quantity for item in db_disbursement.items)
             vendor_names = {item.vendor for item in db_disbursement.items if item.vendor}
-
-            inflow_source_enum = InflowSource[budgetSource.replace(" ", "_").upper()]
             
-            outflow_payload = OutflowFinanceRecordCreate(
-                counterparty=", ".join(vendor_names),
-                amount=total_amount,
-                date=datetime.strptime(dateOfPayment, "%Y-%m-%d").date(),
-                purpose=db_disbursement.disbursement_name,
-                spend_category=SpendCategory.DISBURSEMENT,
-                inflow_source=inflow_source_enum,
-                attachment=file_path
-            )
-            FinanceRecordCRUD.create_outflow_record(db, outflow_payload)
+            budget_summaries = FinanceRecordCRUD.summarize_by_budget_allocation(db)
+            budget_map = {summary['budget_for']: summary['net_total'] for summary in budget_summaries}
+
+            for source in (disbursement_update.budgetSource or []):
+                available_amount = budget_map.get(source, 0)
+                
+                if total_amount <= 0:
+                    break
+
+                disburse_amount = min(total_amount, available_amount)
+                
+                if disburse_amount > 0:
+                    inflow_source_enum = InflowSource[source.replace(" ", "_").upper()]
+                    
+                    outflow_payload = OutflowFinanceRecordCreate(
+                        counterparty=", ".join(vendor_names),
+                        amount=disburse_amount,
+                        date=datetime.strptime(date_updated, "%Y-%m-%d").date(),
+                        purpose=db_disbursement.disbursement_name,
+                        spend_category=SpendCategory.DISBURSEMENT,
+                        inflow_source=inflow_source_enum,
+                        attachment=file_path
+                    )
+                    FinanceRecordCRUD.create_outflow_record(db, outflow_payload)
+                    total_amount -= disburse_amount
 
         db.commit()
         db.refresh(db_disbursement)

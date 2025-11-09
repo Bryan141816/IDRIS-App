@@ -3,7 +3,7 @@ import uuid
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from datetime import datetime, time, timezone, timedelta
-from models import Disbursement, DisbursementItem, SpendCategory, InflowSource, ProcurementRequest,DistributionRoute,DistributionRouteLogs
+from models import Disbursement, DisbursementItem, SpendCategory, InflowSource, ProcurementRequest,DistributionRoute,DistributionRouteLogs, DisbursementStatus
 from data_schemas.finance_disbursement import DisbursementCreate, DisbursementUpdate
 from crud_functions.utils import uid_from_string, random_suffix
 from crud_functions.finance_management.finance_crud import FinanceRecordCRUD
@@ -85,7 +85,7 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
             db_disbursement.attachment = file_path
   
 
-        if disbursement_update.status is not None and disbursement_update.status.lower() == "approved":
+        if disbursement_update.status is not None and disbursement_update.status == DisbursementStatus.APPROVED:
             add_distribution_route(db_disbursement.origin_id, db)
         if disbursement_update.status is not None:
             db_disbursement.status = disbursement_update.status.upper()

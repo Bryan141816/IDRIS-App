@@ -656,448 +656,6 @@ class Donation_InKind(Base):
         cascade="all, delete-orphan",
     )
 
-
-# imports (keep your own project Base import as-is)
-
-
-# ------------------ VOLUNTEER MANAGEMENT MODELS
-
-
-class VolunteerStatus(enum.Enum):
-    submitted = "submitted"
-    verifying = "verifying"
-    approved = "approved"
-    rejected = "rejected"
-    available = "available"
-    assigned = "assigned"
-    unavailable = "unavailable"
-
-
-class TaskLifecycle(str, enum.Enum):
-    incoming = "incoming"
-    ongoing = "ongoing"
-    finished = "finished"
-    cancelled = "cancelled"  # optional
-
-
-class IndividualVolunteer(Base):
-    __tablename__ = "individual_volunteer"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    # Change to String type and add default generator
-    volunteer_id = Column(
-        Integer,
-        primary_key=True,
-        unique=True,
-        autoincrement=True,
-    )
-
-    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
-    user = relationship("User", back_populates="volunteers")
-
-    first_name = Column(String(50), nullable=False)
-    middle_name = Column(String(50), nullable=True)
-    last_name = Column(String(50), nullable=False)
-    email = Column(String(100), nullable=False)
-    phone_number = Column(String(20), nullable=True)
-    address = Column(String(255), nullable=True)
-    birthday = Column(Date, nullable=True)
-    gender = Column(String(10), nullable=True)
-    age = Column(Integer, nullable=True)
-    availability = Column(String(255), nullable=True)
-    medical_conditions = Column(String(255), nullable=True)
-    other_medical_conditions = Column(String(255), nullable=True, default="N/A")
-    certification = Column(String(255), nullable=True)
-    skills = Column(String(255), nullable=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    volunteer_type = Column(String(50), nullable=False, default="individual")
-    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
-    availability_status = Column(
-        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
-    )
-
-    certificates = relationship(
-        "VolunteerCertificate",
-        back_populates="individual_volunteer",
-        primaryjoin="VolunteerCertificate.individual_volunteer_id==IndividualVolunteer.volunteer_id",
-        passive_deletes=True,
-    )
-    @property
-    def profile_image(self):
-        """Get profile image from associated user profile"""
-        if self.user and self.user.user_profile:
-            return self.user.user_profile.profile_image
-        return None
-
-
-class OrganizationVolunteer(Base):
-    __tablename__ = "organization_volunteer"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    # Change to String type and add default generator
-    volunteer_id = Column(
-        Integer,
-        primary_key=True,
-        unique=True,
-        index=True,
-        autoincrement=True,
-    )
-
-    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
-    user = relationship("User", back_populates="OrganizationVolunteer")
-
-    organization_name = Column(String(255), nullable=False)
-    organization_type = Column(String(50), nullable=False)
-    organization_email = Column(String(100), nullable=False)
-    organization_phone_number = Column(String(20), nullable=True)
-    organization_address = Column(String(255), nullable=True)
-    contact_person_name = Column(String(100), nullable=False)
-    contact_person_position = Column(String(100), nullable=False)
-    contact_person_phone_number = Column(String(20), nullable=True)
-    contact_person_email = Column(String(100), nullable=False)
-    availability = Column(String(255), nullable=True)
-    organization_picture = Column(String(255), nullable=True)
-    organization_certificate = Column(String(255), nullable=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    volunteer_type = Column(String(50), nullable=False, default="organization")
-    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
-    availability_status = Column(
-        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
-    )
-
-    certificates = relationship(
-        "VolunteerCertificate",
-        back_populates="organization_volunteer",
-        primaryjoin="VolunteerCertificate.organization_volunteer_id==OrganizationVolunteer.volunteer_id",
-        passive_deletes=True,
-    )
-
-
-
-class VolunteerCertificate(Base):
-    __tablename__ = "volunteer_certificate"
-
-    id = Column(Integer, primary_key=True, index=True)
-
-    # Exactly one of these must be set:
-    individual_volunteer_id = Column(
-        Integer,
-        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-    organization_volunteer_id = Column(
-        Integer,
-        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-
-    file_name = Column(String(255), nullable=False)
-    file_path = Column(String(512), nullable=False)  # normalized POSIX path
-    mime_type = Column(String(100), nullable=True)
-    uploaded_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    # Enforce XOR ownership at the DB level
-    __table_args__ = (
-        CheckConstraint(
-            # works in Postgres; SQLite accepts CASE variant too
-            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
-            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
-            name="ck_cert_exactly_one_owner",
-        ),
-        Index("ix_vol_cert_owner_i", "individual_volunteer_id"),
-        Index("ix_vol_cert_owner_o", "organization_volunteer_id"),
-    )
-
-    # ORM relationships back to owners
-    individual_volunteer = relationship(
-        "IndividualVolunteer",
-        back_populates="certificates",
-        foreign_keys=[individual_volunteer_id],
-    )
-    organization_volunteer = relationship(
-        "OrganizationVolunteer",
-        back_populates="certificates",
-        foreign_keys=[organization_volunteer_id],
-    )
-
-
-class Event(Base):
-    __tablename__ = "event"
-
-    id = Column(Integer, primary_key=True)
-    title = Column(String(120), nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    location = Column(String(255), nullable=True)
-    # Optional global date, but your UI sets date at task level—keep for future use
-    event_date = Column(Date, nullable=True)
-
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    tasks = relationship("Task", back_populates="event", cascade="all, delete-orphan")
-
-
-class Task(Base):
-    __tablename__ = "task"
-
-    id = Column(Integer, primary_key=True)
-    event_id = Column(
-        Integer, ForeignKey("event.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-
-    title = Column(String(120), nullable=False)
-    description = Column(Text)
-    location = Column(String(255))
-
-    start_at = Column(DateTime(timezone=True), nullable=False, index=True)
-    end_at = Column(DateTime(timezone=True), nullable=False, index=True)
-
-    max_volunteers = Column(Integer, nullable=False)
-    required_skills = Column(String(500))
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    event = relationship("Event", back_populates="tasks")
-    assignments = relationship(
-        "Assignment", back_populates="task", cascade="all, delete-orphan"
-    )
-
-    # derive lifecycle from now
-    @hybrid_property
-    def lifecycle(self) -> "TaskLifecycle":
-        now = datetime.now(timezone.utc)
-        if now < self.start_at:
-            return TaskLifecycle.incoming
-        if self.start_at <= now < self.end_at:
-            return TaskLifecycle.ongoing
-        return TaskLifecycle.finished
-
-    @lifecycle.expression
-    def lifecycle(cls):
-        # evaluated in SQL (Postgres NOW() is tz-aware under timestamptz)
-        return case(
-            (func.now() < cls.start_at, literal(TaskLifecycle.incoming.value)),
-            (func.now() >= cls.end_at, literal(TaskLifecycle.finished.value)),
-            else_=literal(TaskLifecycle.ongoing.value),
-        )
-
-
-class AssignmentStatus(str, enum.Enum):
-    applied = "applied"
-    invited = "invited"
-    accepted = "accepted"
-    declined = "declined"
-    waitlisted = "waitlisted"
-    checked_in = "checked_in"
-    no_show = "no_show"
-    completed = "completed"
-    cancelled = "cancelled"
-
-
-class Assignment(Base):
-    __tablename__ = "assignment"
-
-    id = Column(Integer, primary_key=True)
-    task_id = Column(
-        Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-
-    # Assign EITHER an individual OR an organization (XOR)
-    individual_volunteer_id = Column(
-        Integer,  # Changed from Integer
-        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-    organization_volunteer_id = Column(
-        Integer,  # Changed from Integer
-        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
-        nullable=True,
-        index=True,
-    )
-
-    status = Column(
-        SqlEnum(AssignmentStatus),
-        nullable=False,
-        server_default=AssignmentStatus.applied.value,
-    )
-    notes = Column(Text)
-    volunteer_count = Column(Integer, nullable=True, default=1)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-    task = relationship("Task", back_populates="assignments")
-    # string names avoid circular import
-    individual_volunteer = relationship(
-        "IndividualVolunteer", foreign_keys=[individual_volunteer_id]
-    )
-    organization_volunteer = relationship(
-        "OrganizationVolunteer", foreign_keys=[organization_volunteer_id]
-    )
-
-    __table_args__ = (
-        # exactly one owner
-        CheckConstraint(
-            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
-            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
-            name="ck_assignment_exactly_one_owner",
-        ),
-        # prevent duplicates on same task
-        UniqueConstraint(
-            "task_id", "individual_volunteer_id", name="uq_task_individual"
-        ),
-        UniqueConstraint(
-            "task_id", "organization_volunteer_id", name="uq_task_organization"
-        ),
-        Index("ix_assignment_status", "status"),
-    )
-
-
-# ------------------ Computed counters (attach after classes to avoid forward-ref issues)
-
-# Which statuses mean a volunteer actually "joined" a program/task
-JOINED_STATUSES = (
-    AssignmentStatus.accepted,
-    AssignmentStatus.checked_in,
-    AssignmentStatus.completed,
-)
-
-# IndividualVolunteer counters
-IndividualVolunteer.tasks_joined = column_property(
-    select(func.count(Assignment.id))
-    .where(
-        and_(
-            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-        )
-    )
-    .correlate_except(Assignment)
-    .scalar_subquery()
-)
-
-IndividualVolunteer.active_tasks_joined = column_property(
-    select(func.count(Assignment.id))
-    .join(Task, Task.id == Assignment.task_id)
-    .where(
-        and_(
-            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-            Task.end_at >= func.now(),  # active if not yet finished
-        )
-    )
-    .correlate_except(Assignment, Task)
-    .scalar_subquery()
-)
-
-IndividualVolunteer.events_joined = column_property(
-    select(func.count(func.distinct(Event.id)))
-    .select_from(Assignment)
-    .join(Task, Task.id == Assignment.task_id)
-    .join(Event, Event.id == Task.event_id)
-    .where(
-        and_(
-            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-        )
-    )
-    .correlate_except(Assignment, Task, Event)
-    .scalar_subquery()
-)
-
-IndividualVolunteer.active_events_joined = column_property(
-    select(func.count(func.distinct(Event.id)))
-    .select_from(Assignment)
-    .join(Task, Task.id == Assignment.task_id)
-    .join(Event, Event.id == Task.event_id)
-    .where(
-        and_(
-            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-            Task.end_at >= func.now(),
-        )
-    )
-    .correlate_except(Assignment, Task, Event)
-    .scalar_subquery()
-)
-
-# OrganizationVolunteer counters
-OrganizationVolunteer.tasks_joined = column_property(
-    select(func.count(Assignment.id))
-    .where(
-        and_(
-            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-        )
-    )
-    .correlate_except(Assignment)
-    .scalar_subquery()
-)
-
-OrganizationVolunteer.active_tasks_joined = column_property(
-    select(func.count(Assignment.id))
-    .join(Task, Task.id == Assignment.task_id)
-    .where(
-        and_(
-            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-            Task.end_at >= func.now(),
-        )
-    )
-    .correlate_except(Assignment, Task)
-    .scalar_subquery()
-)
-
-OrganizationVolunteer.events_joined = column_property(
-    select(func.count(func.distinct(Event.id)))
-    .select_from(Assignment)
-    .join(Task, Task.id == Assignment.task_id)
-    .join(Event, Event.id == Task.event_id)
-    .where(
-        and_(
-            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-        )
-    )
-    .correlate_except(Assignment, Task, Event)
-    .scalar_subquery()
-)
-
-OrganizationVolunteer.active_events_joined = column_property(
-    select(func.count(func.distinct(Event.id)))
-    .select_from(Assignment)
-    .join(Task, Task.id == Assignment.task_id)
-    .join(Event, Event.id == Task.event_id)
-    .where(
-        and_(
-            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
-            Assignment.status.in_(JOINED_STATUSES),
-            Task.end_at >= func.now(),
-        )
-    )
-    .correlate_except(Assignment, Task, Event)
-    .scalar_subquery()
-)
-
-
 # Procurement Request
 
 
@@ -1575,4 +1133,469 @@ class DisbursementItem(Base):
         "Disbursement",
         back_populates="items",
     )
-    
+
+
+
+# ------------------ VOLUNTEER MANAGEMENT MODELS
+
+
+class VolunteerStatus(enum.Enum):
+    submitted = "submitted"
+    verifying = "verifying"
+    approved = "approved"
+    rejected = "rejected"
+    available = "available"
+    assigned = "assigned"
+    unavailable = "unavailable"
+
+
+class TaskLifecycle(str, enum.Enum):
+    incoming = "incoming"
+    ongoing = "ongoing"
+    finished = "finished"
+    cancelled = "cancelled"  # optional
+
+
+class IndividualVolunteer(Base):
+    __tablename__ = "individual_volunteer"
+
+    id = Column(Integer, index=True, server_default=Identity())
+
+    # Change to String type and add default generator
+    volunteer_id = Column(
+        Integer,
+        primary_key=True,
+        unique=True,
+        autoincrement=True,
+    )
+
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user = relationship("User", back_populates="volunteers")
+
+    first_name = Column(String(50), nullable=False)
+    middle_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=False)
+    email = Column(String(100), nullable=False)
+    phone_number = Column(String(20), nullable=True)
+    address = Column(String(255), nullable=True)
+    birthday = Column(Date, nullable=True)
+    gender = Column(String(10), nullable=True)
+    age = Column(Integer, nullable=True)
+    availability = Column(String(255), nullable=True)
+    medical_conditions = Column(String(255), nullable=True)
+    other_medical_conditions = Column(String(255), nullable=True, default="N/A")
+    certification = Column(String(255), nullable=True)
+    skills = Column(String(255), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    volunteer_type = Column(String(50), nullable=False, default="individual")
+    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
+    availability_status = Column(
+        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
+    )
+
+    certificates = relationship(
+        "VolunteerCertificate",
+        back_populates="individual_volunteer",
+        primaryjoin="VolunteerCertificate.individual_volunteer_id==IndividualVolunteer.volunteer_id",
+        passive_deletes=True,
+    )
+    @property
+    def profile_image(self):
+        """Get profile image from associated user profile"""
+        if self.user and self.user.user_profile:
+            return self.user.user_profile.profile_image
+        return None
+
+
+class OrganizationVolunteer(Base):
+    __tablename__ = "organization_volunteer"
+
+    id = Column(Integer, index=True, server_default=Identity())
+
+    # Change to String type and add default generator
+    volunteer_id = Column(
+        Integer,
+        primary_key=True,
+        unique=True,
+        index=True,
+        autoincrement=True,
+    )
+
+    user_id = Column(String, ForeignKey("users.user_id"), nullable=False, unique=True)
+    user = relationship("User", back_populates="OrganizationVolunteer")
+
+    organization_name = Column(String(255), nullable=False)
+    organization_type = Column(String(50), nullable=False)
+    organization_email = Column(String(100), nullable=False)
+    organization_phone_number = Column(String(20), nullable=True)
+    organization_address = Column(String(255), nullable=True)
+    contact_person_name = Column(String(100), nullable=False)
+    contact_person_position = Column(String(100), nullable=False)
+    contact_person_phone_number = Column(String(20), nullable=True)
+    contact_person_email = Column(String(100), nullable=False)
+    availability = Column(String(255), nullable=True)
+    organization_picture = Column(String(255), nullable=True)
+    organization_certificate = Column(String(255), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    volunteer_type = Column(String(50), nullable=False, default="organization")
+    status = Column(SqlEnum(VolunteerStatus), default=VolunteerStatus.submitted)
+    availability_status = Column(
+        SqlEnum(VolunteerStatus), default=VolunteerStatus.unavailable
+    )
+
+    certificates = relationship(
+        "VolunteerCertificate",
+        back_populates="organization_volunteer",
+        primaryjoin="VolunteerCertificate.organization_volunteer_id==OrganizationVolunteer.volunteer_id",
+        passive_deletes=True,
+    )
+
+
+
+class VolunteerCertificate(Base):
+    __tablename__ = "volunteer_certificate"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Exactly one of these must be set:
+    individual_volunteer_id = Column(
+        Integer,
+        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    organization_volunteer_id = Column(
+        Integer,
+        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(512), nullable=False)  # normalized POSIX path
+    mime_type = Column(String(100), nullable=True)
+    uploaded_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Enforce XOR ownership at the DB level
+    __table_args__ = (
+        CheckConstraint(
+            # works in Postgres; SQLite accepts CASE variant too
+            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_cert_exactly_one_owner",
+        ),
+        Index("ix_vol_cert_owner_i", "individual_volunteer_id"),
+        Index("ix_vol_cert_owner_o", "organization_volunteer_id"),
+    )
+
+    # ORM relationships back to owners
+    individual_volunteer = relationship(
+        "IndividualVolunteer",
+        back_populates="certificates",
+        foreign_keys=[individual_volunteer_id],
+    )
+    organization_volunteer = relationship(
+        "OrganizationVolunteer",
+        back_populates="certificates",
+        foreign_keys=[organization_volunteer_id],
+    )
+
+
+class Event(Base):
+    __tablename__ = "event"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(120), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    # Optional global date, but your UI sets date at task level—keep for future use
+    event_date = Column(Date, nullable=True)
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    tasks = relationship("Task", back_populates="event", cascade="all, delete-orphan")
+
+
+class Task(Base):
+    __tablename__ = "task"
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(
+        Integer, ForeignKey("event.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    title = Column(String(120), nullable=False)
+    description = Column(Text)
+    location = Column(String(255))
+
+    start_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    end_at = Column(DateTime(timezone=True), nullable=False, index=True)
+
+    max_volunteers = Column(Integer, nullable=False)
+    required_skills = Column(String(500))
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    event = relationship("Event", back_populates="tasks")
+    assignments = relationship(
+        "Assignment", back_populates="task", cascade="all, delete-orphan"
+    )
+
+    # derive lifecycle from now
+    @hybrid_property
+    def lifecycle(self) -> "TaskLifecycle":
+        now = datetime.now(timezone.utc)
+        if now < self.start_at:
+            return TaskLifecycle.incoming
+        if self.start_at <= now < self.end_at:
+            return TaskLifecycle.ongoing
+        return TaskLifecycle.finished
+
+    @lifecycle.expression
+    def lifecycle(cls):
+        # evaluated in SQL (Postgres NOW() is tz-aware under timestamptz)
+        return case(
+            (func.now() < cls.start_at, literal(TaskLifecycle.incoming.value)),
+            (func.now() >= cls.end_at, literal(TaskLifecycle.finished.value)),
+            else_=literal(TaskLifecycle.ongoing.value),
+        )
+
+
+class AssignmentStatus(str, enum.Enum):
+    applied = "applied"
+    invited = "invited"
+    accepted = "accepted"
+    declined = "declined"
+    waitlisted = "waitlisted"
+    checked_in = "checked_in"
+    no_show = "no_show"
+    completed = "completed"
+    cancelled = "cancelled"
+
+
+class Assignment(Base):
+    __tablename__ = "assignment"
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(
+        Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Assign EITHER an individual OR an organization (XOR)
+    individual_volunteer_id = Column(
+        Integer,  # Changed from Integer
+        ForeignKey("individual_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    organization_volunteer_id = Column(
+        Integer,  # Changed from Integer
+        ForeignKey("organization_volunteer.volunteer_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+
+    status = Column(
+        SqlEnum(AssignmentStatus),
+        nullable=False,
+        server_default=AssignmentStatus.applied.value,
+    )
+    notes = Column(Text)
+    volunteer_count = Column(Integer, nullable=True, default=1)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    task = relationship("Task", back_populates="assignments")
+    # string names avoid circular import
+    individual_volunteer = relationship(
+        "IndividualVolunteer", foreign_keys=[individual_volunteer_id]
+    )
+    organization_volunteer = relationship(
+        "OrganizationVolunteer", foreign_keys=[organization_volunteer_id]
+    )
+
+    __table_args__ = (
+        # exactly one owner
+        CheckConstraint(
+            "(CASE WHEN individual_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) + "
+            "(CASE WHEN organization_volunteer_id IS NOT NULL THEN 1 ELSE 0 END) = 1",
+            name="ck_assignment_exactly_one_owner",
+        ),
+        # prevent duplicates on same task
+        UniqueConstraint(
+            "task_id", "individual_volunteer_id", name="uq_task_individual"
+        ),
+        UniqueConstraint(
+            "task_id", "organization_volunteer_id", name="uq_task_organization"
+        ),
+        Index("ix_assignment_status", "status"),
+    )
+
+
+# ------------------ Computed counters (attach after classes to avoid forward-ref issues)
+
+# Which statuses mean a volunteer actually "joined" a program/task
+JOINED_STATUSES = (
+    AssignmentStatus.accepted,
+    AssignmentStatus.checked_in,
+    AssignmentStatus.completed,
+)
+
+# IndividualVolunteer counters
+IndividualVolunteer.tasks_joined = column_property(
+    select(func.count(Assignment.id))
+    .where(
+        and_(
+            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+        )
+    )
+    .correlate_except(Assignment)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.active_tasks_joined = column_property(
+    select(func.count(Assignment.id))
+    .join(Task, Task.id == Assignment.task_id)
+    .where(
+        and_(
+            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+            Task.end_at >= func.now(),  # active if not yet finished
+        )
+    )
+    .correlate_except(Assignment, Task)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.events_joined = column_property(
+    select(func.count(func.distinct(Event.id)))
+    .select_from(Assignment)
+    .join(Task, Task.id == Assignment.task_id)
+    .join(Event, Event.id == Task.event_id)
+    .where(
+        and_(
+            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+        )
+    )
+    .correlate_except(Assignment, Task, Event)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.active_events_joined = column_property(
+    select(func.count(func.distinct(Event.id)))
+    .select_from(Assignment)
+    .join(Task, Task.id == Assignment.task_id)
+    .join(Event, Event.id == Task.event_id)
+    .where(
+        and_(
+            Assignment.individual_volunteer_id == IndividualVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+            Task.end_at >= func.now(),
+        )
+    )
+    .correlate_except(Assignment, Task, Event)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.distributionprogramsjoined = column_property(
+    select(func.count(TeamMembers.members_id))
+    .where(
+        and_(
+            TeamMembers.member == IndividualVolunteer.volunteer_id,
+            TeamMembers.status == "accepted",
+        )
+    )
+    .correlate_except(TeamMembers)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.activedistributionprograms = column_property(
+    select(func.count(TeamMembers.members_id))
+    .join(DistributionTeam, DistributionTeam.team_id == TeamMembers.team_id)
+    .join(DistributionRoute, DistributionRoute.team == DistributionTeam.team_id)
+    .where(
+        and_(
+            TeamMembers.member == IndividualVolunteer.volunteer_id,
+            TeamMembers.status == "accepted",
+            DistributionRoute.status.in_(["Active", "Waiting for volunteer acceptance"]),
+        )
+    )
+    .correlate_except(TeamMembers, DistributionTeam, DistributionRoute)
+    .scalar_subquery()
+)
+
+# OrganizationVolunteer counters
+OrganizationVolunteer.tasks_joined = column_property(
+    select(func.count(Assignment.id))
+    .where(
+        and_(
+            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+        )
+    )
+    .correlate_except(Assignment)
+    .scalar_subquery()
+)
+
+OrganizationVolunteer.active_tasks_joined = column_property(
+    select(func.count(Assignment.id))
+    .join(Task, Task.id == Assignment.task_id)
+    .where(
+        and_(
+            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+            Task.end_at >= func.now(),
+        )
+    )
+    .correlate_except(Assignment, Task)
+    .scalar_subquery()
+)
+
+OrganizationVolunteer.events_joined = column_property(
+    select(func.count(func.distinct(Event.id)))
+    .select_from(Assignment)
+    .join(Task, Task.id == Assignment.task_id)
+    .join(Event, Event.id == Task.event_id)
+    .where(
+        and_(
+            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+        )
+    )
+    .correlate_except(Assignment, Task, Event)
+    .scalar_subquery()
+)
+
+OrganizationVolunteer.active_events_joined = column_property(
+    select(func.count(func.distinct(Event.id)))
+    .select_from(Assignment)
+    .join(Task, Task.id == Assignment.task_id)
+    .join(Event, Event.id == Task.event_id)
+    .where(
+        and_(
+            Assignment.organization_volunteer_id == OrganizationVolunteer.volunteer_id,
+            Assignment.status.in_(JOINED_STATUSES),
+            Task.end_at >= func.now(),
+        )
+    )
+    .correlate_except(Assignment, Task, Event)
+    .scalar_subquery()
+)

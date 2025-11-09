@@ -14,6 +14,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './css/VolunteerProfile.css';
 import { API } from '../../../API_Handler/Axio_API_Handler';
+import { Table, Tag, Collapse } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 // Fix for Leaflet marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -70,7 +72,18 @@ interface VolunteerData {
     };
 }
 
-// Define tab types
+interface ProgramHistory {
+    programtype: string;
+    programname: string;
+    eventname?: string;
+    location?: string;
+    startdate?: string;
+    enddate?: string;
+    status: string;
+    joineddate?: string;
+    role: string;
+}
+
 type TabType = 'personalInfo' | 'organizationInfo' | 'description' | 'skillsAndInterest' | 'availability' | 'credentials';
 
 const VolunteerProfile: React.FC = () => {
@@ -80,8 +93,9 @@ const VolunteerProfile: React.FC = () => {
     const [isIndividual, setIsIndividual] = useState(true);
     const [mapCenter, setMapCenter] = useState<LatLngExpression>([10.3157, 123.8854]);
     const [isGeocoding, setIsGeocoding] = useState(false);
+    const [programsHistory, setProgramsHistory] = useState<ProgramHistory[]>([]);
+    const [loadingPrograms, setLoadingPrograms] = useState(false);
 
-    // Calculate age from birthdate
     const calculateAge = (birthDate: string): number => {
         const birth = dayjs(birthDate);
         const today = dayjs();
@@ -104,11 +118,14 @@ const VolunteerProfile: React.FC = () => {
         if (!joinDate) return 0;
 
         const start = dayjs(joinDate);
-        const end = lastActive ? dayjs(lastActive) : dayjs();
+        const end = lastActive && lastActive !== 'null' ? dayjs(lastActive) : dayjs(); // Use current date if no lastActive
 
-        const months = end.diff(start, 'month');
-        return Math.max(months, 0);
+        const months = end.diff(start, "month");
+
+        // Return at least 1 month if they've joined (avoid division by 0)
+        return Math.max(months, 1);
     };
+
 
     // Geocode address to get accurate coordinates
     const geocodeAddress = async (address: string) => {
@@ -141,6 +158,20 @@ const VolunteerProfile: React.FC = () => {
             return null;
         } finally {
             setIsGeocoding(false);
+        }
+    };
+
+    const fetchProgramsHistory = async (volunteerId: number) => {
+        setLoadingPrograms(true);
+        try {
+            const response = await API.get(
+                `/volunteer/volunteer/${volunteerId}/programs_history`
+            );
+            setProgramsHistory(response.data.programs);
+        } catch (error) {
+            console.error("Error fetching programs history:", error);
+        } finally {
+            setLoadingPrograms(false);
         }
     };
 
@@ -250,10 +281,9 @@ const VolunteerProfile: React.FC = () => {
                         volunteerId: volunteerInfo?.volunteer_id || 'N/A',
                         statistics: {
                             totalPrograms: Number(
-                                volunteerInfo?.events_joined ??
-                                volunteerInfo?.active_events_joined ??
-                                volunteerInfo?.tasks_joined ??
-                                volunteerInfo?.active_tasks_joined ?? 0
+                                (volunteerInfo?.eventsjoined ?? 0) +
+                                (volunteerInfo?.tasksjoined ?? 0) +
+                                (volunteerInfo?.distributionprogramsjoined ?? 0)
                             ),
                             monthlyActivity: calculateMonthlyActivity(
                                 volunteerInfo?.created_at ?? volunteerInfo?.join_date,
@@ -359,6 +389,87 @@ const VolunteerProfile: React.FC = () => {
         loadVolunteerProfile();
     }, []);
 
+    useEffect(() => {
+        if (volunteerData) {
+            fetchProgramsHistory(Number(volunteerData.volunteerId));
+        }
+    }, [volunteerData]);
+
+    const programColumns: ColumnsType<ProgramHistory> = [
+        {
+            title: 'Type',
+            dataIndex: 'programtype',
+            key: 'programtype',
+            width: 100,
+            render: (type: string) => (
+                <Tag color={type === 'Task' ? 'blue' : type === 'Distribution' ? 'green' : 'orange'}>
+                    {type}
+                </Tag>
+            ),
+            filters: [
+                { text: 'Task', value: 'Task' },
+                { text: 'Distribution', value: 'Distribution' },
+            ],
+            onFilter: (value, record) => record.programtype === value,
+        },
+        {
+            title: 'Program Name',
+            dataIndex: 'programname',
+            key: 'programname',
+            width: 120,
+            render: (text: string, record: ProgramHistory) => (
+                <div>
+                    <strong>{text}</strong>
+                    {record.eventname && (
+                        <div style={{ fontSize: '12px', color: '#888' }}>
+                            Event: {record.eventname}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            title: 'Role',
+            dataIndex: 'role',
+            key: 'role',
+            width: 120,
+            render: (role: string) => {
+                // Capitalize first letter of each word
+                return role
+                    .split(' ')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                    .join(' ');
+            },
+        },
+        {
+            title: 'Location',
+            dataIndex: 'location',
+            key: 'location',
+            width: 200,
+            ellipsis: true,
+        },
+        {
+            title: 'Start Date',
+            dataIndex: 'startdate',  // ✅ CHANGED
+            key: 'startdate',         // ✅ CHANGED
+            width: 130,
+            render: (date: string) => date ? dayjs(date).format('MMM DD, YYYY') : 'N/A',
+            sorter: (a, b) => {
+                const dateA = a.startdate ? new Date(a.startdate).getTime() : 0;
+                const dateB = b.startdate ? new Date(b.startdate).getTime() : 0;
+                return dateA - dateB;
+            },
+        },
+        {
+            title: 'End Date',
+            dataIndex: 'enddate',  // ✅ CHANGED
+            key: 'enddate',         // ✅ CHANGED
+            width: 130,
+            render: (date: string) => date ? dayjs(date).format('MMM DD, YYYY') : 'N/A',
+        },
+
+    ];
+
     const renderTabContent = (): React.ReactNode => {
         if (!volunteerData) return <p>No data available</p>;
 
@@ -367,28 +478,67 @@ const VolunteerProfile: React.FC = () => {
                 if (!isIndividual) return null;
                 return (
                     <div className="info-content">
-                        <div className="info-grid">
-                            <div className="info-item">
-                                <div className="info-label">Age</div>
-                                <div className="info-value">{volunteerData.personalInfo?.age}</div>
+                        {volunteerData.personalInfo ? (
+                            <div className="personal-info-list">
+                                {volunteerData.personalInfo.age && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+
+                                            <div className="info-details">
+                                                <div className="info-label-text">Age</div>
+                                                <div className="info-value-text">{volunteerData.personalInfo.age} years old</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.personalInfo.dateOfBirth && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+
+                                            <div className="info-details">
+                                                <div className="info-label-text">Date of Birth</div>
+                                                <div className="info-value-text">{volunteerData.personalInfo.dateOfBirth}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.personalInfo.phoneNumber && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+
+                                            <div className="info-details">
+                                                <div className="info-label-text">Phone Number</div>
+                                                <div className="info-value-text">{volunteerData.personalInfo.phoneNumber}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.personalInfo.address && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+
+                                            <div className="info-details">
+                                                <div className="info-label-text">Address</div>
+                                                <div className="info-value-text">{volunteerData.personalInfo.address}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.personalInfo.gender && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+
+                                            <div className="info-details">
+                                                <div className="info-label-text">Gender</div>
+                                                <div className="info-value-text">{volunteerData.personalInfo.gender}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                            <div className="info-item">
-                                <div className="info-label">Date of Birth</div>
-                                <div className="info-value">{volunteerData.personalInfo?.dateOfBirth}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Phone Number</div>
-                                <div className="info-value">{volunteerData.personalInfo?.phoneNumber}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Address</div>
-                                <div className="info-value">{volunteerData.personalInfo?.address}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Gender</div>
-                                <div className="info-value">{volunteerData.personalInfo?.gender}</div>
-                            </div>
-                        </div>
+                        ) : (
+                            <p>No personal information available.</p>
+                        )}
                     </div>
                 );
 
@@ -396,54 +546,119 @@ const VolunteerProfile: React.FC = () => {
                 if (isIndividual) return null;
                 return (
                     <div className="info-content">
-                        <div className="info-grid">
-                            <div className="info-item">
-                                <div className="info-label">Organization Name</div>
-                                <div className="info-value">{volunteerData.organizationInfo?.organizationName}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Organization Type</div>
-                                <div className="info-value">{volunteerData.organizationInfo?.organizationType}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Phone Number</div>
-                                <div className="info-value">{volunteerData.organizationInfo?.phoneNumber}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Email</div>
-                                <div className="info-value">{volunteerData.organizationInfo?.email}</div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-label">Address</div>
-                                <div className="info-value">{volunteerData.organizationInfo?.address}</div>
-                            </div>
-                            {volunteerData.organizationInfo?.website && (
-                                <div className="info-item">
-                                    <div className="info-label">Website</div>
-                                    <div className="info-value">
-                                        <span className="info-icon">🌐</span>
-                                        <a href={volunteerData.organizationInfo.website} target="_blank" rel="noopener noreferrer">
-                                            {volunteerData.organizationInfo.website}
-                                        </a>
+                        {volunteerData.organizationInfo ? (
+                            <div className="personal-info-list">
+                                {volunteerData.organizationInfo.organizationName && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">🏢</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Organization Name</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.organizationName}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                            {volunteerData.organizationInfo?.establishedDate && (
-                                <div className="info-item">
-                                    <div className="info-label">Established Date</div>
-                                    <div className="info-value">
-                                        <span className="info-icon">📅</span> {volunteerData.organizationInfo.establishedDate}
+                                )}
+                                {volunteerData.organizationInfo.organizationType && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">🏷️</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Organization Type</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.organizationType}</div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                                {volunteerData.organizationInfo.phoneNumber && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">📱</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Phone Number</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.phoneNumber}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.organizationInfo.email && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">📧</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Email</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.email}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.organizationInfo.address && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">📍</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Address</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.address}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.organizationInfo.website && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">🌐</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Website</div>
+                                                <div className="info-value-text">
+                                                    <a
+                                                        href={volunteerData.organizationInfo.website}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="website-link"
+                                                    >
+                                                        {volunteerData.organizationInfo.website}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {volunteerData.organizationInfo.establishedDate && (
+                                    <div className="personal-info-item">
+                                        <div className="personal-info-info">
+                                            <span className="info-icon">📆</span>
+                                            <div className="info-details">
+                                                <div className="info-label-text">Established Date</div>
+                                                <div className="info-value-text">{volunteerData.organizationInfo.establishedDate}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p>No organization information available.</p>
+                        )}
                     </div>
                 );
 
             case 'description':
                 return (
                     <div className="info-content">
-                        <p>{volunteerData.description || 'No description available for this volunteer.'}</p>
+                        {volunteerData.description && volunteerData.description.trim() !== '' ? (
+                            <div className="description-container">
+                                <div className="description-item">
+                                    <div className="description-info">
+
+                                        <div className="description-details">
+                                            <div className="description-label">About {isIndividual ? 'Me' : 'Us'}</div>
+                                            <div className="description-text">{volunteerData.description}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <p>No description available for this volunteer.</p>
+                        )}
                     </div>
                 );
 
@@ -451,11 +666,22 @@ const VolunteerProfile: React.FC = () => {
                 return (
                     <div className="info-content">
                         {volunteerData.skillsAndInterest && volunteerData.skillsAndInterest.length > 0 ? (
-                            <ul>
+                            <div className="skills-list">
                                 {volunteerData.skillsAndInterest.map((skill, index) => (
-                                    <li key={index}>{skill}</li>
+                                    <div key={index} className="skill-item">
+                                        <div className="skill-info">
+
+                                            <div className="skill-details">
+                                                <div className="skill-name">{skill}</div>
+                                                <div className="skill-category">
+                                                    {isIndividual ? 'Skill & Interest' : 'Service'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         ) : (
                             <p>No {isIndividual ? 'skills and interests' : 'services'} listed for this volunteer.</p>
                         )}
@@ -465,7 +691,64 @@ const VolunteerProfile: React.FC = () => {
             case 'availability':
                 return (
                     <div className="info-content">
-                        <p>{volunteerData.availability || 'Availability schedule not set.'}</p>
+                        {volunteerData.availability && volunteerData.availability.trim() !== '' ? (
+                            <div className="availability-list">
+                                {(() => {
+
+                                    type AvailabilitySchedule = { day?: string; time?: string };
+                                    let schedules: AvailabilitySchedule[] = [];
+
+                                    try {
+                                        // Try parsing as JSON first
+                                        const parsed = JSON.parse(volunteerData.availability);
+
+                                        if (Array.isArray(parsed)) {
+                                            // If array of strings like ["Monday: 9am-5pm", ...]
+                                            if (parsed.length > 0 && typeof parsed[0] === 'string') {
+                                                schedules = (parsed as string[]).map(part => {
+                                                    const [day, time] = part.split(':').map(s => s.trim());
+                                                    return { day, time };
+                                                });
+                                            } else {
+                                                // Assume array of objects already in shape
+                                                schedules = parsed as AvailabilitySchedule[];
+                                            }
+                                        } else if (typeof parsed === 'string') {
+                                            const parts = parsed.split(',').map((s: string) => s.trim());
+                                            schedules = parts.map(part => {
+                                                const [day, time] = part.split(':').map(s => s.trim());
+                                                return { day, time };
+                                            });
+                                        } else if (typeof parsed === 'object' && parsed !== null) {
+                                            // Single object
+                                            schedules = [parsed as AvailabilitySchedule];
+                                        }
+                                    } catch {
+                                        // If not JSON, parse as comma-separated string
+                                        const parts = volunteerData.availability.split(',').map(s => s.trim());
+                                        schedules = parts.map(part => {
+                                            const [day, time] = part.split(':').map(s => s.trim());
+                                            return { day, time };
+                                        });
+                                    }
+
+                                    return schedules.map((schedule: AvailabilitySchedule, index: number) => (
+                                        <div key={index} className="availability-item">
+                                            <div className="availability-info">
+
+                                                <div className="schedule-details">
+                                                    <div className="schedule-day">{schedule.day || `Day ${index + 1}`}</div>
+                                                    <div className="schedule-time">{schedule.time || ''}</div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        ) : (
+                            <p>Availability schedule not set.</p>
+                        )}
                     </div>
                 );
 
@@ -552,6 +835,8 @@ const VolunteerProfile: React.FC = () => {
             </div>
         );
     }
+
+
 
     return (
         <div className="volunteer-container">
@@ -653,7 +938,7 @@ const VolunteerProfile: React.FC = () => {
                                             className={`sidebar-item ${activeTab === 'skillsAndInterest' ? 'active' : ''}`}
                                             onClick={() => handleTabClick('skillsAndInterest')}
                                         >
-                                            Skills and Interest
+                                            Skills
                                         </div>
                                     )}
                                     <div
@@ -683,32 +968,35 @@ const VolunteerProfile: React.FC = () => {
                             </h2>
                             <div className="statistics-grid">
                                 <div className="stat-card">
-                                    <div className="stat-icon">📊</div>
+
                                     <div className="stat-content">
                                         <p className="stat-label">Total Programs Joined</p>
-                                        <p className="stat-value">{volunteerData.statistics.totalPrograms}</p>
+                                        <p className="stat-value">{programsHistory.length}</p>
                                     </div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-icon">📅</div>
                                     <div className="stat-content">
                                         <p className="stat-label">Months Active</p>
-                                        <p className="stat-value">{volunteerData.statistics.monthlyActivity}</p>
-                                    </div>
-                                </div>
-                                <div className="stat-card">
-                                    <div className="stat-icon">📈</div>
-                                    <div className="stat-content">
-                                        <p className="stat-label">Average Programs/Month</p>
                                         <p className="stat-value">
-                                            {volunteerData.statistics.monthlyActivity > 0
-                                                ? (volunteerData.statistics.totalPrograms / volunteerData.statistics.monthlyActivity).toFixed(1)
-                                                : '0'}
+                                            {volunteerData.statistics.monthlyActivity}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-icon">🎯</div>
+                                    <div className="stat-content">
+                                        <p className="stat-label">Average Programs/Month</p>
+                                        <p className="stat-value">
+                                            {volunteerData.statistics.monthlyActivity > 0
+                                                ? (
+                                                    programsHistory.length / // ✅ USE programsHistory.length instead
+                                                    volunteerData.statistics.monthlyActivity
+                                                ).toFixed(1)
+                                                : "0.0"}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="stat-card">
+
                                     <div className="stat-content">
                                         <p className="stat-label">Join Date</p>
                                         <p className="stat-value">
@@ -719,6 +1007,36 @@ const VolunteerProfile: React.FC = () => {
                             </div>
                         </div>
                     )}
+                    <div className="programs-history-section" style={{ marginTop: '24px' }}>
+                        <Collapse defaultActiveKey={['1']}>
+                            <Collapse.Panel
+                                header={
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '16px', fontWeight: 600 }}>
+                                            Programs History
+                                        </span>
+                                        <Tag color="blue">{programsHistory.length} Total Programs</Tag>
+                                    </div>
+                                }
+                                key="1"
+                            >
+                                <Spin spinning={loadingPrograms}>
+                                    <Table
+                                        dataSource={programsHistory}
+                                        columns={programColumns}
+                                        pagination={{
+                                            pageSize: 10,
+                                            showSizeChanger: true,
+                                            showTotal: (total) => `Total ${total} programs`,
+                                        }}
+                                        rowKey={(record, index) => `program-${index}`}
+                                        scroll={{ x: 1000 }}
+                                    />
+                                </Spin>
+                            </Collapse.Panel>
+                        </Collapse>
+                    </div>
+
                 </div>
             </div>
         </div>

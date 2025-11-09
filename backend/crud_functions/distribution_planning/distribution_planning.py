@@ -651,10 +651,10 @@ class DistributionAndPlanningCRUD:
         return (
             db.query(func.count(DistributionRoute.route_id))
             .filter(
-                
+
 
                     DistributionRoute.status == "In Transit"
-                
+
             )
             .scalar()
         )

@@ -14,8 +14,6 @@ type UserRoleContextType = {
 };
 
 const ROLE_PRECEDENCE: Record<string, number> = {
-  volunteer: 3,
-  donor: 3,
   generic: 10,
   user: 10,
 };

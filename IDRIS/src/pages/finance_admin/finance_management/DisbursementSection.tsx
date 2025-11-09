@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { getDisbursements, updateDisbursement, getDisbursement } from "../../../API_Handler/finance_disbursement_handler";
+import {
+  getDisbursements,
+  updateDisbursement,
+  getDisbursement,
+} from "../../../API_Handler/finance_disbursement_handler";
 import { Disbursement as DisbursementType, DisbursementItem } from "./types";
 import { getAttachmentSrc, toDateInputValue } from "./helpers";
 
@@ -20,7 +24,9 @@ interface FormState {
 }
 
 const StatusBadge = ({ status }: { status: string }) => (
-  <span className={`status-badge ${status.toLowerCase()}`}>{status.toUpperCase()}</span>
+  <span className={`status-badge ${status.toLowerCase()}`}>
+    {status.toUpperCase()}
+  </span>
 );
 
 const DisbursementSection: React.FC = () => {
@@ -50,7 +56,6 @@ const DisbursementSection: React.FC = () => {
     fetchDisbursements();
   }, []);
 
-
   const handleDisburseClick = (idx: number) => {
     setSelectedIdx(idx);
     const disbursement = requests[idx];
@@ -61,11 +66,12 @@ const DisbursementSection: React.FC = () => {
         origin_name: disbursement.origin_name || "",
         date_updated: disbursement.date_updated || "",
         budgetSource: disbursement.budgetSource || "",
-        items: disbursement.items.map(item => ({
+        items: disbursement.items.map((item) => ({
           ...item,
-          unit_cost: typeof item.unit_cost === 'number'
-            ? item.unit_cost
-            : parseFloat(item.unit_cost),
+          unit_cost:
+            typeof item.unit_cost === "number"
+              ? item.unit_cost
+              : parseFloat(item.unit_cost),
         })),
         remarks: disbursement.remarks || "",
         attachment: disbursement.attachment,
@@ -75,8 +81,13 @@ const DisbursementSection: React.FC = () => {
       setForm({
         origin_name: disbursement.origin_name,
         date_updated: "",
-        budgetSource: disbursement.origin_name,
-        items: disbursement.items.map(i => ({ ...i, unit_cost: 0, vendor: "" })),
+        budgetSource:
+          disbursement.budgetSource ?? "Government Grants and Funds",
+        items: disbursement.items.map((i) => ({
+          ...i,
+          unit_cost: 0,
+          vendor: "",
+        })),
         remarks: "",
         attachment: undefined,
       });
@@ -85,11 +96,15 @@ const DisbursementSection: React.FC = () => {
     setShowModal(true);
   };
 
-  const onItemChange = <K extends keyof DisbursementItem>(idx: number, field: K, value: DisbursementItem[K]) => {
-    setForm(prev => ({
+  const onItemChange = <K extends keyof DisbursementItem>(
+    idx: number,
+    field: K,
+    value: DisbursementItem[K],
+  ) => {
+    setForm((prev) => ({
       ...prev,
       items: prev.items.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
+        i === idx ? { ...item, [field]: value } : item,
       ),
     }));
   };
@@ -109,7 +124,7 @@ const DisbursementSection: React.FC = () => {
     formData.append("budgetSource", form.budgetSource);
 
     // Serialize the items array to a JSON string
-    const itemsData = form.items.map(item => ({
+    const itemsData = form.items.map((item) => ({
       item_id: item.item_id,
       unit_cost: item.unit_cost,
       vendor: item.vendor,
@@ -158,7 +173,9 @@ const DisbursementSection: React.FC = () => {
                     onClick={() => handleDisburseClick(idx)}
                     disabled={row.status === "approved"}
                   >
-                    {row.status.toLocaleLowerCase() === "approved" ? "View Attachment" : "Disburse"}
+                    {row.status.toLocaleLowerCase() === "approved"
+                      ? "View Attachment"
+                      : "Disburse"}
                   </button>
                 </td>
               </tr>
@@ -175,18 +192,26 @@ const DisbursementSection: React.FC = () => {
               </button>
             </div>
             <div className="modal-content compact-content">
-              <h3>{isReadOnly ? "View Disbursement" : "Disburse Request"} #{requests[selectedIdx].disbursement_id}</h3>
+              <h3>
+                {isReadOnly ? "View Disbursement" : "Disburse Request"} #
+                {requests[selectedIdx].disbursement_id}
+              </h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <label>Request Title</label>
-                  <input disabled value={requests[selectedIdx].disbursement_name} />
+                  <input
+                    disabled
+                    value={requests[selectedIdx].disbursement_name}
+                  />
                 </div>
                 <div className="form-row">
                   <label>Date of Payment</label>
                   <input
                     type="date"
                     value={toDateInputValue(form.date_updated)}
-                    onChange={e => setForm(f => ({ ...f, date_updated: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, date_updated: e.target.value }))
+                    }
                     required
                     disabled={isReadOnly}
                   />
@@ -198,13 +223,17 @@ const DisbursementSection: React.FC = () => {
                 <div className="form-row">
                   <label>Budget Source</label>
                   <select
-                    value={form.origin_name}
-                    onChange={e => setForm(f => ({ ...f, origin_name: e.target.value }))}
+                    value={form.budgetSource}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, budgetSource: e.target.value }))
+                    }
                     required
                     disabled={isReadOnly}
                   >
-                    {BUDGET_SOURCES.map(bs => (
-                      <option key={bs} value={bs}>{bs}</option>
+                    {BUDGET_SOURCES.map((bs) => (
+                      <option key={bs} value={bs}>
+                        {bs}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -231,7 +260,13 @@ const DisbursementSection: React.FC = () => {
                             type="number"
                             value={item.unit_cost}
                             min="0"
-                            onChange={e => onItemChange(idx, "unit_cost", Number(e.target.value))}
+                            onChange={(e) =>
+                              onItemChange(
+                                idx,
+                                "unit_cost",
+                                Number(e.target.value),
+                              )
+                            }
                             required
                             disabled={isReadOnly}
                           />
@@ -243,7 +278,9 @@ const DisbursementSection: React.FC = () => {
                           <input
                             type="text"
                             value={item.vendor}
-                            onChange={e => onItemChange(idx, "vendor", e.target.value)}
+                            onChange={(e) =>
+                              onItemChange(idx, "vendor", e.target.value)
+                            }
                             required
                             disabled={isReadOnly}
                           />
@@ -254,30 +291,46 @@ const DisbursementSection: React.FC = () => {
                 </table>
                 <div className="form-row">
                   <label>Attachments (Receipts)</label>
-                  {!isReadOnly &&
+                  {!isReadOnly && (
                     <input
                       required={!isReadOnly}
                       type="file"
                       accept="image/*,application/pdf"
-                      onChange={e =>
-                        e.target.files && setForm(f => ({ ...f, attachment: e.target.files![0] }))
+                      onChange={(e) =>
+                        e.target.files &&
+                        setForm((f) => ({
+                          ...f,
+                          attachment: e.target.files![0],
+                        }))
                       }
                       disabled={isReadOnly}
                     />
-                  }
-                  {form.attachment && typeof form.attachment === 'object' ? (
+                  )}
+                  {form.attachment && typeof form.attachment === "object" ? (
                     <span>{form.attachment.name}</span>
-                  ) : form.attachment && typeof form.attachment === 'string' ? (
+                  ) : form.attachment && typeof form.attachment === "string" ? (
                     isReadOnly ? (
                       <div>
-                        {form.attachment.endsWith('.pdf') ? (
-                          <iframe src={getAttachmentSrc(form.attachment)} width="100%" height="500px" />
+                        {form.attachment.endsWith(".pdf") ? (
+                          <iframe
+                            src={getAttachmentSrc(form.attachment)}
+                            width="100%"
+                            height="500px"
+                          />
                         ) : (
-                          <img src={getAttachmentSrc(form.attachment)} alt="Attachment" style={{ maxWidth: '100%' }} />
+                          <img
+                            src={getAttachmentSrc(form.attachment)}
+                            alt="Attachment"
+                            style={{ maxWidth: "100%" }}
+                          />
                         )}
                       </div>
                     ) : (
-                      <a href={getAttachmentSrc(form.attachment)} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={getAttachmentSrc(form.attachment)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         View Attachment
                       </a>
                     )
@@ -287,18 +340,34 @@ const DisbursementSection: React.FC = () => {
                   <label>Remarks</label>
                   <textarea
                     value={form.remarks}
-                    onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, remarks: e.target.value }))
+                    }
                     rows={2}
                     disabled={isReadOnly}
                   />
                 </div>
                 <div className="modal-actions">
                   {isReadOnly ? (
-                    <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Close</button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Close
+                    </button>
                   ) : (
                     <>
-                      <button type="submit" className="primary-btn">Disburse</button>
-                      <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Cancel</button>
+                      <button type="submit" className="primary-btn">
+                        Disburse
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
                     </>
                   )}
                 </div>

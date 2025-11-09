@@ -332,7 +332,7 @@ def create_disbursement_with_items(db: Session, request_data: dict, items: List[
     disbursement = Disbursement(
         disbursement_id=disbursement_id,
         disbursement_name=request_data.get("request_title", "No title"),
-        origin_name=request_data.get("procurement", "No origin"),
+        origin_name="Procurement",
         origin_id=request_data["request_id"],
     )
 

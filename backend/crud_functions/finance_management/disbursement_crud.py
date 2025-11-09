@@ -42,6 +42,7 @@ def get_disbursement(db: Session, disbursement_id: str):
 
 def add_distribution_route(request_id: int, db:Session):
     request = db.query(ProcurementRequest).filter(ProcurementRequest.request_id == request_id).first()
+    request.status = "Approved"
     if not request:
         return
     delivery_dt = datetime.combine(
@@ -84,9 +85,10 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
                 buffer.write(attachment.file.read())
             
             db_disbursement.attachment = file_path
-  
 
-        if disbursement_update.status is not None and disbursement_update.status == DisbursementStatus.APPROVED:
+        print(disbursement_update.status)
+        if disbursement_update.status is not None and disbursement_update.status.lower() == "approved":
+            print("add please")
             add_distribution_route(db_disbursement.origin_id, db)
             
         if disbursement_update.status is not None:

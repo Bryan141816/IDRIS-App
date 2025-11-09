@@ -37,17 +37,46 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
 
   useEffect(() => {
     if (selectedItem?.request_type === "relief") {
-      const mapped = selectedItem?.items.map((item) => ({
-        item_id: item.item_id,
-        name: item.name,
-        category: item.category,
-        quantity: item.quantity,
-        unit: item.unit,
-        assigned_id: -1,
-        inventory_name: "",
-        warehouse_name: "",
-        quantity_assigned: -1,
-      }));
+      const mapped = selectedItem.items.map((item) => {
+        if (selectedItem.route) {
+          const distributed = selectedItem.route.distributed_items.find(
+            (d: any) => d.item_id === item.item_id,
+          );
+
+          return {
+            item_id: item.item_id,
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            unit: item.unit || "",
+
+            // If distributed item exists, get the values; else default
+            assigned_id: distributed ? distributed.assigned_storage : -1,
+            inventory_name: distributed
+              ? distributed.assigned_storage_rec.inventory_item.item_name
+              : "",
+            warehouse_name: distributed
+              ? distributed.assigned_storage_rec.warehouse.zone_name
+              : "",
+            quantity_assigned: distributed ? distributed.quantity : -1,
+          };
+        } else {
+          return {
+            item_id: item.item_id,
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            unit: item.unit || "",
+
+            // If distributed item exists, get the values; else default
+            assigned_id: -1,
+            inventory_name: "",
+            warehouse_name: "",
+            quantity_assigned: -1,
+          };
+        }
+      });
+
       setRequestList(mapped);
     }
   }, []);
@@ -171,6 +200,12 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
                     requestItems={requestList}
                     setRequestListState={setRequestList}
                     status={selectedItem.status}
+                    type={mode}
+                    showInventory={
+                      selectedItem.route
+                        ? selectedItem.route.distributed_items.length > 0
+                        : false
+                    }
                   ></RequestItemsHandler>
                 ) : (
                   <table style={{ width: "100%" }}>
@@ -229,12 +264,16 @@ interface RequestItemsHandlerProp {
     React.SetStateAction<(requestItemsType & StorageInfo)[]>
   >;
   status: string;
+  type: string;
+  showInventory?: boolean;
 }
 
 export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
   requestItems,
   status,
   setRequestListState,
+  type,
+  showInventory = true,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<
     (requestItemsType & StorageInfo) | null
@@ -271,6 +310,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
       ),
     );
   };
+  console.log(type);
   const clearInventory = (index: number) => {
     setRequestListState((prev) =>
       prev.map((item, i) =>
@@ -316,7 +356,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
               <th style={{ textAlign: "start", padding: "10px" }}>
                 Quantity Needed
               </th>
-              {status.toLowerCase() !== "pending approval" && (
+              {status.toLowerCase() !== "pending approval" && showInventory && (
                 <>
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Inventory Name
@@ -324,12 +364,16 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Quantity
                   </th>
-                  <th style={{ textAlign: "start", padding: "10px" }}>
-                    Warehouse
-                  </th>
+                  {type !== "view" && (
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Warehouse
+                    </th>
+                  )}
                 </>
               )}
-              <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+              {(type === "review" || type === "picking") && (
+                <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -339,56 +383,58 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <td style={{ padding: "10px" }}>{item.name}</td>
                   <td style={{ padding: "10px" }}>{item.category}</td>
                   <td style={{ padding: "10px" }}>{item.quantity}</td>
-                  {status.toLowerCase() !== "pending approval" && (
-                    <>
-                      <td style={{ padding: "10px" }}>{item.inventory_name}</td>
-                      <td style={{ padding: "10px" }}>
-                        {item.quantity_assigned !== -1
-                          ? item.quantity_assigned
-                          : ""}
-                      </td>
-                      <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
-                    </>
+                  {status.toLowerCase() !== "pending approval" &&
+                    showInventory && (
+                      <>
+                        <td style={{ padding: "10px" }}>
+                          {item.inventory_name}
+                        </td>
+                        <td style={{ padding: "10px" }}>
+                          {item.quantity_assigned !== -1
+                            ? item.quantity_assigned
+                            : ""}
+                        </td>
+                        {type !== "view" && (
+                          <td style={{ padding: "10px" }}>
+                            {item.warehouse_name}
+                          </td>
+                        )}
+                      </>
+                    )}
+                  {type !== "view" && (
+                    <td style={{ padding: "10px", width: "fit-content" }}>
+                      {status.toLowerCase() === "pending approval" && (
+                        <>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={() => openInventory(item, index)}
+                          >
+                            Check Availability
+                          </button>
+                        </>
+                      )}
+                      {status.toLowerCase() ===
+                        "waiting for additional action" && (
+                        <>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={() => openInventory(item, index)}
+                          >
+                            Pick From Inventory
+                          </button>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={() => clearInventory(index)}
+                          >
+                            Clear Selected
+                          </button>
+                        </>
+                      )}
+                    </td>
                   )}
-                  <td style={{ padding: "10px", width: "fit-content" }}>
-                    {status.toLowerCase() === "pending approval" && (
-                      <>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => openInventory(item, index)}
-                        >
-                          Check Availability
-                        </button>
-                      </>
-                    )}
-                    {status.toLowerCase() ===
-                      "waiting for additional action" && (
-                      <>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => openInventory(item, index)}
-                        >
-                          Pick From Inventory
-                        </button>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => clearInventory(index)}
-                        >
-                          Clear Selected
-                        </button>
-                      </>
-                    )}
-                    {/* <button */}
-                    {/*   className="action-btn" */}
-                    {/*   style={{ width: "fit-content" }} */}
-                    {/*   onClick={() => clearInventory(index)} */}
-                    {/* > */}
-                    {/*   Clear Selected */}
-                    {/* </button> */}
-                  </td>
                 </tr>
               ))}
           </tbody>

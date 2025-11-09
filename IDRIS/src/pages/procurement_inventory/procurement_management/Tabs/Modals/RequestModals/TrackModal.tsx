@@ -2,6 +2,19 @@ import { ModalOverlay } from "../ProcurementModalsDefault";
 import { ProcurementRequest } from "../ProcurementDefaults";
 import React, { useState } from "react";
 import { Stepper } from "react-form-stepper";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faListUl,
+  faExclamationTriangle,
+  faUsers,
+  faChevronDown,
+  faChevronUp,
+  faMapMarkerAlt,
+  faClock,
+  faFileAlt,
+  faPrint,
+  faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 interface TrackDeliveryProp {
   onClose: () => void;
   selectedData: ProcurementRequest;
@@ -36,27 +49,30 @@ export const TrackDelivery: React.FC<TrackDeliveryProp> = ({
       case "completed":
         step = 4;
         break;
+      case "cancelled":
+        step = 4;
+        break;
     }
     return step;
   }
+  const isCancelled = selectedData.route.status === "Cancelled";
   return (
     <ModalOverlay onClose={onClose} modalType="view">
       <div className="modal-content">
         <h3>Track Delivery</h3>
-
         <Stepper
           steps={[
             { label: "Route Created" },
-            { label: "Awaiting Volunteer Approval" },
+            { label: "On Hold - Awaiting Volunteers" },
             { label: "Ready for Transit" },
             { label: "In Transit" },
-            { label: "Completed" },
+            { label: isCancelled ? "Cancelled" : "Completed" },
           ]}
           activeStep={getProgress(selectedData.route.status)}
           styleConfig={{
-            activeBgColor: "#007bff",
+            activeBgColor: isCancelled ? "#dc3545" : "#007bff",
             activeTextColor: "#ffffff",
-            completedBgColor: "#28a745",
+            completedBgColor: isCancelled ? "#dc3545" : "#28a745",
             completedTextColor: "#ffffff",
             inactiveBgColor: "#e0e0e0",
             inactiveTextColor: "#888888",
@@ -67,13 +83,13 @@ export const TrackDelivery: React.FC<TrackDeliveryProp> = ({
             fontWeight: "500",
           }}
           connectorStyleConfig={{
-            activeColor: "#007bff",
-            completedColor: "#28a745",
+            activeColor: isCancelled ? "#dc3545" : "#007bff",
+            completedColor: isCancelled ? "#dc3545" : "#28a745",
             disabledColor: "#ccc",
             size: 5,
             style: "solid",
           }}
-        />
+        />{" "}
         <div
           className="form-group"
           style={{
@@ -112,14 +128,24 @@ export const TrackDelivery: React.FC<TrackDeliveryProp> = ({
                 </span>
                 <span
                   style={{
-                    color: index === 0 ? "#28a745" : "gray",
+                    color:
+                      index === 0
+                        ? isCancelled
+                          ? "#dc3545"
+                          : "#28a745"
+                        : "gray",
                   }}
                 >
                   ●
                 </span>
                 <span
                   style={{
-                    color: index === 0 ? "#28a745" : "gray",
+                    color:
+                      index === 0
+                        ? isCancelled
+                          ? "#dc3545"
+                          : "#28a745"
+                        : "gray",
                   }}
                 >
                   {item.log_message}

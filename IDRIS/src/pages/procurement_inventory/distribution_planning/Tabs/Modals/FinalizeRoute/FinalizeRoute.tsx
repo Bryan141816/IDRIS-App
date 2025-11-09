@@ -195,6 +195,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
                   requestItems={requestList}
                   setRequestListState={setRequestList}
                   status={selectedRoute.status}
+                  type="picking"
                 ></RequestItemsHandler>
               </div>
             )}

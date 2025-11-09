@@ -1179,8 +1179,6 @@ export default function IDRISDashboard() {
                                             top3ActiveVolunteers.map((v) => {
                                                 const name = fullName(v) || "Unnamed Volunteer";
                                                 const programs = Number(v.events_joined ?? 0);
-
-                                                // ✅ CHANGE: Get profile_image directly from volunteer object
                                                 const picUrl = v.profile_image ? toAbsoluteFileUrl(v.profile_image) : null;
 
                                                 return (

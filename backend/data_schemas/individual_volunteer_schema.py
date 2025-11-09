@@ -72,13 +72,13 @@ class IndividualVolunteerRead(IndividualVolunteerBase):
     created_at: datetime
     certificates: List[VolunteerCertificateRead] = []
     availability_status: Optional[VolunteerStatus] = None
-
-    # computed counters from column_property
     tasks_joined: int = 0
     active_tasks_joined: int = 0
     events_joined: int = 0
     active_events_joined: int = 0
     profile_image: Optional[str] = None
+    distributionprogramsjoined: Optional[int] = 0
+    activedistributionprograms: Optional[int] = 0
     class Config:
         orm_mode = True
         use_enum_values = True

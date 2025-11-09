@@ -33,7 +33,7 @@ export interface DisbursementItem {
 export interface Disbursement {
   disbursement_id: string;
   disbursement_name: string;
-  status: "pending" | "approved";
+  status: "pending" | "approved" | "disapproved";
   date_created: string;
   date_updated: string;
   origin_name: string;

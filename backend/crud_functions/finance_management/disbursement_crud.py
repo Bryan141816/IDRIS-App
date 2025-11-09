@@ -42,7 +42,8 @@ def get_disbursement(db: Session, disbursement_id: str):
 
 def add_distribution_route(request_id: int, db:Session):
     request = db.query(ProcurementRequest).filter(ProcurementRequest.request_id == request_id).first()
-    request.status = "Approved"
+    if not request:
+        return
     delivery_dt = datetime.combine(
                 request.date_needed, time(9, 0, tzinfo=timezone.utc)
             )
@@ -87,6 +88,7 @@ def update_disbursement(db: Session, disbursementId: str, disbursement_update: D
 
         if disbursement_update.status is not None and disbursement_update.status == DisbursementStatus.APPROVED:
             add_distribution_route(db_disbursement.origin_id, db)
+            
         if disbursement_update.status is not None:
             db_disbursement.status = disbursement_update.status.upper()
         

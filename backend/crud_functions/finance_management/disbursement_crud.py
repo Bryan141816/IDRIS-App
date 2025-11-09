@@ -42,9 +42,9 @@ def get_disbursement(db: Session, disbursement_id: str):
 
 def add_distribution_route(request_id: int, db:Session):
     request = db.query(ProcurementRequest).filter(ProcurementRequest.request_id == request_id).first()
-    request.status = "Approved"
     if not request:
         return
+    request.status = "Approved"
     delivery_dt = datetime.combine(
                 request.date_needed, time(9, 0, tzinfo=timezone.utc)
             )

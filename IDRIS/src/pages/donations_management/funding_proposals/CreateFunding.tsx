@@ -93,7 +93,7 @@ const CreateFunding: React.FC = () => {
           const notificationPayload = {
             title: "New Funding Proposal",
             message: `Hi, [donor_name]! A ${title} funding has been created, visit it by clicking this notification.`,
-            url_redirect: `/donations/funding_proposals/${response.data.funding_id}`,
+            url_redirect: `/donations_management/funding_donation?funding_id=${response.data.funding_id}`,
             donors: donorIds,
           };
 

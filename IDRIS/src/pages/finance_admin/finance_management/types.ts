@@ -21,6 +21,28 @@ export enum SpendCategory {
   INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs",
   DISBURSEMENT = "Disbursement",
 }
+export interface DisbursementItem {
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  unit: string;
+  unit_cost: number;
+  vendor: string;
+}
+
+export interface Disbursement {
+  disbursement_id: string;
+  disbursement_name: string;
+  status: "pending" | "approved";
+  date_created: string;
+  date_updated: string;
+  origin_name: string;
+  items: DisbursementItem[];
+  remarks?: string;
+  dateOfPayment?: string;
+  budgetSource?: string;
+  attachment?: string;
+}
 
 
 export enum TransactionType {

@@ -160,7 +160,7 @@ class DonationHistoryResponse(BaseModel):
     status: str   
     
     # Missing fields from your front-end and database model
-    proposal_id: Optional[str] = None 
+    proposal_id: Optional[str] = Field(None, alias='funding_id')
     donation_date: datetime
     donation_type: str
     next_donation_date: Optional[datetime] = None

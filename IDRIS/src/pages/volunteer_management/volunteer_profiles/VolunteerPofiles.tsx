@@ -988,7 +988,7 @@ const VolunteerProfile: React.FC = () => {
                                         <p className="stat-value">
                                             {volunteerData.statistics.monthlyActivity > 0
                                                 ? (
-                                                    programsHistory.length / // ✅ USE programsHistory.length instead
+                                                    programsHistory.length / 
                                                     volunteerData.statistics.monthlyActivity
                                                 ).toFixed(1)
                                                 : "0.0"}

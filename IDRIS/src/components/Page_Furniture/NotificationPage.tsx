@@ -2,6 +2,7 @@ import "../../pages/procurement_inventory/ProcurementInventory.scss";
 import { useNotifications } from "../../NotificationContext";
 import { API } from "../../API_Handler/Axio_API_Handler";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function formatTimeAgo(isoString: string) {
     const targetDate = new Date(isoString);
@@ -34,6 +35,7 @@ type NotificationType = {
 };
 
 const NotificationPage = () => {
+    const navigate = useNavigate();
     const { notifications, refreshNotifications } = useNotifications();
     const [respondingTo, setRespondingTo] = useState<number | null>(null);
 
@@ -106,7 +108,14 @@ const NotificationPage = () => {
         });
 
         if (notification_value.url_redirect) {
-            window.location.href = notification_value.url_redirect;
+            const url = new URL(notification_value.url_redirect, window.location.origin);
+            const fundingId = url.searchParams.get("funding_id");
+        
+            if (fundingId) {
+                navigate(url.pathname, { state: { funding_id: fundingId } });
+            } else {
+                window.location.href = notification_value.url_redirect;
+            }
         }
     };
 

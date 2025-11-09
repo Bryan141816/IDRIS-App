@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./DonationReport.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
 import TransparencyReportForm from "./TransparencyReportForm";
@@ -38,7 +38,7 @@ export default function DonationReport({
     contact: { phone: "(09) 000-000-0000", email: "sampleemail@gmail.com" },
   } as CompanyInfo,
   reportTitle = "Donation Report",
-  currency = "USD",
+  currency = "PHP",
 }: {
   donations?: Donation[];
   companyInfo?: CompanyInfo;
@@ -50,7 +50,7 @@ export default function DonationReport({
 
   // ------- Helpers -------
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(amount || 0);
+    new Intl.NumberFormat("en-PH", { style: "currency", currency }).format(amount || 0);
 
   const formatDate = (isoLike: string) =>
     new Date(isoLike).toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
@@ -134,6 +134,16 @@ export default function DonationReport({
     }
   };
 
+  useEffect(() => {
+    if (donations.length === 0) {
+      const now = new Date();
+      const m = now.getMonth() + 1;   // 1–12
+      const y = now.getFullYear();
+      const type = "cash";            // or "in-kind", your call
+      handleFormSubmit(m, y, type);
+    }
+  }, []);
+  
   // ------- Download as PDF (jsPDF + autotable) -------
   const urlToDataUrl = async (url: string): Promise<string | null> => {
     try {

@@ -4,6 +4,7 @@ import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { FinalizeRouteSetup } from "./Modals/FinalizeRoute/FinalizeRoute";
 import { EditRoute } from "./Modals/EditRoute/EditRoute";
 import { ViewRoute } from "./Modals/ViewRoute/ViewRoute";
+import { ReAssignVolunteers } from "./Modals/ReAssignVolunteers/ReAssignVolunteers";
 // Helpers
 export type ISODate = string;
 export type Maybe<T> = T | null;
@@ -194,6 +195,10 @@ export const RoutesAndPlanning = () => {
     useState<DistributionRouteDTO | null>(null);
   const [activeModal, setActiveModal] = useState("");
 
+  const [selectedMemeber, setSelectedMembers] = useState<{
+    team_id: number;
+    team_members: TeamMember[];
+  } | null>(null);
   const openModal = (
     type: string,
     route: DistributionRouteDTO | null = null,
@@ -216,10 +221,19 @@ export const RoutesAndPlanning = () => {
     };
     fetch();
   };
-
   useEffect(() => {
     fetchData();
   }, []);
+
+  const openReassignVolunteers = (
+    team_id: number,
+    team_members: TeamMember[],
+  ) => {
+    setSelectedMembers({ team_id: team_id, team_members: team_members });
+  };
+  const closeReassignVolunteers = () => {
+    setSelectedMembers(null);
+  };
   return (
     <>
       {activeModal === "finalize" && selectedRoute && (
@@ -242,6 +256,14 @@ export const RoutesAndPlanning = () => {
           onClose={closeModal}
           selectedRoute={selectedRoute}
         ></ViewRoute>
+      )}
+      {selectedMemeber && (
+        <ReAssignVolunteers
+          onClose={closeReassignVolunteers}
+          refreshData={fetchData}
+          team_members={selectedMemeber.team_members}
+          team_id={selectedMemeber.team_id}
+        ></ReAssignVolunteers>
       )}
       <div className="routes-content">
         <div className="section-header">
@@ -297,6 +319,21 @@ export const RoutesAndPlanning = () => {
                       onClick={() => openModal("update", route)}
                     >
                       Update
+                    </button>
+                  )}
+                  {route.assigned_team?.team_members?.some(
+                    (member) => member.status === "rejected",
+                  ) && (
+                    <button
+                      className="secondary-btn"
+                      onClick={() =>
+                        openReassignVolunteers(
+                          route.assigned_team?.team_id ?? -1,
+                          route.assigned_team?.team_members ?? [],
+                        )
+                      }
+                    >
+                      Reassign Volunteers
                     </button>
                   )}
                   <button

@@ -283,7 +283,7 @@ interface SelectVolunteerProp {
   teamMember: Volunteer[];
 }
 
-const SelectVolunteer: React.FC<SelectVolunteerProp> = ({
+export const SelectVolunteer: React.FC<SelectVolunteerProp> = ({
   onClose,
   handleSelect,
   teamMember,

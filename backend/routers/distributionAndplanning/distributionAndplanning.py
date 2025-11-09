@@ -10,6 +10,7 @@ from data_schemas.distribution_planning import (
     AssignTeam,
     UpdateRoute,
     FinalizeRoute,
+    ReassignVolunteer
 )
 from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
@@ -32,7 +33,7 @@ from models import (
     DistributedItems
 )
 from datetime import datetime, timezone
-
+from sqlalchemy import update, delete
 
 router = APIRouter(
     tags=["distribution_planning"],
@@ -543,3 +544,79 @@ def finalize_route(
     return {
         "message": "Route is completed successfully",
     }
+
+
+@router.post("/distributionAndplanning/reassigned_volunteers")
+def reassigned_volunteers(payload: List[ReassignVolunteer],background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    update_mappings = []
+    remove_members = []
+
+    for data in payload:
+        if data.reassign_type in ["retry", "change"]:
+            # Update mapping: use 'members_id' to identify the row
+            update_mappings.append({
+                "members_id": data.member_id,
+                "member": data.volunteer_id,  # maps to volunteer_id
+                "role": data.role,
+                "status": "pending"
+            })
+        else:
+            remove_members.append(data.member_id)
+
+    # Bulk update retry/change members
+    if update_mappings:
+        db.bulk_update_mappings(TeamMembers, update_mappings)
+
+    # Bulk delete removed members
+    if remove_members:
+        db.execute(
+            delete(TeamMembers)
+            .where(TeamMembers.members_id.in_(remove_members))
+        )
+
+    db.commit()    
+    retry_items = [item for item in payload if item.reassign_type in ["retry","change"]]
+    print(payload)
+    
+    background_tasks.add_task(send_retry_team_notifications,retry_items)
+    return {"message": "Reassignments processed successfully."}
+
+
+def send_retry_team_notifications(members: List[ReassignVolunteer]):
+    """Send notifications to all assigned volunteers"""
+    db = SessionLocal()
+
+    try:
+        team_id = members[0].team_id
+        team = db.query(DistributionTeam).filter(DistributionTeam.team_id == team_id).first()
+
+
+        notifications = []
+        for team_member in members:
+            volunteer = (
+                db.query(IndividualVolunteer)
+                .filter(IndividualVolunteer.volunteer_id == team_member.volunteer_id)
+                .first()
+            )
+
+            if volunteer and volunteer.user_id:
+                notification_obj = {
+                    "to": str(volunteer.user_id),
+                    "from_origin": "Distribution Planning",
+                    "title": "New Team Assignment - Action Required",
+                    "message": (
+                        f"You have been assigned to {team.team_name} as {team_member.role}. "
+                        f"Please accept or decline this assignment."
+                    ),
+                    # Include members_id in URL for easy extraction
+                    "url_redirect": f"/volunteer/assignment/{team_member.member_id}",
+                    "date": datetime.now(),
+                    "isRead": False,
+                }
+                notifications.append(notification_obj)
+
+        if notifications:
+            asyncio.run(send_notifications_bulk(db, notifications))
+
+    finally:
+        db.close()

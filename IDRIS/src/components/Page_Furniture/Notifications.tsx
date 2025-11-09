@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { faBell } from "@fortawesome/free-solid-svg-icons/faBell";
 import { useNotifications } from "../../NotificationContext";
 import { RealTimeDataContext } from "../../RealTimeDataContext";
@@ -8,12 +8,17 @@ import { useEffect, useContext, useState } from "react";
 export const NotificationsButton = () => {
   const { notifications } = useNotifications();
   const { event } = useContext(RealTimeDataContext);
+  const location = useLocation();
 
   const [showNewBox, setShowNewBox] = useState(false);
 
-  // Whenever a new event or notification arrives
+  // Show popup only if NOT currently on /notifications
   useEffect(() => {
-    if (event && event.event_type === "notification") {
+    if (
+      event &&
+      event.event_type === "notification" &&
+      location.pathname !== "/notifications"
+    ) {
       setShowNewBox(true);
       const timer = setTimeout(() => setShowNewBox(false), 3000); // hide after 3s
       return () => clearTimeout(timer);
@@ -41,6 +46,7 @@ export const NotificationsButton = () => {
             whiteSpace: "nowrap",
             boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
             animation: "fadeInOut 3s ease",
+            zIndex: 1000,
           }}
         >
           <FontAwesomeIcon icon={faBell} /> New notification received!

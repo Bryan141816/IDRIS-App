@@ -35,7 +35,7 @@ def create_disbursement(db: Session, disbursement: DisbursementCreate):
     return db_disbursement
 
 def get_disbursements(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Disbursement).offset(skip).limit(limit).all()
+    return db.query(Disbursement).order_by(Disbursement.date_updated.desc()).offset(skip).limit(limit).all()
 
 def get_disbursement(db: Session, disbursement_id: str):
     return db.query(Disbursement).filter(Disbursement.disbursement_id == disbursement_id).first()

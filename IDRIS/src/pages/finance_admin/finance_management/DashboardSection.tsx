@@ -86,10 +86,15 @@ const RecentTransactions: React.FC<{
   inflows: InflowItem[];
   outflows: OutflowItem[];
 }> = ({ inflows, outflows }) => {
-  const items: (InflowItem | OutflowItem)[] = [
-    ...inflows.slice(0, 3).map(t => ({ ...t, kind: "inflow" as const })),
-    ...outflows.slice(0, 2).map(t => ({ ...t, kind: "outflow" as const })),
+  const combined = [
+    ...inflows.map(t => ({ ...t, kind: "inflow" as const })),
+    ...outflows.map(t => ({ ...t, kind: "outflow" as const })),
   ];
+
+  combined.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+  const items = combined.slice(0, 5);
+
   return (
     <div className="chart-container">
       <h3>Recent Transactions</h3>

@@ -33,7 +33,7 @@ router_admin = APIRouter(
     dependencies=[Depends(RoleChecker(["logistics admin", "superadmin"]))],
 )
 
-def get_short_date(dt: datetime = None) -> str:
+def get_short_date(dt: Optional[datetime] = None) -> str:
     """
     Returns a shortened date string like "Nov 9 2025".
     If no datetime is provided, uses the current date.

@@ -164,7 +164,7 @@ class Notifications(Base):
 
     from_origin = Column(String(255), nullable=False)
     title = Column(String(255), nullable=False)
-    message = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
     url_redirect = Column(String(255), nullable=False)
     date = Column(DateTime(timezone=True), nullable=False)
     isRead = Column(Boolean)
@@ -220,6 +220,7 @@ class EvacuationCenter(Base):
         "BaranggayRecords",
         back_populates="evacucation_center",
         passive_deletes=True,
+        uselist=False,
     )
 
 
@@ -915,7 +916,7 @@ class DistributionTeam(Base):
     isActive = Column(Boolean, default=True)
     status = Column(String(255), default="waiting")
     team_members = relationship("TeamMembers", back_populates="team")
-    routes = relationship("DistributionRoute", back_populates="assigned_team")
+    routes = relationship("DistributionRoute", back_populates="assigned_team", uselist=False)
 
 
 class DistributionRouteLogs(Base):

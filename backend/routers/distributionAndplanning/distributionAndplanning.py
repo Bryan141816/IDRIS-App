@@ -74,12 +74,23 @@ def send_team_notifications(team_data: dict):
             )
 
             if volunteer and volunteer.user_id:
+                route = team_member.team.routes
+                request = route.request
+                address = f"{request.lgu.lgu_name}, Cebu"
+                if request.use_different_end:
+                    if request.end_barangay:
+                        address = f"{request.barangay.name}, {address}"
+                    elif request.end_evac:
+                        address = f"{request.evacuation_center.name}, {request.evacuation_center.barangay.name}, {address}"
+                        
                 notification_obj = {
                     "to": str(volunteer.user_id),
                     "from_origin": "Distribution Planning",
                     "title": "New Team Assignment - Action Required",
                     "message": (
-                        f"You have been assigned to {team_data['team_name']} as {team_member.role}. "
+                        f"You have been assigned to the {team_data['team_name']} team as {team_member.role}. "
+                        f"The distribution is scheduled from {shorten_date(route.start_schedule)} to {shorten_date(route.end_schedule)}, "
+                        f"with items to be delivered to {address}. The designated gathering area is {route.gathering_area}. "
                         f"Please accept or decline this assignment."
                     ),
                     # Include members_id in URL for easy extraction
@@ -581,6 +592,14 @@ def reassigned_volunteers(payload: List[ReassignVolunteer],background_tasks: Bac
     background_tasks.add_task(send_retry_team_notifications,retry_items)
     return {"message": "Reassignments processed successfully."}
 
+def shorten_date(dt: Optional[datetime] = None) -> str:
+    """
+    Returns a shortened date string like "Nov 9 2025".
+    If no datetime is provided, uses the current date.
+    """
+    if dt is None:
+        dt = datetime.now()
+    return dt.strftime("%b %-d %Y")
 
 def send_retry_team_notifications(members: List[ReassignVolunteer]):
     """Send notifications to all assigned volunteers"""
@@ -600,14 +619,27 @@ def send_retry_team_notifications(members: List[ReassignVolunteer]):
             )
 
             if volunteer and volunteer.user_id:
+                route = team.routes
+                request = route.request
+                address = f"{request.lgu.lgu_name}, Cebu"
+                if request.use_different_end:
+                    if request.end_barangay:
+                        address = f"{request.barangay.name}, {address}"
+                    elif request.end_evac:
+                        address = f"{request.evacuation_center.name}, {request.evacuation_center.barangay.name}, {address}"
+
                 notification_obj = {
                     "to": str(volunteer.user_id),
                     "from_origin": "Distribution Planning",
                     "title": "New Team Assignment - Action Required",
+
                     "message": (
-                        f"You have been assigned to {team.team_name} as {team_member.role}. "
-                        f"Please accept or decline this assignment."
+                        f"You have been assigned to the {team.team_name} team as {team_member.role}. "
+                        f"The distribution is scheduled from {shorten_date(route.start_schedule)} to {shorten_date(route.end_schedule)}, "
+                        f"with items to be delivered to {address}. The designated gathering area is {route.gathering_area}. "
+                        f"Please confirm your participation by accepting or declining this assignment."
                     ),
+
                     # Include members_id in URL for easy extraction
                     "url_redirect": f"/volunteer/assignment/{team_member.member_id}",
                     "date": datetime.now(),

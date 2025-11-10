@@ -41,7 +41,7 @@ def get_short_date(dt: Optional[datetime] = None) -> str:
     if dt is None:
         dt = datetime.now()
     return dt.strftime("%b %-d %Y")
-@router_admin.get("/report",)
+@router.get("/report",)
 def get_emergency_response_report(
     period: Optional[str] = "monthly", db: Session = Depends(get_db)
 ):

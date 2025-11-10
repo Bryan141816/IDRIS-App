@@ -301,6 +301,8 @@ $gray-800: #1f2937;
   }  
   @page {
     margin: 0;
+    margin-top: 10mm;
+    margin-bottom: 10mm;
     @top-left {
       content: element(header);
     }

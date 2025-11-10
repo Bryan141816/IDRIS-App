@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Form
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import func, desc
 from typing import List, Optional
 from pathlib import Path
 
@@ -406,6 +407,98 @@ def get_volunteer_programs_history(
         "volunteer_name": f"{volunteer.first_name} {volunteer.last_name}",
         "total_programs": len(programs),
         "programs": programs
+    }
+
+@router_admin_or_volunteer.get("/top-active")
+def get_top_active_volunteers(
+    limit: int = 3,
+    include_programs: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Get top N most active volunteers based on total programs joined
+    (Tasks + Distribution programs)
+    """
+
+    # Subquery for counting task assignments per volunteer
+    task_counts = (
+        db.query(
+            Assignment.individual_volunteer_id.label('volunteer_id'),
+            func.count(Assignment.id).label('task_count')
+        )
+        .filter(Assignment.status == 'accepted')
+        .group_by(Assignment.individual_volunteer_id)
+        .subquery()
+    )
+
+    # Subquery for counting distribution programs per volunteer
+    distribution_counts = (
+        db.query(
+            TeamMembers.member.label('volunteer_id'),
+            func.count(TeamMembers.members_id).label('distribution_count')
+        )
+        .filter(TeamMembers.status == 'accepted')
+        .group_by(TeamMembers.member)
+        .subquery()
+    )
+
+    # Main query: Get volunteers with their program counts
+    query = (
+        db.query(
+            IndividualVolunteer,
+            func.coalesce(task_counts.c.task_count, 0).label('task_programs'),
+            func.coalesce(distribution_counts.c.distribution_count, 0).label('distribution_programs'),
+            (
+                func.coalesce(task_counts.c.task_count, 0) +
+                func.coalesce(distribution_counts.c.distribution_count, 0)
+            ).label('total_programs')
+        )
+        .outerjoin(
+            task_counts,
+            IndividualVolunteer.volunteer_id == task_counts.c.volunteer_id
+        )
+        .outerjoin(
+            distribution_counts,
+            IndividualVolunteer.volunteer_id == distribution_counts.c.volunteer_id
+        )
+        .filter(IndividualVolunteer.status == 'approved')
+        .order_by(desc('total_programs'))
+        .limit(limit)
+    )
+
+    results = query.all()
+
+    # Format response
+    top_volunteers = []
+    for volunteer, task_programs, distribution_programs, total_programs in results:
+        volunteer_data = {
+            "volunteerid": volunteer.volunteer_id,
+            "userid": volunteer.user_id,
+            "first_name": volunteer.first_name,
+            "middlename": volunteer.middle_name,
+            "last_name": volunteer.last_name,
+            "status": volunteer.status,
+            "tasksjoined": task_programs,
+            "distributionprogramsjoined": distribution_programs,
+            "eventsjoined": total_programs,
+            "totalPrograms": total_programs,
+            "profile_image": volunteer.profile_image,
+        }
+
+        # Optionally include full program history
+        if include_programs:
+            programs_data = get_volunteer_programs_history(
+                volunteer.volunteer_id,
+                limit=None,
+                db=db
+            )
+            volunteer_data["programHistory"] = programs_data["programs"]
+
+        top_volunteers.append(volunteer_data)
+
+    return {
+        "count": len(top_volunteers),
+        "volunteers": top_volunteers
     }
 
 

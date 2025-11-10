@@ -142,28 +142,12 @@ $gray-800: #1f2937;
   font-weight: 500;
 }
 
-.typeBadge {
-  background-color: #dbeafe;
-  color: #1e40af;
+
+.reportMain{
+  width: 100%;       /* container width */
+  max-width: 100%;   /* prevent table from exceeding container */
+  overflow-x: hidden; 
 }
-
-.statusBadge {
-  &.statusCompleted {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-
-  &.statusPending {
-    background-color: #fef3c7;
-    color: $warning-color;
-  }
-
-  &.statusFailed {
-    background-color: #fee2e2;
-    color: $error-color;
-  }
-}
-
 // Summary Section
 .summarySection {
   margin-top: 2rem;
@@ -244,140 +228,54 @@ $gray-800: #1f2937;
 /* Optional utility if manual page breaks are needed */
 .page-break { break-before: page; }
 
-// Print Media Queries
+
 @media print {
-  @page {
-    size: letter portrait;
-    margin: 12mm 12mm 16mm 12mm; /* real printable margins */
+  body * {
+    visibility: hidden; // hide everything by default
   }
 
-  html, body {
-    height: auto;
-    margin: 0;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .donationReport, 
+  .donationReport * {
+    visibility: visible; // only show the report
   }
 
   .donationReport {
-    position: static;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* per-page height in print UAs */
+    position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
-    height: auto;
+  }
+
+  /* Hide buttons in print */
+  .printButton {
+    display: none;
+  }
+
+  /* Make header/footer repeat per page */
+  .print-header {
+    position: running(header);
+  }
+
+  .print-footer {
+    position: running(footer);
+  }
+
+  @page {
     margin: 0;
-    padding: 0;
+    @top-left {
+      content: element(header);
+    }
+    @bottom-left {
+      content: element(footer);
+    }
   }
 
-  /* If the main content wrapper exists, let it expand */
-  .reportMain {
-    flex: 1 1 auto;
-    height: auto;
-  }
-
-  .reportHeader {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    padding: 8mm 0 4mm 0;
-  }
-
-  .companyLogo {
-    width: 3rem;
-    height: 3rem;
-  }
-  .logoText { font-size: 1.125rem; }
-  .companyName { font-size: 1.5rem; }
-  .companyTagline { font-size: 0.875rem; }
-  .companyInfo {
-    font-size: 0.75rem;
-    text-align: right !important;
-  }
-
-  .reportTitle { font-size: 1.125rem; }
-  .reportMetadata { font-size: 0.75rem; }
-  .reportInfo {
-    background-color: $gray-100;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Tables: repeat header, avoid splitting rows, no fixed widths */
-  .tableContainer { overflow: visible !important; }
-  .donationsTable {
-    width: 100%;
-    table-layout: auto;
-    border-collapse: collapse;
+  table {
     page-break-inside: auto;
   }
-  thead { display: table-header-group; }
-  tfoot { display: table-footer-group; }
-  tr, th, td { page-break-inside: avoid; }
-
-  .tableCell, .headerCell {
-    padding: 5px;
-    font-size: 0.875rem;
-  }
-
-  /* Remove any preset column widths so columns can flex for print */
-  .donationsTable th:nth-child(n),
-  .donationsTable td:nth-child(n) {
-    width: auto !important;
-  }
-
-  .tableRow:hover { background-color: transparent; }
-  .amount { color: #000000; }
-  .badge {
-    background-color: transparent !important;
-    color: #000000 !important;
-  }
-
-  .summarySection {
-    margin-top: -30px;
-    background-color: $gray-100;
-    font-size: 0.875rem;
-    break-inside: avoid;
+  tr {
     page-break-inside: avoid;
-  }
-  .summaryTitle { font-size: 1rem; }
-  .summaryValue { font-size: 1.25rem; color: #000000; }
-
-  /* Screen-only controls hidden in print */
-  .printSection { display: none !important; }
-
-  /* Footer appears once and sticks to bottom of the final page */
-  .printFooter {
-    margin-top: auto;           /* pushes footer to the end */
-    break-before: avoid;
-    break-inside: avoid;
-    page-break-inside: avoid;
-    padding-top: 6mm;
-    border-top: 1px solid $gray-300;
-    text-align: center;
-    font-size: 0.75rem;
-    color: #6b7280;
-  }
-
-  /* Hide any scrollbars */
-  *::-webkit-scrollbar { display: none !important; }
-  * {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+    page-break-after: auto;
   }
 }
 
-// Responsive Design
-@media (max-width: 768px) {
-  .donationReport { padding: 1rem; }
-
-  .headerContent {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-
-  .companyInfo { text-align: center; }
-
-  .summaryGrid { grid-template-columns: 1fr; }
-
-  .tableContainer { font-size: 0.875rem; }
-}

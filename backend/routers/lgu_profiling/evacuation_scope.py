@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple, Set
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, select
+from collections import defaultdict
 from database import get_db
 from routers.auth.authentication import get_current_user_from_access_token as get_current_user
-
+from routers.GetUserId import GetUserId
 # ==== MODELS (match your schema) ====
 from models import (
     User,
@@ -16,6 +16,7 @@ from models import (
     LGURecords,
     BaranggayRecords,
     EvacuationCenter,
+    AdminUserProfile
 )
 
 router = APIRouter(prefix="/evacuation", tags=["Evacuation"])
@@ -274,3 +275,53 @@ def get_scope_address(
 ):
     # Same as /my_centers — returns LGU-wide scope and centers
     return get_my_centers(db=db, current_user=current_user)
+
+
+@router.get("/get_reports")
+def get_evacuation_data(db: Session = Depends(get_db),     user_id: str = Depends(GetUserId())):
+    # Resolve LGU for the current user
+
+    # Base query
+    stmt = (
+        select(
+            LGURecords.lgu_name,
+            EvacuationCenter.name.label("evacuation_name"),
+            EvacuationCenter.capacity,
+            EvacuationCenter.occupied,
+            BaranggayRecords.name.label("barangay_name")
+        )
+        .join(BaranggayRecords, EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id)
+        .join(LGURecords, LGURecords.id == BaranggayRecords.lgu_id)
+    )
+
+    # If user is an LGU, filter by that LGU
+
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+
+
+
+    lgu = admin.lgu if admin else None
+
+    if lgu:
+        stmt = stmt.where(LGURecords.id == lgu.id)
+    result = db.execute(stmt).all()
+
+    # Aggregate evacuations by LGU (same format as before)
+    lgu_dict = defaultdict(list)
+    for row in result:
+        lgu_dict[row.lgu_name].append({
+            "evacuation_name": row.evacuation_name,
+            "barangay_name": row.barangay_name,
+            "occupied": row.occupied,
+            "capacity": row.capacity
+        })
+
+    # Format output
+    output = [{"lgu": lgu_name, "evacuation": evacuations} for lgu_name, evacuations in lgu_dict.items()]
+
+    return output

@@ -1,4 +1,5 @@
-import "../procurement_management/ProcurementManagement.scss";
+import "../ProcurementInventory.scss";
+import "../ProcurementModal.scss";
 import RequestTab from "../procurement_management/Tabs/Request";
 const ProcurementManagement = () => {
   return (

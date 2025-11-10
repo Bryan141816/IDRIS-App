@@ -26,7 +26,7 @@ export const ModalOverlay: React.FC<ModalProps> = ({
 }) => {
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div className="modal" style={{ minWidth }}>
+      <form className="modal" style={{ minWidth }}>
         <div className="modal-header">
           <button className="close-btn" onClick={onClose}>
             ×
@@ -52,7 +52,7 @@ export const ModalOverlay: React.FC<ModalProps> = ({
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };

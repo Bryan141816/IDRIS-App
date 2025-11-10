@@ -7,8 +7,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -17,7 +15,7 @@ import "../ProcurementInventory.scss";
 import "../ProcurementModal.scss";
 import { useState, useEffect } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
-
+import { useNavigate, useParams } from "react-router-dom";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
 type DashboardData = {
@@ -40,6 +38,8 @@ type DashboardData = {
 };
 
 const FinanceAdmin = () => {
+  const navigate = useNavigate();
+  const { tab } = useParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
@@ -92,11 +92,20 @@ const FinanceAdmin = () => {
   useEffect(() => {
     fetch();
   }, []);
+
   useEffect(() => {
-    if (activeTab === "dashboard") {
-      fetch();
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
     }
-  }, [activeTab]);
+  }, [tab]);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    navigate(`/procurement_inventory/distribution_planning/${newTab}`, {
+      replace: false,
+    });
+  };
+
   const renderDashboard = () => {
     return (
       <>
@@ -226,13 +235,13 @@ const FinanceAdmin = () => {
       <div className="procurement-navigation">
         <button
           className={`nav-btn ${activeTab === "dashboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
+          onClick={() => handleTabChange("dashboard")}
         >
           📊 Dashboard
         </button>
         <button
           className={`nav-btn ${activeTab === "routes" ? "active" : ""}`}
-          onClick={() => setActiveTab("routes")}
+          onClick={() => handleTabChange("routes")}
         >
           🗺️ Routes & Schedules
         </button>

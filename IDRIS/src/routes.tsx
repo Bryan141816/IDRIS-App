@@ -328,44 +328,43 @@ export const router = createBrowserRouter([
       { path: "notifications", lazy: NotificationPage },
       { path: "oauth_callback", lazy: OauthCallback },
       {
-  path: "lgu_profiling",
-  children: [
-    {
-      path: "map_of_cebu",
-      lazy: MapOfCebu,
-    },
-    {
-      path: "evacuationandshelter",
-      lazy: EvacuationAndShelter,
-    },
-    {
-      path: "shelter_report_dashboard",
-      lazy: ShelterReportDashboard,
-    },
-    {
-      path: "LGU",
-      lazy: LGU,
-    },
-    {
-      path: "LGUmanagement",
-      lazy: ManageLGU,
-    },
-    {
-      path: "LGUofficermanagement", 
-      lazy: LGUofficermanagement,   
-    },
-        {
-      path: "LGUofficerSuperAdmin",
-      lazy: LGUofficerSuperAdmin,
-    },
+        path: "lgu_profiling",
+        children: [
+          {
+            path: "map_of_cebu",
+            lazy: MapOfCebu,
+          },
+          {
+            path: "evacuationandshelter",
+            lazy: EvacuationAndShelter,
+          },
+          {
+            path: "shelter_report_dashboard",
+            lazy: ShelterReportDashboard,
+          },
+          {
+            path: "LGU",
+            lazy: LGU,
+          },
+          {
+            path: "LGUmanagement",
+            lazy: ManageLGU,
+          },
+          {
+            path: "LGUofficermanagement",
+            lazy: LGUofficermanagement,
+          },
+          {
+            path: "LGUofficerSuperAdmin",
+            lazy: LGUofficerSuperAdmin,
+          },
 
-    {
-      path: "LGUSeeMore/:id",
-      lazy: LGUSeeMore,
-    },
-  ],
-}
-,
+          {
+            path: "LGUSeeMore/:id",
+            lazy: LGUSeeMore,
+          },
+        ],
+      },
       {
         path: "volunteer_management",
         children: [
@@ -501,8 +500,32 @@ export const router = createBrowserRouter([
       {
         path: "procurement_inventory",
         children: [
-          { path: "procurement_inventory", lazy: ProcurementInventory },
-          { path: "distribution_planning", lazy: DistributionPlanning },
+          {
+            path: "procurement_inventory",
+            children: [
+              { path: ":tab", lazy: ProcurementInventory },
+              {
+                index: true,
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/procurement_inventory/dashboard",
+                  ),
+              },
+            ],
+          },
+          {
+            path: "distribution_planning",
+            children: [
+              { path: ":tab", lazy: DistributionPlanning },
+              {
+                index: true,
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/distribution_planning/dashboard",
+                  ),
+              },
+            ],
+          },
           {
             path: "procurement_management",
             children: [
@@ -594,7 +617,8 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/reports_generation": ReportsGeneration,
   "/damange_assessment": DamageAssessment,
   "/procurement_inventory/procurement_inventory": ProcurementInventory,
-  "/procurement_inventory/distribution_planning": DistributionPlanning,
+  "/procurement_inventory/distribution_planning/dashboard":
+    DistributionPlanning,
   "/procurement_inventory/procurement_management": ProcurementManagement,
   "/finance&admin/finance_management": FinanceManagement,
   "/finance_printable": FinancePrintPage,

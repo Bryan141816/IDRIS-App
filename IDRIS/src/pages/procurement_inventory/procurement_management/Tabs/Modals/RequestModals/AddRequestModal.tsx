@@ -1,5 +1,5 @@
 import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
-import { useState } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { ModalOverlay } from "../ProcurementModalsDefault";
 import { SelectBarangayEvacuation } from "./SelectBarangayEvacuation";
@@ -46,13 +46,21 @@ export const SubmitProcurementRequest: React.FC<
     end_evacuation: -1,
   });
   const [isUseBarangayPicker, SetIsUseBarangayPicker] = useState(false);
-  const changeRequestType = (type: string) => {
+  const changeRequestType = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    type: string,
+  ) => {
+    e.preventDefault();
     setFormData((prev) => ({
       ...prev,
       request_type: type,
     }));
   };
-  const changeDeliveryType = (type: boolean) => {
+  const changeDeliveryType = (
+    e: Reac.MouseEven<HTMLButtonElement>,
+    type: boolean,
+  ) => {
+    e.preventDefault();
     if (type) {
       setFormData((prev) => ({
         ...prev,
@@ -133,7 +141,9 @@ export const SubmitProcurementRequest: React.FC<
                   color:
                     formData.request_type === "relief" ? "#ffffff" : "#749ab6",
                 }}
-                onClick={() => changeRequestType("relief")}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  changeRequestType(e, "relief")
+                }
               >
                 Relief
               </button>
@@ -150,7 +160,9 @@ export const SubmitProcurementRequest: React.FC<
                       ? "#ffffff"
                       : "#749ab6",
                 }}
-                onClick={() => changeRequestType("procurement")}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  changeRequestType(e, "procurement")
+                }
               >
                 Procurement
               </button>
@@ -160,6 +172,7 @@ export const SubmitProcurementRequest: React.FC<
             <label>Request Title:</label>
             <input
               type="text"
+              required
               value={formData.request_title}
               onChange={(e) => {
                 const { value } = e.target;
@@ -173,6 +186,7 @@ export const SubmitProcurementRequest: React.FC<
           <div className="form-group">
             <label>Request Description:</label>
             <textarea
+              required
               value={formData.request_description}
               onChange={(e) => {
                 const { value } = e.target;
@@ -187,6 +201,7 @@ export const SubmitProcurementRequest: React.FC<
             <label>Disaster Type:</label>
             <select
               value={formData.disaster_type}
+              required
               onChange={(e) => {
                 const { value } = e.target;
                 setFormData((prev) => ({
@@ -208,6 +223,7 @@ export const SubmitProcurementRequest: React.FC<
           <div className="form-group">
             <label>Priority Level:</label>
             <select
+              required
               value={formData.priority}
               onChange={(e) => {
                 const { value } = e.target;
@@ -237,7 +253,9 @@ export const SubmitProcurementRequest: React.FC<
                     : "#ffffff",
                   color: !formData.use_different_end ? "#ffffff" : "#749ab6",
                 }}
-                onClick={() => changeDeliveryType(false)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                  changeDeliveryType(e, false)
+                }
               >
                 Use this LGU's address
               </button>
@@ -250,8 +268,8 @@ export const SubmitProcurementRequest: React.FC<
                     : "#ffffff",
                   color: formData.use_different_end ? "#ffffff" : "#749ab6",
                 }}
-                onClick={() => {
-                  changeDeliveryType(true);
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  changeDeliveryType(e, true);
                 }}
               >
                 Use barangay/evacuation location
@@ -263,6 +281,7 @@ export const SubmitProcurementRequest: React.FC<
                   type="text"
                   placeholder="No Address have been selected yet"
                   value={selectedDifferent}
+                  required={formData.use_different_end}
                 />
                 <button
                   className="secondary-btn"
@@ -374,7 +393,8 @@ export const SubmitProcurementRequest: React.FC<
 
                   <button
                     className="secondary-btn"
-                    onClick={() => {
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      e.preventDefault();
                       // (optional) basic validation
                       if (!itemForm.name || itemForm.quantity < 0) return;
 
@@ -418,8 +438,29 @@ export const SubmitProcurementRequest: React.FC<
                     overflowY: "auto",
                     padding: "5px",
                     gap: "5px",
+                    position: "relative",
                   }}
                 >
+                  {requestItem.length === 0 && (
+                    <input
+                      type="text"
+                      id="name"
+                      required={requestItem.length === 0}
+                      onInvalid={(e) =>
+                        e.currentTarget.setCustomValidity(
+                          "Add at least one item!",
+                        )
+                      }
+                      style={{
+                        height: "0px",
+                        width: "0px",
+                        opacity: 0,
+                        position: "absolute",
+                        left: "50%",
+                      }}
+                      onInput={(e) => e.currentTarget.setCustomValidity("")}
+                    />
+                  )}
                   {requestItem.map((item, index) => (
                     <div
                       style={{
@@ -487,6 +528,7 @@ export const SubmitProcurementRequest: React.FC<
                   date_needed: value,
                 }));
               }}
+              required
             />
           </div>
         </div>

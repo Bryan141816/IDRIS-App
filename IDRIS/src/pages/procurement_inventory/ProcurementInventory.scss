@@ -5,6 +5,7 @@
   flex-direction: column;
   overflow-y: auto;
   height: 100%;
+  background-color: #E9EFF4;
   @media (max-width: 1024px) {
     margin-left: 0;
   }
@@ -56,13 +57,19 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
+}
+.requests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+
+     
+  
 }
 .requests-content {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   /* padding here does nothing for scroll */
 }
 .dashboard-content {

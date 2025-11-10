@@ -195,7 +195,7 @@ def send_complete_notifications(route_id: int, status: str):
         notification_obj = {
             "to": str(admin.user_id),
             "from_origin": "Distribution Planning",
-            "title": "Delivery Completed",
+            "title": "Procurement Request Update",
             "message": f"Request {route.request.request_title} has been {status.lower()}",
             "url_redirect": "/request_procurement",
             "date": datetime.now(),

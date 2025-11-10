@@ -66,12 +66,19 @@ export default function ShelterReportDashboard({
 
   interface LGUEvacuation {
     lgu: string;
+    evacuation_count: number;
     evacuation: EvacuationInfo[];
   }
+
   interface ReportData {
     scope: string;
     total_count: number;
     data: LGUEvacuation[];
+
+    total_capacity?: number;
+    total_occupied?: number;
+    largest_shelter?: string;
+    smallest_shelter?: string;
   }
   useEffect(() => {
     const fetch = async () => {
@@ -137,41 +144,91 @@ export default function ShelterReportDashboard({
 
       <main className={styles.reportMain}>
         {reports && (
-          <div className={tableStyle.table_container}>
-            {reports.data.map((report) => (
-              <>
-                <h2 className={tableStyle.lgu_name}>{report.lgu}, Cebu</h2>
-                <table className={tableStyle.table}>
-                  <thead className={tableStyle.thead}>
-                    <tr>
-                      <th className={tableStyle.th}>Shelter Name</th>
-                      <th className={tableStyle.th}>Barangay</th>
-                      <th className={tableStyle.th}>Capacity</th>
-                      <th className={tableStyle.th}>Occupied</th>
-                      <th className={tableStyle.th}>Vacant</th>
-                      <th className={tableStyle.th}>Utilization</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.evacuation.map((eva) => (
+          <>
+            <div className={tableStyle.table_container}>
+              {reports.data.map((report) => (
+                <>
+                  <h2 className={tableStyle.lgu_name}>{report.lgu}, Cebu</h2>
+                  <table className={tableStyle.table}>
+                    <thead className={tableStyle.thead}>
                       <tr>
-                        <td className={tableStyle.td}>{eva.evacuation_name}</td>
-                        <td className={tableStyle.td}>{eva.barangay_name}</td>
-                        <td className={tableStyle.td}>{eva.capacity}</td>
-                        <td className={tableStyle.td}>{eva.occupied}</td>
-                        <td className={tableStyle.td}>
-                          {eva.capacity - eva.occupied}
-                        </td>
-                        <td className={tableStyle.td}>
-                          {((eva.occupied / eva.capacity) * 100).toFixed(1)}%
-                        </td>
+                        <th className={tableStyle.th}>Shelter Name</th>
+                        <th className={tableStyle.th}>Barangay</th>
+                        <th className={tableStyle.th}>Capacity</th>
+                        <th className={tableStyle.th}>Occupied</th>
+                        <th className={tableStyle.th}>Vacant</th>
+                        <th className={tableStyle.th}>Utilization</th>
                       </tr>
+                    </thead>
+                    <tbody>
+                      {report.evacuation.map((eva) => (
+                        <tr>
+                          <td className={tableStyle.td}>
+                            {eva.evacuation_name}
+                          </td>
+                          <td className={tableStyle.td}>{eva.barangay_name}</td>
+                          <td className={tableStyle.td}>{eva.capacity}</td>
+                          <td className={tableStyle.td}>{eva.occupied}</td>
+                          <td className={tableStyle.td}>
+                            {eva.capacity - eva.occupied}
+                          </td>
+                          <td className={tableStyle.td}>
+                            {((eva.occupied / eva.capacity) * 100).toFixed(1)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              ))}
+            </div>
+            <div className={styles.summary}>
+              <h2>Summary</h2>
+              {reports.scope === "All LGU" ? (
+                <div className={styles.totalNumber}>
+                  <h2>Total Number of Shelters</h2>
+                  <div className={styles.summaryGrid}>
+                    {reports.data.map((item) => (
+                      <span className={styles.summaryLabel}>
+                        •{item.lgu}: {item.evacuation_count}
+                      </span>
                     ))}
-                  </tbody>
-                </table>
-              </>
-            ))}
-          </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.summaryGrid2Column}>
+                  <span className={styles.summaryLabel}>
+                    •Total Number of Shelter: {reports.total_count}
+                  </span>
+                  <span className={styles.summaryLabel}>
+                    •Total Shelter Capacity: {reports.total_capacity ?? 0}
+                  </span>
+
+                  <span className={styles.summaryLabel}>
+                    •Overall Capacity Utilization:{" "}
+                    {(
+                      ((reports.total_occupied ?? 0) /
+                        (reports.total_capacity ?? 1)) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </span>
+                  <span className={styles.summaryLabel}>
+                    •Total Occupied and Vacant: {reports.total_occupied ?? 0}/
+                    {reports.total_count - (reports.total_occupied ?? 0)}
+                  </span>
+                  <span className={styles.summaryLabel}>
+                    •Largest Shelter: {reports.largest_shelter ?? ""}
+                  </span>
+                  {reports.smallest_shelter !== reports.largest_shelter && (
+                    <span className={styles.summaryLabel}>
+                      •Smallest Shelter: {reports.smallest_shelter ?? ""}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
         )}
       </main>
       <div className={styles.printFooter}>

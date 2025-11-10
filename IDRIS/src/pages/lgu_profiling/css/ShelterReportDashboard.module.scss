@@ -166,10 +166,28 @@ $gray-800: #1f2937;
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  grid-template-rows: repeat(5, 1fr); /* number of rows */
+  grid-auto-flow: column; /* fill top-to-bottom first, then next column */
+  gap: 5px;
+  padding: 10px;
+   grid-auto-rows: auto;
+   align-content: start;
 }
 
+.summaryGrid2Column {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  padding: 10px;
+
+  grid-auto-flow: column;
+  align-content: start;
+}
+
+.totalNumber{
+  padding: 10px;
+}
 .summaryLabel {
   color: $gray-600;
   margin: 0;
@@ -193,7 +211,6 @@ $gray-800: #1f2937;
 .printSection {
   display: flex;
   flex-direction: row;
-  gap: 10px;
   text-align: center;
 }
 
@@ -229,6 +246,18 @@ $gray-800: #1f2937;
 /* Optional utility if manual page breaks are needed */
 .page-break { break-before: page; }
 
+.summary{
+  display: flex;
+  flex-direction: column;
+  margin-top: 25px;
+  padding: 20px;
+  background-color: $gray-100;
+  border-radius: 10px;
+  gap: 10px;
+  h2{
+    font-weight: 600;
+  }
+}
 
 @media print {
   body * {
@@ -260,11 +289,12 @@ $gray-800: #1f2937;
   .print-footer {
     position: running(footer);
   }
-  .reportInfo{
-    padding: 0px;
-    margin: 0px;
-  }
-
+  .donationReport, 
+  .reportInfo,
+  .summary {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }  
   @page {
     margin: 0;
     @top-left {

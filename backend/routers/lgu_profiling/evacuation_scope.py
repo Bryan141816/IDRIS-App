@@ -277,7 +277,6 @@ def get_scope_address(
     return get_my_centers(db=db, current_user=current_user)
 
 
-
 @router.get("/get_reports")
 def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(GetUserId())):
 
@@ -326,17 +325,37 @@ def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(Ge
     data_list = [
         {
             "lgu": lgu_name,
+            "evacuation_count": len(evacuations) if not lgu else None,  # only include count for All LGU
             "evacuation": evacuations
         }
         for lgu_name, evacuations in lgu_dict.items()
     ]
 
+    # Prepare summary if an LGU is selected
+    summary = {}
+    if lgu and result:
+        capacities = [row.capacity for row in result]
+        occupied = [row.occupied for row in result]
+
+        # Find largest and smallest shelters
+        largest = max(result, key=lambda x: x.capacity)
+        smallest = min(result, key=lambda x: x.capacity)
+
+        summary = {
+            "total_capacity": sum(capacities),
+            "total_occupied": sum(occupied),
+            "largest_shelter": f"{largest.evacuation_name}, {largest.barangay_name}",
+            "smallest_shelter": f"{smallest.evacuation_name}, {smallest.barangay_name}",
+        }
     # Final response
     output = {
         "scope": scope_name,
         "total_count": len(result),
-        "data": data_list
+        "data": data_list,
     }
+
+    if summary:
+        output.update(summary)
 
     return output
 

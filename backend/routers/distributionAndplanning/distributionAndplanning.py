@@ -30,11 +30,12 @@ from models import (
     AssignedStorage,
     InventoryItems,
     WarehouseZones,
-    DistributedItems
+    DistributedItems,
+    AdminUserProfile
 )
 from datetime import datetime, timezone
 from sqlalchemy import update, delete
-
+from sqlalchemy.inspection import inspect
 router = APIRouter(
     tags=["distribution_planning"],
     dependencies=[
@@ -170,9 +171,49 @@ def get_movement(db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.get_all_routes_with_latest_log(db)
 
 
+
+def send_complete_notifications(route_id: int, status: str):
+    db = SessionLocal()
+
+    route = (
+        db.query(DistributionRoute)
+        .filter(DistributionRoute.route_id == route_id)
+        .first()
+    )
+
+    lgu_id = route.request.lgu_id
+
+    admins = (
+        db.query(AdminUserProfile)
+        .filter(AdminUserProfile.lgu_id == lgu_id)
+        .all()
+    )
+
+    notifications = []
+
+    for admin in admins:
+        notification_obj = {
+            "to": str(admin.user_id),
+            "from_origin": "Distribution Planning",
+            "title": "Delivery Completed",
+            "message": f"Request {route.request.request_title} has been {status.lower()}",
+            "url_redirect": "/request_procurement",
+            "date": datetime.now(),
+            "isRead": False,
+        }
+        notifications.append(notification_obj)
+
+    if notifications:
+        asyncio.run(send_notifications_bulk(db, notifications))
+
 @router.post("/distribution_planning/update_route")
-def update_route(payload: UpdateRoute, db: Session = Depends(get_db)):
-    return DistributionAndPlanningCRUD.update_route(payload, db)
+def update_route(payload: UpdateRoute,background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
+    route = DistributionAndPlanningCRUD.update_route(payload, db)
+    status = payload.status.lower()
+    if(status == "completed" or status == "in transit" or status == "cancelled"):
+        route_dict = {c.key: getattr(route, c.key) for c in inspect(route).mapper.column_attrs}
+        background_tasks.add_task(send_complete_notifications,route_dict["route_id"], status)
+    return route
 
 
 @router.get("/distribution_planning/get_all_response")
@@ -652,3 +693,6 @@ def send_retry_team_notifications(members: List[ReassignVolunteer]):
 
     finally:
         db.close()
+
+
+

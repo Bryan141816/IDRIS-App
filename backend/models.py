@@ -322,6 +322,7 @@ class BaranggayRecords(Base):
         "EvacuationCenter",
         back_populates="barangay",
         passive_deletes=True,
+        uselist=False,
     )
 
 

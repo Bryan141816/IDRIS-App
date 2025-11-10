@@ -77,7 +77,7 @@ class EvacuationWithBarangaysOut(BaseModel):
     lng: float
     capacity: int
     occupied: int
-    barangay: List[BarangayMiniOut]  # nested list
+    barangay: BarangayMiniOut  # nested list
 
     class Config:
         orm_mode = True
@@ -520,28 +520,52 @@ def add_evacuation(payload: EvacuationAdd, db: Session = Depends(get_db)):
 
 
 @router.get("/api/get_evacuation", response_model=List[EvacuationWithBarangaysOut])
-def list_evac_centers_with_barangays(
-    request: Request,
-    db: Session = Depends(get_db),
-):
+def list_evac_centers_with_barangays(request: Request, db: Session = Depends(get_db)):
     evac_list = (
         db.query(EvacuationCenter)
-        .options(joinedload(EvacuationCenter.barangay))  # eager-load barangays
+        .options(joinedload(EvacuationCenter.barangay))
         .order_by(EvacuationCenter.name.asc())
         .all()
     )
 
-    # Optional: make barangay pictures absolute URLs
     for ec in evac_list:
-        for b in ec.barangay:
-            if b.baranggay_pic:
-                b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
+        b = ec.barangay  # single object, not iterable
+        if b and b.baranggay_pic:
+            b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
 
     return evac_list
 
 
+@router.get("/me/get_evacuation", response_model=List[EvacuationWithBarangaysOut])
+def list_evac_centers_with_barangays(request: Request, db: Session = Depends(get_db),   user_id: str = Depends(GetUserId())):
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+    if not admin or not admin.lgu:
+        raise HTTPException(status_code=404, detail="LGU not found")
 
+    lgu_id = admin.lgu.id
 
+    # 🔹 2. Get all evacuation centers tied to this LGU (via barangays)
+    evac_list = (
+        db.query(EvacuationCenter)
+        .join(BaranggayRecords, BaranggayRecords.evacucation_center_id == EvacuationCenter.evacuation_id)
+        .filter(BaranggayRecords.lgu_id == lgu_id)
+        .options(joinedload(EvacuationCenter.barangay))
+        .order_by(EvacuationCenter.name.asc())
+        .all()
+    )
+
+    # 🔹 3. Convert relative barangay pictures to absolute URLs
+    for ec in evac_list:
+        b = ec.barangay
+        if b and b.baranggay_pic:
+            b.baranggay_pic = to_abs_url(b.baranggay_pic, request)
+
+    return evac_list
 # -------------------------------------super admin------------------------------
 
 

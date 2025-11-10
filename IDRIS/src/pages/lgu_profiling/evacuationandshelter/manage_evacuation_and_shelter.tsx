@@ -13,8 +13,6 @@ import type { AxiosError } from "axios";
 import { Barangay } from "../LGUofficer/LGUofficer";
 import { MapViewWithSearch } from "../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 
-
-
 export type LGUMin = { id: number; name: string };
 
 export type BarangayMiniInfo = {
@@ -32,15 +30,18 @@ export type Shelter = {
   lng: number;
   capacity: number;
   occupied: number;
-  barangay?: BarangayMiniInfo[] | null;
+  barangay?: BarangayMiniInfo | null;
 };
 
 /* ---------- helpers ---------- */
 const toL = (v?: string | null) => (v ?? "").toLowerCase();
 // ⬇️ put near your other helpers/types
 
-
-const deriveStatus = (occupied: number, capacity: number, provided?: string) => {
+const deriveStatus = (
+  occupied: number,
+  capacity: number,
+  provided?: string,
+) => {
   // prefer provided status if present
   const s = (provided ?? "").trim();
   if (s) return s;
@@ -65,14 +66,22 @@ const greenPinIcon = new L.Icon({
 
 const EvacuationAndShelter = () => {
   const navigate = useNavigate();
-  const evacuationCenterRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const statusSectionRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const barangayAssignmentRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
-  const reportsRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+  const evacuationCenterRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const statusSectionRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const barangayAssignmentRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
+  const reportsRef = useRef<HTMLDivElement>(
+    null,
+  ) as React.RefObject<HTMLDivElement>;
   const { userRoles } = useUserRoleContext();
   const { userType } = useUserContext();
 
-const isRolesReady = userType != null && Array.isArray(userRoles);
+  const isRolesReady = userType != null && Array.isArray(userRoles);
   const [centerForm, setCenterForm] = useState({
     name: "",
     capacity: "",
@@ -85,44 +94,47 @@ const isRolesReady = userType != null && Array.isArray(userRoles);
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const isSuperAdmin = userType === "superadmin" || userRoles.includes("superadmin");
-  const isLGUOfficer = userType === "lguofficer" || userRoles.includes("lgu officer");
+  const isSuperAdmin =
+    userType === "superadmin" || userRoles.includes("superadmin");
+  const isLGUOfficer =
+    userType === "lguofficer" || userRoles.includes("lgu officer");
 
   // We'll keep your existing barangayList, but also store quick lookup IDs
   const [myBarangayIds, setMyBarangayIds] = useState<number[]>([]);
 
-/* ---------- local types ---------- */
+  /* ---------- local types ---------- */
 
-const normalizeShelters = (rows: any[]): Shelter[] =>
-  (Array.isArray(rows) ? rows : []).map((r: any) => {
-    const rawId = r?.evacuation_id ?? r?.id;
-    const id = Number(rawId);
-    return {
-      id: Number.isFinite(id) ? id : -1,
-      name: r?.name ?? "",
-      lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
-      lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
-      capacity: typeof r?.capacity === "number" ? r.capacity : Number(r?.capacity) || 0,
-      occupied: typeof r?.occupied === "number" ? r.occupied : Number(r?.occupied) || 0,
-      barangay: Array.isArray(r?.barangay) ? r.barangay : null,
-    };
-  });
+  const normalizeShelters = (rows: any[]): Shelter[] =>
+    (Array.isArray(rows) ? rows : []).map((r: any) => {
+      const rawId = r?.evacuation_id ?? r?.id;
+      const id = Number(rawId);
+      return {
+        id: Number.isFinite(id) ? id : -1,
+        name: r?.name ?? "",
+        lat: typeof r?.lat === "number" ? r.lat : Number(r?.lat) || 0,
+        lng: typeof r?.lng === "number" ? r.lng : Number(r?.lng) || 0,
+        capacity:
+          typeof r?.capacity === "number"
+            ? r.capacity
+            : Number(r?.capacity) || 0,
+        occupied:
+          typeof r?.occupied === "number"
+            ? r.occupied
+            : Number(r?.occupied) || 0,
+        barangay: r.barangay ?? null,
+      };
+    });
   const [shelters, setShelters] = useState<Shelter[]>([]);
   const displayedShelters = React.useMemo(() => {
-  if (isSuperAdmin) return shelters;
+    if (isSuperAdmin) return shelters;
 
-  if (isLGUOfficer && myBarangayIds.length > 0) {
-    return shelters.filter(
-      (s) => Array.isArray(s.barangay) && s.barangay?.some((b) => myBarangayIds.includes(b.id)),
-    );
-  }
+    // Normal users: backend already scoped the data
+    return shelters;
+  }, [isSuperAdmin, isLGUOfficer, myBarangayIds, shelters]);
 
-  // Normal users: backend already scoped the data
-  return shelters;
-}, [isSuperAdmin, isLGUOfficer, myBarangayIds, shelters]);
-
-
-  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(null);
+  const [dropdownOpenId, setDropdownOpenId] = useState<string | number | null>(
+    null,
+  );
 
   type EditModalType = {
     id: string | number;
@@ -132,7 +144,8 @@ const normalizeShelters = (rows: any[]): Shelter[] =>
   const [editModal, setEditModal] = useState<EditModalType>(null);
 
   const isLguAdmin =
-    (userType === "admin" && userRoles.includes("lgu officer")) || userRoles.includes("superadmin");
+    (userType === "admin" && userRoles.includes("lgu officer")) ||
+    userRoles.includes("superadmin");
 
   const scrollToSection = (ref: React.RefObject<HTMLDivElement>) =>
     ref.current?.scrollIntoView({
@@ -141,7 +154,9 @@ const normalizeShelters = (rows: any[]): Shelter[] =>
       inline: "nearest",
     });
 
-  const handleFormChange = (e: { target: { name: any; value: any; type: any } }) => {
+  const handleFormChange = (e: {
+    target: { name: any; value: any; type: any };
+  }) => {
     const { name, value, type } = e.target;
     setCenterForm((prev) => ({
       ...prev,
@@ -160,7 +175,11 @@ const normalizeShelters = (rows: any[]): Shelter[] =>
   const handleDropdownToggle = (id: string | number) =>
     setDropdownOpenId(id === dropdownOpenId ? null : id);
 
-  const handleEditClick = (id: string | number, occupied: number, capacity: number) => {
+  const handleEditClick = (
+    id: string | number,
+    occupied: number,
+    capacity: number,
+  ) => {
     const numId = Number(id);
     if (!Number.isFinite(numId)) {
       console.warn("Invalid shelter id on edit:", id);
@@ -193,54 +212,56 @@ const normalizeShelters = (rows: any[]): Shelter[] =>
 
   // Keep your existing effect for when the register modal opens
   // ---- NEW: utility to load LGUs ----
-const fetchLGUs = async () => {
-  try {
-    // ✅ new backend path
-    const res = await API.get<LGUMin[]>("/lgu_profiling/manage_lgu/lgu/list");
-    setLguList(res.data ?? []);
-  } catch (err: any) {
-    // optional fallback
-    if (err?.response?.status === 404) {
-      try {
-        const res2 = await API.get<LGUMin[]>("/lgu_profiling/lgu/list");
-        setLguList(res2.data ?? []);
-        return;
-      } catch (e2) {
-        console.error("LGU list (fallback) failed:", e2);
-      }
-    }
-    console.error("LGU list failed:", err);
-  }
-};
-
-// Keep your existing effect for when the register modal opens
-useEffect(() => {
-  if (isRegisterModalOpen) {
-    const fetch = async () => {
-      try {
-        if (isSuperAdmin) {
-          if (selectedLGUId != null) {
-            setLoadingBarangays(true);
-            const res = await API.get("/lgu_profiling/barangays", { params: { lgu_id: selectedLGUId } });
-            setBarangayList(res.data);
-            setLoadingBarangays(false);
-          } else {
-            // ✅ use helper instead of the old API call
-            await fetchLGUs();
-            setBarangayList([]);
-          }
-        } else {
-          const response = await API.get("/lgu_profiling/me/barangay_list");
-          setBarangayList(response.data);
+  const fetchLGUs = async () => {
+    try {
+      // ✅ new backend path
+      const res = await API.get<LGUMin[]>("/lgu_profiling/manage_lgu/lgu/list");
+      setLguList(res.data ?? []);
+    } catch (err: any) {
+      // optional fallback
+      if (err?.response?.status === 404) {
+        try {
+          const res2 = await API.get<LGUMin[]>("/lgu_profiling/lgu/list");
+          setLguList(res2.data ?? []);
+          return;
+        } catch (e2) {
+          console.error("LGU list (fallback) failed:", e2);
         }
-      } catch (e: any) {
-        console.error("Error fetching barangay / lgu: " + (e?.message || e));
-        setLoadingBarangays(false);
       }
-    };
-    fetch();
-  }
-}, [isRegisterModalOpen, isSuperAdmin, selectedLGUId]);
+      console.error("LGU list failed:", err);
+    }
+  };
+
+  // Keep your existing effect for when the register modal opens
+  useEffect(() => {
+    if (isRegisterModalOpen) {
+      const fetch = async () => {
+        try {
+          if (isSuperAdmin) {
+            if (selectedLGUId != null) {
+              setLoadingBarangays(true);
+              const res = await API.get("/lgu_profiling/barangays", {
+                params: { lgu_id: selectedLGUId },
+              });
+              setBarangayList(res.data);
+              setLoadingBarangays(false);
+            } else {
+              // ✅ use helper instead of the old API call
+              await fetchLGUs();
+              setBarangayList([]);
+            }
+          } else {
+            const response = await API.get("/lgu_profiling/me/barangay_list");
+            setBarangayList(response.data);
+          }
+        } catch (e: any) {
+          console.error("Error fetching barangay / lgu: " + (e?.message || e));
+          setLoadingBarangays(false);
+        }
+      };
+      fetch();
+    }
+  }, [isRegisterModalOpen, isSuperAdmin, selectedLGUId]);
 
   useEffect(() => {
     if (isRegisterModalOpen) {
@@ -250,12 +271,14 @@ useEffect(() => {
             // For Super Admin, if an LGU is already selected fetch its barangays
             if (selectedLGUId != null) {
               setLoadingBarangays(true);
-              const res = await API.get("/lgu_profiling/barangays", { params: { lgu_id: selectedLGUId } });
+              const res = await API.get("/lgu_profiling/barangays", {
+                params: { lgu_id: selectedLGUId },
+              });
               setBarangayList(res.data);
               setLoadingBarangays(false);
             } else {
               // Load LGU list to allow selection
-              const lgus = await fetchLGUs(); 
+              const lgus = await fetchLGUs();
               setBarangayList([]); // wait until LGU is chosen
             }
           } else {
@@ -283,7 +306,9 @@ useEffect(() => {
       }
       try {
         setLoadingBarangays(true);
-        const res = await API.get("/lgu_profiling/manage_lgu/barangays", { params: { lgu_id: selectedLGUId } })
+        const res = await API.get("/lgu_profiling/manage_lgu/barangays", {
+          params: { lgu_id: selectedLGUId },
+        });
 
         setBarangayList(res.data);
       } catch (e) {
@@ -297,26 +322,27 @@ useEffect(() => {
 
   // NEW: fetch barangays on mount (so filtering works immediately for LGU Officer)
   useEffect(() => {
-  const fetchMine = async () => {
-    try {
-      const response = await API.get("/lgu_profiling/me/barangay_list");
-      const list: Barangay[] = Array.isArray(response.data) ? response.data : [];
-      setBarangayList(list);
-      setMyBarangayIds(list.map((b) => b.id));
-    } catch (e: any) {
-      // Only log non-404s; ignore 404 since route may not exist for your deploy
-      if (e?.response?.status !== 404) {
-        console.error("Error fetching my barangays:", e?.message || e);
+    const fetchMine = async () => {
+      try {
+        const response = await API.get("/lgu_profiling/me/barangay_list");
+        const list: Barangay[] = Array.isArray(response.data)
+          ? response.data
+          : [];
+        setBarangayList(list);
+        setMyBarangayIds(list.map((b) => b.id));
+      } catch (e: any) {
+        // Only log non-404s; ignore 404 since route may not exist for your deploy
+        if (e?.response?.status !== 404) {
+          console.error("Error fetching my barangays:", e?.message || e);
+        }
       }
+    };
+
+    // ✅ Only LGU officers need this list for client-side filtering
+    if (!isSuperAdmin && isLGUOfficer) {
+      fetchMine();
     }
-  };
-
-  // ✅ Only LGU officers need this list for client-side filtering
-  if (!isSuperAdmin && isLGUOfficer) {
-    fetchMine();
-  }
-}, [isSuperAdmin, isLGUOfficer]);
-
+  }, [isSuperAdmin, isLGUOfficer]);
 
   const handleEditSave = async () => {
     if (!editModal) return;
@@ -337,13 +363,16 @@ useEffect(() => {
     }
 
     try {
-      await API.put(`/lgu_profiling/manage_lgu/update_evacuation/${Number(editModal.id)}`, {
-        name: shelterToUpdate.name,
-        lat: shelterToUpdate.lat,
-        lng: shelterToUpdate.lng,
-        capacity: shelterToUpdate.capacity,
-        occupied: editModal.occupied,
-      });
+      await API.put(
+        `/lgu_profiling/manage_lgu/update_evacuation/${Number(editModal.id)}`,
+        {
+          name: shelterToUpdate.name,
+          lat: shelterToUpdate.lat,
+          lng: shelterToUpdate.lng,
+          capacity: shelterToUpdate.capacity,
+          occupied: editModal.occupied,
+        },
+      );
       setEditModal(null);
       await Swal.fire("Success", "Evacuee count updated!", "success");
       fetchShelters();
@@ -355,14 +384,15 @@ useEffect(() => {
   const handleDeleteClick = async (shelter: {
     id: number;
     name: string;
-    barangay?: { name: string }[] | null;
+    barangay?: { name: string } | null;
   }) => {
     setDropdownOpenId(null);
 
     const numId = Number(shelter.id);
     const shelterName = shelter.name || "this shelter";
-    const barangayName =
-      shelter.barangay && shelter.barangay.length > 0 ? shelter.barangay[0].name : "no assigned barangay";
+    const barangayName = shelter.barangay
+      ? shelter.barangay.name
+      : "no assigned barangay";
 
     if (!Number.isFinite(numId)) {
       await Swal.fire("Error", "Invalid shelter ID.", "error");
@@ -385,7 +415,11 @@ useEffect(() => {
     try {
       // Normal delete first
       await API.delete(`/lgu_profiling/manage_lgu/delete_evacuation/${numId}`);
-      await Swal.fire("Deleted!", `"${shelterName}" has been removed.`, "success");
+      await Swal.fire(
+        "Deleted!",
+        `"${shelterName}" has been removed.`,
+        "success",
+      );
       fetchShelters();
     } catch (e) {
       const err = e as AxiosError<any>;
@@ -408,7 +442,9 @@ useEffect(() => {
 
         try {
           // Force delete = detach barangay + delete evacuation
-          const resp = await API.post(`/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`);
+          const resp = await API.post(
+            `/lgu_profiling/manage_lgu/evacuation/${numId}/force_delete`,
+          );
           const count = resp?.data?.detached_count ?? 0;
 
           await Swal.fire(
@@ -420,7 +456,11 @@ useEffect(() => {
         } catch (e2) {
           const err2 = e2 as AxiosError<any>;
           const detail2 = (err2?.response?.data as any)?.detail;
-          await Swal.fire("Error", detail2 || `Failed to detach and delete "${shelterName}".`, "error");
+          await Swal.fire(
+            "Error",
+            detail2 || `Failed to detach and delete "${shelterName}".`,
+            "error",
+          );
         }
         return;
       }
@@ -438,11 +478,19 @@ useEffect(() => {
         return;
       }
       if (!payload.lat || !payload.lng) {
-        await Swal.fire("Required", "Please pick a location on the map.", "warning");
+        await Swal.fire(
+          "Required",
+          "Please pick a location on the map.",
+          "warning",
+        );
         return;
       }
       if (Number(payload.occupied) < 0 || Number(payload.capacity) < 0) {
-        await Swal.fire("Error", "Capacity and occupied must be non-negative.", "error");
+        await Swal.fire(
+          "Error",
+          "Capacity and occupied must be non-negative.",
+          "error",
+        );
         return;
       }
       if (Number(payload.occupied) > Number(payload.capacity)) {
@@ -485,39 +533,49 @@ useEffect(() => {
       return "";
     }
   }
-const fetchShelters = useCallback(async () => {
-  try {
-    if (isSuperAdmin || isLGUOfficer) {
-      const response = await API.get("/lgu_profiling/api/get_evacuation");
-      setShelters(normalizeShelters(response.data));
-    } else {
-      const response = await API.get("/evacuation/my_centers");
-      const centers: any[] = response?.data?.centers ?? [];
-      setShelters(normalizeShelters(centers));
-      const brgyId = response?.data?.scope?.barangay?.id;
-      if (brgyId) setMyBarangayIds([brgyId]);
+  useEffect(() => {
+    console.log(shelters);
+  }, [shelters]);
+  const fetchShelters = useCallback(async () => {
+    try {
+      if (isSuperAdmin || isLGUOfficer) {
+        let url = "/lgu_profiling/api/get_evacuation";
+        if (isLGUOfficer) {
+          url = "/lgu_profiling/me/get_evacuation";
+        }
+        const response = await API.get(url);
+        setShelters(normalizeShelters(response.data));
+      } else {
+        const response = await API.get("/evacuation/my_centers");
+        const centers: any[] = response?.data?.centers ?? [];
+        setShelters(normalizeShelters(centers));
+        const brgyId = response?.data?.scope?.barangay?.id;
+        if (brgyId) setMyBarangayIds([brgyId]);
+      }
+    } catch (e) {
+      console.error("Failed to fetch shelters", e);
     }
-  } catch (e) {
-    console.error("Failed to fetch shelters", e);
-  }
-}, [isSuperAdmin, isLGUOfficer]); 
+  }, [isSuperAdmin, isLGUOfficer]);
 
   const getBarangayCoordinate = (id: number): [number, number] | null => {
     const b = barangayList.find((b) => b.id === id);
     return b && b.lat != null && b.lng != null ? [b.lat, b.lng] : null;
   };
-// React 18 guard + role-aware fetch
-const fetchedRef = useRef(false);
+  // React 18 guard + role-aware fetch
+  const fetchedRef = useRef(false);
 
-useEffect(() => {
-  if (!isRolesReady) return;         // wait until roles are known
-  if (fetchedRef.current) return;    // prevent dev double-fetch
-  fetchedRef.current = true;
+  useEffect(() => {
+    if (!isRolesReady) return; // wait until roles are known
+    if (fetchedRef.current) return; // prevent dev double-fetch
+    fetchedRef.current = true;
 
-  fetchShelters();                   // now safely fetch based on role
-}, [isRolesReady, fetchShelters]);
+    fetchShelters(); // now safely fetch based on role
+  }, [isRolesReady, fetchShelters]);
 
-  const onLocationSelectSubmit = (address: string, coordinates: [number, number]) => {
+  const onLocationSelectSubmit = (
+    address: string,
+    coordinates: [number, number],
+  ) => {
     setCenterForm((prev) => ({
       ...prev,
       lat: coordinates[0],
@@ -537,7 +595,8 @@ useEffect(() => {
             <div className="status-content">
               <h3>Shelters Occupied</h3>
               <p className="status-number">
-                {displayedShelters.filter((s) => s.occupied > 0).length}/{displayedShelters.length}
+                {displayedShelters.filter((s) => s.occupied > 0).length}/
+                {displayedShelters.length}
               </p>
               <span className="status-label">Assigned to shelters</span>
             </div>
@@ -551,7 +610,9 @@ useEffect(() => {
               <p className="status-number">
                 {displayedShelters.reduce((total, s) => total + s.occupied, 0)}
               </p>
-              <span className="status-label">Across {displayedShelters.length} locations</span>
+              <span className="status-label">
+                Across {displayedShelters.length} locations
+              </span>
             </div>
           </div>
           <div className="status-card info">
@@ -562,14 +623,26 @@ useEffect(() => {
               <h3>Available Capacity</h3>
               <p className="status-number">
                 {Math.round(
-                  (displayedShelters.reduce((total, s) => total + (s.capacity - s.occupied), 0) /
-                    Math.max(1, displayedShelters.reduce((total, s) => total + s.capacity, 0))) *
+                  (displayedShelters.reduce(
+                    (total, s) => total + (s.capacity - s.occupied),
+                    0,
+                  ) /
+                    Math.max(
+                      1,
+                      displayedShelters.reduce(
+                        (total, s) => total + s.capacity,
+                        0,
+                      ),
+                    )) *
                     100,
                 )}
                 %
               </p>
               <span className="status-label">
-                {displayedShelters.reduce((total, s) => total + (s.capacity - s.occupied), 0)}{" "}
+                {displayedShelters.reduce(
+                  (total, s) => total + (s.capacity - s.occupied),
+                  0,
+                )}{" "}
                 available capacity
               </span>
             </div>
@@ -581,10 +654,17 @@ useEffect(() => {
           <section className="quick-actions">
             <h2>Quick Actions</h2>
             <div className="action-buttons">
-              <button className="action-btn primary" onClick={() => setIsRegisterModalOpen(true)}>
-                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation Center
+              <button
+                className="action-btn primary"
+                onClick={() => setIsRegisterModalOpen(true)}
+              >
+                <i className="fas fa-plus-circle"></i>&nbsp;Register Evacuation
+                Center
               </button>
-              <button className="action-btn secondary" onClick={() => scrollToSection(statusSectionRef)}>
+              <button
+                className="action-btn secondary"
+                onClick={() => scrollToSection(statusSectionRef)}
+              >
                 <i className="fas fa-map-marked-alt"></i>View Shelter Status
               </button>
               <button
@@ -619,19 +699,22 @@ useEffect(() => {
             <section className="map-section">
               <div className="section-header">
                 <h2>
-                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps and Occupancy
+                  <i className="fas fa-map"></i>&nbsp;Evacuation/Shelter Maps
+                  and Occupancy
                 </h2>
               </div>
               <div className="map-container">
                 <div className="maps-placeholder">
                   <MapView
                     center={[10.313924, 123.887082]}
-                    markers={displayedShelters.map(({ lat, lng, name, capacity }) => ({
-                      lat,
-                      lng,
-                      name,
-                      capacity,
-                    }))}
+                    markers={displayedShelters.map(
+                      ({ lat, lng, name, capacity }) => ({
+                        lat,
+                        lng,
+                        name,
+                        capacity,
+                      }),
+                    )}
                     customIcon={greenPinIcon}
                   />
                 </div>
@@ -648,67 +731,88 @@ useEffect(() => {
           </div>
 
           <div className="shelter-list">
-            {displayedShelters.length === 0 ? (
+            {shelters.length === 0 ? (
               <Empty description="No shelters added yet" />
             ) : (
-              displayedShelters.map(({ id, name, capacity, occupied, lat, lng, barangay }) => {
-                const capacityPercent =
-                  capacity === 0 ? 0 : Math.min(100, Math.round((occupied / capacity) * 100));
-                const statusLabel = deriveStatus(occupied, capacity);
+              shelters.map(
+                ({ id, name, capacity, occupied, lat, lng, barangay }) => {
+                  const capacityPercent =
+                    capacity === 0
+                      ? 0
+                      : Math.min(100, Math.round((occupied / capacity) * 100));
+                  const statusLabel = deriveStatus(occupied, capacity);
 
-                return (
-                  <div className="shelter-item" key={id} style={{ position: "relative" }}>
-                    <div className="shelter-info">
-                      <h4 className="shelter-title-row">
-                        <span>
-                          {name} ({lat}, {lng})
-                        </span>
-                        {isLguAdmin && (
-                          <>
-                            <button
-                              className="kebab-menu-btn"
-                              aria-label="Options"
-                              onClick={() => handleDropdownToggle(id)}
-                              type="button"
-                            >
-                              <span className="kebab-menu-icon">⋮</span>
-                            </button>
-                            {dropdownOpenId === id && (
-                              <div className="kebab-dropdown">
-                                <button
-                                  className="kebab-dropdown-item"
-                                  onClick={() => handleEditClick(id, occupied, capacity)}
-                                >
-                                  <i className="fas fa-edit"></i> Edit
-                                </button>
-                                <button
-                                  className="kebab-dropdown-item danger"
-                                  onClick={() => handleDeleteClick({ id, name, barangay })}
-                                >
-                                  <i className="fas fa-trash-alt" /> Delete
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </h4>
-                    </div>
-
-                    <div className="shelter-stats">
-                      <div className="capacity-bar">
-                        <div className="capacity-fill" style={{ width: `${capacityPercent}%` }} />
+                  return (
+                    <div
+                      className="shelter-item"
+                      key={id}
+                      style={{ position: "relative" }}
+                    >
+                      <div className="shelter-info">
+                        <h4 className="shelter-title-row">
+                          <span>
+                            {name} ({lat}, {lng})
+                          </span>
+                          {isLguAdmin && (
+                            <>
+                              <button
+                                className="kebab-menu-btn"
+                                aria-label="Options"
+                                onClick={() => handleDropdownToggle(id)}
+                                type="button"
+                              >
+                                <span className="kebab-menu-icon">⋮</span>
+                              </button>
+                              {dropdownOpenId === id && (
+                                <div className="kebab-dropdown">
+                                  <button
+                                    className="kebab-dropdown-item"
+                                    onClick={() =>
+                                      handleEditClick(id, occupied, capacity)
+                                    }
+                                  >
+                                    <i className="fas fa-edit"></i> Edit
+                                  </button>
+                                  <button
+                                    className="kebab-dropdown-item danger"
+                                    onClick={() =>
+                                      handleDeleteClick({ id, name, barangay })
+                                    }
+                                  >
+                                    <i className="fas fa-trash-alt" /> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </h4>
                       </div>
-                      <span className="capacity-text">
-                        {occupied}/{capacity} people
-                      </span>
-                      <span className="capacity-percent">{capacityPercent}%</span>
-                    </div>
 
-                    <span className={`shelter-badge ${toL(statusLabel)}`}>Status: {statusLabel}</span>
-                    <span>Barangay Assigned: {barangay && String(barangay[0]?.name)}</span>
-                  </div>
-                );
-              })
+                      <div className="shelter-stats">
+                        <div className="capacity-bar">
+                          <div
+                            className="capacity-fill"
+                            style={{ width: `${capacityPercent}%` }}
+                          />
+                        </div>
+                        <span className="capacity-text">
+                          {occupied}/{capacity} people
+                        </span>
+                        <span className="capacity-percent">
+                          {capacityPercent}%
+                        </span>
+                      </div>
+
+                      <span className={`shelter-badge ${toL(statusLabel)}`}>
+                        Status: {statusLabel}
+                      </span>
+                      <span>
+                        Barangay Assigned: {barangay && barangay.name}
+                      </span>
+                    </div>
+                  );
+                },
+              )
             )}
           </div>
         </section>
@@ -728,7 +832,10 @@ useEffect(() => {
                 className="modal-input"
               />
               <div className="modal-actions">
-                <button onClick={handleEditModalClose} className="modal-btn cancel">
+                <button
+                  onClick={handleEditModalClose}
+                  className="modal-btn cancel"
+                >
                   Cancel
                 </button>
                 <button onClick={handleEditSave} className="modal-btn save">
@@ -744,9 +851,13 @@ useEffect(() => {
             <div className="modal">
               <div className="modal-header">
                 <h3>
-                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation Center
+                  <i className="fas fa-edit"></i>&nbsp;Register Evacuation
+                  Center
                 </h3>
-                <button className="modal-close" onClick={() => setIsRegisterModalOpen(false)}>
+                <button
+                  className="modal-close"
+                  onClick={() => setIsRegisterModalOpen(false)}
+                >
                   &times;
                 </button>
               </div>
@@ -762,7 +873,10 @@ useEffect(() => {
                         const v = e.target.value ? Number(e.target.value) : NaN;
                         setSelectedLGUId(Number.isFinite(v) ? v : null);
                         // reset barangay selection when LGU changes
-                        setCenterForm((prev) => ({ ...prev, baranggay_id: -1 }));
+                        setCenterForm((prev) => ({
+                          ...prev,
+                          baranggay_id: -1,
+                        }));
                       }}
                     >
                       <option value="">Select LGU</option>
@@ -807,7 +921,9 @@ useEffect(() => {
                         </option>
                       ) : barangayList.length === 0 ? (
                         <option disabled value={-1}>
-                          {isSuperAdmin && selectedLGUId == null ? "Select an LGU first" : "Fetching data..."}
+                          {isSuperAdmin && selectedLGUId == null
+                            ? "Select an LGU first"
+                            : "Fetching data..."}
                         </option>
                       ) : (
                         <>
@@ -816,9 +932,15 @@ useEffect(() => {
                           {barangayList
                             .filter((item) => !item.evacucation_center_id) // show only barangays without evac center
                             .map((item) => (
-                              <option key={item.id} value={item.id} disabled={!(item.lat && item.lng)}>
+                              <option
+                                key={item.id}
+                                value={item.id}
+                                disabled={!(item.lat && item.lng)}
+                              >
                                 {item.name}
-                                {!item.lat || !item.lng ? " (Missing some info)" : ""}
+                                {!item.lat || !item.lng
+                                  ? " (Missing some info)"
+                                  : ""}
                               </option>
                             ))}
                         </>
@@ -834,9 +956,18 @@ useEffect(() => {
                       type="text"
                       readOnly
                       placeholder="Select a location"
-                      value={centerForm.lat ? `${centerForm.lat}, ${centerForm.lng}` : ""}
+                      value={
+                        centerForm.lat
+                          ? `${centerForm.lat}, ${centerForm.lng}`
+                          : ""
+                      }
                     />
-                    <button type="button" className="map-btn" onClick={openPicker} title="Pick location on map">
+                    <button
+                      type="button"
+                      className="map-btn"
+                      onClick={openPicker}
+                      title="Pick location on map"
+                    >
                       <i className="fas fa-map-marker-alt" />
                     </button>
                   </div>
@@ -857,14 +988,23 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {editingId && <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>}
+                {editingId && (
+                  <p style={{ marginTop: 8 }}>Editing record ID: {editingId}</p>
+                )}
 
                 <div className="modal-actions">
-                  <button type="button" className="modal-btn cancel" onClick={() => setIsRegisterModalOpen(false)}>
+                  <button
+                    type="button"
+                    className="modal-btn cancel"
+                    onClick={() => setIsRegisterModalOpen(false)}
+                  >
                     Cancel
                   </button>
                   <button type="submit" className="modal-btn save">
-                    <i className="fas fa-save"></i> {editingId ? "Update Evacuation Center" : "Save Evacuation Center"}
+                    <i className="fas fa-save"></i>{" "}
+                    {editingId
+                      ? "Update Evacuation Center"
+                      : "Save Evacuation Center"}
                   </button>
                 </div>
               </form>
@@ -880,7 +1020,9 @@ useEffect(() => {
               address: ``,
               coordinates: [-1000000, -1000000],
             }}
-            customCenter={getBarangayCoordinate(centerForm.baranggay_id) ?? null}
+            customCenter={
+              getBarangayCoordinate(centerForm.baranggay_id) ?? null
+            }
           ></MapViewWithSearch>
         )}
       </main>

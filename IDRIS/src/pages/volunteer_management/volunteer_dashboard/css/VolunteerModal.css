@@ -26,18 +26,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: -16px;
+  margin-right: -10px;
 }
 
 .modal-header h3 {
   color: white;
 }
 
-.close-btn {
-  background: transparent;
+.closeBtn {
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  background: red;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  color: red;
+  color: white;
 }
 
 /* Modal Actions */
@@ -61,12 +66,12 @@
 }
 
 .cancel-btn {
-  background-color: #749ab6;
+  background: linear-gradient(135deg, #749AB6 0%, rgb(149.4386792453, 178.2971698113, 199.5613207547) 100%);
   color: white;
 }
 
 .save-btn {
-  background-color: #749ab6;
+   background: linear-gradient(135deg, #749AB6 0%, rgb(149.4386792453, 178.2971698113, 199.5613207547) 100%);
   color: white;
 }
 

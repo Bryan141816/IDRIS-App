@@ -34,7 +34,7 @@ export async function getMyVolunteerProfile(): Promise<any> {
 
 // Read by current user id (auth-based; no params)
 export async function getVolunteerByUserId(): Promise<any> {
-    const res = await API.get('/volunteer/my_profile'); 
+    const res = await API.get('/volunteer/my_profile');
     return res.data;
 }
 
@@ -74,3 +74,22 @@ export async function updateVolunteerStatus(
     const res = await API.patch(`/volunteer/${id}/status`, payload);
     return res.data;
 }
+
+export const getTopActiveVolunteers = async (
+    limit: number = 3,
+    includePrograms: boolean = true
+) => {
+    try {
+        const response = await API.get('/volunteer/top-active', {  // ✅ Changed path
+            params: {
+                limit,
+                include_programs: includePrograms
+            }
+        })
+        return response.data.volunteers
+    } catch (error) {
+        console.error('Error fetching top active volunteers:', error)
+        throw error
+    }
+}
+

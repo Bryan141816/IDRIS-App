@@ -57,7 +57,7 @@ export const SubmitProcurementRequest: React.FC<
     }));
   };
   const changeDeliveryType = (
-    e: Reac.MouseEven<HTMLButtonElement>,
+    e: React.MouseEvent<HTMLButtonElement>,
     type: boolean,
   ) => {
     e.preventDefault();
@@ -286,7 +286,10 @@ export const SubmitProcurementRequest: React.FC<
                 <button
                   className="secondary-btn"
                   style={{ width: "100%" }}
-                  onClick={() => SetIsUseBarangayPicker(true)}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    SetIsUseBarangayPicker(true);
+                  }}
                 >
                   Select Address
                 </button>

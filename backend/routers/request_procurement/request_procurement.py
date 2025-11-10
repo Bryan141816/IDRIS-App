@@ -339,33 +339,55 @@ def list_requests(
     return [serialize_request(r) for r in rows]
 
 
+
 @router.get("/request_procurement/barangay_evac_list")
-def barangay_evac_list(db: Session = Depends(get_db)):
+def barangay_evac_list(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId()),
+):
+
+    # Get the admin's LGU
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+    if not admin or not admin.lgu:
+        raise HTTPException(status_code=404, detail="LGU not found")
+
+    lgu_id = admin.lgu.id
+
+    # Barangays only in this LGU
     q_barangay = select(
         BaranggayRecords.id.label("id"),
         BaranggayRecords.name.label("name"),
         literal("barangay").label("type"),
     ).where(
         and_(
+            BaranggayRecords.lgu_id == lgu_id,
             BaranggayRecords.lat.isnot(None),
             BaranggayRecords.lng.isnot(None),
         )
     )
 
-    # Evacuation centers (no filters)
+    # Evacuation centers only linked to this LGU's barangays
     q_evac = select(
         EvacuationCenter.evacuation_id.label("id"),
         EvacuationCenter.name.label("name"),
         literal("evacuation").label("type"),
-    )
+    ).join(
+        BaranggayRecords,
+        EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id,
+    ).where(
+        BaranggayRecords.lgu_id == lgu_id
+    ).distinct()
 
-    # Combine both queries (no deduping)
+    # Combine both queries
     q = q_barangay.union_all(q_evac).order_by("name")
 
-    # Execute and return mappings
     rows = db.execute(q).mappings().all()
     return [dict(r) for r in rows]
-
 
 #
 # @router.post("/procurement_management/update_request")

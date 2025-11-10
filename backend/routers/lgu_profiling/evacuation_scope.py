@@ -277,9 +277,9 @@ def get_scope_address(
     return get_my_centers(db=db, current_user=current_user)
 
 
+
 @router.get("/get_reports")
-def get_evacuation_data(db: Session = Depends(get_db),     user_id: str = Depends(GetUserId())):
-    # Resolve LGU for the current user
+def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(GetUserId())):
 
     # Base query
     stmt = (
@@ -294,8 +294,7 @@ def get_evacuation_data(db: Session = Depends(get_db),     user_id: str = Depend
         .join(LGURecords, LGURecords.id == BaranggayRecords.lgu_id)
     )
 
-    # If user is an LGU, filter by that LGU
-
+    # Check if user is an LGU
     admin = (
         db.query(AdminUserProfile)
         .options(joinedload(AdminUserProfile.lgu))
@@ -303,15 +302,14 @@ def get_evacuation_data(db: Session = Depends(get_db),     user_id: str = Depend
         .first()
     )
 
-
-
     lgu = admin.lgu if admin else None
 
     if lgu:
         stmt = stmt.where(LGURecords.id == lgu.id)
+
     result = db.execute(stmt).all()
 
-    # Aggregate evacuations by LGU (same format as before)
+    # Aggregate evacuations by LGU
     lgu_dict = defaultdict(list)
     for row in result:
         lgu_dict[row.lgu_name].append({
@@ -321,7 +319,24 @@ def get_evacuation_data(db: Session = Depends(get_db),     user_id: str = Depend
             "capacity": row.capacity
         })
 
-    # Format output
-    output = [{"lgu": lgu_name, "evacuation": evacuations} for lgu_name, evacuations in lgu_dict.items()]
+    # Determine scope
+    scope_name = lgu.lgu_name if lgu else "All LGU"
+
+    # Build data list
+    data_list = [
+        {
+            "lgu": lgu_name,
+            "evacuation": evacuations
+        }
+        for lgu_name, evacuations in lgu_dict.items()
+    ]
+
+    # Final response
+    output = {
+        "scope": scope_name,
+        "total_count": len(result),
+        "data": data_list
+    }
 
     return output
+

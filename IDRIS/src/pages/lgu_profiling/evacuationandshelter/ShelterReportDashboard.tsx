@@ -68,6 +68,11 @@ export default function ShelterReportDashboard({
     lgu: string;
     evacuation: EvacuationInfo[];
   }
+  interface ReportData {
+    scope: string;
+    total_count: number;
+    data: LGUEvacuation[];
+  }
   useEffect(() => {
     const fetch = async () => {
       try {
@@ -79,7 +84,7 @@ export default function ShelterReportDashboard({
     };
     fetch();
   }, []);
-  const [reports, setReports] = useState<LGUEvacuation[]>([]);
+  const [reports, setReports] = useState<ReportData | null>(null);
   return (
     <div className={styles.donationReport}>
       <div className={styles.reportHeader}>
@@ -111,7 +116,10 @@ export default function ShelterReportDashboard({
         <div className={styles.reportInfo}>
           <h2 className={styles.reportTitle}>{reportTitle}</h2>
           <div className={styles.reportMetadata}>
-            <span>Generated on: {new Date().toLocaleDateString()}</span>
+            <span>
+              Generated on: {new Date().toLocaleDateString()} • Total Shelters:{" "}
+              {reports?.total_count} • Scope: {reports?.scope}
+            </span>
 
             <div className={styles.printSection} style={{ gap: 8 }}>
               <button
@@ -128,41 +136,43 @@ export default function ShelterReportDashboard({
       </div>
 
       <main className={styles.reportMain}>
-        <div className={tableStyle.table_container}>
-          {reports.map((report) => (
-            <>
-              <h2 className={tableStyle.lgu_name}>{report.lgu}, Cebu</h2>
-              <table className={tableStyle.table}>
-                <thead className={tableStyle.thead}>
-                  <tr>
-                    <th className={tableStyle.th}>Shelter Name</th>
-                    <th className={tableStyle.th}>Barangay</th>
-                    <th className={tableStyle.th}>Capacity</th>
-                    <th className={tableStyle.th}>Occupied</th>
-                    <th className={tableStyle.th}>Vacant</th>
-                    <th className={tableStyle.th}>Utilization</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.evacuation.map((eva) => (
+        {reports && (
+          <div className={tableStyle.table_container}>
+            {reports.data.map((report) => (
+              <>
+                <h2 className={tableStyle.lgu_name}>{report.lgu}, Cebu</h2>
+                <table className={tableStyle.table}>
+                  <thead className={tableStyle.thead}>
                     <tr>
-                      <td className={tableStyle.td}>{eva.evacuation_name}</td>
-                      <td className={tableStyle.td}>{eva.barangay_name}</td>
-                      <td className={tableStyle.td}>{eva.capacity}</td>
-                      <td className={tableStyle.td}>{eva.occupied}</td>
-                      <td className={tableStyle.td}>
-                        {eva.capacity - eva.occupied}
-                      </td>
-                      <td className={tableStyle.td}>
-                        {((eva.occupied / eva.capacity) * 100).toFixed(1)}%
-                      </td>
+                      <th className={tableStyle.th}>Shelter Name</th>
+                      <th className={tableStyle.th}>Barangay</th>
+                      <th className={tableStyle.th}>Capacity</th>
+                      <th className={tableStyle.th}>Occupied</th>
+                      <th className={tableStyle.th}>Vacant</th>
+                      <th className={tableStyle.th}>Utilization</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          ))}
-        </div>
+                  </thead>
+                  <tbody>
+                    {report.evacuation.map((eva) => (
+                      <tr>
+                        <td className={tableStyle.td}>{eva.evacuation_name}</td>
+                        <td className={tableStyle.td}>{eva.barangay_name}</td>
+                        <td className={tableStyle.td}>{eva.capacity}</td>
+                        <td className={tableStyle.td}>{eva.occupied}</td>
+                        <td className={tableStyle.td}>
+                          {eva.capacity - eva.occupied}
+                        </td>
+                        <td className={tableStyle.td}>
+                          {((eva.occupied / eva.capacity) * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ))}
+          </div>
+        )}
       </main>
       <div className={styles.printFooter}>
         <p>

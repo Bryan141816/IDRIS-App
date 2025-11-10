@@ -76,7 +76,16 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
       [name]: value,
     }));
   };
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const callFunction = async () => {
       const result = await Swal.fire({
         title: "Are you sure you want to edit this item?",
@@ -207,6 +216,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
+                  required
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -223,6 +233,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   name="zone_name"
                   value={formData.zone_name}
                   onChange={handleChange}
+                  required
                 />
               </div>
 
@@ -238,12 +249,15 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                 <MiniMap coordinate={[formData.lat, formData.long]}></MiniMap>
                 <input
                   type="text"
-                  disabled
                   placeholder="No Address has been selected yet."
                   value={formData.address}
+                  required
                 />
                 <button
-                  onClick={() => setAddressSelector(true)}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    setAddressSelector(true);
+                  }}
                   className="secondary-btn"
                   style={{ width: "100%" }}
                 >
@@ -257,6 +271,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   name="zone_type"
                   value={formData.zone_type}
                   onChange={handleChange}
+                  required
                 >
                   <option value="food storage zone">Food Storage Zone</option>
                   <option value="shelter materials zone">
@@ -276,6 +291,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   name="capacity"
                   value={formData.capacity}
                   onChange={handleChange}
+                  required
                 />
               </div>
               <div className="form-group">
@@ -286,6 +302,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   name="manager"
                   value={formData.manager}
                   onChange={handleChange}
+                  required
                 />
               </div>
             </>
@@ -316,6 +333,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
+                    required
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -332,6 +350,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                     name="capacity"
                     value={formData.capacity}
                     onChange={handleChange}
+                    required
                   />
                 </div>
                 <div className="form-group">
@@ -342,6 +361,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                     name="manager"
                     value={formData.manager}
                     onChange={handleChange}
+                    required
                   />
                 </div>
               </div>

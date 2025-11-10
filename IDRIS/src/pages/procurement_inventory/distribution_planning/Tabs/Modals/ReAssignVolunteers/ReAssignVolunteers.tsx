@@ -65,7 +65,17 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
       ),
     );
   };
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
+
     const normalizedData = formTeam.map((item) => ({
       member_id: item.members_id,
       volunteer_id: item.volunteer.volunteer_id,
@@ -74,6 +84,14 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
       team_id: team_id,
     }));
     const submit = async () => {
+      const confirm = await Swal.fire({
+        title: "Are you sure you want to reassign this volunteer/s?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+      if (!confirm.isConfirmed) {
+        return;
+      }
       try {
         const response = await API.post(
           "/distributionAndplanning/reassigned_volunteers",
@@ -102,7 +120,7 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
         ></SelectVolunteer>
       )}
       <div className="modal-overlay" style={{ zIndex: 900 }}>
-        <div className="modal" style={{ minWidth: "65vw" }}>
+        <form className="modal" style={{ minWidth: "65vw" }}>
           <div className="modal-header">
             <button className="close-btn" onClick={onClose}>
               ×
@@ -150,6 +168,7 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
                                 ),
                               );
                             }}
+                            required
                           >
                             <option value="team leader">Team Leader</option>
                             <option value="coordinator">Coordinator</option>
@@ -159,6 +178,27 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
                         </td>
                         <td style={{ padding: "8px" }}>
                           {member.reassign_type}
+                          {member.reassign_type.trim() === "" && (
+                            <input
+                              type="text"
+                              id="name"
+                              required
+                              onInvalid={(e) =>
+                                e.currentTarget.setCustomValidity(
+                                  "Pick Modification Type!",
+                                )
+                              }
+                              style={{
+                                height: "0px",
+                                width: "0px",
+                                opacity: 0,
+                                left: "50%",
+                              }}
+                              onInput={(e) =>
+                                e.currentTarget.setCustomValidity("")
+                              }
+                            />
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -166,7 +206,10 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
                           <div style={{ display: "flex", gap: "6px" }}>
                             <button
                               className="action-btn"
-                              onClick={() => {
+                              onClick={(
+                                e: React.MouseEvent<HTMLButtonElement>,
+                              ) => {
+                                e.preventDefault();
                                 if (member.reassign_type === "change") {
                                   const prev_data = team_members[index];
                                   setFormTeam((prev) =>
@@ -195,7 +238,10 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
 
                             <button
                               className="action-btn"
-                              onClick={() => {
+                              onClick={(
+                                e: React.MouseEvent<HTMLButtonElement>,
+                              ) => {
+                                e.preventDefault();
                                 if (member.reassign_type === "change") {
                                   const prev_data = team_members[index];
                                   setFormTeam((prev) =>
@@ -224,7 +270,10 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
 
                             <button
                               className="action-btn"
-                              onClick={() => {
+                              onClick={(
+                                e: React.MouseEvent<HTMLButtonElement>,
+                              ) => {
+                                e.preventDefault();
                                 setOpenSelector(true);
                                 setSelectedIndex(index);
                               }}
@@ -257,14 +306,20 @@ export const ReAssignVolunteers: React.FC<ReAssignVolunteersProps> = ({
             </div>
           </div>
           <div className="modal-actions">
-            <button className="secondary-btn" onClick={onClose}>
+            <button
+              className="secondary-btn"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                onClose();
+              }}
+            >
               Cancel
             </button>
             <button className="primary-btn" onClick={handleSubmit}>
               Submit
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </>
   );

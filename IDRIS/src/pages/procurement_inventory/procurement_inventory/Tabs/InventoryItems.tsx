@@ -113,12 +113,12 @@ const InventoryItems = () => {
         <div className="section-header">
           <h2>Inventory Dashboard</h2>
           <div className="header-actions">
-            <button
-              className="secondary-btn"
-              onClick={() => openModal("export")}
-            >
-              📊 Export Report
-            </button>
+            {/* <button */}
+            {/*   className="secondary-btn" */}
+            {/*   onClick={() => openModal("export")} */}
+            {/* > */}
+            {/*   📊 Export Report */}
+            {/* </button> */}
             <button
               className="primary-btn"
               onClick={() => openModal("add-item")}

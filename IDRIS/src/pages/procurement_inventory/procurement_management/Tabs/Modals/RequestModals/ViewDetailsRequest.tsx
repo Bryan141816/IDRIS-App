@@ -81,14 +81,22 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
     }
   }, []);
   const handleApproval = async (type: string) => {
+    const confirm = await Swal.fire({
+      title: `Are you sure you want to ${type} this request?`,
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+    });
+    if (!confirm.isConfirmed) {
+      return;
+    }
     try {
-      const cleanedList = requestList
-        ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
-        .map(({ item_id, assigned_id, quantity_assigned }) => ({
-          item_id,
-          assigned_id,
-          quantity_assigned,
-        }));
+      // const cleanedList = requestList
+      //   ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
+      //   .map(({ item_id, assigned_id, quantity_assigned }) => ({
+      //     item_id,
+      //     assigned_id,
+      //     quantity_assigned,
+      //   }));
       const response = await API.post(
         `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
       );
@@ -104,10 +112,16 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
       );
     }
   };
-  const onReject = () => {
+  const onReject = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+    }
     handleApproval("reject");
   };
-  const onApprove = () => {
+  const onApprove = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+    }
     handleApproval("approve");
   };
   return (
@@ -408,7 +422,12 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                           <button
                             className="action-btn"
                             style={{ width: "fit-content" }}
-                            onClick={() => openInventory(item, index)}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              openInventory(item, index);
+                            }}
                           >
                             Check Availability
                           </button>
@@ -420,14 +439,24 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                           <button
                             className="action-btn"
                             style={{ width: "fit-content" }}
-                            onClick={() => openInventory(item, index)}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              openInventory(item, index);
+                            }}
                           >
                             Pick From Inventory
                           </button>
                           <button
                             className="action-btn"
                             style={{ width: "fit-content" }}
-                            onClick={() => clearInventory(index)}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              clearInventory(index);
+                            }}
                           >
                             Clear Selected
                           </button>
@@ -594,11 +623,23 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
           </div>
         </div>
         <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
+          <button
+            className="secondary-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             Cancel
           </button>
           {type !== "check" && (
-            <button className="primary-btn" onClick={handleSubmit}>
+            <button
+              className="primary-btn"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+            >
               Select Item
             </button>
           )}

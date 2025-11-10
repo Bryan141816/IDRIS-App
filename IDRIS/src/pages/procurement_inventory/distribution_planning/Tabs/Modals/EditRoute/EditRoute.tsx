@@ -28,6 +28,14 @@ export const EditRoute: React.FC<EditRouteProp> = ({
   };
   const handleSubmit = () => {
     const post = async () => {
+      const confirm = await Swal.fire({
+        title: "Are you sure you want to edit this route?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+      if (!confirm.isConfirmed) {
+        return;
+      }
       try {
         const response = await API.post("/distribution_planning/update_route", {
           route_id: route.route_id,

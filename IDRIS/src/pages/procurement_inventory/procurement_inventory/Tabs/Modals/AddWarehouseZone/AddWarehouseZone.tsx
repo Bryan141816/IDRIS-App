@@ -1,9 +1,10 @@
 import {
+  ButtonHandler,
   DefaultInventoryModalProps,
   InventoryModal,
   WarehouseZone,
 } from "../ModalDefault";
-import { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { MapViewWithSearch } from "../../MapViewWithSearch";
 import Swal from "sweetalert2";
@@ -34,7 +35,16 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
       [name]: value,
     }));
   };
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const callFunction = async () => {
       const response = await AddWareHouse();
       if (response) {
@@ -105,6 +115,7 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
               type="text"
               placeholder="Enter zone name"
               name="zone_name"
+              required
               value={formData.zone_name}
               onChange={handleChange}
             />
@@ -113,12 +124,15 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
             <label>Address</label>
             <input
               type="text"
-              disabled
               placeholder="No Address has been selected yet."
               value={formData.address}
+              required
             />
             <button
-              onClick={() => setAddressSelector(true)}
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                setAddressSelector(true);
+              }}
               className="secondary-btn"
               style={{ width: "100%" }}
             >
@@ -131,6 +145,7 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
               name="zone_type"
               value={formData.zone_type}
               onChange={handleChange}
+              required
             >
               <option value="" disabled>
                 Select Type
@@ -150,7 +165,8 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
               type="number"
               placeholder="Enter capacity"
               name="capacity"
-              value={formData.capacity}
+              value={formData.capacity === 0 ? "" : formData.capacity}
+              required
               onChange={handleChange}
             />
           </div>
@@ -162,6 +178,7 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
               name="manager"
               value={formData.manager}
               onChange={handleChange}
+              required
             />
           </div>
         </div>

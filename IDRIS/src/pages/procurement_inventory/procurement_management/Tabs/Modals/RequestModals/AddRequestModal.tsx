@@ -92,7 +92,28 @@ export const SubmitProcurementRequest: React.FC<
       }));
     }
   };
-  const handleSubmit = () => {
+  const checkValidation = () => {
+    if (
+      formData.request_title.trim() !== "" &&
+      formData.request_description.trim() !== "" &&
+      formData.disaster_type.trim() !== "" &&
+      formData.date_needed.trim() !== "" &&
+      requestItem.length > 0
+    ) {
+      return true;
+    }
+    return false;
+  };
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const payload = { ...formData, request_items: requestItem };
     const submit = async () => {
       try {

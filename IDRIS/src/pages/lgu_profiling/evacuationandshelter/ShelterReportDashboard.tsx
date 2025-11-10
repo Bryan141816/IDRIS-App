@@ -68,17 +68,19 @@ export default function ShelterReportDashboard({
     lgu: string;
     evacuation_count: number;
     evacuation: EvacuationInfo[];
+
+    summary: {
+      total_capacity: number;
+      total_occupied: number;
+      largest_shelter: string;
+      smallest_shelter: string;
+    };
   }
 
   interface ReportData {
     scope: string;
     total_count: number;
     data: LGUEvacuation[];
-
-    total_capacity?: number;
-    total_occupied?: number;
-    largest_shelter?: string;
-    smallest_shelter?: string;
   }
   useEffect(() => {
     const fetch = async () => {
@@ -147,7 +149,7 @@ export default function ShelterReportDashboard({
           <>
             <div className={tableStyle.table_container}>
               {reports.data.map((report) => (
-                <>
+                <div key={report.lgu}>
                   <h2 className={tableStyle.lgu_name}>{report.lgu}, Cebu</h2>
                   <table className={tableStyle.table}>
                     <thead className={tableStyle.thead}>
@@ -161,8 +163,8 @@ export default function ShelterReportDashboard({
                       </tr>
                     </thead>
                     <tbody>
-                      {report.evacuation.map((eva) => (
-                        <tr>
+                      {report.evacuation.map((eva, index) => (
+                        <tr key={index}>
                           <td className={tableStyle.td}>
                             {eva.evacuation_name}
                           </td>
@@ -179,54 +181,52 @@ export default function ShelterReportDashboard({
                       ))}
                     </tbody>
                   </table>
-                </>
+                </div>
               ))}
             </div>
+
             <div className={styles.summary}>
               <h2>Summary</h2>
-              {reports.scope === "All LGU" ? (
-                <div className={styles.totalNumber}>
-                  <h2>Total Number of Shelters</h2>
-                  <div className={styles.summaryGrid}>
-                    {reports.data.map((item) => (
+              {reports.data.map((item) => {
+                const report = item.summary;
+                return (
+                  <div className={styles.summryContent}>
+                    {reports.scope === "All LGU" && (
+                      <h2 className={styles.summaryLabel}>{item.lgu}</h2>
+                    )}
+                    <div key={item.lgu} className={styles.summaryGrid2Column}>
                       <span className={styles.summaryLabel}>
-                        •{item.lgu}: {item.evacuation_count}
+                        • Total Number of Shelter: {item.evacuation_count}
                       </span>
-                    ))}
+                      <span className={styles.summaryLabel}>
+                        • Total Shelter Capacity: {report.total_capacity ?? 0}
+                      </span>
+                      <span className={styles.summaryLabel}>
+                        • Overall Capacity Utilization:{" "}
+                        {(
+                          ((report.total_occupied ?? 0) /
+                            (report.total_capacity ?? 1)) *
+                          100
+                        ).toFixed(1)}
+                        %
+                      </span>
+                      <span className={styles.summaryLabel}>
+                        • Total Occupied and Vacant:{" "}
+                        {report.total_occupied ?? 0}/
+                        {reports.total_count - (report.total_occupied ?? 0)}
+                      </span>
+                      <span className={styles.summaryLabel}>
+                        • Largest Shelter: {report.largest_shelter ?? ""}
+                      </span>
+                      {report.smallest_shelter !== report.largest_shelter && (
+                        <span className={styles.summaryLabel}>
+                          • Smallest Shelter: {report.smallest_shelter ?? ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className={styles.summaryGrid2Column}>
-                  <span className={styles.summaryLabel}>
-                    •Total Number of Shelter: {reports.total_count}
-                  </span>
-                  <span className={styles.summaryLabel}>
-                    •Total Shelter Capacity: {reports.total_capacity ?? 0}
-                  </span>
-
-                  <span className={styles.summaryLabel}>
-                    •Overall Capacity Utilization:{" "}
-                    {(
-                      ((reports.total_occupied ?? 0) /
-                        (reports.total_capacity ?? 1)) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                  <span className={styles.summaryLabel}>
-                    •Total Occupied and Vacant: {reports.total_occupied ?? 0}/
-                    {reports.total_count - (reports.total_occupied ?? 0)}
-                  </span>
-                  <span className={styles.summaryLabel}>
-                    •Largest Shelter: {reports.largest_shelter ?? ""}
-                  </span>
-                  {reports.smallest_shelter !== reports.largest_shelter && (
-                    <span className={styles.summaryLabel}>
-                      •Smallest Shelter: {reports.smallest_shelter ?? ""}
-                    </span>
-                  )}
-                </div>
-              )}
+                );
+              })}
             </div>
           </>
         )}

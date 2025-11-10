@@ -278,8 +278,10 @@ def get_scope_address(
 
 
 @router.get("/get_reports")
-def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(GetUserId())):
-
+def get_evacuation_data(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId())
+):
     # Base query
     stmt = (
         select(
@@ -289,7 +291,10 @@ def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(Ge
             EvacuationCenter.occupied,
             BaranggayRecords.name.label("barangay_name")
         )
-        .join(BaranggayRecords, EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id)
+        .join(
+            BaranggayRecords,
+            EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id
+        )
         .join(LGURecords, LGURecords.id == BaranggayRecords.lgu_id)
     )
 
@@ -303,59 +308,53 @@ def get_evacuation_data(db: Session = Depends(get_db), user_id: str = Depends(Ge
 
     lgu = admin.lgu if admin else None
 
+    # If LGU user, limit query to that LGU only
     if lgu:
         stmt = stmt.where(LGURecords.id == lgu.id)
 
     result = db.execute(stmt).all()
 
-    # Aggregate evacuations by LGU
+    # Group evacuations by LGU
     lgu_dict = defaultdict(list)
     for row in result:
         lgu_dict[row.lgu_name].append({
             "evacuation_name": row.evacuation_name,
             "barangay_name": row.barangay_name,
             "occupied": row.occupied,
-            "capacity": row.capacity
+            "capacity": row.capacity,
+        })
+
+    # Build data list with per-LGU summaries
+    data_list = []
+    for lgu_name, evacuations in lgu_dict.items():
+        capacities = [e["capacity"] for e in evacuations]
+        occupied = [e["occupied"] for e in evacuations]
+
+        # Compute largest and smallest shelters
+        largest = max(evacuations, key=lambda x: x["capacity"])
+        smallest = min(evacuations, key=lambda x: x["capacity"])
+
+        data_list.append({
+            "lgu": lgu_name,
+            "evacuation_count": len(evacuations),  # only show for All LGU
+            "evacuation": evacuations,
+            "summary": {
+                "total_capacity": sum(capacities),
+                "total_occupied": sum(occupied),
+                "largest_shelter": f"{largest['evacuation_name']}, {largest['barangay_name']}",
+                "smallest_shelter": f"{smallest['evacuation_name']}, {smallest['barangay_name']}",
+            }
         })
 
     # Determine scope
     scope_name = lgu.lgu_name if lgu else "All LGU"
 
-    # Build data list
-    data_list = [
-        {
-            "lgu": lgu_name,
-            "evacuation_count": len(evacuations) if not lgu else None,  # only include count for All LGU
-            "evacuation": evacuations
-        }
-        for lgu_name, evacuations in lgu_dict.items()
-    ]
-
-    # Prepare summary if an LGU is selected
-    summary = {}
-    if lgu and result:
-        capacities = [row.capacity for row in result]
-        occupied = [row.occupied for row in result]
-
-        # Find largest and smallest shelters
-        largest = max(result, key=lambda x: x.capacity)
-        smallest = min(result, key=lambda x: x.capacity)
-
-        summary = {
-            "total_capacity": sum(capacities),
-            "total_occupied": sum(occupied),
-            "largest_shelter": f"{largest.evacuation_name}, {largest.barangay_name}",
-            "smallest_shelter": f"{smallest.evacuation_name}, {smallest.barangay_name}",
-        }
     # Final response
     output = {
         "scope": scope_name,
         "total_count": len(result),
         "data": data_list,
     }
-
-    if summary:
-        output.update(summary)
 
     return output
 

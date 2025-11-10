@@ -38,6 +38,18 @@ export const AddWarehouseZone: React.FC<DefaultInventoryModalProps> = ({
     const callFunction = async () => {
       const response = await AddWareHouse();
       if (response) {
+        Swal.fire({
+          title: "Success!",
+          text: "Warehouse has been added.",
+          icon: "success",
+          timer: 1000, // 2 seconds
+          showConfirmButton: false, // hides the OK button
+          timerProgressBar: true, // optional progress bar
+          willClose: () => {
+            console.log("Alert closed automatically");
+          },
+        });
+
         refreshData();
         onClose();
       }

@@ -98,9 +98,12 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
       const response = await handleRequest();
       if (response) {
         Swal.fire({
-          title: "Add Inventory Item",
-          text: "Item has been updated succesfuly",
+          title: "Success!",
+          text: "Inventory has been updated.",
           icon: "success",
+          timer: 1000, // 2 seconds
+          showConfirmButton: false, // hides the OK button
+          timerProgressBar: true, // optional progress bar
         });
 
         refreshData();

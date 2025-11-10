@@ -56,6 +56,7 @@ const InventoryModal: React.FC<InventoryModalProps> = ({
     <div className="modal-overlay" style={{ zIndex }}>
       <form
         className="modal fit-content-spreed"
+        style={{ maxWidth: "75vw" }}
         onSubmit={(e) => {
           if (onSubmit) onSubmit(e);
         }}
@@ -199,6 +200,15 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
 
   // 🚀 Submit payload
   const submitData = async () => {
+    const confirm = await Swal.fire({
+      title: "Are you sure you want to assign this item?",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+    });
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
     try {
       const formatted = Object.entries(assignQuantities).map(
         ([key, value]) => ({
@@ -224,8 +234,18 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
         `/procurement_inventory/assign_storage?id=${selectedData.warehouse_id}`,
         formatted,
       );
-      refreshData();
-      onClose();
+      if (response.data) {
+        Swal.fire({
+          title: "Success!",
+          text: "Warehouse has been added.",
+          icon: "success",
+          timer: 1000, // 2 seconds
+          showConfirmButton: false, // hides the OK button
+          timerProgressBar: true, // optional progress bar
+        });
+        refreshData();
+        onClose();
+      }
       return response.data;
     } catch (e: any) {
       console.error("Error assigning storage: " + e);
@@ -234,7 +254,7 @@ export const AssignStorage: React.FC<AssignStorageProps> = ({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(inventoryItems);
+
     submitData();
   };
 

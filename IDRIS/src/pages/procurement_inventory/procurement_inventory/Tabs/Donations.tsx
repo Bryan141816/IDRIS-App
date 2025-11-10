@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
-import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
-import { EditInventoryModal } from "./Modals/EditInventoryItemModal/EditInventoryItemModal";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
-
+import Swal from "sweetalert2";
 export interface AvailableInKindItem {
   item_id: number;
   donor_name: string;
@@ -182,13 +180,31 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
   };
   const handleSubmit = () => {
     const submit = async () => {
+      const confirm = await Swal.fire({
+        title: "Are you sure you want to add this donation/s to the inventory?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+      if (!confirm.isConfirmed) {
+        return;
+      }
       try {
         const response = await API.post(
           "/procurement_inventory/add_inventory_item_bulk",
           { inkind_id: inkind_id, items: donationsItem },
         );
-        updateTable();
-        onClose();
+        if (response.data) {
+          Swal.fire({
+            title: "Success!",
+            text: "Donation/s has been added.",
+            icon: "success",
+            timer: 1000, // 2 seconds
+            showConfirmButton: false, // hides the OK button
+            timerProgressBar: true, // optional progress bar
+          });
+          updateTable();
+          onClose();
+        }
       } catch (e: any) {
         console.log("Error adding donations to inventory: " + e);
       }

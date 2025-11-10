@@ -753,7 +753,7 @@ class DistributionAndPlanningCRUD:
     def get_dashboard(db: Session):
         return {
             "total_route": DistributionAndPlanningCRUD.count_total_route(db),
-            "active_route": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "active_route": DistributionAndPlanningCRUD.count_active_route(db),
             "in_transit": DistributionAndPlanningCRUD.count_assigned_routes(db),
             "pending_routes": DistributionAndPlanningCRUD.count_pending_route(db),
             "deployed_volunteers": DistributionAndPlanningCRUD.count_unique_members(db),

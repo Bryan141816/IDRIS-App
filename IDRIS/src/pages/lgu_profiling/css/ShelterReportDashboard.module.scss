@@ -76,6 +76,7 @@ $gray-800: #1f2937;
   background-color: $gray-50;
   padding: 1rem;
   border-radius: 0.5rem;
+  border-bottom: 1px solid #ddd;
 }
 
 .reportTitle {
@@ -258,6 +259,10 @@ $gray-800: #1f2937;
 
   .print-footer {
     position: running(footer);
+  }
+  .reportInfo{
+    padding: 0px;
+    margin: 0px;
   }
 
   @page {

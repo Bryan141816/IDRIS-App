@@ -1,38 +1,5 @@
 @use '../../../styles/variables' as *;
 
-.inventory-warehousing {
-  padding-top: 20px;
-  min-height: calc(100vh - 60px);
-  overflow-y: auto;
-
-  @media (max-width: 1024px) {
-    margin-left: 0;
-  }
-}
-
-
-.fit-content-spreed {
-  min-width: fit-content;
-  max-width: fit-content;
-}
-
-
-/* Main Content */
-.procurement-inventory-active-section {
-  padding: 2rem;
-  padding-bottom: 4rem;
-
-  @media (max-width: 768px) {
-    padding: 1rem;
-    padding-bottom: 3rem;
-  }
-}
-
-
-
-
-
-/* Stock Overview */
 .stock-overview {
   .stock-item {
     display: flex;
@@ -152,18 +119,20 @@
 }
 
 
-/* Table Styles */
+
 .inventory-table,
 .donations-table {
   background: #ffffff;
   border-radius: 1rem;
   box-shadow: 0 4px 12px rgba(116, 154, 182, 0.15);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column; // Important for table wrapper
+  height: fit-content; // ensure parent has height
   overflow-x: auto;
+  overflow-y: auto; // enable vertical scrolling
 
   table {
     width: 100%;
-    box-sizing: border-box;
     table-layout: fixed;
     border-collapse: collapse;
 
@@ -178,8 +147,6 @@
         font-size: 0.875rem;
         white-space: nowrap;
         min-width: 100px;
-        max-width: 1fr;
-
       }
     }
 
@@ -209,7 +176,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: 1.5rem;
-
+  height: fit-content;
+  overflow-x: auto;
   .warehouse-card {
     background: #ffffff;
     padding: 1.5rem;

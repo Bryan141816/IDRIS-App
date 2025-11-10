@@ -6,7 +6,6 @@ import { useMapEvent } from "react-leaflet";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useMap } from "react-leaflet";
-import "../../procurement_management/ProcurementManagement.scss";
 interface MapViewWithSearchProp {
   onClose: () => void;
   defaultValue: { address: string; coordinates: [number, number] };

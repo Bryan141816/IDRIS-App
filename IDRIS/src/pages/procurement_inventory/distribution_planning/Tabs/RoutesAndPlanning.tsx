@@ -5,6 +5,7 @@ import { FinalizeRouteSetup } from "./Modals/FinalizeRoute/FinalizeRoute";
 import { EditRoute } from "./Modals/EditRoute/EditRoute";
 import { ViewRoute } from "./Modals/ViewRoute/ViewRoute";
 import { ReAssignVolunteers } from "./Modals/ReAssignVolunteers/ReAssignVolunteers";
+import { formatDateTime } from "../../CommonFunctions";
 // Helpers
 export type ISODate = string;
 export type Maybe<T> = T | null;
@@ -177,18 +178,6 @@ export interface DistributionRouteDTO {
   request: Maybe<RequestBlock>;
 }
 
-function formatDateTime(dateString: string): string {
-  if (!dateString) return "";
-
-  const date = new Date(dateString);
-
-  return date.toLocaleString("en-US", {
-    month: "long", // "October"
-    day: "numeric", // "16"
-    year: "numeric", // "2025"
-  });
-}
-
 export const RoutesAndPlanning = () => {
   const [routeList, setRouteList] = useState<DistributionRouteDTO[]>([]);
   const [selectedRoute, setSelectedRoute] =
@@ -235,7 +224,7 @@ export const RoutesAndPlanning = () => {
     setSelectedMembers(null);
   };
   return (
-    <>
+    <div className="requests-content">
       {activeModal === "finalize" && selectedRoute && (
         <FinalizeRouteSetup
           onClose={closeModal}
@@ -265,89 +254,99 @@ export const RoutesAndPlanning = () => {
           team_id={selectedMemeber.team_id}
         ></ReAssignVolunteers>
       )}
-      <div className="routes-content">
-        <div className="section-header">
-          <h2>Distribution Routes & Schedules</h2>
+      <div className="section-header">
+        <h2>Distribution Routes & Schedules</h2>
+      </div>
+      {routeList.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            height: "100%",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span>No Request</span>
         </div>
-
-        <div className="routes-grid">
-          {routeList.map((route) => (
-            <div key={route.route_id} className="route-card">
-              <div className="route-header">
-                <h3>{route.route_name}</h3>
-                <span
-                  className={`status-badge ${route.status.toLowerCase().split(" ")[0]}`}
-                >
-                  {route.status}
-                </span>
-              </div>
-              <div className="route-details">
-                <p>
-                  <strong>Route: </strong>
-                  {route.gathering_area} -{" "}
-                  {route.request?.use_different_end &&
-                  route.request.different_end_type === "barangay"
-                    ? route.request.barangay?.name
-                    : route.request?.evacuation_center?.name}{" "}
-                  {route.request?.lgu?.name}, Cebu
-                </p>
-                <p>
-                  <strong>Team: </strong>
-                  {route.assigned_team
-                    ? route.assigned_team.team_name
-                    : "No team have been assigned yet"}
-                </p>
-                <p>
-                  <strong>Schedule: </strong>
-                  {route.start_schedule && route.end_schedule
-                    ? `${formatDateTime(route.start_schedule)} - ${formatDateTime(route.end_schedule)}`
-                    : "No Schedule Yet"}
-                </p>
-                <div className="route-actions">
-                  {!route.gathering_area && (
-                    <button
-                      className="secondary-btn"
-                      onClick={() => openModal("finalize", route)}
-                    >
-                      Finalize Route Setup
-                    </button>
-                  )}
-                  {(route.status.toLowerCase() === "active" ||
-                    route.status.toLowerCase() === "in transit") && (
-                    <button
-                      className="secondary-btn"
-                      onClick={() => openModal("update", route)}
-                    >
-                      Update
-                    </button>
-                  )}
-                  {route.assigned_team?.team_members?.some(
-                    (member) => member.status === "rejected",
-                  ) && (
-                    <button
-                      className="secondary-btn"
-                      onClick={() =>
-                        openReassignVolunteers(
-                          route.assigned_team?.team_id ?? -1,
-                          route.assigned_team?.team_members ?? [],
-                        )
-                      }
-                    >
-                      Reassign Volunteers
-                    </button>
-                  )}
-                  <button
-                    className="primary-btn"
-                    onClick={() => openModal("view", route)}
-                  >
-                    View
-                  </button>
-                </div>
+      )}
+      <div className="requests-grid">
+        {routeList.map((route) => (
+          <div key={route.route_id} className="request-card">
+            <div className="request-header">
+              <div className="request-id">{route.route_name}</div>
+              <div className="request-badges">
+                <span className={`status-badge `}>{route.status}</span>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="request-content">
+              <p>
+                <strong>Route: </strong>
+                {route.gathering_area ?? "Unassigned"} -{" "}
+                {route.request?.use_different_end &&
+                route.request.different_end_type === "barangay"
+                  ? route.request.barangay?.name
+                  : route.request?.evacuation_center?.name}{" "}
+                {route.request?.lgu?.name}, Cebu
+              </p>
+              <p>
+                <strong>Team: </strong>
+                {route.assigned_team
+                  ? route.assigned_team.team_name
+                  : "No team have been assigned yet"}
+              </p>
+              <p>
+                <strong>Schedule: </strong>
+                {route.start_schedule && route.end_schedule
+                  ? `${formatDateTime(route.start_schedule)} - ${formatDateTime(route.end_schedule)}`
+                  : "No Schedule Yet"}
+              </p>
+              <div className="route-actions">
+                {!route.gathering_area && (
+                  <button
+                    className="action-btn"
+                    onClick={() => openModal("finalize", route)}
+                  >
+                    Finalize Route Setup
+                  </button>
+                )}
+                {(route.status.toLowerCase() === "active" ||
+                  route.status.toLowerCase() === "in transit") && (
+                  <button
+                    className="action-btn"
+                    onClick={() => openModal("update", route)}
+                  >
+                    Update
+                  </button>
+                )}
+                {route.assigned_team?.team_members?.some(
+                  (member) => member.status === "rejected",
+                ) && (
+                  <button
+                    className="action-btn"
+                    onClick={() =>
+                      openReassignVolunteers(
+                        route.assigned_team?.team_id ?? -1,
+                        route.assigned_team?.team_members ?? [],
+                      )
+                    }
+                  >
+                    Reassign Volunteers
+                  </button>
+                )}
+                <button
+                  className="action-btn"
+                  onClick={() => openModal("view", route)}
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 };

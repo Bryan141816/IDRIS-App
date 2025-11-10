@@ -82,20 +82,6 @@ const FinanceAdmin = () => {
     return "good";
   };
 
-  type ItemType =
-    | string
-    | InventoryItemProps
-    | WarehouseZoneProps
-    | {
-        id: number;
-        donor: string;
-        items: string;
-        quantity: number;
-        date: string;
-        status: string;
-      }
-    | null; // updated to include donation object
-
   const [dashboardData, setDashboardData] = useState<InventoryDashboard | null>(
     null,
   );
@@ -106,6 +92,111 @@ const FinanceAdmin = () => {
     } catch (e: any) {
       console.error("Error fetching inventory dashboard: " + e);
     }
+  };
+  const renderDashboard = () => {
+    return (
+      <>
+        <div className="dashboard-content">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">📦</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.available_inventory_items
+                    ? dashboardData.available_inventory_items
+                    : "0"}
+                </h3>
+                <p>Total Items</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🏢</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.active_zones
+                    ? dashboardData.active_zones
+                    : "0"}
+                </h3>
+                <p>Active Zones</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🎁</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.available_inkind_items
+                    ? dashboardData.available_inkind_items
+                    : "0"}
+                </h3>
+                <p>Recent Donations</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-grid">
+            <div className="chart-container">
+              <h3>Stock Levels Overview</h3>
+              {dashboardData ? (
+                <div className="stock-overview">
+                  {Object.entries(dashboardData?.stock_level ?? {}).map(
+                    ([category, quantity]) => (
+                      <div className="stock-item">
+                        <div className="item-info">
+                          <span className="item-name">
+                            {toLetterCase(category)}
+                          </span>
+                          <span className="item-quantity">{quantity}x</span>
+                        </div>
+                        <div className="stock-bar">
+                          <div
+                            className={`stock-fill ${getStockStatus(quantity)}`}
+                            style={{
+                              width: `${Math.min((quantity / dashboardData?.available_inventory_items) * 100, 100)}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                "No Data"
+              )}
+            </div>
+
+            <div className="chart-container">
+              <h3>Expiry Alert Dashboard</h3>
+              <div className="expiry-alerts">
+                {dashboardData?.expiry_alert.map((item) => (
+                  <div
+                    key={item.inventory_id}
+                    className={`expiry-item ${getExpiryStatus(item.expiry)}`}
+                  >
+                    <div className="expiry-info">
+                      <strong>{item.item_name}</strong>
+                      <span>Batch: {item.batch}</span>
+                      <span>
+                        Expires:{" "}
+                        {item.expiry
+                          ? new Date(item.expiry).toLocaleDateString()
+                          : "N/A"}
+                      </span>
+                    </div>
+                    <div
+                      className={`expiry-status ${getExpiryStatus(item.expiry)}`}
+                    >
+                      {getExpiryStatus(item.expiry)
+                        .replace("-", " ")
+                        .toUpperCase()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
   };
 
   useEffect(() => {
@@ -122,10 +213,10 @@ const FinanceAdmin = () => {
   };
 
   return (
-    <div className="inventory-warehousing">
+    <div className="procurement-management">
       <h3 className="public-feed-title">Inventory & Warehousing System</h3>
 
-      <div className="navigation">
+      <div className="procurement-navigation">
         <button
           className={`nav-btn ${activeTab === "dashboard" ? "active" : ""}`}
           onClick={() => setActiveTab("dashboard")}
@@ -152,108 +243,8 @@ const FinanceAdmin = () => {
         </button>
       </div>
 
-      <div className="procurement-inventory-active-section">
-        {activeTab == "dashboard" && (
-          <div className="dashboard-content">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">📦</div>
-                <div className="stat-info">
-                  <h3>
-                    {dashboardData?.available_inventory_items
-                      ? dashboardData.available_inventory_items
-                      : "0"}
-                  </h3>
-                  <p>Total Items</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">🏢</div>
-                <div className="stat-info">
-                  <h3>
-                    {dashboardData?.active_zones
-                      ? dashboardData.active_zones
-                      : "0"}
-                  </h3>
-                  <p>Active Zones</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">🎁</div>
-                <div className="stat-info">
-                  <h3>
-                    {dashboardData?.available_inkind_items
-                      ? dashboardData.available_inkind_items
-                      : "0"}
-                  </h3>
-                  <p>Recent Donations</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="dashboard-grid">
-              <div className="chart-container">
-                <h3>Stock Levels Overview</h3>
-                {dashboardData ? (
-                  <div className="stock-overview">
-                    {Object.entries(dashboardData?.stock_level ?? {}).map(
-                      ([category, quantity]) => (
-                        <div className="stock-item">
-                          <div className="item-info">
-                            <span className="item-name">
-                              {toLetterCase(category)}
-                            </span>
-                            <span className="item-quantity">{quantity}x</span>
-                          </div>
-                          <div className="stock-bar">
-                            <div
-                              className={`stock-fill ${getStockStatus(quantity)}`}
-                              style={{
-                                width: `${Math.min((quantity / dashboardData?.available_inventory_items) * 100, 100)}%`,
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  "No Data"
-                )}
-              </div>
-
-              <div className="chart-container">
-                <h3>Expiry Alert Dashboard</h3>
-                <div className="expiry-alerts">
-                  {dashboardData?.expiry_alert.map((item) => (
-                    <div
-                      key={item.inventory_id}
-                      className={`expiry-item ${getExpiryStatus(item.expiry)}`}
-                    >
-                      <div className="expiry-info">
-                        <strong>{item.item_name}</strong>
-                        <span>Batch: {item.batch}</span>
-                        <span>
-                          Expires:{" "}
-                          {item.expiry
-                            ? new Date(item.expiry).toLocaleDateString()
-                            : "N/A"}
-                        </span>
-                      </div>
-                      <div
-                        className={`expiry-status ${getExpiryStatus(item.expiry)}`}
-                      >
-                        {getExpiryStatus(item.expiry)
-                          .replace("-", " ")
-                          .toUpperCase()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="procurement-mains-content">
+        {activeTab == "dashboard" && renderDashboard()}
         {activeTab == "inventory" && <InventoryItems></InventoryItems>}
         {activeTab == "warehouses" && <WarehouseZone></WarehouseZone>}
         {activeTab == "donations" && <Donations></Donations>}

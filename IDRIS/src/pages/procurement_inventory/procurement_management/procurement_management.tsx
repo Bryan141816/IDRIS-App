@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../ProcurementInventory.scss";
 import "../ProcurementModal.scss";
-import "./ProcurementManagement.scss";
 import RequestTab from "./Tabs/Request";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import { useNavigate, useParams } from "react-router-dom";
@@ -211,7 +210,7 @@ const ProcurementManagement = () => {
   return (
     <div className="procurement-management">
       <h3 className="public-feed-title">PROCUREMENT MANAGEMENT</h3>
-      <div className="navigation">
+      <div className="procurement-navigation">
         <button
           className={`nav-btn ${activeTab === "dashboard" ? "active" : ""}`}
           onClick={() => handleTabChange("dashboard")}
@@ -226,7 +225,7 @@ const ProcurementManagement = () => {
         </button>
       </div>
 
-      <div className="mains-content">
+      <div className="procurement-mains-content">
         {activeTab === "dashboard" && renderDashboard()}
         {activeTab === "requests" && (
           <RequestTab apiUrl="/procurement_management" />

@@ -7,7 +7,6 @@ import {
   ModalType,
   getPriorityColor,
   getStatusColor,
-  formatCurrency,
 } from "./Modals/ProcurementDefaults";
 import { SubmitProcurementRequest } from "./Modals/RequestModals/AddRequestModal";
 import { ViewDetails } from "./Modals/RequestModals/ViewDetailsRequest";
@@ -16,8 +15,8 @@ import { UpdateRequestStatus } from "./Modals/RequestModals/UpdateStatus";
 import { useUserRoleContext } from "../../../../UserRoleContext";
 import { RealTimeDataContext } from "../../../../RealTimeDataContext";
 import { DistributionRouteDTO } from "../../distribution_planning/Tabs/RoutesAndPlanning";
-import { ViewRoute } from "../../distribution_planning/Tabs/Modals/ViewRoute/ViewRoute";
 import { TrackDelivery } from "./Modals/RequestModals/TrackModal";
+import { formatDateTime } from "../../CommonFunctions";
 interface RequestTabProps {
   apiUrl: string;
 }
@@ -205,6 +204,20 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
         )}
       </div>
 
+      {requests.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            height: "100%",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span>No Request</span>
+        </div>
+      )}
       <div className="requests-grid">
         {requests.length > 0 &&
           requests.map((request) => (
@@ -225,28 +238,28 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                 </div>
               </div>
               <div className="request-content">
-                <h3>{request.request_title} </h3>
-                <p className="request-description">
+                <p>
+                  <strong>Title: </strong>
+                  {request.request_title}
+                </p>
+                <p>
+                  <strong>Description: </strong>
                   {request.request_description}
                 </p>
-                <div className="request-details">
-                  <div className="detail-row">
-                    <span>Requester:</span>
-                    <span>{request.lgu.name}</span>
-                  </div>
-                  <div className="detail-row">
-                    <span>Date:</span>
-
-                    <span>
-                      {new Intl.DateTimeFormat("en-PH", {
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                        timeZone: "Asia/Manila", // <-- force UTC+8
-                      }).format(new Date(request.date_requested))}
-                    </span>
-                  </div>
-                </div>
+                {!userRoles.includes("lgu officer") && (
+                  <p>
+                    <strong>Requester: </strong>
+                    {request.lgu.name}
+                  </p>
+                )}
+                <p>
+                  <strong>Date Requested: </strong>
+                  {formatDateTime(request.date_requested)}
+                </p>
+                <p>
+                  <strong>Date Needed: </strong>
+                  {formatDateTime(request.date_needed)}
+                </p>
 
                 <div className="request-actions">
                   <button

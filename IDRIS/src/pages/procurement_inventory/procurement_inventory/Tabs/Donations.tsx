@@ -68,7 +68,7 @@ const Donations = () => {
           updateTable={updateTable}
         ></AddItemToInventory>
       )}
-      <div className="inventory-content">
+      <div className="requests-content">
         <div className="section-header">
           <h2>Donations</h2>
         </div>
@@ -99,6 +99,13 @@ const Donations = () => {
                   </td>
                 </tr>
               ))}
+              {inkindItem.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center" }}>
+                    No Data
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -13,12 +13,17 @@ export const NotificationsButton = () => {
   const [showNewBox, setShowNewBox] = useState(false);
 
   // Show popup only if NOT currently on /notifications
+  const playNotification = () => {
+    const sound = new Audio("/sound/notification_sound.mp3");
+    sound.play();
+  };
   useEffect(() => {
     if (
       event &&
       event.event_type === "notification" &&
       location.pathname !== "/notifications"
     ) {
+      playNotification();
       setShowNewBox(true);
       const timer = setTimeout(() => setShowNewBox(false), 3000); // hide after 3s
       return () => clearTimeout(timer);

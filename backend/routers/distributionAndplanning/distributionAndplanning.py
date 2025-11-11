@@ -34,7 +34,7 @@ from models import (
     AdminUserProfile
 )
 from datetime import datetime, timezone
-from sqlalchemy import update, delete
+from sqlalchemy import update, delete, or_
 from sqlalchemy.inspection import inspect
 from collections import Counter
 router = APIRouter(
@@ -750,7 +750,11 @@ def get_distributed_summary(
             joinedload(DistributionRoute.assigned_team),
         )
         .filter(
-            DistributionRoute.status == "Completed",
+             or_(
+                DistributionRoute.status == "Completed",
+                DistributionRoute.status == "In Transit",
+                DistributionRoute.status == "Cancelled"
+            ),
             DistributionRoute.updated_at >= start_date,
             DistributionRoute.updated_at < end_date
         )
@@ -771,7 +775,7 @@ def get_distributed_summary(
         request_type = request.request_type or "Unknown"
         date_distributed = route.updated_at
         team_name = route.assigned_team.team_name if route.assigned_team else "Unassigned"
-
+        status = route.status
         if request.use_different_end:
             if request.barangay:
                 barangay_set.add(request.barangay.name)
@@ -792,12 +796,13 @@ def get_distributed_summary(
                     item_counter[item_name] += qty
 
         elif request_type.lower() == "procurement":
-            for dist in route.distributed_items:
-                if dist.procurement_item:
-                    item_name = dist.procurement_item.item_name
+            for dist in request.procurement_items:
+                if dist:
+                    item_name = dist.item_name
                     qty = dist.quantity
                     items_data.append({"item_name": item_name, "quantity": qty})
                     item_counter[item_name] += qty
+
 
         data.append({
             "lgu_name": lgu_name,
@@ -805,6 +810,7 @@ def get_distributed_summary(
             "request_type": request_type,
             "items": items_data,
             "date_distributed": date_distributed,
+            "status": status
         })
 
     # Prepare summary

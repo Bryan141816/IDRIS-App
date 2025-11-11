@@ -46,6 +46,7 @@ export default function DistributionReport({
     request_type: string;
     items: DistributedItem[];
     date_distributed: string; // ISO date string
+    status: string;
   };
 
   type DistributedItem = {
@@ -156,6 +157,7 @@ export default function DistributionReport({
                       <th className={tableStyle.th}>Items Delivered</th>
                       <th className={tableStyle.th}>Date Distributed</th>
                       <th className={tableStyle.th}>Distributed By</th>
+                      <th className={tableStyle.th}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -170,6 +172,7 @@ export default function DistributionReport({
                           {formatDateTime(data.date_distributed)}
                         </td>
                         <td className={tableStyle.td}>{data.team_name}</td>
+                        <td className={tableStyle.th}>{data.status}</td>
                       </tr>
                     ))}
                   </tbody>

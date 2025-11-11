@@ -246,7 +246,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
                             <td style={{ padding: "10px" }}>{item.name}</td>
                             <td style={{ padding: "10px" }}>{item.quantity}</td>
                             <td style={{ padding: "10px" }}>
-                              {item.unit ?? "-"}
+                              {"unit" in item ? item.unit : "-"}
                             </td>
                           </tr>
                         ))}
@@ -489,7 +489,7 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
     const fetch = async () => {
       try {
         const response = await API.get(
-          `/distribution_planning/get_assigned?category=${encodeURIComponent(item.category)}`,
+          `/distribution_planning/get_assigned?category=${encodeURIComponent(item.category ?? "food items")}`,
         );
         setResponseData(response.data);
       } catch (e: any) {

@@ -136,39 +136,39 @@ export default function IDRISDashboard() {
     const [loadingTop3, setLoadingTop3] = useState(false)
 
     useEffect(() => {
-  const fetchTop3 = async () => {
-    setLoadingTop3(true);
-    try {
-      const response = await API.get('/volunteer/top-active', {
-        params: {
-          limit: 10,  // ✅ Request more to ensure 3 after filtering
-          includeprograms: true
-        }
-      });
+        const fetchTop3 = async () => {
+            setLoadingTop3(true);
+            try {
+                const response = await API.get('/volunteer/top-active', {
+                    params: {
+                        limit: 10,  // ✅ Request more to ensure 3 after filtering
+                        includeprograms: true
+                    }
+                });
 
-      // Normalize and filter
-      const volunteers = (response.data.volunteers || [])
-        .map((v: any) => ({
-          ...v,
-          firstname: v.firstname || v.first_name,
-          middlename: v.middlename || v.middle_name,
-          lastname: v.lastname || v.last_name,
-          profileimage: v.profileimage || v.profile_image,
-          totalPrograms: Number(v.totalPrograms ?? v.eventsjoined ?? 0),
-        }))
-        .filter((v: any) => v.totalPrograms > 0)  // ✅ Remove volunteers with 0 programs
-        .slice(0, 3);  // ✅ Take only top 3
+                // Normalize and filter
+                const volunteers = (response.data.volunteers || [])
+                    .map((v: any) => ({
+                        ...v,
+                        firstname: v.firstname || v.first_name,
+                        middlename: v.middlename || v.middle_name,
+                        lastname: v.lastname || v.last_name,
+                        profileimage: v.profileimage || v.profile_image,
+                        totalPrograms: Number(v.totalPrograms ?? v.eventsjoined ?? 0),
+                    }))
+                    .filter((v: any) => v.totalPrograms > 0)  // ✅ Remove volunteers with 0 programs
+                    .slice(0, 3);  // ✅ Take only top 3
 
-      setTop3ActiveVolunteers(volunteers);
-    } catch (error) {
-      console.error('Error fetching top 3:', error);
-    } finally {
-      setLoadingTop3(false);
-    }
-  };
+                setTop3ActiveVolunteers(volunteers);
+            } catch (error) {
+                console.error('Error fetching top 3:', error);
+            } finally {
+                setLoadingTop3(false);
+            }
+        };
 
-  fetchTop3();
-}, []);
+        fetchTop3();
+    }, []);
 
 
     const getOrgLogoPath = (org: any): string | null => {
@@ -931,7 +931,7 @@ export default function IDRISDashboard() {
             const normalizedProgramSkills = Array.isArray(programSkills)
                 ? programSkills
                 : typeof programSkills === "string"
-                    ? programSkills
+                    ? (programSkills as string)
                         .split(",")
                         .map((s: string) => s.trim())
                         .filter(Boolean)
@@ -940,7 +940,7 @@ export default function IDRISDashboard() {
             const normalizedVolunteerSkills = Array.isArray(volunteerSkills)
                 ? volunteerSkills
                 : typeof volunteerSkills === "string"
-                    ? volunteerSkills
+                    ? (volunteerSkills as string)
                         .split(",")
                         .map((s: string) => s.trim())
                         .filter(Boolean)

@@ -894,7 +894,7 @@ const VolunteerProfile: React.FC = () => {
                                         zoomControl={false}
                                         attributionControl={false}
                                         style={{ height: '100%', width: '100%' }}
-                                        key={`${mapCenter[0]}-${mapCenter[1]}`}
+                                        key={`${(mapCenter as [number, number])[0]}-${(mapCenter as [number, number])[1]}`}
                                     >
                                         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                         <Marker position={mapCenter}>
@@ -988,7 +988,7 @@ const VolunteerProfile: React.FC = () => {
                                         <p className="stat-value">
                                             {volunteerData.statistics.monthlyActivity > 0
                                                 ? (
-                                                    programsHistory.length / 
+                                                    programsHistory.length /
                                                     volunteerData.statistics.monthlyActivity
                                                 ).toFixed(1)
                                                 : "0.0"}

@@ -303,6 +303,9 @@ $gray-800: #1f2937;
   .print-footer {
     position: running(footer);
   }
+  .printSection {
+    display: none;
+  }
   .donationReport, 
   .reportInfo,
   .summary {

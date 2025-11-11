@@ -23,7 +23,7 @@ export default function DistributionReport({
     },
     contact: { phone: "(09) 000-000-0000", email: "sampleemail@gmail.com" },
   } as CompanyInfo,
-  reportTitle = "Shelter Summary Report",
+  reportTitle = "Distribution Summary Report",
 }: {
   companyInfo?: CompanyInfo;
   reportTitle?: string;

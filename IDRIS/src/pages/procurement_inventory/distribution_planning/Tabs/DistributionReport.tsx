@@ -68,7 +68,7 @@ export default function DistributionReport({
   }, [period]);
   function formatDistributedItems(items: DistributedItem[]): string {
     return items
-      .map((item) => `${item.item_name} ${item.quantity}x`)
+      .map((item) => `${item.quantity}x ${item.item_name}`)
       .join(", ");
   }
   const [reports, setReports] = useState<DistributionReport | null>(null);

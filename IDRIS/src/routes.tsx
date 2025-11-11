@@ -245,36 +245,6 @@ const EmegencyReport = () =>
     Component: m.default,
   }));
 
-const ReportList = () =>
-  import("./pages/response_dashboard/report_list/ReportList").then((m) => ({
-    Component: m.default,
-  }));
-
-const DemandAndResponseMap = () =>
-  import(
-    "./pages/response_dashboard/demand_and_response_map/DemandAndResponseMap"
-  ).then((m) => ({ Component: m.default }));
-
-const DemandAndResponseList = () =>
-  import(
-    "./pages/response_dashboard/demand_and_response_map/DemandAndResponseList"
-  ).then((m) => ({ Component: m.default }));
-
-const ModalityDistribution = () =>
-  import(
-    "./pages/response_dashboard/modality_distribution/ModalityDistribution"
-  ).then((m) => ({ Component: m.default }));
-
-const InKindMonitoring = () =>
-  import("./pages/response_dashboard/in_kind_monitoring/InKindMonitoring").then(
-    (m) => ({ Component: m.default }),
-  );
-
-const BudgetRecord = () =>
-  import("./pages/response_dashboard/budget_record/BudgetRecord").then((m) => ({
-    Component: m.default,
-  }));
-
 // Procurement Inventory
 const ProcurementInventory = () =>
   import(
@@ -447,55 +417,6 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: ResponseDashboard },
           { path: "emergency_report", lazy: EmegencyReport },
-          {
-            path: "report_list",
-            lazy: ReportList,
-            handle: {
-              allowedRoles: ["superadmin", "lgu officer", "logistics admin"],
-            },
-          },
-          {
-            path: "demand_and_response_map",
-            children: [
-              {
-                index: true,
-                lazy: DemandAndResponseMap,
-                handle: {
-                  allowedRoles: [
-                    "superadmin",
-                    "lgu officer",
-                    "logistics admin",
-                  ],
-                },
-              },
-              {
-                path: "list_view",
-                lazy: DemandAndResponseList,
-                handle: {
-                  allowedRoles: [
-                    "superadmin",
-                    "lgu officer",
-                    "logistics admin",
-                  ],
-                },
-              },
-            ],
-          },
-          {
-            path: "modality_distribution",
-            lazy: ModalityDistribution,
-            handle: { allowedRoles: ["operations admin"] },
-          },
-          {
-            path: "in_kind_monitoring",
-            lazy: InKindMonitoring,
-            handle: { allowedRoles: ["operations admin"] },
-          },
-          {
-            path: "budget_record",
-            lazy: BudgetRecord,
-            handle: { allowedRoles: ["operations admin"] },
-          },
         ],
       },
       { path: "reports_generation", lazy: ReportsGeneration },
@@ -611,13 +532,6 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/donation_records": DonationRecords,
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/emergency_report": EmegencyReport,
-  "/response_dashboard/report_list": ReportList,
-  "/response_dashboard/demand_and_response_map": DemandAndResponseMap,
-  "/response_dashboard/demand_and_response_map/list_view":
-    DemandAndResponseList,
-  "/response_dashboard/modality_distribution": ModalityDistribution,
-  "/response_dashboard/in_kind_monitoring": InKindMonitoring,
-  "/response_dashboard/budget_record": BudgetRecord,
   "/reports_generation": ReportsGeneration,
   "/damange_assessment": DamageAssessment,
   "/procurement_inventory/procurement_inventory": ProcurementInventory,

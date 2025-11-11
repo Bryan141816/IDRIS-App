@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import MapView, { MarkerType } from "../../../components/MapView/MapView";
-import { Link } from "react-router-dom";
 import "../css/MapOfCebu.css";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
@@ -119,7 +118,7 @@ type EvacAPI = {
 };
 
 /* ---------- API Bases ---------- */
-const RAW_API = API.defaults.baseURL;
+const RAW_API = API.defaults.baseURL ?? "http://localhost:5173/";
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
 const API_BASE = `${RAW_API.replace(/\/+$/, "")}${MAPOFCEBU_BASE}`;
 
@@ -520,8 +519,8 @@ const MapOfCebu = () => {
             lng: Number(e.lng) || 0,
             lguName: e.name,
             type: "evacuation",
-            capacity: Number.isFinite(cap) ? cap : null,
-            occupied: Number.isFinite(occ) ? occ : null,
+            capacity: Number.isFinite(cap) ? cap : undefined,
+            occupied: Number.isFinite(occ) ? occ : undefined,
             evacStatus: (e.status ?? "Unknown") || "Unknown",
             description: `Status: ${e.status ?? "Unknown"}`,
             resources: `Capacity: ${

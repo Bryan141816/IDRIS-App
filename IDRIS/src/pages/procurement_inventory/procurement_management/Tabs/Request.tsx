@@ -10,7 +10,6 @@ import {
 } from "./Modals/ProcurementDefaults";
 import { SubmitProcurementRequest } from "./Modals/RequestModals/AddRequestModal";
 import { ViewDetails } from "./Modals/RequestModals/ViewDetailsRequest";
-import { UpdateRequestStatus } from "./Modals/RequestModals/UpdateStatus";
 
 import { useUserRoleContext } from "../../../../UserRoleContext";
 import { RealTimeDataContext } from "../../../../RealTimeDataContext";
@@ -86,27 +85,31 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
     }
     if (requests.request_type === "relief") {
       requests.items.map((item) => {
-        const { item_id, name, category, quantity } = item;
-        const relief_item: reliefType = {
-          item_id: item_id,
-          request_id: requests.request_id,
-          item_name: name,
-          category: category,
-          quantity: quantity,
-        };
-        relief.push(relief_item);
+        if ("category" in item) {
+          const { item_id, name, category, quantity } = item;
+          const relief_item: reliefType = {
+            item_id: item_id,
+            request_id: requests.request_id,
+            item_name: name,
+            category: category,
+            quantity: quantity,
+          };
+          relief.push(relief_item);
+        }
       });
     } else {
       requests.items.map((item) => {
-        const { item_id, name, quantity, unit } = item;
-        const procurement_item: procurementType = {
-          item_id: item_id,
-          request_id: requests.request_id,
-          item_name: name,
-          unit: unit,
-          quantity: quantity,
-        };
-        procurement_items.push(procurement_item);
+        if ("unit" in item) {
+          const { item_id, name, quantity, unit } = item;
+          const procurement_item: procurementType = {
+            item_id: item_id,
+            request_id: requests.request_id,
+            item_name: name,
+            unit: unit ?? "pcs",
+            quantity: quantity,
+          };
+          procurement_items.push(procurement_item);
+        }
       });
     }
     const cleanRequest = {
@@ -185,16 +188,6 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
           selectedData={selectedItem}
         ></TrackDelivery>
       )}
-
-      {activeModal === "update" && userRoles.includes("logistics admin") && (
-        <UpdateRequestStatus
-          onClose={closeModal}
-          selectedItem={selectedItem}
-          refreshData={refreshData}
-          apiUrl={apiUrl}
-        ></UpdateRequestStatus>
-      )}
-
       <div className="section-header">
         <h2>Procurement Requests</h2>
         {userRoles.includes("lgu officer") && (

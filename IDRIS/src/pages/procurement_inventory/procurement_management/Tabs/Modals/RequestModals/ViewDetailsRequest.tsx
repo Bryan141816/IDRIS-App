@@ -38,43 +38,39 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
   useEffect(() => {
     if (selectedItem?.request_type === "relief") {
       const mapped = selectedItem.items.map((item) => {
+        const category = "category" in item ? item.category : "";
+        const unit = "unit" in item ? item.unit || "" : "";
+
+        let assigned_id = -1;
+        let inventory_name = "";
+        let warehouse_name = "";
+        let quantity_assigned = -1;
+
         if (selectedItem.route) {
           const distributed = selectedItem.route.distributed_items.find(
             (d: any) => d.item_id === item.item_id,
           );
-
-          return {
-            item_id: item.item_id,
-            name: item.name,
-            category: item.category,
-            quantity: item.quantity,
-            unit: item.unit || "",
-
-            // If distributed item exists, get the values; else default
-            assigned_id: distributed ? distributed.assigned_storage : -1,
-            inventory_name: distributed
-              ? distributed.assigned_storage_rec.inventory_item.item_name
-              : "",
-            warehouse_name: distributed
-              ? distributed.assigned_storage_rec.warehouse.zone_name
-              : "",
-            quantity_assigned: distributed ? distributed.quantity : -1,
-          };
-        } else {
-          return {
-            item_id: item.item_id,
-            name: item.name,
-            category: item.category,
-            quantity: item.quantity,
-            unit: item.unit || "",
-
-            // If distributed item exists, get the values; else default
-            assigned_id: -1,
-            inventory_name: "",
-            warehouse_name: "",
-            quantity_assigned: -1,
-          };
+          if (distributed) {
+            assigned_id = distributed.assigned_storage;
+            inventory_name =
+              distributed.assigned_storage_rec.inventory_item.item_name;
+            warehouse_name =
+              distributed.assigned_storage_rec.warehouse.zone_name;
+            quantity_assigned = distributed.quantity;
+          }
         }
+
+        return {
+          item_id: item.item_id,
+          name: item.name,
+          category, // safe
+          quantity: item.quantity,
+          unit, // safe
+          assigned_id,
+          inventory_name,
+          warehouse_name,
+          quantity_assigned,
+        };
       });
 
       setRequestList(mapped);

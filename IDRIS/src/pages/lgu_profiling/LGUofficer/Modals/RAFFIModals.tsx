@@ -3,12 +3,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Modal } from "../../../../components/Page_Furniture/Modals";
 import { MapViewWithSearch } from "../../../procurement_inventory/procurement_inventory/Tabs/MapViewWithSearch";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faImage, faLock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faImage,
+  faLock,
+  faMapMarkerAlt,
+} from "@fortawesome/free-solid-svg-icons";
 import "../../css/LGUModal.css";
 import Swal from "sweetalert2";
 import defaultpicture from "../../../../../public/images/defaultpicture.jpg";
 import type { LGUOut } from "./LGUModals";
-import { deleteRAFFI, createRAFFI, updateRAFFI, type RAFIOut as RAFIServerOut } from  "../../../../API_Handler/lguprofiling/RAFFI";
+import {
+  deleteRAFFI,
+  createRAFFI,
+  updateRAFFI,
+  type RAFIOut as RAFIServerOut,
+} from "../../../../API_Handler/lguprofiling/RAFFI";
 
 /* =========================
    Local Types (UI)
@@ -71,16 +80,21 @@ type ViewProps = {
   onDeleted?: (id: number) => void;
 };
 
-export const RAFFIViewModal: React.FC<ViewProps> = ({ closeModal, onOpenEdit, data, onDeleted }) => {
+export const RAFFIViewModal: React.FC<ViewProps> = ({
+  closeModal,
+  onOpenEdit,
+  data,
+  onDeleted,
+}) => {
   const id = Number((data as any).rafi_id ?? (data as any).raffi_id);
 
   // normalize both spellings from backend
   const norm = {
     name: (data as any).rafi_name ?? (data as any).raffi_name ?? "",
     desc: (data as any).rafi_desc ?? (data as any).raffi_desc ?? "",
-    pic:  (data as any).rafi_pic  ?? (data as any).raffi_pic  ?? null,
-    lat:  Number((data as any).lat),
-    lng:  Number((data as any).lng),
+    pic: (data as any).rafi_pic ?? (data as any).raffi_pic ?? null,
+    lat: Number((data as any).lat),
+    lng: Number((data as any).lng),
   };
 
   const doDelete = async () => {
@@ -107,7 +121,13 @@ export const RAFFIViewModal: React.FC<ViewProps> = ({ closeModal, onOpenEdit, da
   };
 
   return (
-    <Modal isOpen={true} onClose={closeModal} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
+    <Modal
+      isOpen={true}
+      onClose={closeModal}
+      zIndex={998}
+      width="clamp(560px, 56vw, 840px)"
+      height="86vh"
+    >
       <div className="modal-container lgu-modal">
         <div className="horizontal-container">
           <span className="title-modal-text">RAFFI Infrastructure</span>
@@ -139,7 +159,12 @@ export const RAFFIViewModal: React.FC<ViewProps> = ({ closeModal, onOpenEdit, da
         </div>
 
         <div className="action-button">
-          <button style={{ backgroundColor: "#F84B4D", color: "#fff" }} onClick={closeModal}>Close</button>
+          <button
+            style={{ backgroundColor: "#F84B4D", color: "#fff" }}
+            onClick={closeModal}
+          >
+            Close
+          </button>
         </div>
       </div>
     </Modal>
@@ -152,8 +177,8 @@ export const RAFFIViewModal: React.FC<ViewProps> = ({ closeModal, onOpenEdit, da
 export const RAFFICreateModal: React.FC<{
   closeModal: () => void;
   onCreated?: (created: RAFIServerOut | RAFFIEditForm) => void;
-  lgu?: LGUOut | null;                        // pass the whole LGU (preferred)
-  lguCoordinate?: [number, number] | null;    // or just a tuple
+  lgu?: LGUOut | null; // pass the whole LGU (preferred)
+  lguCoordinate?: [number, number] | null; // or just a tuple
 }> = ({ closeModal, onCreated, lgu, lguCoordinate }) => {
   const defaults: RAFFIEditForm = {
     raffi_name: "",
@@ -187,7 +212,10 @@ export const RAFFICreateModal: React.FC<{
   }, [lguCenter]);
 
   // Ignore picker-chosen coords; always keep LGU center
-  const onLocationSelectSubmit = (_address: string, _coordinates: [number, number]) => {
+  const onLocationSelectSubmit = (
+    _address: string,
+    _coordinates: [number, number],
+  ) => {
     setForm((prev) => ({ ...prev, lat: lguCenter[0], lng: lguCenter[1] }));
   };
 
@@ -201,28 +229,28 @@ export const RAFFICreateModal: React.FC<{
       console.error("Failed to read image:", err);
     }
   };
-const [validation, setValidation] = useState<{[key: string]: boolean}>({});
+  const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
 
-const validateForm = () => {
-  const v: { [key: string]: boolean } = {};
-  v.raffi_name = !form.raffi_name?.trim();
-  v.raffi_desc = !form.raffi_desc?.trim();
-  v.lat = form.lat == null;
-  v.lng = form.lng == null;
-  setValidation(v);
-  return !Object.values(v).some(Boolean);
-};
+  const validateForm = () => {
+    const v: { [key: string]: boolean } = {};
+    v.raffi_name = !form.raffi_name?.trim();
+    v.raffi_desc = !form.raffi_desc?.trim();
+    v.lat = form.lat == null;
+    v.lng = form.lng == null;
+    setValidation(v);
+    return !Object.values(v).some(Boolean);
+  };
 
   const handleCreate = async () => {
     if (!validateForm()) {
-    await Swal.fire({
-      icon: "warning",
-      title: "Incomplete or Invalid Form",
-      text: "Please fill in all required fields. Fields with red highlight need your attention.",
-      confirmButtonColor: "#f59e0b",
-    });
-    return;
-  }
+      await Swal.fire({
+        icon: "warning",
+        title: "Incomplete or Invalid Form",
+        text: "Please fill in all required fields. Fields with red highlight need your attention.",
+        confirmButtonColor: "#f59e0b",
+      });
+      return;
+    }
     if (!form.raffi_name.trim()) {
       Swal.fire({ icon: "warning", title: "Please enter a name" });
       return;
@@ -278,7 +306,13 @@ const validateForm = () => {
         />
       )}
 
-      <Modal isOpen={true} onClose={closeModal} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
+      <Modal
+        isOpen={true}
+        onClose={closeModal}
+        zIndex={998}
+        width="clamp(560px, 56vw, 840px)"
+        height="86vh"
+      >
         <div className="modal-container lgu-modal">
           <div className="horizontal-container">
             <span className="details-title">Create RAFFI</span>
@@ -290,7 +324,9 @@ const validateForm = () => {
                 <input
                   type="text"
                   value={form.raffi_name}
-                  onChange={(e) => setForm((p) => ({ ...p, raffi_name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, raffi_name: e.target.value }))
+                  }
                   placeholder="Enter RAFFI name"
                   required
                   className={validation.raffi_name ? "input-invalid" : ""}
@@ -300,7 +336,9 @@ const validateForm = () => {
               <Row label="Description">
                 <textarea
                   value={form.raffi_desc ?? ""}
-                  onChange={(e) => setForm((p) => ({ ...p, raffi_desc: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, raffi_desc: e.target.value }))
+                  }
                   placeholder="Short description"
                   rows={3}
                   className={validation.raffi_desc ? "input-invalid" : ""}
@@ -308,8 +346,20 @@ const validateForm = () => {
               </Row>
 
               <Row label="Location">
-                <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 8 }}>
-                  <input type="text" readOnly value={fmtLL(form.lat, form.lng)} style={{ flex: 1 }} />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: 8,
+                  }}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={fmtLL(form.lat, form.lng)}
+                    style={{ flex: 1 }}
+                  />
                   <button
                     type="button"
                     onClick={openLocationPicker}
@@ -337,18 +387,33 @@ const validateForm = () => {
                 <label className="filelike">
                   <FontAwesomeIcon icon={faImage} />
                   <span>Choose image</span>
-                  <input type="file" accept="image/*" hidden onChange={onImage} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={onImage}
+                  />
                 </label>
-                {form.raffi_pic && <img src={form.raffi_pic} alt="RAFFI" className="img-thumb" />}
+                {form.raffi_pic && (
+                  <img src={form.raffi_pic} alt="RAFFI" className="img-thumb" />
+                )}
               </Row>
             </Section>
           </div>
 
           <div className="action-button">
-            <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleCreate} disabled={isSaving}>
+            <button
+              style={{ background: "#749AB6", color: "#fff" }}
+              onClick={handleCreate}
+              disabled={isSaving}
+            >
               {isSaving ? "Adding..." : "ADD"}
             </button>
-            <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal} disabled={isSaving}>
+            <button
+              style={{ background: "#F84B4D", color: "#fff" }}
+              onClick={closeModal}
+              disabled={isSaving}
+            >
               Cancel
             </button>
           </div>
@@ -369,7 +434,6 @@ export const RAFFIEditModal: React.FC<{
   lgu?: LGUOut | null;
   lguCoordinate?: [number, number] | null;
 }> = ({ closeModal, data, onSaved, onDeleted, lgu, lguCoordinate }) => {
-
   // Normalize both spellings from backend into a single shape
   const normalize = (row?: RAFIServerOut) => {
     const r: any = row ?? {};
@@ -393,7 +457,10 @@ export const RAFFIEditModal: React.FC<{
     raffi_pic: "",
   };
 
-  const [form, setForm] = useState<RAFFIEditForm>({ ...defaults, ...normalized });
+  const [form, setForm] = useState<RAFFIEditForm>({
+    ...defaults,
+    ...normalized,
+  });
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -405,14 +472,23 @@ export const RAFFIEditModal: React.FC<{
   }, [data]);
 
   const center = useMemo<[number, number]>(() => {
-    if (form.lat != null && form.lng != null && Number.isFinite(+form.lat) && Number.isFinite(+form.lng)) {
+    // Use form values if valid
+    if (
+      form.lat != null &&
+      form.lng != null &&
+      Number.isFinite(+form.lat) &&
+      Number.isFinite(+form.lng)
+    ) {
       return [Number(form.lat), Number(form.lng)];
     }
-    const fromLGU =
-      (lgu?.lat != null && lgu?.lng != null)
-        ? [Number(lgu.lat), Number(lgu.lng)]
-        : null;
-    return fromLGU ?? (lguCoordinate ?? CEBU_FALLBACK);
+
+    // Use LGU coordinates if available
+    if (lgu?.lat != null && lgu?.lng != null) {
+      return [Number(lgu.lat), Number(lgu.lng)];
+    }
+
+    // Use fallback coordinates (CEBU_FALLBACK must be [number, number])
+    return lguCoordinate ?? CEBU_FALLBACK;
   }, [form.lat, form.lng, lgu, lguCoordinate]);
 
   useEffect(() => {
@@ -421,7 +497,10 @@ export const RAFFIEditModal: React.FC<{
     }
   }, [locationPickerIsOpen, center, form.lat, form.lng]);
 
-  const onLocationSelectSubmit = (_address: string, coordinates: [number, number]) => {
+  const onLocationSelectSubmit = (
+    _address: string,
+    coordinates: [number, number],
+  ) => {
     setForm((prev) => ({ ...prev, lat: coordinates[0], lng: coordinates[1] }));
   };
 
@@ -429,7 +508,8 @@ export const RAFFIEditModal: React.FC<{
     const file = e.target.files?.[0];
     if (!file) return;
     const r = new FileReader();
-    r.onload = () => setForm((prev) => ({ ...prev, raffi_pic: String(r.result) }));
+    r.onload = () =>
+      setForm((prev) => ({ ...prev, raffi_pic: String(r.result) }));
     r.readAsDataURL(file);
   };
 
@@ -521,7 +601,13 @@ export const RAFFIEditModal: React.FC<{
         />
       )}
 
-      <Modal isOpen={true} onClose={closeModal} zIndex={998} width="clamp(560px, 56vw, 840px)" height="86vh">
+      <Modal
+        isOpen={true}
+        onClose={closeModal}
+        zIndex={998}
+        width="clamp(560px, 56vw, 840px)"
+        height="86vh"
+      >
         <div className="modal-container lgu-modal">
           <div className="horizontal-container">
             <span className="details-title">Edit RAFFI Details</span>
@@ -533,7 +619,9 @@ export const RAFFIEditModal: React.FC<{
                 <input
                   type="text"
                   value={form.raffi_name}
-                  onChange={(e) => setForm((p) => ({ ...p, raffi_name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, raffi_name: e.target.value }))
+                  }
                   placeholder="Enter RAFFI name"
                   required
                 />
@@ -542,19 +630,32 @@ export const RAFFIEditModal: React.FC<{
               <Row label="Description">
                 <textarea
                   value={form.raffi_desc ?? ""}
-                  onChange={(e) => setForm((p) => ({ ...p, raffi_desc: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, raffi_desc: e.target.value }))
+                  }
                   placeholder="Short description"
                   rows={3}
                 />
               </Row>
 
               <Row label="Location">
-                <div style={{ display: "flex", alignItems: "center", width: "100%", gap: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: 8,
+                  }}
+                >
                   <input
                     type="text"
                     readOnly
                     placeholder="Pick on map"
-                    value={form.lat != null && form.lng != null ? `${form.lat}, ${form.lng}` : ""}
+                    value={
+                      form.lat != null && form.lng != null
+                        ? `${form.lat}, ${form.lng}`
+                        : ""
+                    }
                     style={{ flex: 1 }}
                   />
                   <button
@@ -584,19 +685,34 @@ export const RAFFIEditModal: React.FC<{
                 <label className="filelike">
                   <FontAwesomeIcon icon={faImage} />
                   <span>Choose image</span>
-                  <input type="file" accept="image/*" hidden onChange={onImage} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    onChange={onImage}
+                  />
                 </label>
-                {form.raffi_pic && <img src={form.raffi_pic} alt="RAFFI" className="img-thumb" />}
+                {form.raffi_pic && (
+                  <img src={form.raffi_pic} alt="RAFFI" className="img-thumb" />
+                )}
               </Row>
             </Section>
           </div>
 
           <div className="action-button">
-            <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleSubmit} disabled={isSaving}>
+            <button
+              style={{ background: "#749AB6", color: "#fff" }}
+              onClick={handleSubmit}
+              disabled={isSaving}
+            >
               {isSaving ? "Saving..." : "Save"}
             </button>
-           
-            <button style={{ background: "#F84B4D", color: "#fff" }} onClick={closeModal} disabled={isSaving}>
+
+            <button
+              style={{ background: "#F84B4D", color: "#fff" }}
+              onClick={closeModal}
+              disabled={isSaving}
+            >
               Cancel
             </button>
           </div>
@@ -609,7 +725,13 @@ export const RAFFIEditModal: React.FC<{
 /* =========================
    Presentational helpers
 ========================= */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="section-block" style={{ marginTop: 12 }}>
       <h3 className="section-title" style={{ marginBottom: 8 }}>
@@ -638,7 +760,14 @@ function Row({
         {hint ? ` — ${hint}` : ""}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexDirection: "column" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          flexDirection: "column",
+        }}
+      >
         {children}
       </div>
 
@@ -669,7 +798,13 @@ function DL({
   );
 }
 
-function ImgOrPlaceholder({ label, src }: { label: string; src?: string | null }) {
+function ImgOrPlaceholder({
+  label,
+  src,
+}: {
+  label: string;
+  src?: string | null;
+}) {
   const hasImg = !!src;
   return (
     <div className="lgu-media">

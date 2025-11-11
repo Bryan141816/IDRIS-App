@@ -24,7 +24,6 @@ type AssignedStorage = {
   quantity: number;
   warehouse_id: number;
   assigned_id: number;
-  unit_occupancy: number;
   warehouse: Warehouse;
 };
 

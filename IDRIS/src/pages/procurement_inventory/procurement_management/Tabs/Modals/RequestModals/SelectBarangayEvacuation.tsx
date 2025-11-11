@@ -1,6 +1,5 @@
 import { ProcurementDefaultModalProps } from "../ProcurementModalsDefault";
 import { ModalOverlay } from "../ProcurementModalsDefault";
-import { RequestData } from "../ProcurementDefaults";
 import React, { useState, useEffect } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 

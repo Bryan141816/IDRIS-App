@@ -16,12 +16,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     // Still loading, avoid rendering or redirecting
     return null; // or a spinner if you want
   }
-
-  if (!userType) {
-    //if (!userType || userType === '') {
-    // User not authenticated, redirect to login page
-    return <Navigate to="/login" replace />;
-  }
+  // if (!userType) {
+  //   //if (!userType || userType === '') {
+  //   // User not authenticated, redirect to login page
+  //   return <Navigate to="/login" replace />;
+  // }
   const matches = useMatches();
   const current = matches[matches.length - 1];
   const handle = current.handle as RouteHandle | undefined;

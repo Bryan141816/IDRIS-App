@@ -6,7 +6,7 @@ import type { LoaderFunctionArgs } from "react-router-dom";
 export async function authLoader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const path = url.pathname;        // e.g. "/activate"
-  if (path == "/activate") {
+  if (path == "/activate" || path == "/login" || path == "/register" || path == "/reset_password") {
     return null
   }
   try {

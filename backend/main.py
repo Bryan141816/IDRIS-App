@@ -50,7 +50,7 @@ from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
 from routers import notification_donors_route
 import real_time_handler
-
+from decouple import config
 # ✅ LGU officer location-only router
 import insert_lgu_info
 
@@ -66,16 +66,11 @@ insert_lgu_info.insert_lgu_records_if_empty()
 # Initialize FastAPI app
 app = FastAPI()
 SECRET_KEY = config("SECRET_KEY")
-
+ALLOW_ORIGINS = [origin.strip() for origin in config("ALLOW_ORIGINS").split(",")]
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://localhost:4173",
-    ],
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

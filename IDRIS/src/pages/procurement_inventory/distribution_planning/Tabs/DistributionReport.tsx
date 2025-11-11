@@ -193,12 +193,12 @@ export default function DistributionReport({
                   • Total Deliveries for barangay:{" "}
                   {reports.summary.barangays_covered}
                 </span>
-                <span className={styles.summaryLabel}>
-                  • Top 3 most request items:{" "}
-                  {reports.summary.most_requested_items
-                    .map((item) => `${item.item_name}: ${item.total_quantity}x`)
-                    .join(", ")}
-                </span>
+                {/* <span className={styles.summaryLabel}> */}
+                {/*   • Top 3 most request items:{" "} */}
+                {/*   {reports.summary.most_requested_items */}
+                {/*     .map((item) => `${item.item_name}: ${item.total_quantity}x`) */}
+                {/*     .join(", ")} */}
+                {/* </span> */}
               </div>
             </div>
           </>

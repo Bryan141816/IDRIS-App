@@ -55,6 +55,7 @@ export interface ProgramDTO {
 export interface AssignRequest {
     individual_volunteer_id?: number;
     organization_volunteer_id?: number;
+    volunteer_count?: number;
     status?: AssignmentStatus;
 }
 

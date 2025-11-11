@@ -8,7 +8,7 @@ from decouple import config
 from crud import get_superadmins
 from database import get_db
 from sqlalchemy.orm import Session
-
+import json
 # Gmail API
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
@@ -20,14 +20,14 @@ SUPERADMIN_EMAIL = config("SUPERADMIN_EMAIL", default=None)
 GMAIL_TOKEN_PATH = "token.json"  # Gmail API token file
 GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 GMAIL_SENDER_EMAIL = config("MAIL_FROM")  # your Gmail email address
-
+token_data = json.loads(config("TOKEN_JSON"))
 
 # --- Gmail API Helpers ---
 def get_gmail_service():
     """
     Returns an authorized Gmail API service.
     """
-    creds = Credentials.from_authorized_user_file(GMAIL_TOKEN_PATH, GMAIL_SCOPES)
+    creds = Credentials.from_authorized_user_info(token_data, GMAIL_SCOPES)
     service = build('gmail', 'v1', credentials=creds)
     return service
 

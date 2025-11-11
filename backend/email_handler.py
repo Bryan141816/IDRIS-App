@@ -15,7 +15,7 @@ from google.oauth2.credentials import Credentials
 
 logger = logging.getLogger(__name__)
 
-APP_BASE_URL = config("APP_BASE_URL", default="http://localhost:5173")
+APP_BASE_URL = config("APP_BASE_URL")
 SUPERADMIN_EMAIL = config("SUPERADMIN_EMAIL", default=None)
 GMAIL_TOKEN_PATH = "token.json"  # Gmail API token file
 GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.send']

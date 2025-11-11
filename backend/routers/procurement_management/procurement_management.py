@@ -46,7 +46,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.inspection import inspect
 router = APIRouter(
     tags=["procurement_management"],
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+    dependencies=[Depends(RoleChecker(["operations admin", "superadmin", "logistics admin"]))],
 )
 
 @router.get("/procurement_management/get_dashboard_data")

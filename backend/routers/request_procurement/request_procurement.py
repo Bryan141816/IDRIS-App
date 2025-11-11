@@ -1,41 +1,29 @@
-from crud import delete
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload, selectinload
 from database import get_db
-from crud import delete
 from models import (
     ProcurementRequest,
-    ProcurementRequestItem,
     User,
     BaranggayRecords,
     EvacuationCenter,
     AdminUserProfile,
     LGURecords,
     DistributionRoute,
-    DistributionRouteLogs,
     DistributedItems,
     DistributionTeam,
     TeamMembers,
     AssignedStorage
 )  # no Role import datetime
-from datetime import datetime, timezone
-from pydantic import BaseModel
-from typing import List, Dict, Any
+
 from routers.role_checker import RoleChecker
-import math
-from fastapi import Request
-from sqlalchemy import func
-from zoneinfo import ZoneInfo
+
 from data_schemas.procurement_management_schema import (
-    ProcurementRequestCreate,
-    ProcurementRequestSchema,
-    UpdateProcurementRequest,
+
     ProcurementRequestCreateSchema,
 )
 from crud_functions.procurement_manage.procurement_management import (
     ProcurementRequestCRUD,
-    UpdateProcurementRequest,
 )
 
 from sqlalchemy import select, literal, and_, case
@@ -323,13 +311,6 @@ def list_requests(
         )
         .filter(ProcurementRequest.lgu_id == lgu_id)
         .order_by(
-           case(
-                (ProcurementRequest.status == "Pending Approval",0),
-                (ProcurementRequest.status == "Waiting for Budget Approval", 0),
-                (ProcurementRequest.status == "Approved", 1),
-                (ProcurementRequest.status == "Rejected", 2),
-                else_=3
-            ), 
             ProcurementRequest.date_requested.asc()
         )
     )

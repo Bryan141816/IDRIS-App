@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
-import { useUserContext } from "../../UserContext";
-import { useUserRoleContext } from "../../UserRoleContext";
-import Logo1 from "../../media/Logo1.png";
-import { Modal } from "./Modals";
-import { Link } from "react-router-dom";
+
+import Logo1 from "../../media/logo1.png";
+
 import { useLocation } from "react-router-dom";
 import { API } from "../../API_Handler/Axio_API_Handler";
 const UpdatePassword = () => {

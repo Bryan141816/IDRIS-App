@@ -1,43 +1,14 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import styles from "../css/ShelterReportDashboard.module.scss";
 import RAFI_Shield from "../../../../src/media/RAFI_Shield.png";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { message, Empty } from "antd";
 import tableStyle from "./EvacuationReport.module.scss";
-
-type Shelter = {
-  id: string | number;
-  name: string;
-  lat: number;
-  lng: number;
-  capacity: number;
-  occupied: number;
-  address?: string;
-  barangay?: string;
-};
 
 type CompanyInfo = {
   name: string;
   tagline: string;
   address: { street: string; city: string; state: string; zip: string };
   contact: { phone: string; email: string };
-};
-
-const urlToDataUrl = async (url: string): Promise<string | null> => {
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return null;
-  }
 };
 
 export default function ShelterReportDashboard({

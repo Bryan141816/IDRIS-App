@@ -36,6 +36,7 @@ from models import (
 from datetime import datetime, timezone
 from sqlalchemy import update, delete
 from sqlalchemy.inspection import inspect
+from collections import Counter
 router = APIRouter(
     tags=["distribution_planning"],
     dependencies=[
@@ -695,4 +696,133 @@ def send_retry_team_notifications(members: List[ReassignVolunteer]):
         db.close()
 
 
+@router.get("/distribution_planning/get_report")
+def get_distributed_summary(
+    db: Session = Depends(get_db),
+    period: str = Query("monthly", description="Filter by period: monthly, quarterly, or yearly")
+):
+    # Get current date info
+    now = datetime.now()
+    current_year = now.year
+    current_month = now.month
 
+    # Determine the start and end dates based on the selected period
+    if period == "monthly":
+        start_date = datetime(current_year, current_month, 1)
+        if current_month == 12:
+            end_date = datetime(current_year + 1, 1, 1)
+        else:
+            end_date = datetime(current_year, current_month + 1, 1)
+
+    elif period == "quarterly":
+        # Determine which quarter we're in (1–4)
+        quarter = (current_month - 1) // 3 + 1
+        start_month = (quarter - 1) * 3 + 1
+        end_month = start_month + 3
+        start_date = datetime(current_year, start_month, 1)
+        if end_month > 12:
+            end_date = datetime(current_year + 1, 1, 1)
+        else:
+            end_date = datetime(current_year, end_month, 1)
+
+    elif period == "yearly":
+        start_date = datetime(current_year, 1, 1)
+        end_date = datetime(current_year + 1, 1, 1)
+
+    else:
+        return {"error": "Invalid period. Use 'monthly', 'quarterly', or 'yearly'."}
+
+    # Base query — get only routes that have completed distribution and match period
+    routes = (
+        db.query(DistributionRoute)
+        .join(ProcurementRequest, DistributionRoute.request_id == ProcurementRequest.request_id)
+        .join(LGURecords, ProcurementRequest.lgu_id == LGURecords.id)
+        .options(
+            joinedload(DistributionRoute.request)
+            .joinedload(ProcurementRequest.relief_items),
+            joinedload(DistributionRoute.request)
+            .joinedload(ProcurementRequest.procurement_items),
+            joinedload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.assigned_storage_rec)
+            .joinedload(AssignedStorage.inventory_item),
+            joinedload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.procurement_item),
+            joinedload(DistributionRoute.assigned_team),
+        )
+        .filter(
+            DistributionRoute.status == "Completed",
+            DistributionRoute.updated_at >= start_date,
+            DistributionRoute.updated_at < end_date
+        )
+        .all()
+    )
+
+    data = []
+    total_distributed = len(routes)
+
+    # For summary
+    item_counter = Counter()
+    lgu_set = set()
+    barangay_set = set()
+
+    for route in routes:
+        request = route.request
+        lgu_name = request.lgu.lgu_name if request.lgu else "Unknown LGU"
+        request_type = request.request_type or "Unknown"
+        date_distributed = route.updated_at
+        team_name = route.assigned_team.team_name if route.assigned_team else "Unassigned"
+
+        if request.use_different_end:
+            if request.barangay:
+                barangay_set.add(request.barangay.name)
+            elif request.evacuation_center:
+                barangay_set.add(request.evacuation_center.name)
+        else:
+            lgu_set.add(lgu_name)
+
+        items_data = []
+
+        # Conditional logic depending on request type
+        if request_type.lower() == "relief":
+            for dist in route.distributed_items:
+                if dist.assigned_storage_rec and dist.assigned_storage_rec.inventory_item:
+                    item_name = dist.assigned_storage_rec.inventory_item.item_name
+                    qty = dist.quantity
+                    items_data.append({"item_name": item_name, "quantity": qty})
+                    item_counter[item_name] += qty
+
+        elif request_type.lower() == "procurement":
+            for dist in route.distributed_items:
+                if dist.procurement_item:
+                    item_name = dist.procurement_item.item_name
+                    qty = dist.quantity
+                    items_data.append({"item_name": item_name, "quantity": qty})
+                    item_counter[item_name] += qty
+
+        data.append({
+            "lgu_name": lgu_name,
+            "team_name": team_name,
+            "request_type": request_type,
+            "items": items_data,
+            "date_distributed": date_distributed,
+        })
+
+    # Prepare summary
+    most_requested_items = [
+        {"item_name": name, "total_quantity": qty} 
+        for name, qty in item_counter.most_common(3)
+    ]
+
+    summary = {
+        "total_delivered": total_distributed,
+        "most_requested_items": most_requested_items,
+        "lgus_covered": len(lgu_set),
+        "barangays_covered": len(barangay_set),
+    }
+
+    return {
+        "period": period,
+        "total_distributed": total_distributed,
+        "summary": summary,
+        "data": data,
+    }

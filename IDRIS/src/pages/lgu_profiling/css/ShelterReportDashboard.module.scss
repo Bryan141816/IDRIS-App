@@ -183,6 +183,16 @@ $gray-800: #1f2937;
   grid-auto-flow: column;
   align-content: start;
 }
+.summaryGrid2X2Column{
+    display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns */
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
+
+  grid-auto-flow: column;
+  align-content: start;
+
+}
 .summaryContent{
   display: flex;
   flex-direction: column;

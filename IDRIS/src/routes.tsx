@@ -295,7 +295,10 @@ const RequestProcurement = () =>
   import(
     "./pages/procurement_inventory/request_procurement/request_prcurement"
   ).then((m) => ({ Component: m.default }));
-
+const DistributionReport = () =>
+  import(
+    "./pages/procurement_inventory/distribution_planning/Tabs/DistributionReport"
+  ).then((m) => ({ Component: m.default }));
 // ✅ Router Definition (clean + merged)
 export const router = createBrowserRouter([
   {
@@ -513,6 +516,7 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          { path: "distribution_report", lazy: DistributionReport },
           {
             path: "distribution_planning",
             children: [

@@ -6,6 +6,7 @@ import { EditRoute } from "./Modals/EditRoute/EditRoute";
 import { ViewRoute } from "./Modals/ViewRoute/ViewRoute";
 import { ReAssignVolunteers } from "./Modals/ReAssignVolunteers/ReAssignVolunteers";
 import { formatDateTime } from "../../CommonFunctions";
+import { useNavigate } from "react-router-dom";
 // Helpers
 export type ISODate = string;
 export type Maybe<T> = T | null;
@@ -179,6 +180,7 @@ export interface DistributionRouteDTO {
 }
 
 export const RoutesAndPlanning = () => {
+  const navigate = useNavigate();
   const [routeList, setRouteList] = useState<DistributionRouteDTO[]>([]);
   const [selectedRoute, setSelectedRoute] =
     useState<DistributionRouteDTO | null>(null);
@@ -213,6 +215,10 @@ export const RoutesAndPlanning = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleGenerateReport = () => {
+    navigate("/procurement_inventory/distribution_report");
+  };
 
   const openReassignVolunteers = (
     team_id: number,
@@ -256,6 +262,9 @@ export const RoutesAndPlanning = () => {
       )}
       <div className="section-header">
         <h2>Distribution Routes & Schedules</h2>
+        <button className="primary-btn" onClick={handleGenerateReport}>
+          Generate Report
+        </button>
       </div>
       {routeList.length === 0 && (
         <div

@@ -59,7 +59,6 @@ const TrackVolunteerApplication: React.FC = () => {
         <div className="application-form">
             <h2 className="page-title">Track Volunteer Application</h2>
             <Breadcrumb>
-                <Breadcrumb.Item><Link to="/">Home</Link></Breadcrumb.Item>
                 <Breadcrumb.Item><Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link></Breadcrumb.Item>
                 <Breadcrumb.Item>Track Volunteer Application</Breadcrumb.Item>
             </Breadcrumb>

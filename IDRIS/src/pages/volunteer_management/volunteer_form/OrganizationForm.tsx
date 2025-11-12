@@ -266,9 +266,6 @@ const { email } = useUserContext();
             <div className="breadcrumb-section">
                 <h2 className="page-title">Organization Application</h2>
                 <Breadcrumb>
-                    <Breadcrumb.Item href="#">
-                        <span>Home</span>
-                    </Breadcrumb.Item>
                     <Breadcrumb.Item>
                         <Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link>
                     </Breadcrumb.Item>

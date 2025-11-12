@@ -59,7 +59,9 @@ function PageLayout() {
 
   useEffect(() => {
     if (!userData) {
-      navigate("/login");
+      if(!isAuthPage){
+        navigate("/login");
+      }
       return;
     }
 

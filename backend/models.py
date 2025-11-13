@@ -1019,27 +1019,6 @@ class FinanceRecord(Base):
     __table_args__ = (Index("ix_finance_type_date", "transaction_type", "date"),)
 
 
-class FinanceAudit(Base):
-    __tablename__ = "finance_audits"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    audit_id = Column(String, primary_key=True)
-    record_id = Column(
-        String,
-        ForeignKey("finance_records.finance_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    action = Column(
-        String(64), nullable=False
-    )  # e.g., create, update, reconcile, export
-    at = Column(DateTime, nullable=False, server_default=func.now())
-    actor = Column(String(128), nullable=True)  # optional: username/email
-    details = Column(Text, nullable=True)
-
-    record = relationship("FinanceRecord", back_populates="audits")
-
-
 class DisbursementStatus(enum.Enum):
     SUBMITTED = "SUBMITTED"
     APPROVED = "APPROVED"

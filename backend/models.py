@@ -1012,10 +1012,6 @@ class FinanceRecord(Base):
     )
     donation = relationship("Donation", back_populates="finance_record", uselist=False)
 
-    audits = relationship(
-        "FinanceAudit", back_populates="record", cascade="all, delete-orphan"
-    )
-
     __table_args__ = (Index("ix_finance_type_date", "transaction_type", "date"),)
 
 

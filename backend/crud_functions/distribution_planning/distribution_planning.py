@@ -16,7 +16,6 @@ from models import (
     DistributedItems,
     DistributionRoute,
     DistributionRouteLogs,
-    DemandAndResponse,
     AssignedStorage,
     ProcurementRequest,
     VolunteerStatus

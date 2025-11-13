@@ -325,67 +325,7 @@ class BaranggayRecords(Base):
         uselist=False,
     )
 
-class DemandAndResponse(Base):
-    __tablename__ = "demand_and_response"
-    __random_pk_field__ = "demand_id"
-    id = Column(Integer, index=True, server_default=Identity())
 
-    demand_id = Column(Integer, primary_key=True)
-    title_label = Column(String(255), nullable=False)
-    address = Column(String(255), nullable=False)
-    lat = Column(Float, nullable=False)
-    lng = Column(Float, nullable=False)
-    status = Column(String(255), nullable=False)
-    needs = Column(JSON, default=[])
-    priority = Column(String(255), nullable=False)
-
-    submitted_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    last_updated = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
-class ModalityDistribution(Base):
-    __tablename__ = "modality_distribution"
-    __random_pk_field__ = "modality_id"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    modality_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    modality_type = Column(String(255), nullable=False)
-
-
-class InKindMonitoring(Base):
-    __tablename__ = "inkind_monitoring"
-    __random_pk_field__ = "in_kind_monitoring_id"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    in_kind_monitoring_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    quantity = Column(Integer, default=0, nullable=False)
-    record_type = Column(String(255), nullable=False)
-
-
-class ResponseReportBudget(Base):
-    __tablename__ = "response_report_budget"
-    __random_pk_field__ = "response_budget_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    response_budget_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    budget_record_type = Column(String(255), nullable=False)
-    total_amount = Column(Float, nullable=False)
-    amount = Column(Float, nullable=False)
 
 
 # ------------------ DONATIONS MANAGEMENT MODELS

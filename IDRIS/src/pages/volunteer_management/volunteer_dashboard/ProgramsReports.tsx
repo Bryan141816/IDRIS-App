@@ -347,9 +347,6 @@ export default function ProgramsReport({
       <div className="breadcrumb-section">
         <h2 className="page-title">Programs Reports</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#">
-            <span>Home</span>
-          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
               Volunteer Dashboard

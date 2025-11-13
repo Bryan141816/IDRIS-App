@@ -16,13 +16,8 @@ from models import (
     DistributedItems,
     DistributionRoute,
     DistributionRouteLogs,
-    DemandAndResponse,
     AssignedStorage,
     ProcurementRequest,
-    InKindInventoryItem,
-    Donation_InKind,
-    Donation,
-    Donor,
     VolunteerStatus
 )
 from calendar import month_abbr
@@ -561,17 +556,6 @@ class DistributionAndPlanningCRUD:
             )
             db.add(log_entry)
 
-        # --- Update DemandAndResponse for this route's end_location ---
-        demand_response = (
-            db.query(DemandAndResponse)
-            .filter(DemandAndResponse.id == route.end_location_id)
-            .first()
-        )
-
-        if demand_response:
-            demand_response.status = "responded"
-            demand_response.last_updated = datetime.now()
-
         db.commit()
         db.refresh(route)
         if team:
@@ -635,15 +619,6 @@ class DistributionAndPlanningCRUD:
         ]
 
         return formatted
-
-    @staticmethod
-    def get_all_response(db: Session):
-        demands = (
-            db.query(DemandAndResponse)
-            .filter(DemandAndResponse.status == "no response")
-            .all()
-        )
-        return demands
 
     @staticmethod
     def count_assigned_routes(db: Session) -> int:

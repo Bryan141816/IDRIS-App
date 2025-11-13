@@ -727,9 +727,6 @@ const ManageApplicant: React.FC = () => {
                 <div className="breadcrumb-section">
                     <h2 className="page-title">Applicants</h2>
                     <Breadcrumb>
-                        <Breadcrumb.Item href="#">
-                            <span>Home</span>
-                        </Breadcrumb.Item>
                         <Breadcrumb.Item>
                             <Link to="/volunteer_management/volunteer_dashboard">
                                 Volunteer Dashboard
@@ -761,9 +758,6 @@ const ManageApplicant: React.FC = () => {
             <div className="breadcrumb-section">
                 <h2 className="page-title">Applicants</h2>
                 <Breadcrumb>
-                    <Breadcrumb.Item href="#">
-                        <span>Home</span>
-                    </Breadcrumb.Item>
                     <Breadcrumb.Item>
                         <Link to="/volunteer_management/volunteer_dashboard">
                             Volunteer Dashboard

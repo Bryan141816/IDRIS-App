@@ -1068,9 +1068,6 @@ const VolunteerAssignmentPage: React.FC = () => {
                 <div className="breadcrumb-section" style={{ marginBottom: '16px' }}>
                     <h2 className="page-title">Volunteer Assignment</h2>
                     <Breadcrumb>
-                        <Breadcrumb.Item href="#">
-                            <span>Home</span>
-                        </Breadcrumb.Item>
                         <Breadcrumb.Item>
                             <Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link>
                         </Breadcrumb.Item>

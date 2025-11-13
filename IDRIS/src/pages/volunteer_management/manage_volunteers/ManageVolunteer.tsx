@@ -292,9 +292,6 @@ const ManageVolunteer: React.FC = () => {
       <div className="breadcrumb-section">
         <h2 className="page-title">Volunteer Lists</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#">
-            <span>Home</span>
-          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
               Volunteer Dashboard

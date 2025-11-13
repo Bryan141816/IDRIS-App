@@ -604,10 +604,6 @@ const ResponseDashboard = () => {
       "/response_dashboard/report_summary",
       setReportSummary,
     );
-    fetchData<RecentMapActivity[]>(
-      "/response_dashboard/recent_map_activity",
-      setRecentMapActivity,
-    );
     fetchData<InventorySummary>(
       "/response_dashboard/in_kind_monitoring_detailed",
       setInKindMonitoring,

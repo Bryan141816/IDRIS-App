@@ -109,3 +109,44 @@
   }
   
 }
+
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .fundingCard {
+    img {
+      height: 280px; /* Adjust height for tablets */
+    }
+    p.fundingMessage {
+      font-size: 0.95rem; /* Slightly smaller text */
+    }
+    .funding-donate-btn {
+      padding: 8px 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .fundingCard {
+    img {
+      height: 200px; /* Smaller height for mobile phones */
+    }
+    p.fundingMessage {
+      font-size: 0.9rem;
+      -webkit-line-clamp: 4;
+    }
+    .amountRaised {
+      font-size: 12px;
+    }
+    .funding-donate-btn {
+      padding: 6px 0;
+      font-size: 0.85rem;
+      border-radius: 10px;
+    }
+    .active, .inactive {
+      font-size: 1rem;
+      padding: 2px 8px;
+    }
+  }
+}

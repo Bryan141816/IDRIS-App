@@ -277,46 +277,71 @@ label {
 }
 
 @media (max-width: 900px) {
-  .create-funding-image-side {
-    min-width: 200px;
-    max-width: 99vw;
+  .create-funding-card {
+    flex-direction: column-reverse;
+    align-items: center;
+    padding: 24px;
   }
+
+  .create-funding-form {
+    width: 100%;
+    max-width: none;
+  }
+
+  .create-funding-image-side {
+    width: 100%;
+    max-width: 400px; /* Limit image uploader width */
+    min-width: unset;
+  }
+
   .cf-upload {
-    max-width: 98vw;
-    min-width: 120px;
-    min-height: 170px;
-    padding: 12px 4px;
+    width: 100%;
+    min-height: 250px;
   }
 }
 
 @media (max-width: 600px) {
+  .create-funding-wrapper {
+    padding: 24px 12px;
+  }
+
   .create-funding-title {
-    font-size: 1.4rem;
-    margin-bottom: 14px;
+    font-size: 1.6rem;
+    margin-bottom: 16px;
   }
+
   .create-funding-card {
-    padding: 12px;
-    gap: 20px;
+    padding: 16px;
   }
-  .create-funding-form,
-  .create-funding-image-side {
-    max-width: 100%;
-    width: 100%;
-    padding: 0;
-    min-width: 0;
+
+  .create-funding-form {
+    gap: 16px;
   }
+
   .cf-button-group {
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 16px;
   }
+
   .cf-btn {
     width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
   }
+
   .cf-upload {
-    min-width: 120px;
-    min-height: 100px;
-    max-width: 95vw;
-    padding: 9px 2px;
+    min-height: 200px;
+    gap: 12px;
+  }
+
+  .cf-upload .upload-text {
+    font-size: 1rem;
+  }
+
+  .cf-upload img {
+    width: 180px;
+    height: 180px;
   }
 }
 

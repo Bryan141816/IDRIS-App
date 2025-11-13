@@ -1,8 +1,12 @@
 // DonationPage.scss
 .donation-page {
-  padding: 1.5rem;
+  padding: 1rem;
 
-  &__container {  
+  @media (min-width: 768px) {
+    padding: 2rem;
+  }
+
+  &__container {
     max-width: 90rem;
     margin: 0 auto;
   }
@@ -10,10 +14,11 @@
   &__grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
 
     @media (min-width: 1024px) {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1.2fr; // Give more space to the form
+      gap: 2.5rem;
     }
   }
 }

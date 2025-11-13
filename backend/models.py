@@ -325,20 +325,6 @@ class BaranggayRecords(Base):
         uselist=False,
     )
 
-
-class ResponseReport(Base):
-    __tablename__ = "response_reports"
-    __random_pk_field__ = "response_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    response_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    report_type = Column(String(255), nullable=False)
-    status = Column(String(50), nullable=False)
-
-
 class DemandAndResponse(Base):
     __tablename__ = "demand_and_response"
     __random_pk_field__ = "demand_id"

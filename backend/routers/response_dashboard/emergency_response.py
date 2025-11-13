@@ -1,14 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, literal
-from schemas import (
-    EmergencyReportResponse,
-    EmergencyReportIncidentsByPriority,
-    EmergencyReportSummary,
-    EmergencyReportPerformanceMetrics,
-)
+from sqlalchemy import func
+
 from models import (
-    DemandAndResponse,
     TeamMembers,
     DistributionRoute,
     DistributionTeam,

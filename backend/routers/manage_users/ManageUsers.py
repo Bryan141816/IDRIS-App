@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session, joinedload
 from data_schemas.report_schema import TableResponse, Cell
 from schemas import ResponseReportOut, ResponseReportCreate
 from database import get_db
-from crud import delete, create_response_report
 from models import User, AdminUserProfile
 from routers.role_checker import RoleChecker, GetUserRoles
 import math

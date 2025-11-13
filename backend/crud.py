@@ -1,25 +1,12 @@
-from datetime import datetime, timezone
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc
 from typing import List, Optional
 from models import (
-    EvacuationCenter,
-    ResponseReport,
     AdminUserProfile,
     User,
-    ModalityDistribution,
-    ResponseReportBudget,
-    InKindMonitoring,
-    DemandAndResponse,
 )
 from auth import hash_password, verify_password
 from schemas import (
-    EvacuationCenterCreate,
-    ResponseReportCreate,
-    ModalityDistributionCreate,
-    ResponseDashboardBudgetCreate,
-    InKindMonitoringCreate,
-    DemandAndResponseCreate,
+
     AdminUserProfileCreate,
     AdminUserProfileUpdate,
 )
@@ -305,108 +292,6 @@ def assign_roles(db: Session, user: User, role_names: list[str]):
     db.commit()
     db.refresh(user)
     return user
-
-
-def create_evacuation_center(
-    db: Session, record: EvacuationCenterCreate
-) -> EvacuationCenter:
-    db_record = EvacuationCenter(
-        name=record.name, lat=record.lat, lng=record.lng, capacity=record.capacity
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-    return db_record
-
-
-def create_response_report(db: Session, report: ResponseReportCreate) -> ResponseReport:
-    db_report = ResponseReport(
-        date_time=datetime.now(timezone.utc),
-        report_type=report.report_type,
-        status=report.status,
-    )
-    db.add(db_report)
-    db.commit()
-    db.refresh(db_report)
-    return db_report
-
-
-def create_demand_and_response_record(
-    db: Session, demand_and_response: DemandAndResponseCreate
-) -> DemandAndResponse:
-    json_needs = [need.dict() for need in demand_and_response.needs]
-    db_record = DemandAndResponse(
-        title_label=demand_and_response.title_label,
-        address=demand_and_response.address,
-        lat=demand_and_response.lat,
-        lng=demand_and_response.lng,
-        status=demand_and_response.status,
-        needs=json_needs,
-        priority=demand_and_response.priority,
-        submitted_at=datetime.now(timezone.utc),
-        last_updated=datetime.now(timezone.utc),
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-
-    return db_record
-
-
-def create_modality_distribution_record(
-    db: Session, modality_report: ModalityDistributionCreate
-) -> ModalityDistribution:
-    db_record = ModalityDistribution(
-        date_time=datetime.now(timezone.utc),
-        modality_type=modality_report.modality_type,
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-    return db_record
-
-
-def create_in_kind_monitoring_record(
-    db: Session, inkind_record: InKindMonitoringCreate
-) -> InKindMonitoring:
-    db_record = InKindMonitoring(
-        date_time=datetime.now(timezone.utc),
-        record_type=inkind_record.record_type,
-        quantity=inkind_record.quantity,
-    )
-    db.add(db_record)
-    db.commit()
-    db.refresh(db_record)
-    return db_record
-
-
-def create_response_dashboard_budget_create(
-    db: Session, response_budget: ResponseDashboardBudgetCreate
-) -> ResponseReportBudget:
-    latest_record = (
-        db.query(ResponseReportBudget)
-        .order_by(desc(ResponseReportBudget.date_time))
-        .first()
-    )
-
-    previous_total = latest_record.total_amount if latest_record else 0
-
-    if response_budget.budget_record_type == "Add":
-        new_total = previous_total + response_budget.amount
-    else:
-        new_total = previous_total - response_budget.amount
-
-    db_record = ResponseReportBudget(
-        date_time=datetime.now(timezone.utc),
-        budget_record_type=response_budget.budget_record_type,
-        amount=response_budget.amount,
-        total_amount=new_total,
-    )
-
-    db.add(db_record)
-    db.commit()
-    return db_record
-
 
 def get_superadmins(db: Session) -> List[User]:
     return db.query(User).filter(User.roles.contains(["superadmin"])).all()

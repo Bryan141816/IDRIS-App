@@ -216,12 +216,6 @@ def update_route(payload: UpdateRoute,background_tasks: BackgroundTasks,db: Sess
         background_tasks.add_task(send_complete_notifications,route_dict["route_id"], status)
     return route
 
-
-@router.get("/distribution_planning/get_all_response")
-def get_all_response(db: Session = Depends(get_db)):
-    return DistributionAndPlanningCRUD.get_all_response(db)
-
-
 # New endpoints for volunteer responses
 @router_generic.get("/distribution_planning/pending_assignments/{volunteer_id}")
 def get_pending_assignments(volunteer_id: int, db: Session = Depends(get_db)):

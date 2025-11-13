@@ -324,6 +324,15 @@
         }
       }
     }
+    @media (max-width: 480px) {
+      .modal {
+        width: 95%;
+        max-height: 90vh;
+      }
+      .modal-content {
+        padding: 0 1rem 1rem 1rem;
+      }
+    }
   }
   
   
@@ -509,8 +518,19 @@
           text-align: center;
         }
       }
-     
-      @media (max-width: 768px) {
+    }
+    
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -795,6 +815,10 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(200px, 2fr));
     gap: 1.5rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
    
     .export-card {
       background: #ffffff;
@@ -997,6 +1021,15 @@
     display: flex;
     flex-direction: row;
     gap: 10px;
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      width: 100%;
+
+      .primary-btn, .secondary-btn {
+        width: 100%;
+      }
+    }
   }
 
   /* Modal Styles */

@@ -1,12 +1,9 @@
 name: Backend Build & Run Check
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
-      - main
+      - release
 
 jobs:
   backend-check:

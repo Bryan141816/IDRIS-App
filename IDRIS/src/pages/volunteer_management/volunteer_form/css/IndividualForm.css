@@ -1,143 +1,658 @@
-/* Add this CSS to your IndividualForm.css file */
-  .breadcrumb-section {
-    margin-bottom: 20px;
-  }
+.application-form {
+  padding: 16px;
+  background-color: #ffff;
+}
 
-  .page-title {
-    font-size: 24px;
-    margin-bottom: 10px;
-  }
+.breadcrumb-section {
+  margin-bottom: 20px;
+}
 
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.application-form-container {
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+}
+
+.form-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  width: 100%;
+  max-width: 800px;
+  border: 1px solid #e8e8e8;
+}
+
+.form-title {
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+.form-section {
+  margin-bottom: 30px;
+  padding-top: 20px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 10px;
+  color: #333;
+}
+
+/* Upload Title */
+.upload-title {
+  margin-top: 30px;
+}
+
+/* Form Layout Helpers */
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.form-item-half {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-item-third {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Override Ant Design Styles */
+.application-form .ant-form-item-label > label {
+  font-weight: 500;
+  color: #333;
+}
+
+.application-form .ant-input,
+.application-form .ant-select-selector,
+.application-form .ant-picker {
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #d9d9d9;
+  padding: 8px 12px;
+  height: auto;
+}
+
+.application-form .ant-input:focus,
+.application-form .ant-select-selector:focus,
+.application-form .ant-picker:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: #40a9ff;
+}
+
+.application-form .ant-picker-range {
+  padding: 0;
+}
+
+.application-form .ant-select-selector {
+  height: 40px;
+  padding: 4px 12px;
+}
+
+.application-form .ant-select-selection-item {
+  line-height: 32px;
+}
+
+.application-form .ant-input-number {
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* Textarea */
+.application-form .ant-input-textarea textarea {
+  border-radius: 10px;
+}
+
+/* Checkbox Group */
+.application-form .ant-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.application-form .ant-checkbox-wrapper {
+  margin: 0;
+}
+
+/* Upload Section */
+.upload-item {
+  margin-bottom: 24px;
+}
+
+.application-form .ant-upload-drag {
+  border-radius: 12px;
+  border: 2px dashed #d9d9d9;
+  background: #fafafa;
+  transition: all 0.3s;
+}
+
+.application-form .ant-upload-drag:hover {
+  border-color: #40a9ff;
+}
+
+.upload-text {
+  font-size: 16px;
+  color: #666;
+  margin: 8px 0;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: #999;
+  margin: 4px 0;
+}
+
+.browse-button {
+  background-color: #4a89dc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.browse-button:hover {
+  background-color: #5d9cec;
+  color: white;
+}
+
+/* Note Section */
+.note-section {
+  background: #f8f9fa;
+  border-left: 4px solid #4a89dc;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+}
+
+.note-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.note-text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.understand-checkbox {
+  font-size: 14px;
+}
+
+/* Form Buttons */
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+  margin-bottom: 0;
+}
+
+.submit-button {
+  background-color: #4a89dc;
+  border-color: #4a89dc;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 24px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #5d9cec;
+  border-color: #5d9cec;
+}
+
+.submit-button:disabled {
+  background-color: #d9d9d9;
+  border-color: #d9d9d9;
+  cursor: not-allowed;
+}
+
+.previous-button {
+  margin-right: auto;
+  border: 1px solid #d9d9d9;
+  color: #666;
+  background: white;
+  border-radius: 8px;
+  height: 40px;
+  padding: 0 24px;
+}
+
+.previous-button:hover {
+  background-color: #40a9ff !important;
+  border-color: #40a9ff !important;
+  color: white !important;
+}
+
+/* Custom SweetAlert Modal */
+.custom-height-modal {
+  height: auto;
+  min-height: 200px;
+}
+
+.custom-swal-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.custom-swal-text {
+  font-size: 14px;
+}
+
+.custom-swal-button {
+  border-radius: 8px;
+  padding: 10px 24px;
+}
+
+.custom-swal-icon {
+  font-size: 48px;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Large tablets (≤1024px) */
+@media (max-width: 1024px) {
   .application-form-container {
-    display: flex;
-    justify-content: center;
+    padding: 0 12px;
   }
 
   .form-card {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 24px;
-    width: 100%;
-    max-width: 800px;
-    border: 1px solid #e8e8e8;
+    max-width: 100%;
+  }
+}
+
+/* Tablets (≤768px) */
+@media (max-width: 768px) {
+  .application-form {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .application-form-container {
+    padding: 0 8px;
+  }
+
+  .form-card {
+    padding: 20px;
+    border-radius: 16px;
   }
 
   .form-title {
-    font-size: 22px;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-
-  .form-section {
-    margin-bottom: 30px;
-    padding-top: 20px;
+    font-size: 20px;
   }
 
   .section-title {
-    font-size: 18px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 10px;
+    font-size: 17px;
   }
 
-  /* Form Layout Helpers */
+  /* Stack form rows vertically */
   .form-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 0;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .form-item-half {
-    flex: 1;
-  }
-
+  .form-item-half,
   .form-item-third {
-    flex: 1;
+    width: 100%;
+    flex: none;
   }
 
-  /* Override Ant Design Styles for a clean look */
+  /* Checkbox groups */
+  .application-form .ant-checkbox-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Upload section */
+  .upload-text {
+    font-size: 15px;
+  }
+
+  .upload-hint {
+    font-size: 13px;
+  }
+
+  /* Note section */
+  .note-section {
+    padding: 14px 16px;
+  }
+
+  .note-title {
+    font-size: 15px;
+  }
+
+  .note-text {
+    font-size: 13px;
+  }
+
+  /* Buttons */
+  .form-buttons {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .submit-button,
+  .previous-button {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Ant Design overrides */
+  .application-form .ant-form-item {
+    margin-bottom: 20px;
+  }
+
+  .application-form .ant-select-selector {
+    height: 44px;
+  }
+
+  .application-form .ant-input,
+  .application-form .ant-picker {
+    height: 44px;
+  }
+}
+
+/* Mobile phones (≤480px) */
+@media (max-width: 480px) {
+  .application-form {
+    padding: 10px;
+  }
+
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .breadcrumb-section {
+    margin-bottom: 16px;
+  }
+
+  .application-form-container {
+    padding: 0 4px;
+  }
+
+  .form-card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .form-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .form-section {
+    padding-top: 16px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Form elements */
   .application-form .ant-form-item-label > label {
-    font-weight: 500;
-    color: #333;
+    font-size: 14px;
   }
 
   .application-form .ant-input,
   .application-form .ant-select-selector,
   .application-form .ant-picker {
-    border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    border: 1px solid #d9d9d9;
-    padding: 8px 12px;
-    height: auto;
+    padding: 10px 12px;
+    font-size: 14px;
   }
 
-  .application-form .ant-input:focus,
-  .application-form .ant-select-selector:focus,
-  .application-form .ant-picker:focus {
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-    border-color: #40a9ff;
+  .application-form .ant-input-textarea textarea {
+    font-size: 14px;
   }
 
-  .application-form .ant-picker-range {
-    padding: 0;
+  /* Checkbox styling */
+  .application-form .ant-checkbox-wrapper {
+    font-size: 14px;
   }
 
-  .application-form .ant-select-selector {
-    height: 40px;
-    padding: 4px 12px;
+  /* Upload section */
+  .application-form .ant-upload-drag {
+    padding: 16px;
   }
 
-  .application-form .ant-select-selection-item {
-    line-height: 32px;
+  .ant-upload-drag-icon {
+    font-size: 36px;
   }
 
-  /* Form Buttons */
+  .upload-text {
+    font-size: 14px;
+  }
+
+  .upload-hint {
+    font-size: 12px;
+  }
+
+  .browse-button {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  /* Note section */
+  .note-section {
+    padding: 12px 14px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .note-title {
+    font-size: 14px;
+  }
+
+  .note-text {
+    font-size: 12px;
+  }
+
+  .understand-checkbox {
+    font-size: 13px;
+  }
+
+  /* Buttons */
   .form-buttons {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 30px;
+    margin-top: 20px;
   }
 
-  .submit-button {
-    background-color: #4a89dc;
-    border-color: #4a89dc;
-    border-radius: 8px;
-    height: 38px;
-    padding: 0 20px;
+  .submit-button,
+  .previous-button {
+    height: 44px;
+    font-size: 15px;
   }
 
-  .submit-button:hover {
-    background-color: #5d9cec;
-    border-color: #5d9cec;
-  }
-
-
-  .previous-button{
-    margin-left: -510%;
-  }
-
-  .previous-button:hover {
-    background-color: #40a9ff !important;
-    border: none !important;
-    color: white !important;
-    box-shadow: none !important;
-  }
-
+  /* SweetAlert */
   .custom-height-modal {
-    height: 75%; /* You can change this to any value that fits your needs */
+    width: 90% !important;
+  }
 
+  .custom-swal-title {
+    font-size: 18px;
+  }
+
+  .custom-swal-text {
+    font-size: 13px;
+  }
 }
 
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .form-row {
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .form-item-half,
-    .form-item-third {
-      width: 100%;
-    }
+/* Extra small phones (≤360px) */
+@media (max-width: 360px) {
+  .application-form {
+    padding: 8px;
   }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .form-card {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .form-title {
+    font-size: 17px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .form-section {
+    padding-top: 12px;
+    margin-bottom: 20px;
+  }
+
+  /* Form elements */
+  .application-form .ant-form-item-label > label {
+    font-size: 13px;
+  }
+
+  .application-form .ant-input,
+  .application-form .ant-select-selector,
+  .application-form .ant-picker {
+    font-size: 13px;
+    padding: 8px 10px;
+  }
+
+  .application-form .ant-checkbox-wrapper {
+    font-size: 13px;
+  }
+
+  /* Upload section */
+  .application-form .ant-upload-drag {
+    padding: 12px;
+  }
+
+  .upload-text {
+    font-size: 13px;
+  }
+
+  .browse-button {
+    font-size: 13px;
+    padding: 6px 14px;
+  }
+
+  /* Note section */
+  .note-section {
+    padding: 10px 12px;
+  }
+
+  .note-title {
+    font-size: 13px;
+  }
+
+  .note-text {
+    font-size: 11px;
+  }
+
+  /* Buttons */
+  .submit-button,
+  .previous-button {
+    font-size: 14px;
+    height: 42px;
+  }
+}
+
+/* Landscape mode for phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .form-card {
+    padding: 16px;
+  }
+
+  .form-section {
+    margin-bottom: 20px;
+    padding-top: 12px;
+  }
+
+  .section-title {
+    margin-bottom: 12px;
+  }
+
+  .application-form .ant-form-item {
+    margin-bottom: 12px;
+  }
+
+  .note-section {
+    padding: 10px 14px;
+    margin: 16px 0;
+  }
+}
+
+/* Touch device enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .application-form .ant-input,
+  .application-form .ant-select-selector,
+  .application-form .ant-picker,
+  .submit-button,
+  .previous-button {
+    min-height: 44px;
+  }
+
+  .application-form .ant-checkbox-wrapper {
+    padding: 8px 0;
+  }
+
+  .browse-button {
+    min-height: 44px;
+  }
+}
+
+/* Ant Design DatePicker responsive */
+@media (max-width: 480px) {
+  .ant-picker-dropdown {
+    max-width: 95vw !important;
+  }
+
+  .ant-picker-panel {
+    max-width: 100% !important;
+  }
+}
+
+/* Ant Design Select dropdown responsive */
+@media (max-width: 480px) {
+  .ant-select-dropdown {
+    max-width: 95vw !important;
+  }
+}
+
+/* Upload list item responsive */
+@media (max-width: 480px) {
+  .ant-upload-list-picture .ant-upload-list-item {
+    padding: 8px;
+  }
+
+  .ant-upload-list-item-name {
+    font-size: 13px;
+  }
+}

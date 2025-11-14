@@ -730,3 +730,35 @@
     height: 100%;
   }
 }
+
+@media (max-width: 480px) {
+  #donors {
+    padding: 10px;
+  }
+
+  #settings-container {
+    padding: 15px;
+
+    .search-bar input, .filter-bar select {
+      padding-top: 12px;
+      padding-bottom: 12px;
+      font-size: 0.9rem;
+    }
+  }
+
+  .table {
+    th, td {
+      padding: 12px 10px;
+      font-size: 0.85rem;
+    }
+
+    td:nth-child(4) {
+      font-size: 1rem;
+    }
+  }
+
+  .page-contorol {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

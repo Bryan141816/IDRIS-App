@@ -153,7 +153,10 @@ const DashboardSection: React.FC<{
           }
         }}>
           <div id="report-selection">
-            <ReportsExportsSection mode={(activeModal == "report-selection") ? "reports" : "exports"} />
+            <ReportsExportsSection
+              mode={(activeModal == "report-selection") ? "reports" : "exports"}
+              onClose={closeModal}
+            />
           </div>
         </div>
       }

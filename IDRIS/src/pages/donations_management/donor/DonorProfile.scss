@@ -130,11 +130,10 @@
 
 #donor-sub-info-container {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: auto 1fr;
   gap: 32px;
   padding: 24px;
   background: white;
-  place-items: center;
 
   .map-container {
     display: flex;
@@ -440,9 +439,9 @@
     grid-template-columns: 1fr;
     gap: 24px;
 
-    .map-container {
+    .map-container, .profile-right {
       min-width: auto;
-      width: 100%;
+      width: 100%; /* Ensure both take full width */
     }
   }
 }

@@ -18,17 +18,20 @@ jobs:
       with:
         python-version: '3.13.4'
 
-    - name: Install dependencies
+    - name: Install backend dependencies
+      working-directory: backend
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Lint (optional but recommended)
+    - name: Lint backend (optional)
+      working-directory: backend
       run: |
         pip install flake8
         flake8 .
 
     - name: Run FastAPI server test
+      working-directory: backend
       run: |
         # Run the server in the background
         uvicorn main:app --host 127.0.0.1 --port 8000 &

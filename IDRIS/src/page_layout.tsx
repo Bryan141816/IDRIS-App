@@ -35,7 +35,7 @@ function PageLayout() {
   const navigate = useNavigate();
 
   const userData = useLoaderData() as {
-    id: number;
+    user_id: number;
     user_type: string;
     email: string;
     username: string;
@@ -54,42 +54,39 @@ function PageLayout() {
     location.pathname === "/reset_password" ||
     location.pathname === "/oauth_callback";
 
+  // Track previous user type to detect changes
+  const [prevUserType, setPrevUserType] = useState<string | null>(null);
+
   useEffect(() => {
-    if (userData) {
+    if (!userData) {
+      if(!isAuthPage){
+        navigate("/login");
+      }
+      return;
+    }
+
+    const { user_type, email, user_id, username, roles, user_profile } =
+      userData;
+
+    // Only update if user_type has changed and is not null
+    if (user_type && user_type !== prevUserType) {
+      setPrevUserType(user_type);
+
       if (isAuthPage) {
-        handleRoleBasedRedirect(userData.roles, navigate);
+        handleRoleBasedRedirect(roles, navigate);
         return;
       }
-      setUserType(userData.user_type);
-      setEmail(userData.email);
-      setUserId(userData.id);
-      setUsername(userData.username);
-      setUserRoles(userData.roles);
-      if (userData.user_profile) {
-        setUserImage(userData.user_profile.profile_image);
-      }
-    } else {
-      setUserType("");
-      setEmail("");
-      setUserId(null);
-      setUsername("");
-      setUserRoles([]);
-      setUserImage(null);
+
+      setUserType(user_type);
+      setEmail(email);
+      setUserId(user_id);
+      setUsername(username);
+      setUserRoles(roles);
+      setUserImage(user_profile?.profile_image ?? null);
+
+      setUserReady(true);
     }
-    // Set userReady after userData is processed
-    setUserReady(true);
-  }, [
-    userData,
-    isAuthPage,
-    navigate,
-    setUserType,
-    setEmail,
-    setUserId,
-    setUsername,
-    setUserRoles,
-    setUserReady,
-    setUserImage,
-  ]);
+  }, [userData]);
 
   const navigation = useNavigation();
 
@@ -107,12 +104,8 @@ function PageLayout() {
   );
 
   const isPrintPage = location.pathname === "/donation_report";
-
   const hideNavbarRoutes = ["/finance_printable"];
-
   const shouldHideNavbar = false;
-  // isPrintPage || hideNavbarRoutes.includes(location.pathname);
-
   const shouldHideLayout =
     isAuthPage ||
     hideHeaderFooterRoutes.includes(location.pathname) ||
@@ -122,6 +115,7 @@ function PageLayout() {
   const toggleNavbar = () => setIsNavbarVisible((prev) => !prev);
   const closeSidebar = () => setIsNavbarVisible(false);
   const shouldHideUI = !userRoles || userRoles.length === 0;
+
   let content;
   if ((!isUserReady && !isAuthPage) || navigation.state === "loading") {
     content = <PageLoader />;
@@ -136,7 +130,7 @@ function PageLayout() {
   }
 
   return (
-    <RealTimeDataProvider url={`http://localhost:8000/real_time/${userId}`}>
+    <RealTimeDataProvider>
       <NotificationProvider>
         {!shouldHideUI && !shouldHideNavbar && (
           <Navbar isVisible={isNavbarVisible} onClose={closeSidebar} />

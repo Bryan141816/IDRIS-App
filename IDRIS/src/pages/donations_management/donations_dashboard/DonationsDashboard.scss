@@ -447,17 +447,8 @@
 }
 
 // Responsive Design
-@media screen and (max-width: 1200px) {
+@media screen and (max-width: 1024px) {
   #dashboard {
-    #funding-proposals {
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-  }
-}
-@media screen and (max-width: 992px) {
-  #dashboard {
-    padding: 20px;
-    gap: 24px;
     #grid-container {
       grid-template-columns: 1fr;
       gap: 16px;
@@ -466,72 +457,115 @@
       grid-template-columns: 1fr;
       gap: 24px;
     }
-    #funding-proposals {
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-    }
   }
 }
+
 @media screen and (max-width: 768px) {
   #dashboard {
     padding: 16px;
-    gap: 20px;
+    gap: 24px;
+
     .public-feed-title {
       flex-direction: column;
-      gap: 12px;
       align-items: flex-start;
+      gap: 12px;
       .title-child h3 {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+      }
+      .icon-container {
+        align-self: flex-end;
+        padding: 6px 14px;
+        font-size: 0.85rem;
       }
     }
+
     .donation-stat-card {
       padding: 20px;
-      .title { font-size: 1rem; }
-      .stat-data { font-size: 1.75rem; }
-      &:first-child {
-        .title { font-size: 1.1rem; }
-        .stat-data { font-size: 1.9rem; }
+      .title {
+        font-size: 1rem;
+      }
+      .stat-data {
+        font-size: 1.8rem;
       }
     }
-    .horizontal-container {
-      .total_donations_settings {
-        align-self: stretch;
-        justify-content: center;
-      }
+
+    .horizontal-container .total_donations_settings {
+      align-self: flex-start;
+      margin-top: 8px;
     }
+
+    .funding-proposal-titles h3 {
+      font-size: 1.4rem;
+    }
+
     #funding-proposals {
-      grid-template-columns: 1fr;
+      min-height: auto; // Let content define height
+      padding: 20px;
     }
+
     .page-contorol {
-      flex-direction: column;
-      gap: 12px;
-      button { min-width: 120px; }
-    }
-    // Mobile adjustments for donation records
-    .donation-record-container {
-      #donation-record-list {
-        .donation-record {
-          padding: 12px 14px;
-          gap: 4px;
-          .donation-main { gap: 8px; .donor-name, .donation-amount { font-size: 0.85rem; } }
-          .donation-date { font-size: 0.7rem; white-space: nowrap; }
-          .funding-title, .item-description { font-size: 0.75rem;}
-          .donation-type { font-size: 0.7rem; }
-        }
+      margin-top: 24px; // Add more space above controls
+      button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
       }
     }
   }
 }
+
 @media screen and (max-width: 480px) {
   #dashboard {
     padding: 12px;
-    gap: 16px;
-    .donation-stat-card { padding: 16px; }
+    gap: 20px;
+
+    .public-feed-title .title-child h3 {
+      font-size: 1.4rem;
+    }
+
+    .donation-stat-card {
+      padding: 16px;
+      .title {
+        font-size: 0.9rem;
+      }
+      .stat-data {
+        font-size: 1.6rem;
+      }
+    }
+
+    .horizontal-container .total_donations_settings button {
+      padding: 5px 12px;
+      font-size: 0.8rem;
+    }
+
     .donation-pie-chart-container,
-    .donation-record-container { padding: 16px; }
+    #funding-proposals {
+      padding: 16px;
+    }
+
+    .funding-proposal-titles {
+      margin: 0 0 16px 0;
+      h3 {
+        font-size: 1.2rem;
+      }
+    }
+
+    .page-contorol {
+      gap: 12px;
+      p {
+        font-size: 0.9rem;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+      }
+    }
+
     .modal-button-container {
       flex-direction: column;
-      button { width: 100%; }
+      gap: 12px;
+      button {
+        width: 100%;
+      }
     }
   }
 }

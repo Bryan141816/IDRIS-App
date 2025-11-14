@@ -301,17 +301,48 @@
   gap: 10px;
 }
 
-@media screen and (max-width: 720px) {
+@media screen and (max-width: 1024px) {
+  #funding-body {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  #funding {
+    padding: 16px;
+    gap: 16px;
+  }
   #settings-container {
     flex-direction: column;
-    height: auto;
-    align-items: flex-end;
-    gap: 1px;
+    padding: 16px;
+    gap: 12px;
+
+    .search-bar, .filter-bar, .green-button {
+      width: 100%;
+    }
   }
 
   #funding-body {
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    padding-top: 5px;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .page-contorol {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  #settings-container {
+    .green-button {
+      font-size: 0.9rem;
+      padding: 10px 16px;
+    }
+    .search-bar input, .filter-bar select {
+      font-size: 0.9rem;
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
   }
 }

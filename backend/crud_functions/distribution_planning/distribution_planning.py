@@ -7,7 +7,7 @@ from data_schemas.distribution_planning import (
 )
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import func, select, distinct, extract, case
+from sqlalchemy import func, select, distinct, extract, case, or_
 from models import (
     IndividualVolunteer,
     DistributionTeam,
@@ -16,13 +16,8 @@ from models import (
     DistributedItems,
     DistributionRoute,
     DistributionRouteLogs,
-    DemandAndResponse,
     AssignedStorage,
     ProcurementRequest,
-    InKindInventoryItem,
-    Donation_InKind,
-    Donation,
-    Donor,
     VolunteerStatus
 )
 from calendar import month_abbr
@@ -431,6 +426,16 @@ class DistributionAndPlanningCRUD:
                     # (optional) if you later add routes backref here, avoid cycles in serialization
                 ),
             )
+            .order_by(
+                case(
+                    (DistributionRoute.status == "Waiting for Additional Action",0),
+                    (DistributionRoute.status == "Waiting for volunteer acceptance",1),
+                    (DistributionRoute.status == "Active",2),
+                    (DistributionRoute.status == "In Transit",3),
+                    (DistributionRoute.status.in_(["Completed", "Cancelled"]),4),
+                ),
+                DistributionRoute.date_added.asc()
+            )
             .all()
         )
 
@@ -551,17 +556,6 @@ class DistributionAndPlanningCRUD:
             )
             db.add(log_entry)
 
-        # --- Update DemandAndResponse for this route's end_location ---
-        demand_response = (
-            db.query(DemandAndResponse)
-            .filter(DemandAndResponse.id == route.end_location_id)
-            .first()
-        )
-
-        if demand_response:
-            demand_response.status = "responded"
-            demand_response.last_updated = datetime.now()
-
         db.commit()
         db.refresh(route)
         if team:
@@ -627,22 +621,39 @@ class DistributionAndPlanningCRUD:
         return formatted
 
     @staticmethod
-    def get_all_response(db: Session):
-        demands = (
-            db.query(DemandAndResponse)
-            .filter(DemandAndResponse.status == "no response")
-            .all()
-        )
-        return demands
-
-    @staticmethod
     def count_assigned_routes(db: Session) -> int:
         """Count all routes with status 'Assigned'."""
         return (
             db.query(func.count(DistributionRoute.route_id))
-            .filter(DistributionRoute.status == "Assigned")
+            .filter(
+
+
+                    DistributionRoute.status == "In Transit"
+
+            )
             .scalar()
         )
+
+
+    @staticmethod
+    def count_total_route(db:Session) -> int:
+        return (
+            db.query(func.count(DistributionRoute.request_id))
+              .scalar()
+        )
+    @staticmethod
+    def count_pending_route(db: Session) -> int:
+        return (
+            db.query(func.count(DistributionRoute.route_id))
+            .filter(
+                or_(
+                    DistributionRoute.status == "Waiting for Additional Action",
+                    DistributionRoute.status == "Waiting for volunteer acceptance"
+                )
+            )
+            .scalar()
+        )
+
 
     @staticmethod
     def count_unique_members(db: Session) -> int:
@@ -660,6 +671,14 @@ class DistributionAndPlanningCRUD:
             .filter(DistributionRoute.status == "Completed")
             .scalar()
         )
+    @staticmethod
+    def count_active_route(db: Session)-> int:
+        return (
+            db.query(func.count(DistributionRoute.request_id))
+            .filter(DistributionRoute.status == "Active")
+            .scalar()
+        )
+
 
     @staticmethod
     def monthly_route_counts(db: Session):
@@ -708,7 +727,10 @@ class DistributionAndPlanningCRUD:
     @staticmethod
     def get_dashboard(db: Session):
         return {
-            "active_routes": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "total_route": DistributionAndPlanningCRUD.count_total_route(db),
+            "active_route": DistributionAndPlanningCRUD.count_active_route(db),
+            "in_transit": DistributionAndPlanningCRUD.count_assigned_routes(db),
+            "pending_routes": DistributionAndPlanningCRUD.count_pending_route(db),
             "deployed_volunteers": DistributionAndPlanningCRUD.count_unique_members(db),
             "items_distributed": DistributionAndPlanningCRUD.count_items_with_completed_routes(
                 db

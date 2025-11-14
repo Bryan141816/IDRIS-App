@@ -17,7 +17,11 @@ from models import (
     DistributionRouteLogs,
     ProcurementRequestItem,
     Disbursement,
-    DisbursementItem
+    DisbursementItem,
+    TeamMembers,
+    DistributionTeam,
+    TeamMembers,
+    ProcurementRequestLog
 )
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone, time
@@ -42,7 +46,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.inspection import inspect
 router = APIRouter(
     tags=["procurement_management"],
-    dependencies=[Depends(RoleChecker(["operations admin", "superadmin"]))],
+    dependencies=[Depends(RoleChecker(["superadmin", "logistics admin"]))],
 )
 
 @router.get("/procurement_management/get_dashboard_data")
@@ -51,20 +55,27 @@ def get_dashboard(db: Session = Depends(get_db)):
         db.query(
             func.count(ProcurementRequest.request_id).label("total"),
             func.sum(
-                case((ProcurementRequest.status == "APPROVED", 1), else_=0)
+                case((ProcurementRequest.status == "Approved", 1), else_=0)
             ).label("approved"),
             func.sum(
-                case((ProcurementRequest.status != "APPROVED", 1), else_=0)
+                case((ProcurementRequest.status != "Approved", 1), else_=0)
             ).label("not_approved"),
-        )
+        )       
         .one()
     )
+    logs = (db.query(ProcurementRequestLog)
+        .order_by(ProcurementRequestLog.date_created.desc())
+        .limit(5)
+        .all()
+            )
 
     return {
         "total": counts.total or 0,
         "approved": counts.approved or 0,
         "pending": counts.not_approved or 0,
+        "recent_log": logs
     } 
+
 
 
 def serialize_request(r: ProcurementRequest) -> dict:
@@ -91,7 +102,6 @@ def serialize_request(r: ProcurementRequest) -> dict:
                 "occupied": r.evacuation_center.occupied,
             }
         else:
-            # Flag was set but no matching/linked record
             end_target = {"type": None}
 
     # ---- items ----
@@ -119,11 +129,114 @@ def serialize_request(r: ProcurementRequest) -> dict:
             for i in (r.procurement_items or [])
         ]
 
+    # ---- route info ----
+    route_list = None 
+    if r.status == "Approved" and r.routes:
+        route = r.routes
+        if route: 
+            route_list ={
+                "route_id": route.route_id,
+                "route_name": route.route_name,
+                "gathering_area": route.gathering_area,
+                "gathering_lat": route.gathering_lat,
+                "gathering_lng": route.gathering_lng,
+                "request_id": route.request_id,
+                "status": route.status,
+                "start_schedule": route.start_schedule.isoformat() if route.start_schedule else None,
+                "end_schedule": route.end_schedule.isoformat() if route.end_schedule else None,
+                "team_id": route.team,
+                "date_added": route.date_added.isoformat() if route.date_added else None,
+                "assigned_team": {
+                    "team_id": route.assigned_team.team_id,
+                    "team_name": route.assigned_team.team_name,
+                    "isActive": route.assigned_team.isActive,
+                    "status": route.assigned_team.status,
+                    "team_members": [
+                        {
+                            "members_id": m.members_id,
+                            "member": m.member,
+                            "role": m.role,
+                            "status": m.status,
+                            "volunteer": {
+                                "volunteer_id": m.volunteer.volunteer_id,
+                                "first_name": m.volunteer.first_name,
+                                "middle_name": m.volunteer.middle_name,
+                                "last_name": m.volunteer.last_name,
+                                "full_name": f"{m.volunteer.first_name} {m.volunteer.middle_name} {m.volunteer.last_name}",
+                                "email": m.volunteer.email,
+                                "phone_number": m.volunteer.phone_number,
+                                "address": m.volunteer.address,
+                                "gender": m.volunteer.gender,
+                                "age": m.volunteer.age
+                            }
+                        } for m in (route.assigned_team.team_members or [])
+                    ]
+                } if route.assigned_team else None,
+                "distributed_items": [
+                    {
+                        "item_id": d.item_id,
+                        "assigned_storage": d.assigned_storage,
+                        "relief_id": d.relief_id,
+                        "procurement_request_id": d.procurement_request_id,
+                        "route": d.route,
+                        "quantity": d.quantity,
+                        "assigned_storage_rec": {
+                            "assigned_id": d.assigned_storage_rec.assigned_id,
+                            "quantity": d.assigned_storage_rec.quantity,
+                            "warehouse": {
+                                "warehouse_id": d.assigned_storage_rec.warehouse.warehouse_id,
+                                "address": d.assigned_storage_rec.warehouse.address,
+                                "lat": d.assigned_storage_rec.warehouse.lat,
+                                "long": d.assigned_storage_rec.warehouse.long,
+                                "status": d.assigned_storage_rec.warehouse.status,
+                                "zone_name": d.assigned_storage_rec.warehouse.zone_name,
+                                "zone_type": d.assigned_storage_rec.warehouse.zone_type,
+                                "capacity": d.assigned_storage_rec.warehouse.capacity,
+                                "manager": d.assigned_storage_rec.warehouse.manager
+                            },
+                            "inventory_item": {
+                                "inventory_id": d.assigned_storage_rec.inventory_item.inventory_id,
+                                "item_name": d.assigned_storage_rec.inventory_item.item_name,
+                                "quantity": d.assigned_storage_rec.inventory_item.quantity,
+                                "category": d.assigned_storage_rec.inventory_item.category,
+                                "batch": d.assigned_storage_rec.inventory_item.batch,
+                                "expiry": d.assigned_storage_rec.inventory_item.expiry.isoformat() if d.assigned_storage_rec.inventory_item.expiry else None,
+                                "status": d.assigned_storage_rec.inventory_item.status
+                            }
+                        } if d.assigned_storage_rec else None,
+                        "relief_item": {
+                            "item_id": d.relief_item.item_id,
+                            "request_id": d.relief_item.request_id,
+                            "item_name": d.relief_item.item_name,
+                            "category": d.relief_item.category,
+                            "quantity": d.relief_item.quantity
+                        } if d.relief_item else None,
+                        "procurement_item": {
+                            "item_id": d.procurement_item.item_id,
+                            "request_id": d.procurement_item.request_id,
+                            "item_name": d.procurement_item.item_name,
+                            "quantity": d.procurement_item.quantity,
+                            "unit": d.procurement_item.unit
+                        } if d.procurement_item else None
+                    } for d in (route.distributed_items or [])
+                ],
+                "logs": [
+                    {
+                        "log_id": log.log_id,
+                        "route_id": log.route_id,
+                        "log_message": log.log_message,
+                        "date": log.date.isoformat() if log.date else None
+                    } for log in reversed(route.logs or [])
+                ],
+        }
+
     return {
         "request_id": r.request_id,
         "lgu": {
             "id": r.lgu.id if r.lgu else None,
             "name": r.lgu.lgu_name if r.lgu else None,
+            "lat": r.lgu.lat if r.lgu else None,
+            "lng": r.lgu.lng if r.lgu else None
         },
         "request_type": r.request_type,
         "request_ref_num": r.request_ref_num,
@@ -136,34 +249,75 @@ def serialize_request(r: ProcurementRequest) -> dict:
         "date_needed": r.date_needed.isoformat() if r.date_needed else None,
         "use_different_end": r.use_different_end,
         "different_end_type": r.different_end_type,
-        "end_target": end_target,  # <- conditional block above
+        "end_target": end_target,
         "fallback_end": {
             "end_address": r.end_address,
             "end_lat": r.end_lat,
             "end_long": r.end_long,
-        },  # keep raw fields in case you still need them
-        "items_source": item_source,  # "relief" | "procurement"
-        "items": items,  # <- list of the retrieved items
+        },
+        "items_source": item_source,
+        "items": items,
+        "route": route_list  # list of routes
     }
 
 
+
+
 @router.get("/procurement_management/get_request")
-def get_request(db: Session = Depends(get_db)):
+def list_requests(db: Session = Depends(get_db)):
+    # Build the query with deep eager loading
     query = (
         db.query(ProcurementRequest)
         .options(
-            joinedload(ProcurementRequest.lgu).load_only(
-                LGURecords.id, LGURecords.lgu_name
-            ),
-            joinedload(ProcurementRequest.barangay),  # end target (barangay)
-            joinedload(ProcurementRequest.evacuation_center),  # end target (evac)
-            selectinload(ProcurementRequest.relief_items),  # items (relief)
-            selectinload(ProcurementRequest.procurement_items),  # items (procurement)
+            # LGU and end targets
+            joinedload(ProcurementRequest.lgu).load_only(LGURecords.id, LGURecords.lgu_name),
+            joinedload(ProcurementRequest.barangay),
+            joinedload(ProcurementRequest.evacuation_center),
+
+            # Request items
+            selectinload(ProcurementRequest.relief_items),
+            selectinload(ProcurementRequest.procurement_items),
+
+            # Routes and nested relationships
+            selectinload(ProcurementRequest.routes)
+            .joinedload(DistributionRoute.assigned_team)
+            .selectinload(DistributionTeam.team_members)
+            .joinedload(TeamMembers.volunteer),
+
+            selectinload(ProcurementRequest.routes)
+            .selectinload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.assigned_storage_rec)
+            .joinedload(AssignedStorage.warehouse),
+
+            selectinload(ProcurementRequest.routes)
+            .selectinload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.assigned_storage_rec)
+            .joinedload(AssignedStorage.inventory_item),
+
+            selectinload(ProcurementRequest.routes)
+            .selectinload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.relief_item),
+
+            selectinload(ProcurementRequest.routes)
+            .selectinload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.procurement_item),
+
+            selectinload(ProcurementRequest.routes)
+            .selectinload(DistributionRoute.logs)
         )
-        .order_by(ProcurementRequest.date_requested.desc())  # optional: newest first
+        .order_by(
+            case(
+                (ProcurementRequest.status == "Pending Approval", 0),
+                (ProcurementRequest.status == "Waiting for Budget Approval", 0),
+                (ProcurementRequest.status == "Approved", 1),
+                (ProcurementRequest.status == "Rejected", 2),
+                else_=3
+            ),
+            ProcurementRequest.date_requested.asc()
+        )
     )
 
-    rows: List[ProcurementRequest] = query.all()
+    rows: list[ProcurementRequest] = query.all()  
     return [serialize_request(r) for r in rows]
 
 def generate_short_id(length=6):
@@ -178,7 +332,7 @@ def create_disbursement_with_items(db: Session, request_data: dict, items: List[
     disbursement = Disbursement(
         disbursement_id=disbursement_id,
         disbursement_name=request_data.get("request_title", "No title"),
-        origin_name=request_data.get("procurement", "No origin"),
+        origin_name="Procurement",
         origin_id=request_data["request_id"],
     )
 
@@ -256,6 +410,7 @@ def approve_reject_request(
             log = DistributionRouteLogs(
                 route_id=route.route_id,
                 log_message=f"{query.request_ref_num} has been created",
+                date = now,
             )
             db.add(log)
 

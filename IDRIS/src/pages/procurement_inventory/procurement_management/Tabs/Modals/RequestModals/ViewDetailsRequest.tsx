@@ -37,29 +37,62 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
 
   useEffect(() => {
     if (selectedItem?.request_type === "relief") {
-      const mapped = selectedItem?.items.map((item) => ({
-        item_id: item.item_id,
-        name: item.name,
-        category: item.category,
-        quantity: item.quantity,
-        unit: item.unit,
-        assigned_id: -1,
-        inventory_name: "",
-        warehouse_name: "",
-        quantity_assigned: -1,
-      }));
+      const mapped = selectedItem.items.map((item) => {
+        const category = "category" in item ? item.category : "";
+        const unit = "unit" in item ? item.unit || "" : "";
+
+        let assigned_id = -1;
+        let inventory_name = "";
+        let warehouse_name = "";
+        let quantity_assigned = -1;
+
+        if (selectedItem.route) {
+          const distributed = selectedItem.route.distributed_items.find(
+            (d: any) => d.item_id === item.item_id,
+          );
+          if (distributed) {
+            assigned_id = distributed.assigned_storage;
+            inventory_name =
+              distributed.assigned_storage_rec.inventory_item.item_name;
+            warehouse_name =
+              distributed.assigned_storage_rec.warehouse.zone_name;
+            quantity_assigned = distributed.quantity;
+          }
+        }
+
+        return {
+          item_id: item.item_id,
+          name: item.name,
+          category, // safe
+          quantity: item.quantity,
+          unit, // safe
+          assigned_id,
+          inventory_name,
+          warehouse_name,
+          quantity_assigned,
+        };
+      });
+
       setRequestList(mapped);
     }
   }, []);
   const handleApproval = async (type: string) => {
+    const confirm = await Swal.fire({
+      title: `Are you sure you want to ${type} this request?`,
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+    });
+    if (!confirm.isConfirmed) {
+      return;
+    }
     try {
-      const cleanedList = requestList
-        ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
-        .map(({ item_id, assigned_id, quantity_assigned }) => ({
-          item_id,
-          assigned_id,
-          quantity_assigned,
-        }));
+      // const cleanedList = requestList
+      //   ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
+      //   .map(({ item_id, assigned_id, quantity_assigned }) => ({
+      //     item_id,
+      //     assigned_id,
+      //     quantity_assigned,
+      //   }));
       const response = await API.post(
         `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
       );
@@ -75,10 +108,16 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
       );
     }
   };
-  const onReject = () => {
+  const onReject = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+    }
     handleApproval("reject");
   };
-  const onApprove = () => {
+  const onApprove = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+    }
     handleApproval("approve");
   };
   return (
@@ -171,6 +210,12 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
                     requestItems={requestList}
                     setRequestListState={setRequestList}
                     status={selectedItem.status}
+                    type={mode}
+                    showInventory={
+                      selectedItem.route
+                        ? selectedItem.route.distributed_items.length > 0
+                        : false
+                    }
                   ></RequestItemsHandler>
                 ) : (
                   <table style={{ width: "100%" }}>
@@ -201,7 +246,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
                             <td style={{ padding: "10px" }}>{item.name}</td>
                             <td style={{ padding: "10px" }}>{item.quantity}</td>
                             <td style={{ padding: "10px" }}>
-                              {item.unit ?? "-"}
+                              {"unit" in item ? item.unit : "-"}
                             </td>
                           </tr>
                         ))}
@@ -229,12 +274,16 @@ interface RequestItemsHandlerProp {
     React.SetStateAction<(requestItemsType & StorageInfo)[]>
   >;
   status: string;
+  type: string;
+  showInventory?: boolean;
 }
 
 export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
   requestItems,
   status,
   setRequestListState,
+  type,
+  showInventory = true,
 }) => {
   const [selectedRequest, setSelectedRequest] = useState<
     (requestItemsType & StorageInfo) | null
@@ -271,6 +320,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
       ),
     );
   };
+  console.log(type);
   const clearInventory = (index: number) => {
     setRequestListState((prev) =>
       prev.map((item, i) =>
@@ -316,7 +366,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
               <th style={{ textAlign: "start", padding: "10px" }}>
                 Quantity Needed
               </th>
-              {status.toLowerCase() !== "pending approval" && (
+              {status.toLowerCase() !== "pending approval" && showInventory && (
                 <>
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Inventory Name
@@ -324,12 +374,16 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <th style={{ textAlign: "start", padding: "10px" }}>
                     Quantity
                   </th>
-                  <th style={{ textAlign: "start", padding: "10px" }}>
-                    Warehouse
-                  </th>
+                  {type !== "view" && (
+                    <th style={{ textAlign: "start", padding: "10px" }}>
+                      Warehouse
+                    </th>
+                  )}
                 </>
               )}
-              <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+              {(type === "review" || type === "picking") && (
+                <th style={{ textAlign: "start", padding: "10px" }}>Action</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -339,56 +393,73 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <td style={{ padding: "10px" }}>{item.name}</td>
                   <td style={{ padding: "10px" }}>{item.category}</td>
                   <td style={{ padding: "10px" }}>{item.quantity}</td>
-                  {status.toLowerCase() !== "pending approval" && (
-                    <>
-                      <td style={{ padding: "10px" }}>{item.inventory_name}</td>
-                      <td style={{ padding: "10px" }}>
-                        {item.quantity_assigned !== -1
-                          ? item.quantity_assigned
-                          : ""}
-                      </td>
-                      <td style={{ padding: "10px" }}>{item.warehouse_name}</td>
-                    </>
+                  {status.toLowerCase() !== "pending approval" &&
+                    showInventory && (
+                      <>
+                        <td style={{ padding: "10px" }}>
+                          {item.inventory_name}
+                        </td>
+                        <td style={{ padding: "10px" }}>
+                          {item.quantity_assigned !== -1
+                            ? item.quantity_assigned
+                            : ""}
+                        </td>
+                        {type !== "view" && (
+                          <td style={{ padding: "10px" }}>
+                            {item.warehouse_name}
+                          </td>
+                        )}
+                      </>
+                    )}
+                  {type !== "view" && (
+                    <td style={{ padding: "10px", width: "fit-content" }}>
+                      {status.toLowerCase() === "pending approval" && (
+                        <>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              openInventory(item, index);
+                            }}
+                          >
+                            Check Availability
+                          </button>
+                        </>
+                      )}
+                      {status.toLowerCase() ===
+                        "waiting for additional action" && (
+                        <>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              openInventory(item, index);
+                            }}
+                          >
+                            Pick From Inventory
+                          </button>
+                          <button
+                            className="action-btn"
+                            style={{ width: "fit-content" }}
+                            onClick={(
+                              e: React.MouseEvent<HTMLButtonElement>,
+                            ) => {
+                              e.preventDefault();
+                              clearInventory(index);
+                            }}
+                          >
+                            Clear Selected
+                          </button>
+                        </>
+                      )}
+                    </td>
                   )}
-                  <td style={{ padding: "10px", width: "fit-content" }}>
-                    {status.toLowerCase() === "pending approval" && (
-                      <>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => openInventory(item, index)}
-                        >
-                          Check Availability
-                        </button>
-                      </>
-                    )}
-                    {status.toLowerCase() ===
-                      "waiting for additional action" && (
-                      <>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => openInventory(item, index)}
-                        >
-                          Pick From Inventory
-                        </button>
-                        <button
-                          className="action-btn"
-                          style={{ width: "fit-content" }}
-                          onClick={() => clearInventory(index)}
-                        >
-                          Clear Selected
-                        </button>
-                      </>
-                    )}
-                    {/* <button */}
-                    {/*   className="action-btn" */}
-                    {/*   style={{ width: "fit-content" }} */}
-                    {/*   onClick={() => clearInventory(index)} */}
-                    {/* > */}
-                    {/*   Clear Selected */}
-                    {/* </button> */}
-                  </td>
                 </tr>
               ))}
           </tbody>
@@ -418,7 +489,7 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
     const fetch = async () => {
       try {
         const response = await API.get(
-          `/distribution_planning/get_assigned?category=${encodeURIComponent(item.category)}`,
+          `/distribution_planning/get_assigned?category=${encodeURIComponent(item.category ?? "food items")}`,
         );
         setResponseData(response.data);
       } catch (e: any) {
@@ -548,11 +619,23 @@ const PickInventoryModal: React.FC<PickInventoryModalProp> = ({
           </div>
         </div>
         <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
+          <button
+            className="secondary-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             Cancel
           </button>
           {type !== "check" && (
-            <button className="primary-btn" onClick={handleSubmit}>
+            <button
+              className="primary-btn"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+            >
               Select Item
             </button>
           )}

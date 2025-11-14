@@ -9,14 +9,14 @@ import { Link } from "react-router-dom";
 import { loginUser, fetchCurrentUser } from "../../API_Handler/auth.ts";
 import { useUserContext } from "../../UserContext";
 import { handleRoleBasedRedirect } from "../../utils/handleRoleBasedRedirect.ts";
-
+import { API } from "../../API_Handler/Axio_API_Handler.ts";
 const Login = () => {
   const [email, setEmailEntry] = useState("");
   const [password, setPassword] = useState("");
   const [erroMessage, setErrorMessage] = useState("");
   const [showError, setShowError] = useState(false);
   const [errorTitle, setErrorTitle] = useState("");
-
+  const API_URL = API.defaults.baseURL;
   const { setUserRoles } = useUserRoleContext();
   const {
     setUserType,
@@ -105,7 +105,8 @@ const Login = () => {
             break;
           default:
             backendErrorTitle = "Login Error";
-            backendErrorText = detail || "Unable to log in at this time. Please try again.";
+            backendErrorText =
+              detail || "Unable to log in at this time. Please try again.";
         }
       } else if (error.request) {
         backendErrorTitle = "Connection Error";
@@ -129,11 +130,11 @@ const Login = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/auth/login";
+    window.location.href = API_URL + "/auth/login";
   };
 
   const handleMicrosoftLogin = () => {
-    window.location.href = "http://localhost:8000/auth/microsoft/login";
+    window.location.href = API_URL + "/auth/microsoft/login";
   };
 
   return (

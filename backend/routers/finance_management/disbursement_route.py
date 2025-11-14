@@ -7,6 +7,8 @@ from database import get_db
 from data_schemas.finance_disbursement import Disbursement, DisbursementCreate, DisbursementUpdate, DisbursementItemUpdate
 from crud_functions.finance_management import disbursement_crud
 from routers.role_checker import RoleChecker
+from .helper import parse_resolved_at
+from typing import Optional
 
 router = APIRouter()
 
@@ -38,20 +40,23 @@ def update_disbursement(
     status: str = Form(...),
     remarks: str = Form(None),
     items: str = Form(...),
-    attachment: UploadFile = File(...),
-    dateOfPayment: str = Form(...),
+    attachment: Optional[UploadFile] = File(None),
+    resolved_at: Optional[str] = Form(None),
     budgetSource: str = Form(...)
 ):
     try:
         items_data = json.loads(items)
         items_update = [DisbursementItemUpdate(**item) for item in items_data]
+        budget_source_data = json.loads(budgetSource)
     except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON format for items")
-
+        raise HTTPException(status_code=400, detail="Invalid JSON format for items or budgetSource")
+    print("resolved at", resolved_at)
     disbursement_update = DisbursementUpdate(
         status=status,
         remarks=remarks,
-        items=items_update
+        items=items_update,
+        resolved_at = resolved_at,
+        budgetSource=budget_source_data
     )
 
     db_disbursement = disbursement_crud.update_disbursement(
@@ -59,7 +64,7 @@ def update_disbursement(
         disbursementId=disbursementId,
         disbursement_update=disbursement_update,
         attachment=attachment,
-        dateOfPayment=dateOfPayment,
+        resolved_at=resolved_at,
         budgetSource=budgetSource
     )
     if db_disbursement is None:

@@ -14,11 +14,7 @@ from database import Base, engine, SessionLocal
 from routers.auth import authentication, users
 from routers import admin
 from routers.response_dashboard import (
-    in_kind_monitoring,
     response_dashboard,
-    report_list,
-    modality_distribution,
-    budget,
     demand_and_response,
     emergency_response,
 )
@@ -50,7 +46,7 @@ from routers.distributionAndplanning import distributionAndplanning
 from routers.user_profile_routes import router as user_profile_router
 from routers import notification_donors_route
 import real_time_handler
-
+from decouple import config
 # ✅ LGU officer location-only router
 import insert_lgu_info
 
@@ -66,16 +62,11 @@ insert_lgu_info.insert_lgu_records_if_empty()
 # Initialize FastAPI app
 app = FastAPI()
 SECRET_KEY = config("SECRET_KEY")
-
+ALLOW_ORIGINS = [origin.strip() for origin in config("ALLOW_ORIGINS").split(",")]
 # Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://localhost:4173",
-    ],
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,10 +93,6 @@ app.include_router(
 )
 app.include_router(evacuation_scope_router)
 
-# ❌ Removed admin/manage LGU routers
-# app.include_router(admin_lgu_router)
-# app.include_router(manage_lgu.router)
-
 app.include_router(
     transparency_report_route.router,
     prefix="/transparency_report",
@@ -128,15 +115,11 @@ app.include_router(
 app.include_router(mapofcebu.router)
 
 app.include_router(response_dashboard.router)
-app.include_router(report_list.router)
 app.include_router(demand_and_response.router)
-app.include_router(modality_distribution.router)
-app.include_router(budget.router)
-app.include_router(in_kind_monitoring.router)
-app.include_router(emergency_response.router)
 app.include_router(procurement_inventory.router)
 app.include_router(procurement_management.router)
 app.include_router(request_procurement.router)
+app.include_router(emergency_response.router)
 app.include_router(
     organization_volunteer_routes.router, tags=["Organization Volunteer Management"]
 )

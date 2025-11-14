@@ -102,23 +102,23 @@ const InventoryItems = () => {
           refreshData={updateTable}
         ></AddInventoryItemTab>
       )}
-      {activeModal == "edit-item" && (
+      {activeModal == "edit-item" && selectedItem && (
         <EditInventoryModal
           onClose={closeModal}
           refreshData={updateTable}
           selectedData={selectedItem}
         ></EditInventoryModal>
       )}
-      <div className="inventory-content">
+      <div className="requests-content">
         <div className="section-header">
           <h2>Inventory Dashboard</h2>
           <div className="header-actions">
-            <button
-              className="secondary-btn"
-              onClick={() => openModal("export")}
-            >
-              📊 Export Report
-            </button>
+            {/* <button */}
+            {/*   className="secondary-btn" */}
+            {/*   onClick={() => openModal("export")} */}
+            {/* > */}
+            {/*   📊 Export Report */}
+            {/* </button> */}
             <button
               className="primary-btn"
               onClick={() => openModal("add-item")}
@@ -189,6 +189,13 @@ const InventoryItems = () => {
                   </td>
                 </tr>
               ))}
+              {inventoryItems.length === 0 && (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center" }}>
+                    No Data
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

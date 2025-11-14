@@ -1,72 +1,72 @@
-/* Main container */
 .applicants-container {
-    padding: 16px;
-  }
+  padding: 16px;
+}
 
+.breadcrumb-section {
+  margin-bottom: 16px;
+}
 
-  /* Breadcrumb section */
-  .breadcrumb-section {
-    margin-bottom: 16px;
-  }
+.page-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: black;
+}
 
-  .page-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: black;
-  }
+/* Main layout */
+.main-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
 
-  /* Main layout */
-  .main-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 16px;
-  }
+/* Card styles */
+.applicants-list-card {
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  overflow: hidden;
+}
 
-  /* Card styles */
-  .applicants-list-card{
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    border-radius: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  }
+.applicant-details-card {
+  padding: 24px;
+  width: 100%;
+  height: 100%;
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
 
-  .applicant-details-card {
-    padding: 24px;
-    width: 99%;
-    height: 100%;
-    background-color: white;
-    border-radius: 15px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  }
+/* Section titles */
+.section-title {
+  font-size: 25px;
+  font-weight: 670;
+  margin-bottom: 16px;
+  margin-left: 15px;
+  white-space: nowrap;
+}
 
-  /* Section titles */
-  .section-title {
-    font-size: 25px;
-    font-weight: 670;
-    margin-bottom: 16px;
-    margin-left: 15px;
-    white-space: nowrap; /* Prevents wrapping */
-  }
+.details-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #749AB6;
+  margin-bottom: 24px;
+  word-wrap: break-word;
+}
 
-  .details-title {
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: #749AB6;
-    margin-bottom: 24px;
-  }
+/* Table container */
+.table-container {
+  height: 100%;
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
 
-  /* Table container */
-  .table-container {
-    height: 100%;
-    width: 100%;
-    max-height: 500px;
-    overflow-y: auto;
-    overflow-x: auto;
-  }
-
-  ::-webkit-scrollbar {::-webkit-scrollbar {
+::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -81,116 +81,530 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
-    width: 6px;
+
+/* Pagination info */
+.pagination-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* Search container */
+.search-container {
+  display: flex;
+  gap: 20px;
+  padding: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  width: 200px;
+  min-width: 150px;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-accept {
+  color: #1890ff;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.action-accept:hover {
+  color: #40a9ff;
+}
+
+.action-decline {
+  color: red;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.action-decline:hover {
+  color: #ff4d4f;
+}
+
+/* Details container */
+.details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detail-item {
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  color: #6b7280;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.detail-value {
+  font-weight: 500;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  color: black;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* View credentials button */
+.view-credentials-container {
+  text-align: center;
+}
+
+.view-credentials-button {
+  background-color: #749AB6;
+  margin-top: 40px;
+  min-width: 150px;
+}
+
+.view-credentials-button:hover {
+  background-color: #5a8aa0;
+}
+
+/* Custom buttons */
+.my-confirm-button {
+  background-color: #749AB6;
+  color: white;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+.my-confirm-button:hover {
+  background-color: #5a8aa0;
+}
+
+.my-cancel-button {
+  background-color: #8B8B8B;
+  color: white;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  margin-right: 10px;
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+.my-cancel-button:hover {
+  background-color: #6e6e6e;
+}
+
+.custom-swal-popup {
+  border-radius: 15px;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Large tablets (≤1024px) */
+@media (max-width: 1024px) {
+  .main-content {
+    grid-template-columns: 1.5fr 1fr;
+    gap: 12px;
   }
 
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+  .section-title {
+    font-size: 22px;
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+  .search-container {
+    gap: 12px;
+  }
+}
+
+/* Tablets and small laptops (≤768px) */
+@media (max-width: 768px) {
+  .applicants-container {
+    padding: 12px;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+  .page-title {
+    font-size: 1rem;
   }
 
-  /* Pagination info */
-  .pagination-info {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-top: 8px;
+  /* Stack the layout vertically */
+  .main-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Cards */
+  .applicants-list-card,
+  .applicant-details-card {
+    border-radius: 12px;
+  }
+
+  .applicant-details-card {
+    padding: 20px;
+  }
+
+  /* Section title */
+  .section-title {
+    font-size: 20px;
+    margin-left: 12px;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  .details-title {
+    font-size: 1rem;
+    margin-bottom: 20px;
   }
 
   /* Search container */
   .search-container {
-    display: flex;
-    gap: 450px;
-    padding: 8px;
-    margin-left: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
   }
 
   .search-input {
-    width: 200px;
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Table container */
+  .table-container {
+    max-height: 400px;
+  }
+
+  /* Details */
+  .details-container {
+    gap: 20px;
+  }
+
+  .detail-label {
+    font-size: 13px;
+  }
+
+  .detail-value {
+    font-size: 14px;
+  }
+
+  /* View credentials button */
+  .view-credentials-button {
+    margin-top: 30px;
+    width: 100%;
   }
 
   /* Action buttons */
   .action-buttons {
-    display: flex;
-    gap: 8px;
+    justify-content: center;
+  }
+}
+
+/* Mobile phones (≤480px) */
+@media (max-width: 480px) {
+  .applicants-container {
+    padding: 8px;
   }
 
-  .action-accept {
-    color: #1890ff;
-    cursor: pointer;
+  .breadcrumb-section {
+    margin-bottom: 12px;
   }
 
-  .action-decline {
-    color: red;
-    cursor: pointer;
+  .page-title {
+    font-size: 0.95rem;
   }
 
-  /* Details container */
+  /* Main content */
+  .main-content {
+    gap: 12px;
+  }
+
+  /* Cards */
+  .applicants-list-card,
+  .applicant-details-card {
+    border-radius: 10px;
+  }
+
+  .applicant-details-card {
+    padding: 16px;
+  }
+
+  /* Section title */
+  .section-title {
+    font-size: 18px;
+    margin-left: 10px;
+    margin-bottom: 12px;
+  }
+
+  .details-title {
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+  }
+
+  /* Search container */
+  .search-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  /* Table container */
+  .table-container {
+    max-height: 350px;
+    font-size: 13px;
+  }
+
+  /* Details */
   .details-container {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    gap: 16px;
   }
 
   .detail-item {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .detail-label {
-    color: #6b7280;
-    margin-bottom: 4px;
+    font-size: 12px;
+    margin-bottom: 3px;
   }
 
   .detail-value {
-    font-weight: 500;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 8px;
-    color: black;
+    font-size: 13px;
+    padding-bottom: 6px;
   }
 
   /* View credentials button */
-  .view-credentials-container {
-    text-align: center;
+  .view-credentials-button {
+    margin-top: 20px;
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
 
+  /* Custom buttons */
+  .my-confirm-button,
+  .my-cancel-button {
+    padding: 10px 16px;
+    font-size: 14px;
+    width: 100%;
+    margin: 5px 0;
+  }
+
+  .my-cancel-button {
+    margin-right: 0;
+  }
+
+  /* Sweet Alert adjustments */
+  .custom-swal-popup {
+    width: 90% !important;
+    max-width: 350px !important;
+  }
+}
+
+/* Extra small phones (≤360px) */
+@media (max-width: 360px) {
+  .applicants-container {
+    padding: 6px;
+  }
+
+  .page-title {
+    font-size: 0.9rem;
+  }
+
+  .main-content {
+    gap: 10px;
+  }
+
+  .applicant-details-card {
+    padding: 12px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-left: 8px;
+  }
+
+  .details-title {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+
+  .search-container {
+    padding: 8px;
+  }
+
+  .table-container {
+    max-height: 300px;
+    font-size: 12px;
+  }
+
+  .details-container {
+    gap: 12px;
+  }
+
+  .detail-label {
+    font-size: 11px;
+  }
+
+  .detail-value {
+    font-size: 12px;
   }
 
   .view-credentials-button {
-    background-color: #749AB6;
-    margin-top: 40px;
+    font-size: 13px;
+    padding: 8px;
   }
 
-
-
-  .my-confirm-button {
-    background-color: #749AB6;
-    color: white;
-    padding: 8px 18px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: background-color 0.3s;
-  }
-
-
+  .my-confirm-button,
   .my-cancel-button {
-    background-color: #8B8B8B;
-    color: white;
-    padding: 8px 18px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
-    margin-right: 10px;
-    transition: background-color 0.3s;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* Landscape mode for phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .table-container {
+    max-height: 250px;
   }
 
-  .custom-swal-popup {
-
-    border-radius: 15px;
+  .applicant-details-card {
+    max-height: 400px;
+    overflow-y: auto;
   }
+
+  .view-credentials-button {
+    margin-top: 15px;
+  }
+}
+
+/* Override DataTable styles for mobile */
+@media (max-width: 768px) {
+  /* Make table responsive */
+  .rdt_Table {
+    font-size: 13px;
+  }
+
+  .rdt_TableHead {
+    font-size: 12px;
+  }
+
+  .rdt_TableCell {
+    padding: 8px;
+  }
+
+  .rdt_TableCol {
+    padding: 8px;
+  }
+
+  /* Pagination */
+  .rdt_Pagination {
+    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .rdt_Pagination button {
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rdt_Table {
+    font-size: 12px;
+  }
+
+  .rdt_TableHead {
+    font-size: 11px;
+  }
+
+  .rdt_TableCell,
+  .rdt_TableCol {
+    padding: 6px;
+  }
+
+  .rdt_Pagination {
+    font-size: 11px;
+  }
+
+  .rdt_Pagination button {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
+
+/* Touch device enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .action-accept,
+  .action-decline {
+    padding: 8px;
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .view-credentials-button,
+  .my-confirm-button,
+  .my-cancel-button {
+    min-height: 44px;
+  }
+}
+
+/* Modal responsive styles */
+@media (max-width: 768px) {
+  .ant-modal {
+    max-width: 95% !important;
+    margin: 10px auto !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+
+  .ant-modal-header {
+    padding: 16px !important;
+  }
+
+  .ant-modal-footer {
+    padding: 12px 16px !important;
+  }
+
+  .ant-modal-footer .ant-btn {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ant-modal {
+    max-width: 100% !important;
+    margin: 0 !important;
+    top: 0 !important;
+  }
+
+  .ant-modal-content {
+    border-radius: 0 !important;
+  }
+
+  .ant-modal-body {
+    padding: 12px !important;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+  }
+
+  .ant-modal-footer .ant-btn {
+    width: 100%;
+    margin: 5px 0 !important;
+  }
+}

@@ -171,7 +171,7 @@ const FundingProposals = () => {
               proposalId={item.funding_id}
               title={item.title}
               description={item.description}
-              donated={item.total_donated ?? 0}
+              total_donated={item.total_donated ?? 0}
               target={item.budget_required}
               image={item.image || undefined}
               starting_date={item.starting_date}

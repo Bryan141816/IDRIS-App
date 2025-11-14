@@ -30,6 +30,7 @@
   background-color: #60a5fa;
   color: white;
   padding: 16px;
+  transition: transform 0.3s ease;
 }
 
 .logo {
@@ -109,6 +110,7 @@
   overflow: hidden;
   border-radius: 20px;
   z-index: 1;
+  min-height: 150px;
 }
 
 .total-card::before {
@@ -149,7 +151,7 @@
 
 .manage-btn {
   position: absolute;
-  bottom: 15px;
+  bottom: 8px;
   right: 20px;
   z-index: 2;
   background-color: #749ab6;
@@ -160,6 +162,8 @@
   cursor: pointer;
   width: 23%;
   height: 25%;
+  min-width: 80px;
+  min-height: 32px;
 }
 
 .generate-btn {
@@ -175,8 +179,9 @@
   cursor: pointer;
   width: 23%;
   height: 25%;
+  min-width: 80px;
+  min-height: 32px;
 }
-
 
 .cards-grid {
   display: grid;
@@ -202,11 +207,13 @@
   align-items: center;
   margin-bottom: 16px;
 }
+
 .initial-avatar{
-    display: inline-block;  /* or block */
+  display: inline-block;
   margin-left: 14px;
   margin-top: 10px;
 }
+
 .volunteer-avatar {
   width: 40px;
   height: 40px;
@@ -215,6 +222,7 @@
   margin-right: 12px;
   background-image: url("/api/placeholder/40/40");
   background-size: cover;
+  flex-shrink: 0;
 }
 
 .volunteer-name {
@@ -233,7 +241,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 6px; /* subtle breathing room under the title */
+  margin-top: 6px;
+  padding: 0 16px 16px 16px;
 }
 
 .partner-item {
@@ -249,8 +258,8 @@
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  background: #f3f4f6;           /* light gray fallback */
-  border: 1px solid #e5e7eb;     /* soft border */
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
   flex: 0 0 auto;
   margin-left: 12px;
 }
@@ -269,17 +278,20 @@
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  overflow: hidden;
 }
 
 .partner-name {
   font-weight: 600;
-  color: #2c4964; /* matches your blue-ish headings */
+  color: #2c4964;
+  word-break: break-word;
 }
 
 .partner-email {
   font-size: 12px;
-  color: #64748b; /* subtle gray-blue */
+  color: #64748b;
   text-decoration: none;
+  word-break: break-all;
 }
 
 .partner-email:hover {
@@ -287,7 +299,7 @@
 }
 
 .partner-email.muted {
-  color: #94a3b8; /* slightly lighter when missing email */
+  color: #94a3b8;
 }
 
 /* Deployment & Calendar */
@@ -299,14 +311,16 @@
 .deployment-calendar-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  height: 100%;
 }
 
 .deployment-section {
   background-color: #749ab6;
   color: white;
   padding: 16px;
-  width: 85%;
-  height: 131%;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .deployment-title {
@@ -316,7 +330,7 @@
 
 .deployment-list {
   font-size: 14px;
-  height: 360px;
+  height: calc(100% - 40px);
   overflow-y: auto;
 }
 
@@ -360,7 +374,7 @@
 .calendar-section {
   background-color: white;
   padding: 8px;
-  margin-right: 25px;
+  width: 100%;
 }
 
 .calendar-header {
@@ -388,6 +402,7 @@
 .date-display {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .month-day {
@@ -471,19 +486,20 @@
 
 .event-dot-small {
   position: absolute;
-  right: 4px;          /* bottom-right corner */
+  right: 4px;
   bottom: 4px;
   width: 6px;
   height: 6px;
-  background-color: #2563eb; /* blue-600 */
+  background-color: #2563eb;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px #fff; /* crisp edge on light bg */
+  box-shadow: 0 0 0 1px #fff;
 }
 
 /* News & Announcements */
 .news-card {
   padding: 16px;
   height: 43%;
+  min-height: 300px;
 }
 
 .news-header {
@@ -491,6 +507,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .news-title {
@@ -560,6 +578,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .news-item-date {
@@ -587,15 +607,413 @@
   font-weight: bold;
 }
 
-/*  ≤768 px  = “tablet / phone” */
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Tablet devices (≤1024px) */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    width: 180px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .cards-grid {
+    height: auto;
+    min-height: 300px;
+  }
+
+  .deployment-calendar-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .deployment-section {
+    width: 100%;
+    height: auto;
+    min-height: 200px;
+  }
+
+  .calendar-section {
+    margin-right: 0;
+  }
+}
+
+/* Small tablets and large phones (≤768px) */
 @media (max-width: 768px) {
-  /* 1‑A. Stop using absolute positioning */
-  .manage-btn {
-    display: block;
-    width: 30%; /* full card width */
+  .sidebar {
+    position: fixed;
+    left: -200px;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+  }
+
+  .sidebar.open {
+    transform: translateX(200px);
+  }
+
+  .content {
+    padding: 12px;
+  }
+
+  .content-grid {
+    gap: 12px;
+  }
+
+  /* Total cards */
+  .total-card {
+    height: auto;
+    min-height: 140px;
+    padding: 16px 16px 60px 16px;
+  }
+
+  .card-title-white {
+    font-size: 24px;
+  }
+
+  .card-number {
+    font-size: 20px;
+  }
+
+  /* Buttons in total cards */
+  .manage-btn,
+  .generate-btn {
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 36px;
     margin-top: 12px;
-    padding: 10px 0;
-    font-size: 11px; /* smaller text on small screens */
-    border-radius: 8px;
+    bottom: auto;
+    right: auto;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .generate-btn {
+    margin-top: 8px;
+  }
+
+  /* Cards grid */
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    height: auto;
+  }
+
+  /* Deployment and calendar */
+  .deployment-calendar {
+    height: auto;
+  }
+
+  .deployment-calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .deployment-section {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .deployment-list {
+    max-height: 300px;
+  }
+
+  /* Calendar adjustments */
+  .calendar-header {
+    padding: 0 12px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-day {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .weekday {
+    font-size: 11px;
+  }
+
+  /* News card */
+  .news-card {
+    height: auto;
+    min-height: 250px;
+  }
+
+  .news-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .news-list {
+    height: auto;
+    max-height: 400px;
+  }
+
+  /* Partner list */
+  .partner-list {
+    padding: 0 12px 12px 12px;
+  }
+
+  .partner-avatar {
+    width: 36px;
+    height: 36px;
+    margin-left: 0;
+  }
+
+  .partner-name {
+    font-size: 14px;
+  }
+
+  .partner-email {
+    font-size: 11px;
+  }
+
+  /* Volunteer list */
+  .volunteer-list {
+    padding: 0 12px 12px 12px;
+  }
+
+  .volunteer-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Mobile phones (≤480px) */
+@media (max-width: 480px) {
+  .content {
+    padding: 8px;
+  }
+
+  .content-grid {
+    gap: 8px;
+  }
+
+  /* Total cards */
+  .total-card {
+    min-height: 120px;
+    padding: 12px 12px 50px 12px;
+    border-radius: 12px;
+  }
+
+  .card-title-white {
+    font-size: 20px;
+  }
+
+  .card-number {
+    font-size: 18px;
+  }
+
+  .manage-btn,
+  .generate-btn {
+    bottom: -40px;
+    font-size: 15px;
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  /* Blue titles */
+  .blue-title {
+    font-size: 16px;
+    padding: 12px 12px 0 12px;
+  }
+
+  /* Cards */
+  .card {
+    border-radius: 6px;
+  }
+
+  .cards-grid {
+    gap: 8px;
+  }
+
+  /* Volunteer items */
+  .volunteer-item {
+    margin-bottom: 12px;
+  }
+
+  .volunteer-avatar {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+  }
+
+  .volunteer-name {
+    font-size: 13px;
+  }
+
+  .volunteer-meta {
+    font-size: 11px;
+  }
+
+  /* Partner items */
+  .partner-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .partner-name {
+    font-size: 13px;
+  }
+
+  .partner-email {
+    font-size: 10px;
+  }
+
+  /* Deployment section */
+  .deployment-title {
+    font-size: 16px;
+  }
+
+  .deployment-item {
+    font-size: 12px;
+  }
+
+  .deployment-item-title {
+    font-size: 13px;
+  }
+
+  .deployment-item-date,
+  .deployment-item-location {
+    font-size: 11px;
+  }
+
+  /* Calendar */
+  .calendar-header {
+    padding: 0 8px;
+  }
+
+  .day-name {
+    font-size: 13px;
+  }
+
+  .month-day,
+  .year {
+    font-size: 13px;
+  }
+
+  .calendar-day {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .weekday {
+    font-size: 10px;
+    padding: 2px;
+  }
+
+  .event-dot-small {
+    width: 4px;
+    height: 4px;
+    right: 2px;
+    bottom: 2px;
+  }
+
+  /* News & Announcements */
+  .news-title {
+    font-size: 16px;
+  }
+
+  .add-program-btn {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+
+  .news-item {
+    padding: 10px;
+  }
+
+  .news-item-title {
+    font-size: 14px;
+  }
+
+  .news-item-desc {
+    font-size: 11px;
+  }
+
+  .news-item-date {
+    font-size: 11px;
+  }
+
+  .ongoing-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  /* Footer */
+  .footer {
+    font-size: 12px;
+    padding: 6px;
+  }
+}
+
+/* Extra small phones (≤360px) */
+@media (max-width: 360px) {
+  .card-title-white {
+    font-size: 18px;
+  }
+
+  .card-number {
+    font-size: 16px;
+  }
+
+  .manage-btn,
+  .generate-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+
+  .blue-title {
+    font-size: 14px;
+  }
+
+  .volunteer-name,
+  .partner-name {
+    font-size: 12px;
+  }
+
+  .volunteer-meta,
+  .partner-email {
+    font-size: 10px;
+  }
+
+  .calendar-day {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .weekday {
+    font-size: 9px;
+  }
+}
+
+/* Landscape orientation for phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dashboard-container {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .total-card {
+    min-height: 100px;
+  }
+
+  .deployment-list {
+    max-height: 200px;
+  }
+
+  .news-list {
+    max-height: 250px;
   }
 }

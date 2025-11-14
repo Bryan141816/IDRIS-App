@@ -229,8 +229,8 @@ async def auth_callback_login(
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="Lax",
-        secure=False,
+        samesite="None",
+        secure=True,
     )
 
     return {"access_token": access_token, "token_type": "bearer", "user": user}
@@ -354,8 +354,8 @@ def login(form_data: LoginSchema, response: Response, db: Session = Depends(get_
         value=refresh_token,
         httponly=True,
         max_age=60 * 60 * 24 * 7,
-        samesite="Lax",
-        secure=False,
+        samesite="None",
+        secure=True,
     )
 
     print("✓ Login successful - tokens created")

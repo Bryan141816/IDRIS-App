@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MapView, { MarkerType } from "../../../components/MapView/MapView";
-import { Link } from "react-router-dom";
 import "../css/MapOfCebu.css";
+import { API } from "../../../API_Handler/Axio_API_Handler";
 
 /* ---------- Local Types ---------- */
 type HazardPhoto = { src: string; label: string };
@@ -17,16 +17,16 @@ type MarkerWithPhotos = MarkerType & {
 
   /* ---------- LGU ---------- */
   classification?: string | null;
-  population?: number | string | null;   // ← used in JSX
+  population?: number | string | null; // ← used in JSX
   baranggayCount?: number | null;
   mayor?: string | null;
   drmmPersonnel?: string | null;
-  drmmContact?: string | null;           // ← missing
-  majorHazards?: string[] | null;        // ← missing
-  criticalFacilities?: string[] | null;  // ← missing
-  pwdCount?: number | null;              // ← missing
-  seniorCount?: number | null;           // ← missing
-  childrenCount?: number | null;         // ← missing
+  drmmContact?: string | null; // ← missing
+  majorHazards?: string[] | null; // ← missing
+  criticalFacilities?: string[] | null; // ← missing
+  pwdCount?: number | null; // ← missing
+  seniorCount?: number | null; // ← missing
+  childrenCount?: number | null; // ← missing
   hazardPic?: string | null;
 
   // Header seal image (your JSX currently references `image`)
@@ -47,7 +47,6 @@ type MarkerWithPhotos = MarkerType & {
   resources?: string | null;
   type?: string; // "lgu" | "barangay" | "raffi" | "evacuation"
 };
-
 
 type LGUDetail = {
   id: number;
@@ -119,7 +118,7 @@ type EvacAPI = {
 };
 
 /* ---------- API Bases ---------- */
-const RAW_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const RAW_API = API.defaults.baseURL ?? "http://localhost:5173/";
 const MAPOFCEBU_BASE = "/lgu_profiling/mapofcebu";
 const API_BASE = `${RAW_API.replace(/\/+$/, "")}${MAPOFCEBU_BASE}`;
 
@@ -154,7 +153,7 @@ const MapOfCebu = () => {
   const [lguMarkers, setLguMarkers] = useState<MarkerWithPhotos[]>([]);
   const [raffiMarkers, setRaffiMarkers] = useState<MarkerWithPhotos[]>([]);
   const [barangayMarkers, setBarangayMarkers] = useState<MarkerWithPhotos[]>(
-    []
+    [],
   );
   const [evacMarkers, setEvacMarkers] = useState<MarkerWithPhotos[]>([]);
   // 🔎 Search state
@@ -169,7 +168,7 @@ const MapOfCebu = () => {
 
   const allMarkers: MarkerWithPhotos[] = useMemo(
     () => [...lguMarkers, ...barangayMarkers, ...raffiMarkers, ...evacMarkers],
-    [lguMarkers, barangayMarkers, raffiMarkers, evacMarkers]
+    [lguMarkers, barangayMarkers, raffiMarkers, evacMarkers],
   );
 
   const normalize = (s: string) =>
@@ -226,31 +225,30 @@ const MapOfCebu = () => {
 
   // Smoothly move + open sidebar
   const goToMarker = (m: MarkerWithPhotos) => {
-  setCenter([m.lat, m.lng]);
-  setSelectedMarker(m);
-  setSidebarOpen(true);
-  setSearchVisible(false); // 👈 hide search bar
-  setPathCoordinates(null);
-  setEvacuationCenter(null);
-  if (m.type === "lgu" && typeof m.lguId === "number") {
-    loadHazardsForLGU(m.lguId);
-  }
-};
+    setCenter([m.lat, m.lng]);
+    setSelectedMarker(m);
+    setSidebarOpen(true);
+    setSearchVisible(false); // 👈 hide search bar
+    setPathCoordinates(null);
+    setEvacuationCenter(null);
+    if (m.type === "lgu" && typeof m.lguId === "number") {
+      loadHazardsForLGU(m.lguId);
+    }
+  };
 
-const submitSearch = () => {
-  if (!suggestions.length) return;
+  const submitSearch = () => {
+    if (!suggestions.length) return;
 
-  const top = suggestions[activeIndex] ?? suggestions[0];
-  if (top.__kind === "coords") {
-    setCenter(top.coords);
-    setSidebarOpen(false);
-    setSelectedMarker(null);
-    setSearchVisible(false); // 👈 hide when go to coords too
-    return;
-  }
-  goToMarker(top.marker);
-};
-
+    const top = suggestions[activeIndex] ?? suggestions[0];
+    if (top.__kind === "coords") {
+      setCenter(top.coords);
+      setSidebarOpen(false);
+      setSelectedMarker(null);
+      setSearchVisible(false); // 👈 hide when go to coords too
+      return;
+    }
+    goToMarker(top.marker);
+  };
 
   // Keyboard nav for suggestions
   useEffect(() => {
@@ -263,7 +261,7 @@ const submitSearch = () => {
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex(
-          (i) => (i - 1 + suggestions.length) % suggestions.length
+          (i) => (i - 1 + suggestions.length) % suggestions.length,
         );
       } else if (e.key === "Enter") {
         e.preventDefault();
@@ -283,7 +281,7 @@ const submitSearch = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [selectedMarker, setSelectedMarker] = useState<MarkerWithPhotos | null>(
-    null
+    null,
   );
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -291,7 +289,7 @@ const submitSearch = () => {
     [number, number][] | null
   >(null);
   const [evacuationCenter, setEvacuationCenter] = useState<MarkerType | null>(
-    null
+    null,
   );
 
   // per-LGU hazards cache & loading flags
@@ -299,7 +297,7 @@ const submitSearch = () => {
     Record<number, HazardPhoto[]>
   >({});
   const [hazardLoading, setHazardLoading] = useState<Record<number, boolean>>(
-    {}
+    {},
   );
 
   /* ---------- Helpers ---------- */
@@ -351,39 +349,39 @@ const submitSearch = () => {
         if (cancelled) return;
 
         const mapped: MarkerWithPhotos[] = data
-  .filter((p) => p && p.lat != null && p.lng != null)
-  .map((p) => ({
-    lat: Number(p.lat) || 0,
-    lng: Number(p.lng) || 0,
-    lguName: p.lgu_name,
-    type: "lgu",
-    population: String(p.population ?? ""),
-    image: p.lgu_seal || "/images/lgu/default.jpg", // LGU Seal
-    hazardAreas: [],
-    lguId: p.id,
+          .filter((p) => p && p.lat != null && p.lng != null)
+          .map((p) => ({
+            lat: Number(p.lat) || 0,
+            lng: Number(p.lng) || 0,
+            lguName: p.lgu_name,
+            type: "lgu",
+            population: String(p.population ?? ""),
+            image: p.lgu_seal || "/images/lgu/default.jpg", // LGU Seal
+            hazardAreas: [],
+            lguId: p.id,
 
-    classification: p.lgu_classification,
-    mayor: p.mayor ?? null,
+            classification: p.lgu_classification,
+            mayor: p.mayor ?? null,
 
-    // NEW:
-    drmmPersonnel: (p as any).DRMMpersonel ?? null,
-    drmmContact: (p as any).DRMM_contact ?? (p as any).lgu_contact ?? null,
-    majorHazards: (p as any).lgu_majorHazard ?? null,
-    criticalFacilities: (p as any).lgu_critical_facility ?? null,
-    baranggayCount: (p as any).baranggay_count ?? null,
-    pwdCount: (p as any).lgu_pwd ?? null,
-    seniorCount: (p as any).lgu_senior ?? null,
-    childrenCount: (p as any).lgu_children ?? null,
+            // NEW:
+            drmmPersonnel: (p as any).DRMMpersonel ?? null,
+            drmmContact:
+              (p as any).DRMM_contact ?? (p as any).lgu_contact ?? null,
+            majorHazards: (p as any).lgu_majorHazard ?? null,
+            criticalFacilities: (p as any).lgu_critical_facility ?? null,
+            baranggayCount: (p as any).baranggay_count ?? null,
+            pwdCount: (p as any).lgu_pwd ?? null,
+            seniorCount: (p as any).lgu_senior ?? null,
+            childrenCount: (p as any).lgu_children ?? null,
 
-    hazardPic: (p as any).hazard_pic ?? null,
-  }));
-
+            hazardPic: (p as any).hazard_pic ?? null,
+          }));
 
         setLguMarkers(mapped);
       } catch (e: any) {
         console.error("LGU fetch error:", e);
         setError(
-          (prev) => prev ?? (e?.message || "Failed to load LGU points.")
+          (prev) => prev ?? (e?.message || "Failed to load LGU points."),
         );
       } finally {
         setPendingLoads((n) => Math.max(0, n - 1));
@@ -424,7 +422,7 @@ const submitSearch = () => {
       } catch (e: any) {
         console.error("RAFI fetch error:", e);
         setError(
-          (prev) => prev ?? (e?.message || "Failed to load RAFI points.")
+          (prev) => prev ?? (e?.message || "Failed to load RAFI points."),
         );
       } finally {
         setPendingLoads((n) => Math.max(0, n - 1));
@@ -486,7 +484,7 @@ const submitSearch = () => {
       } catch (e: any) {
         console.error("Barangay fetch error:", e);
         setError(
-          (prev) => prev ?? (e?.message || "Failed to load Barangay points.")
+          (prev) => prev ?? (e?.message || "Failed to load Barangay points."),
         );
       } finally {
         // FIX: remove stray 'setPending' and keep the counter decrement
@@ -521,8 +519,8 @@ const submitSearch = () => {
             lng: Number(e.lng) || 0,
             lguName: e.name,
             type: "evacuation",
-            capacity: Number.isFinite(cap) ? cap : null,
-            occupied: Number.isFinite(occ) ? occ : null,
+            capacity: Number.isFinite(cap) ? cap : undefined,
+            occupied: Number.isFinite(occ) ? occ : undefined,
             evacStatus: (e.status ?? "Unknown") || "Unknown",
             description: `Status: ${e.status ?? "Unknown"}`,
             resources: `Capacity: ${
@@ -536,7 +534,8 @@ const submitSearch = () => {
       } catch (e: any) {
         console.error("Evacuation fetch error:", e);
         setError(
-          (prev) => prev ?? (e?.message || "Failed to load Evacuation Centers.")
+          (prev) =>
+            prev ?? (e?.message || "Failed to load Evacuation Centers."),
         );
       } finally {
         setPendingLoads((n) => Math.max(0, n - 1));
@@ -552,7 +551,7 @@ const submitSearch = () => {
   const handleMarkerClick = (marker: MarkerWithPhotos) => {
     setSelectedMarker(marker);
     setSidebarOpen(true);
-  setSearchVisible(false)
+    setSearchVisible(false);
     setPathCoordinates(null);
     setEvacuationCenter(null);
 
@@ -570,17 +569,15 @@ const submitSearch = () => {
     }
   }, [selectedMarker?.lguId]);
 
- const handleCloseSidebar = () => {
-  setSidebarOpen(false);
-  setSelectedMarker(null);
-  setSelectedType(null);
-  setPathCoordinates(null);
-  setEvacuationCenter(null);
-  setSearchVisible(true); // 👈 already here to show the bar again
-  setQuery(""); // 👈 clear the search bar text when closing
-};
-
-
+  const handleCloseSidebar = () => {
+    setSidebarOpen(false);
+    setSelectedMarker(null);
+    setSelectedType(null);
+    setPathCoordinates(null);
+    setEvacuationCenter(null);
+    setSearchVisible(true); // 👈 already here to show the bar again
+    setQuery(""); // 👈 clear the search bar text when closing
+  };
 
   const handleNearestEvacuation = () => {
     if (!selectedMarker) return;
@@ -756,37 +753,37 @@ const submitSearch = () => {
       )}
 
       <div className="map-buttons">
-  <button
-    className={`map-button ${selectedType === null ? "active" : ""}`}
-    onClick={() => setSelectedType(null)}
-  >
-    Show All
-  </button>
-  <button
-    className={`map-button ${selectedType === "lgu" ? "active" : ""}`}
-    onClick={() => setSelectedType("lgu")}
-  >
-    LGU
-  </button>
-  <button
-    className={`map-button ${selectedType === "barangay" ? "active" : ""}`}
-    onClick={() => setSelectedType("barangay")}
-  >
-    Barangay
-  </button>
-  <button
-    className={`map-button ${selectedType === "raffi" ? "active" : ""}`}
-    onClick={() => setSelectedType("raffi")}
-  >
-    RAFI Infrastructure
-  </button>
-  <button
-    className={`map-button ${selectedType === "evacuation" ? "active" : ""}`}
-    onClick={() => setSelectedType("evacuation")}
-  >
-    Evacuation Centers
-  </button>
-</div>
+        <button
+          className={`map-button ${selectedType === null ? "active" : ""}`}
+          onClick={() => setSelectedType(null)}
+        >
+          Show All
+        </button>
+        <button
+          className={`map-button ${selectedType === "lgu" ? "active" : ""}`}
+          onClick={() => setSelectedType("lgu")}
+        >
+          LGU
+        </button>
+        <button
+          className={`map-button ${selectedType === "barangay" ? "active" : ""}`}
+          onClick={() => setSelectedType("barangay")}
+        >
+          Barangay
+        </button>
+        <button
+          className={`map-button ${selectedType === "raffi" ? "active" : ""}`}
+          onClick={() => setSelectedType("raffi")}
+        >
+          RAFI Infrastructure
+        </button>
+        <button
+          className={`map-button ${selectedType === "evacuation" ? "active" : ""}`}
+          onClick={() => setSelectedType("evacuation")}
+        >
+          Evacuation Centers
+        </button>
+      </div>
 
       <div className="legend-box">
         <h4>Legend</h4>
@@ -812,68 +809,67 @@ const submitSearch = () => {
       </div>
       {/* 🔎 Search bar */}
       {searchVisible && (
-  <div className="map-search">
-    <input
-      type="text"
-      placeholder="Search LGU, Barangay, RAFFI, Evacuation"
-      value={query}
-      onChange={(e) => {
-        setQuery(e.target.value);
-        setIsSearchOpen(true);
-        setActiveIndex(0);
-      }}
-      onFocus={() => setIsSearchOpen(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          submitSearch();
-          setIsSearchOpen(false);
-        }
-      }}
-    />
-    {!!(isSearchOpen && suggestions.length) && (
-      <div className="map-search__dropdown">
-        {suggestions.map((s, idx) => {
-          if (s.__kind === "coords") {
-            return (
-              <div
-                key={`coords-${s.label}`}
-                className={`map-search__item ${idx === activeIndex ? "is-active" : ""}`}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setCenter(s.coords);
-                  setIsSearchOpen(false);
-                  setSearchVisible(false); // 👈 hide when selecting
-                }}
-              >
-                <span className="type-pill">Coords</span>
-                <span>{s.label}</span>
-              </div>
-            );
-          }
-
-          const m = s.marker;
-          return (
-            <div
-              key={`${m.type}-${m.lguName}-${m.lat}-${m.lng}`}
-              className={`map-search__item ${idx === activeIndex ? "is-active" : ""}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                goToMarker(m);
+        <div className="map-search">
+          <input
+            type="text"
+            placeholder="Search LGU, Barangay, RAFFI, Evacuation"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setIsSearchOpen(true);
+              setActiveIndex(0);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                submitSearch();
                 setIsSearchOpen(false);
-                setSearchVisible(false); // 👈 hide when selecting
-              }}
-              title={`${m.type} • ${m.lguName}`}
-            >
-              <span className="type-pill">{m.type}</span>
-              <span className="truncate">{m.lguName}</span>
-            </div>
-          );
-        })}
-      </div>
-    )}
-  </div>
-)}
+              }
+            }}
+          />
+          {!!(isSearchOpen && suggestions.length) && (
+            <div className="map-search__dropdown">
+              {suggestions.map((s, idx) => {
+                if (s.__kind === "coords") {
+                  return (
+                    <div
+                      key={`coords-${s.label}`}
+                      className={`map-search__item ${idx === activeIndex ? "is-active" : ""}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setCenter(s.coords);
+                        setIsSearchOpen(false);
+                        setSearchVisible(false); // 👈 hide when selecting
+                      }}
+                    >
+                      <span className="type-pill">Coords</span>
+                      <span>{s.label}</span>
+                    </div>
+                  );
+                }
 
+                const m = s.marker;
+                return (
+                  <div
+                    key={`${m.type}-${m.lguName}-${m.lat}-${m.lng}`}
+                    className={`map-search__item ${idx === activeIndex ? "is-active" : ""}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      goToMarker(m);
+                      setIsSearchOpen(false);
+                      setSearchVisible(false); // 👈 hide when selecting
+                    }}
+                    title={`${m.type} • ${m.lguName}`}
+                  >
+                    <span className="type-pill">{m.type}</span>
+                    <span className="truncate">{m.lguName}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="map-container">
         <MapView
@@ -928,7 +924,7 @@ const submitSearch = () => {
                       const n = Number(selectedMarker.totalPopulation);
                       return Number.isFinite(n)
                         ? n.toLocaleString()
-                        : selectedMarker.totalPopulation ?? "-";
+                        : (selectedMarker.totalPopulation ?? "-");
                     })()}
                   </span>
                 </div>
@@ -939,7 +935,7 @@ const submitSearch = () => {
                       const n = Number(selectedMarker.households);
                       return Number.isFinite(n)
                         ? n.toLocaleString()
-                        : selectedMarker.households ?? "-";
+                        : (selectedMarker.households ?? "-");
                     })()}
                   </span>
                 </div>
@@ -986,7 +982,7 @@ const submitSearch = () => {
                   <span style={value}>
                     {Number.isFinite(selectedMarker.pwd as number)
                       ? (selectedMarker.pwd as number).toLocaleString()
-                      : selectedMarker.pwd ?? "-"}
+                      : (selectedMarker.pwd ?? "-")}
                   </span>
                 </div>
                 <div style={row}>
@@ -994,7 +990,7 @@ const submitSearch = () => {
                   <span style={value}>
                     {Number.isFinite(selectedMarker.senior as number)
                       ? (selectedMarker.senior as number).toLocaleString()
-                      : selectedMarker.senior ?? "-"}
+                      : (selectedMarker.senior ?? "-")}
                   </span>
                 </div>
                 <div style={{ ...row, borderBottom: "none" }}>
@@ -1002,7 +998,7 @@ const submitSearch = () => {
                   <span style={value}>
                     {Number.isFinite(selectedMarker.children as number)
                       ? (selectedMarker.children as number).toLocaleString()
-                      : selectedMarker.children ?? "-"}
+                      : (selectedMarker.children ?? "-")}
                   </span>
                 </div>
               </div>
@@ -1045,179 +1041,207 @@ const submitSearch = () => {
 
           {/* LGU sidebar */}
           {selectedMarker.type === "lgu" && (
-  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-    {/* LGU Seal (header) */}
-    {selectedMarker.image && (
-      <img
-        src={selectedMarker.image}
-        alt={`${selectedMarker.lguName} Seal`}
-        className="lgu-header-img"
-      />
-    )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* LGU Seal (header) */}
+              {selectedMarker.image && (
+                <img
+                  src={selectedMarker.image}
+                  alt={`${selectedMarker.lguName} Seal`}
+                  className="lgu-header-img"
+                />
+              )}
 
-    {/* LGU name */}
-    <h2 style={{ textAlign: "center", marginTop: 8 }}>
-      <b>{selectedMarker.lguName}</b>
-    </h2>
+              {/* LGU name */}
+              <h2 style={{ textAlign: "center", marginTop: 8 }}>
+                <b>{selectedMarker.lguName}</b>
+              </h2>
 
-    {/* LGU Information Details */}
-    <div style={{ ...card, padding: 12 }}>
-      <h3 style={{ margin: 0, marginBottom: 8 }}>LGU Information Details</h3>
-      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
-        <span style={label}>Classification</span>
-        <span style={value}>{selectedMarker.classification || "-"}</span>
-      </div>
-      <div style={row}>
-        <span style={label}>Total Population</span>
-        <span style={value}>
-          {(() => {
-            const n = Number(selectedMarker.population);
-            return Number.isFinite(n) ? n.toLocaleString() : (selectedMarker.population || "-");
-          })()}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={label}>No. of Barangay</span>
-        <span style={value}>
-          {Number.isFinite(selectedMarker.baranggayCount as number)
-            ? (selectedMarker.baranggayCount as number).toLocaleString()
-            : selectedMarker.baranggayCount ?? "-"}
-        </span>
-      </div>
-      <div style={{ ...row, borderBottom: "none" }}>
-        <span style={label}>Mayor</span>
-        <span style={value}>{selectedMarker.mayor || "-"}</span>
-      </div>
-    </div>
-
-    {/* DRRM Office */}
-    <div style={{ ...card, padding: 12 }}>
-      <h3 style={{ margin: 0, marginBottom: 8 }}>
-        Disaster Risk Reduction &amp; Management Office
-      </h3>
-      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
-        <span style={label}>DRMM local personnel</span>
-        <span style={value}>{selectedMarker.drmmPersonnel || "-"}</span>
-      </div>
-      <div style={row}>
-        <span style={label}>DRMM contact</span>
-        <span style={value}>{selectedMarker.drmmContact || "-"}</span>
-      </div>
-      <div style={row}>
-        <span style={label}>Major Hazard</span>
-        <span style={{ ...value, fontWeight: 600 }}>
-          {selectedMarker.majorHazards?.length
-            ? selectedMarker.majorHazards.join(", ")
-            : "-"}
-        </span>
-      </div>
-      <div style={{ ...row, borderBottom: "none" }}>
-        <span style={label}>Critical Facilities</span>
-        <span style={{ ...value, fontWeight: 600 }}>
-          {selectedMarker.criticalFacilities?.length
-            ? selectedMarker.criticalFacilities.join(", ")
-            : "-"}
-        </span>
-      </div>
-    </div>
-
-    {/* Vulnerable Population */}
-    <div style={{ ...card, padding: 12 }}>
-      <h3 style={{ margin: 0, marginBottom: 8 }}>Vulnerable Population</h3>
-      <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
-        <span style={label}>PWD</span>
-        <span style={value}>
-          {Number.isFinite(selectedMarker.pwdCount as number)
-            ? (selectedMarker.pwdCount as number).toLocaleString()
-            : selectedMarker.pwdCount ?? "-"}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={label}>Senior Citizen</span>
-        <span style={value}>
-          {Number.isFinite(selectedMarker.seniorCount as number)
-            ? (selectedMarker.seniorCount as number).toLocaleString()
-            : selectedMarker.seniorCount ?? "-"}
-        </span>
-      </div>
-      <div style={{ ...row, borderBottom: "none" }}>
-        <span style={label}>Children</span>
-        <span style={value}>
-          {Number.isFinite(selectedMarker.childrenCount as number)
-            ? (selectedMarker.childrenCount as number).toLocaleString()
-            : selectedMarker.childrenCount ?? "-"}
-        </span>
-      </div>
-    </div>
-
-    {/* Images section: LGU Seal + Hazard Picture */}
-    <div style={{ ...card, padding: 12 }}>
-      <h3 style={{ margin: 0, marginBottom: 8 }}>Hazard Picture</h3>
-
-      {/* Hazard Picture (prefer loaded gallery; fallback to single hazardPic) */}
-      <div>
-        {hazardLoading[selectedMarker.lguId!] && (
-          <div style={{ fontSize: 13, color: "#6b7280" }}>Loading photos…</div>
-        )}
-        {!hazardLoading[selectedMarker.lguId!] && (() => {
-          const photos = hazardsByLGU[selectedMarker.lguId!] || [];
-          if (photos.length) {
-            return (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                  gap: 8,
-                }}
-              >
-                {photos.map((p, i) => (
-                  <figure key={`${p.src}-${i}`} style={{ margin: 0 }}>
-                    <img
-                      src={p.src}
-                      alt={p.label || `Hazard ${i + 1}`}
-                      style={{
-                        width: "100%",
-                        height: 120,
-                        objectFit: "cover",
-                        borderRadius: 8,
-                        border: "1px solid #eee",
-                      }}
-                    />
-                    {p.label && (
-                      <figcaption
-                        style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}
-                        title={p.label}
-                      >
-                        {p.label}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
+              {/* LGU Information Details */}
+              <div style={{ ...card, padding: 12 }}>
+                <h3 style={{ margin: 0, marginBottom: 8 }}>
+                  LGU Information Details
+                </h3>
+                <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+                  <span style={label}>Classification</span>
+                  <span style={value}>
+                    {selectedMarker.classification || "-"}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Total Population</span>
+                  <span style={value}>
+                    {(() => {
+                      const n = Number(selectedMarker.population);
+                      return Number.isFinite(n)
+                        ? n.toLocaleString()
+                        : selectedMarker.population || "-";
+                    })()}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>No. of Barangay</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.baranggayCount as number)
+                      ? (
+                          selectedMarker.baranggayCount as number
+                        ).toLocaleString()
+                      : (selectedMarker.baranggayCount ?? "-")}
+                  </span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>Mayor</span>
+                  <span style={value}>{selectedMarker.mayor || "-"}</span>
+                </div>
               </div>
-            );
-          }
-          if (selectedMarker.hazardPic) {
-            return (
-              <img
-                src={selectedMarker.hazardPic}
-                alt="Hazard"
-                style={{
-                  width: "100%",
-                  maxHeight: 240,
-                  objectFit: "cover",
-                  borderRadius: 8,
-                  border: "1px solid #eee",
-                }}
-              />
-            );
-          }
-          return <div style={{ fontSize: 13, color: "#6b7280" }}>No photos found.</div>;
-        })()}
-      </div>
-    </div>
-  </div>
-)}
 
+              {/* DRRM Office */}
+              <div style={{ ...card, padding: 12 }}>
+                <h3 style={{ margin: 0, marginBottom: 8 }}>
+                  Disaster Risk Reduction &amp; Management Office
+                </h3>
+                <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+                  <span style={label}>DRMM local personnel</span>
+                  <span style={value}>
+                    {selectedMarker.drmmPersonnel || "-"}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>DRMM contact</span>
+                  <span style={value}>{selectedMarker.drmmContact || "-"}</span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Major Hazard</span>
+                  <span style={{ ...value, fontWeight: 600 }}>
+                    {selectedMarker.majorHazards?.length
+                      ? selectedMarker.majorHazards.join(", ")
+                      : "-"}
+                  </span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>Critical Facilities</span>
+                  <span style={{ ...value, fontWeight: 600 }}>
+                    {selectedMarker.criticalFacilities?.length
+                      ? selectedMarker.criticalFacilities.join(", ")
+                      : "-"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Vulnerable Population */}
+              <div style={{ ...card, padding: 12 }}>
+                <h3 style={{ margin: 0, marginBottom: 8 }}>
+                  Vulnerable Population
+                </h3>
+                <div style={{ ...row, borderTop: "1px solid #f3f4f6" }}>
+                  <span style={label}>PWD</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.pwdCount as number)
+                      ? (selectedMarker.pwdCount as number).toLocaleString()
+                      : (selectedMarker.pwdCount ?? "-")}
+                  </span>
+                </div>
+                <div style={row}>
+                  <span style={label}>Senior Citizen</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.seniorCount as number)
+                      ? (selectedMarker.seniorCount as number).toLocaleString()
+                      : (selectedMarker.seniorCount ?? "-")}
+                  </span>
+                </div>
+                <div style={{ ...row, borderBottom: "none" }}>
+                  <span style={label}>Children</span>
+                  <span style={value}>
+                    {Number.isFinite(selectedMarker.childrenCount as number)
+                      ? (
+                          selectedMarker.childrenCount as number
+                        ).toLocaleString()
+                      : (selectedMarker.childrenCount ?? "-")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Images section: LGU Seal + Hazard Picture */}
+              <div style={{ ...card, padding: 12 }}>
+                <h3 style={{ margin: 0, marginBottom: 8 }}>Hazard Picture</h3>
+
+                {/* Hazard Picture (prefer loaded gallery; fallback to single hazardPic) */}
+                <div>
+                  {hazardLoading[selectedMarker.lguId!] && (
+                    <div style={{ fontSize: 13, color: "#6b7280" }}>
+                      Loading photos…
+                    </div>
+                  )}
+                  {!hazardLoading[selectedMarker.lguId!] &&
+                    (() => {
+                      const photos = hazardsByLGU[selectedMarker.lguId!] || [];
+                      if (photos.length) {
+                        return (
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fill, minmax(140px, 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {photos.map((p, i) => (
+                              <figure
+                                key={`${p.src}-${i}`}
+                                style={{ margin: 0 }}
+                              >
+                                <img
+                                  src={p.src}
+                                  alt={p.label || `Hazard ${i + 1}`}
+                                  style={{
+                                    width: "100%",
+                                    height: 120,
+                                    objectFit: "cover",
+                                    borderRadius: 8,
+                                    border: "1px solid #eee",
+                                  }}
+                                />
+                                {p.label && (
+                                  <figcaption
+                                    style={{
+                                      fontSize: 12,
+                                      color: "#6b7280",
+                                      marginTop: 4,
+                                    }}
+                                    title={p.label}
+                                  >
+                                    {p.label}
+                                  </figcaption>
+                                )}
+                              </figure>
+                            ))}
+                          </div>
+                        );
+                      }
+                      if (selectedMarker.hazardPic) {
+                        return (
+                          <img
+                            src={selectedMarker.hazardPic}
+                            alt="Hazard"
+                            style={{
+                              width: "100%",
+                              maxHeight: 240,
+                              objectFit: "cover",
+                              borderRadius: 8,
+                              border: "1px solid #eee",
+                            }}
+                          />
+                        );
+                      }
+                      return (
+                        <div style={{ fontSize: 13, color: "#6b7280" }}>
+                          No photos found.
+                        </div>
+                      );
+                    })()}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

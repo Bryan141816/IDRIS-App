@@ -308,11 +308,9 @@ export default function VolunteerReport({
 
   return (
     <div className={styles.donationReport}>
-      {/* Breadcrumb (hidden in print via :global(.breadcrumb-section){display:none}) */}
       <div className="breadcrumb-section">
         <h2 className="page-title">Volunteer Reports</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#"><span>Home</span></Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">Volunteer Dashboard</Link>
           </Breadcrumb.Item>

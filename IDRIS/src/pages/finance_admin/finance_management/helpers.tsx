@@ -2,6 +2,15 @@ import { InflowItem, OutflowItem, InflowSource, SpendCategory } from './types';
 import { FinanceRecordType } from "./types";
 import { formatCurrency } from '../../helpers';
 
+export const toDateInputValue = (dateLike?: string | Date) => {
+  if (!dateLike) return "";
+  const d = typeof dateLike === "string" ? new Date(dateLike) : dateLike;
+  if (isNaN(d.getTime())) return "";
+  // Normalize to local date so timezone doesn't shift the day
+  const tzOffset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - tzOffset).toISOString().slice(0, 10); // YYYY-MM-DD
+};
+
 export const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleString("en-US", {
     year: "numeric",

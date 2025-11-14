@@ -1,7 +1,11 @@
+/* ========================================
+   VOLUNTEER MODAL - COMPLETE RESPONSIVE CSS
+   ======================================== */
+
 /* Modal Overlay */
 .modal-overlay {
   position: fixed;
-  top: -50px;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
@@ -10,6 +14,7 @@
   justify-content: center;
   align-items: center;
   z-index: 900;
+  padding: 16px;
 }
 
 /* Modal Content */
@@ -18,7 +23,9 @@
   padding: 20px;
   border-radius: 10px;
   width: 400px;
+  max-width: 100%;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 /* Modal Header */
@@ -26,63 +33,294 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
+  margin-top: -16px;
+  margin-right: -10px;
 }
 
 .modal-header h3 {
-  color: white;
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
 }
 
-.close-btn {
-  background: transparent;
+.closeBtn {
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  background: red;
   border: none;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  color: red;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+  flex-shrink: 0;
+}
+
+.closeBtn:hover {
+  background: #cc0000;
 }
 
 /* Modal Actions */
 .modal-action {
   display: flex;
-  flex-direction: column; /* Stack children vertically */
-  gap: 10px; /* Space between buttons (optional) */
+  flex-direction: column;
+  gap: 15px;
   align-items: center;
 }
 
 .cancel-btn,
 .save-btn {
-  padding: 10px 20px;
+  padding: 15px 20px;
   border: none;
   border-radius: 10px;
   cursor: pointer;
   width: 85%;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 60px;
+}
+
+.cancel-btn:hover,
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(116, 154, 182, 0.4);
 }
 
 .cancel-btn {
-  background-color: #749ab6;
+  background: linear-gradient(135deg, #749AB6 0%, rgb(149, 178, 199) 100%);
   color: white;
 }
 
 .save-btn {
-  background-color: #749ab6;
+  background: linear-gradient(135deg, #749AB6 0%, rgb(149, 178, 199) 100%);
   color: white;
 }
 
 .button-icon {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  right: 57%;
-  margin-top: 4px;
+  width: 24px;
+  height: 24px;
+  left: 20px;
 }
 
 .org-icon {
   position: absolute;
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
-  right: 56%;
-  margin-top: -3px;
+  width: 32px;
+  height: 32px;
+  left: 18px;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+/* Tablets (≤768px) */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-content {
+    width: 90%;
+    max-width: 450px;
+    padding: 18px;
+  }
+
+  .modal-header h3 {
+    font-size: 18px;
+  }
+
+  .closeBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 22px;
+  }
+
+  .modal-action {
+    gap: 12px;
+  }
+
+  .cancel-btn,
+  .save-btn {
+    width: 90%;
+    font-size: 17px;
+    padding: 14px 18px;
+    letter-spacing: 1.2px;
+  }
+
+  .button-icon {
+    width: 22px;
+    height: 22px;
+    left: 18px;
+  }
+
+  .org-icon {
+    width: 30px;
+    height: 30px;
+    left: 16px;
+  }
+}
+
+/* Mobile phones (≤480px) */
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: 100%;
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .modal-header {
+    margin-bottom: 16px;
+    margin-top: -12px;
+    margin-right: -8px;
+  }
+
+  .modal-header h3 {
+    font-size: 17px;
+  }
+
+  .closeBtn {
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+  }
+
+  .modal-action {
+    gap: 10px;
+  }
+
+  .cancel-btn,
+  .save-btn {
+    width: 100%;
+    font-size: 16px;
+    padding: 12px 16px;
+    letter-spacing: 1px;
+    min-height: 54px;
+  }
+
+  .button-icon {
+    width: 20px;
+    height: 20px;
+    left: 15px;
+  }
+
+  .org-icon {
+    width: 28px;
+    height: 28px;
+    left: 14px;
+  }
+}
+
+/* Extra small phones (≤360px) */
+@media (max-width: 360px) {
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .modal-content {
+    width: 100%;
+    padding: 14px;
+  }
+
+  .modal-header {
+    margin-bottom: 14px;
+  }
+
+  .modal-header h3 {
+    font-size: 16px;
+  }
+
+  .closeBtn {
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+  }
+
+  .modal-action {
+    gap: 8px;
+  }
+
+  .cancel-btn,
+  .save-btn {
+    font-size: 15px;
+    padding: 11px 14px;
+    letter-spacing: 0.8px;
+    min-height: 50px;
+  }
+
+  .button-icon {
+    width: 18px;
+    height: 18px;
+    left: 12px;
+  }
+
+  .org-icon {
+    width: 26px;
+    height: 26px;
+    left: 12px;
+  }
+}
+
+/* Landscape mode for phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal-content {
+    margin: 20px auto;
+    padding: 16px;
+  }
+
+  .modal-header {
+    margin-bottom: 12px;
+  }
+
+  .modal-action {
+    gap: 8px;
+  }
+
+  .cancel-btn,
+  .save-btn {
+    min-height: 48px;
+    padding: 10px 16px;
+  }
+}
+
+/* Touch device enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .cancel-btn,
+  .save-btn {
+    min-height: 54px;
+  }
+
+  .closeBtn {
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
+
+/* Very large screens - prevent modal from being too wide */
+@media (min-width: 1200px) {
+  .modal-content {
+    width: 450px;
+  }
 }

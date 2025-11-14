@@ -7,23 +7,22 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
 } from "recharts";
-
-import "./distribution_palling.scss";
+import "../ProcurementInventory.scss";
+import "../ProcurementModal.scss";
 import { useState, useEffect } from "react";
 import { RoutesAndPlanning } from "./Tabs/RoutesAndPlanning";
-import { VolunteerAssignmentTab } from "./Tabs/VolunteerAssignmentTab";
-import { MovementLogsTab } from "./Tabs/MovementLogs";
-
+import { useNavigate, useParams } from "react-router-dom";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 
 type DashboardData = {
-  active_routes: number;
+  total_route: number;
+  active_route: number;
+  in_transit: number;
+  pending_routes: number;
   deployed_volunteers: number;
   items_distributed: number;
   distribution_performance: {
@@ -39,6 +38,8 @@ type DashboardData = {
 };
 
 const FinanceAdmin = () => {
+  const navigate = useNavigate();
+  const { tab } = useParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
@@ -91,132 +92,164 @@ const FinanceAdmin = () => {
   useEffect(() => {
     fetch();
   }, []);
-  useEffect(() => {
-    if (activeTab === "dashboard") {
-      fetch();
-    }
-  }, [activeTab]);
-  return (
-    <div className="distribution-planning">
-      <h3 className="public-feed-title">
-        Distribution Planning and Monitoring
-      </h3>
 
-      <div className="navigation">
+  useEffect(() => {
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
+
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    navigate(`/procurement_inventory/distribution_planning/${newTab}`, {
+      replace: false,
+    });
+  };
+
+  const renderDashboard = () => {
+    return (
+      <>
+        <div className="dashboard-content">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">📊</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.total_route ? dashboardData.total_route : "0"}
+                </h3>
+                <p>Total Route</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🚚</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.active_route
+                    ? dashboardData.active_route
+                    : "0"}
+                </h3>
+                <p>Active Route</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">⏳</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.pending_routes
+                    ? dashboardData.pending_routes
+                    : "0"}
+                </h3>
+                <p>Pending Route</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">🚛</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.in_transit ? dashboardData.in_transit : "0"}
+                </h3>
+                <p>In Transit</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">👥</div>
+              <div className="stat-info">
+                <h3>
+                  {dashboardData?.deployed_volunteers
+                    ? dashboardData.deployed_volunteers
+                    : "0"}
+                </h3>
+                <p>Deployed Volunteers</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon">📦</div>
+              <div className="stat-info">
+                <h3>
+                  {" "}
+                  {dashboardData?.items_distributed
+                    ? dashboardData.items_distributed
+                    : "0"}
+                </h3>
+                <p>Items Distributed</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-grid">
+            <div className="chart-container">
+              <h3>Distribution Performance</h3>
+              {dashboardData?.distribution_performance ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={dashboardData?.distribution_performance}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="total_routes" fill="#749ab6" name="Planned" />
+                    <Bar
+                      dataKey="completed_routes"
+                      fill="#fcb814"
+                      name="Delivered"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                "No Data"
+              )}
+            </div>
+
+            <div className="chart-container">
+              <h3>Delivery Status</h3>
+
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={deliveryStatusData.filter((entry) => entry.value > 0)} // filter out zero values
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}%`}
+                  >
+                    {deliveryStatusData
+                      .filter((entry) => entry.value > 0) // also filter for the cells
+                      .map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+  return (
+    <div className="procurement-management">
+      <h3 className="public-feed-title">PROCUREMENT MANAGEMENT</h3>
+      <div className="procurement-navigation">
         <button
           className={`nav-btn ${activeTab === "dashboard" ? "active" : ""}`}
-          onClick={() => setActiveTab("dashboard")}
+          onClick={() => handleTabChange("dashboard")}
         >
           📊 Dashboard
         </button>
         <button
           className={`nav-btn ${activeTab === "routes" ? "active" : ""}`}
-          onClick={() => setActiveTab("routes")}
+          onClick={() => handleTabChange("routes")}
         >
           🗺️ Routes & Schedules
         </button>
       </div>
 
-      <div className="distribution-planning-active-section">
-        {activeTab === "dashboard" && (
-          <div className="dashboard-content">
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">🚛</div>
-                <div className="stat-info">
-                  <h3>
-                    {dashboardData?.active_routes
-                      ? dashboardData.active_routes
-                      : "0"}
-                  </h3>
-                  <p>Active Route</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">👥</div>
-                <div className="stat-info">
-                  <h3>
-                    {dashboardData?.deployed_volunteers
-                      ? dashboardData.deployed_volunteers
-                      : "0"}
-                  </h3>
-                  <p>Deployed Volunteers</p>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-icon">📦</div>
-                <div className="stat-info">
-                  <h3>
-                    {" "}
-                    {dashboardData?.items_distributed
-                      ? dashboardData.items_distributed
-                      : "0"}
-                  </h3>
-                  <p>Items Distributed</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="charts-grid">
-              <div className="chart-container">
-                <h3>Distribution Performance</h3>
-                {dashboardData?.distribution_performance ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={dashboardData?.distribution_performance}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar
-                        dataKey="total_routes"
-                        fill="#749ab6"
-                        name="Planned"
-                      />
-                      <Bar
-                        dataKey="completed_routes"
-                        fill="#fcb814"
-                        name="Delivered"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  "No Data"
-                )}
-              </div>
-
-              <div className="chart-container">
-                <h3>Delivery Status</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={deliveryStatusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}%`}
-                    >
-                      {deliveryStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab == "routes" && <RoutesAndPlanning></RoutesAndPlanning>}
-
-        {activeTab == "assignment" && (
-          <VolunteerAssignmentTab></VolunteerAssignmentTab>
-        )}
-
-        {activeTab == "movements" && <MovementLogsTab></MovementLogsTab>}
+      <div className="procurement-mains-content">
+        {activeTab === "dashboard" && renderDashboard()}
+        {activeTab === "routes" && <RoutesAndPlanning></RoutesAndPlanning>}
       </div>
     </div>
   );

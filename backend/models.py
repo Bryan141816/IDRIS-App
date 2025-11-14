@@ -26,8 +26,8 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy import event, func, case, literal, select
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import event, func, case, literal, select, inspect
+from sqlalchemy.orm import relationship, Session, object_session
 from sqlalchemy.types import JSON
 from sqlalchemy.sql import func
 from sqlalchemy.exc import IntegrityError
@@ -164,7 +164,7 @@ class Notifications(Base):
 
     from_origin = Column(String(255), nullable=False)
     title = Column(String(255), nullable=False)
-    message = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
     url_redirect = Column(String(255), nullable=False)
     date = Column(DateTime(timezone=True), nullable=False)
     isRead = Column(Boolean)
@@ -220,6 +220,7 @@ class EvacuationCenter(Base):
         "BaranggayRecords",
         back_populates="evacucation_center",
         passive_deletes=True,
+        uselist=False,
     )
 
 
@@ -321,83 +322,10 @@ class BaranggayRecords(Base):
         "EvacuationCenter",
         back_populates="barangay",
         passive_deletes=True,
+        uselist=False,
     )
 
 
-class ResponseReport(Base):
-    __tablename__ = "response_reports"
-    __random_pk_field__ = "response_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    response_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    report_type = Column(String(255), nullable=False)
-    status = Column(String(50), nullable=False)
-
-
-class DemandAndResponse(Base):
-    __tablename__ = "demand_and_response"
-    __random_pk_field__ = "demand_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    demand_id = Column(Integer, primary_key=True)
-    title_label = Column(String(255), nullable=False)
-    address = Column(String(255), nullable=False)
-    lat = Column(Float, nullable=False)
-    lng = Column(Float, nullable=False)
-    status = Column(String(255), nullable=False)
-    needs = Column(JSON, default=[])
-    priority = Column(String(255), nullable=False)
-
-    submitted_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    last_updated = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-
-class ModalityDistribution(Base):
-    __tablename__ = "modality_distribution"
-    __random_pk_field__ = "modality_id"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    modality_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    modality_type = Column(String(255), nullable=False)
-
-
-class InKindMonitoring(Base):
-    __tablename__ = "inkind_monitoring"
-    __random_pk_field__ = "in_kind_monitoring_id"
-
-    id = Column(Integer, index=True, server_default=Identity())
-
-    in_kind_monitoring_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    quantity = Column(Integer, default=0, nullable=False)
-    record_type = Column(String(255), nullable=False)
-
-
-class ResponseReportBudget(Base):
-    __tablename__ = "response_report_budget"
-    __random_pk_field__ = "response_budget_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    response_budget_id = Column(Integer, primary_key=True)
-    date_time = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    budget_record_type = Column(String(255), nullable=False)
-    total_amount = Column(Float, nullable=False)
-    amount = Column(Float, nullable=False)
 
 
 # ------------------ DONATIONS MANAGEMENT MODELS
@@ -656,9 +584,501 @@ class Donation_InKind(Base):
         cascade="all, delete-orphan",
     )
 
+# Procurement Request
 
-# imports (keep your own project Base import as-is)
 
+class ProcurementRequest(Base):
+    __tablename__ = "procurement_request"
+    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
+    request_type = Column(String(255))
+    request_ref_num = Column(String(255), nullable=False)
+    request_title = Column(String(255), nullable=False)
+    request_description = Column(Text, nullable=False)
+    use_different_end = Column(Boolean, default=False)
+
+    different_end_type = Column(String(255), nullable=True)
+    status = Column(String(255), default="Pending Approval")
+    end_barangay = Column(Integer, ForeignKey("baranggay_records.id"), nullable=True)
+    end_evac = Column(
+        Integer,
+        ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    end_address = Column(String(255), nullable=True)
+    end_lat = Column(Float, nullable=True)
+    end_long = Column(Float, nullable=True)
+    priority = Column(String(255))
+    date_requested = Column(Date)
+    disaster_type = Column(String(255), nullable=False)
+    date_needed = Column(Date)
+
+    # ---- Relationships ----
+
+    lgu = relationship(
+        "LGURecords",
+        back_populates="procurement_requests",
+    )
+
+    evacuation_center = relationship(
+        "EvacuationCenter",
+        primaryjoin="ProcurementRequest.end_evac==EvacuationCenter.evacuation_id",
+        foreign_keys=[end_evac],
+        lazy="joined",
+    )
+
+    barangay = relationship(
+        "BaranggayRecords",
+        primaryjoin="ProcurementRequest.end_barangay==BaranggayRecords.id",
+        foreign_keys=[end_barangay],
+        lazy="joined",
+    )
+
+    # ---- the two item collections (fix) ----
+    relief_items = relationship(
+        "ReliefRequestItem",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    procurement_items = relationship(
+        "ProcurementRequestItem",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    routes = relationship(
+        "DistributionRoute",
+        back_populates="request",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+    )
+
+class ProcurementRequestLog(Base):
+    __tablename__ = "procurement_request_log"
+    log_type = Column(String(255))
+    log_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    log_message = Column(Text)
+    date_created = Column(DateTime, default=func.now(), onupdate=func.now())
+
+# Listener for creation
+def log_procurement_request_insert(mapper, connection, target):
+    """Triggered after a new ProcurementRequest is created."""
+    connection.execute(
+        ProcurementRequestLog.__table__.insert(),
+        {
+            "log_type": "Added",
+            "log_message": f"Procurement Request {target.request_ref_num} has been created.",
+            "date_created": datetime.utcnow()
+        }
+    )
+
+# Listener for updates
+def log_procurement_request_update(mapper, connection, target):
+    """Triggered after a ProcurementRequest is updated."""
+    # Only log if status is Approved or Rejected
+    if target.status in ["Approved", "Rejected", "Waiting for Budget Approval"]:
+        log_message = f"Procurement Request {target.request_ref_num} has been {target.status}."
+        log_type = target.status
+        if target.status == "Waiting for Budget Approval":
+            log_message = f"Procurement Request {target.request_ref_num} has been moved to Budget Approval."
+            log_type = "Moved to Budget Approval"
+        
+        connection.execute(
+            ProcurementRequestLog.__table__.insert(),
+            {
+                "log_type": log_type,
+                "log_message": log_message,
+                "date_created": datetime.utcnow()
+            }
+        )
+
+# Attach listeners
+event.listen(ProcurementRequest, "after_insert", log_procurement_request_insert)
+event.listen(ProcurementRequest, "after_update", log_procurement_request_update)
+
+class ReliefRequestItem(Base):
+    __tablename__ = "relief_request_item"
+    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+
+    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
+    item_name = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+    # ✅ belongs to ONE request
+    request = relationship("ProcurementRequest", back_populates="relief_items")
+    distributions = relationship(
+        "DistributedItems",
+        back_populates="relief_item",
+        cascade="all, delete-orphan",
+    )
+
+
+class ProcurementRequestItem(Base):
+    __tablename__ = "procurement_request_item"
+    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+
+    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
+    item_name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    unit = Column(String(255))
+
+    # ✅ belongs to ONE request
+    request = relationship("ProcurementRequest", back_populates="procurement_items")
+    distributions = relationship(
+        "DistributedItems",
+        back_populates="procurement_item",
+        cascade="all, delete-orphan",
+    )
+
+
+class WarehouseZones(Base):
+    __tablename__ = "warehouse_zones"
+
+    warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    address = Column(String(255), nullable=False)
+    lat = Column(Float, nullable=False)
+    long = Column(Float, nullable=False)
+    status = Column(String(255), nullable=False)
+    zone_name = Column(String(255), nullable=False)
+
+    zone_type = Column(String(255), nullable=False)
+    capacity = Column(Integer, nullable=False)
+    manager = Column(String(255), nullable=False)
+
+    assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
+
+
+class InventoryItems(Base):
+    __tablename__ = "inventory_items"
+
+    inventory_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
+    item_name = Column(String(255), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    category = Column(String(255), nullable=False)
+    batch = Column(String(255), nullable=False)
+    expiry = Column(Date, nullable=True)
+    status = Column(String(255), nullable=False)
+
+    assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
+
+
+class AssignedStorage(Base):
+    __tablename__ = "assigned_storage"
+
+    assigned_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+
+    # Foreign keys
+    warehouse_id = Column(
+        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
+    )
+    inventory_id = Column(
+        Integer, ForeignKey("inventory_items.inventory_id"), nullable=False
+    )
+
+    # Additional field
+    quantity = Column(Integer, nullable=False)
+
+    # Relationships
+    warehouse = relationship("WarehouseZones", back_populates="assigned_storages")
+    inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
+    distributed_items = relationship(
+        "DistributedItems",
+        back_populates="assigned_storage_rec",
+        cascade="all, delete-orphan",
+        # foreign_keys is optional here; if you want to be explicit:
+        # foreign_keys="DistributedItems.assigned_storage",
+    )
+
+
+# @event.listens_for(Session, "before_flush")
+# def delete_zero_quantity_assigned_storage(session: Session, flush_context, instances):
+#     """
+#     Before the session flushes updates/inserts, delete any AssignedStorage rows
+#     whose quantity is <= 0 so they don't get persisted.
+#     """
+#     # Updated rows
+#     for obj in list(session.dirty):
+#         if (
+#             isinstance(obj, AssignedStorage)
+#             and (obj.quantity is not None)
+#             and (obj.quantity <= 0)
+#         ):
+#             session.delete(obj)
+#
+#     # New rows that ended up with 0 or negative (just in case)
+#     for obj in list(session.new):
+#         if (
+#             isinstance(obj, AssignedStorage)
+#             and (obj.quantity is not None)
+#             and (obj.quantity <= 0)
+#         ):
+#             session.expunge(obj)
+
+
+class TeamMembers(Base):
+    __tablename__ = "team_members"
+    members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_id = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=False)
+    member = Column(
+        Integer,
+        ForeignKey("individual_volunteer.volunteer_id"),
+        nullable=False
+    )
+    role = Column(String(255), nullable=False)
+    status = Column(String(20), default="pending", nullable=False)
+
+    # Relationships
+    team = relationship("DistributionTeam", back_populates="team_members")
+    volunteer = relationship("IndividualVolunteer")
+
+
+class DistributionTeam(Base):
+    __tablename__ = "distribution_team"
+    team_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    team_name = Column(String(255))
+    isActive = Column(Boolean, default=True)
+    status = Column(String(255), default="waiting")
+    team_members = relationship("TeamMembers", back_populates="team")
+    routes = relationship("DistributionRoute", back_populates="assigned_team", uselist=False)
+
+
+class DistributionRouteLogs(Base):
+    __tablename__ = "distribution_route_log"
+
+    log_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_id = Column(
+        Integer, ForeignKey("distribution_route.route_id"), nullable=False
+    )
+    log_message = Column(String(255))
+    date = Column(DateTime)
+
+    # Relationship back to DistributionRoute
+    route = relationship("DistributionRoute", back_populates="logs")
+
+
+class DistributionRoute(Base):
+    __tablename__ = "distribution_route"
+
+    route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    route_name = Column(String(255), nullable=False)
+    gathering_area = Column(String(255), nullable=True)
+    gathering_lat = Column(Float, nullable=True)
+    gathering_lng = Column(Float, nullable=True)
+    request_id = Column(
+        Integer, ForeignKey("procurement_request.request_id"), nullable=False
+    )
+    status = Column(String(255), default="Waiting for Additional Action")
+    start_schedule = Column(Date)
+    end_schedule = Column(Date)
+    team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
+    date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    distributed_items = relationship("DistributedItems", back_populates="route_info")
+    assigned_team = relationship("DistributionTeam", back_populates="routes")
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    # New relationship for logs
+    logs = relationship("DistributionRouteLogs", back_populates="route")
+    request = relationship(
+        "ProcurementRequest",
+        back_populates="routes",
+        foreign_keys=[request_id],
+    )
+
+
+class DistributedItems(Base):
+    __tablename__ = "distributed_items"
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    assigned_storage = Column(
+        Integer, ForeignKey("assigned_storage.assigned_id"), nullable=True
+    )
+    relief_id = Column(
+        Integer, ForeignKey("relief_request_item.item_id"), nullable=True
+    )
+    procurement_request_id = Column(
+        Integer, ForeignKey("procurement_request_item.item_id"), nullable=True
+    )
+
+    route = Column(Integer, ForeignKey("distribution_route.route_id"), nullable=False)
+    quantity = Column(Integer, nullable=False)
+
+    route_info = relationship("DistributionRoute", back_populates="distributed_items")
+
+    assigned_storage_rec = relationship(
+        "AssignedStorage",
+        back_populates="distributed_items",
+        foreign_keys=[assigned_storage],
+    )
+
+    relief_item = relationship(
+        "ReliefRequestItem",
+        back_populates="distributions",
+        foreign_keys=[relief_id],
+    )
+    procurement_item = relationship(
+        "ProcurementRequestItem",
+        back_populates="distributions",
+        foreign_keys=[procurement_request_id],
+    )
+
+
+class InKindInventoryItem(Base):
+    __tablename__ = "inkind_inventory_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    item_id = Column(
+        String,
+        ForeignKey("donation_inkind.inkind_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    status = Column(String(50), nullable=False, default="available")
+
+    # Relationship back to Donation_InKind
+    inkind = relationship("Donation_InKind", back_populates="inventory_item")
+
+
+@event.listens_for(Donation_InKind, "after_insert")
+def create_inventory_item(mapper, connection, target):
+    """
+    Automatically creates an InKindInventoryItem
+    when a new Donation_InKind is inserted.
+    """
+    connection.execute(
+        InKindInventoryItem.__table__.insert().values(
+            item_id=target.inkind_id,
+            status="available",
+        )
+    )
+
+
+
+class SpendCategory(enum.Enum):
+    RELIEF_SUPPLIES = "Relief Supplies"
+    MEDICAL_NEEDS = "Medical Needs"
+    SEARCH_RESCUE = "Search & Rescue"
+    SHELTER_HOUSING = "Shelter & Housing"
+    TRANSPORTATION = "Transportation"
+    EQUIPMENT = "Equipment"
+    RENTAL_PURCHASE = "Rental/Purchase"
+    VOLUNTEER_SUPPORT = "Volunteer Support"
+    CLEANUP_DEBRIS_REMOVAL = "Clean-up & Debris Removal"
+    SECURITY_SERVICES = "Security Services"
+    INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs"
+    DISBURSEMENT = "Disbursement"
+
+class InflowSource(enum.Enum):
+    GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS"
+    PRIVATE_SECTOR_CONTRIBUTIONS = "PRIVATE_SECTOR_CONTRIBUTIONS"
+    COMMUNITY_BASED_INITIATIVE = "COMMUNITY_BASED_INITIATIVE"
+    MONETARY_DONATIONS = "MONETARY_DONATIONS"
+
+
+class TransactionType(enum.Enum):
+    INFLOW = "INFLOW"
+    OUTFLOW = "OUTFLOW"
+
+
+class InflowType(enum.Enum):
+    CASH = "CASH"
+    CHECK = "CHECK"
+
+
+class FinanceRecord(Base):
+    __tablename__ = "finance_records"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    finance_id = Column(String, primary_key=True)
+    counterparty = Column(String(255), nullable=True)
+    transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
+    amount = Column(Numeric(14, 2), nullable=False)
+    date = Column(Date, nullable=False, index=True)
+    purpose = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=func.now())
+    updated_at = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+    attachment = Column(String, nullable=True)
+    inflow_type = Column(SqlEnum(InflowType), nullable=True)
+
+    inflow_source = Column(SqlEnum(InflowSource), nullable=True, index=True)
+    spend_category = Column(SqlEnum(SpendCategory), nullable=True, index=True)
+
+    donation_id = Column(
+        String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True
+    )
+    donation = relationship("Donation", back_populates="finance_record", uselist=False)
+
+    __table_args__ = (Index("ix_finance_type_date", "transaction_type", "date"),)
+
+
+class DisbursementStatus(enum.Enum):
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    PAID = "PAID"
+    REJECTED = "REJECTED"
+
+
+class Disbursement(Base):
+    __tablename__ = "disbursement"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    disbursement_id = Column(String, primary_key=True)
+    disbursement_name = Column(String, nullable=False, default="No title")
+    origin_name = Column(String, nullable=True, default="No origin")
+    origin_id = Column(Integer, nullable=True)
+    attachment = Column(String, nullable=True)
+    remarks = Column(String, nullable=True)
+    status = Column(
+        SqlEnum(DisbursementStatus),
+        nullable=False,
+        default=DisbursementStatus.SUBMITTED,
+    )
+    resolved_at = Column( DateTime(timezone=True), nullable=True )
+    date_created = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    date_updated = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    items = relationship(
+        "DisbursementItem",
+        back_populates="disbursement",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class DisbursementItem(Base):
+    __tablename__ = "disbursement_item"
+    id = Column(Integer, index=True, server_default=Identity())
+
+    item_id = Column(String, primary_key=True)
+    item_name = Column(String(100), nullable=False, default="Item name")
+    quantity = Column(Integer, nullable=False, default=0)
+    unit = Column(String(10), nullable=True, default="pcs")
+    unit_cost = Column(Numeric(20, 2), nullable=True, default=0)
+    vendor = Column(String(255), nullable=True, default="Vendor name")
+    disbursement_id = Column(
+        String,
+        ForeignKey("disbursement.disbursement_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    disbursement = relationship(
+        "Disbursement",
+        back_populates="items",
+    )
+    
+    
 
 # ------------------ VOLUNTEER MANAGEMENT MODELS
 
@@ -1039,6 +1459,33 @@ IndividualVolunteer.active_events_joined = column_property(
     .scalar_subquery()
 )
 
+IndividualVolunteer.distributionprogramsjoined = column_property(
+    select(func.count(TeamMembers.members_id))
+    .where(
+        and_(
+            TeamMembers.member == IndividualVolunteer.volunteer_id,
+            TeamMembers.status == "accepted",
+        )
+    )
+    .correlate_except(TeamMembers)
+    .scalar_subquery()
+)
+
+IndividualVolunteer.activedistributionprograms = column_property(
+    select(func.count(TeamMembers.members_id))
+    .join(DistributionTeam, DistributionTeam.team_id == TeamMembers.team_id)
+    .join(DistributionRoute, DistributionRoute.team == DistributionTeam.team_id)
+    .where(
+        and_(
+            TeamMembers.member == IndividualVolunteer.volunteer_id,
+            TeamMembers.status == "accepted",
+            DistributionRoute.status.in_(["Active", "Waiting for volunteer acceptance"]),
+        )
+    )
+    .correlate_except(TeamMembers, DistributionTeam, DistributionRoute)
+    .scalar_subquery()
+)
+
 # OrganizationVolunteer counters
 OrganizationVolunteer.tasks_joined = column_property(
     select(func.count(Assignment.id))
@@ -1096,483 +1543,3 @@ OrganizationVolunteer.active_events_joined = column_property(
     .correlate_except(Assignment, Task, Event)
     .scalar_subquery()
 )
-
-
-# Procurement Request
-
-
-class ProcurementRequest(Base):
-    __tablename__ = "procurement_request"
-    request_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    lgu_id = Column(Integer, ForeignKey("lgu_records.lgu_id"), nullable=False)
-    request_type = Column(String(255))
-    request_ref_num = Column(String(255), nullable=False)
-    request_title = Column(String(255), nullable=False)
-    request_description = Column(String(255), nullable=False)
-    use_different_end = Column(Boolean, default=False)
-
-    different_end_type = Column(String(255), nullable=True)
-    status = Column(String(255), default="Pending Approval")
-    end_barangay = Column(Integer, ForeignKey("baranggay_records.id"), nullable=True)
-    end_evac = Column(
-        Integer,
-        ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
-        nullable=True,
-    )
-    end_address = Column(String(255), nullable=True)
-    end_lat = Column(Float, nullable=True)
-    end_long = Column(Float, nullable=True)
-    priority = Column(String(255))
-    date_requested = Column(Date)
-    disaster_type = Column(String(255), nullable=False)
-    date_needed = Column(Date)
-
-    # ---- Relationships ----
-
-    lgu = relationship(
-        "LGURecords",
-        back_populates="procurement_requests",
-    )
-
-    evacuation_center = relationship(
-        "EvacuationCenter",
-        primaryjoin="ProcurementRequest.end_evac==EvacuationCenter.evacuation_id",
-        foreign_keys=[end_evac],
-        lazy="joined",
-    )
-
-    barangay = relationship(
-        "BaranggayRecords",
-        primaryjoin="ProcurementRequest.end_barangay==BaranggayRecords.id",
-        foreign_keys=[end_barangay],
-        lazy="joined",
-    )
-
-    # ---- the two item collections (fix) ----
-    relief_items = relationship(
-        "ReliefRequestItem",
-        back_populates="request",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-    procurement_items = relationship(
-        "ProcurementRequestItem",
-        back_populates="request",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-    routes = relationship(
-        "DistributionRoute",
-        back_populates="request",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-        uselist=False,
-    )
-
-
-class ReliefRequestItem(Base):
-    __tablename__ = "relief_request_item"
-    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-
-    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
-    item_name = Column(String(255), nullable=False)
-    category = Column(String(255), nullable=False)
-    quantity = Column(Integer, nullable=False)
-
-    # ✅ belongs to ONE request
-    request = relationship("ProcurementRequest", back_populates="relief_items")
-    distributions = relationship(
-        "DistributedItems",
-        back_populates="relief_item",
-        cascade="all, delete-orphan",
-    )
-
-
-class ProcurementRequestItem(Base):
-    __tablename__ = "procurement_request_item"
-    item_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-
-    request_id = Column(Integer, ForeignKey("procurement_request.request_id"))
-    item_name = Column(String(255), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    unit = Column(String(255))
-
-    # ✅ belongs to ONE request
-    request = relationship("ProcurementRequest", back_populates="procurement_items")
-    distributions = relationship(
-        "DistributedItems",
-        back_populates="procurement_item",
-        cascade="all, delete-orphan",
-    )
-
-
-class WarehouseZones(Base):
-    __tablename__ = "warehouse_zones"
-
-    warehouse_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    address = Column(String(255), nullable=False)
-    lat = Column(Float, nullable=False)
-    long = Column(Float, nullable=False)
-    status = Column(String(255), nullable=False)
-    zone_name = Column(String(255), nullable=False)
-
-    zone_type = Column(String(255), nullable=False)
-    capacity = Column(Integer, nullable=False)
-    manager = Column(String(255), nullable=False)
-
-    assigned_storages = relationship("AssignedStorage", back_populates="warehouse")
-
-
-class InventoryItems(Base):
-    __tablename__ = "inventory_items"
-
-    inventory_id = Column(Integer, index=True, primary_key=True, autoincrement=True)
-    item_name = Column(String(255), nullable=False)
-    quantity = Column(Integer, nullable=False)
-    category = Column(String(255), nullable=False)
-    batch = Column(String(255), nullable=False)
-    expiry = Column(Date, nullable=True)
-    status = Column(String(255), nullable=False)
-
-    assigned_storages = relationship("AssignedStorage", back_populates="inventory_item")
-
-
-class AssignedStorage(Base):
-    __tablename__ = "assigned_storage"
-
-    assigned_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-
-    # Foreign keys
-    warehouse_id = Column(
-        Integer, ForeignKey("warehouse_zones.warehouse_id"), nullable=False
-    )
-    inventory_id = Column(
-        Integer, ForeignKey("inventory_items.inventory_id"), nullable=False
-    )
-
-    # Additional field
-    quantity = Column(Integer, nullable=False)
-
-    # Relationships
-    warehouse = relationship("WarehouseZones", back_populates="assigned_storages")
-    inventory_item = relationship("InventoryItems", back_populates="assigned_storages")
-    distributed_items = relationship(
-        "DistributedItems",
-        back_populates="assigned_storage_rec",
-        cascade="all, delete-orphan",
-        # foreign_keys is optional here; if you want to be explicit:
-        # foreign_keys="DistributedItems.assigned_storage",
-    )
-
-
-# @event.listens_for(Session, "before_flush")
-# def delete_zero_quantity_assigned_storage(session: Session, flush_context, instances):
-#     """
-#     Before the session flushes updates/inserts, delete any AssignedStorage rows
-#     whose quantity is <= 0 so they don't get persisted.
-#     """
-#     # Updated rows
-#     for obj in list(session.dirty):
-#         if (
-#             isinstance(obj, AssignedStorage)
-#             and (obj.quantity is not None)
-#             and (obj.quantity <= 0)
-#         ):
-#             session.delete(obj)
-#
-#     # New rows that ended up with 0 or negative (just in case)
-#     for obj in list(session.new):
-#         if (
-#             isinstance(obj, AssignedStorage)
-#             and (obj.quantity is not None)
-#             and (obj.quantity <= 0)
-#         ):
-#             session.expunge(obj)
-
-
-class TeamMembers(Base):
-    __tablename__ = "team_members"
-    members_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    team_id = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=False)
-    member = Column(
-        Integer,
-        ForeignKey("individual_volunteer.volunteer_id"),
-        nullable=False
-    )
-    role = Column(String(255), nullable=False)
-    status = Column(String(20), default="pending", nullable=False)
-
-    # Relationships
-    team = relationship("DistributionTeam", back_populates="team_members")
-    volunteer = relationship("IndividualVolunteer")
-
-
-class DistributionTeam(Base):
-    __tablename__ = "distribution_team"
-    team_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    team_name = Column(String(255))
-    isActive = Column(Boolean, default=True)
-    status = Column(String(255), default="waiting")
-    team_members = relationship("TeamMembers", back_populates="team")
-    routes = relationship("DistributionRoute", back_populates="assigned_team")
-
-
-class DistributionRouteLogs(Base):
-    __tablename__ = "distribution_route_log"
-
-    log_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    route_id = Column(
-        Integer, ForeignKey("distribution_route.route_id"), nullable=False
-    )
-    log_message = Column(String(255))
-    date = Column(DateTime)
-
-    # Relationship back to DistributionRoute
-    route = relationship("DistributionRoute", back_populates="logs")
-
-
-class DistributionRoute(Base):
-    __tablename__ = "distribution_route"
-
-    route_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    route_name = Column(String(255), nullable=False)
-    gathering_area = Column(String(255), nullable=True)
-    gathering_lat = Column(Float, nullable=True)
-    gathering_lng = Column(Float, nullable=True)
-    request_id = Column(
-        Integer, ForeignKey("procurement_request.request_id"), nullable=False
-    )
-    status = Column(String(255), default="Waiting for Additional Action")
-    start_schedule = Column(Date)
-    end_schedule = Column(Date)
-    team = Column(Integer, ForeignKey("distribution_team.team_id"), nullable=True)
-    date_added = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    distributed_items = relationship("DistributedItems", back_populates="route_info")
-    assigned_team = relationship("DistributionTeam", back_populates="routes")
-
-    # New relationship for logs
-    logs = relationship("DistributionRouteLogs", back_populates="route")
-    request = relationship(
-        "ProcurementRequest",
-        back_populates="routes",
-        foreign_keys=[request_id],
-    )
-
-
-class DistributedItems(Base):
-    __tablename__ = "distributed_items"
-    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    assigned_storage = Column(
-        Integer, ForeignKey("assigned_storage.assigned_id"), nullable=True
-    )
-    relief_id = Column(
-        Integer, ForeignKey("relief_request_item.item_id"), nullable=True
-    )
-    procurement_request_id = Column(
-        Integer, ForeignKey("procurement_request_item.item_id"), nullable=True
-    )
-
-    route = Column(Integer, ForeignKey("distribution_route.route_id"), nullable=False)
-    quantity = Column(Integer, nullable=False)
-
-    route_info = relationship("DistributionRoute", back_populates="distributed_items")
-
-    assigned_storage_rec = relationship(
-        "AssignedStorage",
-        back_populates="distributed_items",
-        foreign_keys=[assigned_storage],
-    )
-
-    relief_item = relationship(
-        "ReliefRequestItem",
-        back_populates="distributions",
-        foreign_keys=[relief_id],
-    )
-    procurement_item = relationship(
-        "ProcurementRequestItem",
-        back_populates="distributions",
-        foreign_keys=[procurement_request_id],
-    )
-
-
-class InKindInventoryItem(Base):
-    __tablename__ = "inkind_inventory_item"
-
-    id = Column(Integer, primary_key=True, index=True)
-    item_id = Column(
-        String,
-        ForeignKey("donation_inkind.inkind_id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
-    status = Column(String(50), nullable=False, default="available")
-
-    # Relationship back to Donation_InKind
-    inkind = relationship("Donation_InKind", back_populates="inventory_item")
-
-
-@event.listens_for(Donation_InKind, "after_insert")
-def create_inventory_item(mapper, connection, target):
-    """
-    Automatically creates an InKindInventoryItem
-    when a new Donation_InKind is inserted.
-    """
-    connection.execute(
-        InKindInventoryItem.__table__.insert().values(
-            item_id=target.inkind_id,
-            status="available",
-        )
-    )
-
-
-# ================================== FINANCE MODELS =====================================
-
-
-class SpendCategory(enum.Enum):
-    RELIEF_SUPPLIES = "Relief Supplies"
-    MEDICAL_NEEDS = "Medical Needs"
-    SEARCH_RESCUE = "Search & Rescue"
-    SHELTER_HOUSING = "Shelter & Housing"
-    TRANSPORTATION = "Transportation"
-    EQUIPMENT = "Equipment"
-    RENTAL_PURCHASE = "Rental/Purchase"
-    VOLUNTEER_SUPPORT = "Volunteer Support"
-    CLEANUP_DEBRIS_REMOVAL = "Clean-up & Debris Removal"
-    SECURITY_SERVICES = "Security Services"
-    INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs"
-    DISBURSEMENT = "Disbursement"
-
-class InflowSource(enum.Enum):
-    GOVERNMENT_GRANTS_AND_FUNDS = "GOVERNMENT_GRANTS_AND_FUNDS"
-    PRIVATE_SECTOR_CONTRIBUTIONS = "PRIVATE_SECTOR_CONTRIBUTIONS"
-    COMMUNITY_BASED_INITIATIVE = "COMMUNITY_BASED_INITIATIVE"
-    MONETARY_DONATIONS = "MONETARY_DONATIONS"
-
-
-class TransactionType(enum.Enum):
-    INFLOW = "INFLOW"
-    OUTFLOW = "OUTFLOW"
-
-
-class InflowType(enum.Enum):
-    CASH = "CASH"
-    CHECK = "CHECK"
-
-
-class FinanceRecord(Base):
-    __tablename__ = "finance_records"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    finance_id = Column(String, primary_key=True)
-    counterparty = Column(String(255), nullable=True)
-    transaction_type = Column(SqlEnum(TransactionType), nullable=False, index=True)
-    amount = Column(Numeric(14, 2), nullable=False)
-    date = Column(Date, nullable=False, index=True)
-    purpose = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=func.now())
-    updated_at = Column(
-        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-    attachment = Column(String, nullable=True)
-    inflow_type = Column(SqlEnum(InflowType), nullable=True)
-
-    inflow_source = Column(SqlEnum(InflowSource), nullable=True, index=True)
-    spend_category = Column(SqlEnum(SpendCategory), nullable=True, index=True)
-
-    donation_id = Column(
-        String, ForeignKey("donation_records.donation_id"), nullable=True, unique=True
-    )
-    donation = relationship("Donation", back_populates="finance_record", uselist=False)
-
-    audits = relationship(
-        "FinanceAudit", back_populates="record", cascade="all, delete-orphan"
-    )
-
-    __table_args__ = (Index("ix_finance_type_date", "transaction_type", "date"),)
-
-
-class FinanceAudit(Base):
-    __tablename__ = "finance_audits"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    audit_id = Column(String, primary_key=True)
-    record_id = Column(
-        String,
-        ForeignKey("finance_records.finance_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    action = Column(
-        String(64), nullable=False
-    )  # e.g., create, update, reconcile, export
-    at = Column(DateTime, nullable=False, server_default=func.now())
-    actor = Column(String(128), nullable=True)  # optional: username/email
-    details = Column(Text, nullable=True)
-
-    record = relationship("FinanceRecord", back_populates="audits")
-
-
-class DisbursementStatus(enum.Enum):
-    SUBMITTED = "SUBMITTED"
-    APPROVED = "APPROVED"
-    PAID = "PAID"
-    REJECTED = "REJECTED"
-
-
-class Disbursement(Base):
-    __tablename__ = "disbursement"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    disbursement_id = Column(String, primary_key=True)
-    disbursement_name = Column(String, nullable=False, default="No title")
-    origin_name = Column(String, nullable=False, default="No origin")
-    origin_id = Column(Integer, nullable=False)
-    attachment = Column(String, nullable=True)
-    remarks = Column(String, nullable=True)
-    status = Column(
-        SqlEnum(DisbursementStatus),
-        nullable=False,
-        default=DisbursementStatus.SUBMITTED,
-    )
-    date_created = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    date_updated = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-    items = relationship(
-        "DisbursementItem",
-        back_populates="disbursement",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-
-
-class DisbursementItem(Base):
-    __tablename__ = "disbursement_item"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    item_id = Column(String, primary_key=True)
-    item_name = Column(String(100), nullable=False, default="Item name")
-    quantity = Column(Integer, nullable=False, default=0)
-    unit = Column(String(10), nullable=False, default="pcs")
-    unit_cost = Column(Numeric(20, 2), nullable=False, default=0)
-    vendor = Column(String(255), nullable=False, default="Vendor name")
-    disbursement_id = Column(
-        String,
-        ForeignKey("disbursement.disbursement_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-
-    disbursement = relationship(
-        "Disbursement",
-        back_populates="items",
-    )
-    

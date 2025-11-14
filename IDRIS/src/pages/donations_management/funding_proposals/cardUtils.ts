@@ -1,4 +1,4 @@
-import styles from "./FundingCard.module.scss";
+import styles from "./fundingCard.module.scss";
 
 export const getDaysRemaining = (startDateStr?: string, endDateStr?: string) => {
   if (!endDateStr) return { text: "No end date", value: null, percentage: 100 };

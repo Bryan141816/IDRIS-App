@@ -2,6 +2,8 @@ import styles from "./FundingCard.module.scss";
 import { useNavigate } from "react-router-dom";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import Image from '../../images/no-image.jpg';
+import { formatCurrency } from "../helpers";
+
 const backendUrl = "http://127.0.0.1:8000";
 
 // Fallback placeholder image
@@ -16,6 +18,7 @@ type FundingProps = {
   funding_id: number; // Funding ID for Donate
   is_active?: boolean;
   className?: string;
+  total_donated?: number;
 };
 
 export const FundingCard: React.FC<FundingProps> = ({
@@ -27,9 +30,12 @@ export const FundingCard: React.FC<FundingProps> = ({
   funding_id,
   is_active,
   className = "",
+  total_donated,
 }) => {
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
+
+  const adminAccess = userRoles.includes("superadmin") || userRoles.includes("operations admin");
 
   const filled = Math.round(Math.min(((donated ?? 0) / (target ?? 1)) * 100, 100));
 
@@ -52,15 +58,19 @@ export const FundingCard: React.FC<FundingProps> = ({
           <span className={styles.inactive}>Inactive</span>
         )}
       </div>
-      <div className={styles["progress-container"]}>
-        <div className={styles["full-bar"]}>
-          <div
-            className={styles["funded-bar"]}
-            style={{ width: `${filled}%` }}
-          ></div>
+      {adminAccess &&
+        <div className={styles["progress-container"]}>
+          <p className={styles.amountRaised}>
+            {formatCurrency(total_donated || 0)} raised of {formatCurrency(target || 0)}
+          </p>
+          <div className={styles["full-bar"]}>
+            <div
+              className={styles["funded-bar"]}
+              style={{ width: `${filled}%` }}
+            ></div>
+          </div>
         </div>
-        {/* <p>{filled}% Raised</p> */}
-      </div>
+      }
       {userRoles.includes("donor") && is_active && (
         <button
           className={styles["funding-donate-btn"]}

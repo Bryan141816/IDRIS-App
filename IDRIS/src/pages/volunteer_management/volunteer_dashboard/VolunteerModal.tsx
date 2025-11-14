@@ -16,7 +16,7 @@ const VolunteerModal = ({ isOpen, onClose }: ModalProps) => {
       <div className="modal-content">
         <div className="modal-header">
           <h3>Add Program</h3>
-          <button onClick={onClose} className="close-btn">
+          <button onClick={onClose} className="closeBtn">
             ×
           </button>
         </div>

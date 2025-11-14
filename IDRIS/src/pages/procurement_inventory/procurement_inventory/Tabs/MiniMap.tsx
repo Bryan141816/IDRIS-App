@@ -59,7 +59,10 @@ const RecenterButton: React.FC<{ coordinate: [number, number] }> = ({
 
   return (
     <button
-      onClick={handleRecenter}
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        handleRecenter();
+      }}
       style={{
         position: "absolute",
         bottom: "10px",

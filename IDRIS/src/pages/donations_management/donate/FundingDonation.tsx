@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useUserRoleContext } from "../../../UserRoleContext";
 import DonorDonationForm from './DonationInfo';
 import PaymentForm from './PaymentMethod';
 import './fundingDonation.scss';
@@ -24,6 +25,10 @@ const backendUrl = "http://127.0.0.1:8000";
 const DonationPage: React.FC = () => {
   const location = useLocation();
   const fundingId = location.state?.funding_id;
+  const { userRoles } = useUserRoleContext();
+  const adminRoleAccess = userRoles.includes("operations admin") || userRoles.includes("superadmin");
+
+
   const [fundingProposal, setFundingProposal] = useState<any>(null);
   const [isDonationPending, setIsDonationPending] = useState<boolean>(false);
   const [donorId, setDonorId] = useState<number | null>(null);
@@ -381,30 +386,32 @@ const DonationPage: React.FC = () => {
                   <h2 className="funding-title">{fundingProposal.title}</h2>
                   <p className="funding-description">{fundingProposal.description}</p>
 
-                  <div className="progress-container">
-                    <div className="progress-info">
-                      <span className="progress-label">
-                        Raised: {formatCurrency(fundingProposal.total_donated)}
-                      </span>
-                      <span className="progress-percentage">
-                        {computePercentage(
-                          Number(fundingProposal.total_donated),
-                          Number(fundingProposal.budget_required)
-                        )}%
-                      </span>
-                    </div>
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${computePercentage(
+                  {adminRoleAccess &&
+                    <div className="progress-container">
+                      <div className="progress-info">
+                        <span className="progress-label">
+                          Raised: {formatCurrency(fundingProposal.total_donated)}
+                        </span>
+                        <span className="progress-percentage">
+                          {computePercentage(
                             Number(fundingProposal.total_donated),
                             Number(fundingProposal.budget_required)
-                          )}%`,
-                        }}
-                      ></div>
+                          )}%
+                        </span>
+                      </div>
+                      <div className="progress-bar">
+                        <div
+                          className="progress-fill"
+                          style={{
+                            width: `${computePercentage(
+                              Number(fundingProposal.total_donated),
+                              Number(fundingProposal.budget_required)
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
                     </div>
-                  </div>
+                  }
                 </div>
                 <div className="funding-content">
                   <h1>Message from us</h1>

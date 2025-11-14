@@ -263,66 +263,70 @@ export const MyLGUEditModal: React.FC<
   const [drrmContactInvalid, setDrrmContactInvalid] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
- const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
+  const [validation, setValidation] = useState<{ [key: string]: boolean }>({});
 
-const validateForm = () => {
-  const v: { [key: string]: boolean } = {};
-  v.lgu_name = !form.lgu_name?.trim();
-  v.lgu_classification = !form.lgu_classification;
-  v.mayor = !form.mayor?.trim();
-  v.lgu_contact = !form.lgu_contact?.trim() || lguContactInvalid;
-  v.location = !form.lat || !form.lng || form.lat === -1000000 || form.lng === -1000000;
-  v.population = !form.population && form.population !== 0;
-  v.lgu_majorHazard = !Array.isArray(form.lgu_majorHazard) || !form.lgu_majorHazard.length;
-  v.DRMMpersonel = !form.DRMMpersonel?.trim();
-  v.DRMM_contact = !form.DRMM_contact?.trim() || drrmContactInvalid;
-  v.lgu_critical_facility = !Array.isArray(form.lgu_critical_facility) || !form.lgu_critical_facility.length;
-  v.lgu_pwd = !form.lgu_pwd && form.lgu_pwd !== 0;
-  v.lgu_senior = !form.lgu_senior && form.lgu_senior !== 0;
-  v.lgu_children = !form.lgu_children && form.lgu_children !== 0;
-  setValidation(v);
-  return !Object.values(v).some(Boolean);
-};
+  const validateForm = () => {
+    const v: { [key: string]: boolean } = {};
+    v.lgu_name = !form.lgu_name?.trim();
+    v.lgu_classification = !form.lgu_classification;
+    v.mayor = !form.mayor?.trim();
+    v.lgu_contact = !form.lgu_contact?.trim() || lguContactInvalid;
+    v.location =
+      !form.lat || !form.lng || form.lat === -1000000 || form.lng === -1000000;
+    v.population = !form.population && form.population !== 0;
+    v.lgu_majorHazard =
+      !Array.isArray(form.lgu_majorHazard) || !form.lgu_majorHazard.length;
+    v.DRMMpersonel = !form.DRMMpersonel?.trim();
+    v.DRMM_contact = !form.DRMM_contact?.trim() || drrmContactInvalid;
+    v.lgu_critical_facility =
+      !Array.isArray(form.lgu_critical_facility) ||
+      !form.lgu_critical_facility.length;
+    v.lgu_pwd = !form.lgu_pwd && form.lgu_pwd !== 0;
+    v.lgu_senior = !form.lgu_senior && form.lgu_senior !== 0;
+    v.lgu_children = !form.lgu_children && form.lgu_children !== 0;
+    setValidation(v);
+    return !Object.values(v).some(Boolean);
+  };
 
-const handleSubmit = async () => {
-  if (isSaving) return;
-  setIsSaving(true);
+  const handleSubmit = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
 
-  try {
-    if (!validateForm()) {
+    try {
+      if (!validateForm()) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Incomplete or Invalid Form",
+          text: "Please fill in all required fields. Fields with red highlight need your attention.",
+          confirmButtonColor: "#f59e0b",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      const response = await API.put("/lgu_profiling/api/update_lgu", form);
       await Swal.fire({
-        icon: "warning",
-        title: "Incomplete or Invalid Form",
-        text: "Please fill in all required fields. Fields with red highlight need your attention.",
-        confirmButtonColor: "#f59e0b",
+        icon: "success",
+        title: "Saved successfully!",
+        text: "LGU details have been updated.",
+        confirmButtonColor: "#6d28d9",
       });
+
+      if (typeof onSaved === "function") await onSaved();
+      closeModal();
+    } catch (e: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Update failed!",
+        text:
+          e?.response?.data?.message ??
+          "Something went wrong while saving. Please try again.",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
       setIsSaving(false);
-      return;
     }
-
-    const response = await API.put("/lgu_profiling/api/update_lgu", form);
-    await Swal.fire({
-      icon: "success",
-      title: "Saved successfully!",
-      text: "LGU details have been updated.",
-      confirmButtonColor: "#6d28d9",
-    });
-
-    if (typeof onSaved === "function") await onSaved();
-    closeModal();
-  } catch (e: any) {
-    Swal.fire({
-      icon: "error",
-      title: "Update failed!",
-      text: e?.response?.data?.message ?? "Something went wrong while saving. Please try again.",
-      confirmButtonColor: "#ef4444",
-    });
-  } finally {
-    setIsSaving(false);
-  }
-};
-
-
+  };
 
   const handleContactChange = (key: keyof LGUOut, val: string) => {
     // Allow digits, parentheses, plus sign
@@ -460,7 +464,6 @@ const handleSubmit = async () => {
                     }}
                   >
                     <FontAwesomeIcon icon={faMapMarkerAlt} />
-                    
                   </button>
                 </div>
               </Row>
@@ -481,7 +484,6 @@ const handleSubmit = async () => {
                   </option>
                   <option value="Municipality">Municipality</option>
                   <option value="City">City</option>
-                  
                 </select>
               </Row>
               <Row label="LGU's Contact">
@@ -492,7 +494,6 @@ const handleSubmit = async () => {
                     handleContactChange("lgu_contact", e.target.value)
                   }
                   className={validation.lgu_contact ? "input-invalid" : ""}
-
                 />
 
                 <label>
@@ -509,7 +510,6 @@ const handleSubmit = async () => {
                     hidden
                     onChange={onImage("lgu_seal")}
                     className={validation.lgu_seal ? "input-invalid" : ""}
-
                   />
                 </label>
                 {form.lgu_seal && (
@@ -530,11 +530,11 @@ const handleSubmit = async () => {
                   onChange={(e) =>
                     setForm((prev) => ({
                       ...prev,
-                      population: e.target.value === "" ? null : Number(e.target.value)
+                      population:
+                        e.target.value === "" ? null : Number(e.target.value),
                     }))
                   }
                   className={validation.population ? "input-invalid" : ""}
-
                 />
               </Row>
 
@@ -546,7 +546,6 @@ const handleSubmit = async () => {
                     setForm((prev) => ({ ...prev, mayor: e.target.value }))
                   }
                   className={validation.mayor ? "input-invalid" : ""}
-
                 />
               </Row>
             </Section>
@@ -564,8 +563,7 @@ const handleSubmit = async () => {
                   selected={form.lgu_majorHazard ?? []}
                   onToggle={(v) => toggle("lgu_majorHazard", v)}
                   columns={3}
-                  className={validation.major_hazard ? "input-invalid" : ""}
-
+                  isError={validation.major_hazard ? true : false}
                 />
               </Row>
 
@@ -579,7 +577,6 @@ const handleSubmit = async () => {
                     hidden
                     onChange={onImage("hazard_pic")}
                     className={validation.hazard_pic ? "input-invalid" : ""}
-
                   />
                 </label>
                 {form.hazard_pic && (
@@ -604,7 +601,6 @@ const handleSubmit = async () => {
                     }))
                   }
                   className={validation.DRMMpersonel ? "input-invalid" : ""}
-
                 />
               </Row>
 
@@ -617,7 +613,6 @@ const handleSubmit = async () => {
                     handleContactChange("DRMM_contact", e.target.value)
                   }
                   className={validation.DRMM_contact ? "input-invalid" : ""}
-
                 />
                 <label>
                   {drrmContactInvalid && "Contact number is invalid"}
@@ -792,7 +787,7 @@ function DL({
 /** NEW: shows image or a tidy placeholder */
 function ImgOrPlaceholder({ label, src }: { label: string; src?: string }) {
   const hasImg = !!src;
-  return (  
+  return (
     <div className="lgu-media">
       <div className="item-details-identifier" style={{ marginBottom: 6 }}>
         {label}
@@ -819,15 +814,17 @@ function CheckGroup({
   selected,
   onToggle,
   columns = 3,
+  isError = false,
 }: {
   options: string[];
   selected: string[];
   onToggle: (v: string) => void;
   columns?: number;
+  isError?: boolean;
 }) {
   return (
     <div
-      className="lgu-checkgrid"
+      className={`lgu-checkgrid ${isError ? "input-invalid" : ""}`}
       style={{ "--cols": String(columns) } as React.CSSProperties}
     >
       {options.map((opt) => {

@@ -80,6 +80,7 @@ class FundingProposalResponse(BaseModel):
     starting_date: datetime
     end_date: datetime
     image: Optional[str] = None
+    total_donated: float
 
     class Config:
         from_attributes = True

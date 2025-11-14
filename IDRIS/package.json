@@ -35,8 +35,10 @@
     "react-data-table-component": "^7.7.0",
     "react-dom": "^19.0.0",
     "react-easy-crop": "^5.5.0",
+    "react-form-stepper": "^2.0.3",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.5.0",
+    "react-to-print": "^3.2.0",
     "recharts": "^2.15.3",
     "sass": "^1.86.3",
     "sweetalert2": "^11.19.1",
@@ -59,7 +61,8 @@
     "rollup-plugin-visualizer": "^6.0.3",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
-    "vite": "^6.3.1",
+    "vite": "^6.4.1",
+    "vite-plugin-entry-shaking": "^0.5.1",
     "vite-plugin-purgecss": "^0.2.13"
   }
 }

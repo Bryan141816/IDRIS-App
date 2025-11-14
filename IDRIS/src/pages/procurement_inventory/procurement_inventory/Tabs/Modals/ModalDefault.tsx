@@ -1,8 +1,11 @@
 import React, { ReactNode } from "react";
+export type ButtonHandler = (
+  e?: React.MouseEvent<HTMLButtonElement>,
+) => void | Promise<void> | null | undefined;
 
 interface InventoryModalProps {
   onClose: () => void;
-  onSubmit?: () => void | null;
+  onSubmit?: ButtonHandler;
   children: ReactNode;
   modalType: string;
   zIndex?: number;
@@ -19,27 +22,48 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 }) => {
   return (
     <div className="modal-overlay" style={{ zIndex }}>
-      <div
+      <form
         className="modal"
         style={{ maxWidth: maxWidth ? maxWidth : "500px" }}
+        method="POST"
       >
         <div className="modal-header">
-          <button className="close-btn" onClick={onClose}>
+          <button
+            className="close-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             ×
           </button>
         </div>
         {children}
         <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
+          <button
+            className="secondary-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             {modalType === "view-item" ? "Close" : "Cancel"}
           </button>
           {modalType !== "view-item" && (
-            <button className="primary-btn" onClick={onSubmit}>
+            <button
+              type="submit"
+              className="primary-btn"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                if (onSubmit) {
+                  onSubmit(e);
+                }
+              }}
+            >
               {modalType === "export" ? "Generate Report" : "Save"}
             </button>
           )}
         </div>
-      </div>
+      </form>
     </div>
   );
 };

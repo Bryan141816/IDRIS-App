@@ -7,9 +7,6 @@ import { Breadcrumb } from "antd";
 import { Link } from "react-router-dom";
 import { listPrograms } from "../../../API_Handler/assignment_handler";
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Types
-// ───────────────────────────────────────────────────────────────────────────────
 type Program = {
   id: number | string;
   name: string;
@@ -35,6 +32,8 @@ type CompanyInfo = {
 const monthNames = Array.from({ length: 12 }, (_, i) =>
   new Date(2000, i, 1).toLocaleString("default", { month: "long" })
 );
+
+const samplePrograms: Program[] = [];
 
 const safeDate = (d?: string | null) => {
   if (!d) return null;
@@ -174,7 +173,6 @@ export default function ProgramsReport({
         setApiPrograms(normalized);
       } catch (e) {
         console.error("Failed to fetch programs:", e);
-        // keep fallback demo data on UI so page still renders
         setApiPrograms(samplePrograms);
       } finally {
         setLoading(false);
@@ -349,9 +347,6 @@ export default function ProgramsReport({
       <div className="breadcrumb-section">
         <h2 className="page-title">Programs Reports</h2>
         <Breadcrumb>
-          <Breadcrumb.Item href="#">
-            <span>Home</span>
-          </Breadcrumb.Item>
           <Breadcrumb.Item>
             <Link to="/volunteer_management/volunteer_dashboard">
               Volunteer Dashboard

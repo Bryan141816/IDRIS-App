@@ -82,3 +82,11 @@ class FinalizeRoute(BaseModel):
     gathering_area_lng: float
     team_members: List[TeamMembers]
     inventory: List[Inventory]
+
+class ReassignVolunteer(BaseModel):
+    team_id: int
+    member_id: int
+    volunteer_id: int
+    role: str
+    reassign_type: str
+

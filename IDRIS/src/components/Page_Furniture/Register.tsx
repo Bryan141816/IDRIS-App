@@ -4,11 +4,12 @@ import "./styles/Login.scss";
 import LoginHeader from "./LoginHeader";
 import Logo1 from "../../media/logo1.png";
 import { Modal } from "./Modals";
-import Swal from 'sweetalert2';
-
+import Swal from "sweetalert2";
+import { API } from "../../API_Handler/Axio_API_Handler";
 type ModalId = "" | "user-type" | "user-role" | "admin-role";
 
 const Register: React.FC = () => {
+  const API_URL = API.defaults.baseURL;
   const [activeModal, setActiveModal] = useState<ModalId>("");
 
   const [email, setEmail] = useState<string>("");
@@ -120,7 +121,10 @@ const Register: React.FC = () => {
   };
 
   // Actual registration call (unchanged, safe)
-  const doRegister = async (roleParam?: string, userTypeParam?: "admin" | "user") => {
+  const doRegister = async (
+    roleParam?: string,
+    userTypeParam?: "admin" | "user",
+  ) => {
     const roleToSend = roleParam || selectedRole; // ✅ use immediate value
     const userTypeToSend = userTypeParam || userType;
     Swal.fire({
@@ -132,7 +136,7 @@ const Register: React.FC = () => {
       allowEscapeKey: false,
     });
     try {
-      const response = await fetch("http://localhost:8000/register", {
+      const response = await fetch(`${API_URL}/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,11 +180,11 @@ const Register: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/auth/register";
+    window.location.href = `${API_URL}/auth/register`;
   };
 
   const handleMicrosoftLogin = () => {
-    window.location.href = "http://localhost:8000/auth/microsoft/register";
+    window.location.href = `${API_URL}/auth/microsoft/register`;
   };
 
   return (
@@ -245,24 +249,44 @@ const Register: React.FC = () => {
 
           {showValidation && (
             <div className="password-validation">
-              <div className={`validation-item ${passwordValidation.length ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.length ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.length ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.length ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>At least 8 characters</span>
               </div>
-              <div className={`validation-item ${passwordValidation.uppercase ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.uppercase ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.uppercase ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.uppercase ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One uppercase letter</span>
               </div>
-              <div className={`validation-item ${passwordValidation.lowercase ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.lowercase ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.lowercase ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.lowercase ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One lowercase letter</span>
               </div>
-              <div className={`validation-item ${passwordValidation.number ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.number ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.number ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.number ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One number</span>
               </div>
-              <div className={`validation-item ${passwordValidation.special ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.special ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.special ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.special ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>One special character</span>
               </div>
             </div>
@@ -283,10 +307,16 @@ const Register: React.FC = () => {
 
           {showMatchValidation && (
             <div className="password-match-validation">
-              <div className={`validation-item ${passwordValidation.match ? "valid" : "invalid"}`}>
-                <i className={`fas ${passwordValidation.match ? "fa-check-circle" : "fa-times-circle"}`}></i>
+              <div
+                className={`validation-item ${passwordValidation.match ? "valid" : "invalid"}`}
+              >
+                <i
+                  className={`fas ${passwordValidation.match ? "fa-check-circle" : "fa-times-circle"}`}
+                ></i>
                 <span>
-                  {passwordValidation.match ? "Passwords match" : "Passwords do not match"}
+                  {passwordValidation.match
+                    ? "Passwords match"
+                    : "Passwords do not match"}
                 </span>
               </div>
             </div>

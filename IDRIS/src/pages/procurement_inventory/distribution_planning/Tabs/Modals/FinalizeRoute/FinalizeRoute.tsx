@@ -37,14 +37,6 @@ type Volunteer = {
   availability_status?: string;
 };
 
-type TeamData = {
-  team_name: string;
-  team_members: { volunteer_id: number; role: string | undefined }[];
-  deployment_area: string;
-  assignment_duration: number;
-  starting_date: string;
-  assigned_by?: string; // Add this field
-};
 export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
   onClose,
   refreshData,
@@ -112,7 +104,16 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
       gathering_area_lng: coordinates[1],
     }));
   };
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const cleaned_items = requestList
       ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
       .map(({ item_id, assigned_id, quantity_assigned }) => ({
@@ -173,7 +174,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
         ></MapViewWithSearch>
       )}
       <div className="modal-overlay" style={{ zIndex: 900 }}>
-        <div className="modal" style={{ minWidth: "65vw" }}>
+        <form className="modal" style={{ minWidth: "65vw" }}>
           <div className="modal-header">
             <h3>Finalize Route</h3>
             <button className="close-btn" onClick={onClose}>
@@ -185,25 +186,51 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
               <label>Gathering Area:</label>
               <input
                 type="text"
-                disabled
                 value={formData.gathering_area_name}
+                placeholder="Please select a gathering area"
+                required
               />
               <button
                 className="secondary-btn"
                 style={{ width: "100%" }}
-                onClick={() => setOpenMapViewSelect(true)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  setOpenMapViewSelect(true);
+                }}
               >
                 Select Location
               </button>
             </div>
             {selectedRoute.request?.request_type === "relief" && (
-              <div className="form-group">
+              <div className="form-group" style={{ position: "relative" }}>
                 <label>Pick from Inventory</label>
                 <RequestItemsHandler
                   requestItems={requestList}
                   setRequestListState={setRequestList}
                   status={selectedRoute.status}
+                  type="picking"
                 ></RequestItemsHandler>
+                {requestList.filter((item) => item.inventory_name.trim() !== "")
+                  .length === 0 && (
+                  <input
+                    type="text"
+                    id="name"
+                    required
+                    onInvalid={(e) =>
+                      e.currentTarget.setCustomValidity(
+                        "Assign item at least one item!",
+                      )
+                    }
+                    style={{
+                      height: "0px",
+                      width: "0px",
+                      opacity: 0,
+                      position: "absolute",
+                      left: "50%",
+                    }}
+                    onInput={(e) => e.currentTarget.setCustomValidity("")}
+                  />
+                )}
               </div>
             )}
             <div className="form-group">
@@ -216,7 +243,10 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
                   padding: "10px",
                   borderRadius: "5px",
                 }}
-                onClick={() => setIsEditMember(true)}
+                onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  e.preventDefault();
+                  setIsEditMember(true);
+                }}
               >
                 Edit Members
               </button>
@@ -241,6 +271,25 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
                     </tr>
                   </thead>
                   <tbody>
+                    {teamMember.length === 0 && (
+                      <input
+                        type="text"
+                        id="name"
+                        required
+                        onInvalid={(e) =>
+                          e.currentTarget.setCustomValidity("Pick a volunteer!")
+                        }
+                        style={{
+                          height: "0px",
+                          width: "0px",
+                          opacity: 0,
+                          position: "absolute",
+                          left: "50%",
+                        }}
+                        onInput={(e) => e.currentTarget.setCustomValidity("")}
+                      />
+                    )}
+
                     {teamMember.map((volunteer) => (
                       <tr key={volunteer.volunteer_id}>
                         <td style={{ padding: "10px" }}>
@@ -255,6 +304,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
                                 e.target.value,
                               )
                             }
+                            required
                           >
                             <option value="">Select Role</option>
                             <option value="team leader">Team Leader</option>
@@ -278,7 +328,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
               Submit
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </>
   );
@@ -290,7 +340,7 @@ interface SelectVolunteerProp {
   teamMember: Volunteer[];
 }
 
-const SelectVolunteer: React.FC<SelectVolunteerProp> = ({
+export const SelectVolunteer: React.FC<SelectVolunteerProp> = ({
   onClose,
   handleSelect,
   teamMember,

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { WarehouseZone } from "../../procurement_inventory/Tabs/Modals/ModalDefault";
-import { AddRouteModal } from "./Modals/AddRoute/AddRoute";
+
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 import { FinalizeRouteSetup } from "./Modals/FinalizeRoute/FinalizeRoute";
 import { EditRoute } from "./Modals/EditRoute/EditRoute";
 import { ViewRoute } from "./Modals/ViewRoute/ViewRoute";
+import { ReAssignVolunteers } from "./Modals/ReAssignVolunteers/ReAssignVolunteers";
+import { formatDateTime } from "../../CommonFunctions";
+import { useNavigate } from "react-router-dom";
 // Helpers
 export type ISODate = string;
 export type Maybe<T> = T | null;
@@ -20,7 +22,7 @@ export interface VolunteerRef {
   phone_number: string;
   address: string;
   gender: string;
-  age: string;
+  age: number;
 }
 
 export interface TeamMember {
@@ -28,18 +30,12 @@ export interface TeamMember {
   member: number;
   role: string;
   status: string;
-  assigned_at: Maybe<ISODate>;
-  responded_at: Maybe<ISODate>;
-  assigned_by: Maybe<string>;
-  volunteer: Maybe<VolunteerRef>;
+  volunteer: VolunteerRef;
 }
 
 export interface AssignedTeam {
   team_id: number;
   team_name: string;
-  deployment_area: string;
-  assignment_duration: number;
-  starting_date: Maybe<ISODate>;
   isActive: boolean;
   status: string;
   team_members: TeamMember[];
@@ -183,24 +179,17 @@ export interface DistributionRouteDTO {
   request: Maybe<RequestBlock>;
 }
 
-function formatDateTime(dateString: string): string {
-  if (!dateString) return "";
-
-  const date = new Date(dateString);
-
-  return date.toLocaleString("en-US", {
-    month: "long", // "October"
-    day: "numeric", // "16"
-    year: "numeric", // "2025"
-  });
-}
-
 export const RoutesAndPlanning = () => {
+  const navigate = useNavigate();
   const [routeList, setRouteList] = useState<DistributionRouteDTO[]>([]);
   const [selectedRoute, setSelectedRoute] =
     useState<DistributionRouteDTO | null>(null);
   const [activeModal, setActiveModal] = useState("");
 
+  const [selectedMemeber, setSelectedMembers] = useState<{
+    team_id: number;
+    team_members: TeamMember[];
+  } | null>(null);
   const openModal = (
     type: string,
     route: DistributionRouteDTO | null = null,
@@ -223,12 +212,25 @@ export const RoutesAndPlanning = () => {
     };
     fetch();
   };
-
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleGenerateReport = () => {
+    navigate("/procurement_inventory/distribution_report");
+  };
+
+  const openReassignVolunteers = (
+    team_id: number,
+    team_members: TeamMember[],
+  ) => {
+    setSelectedMembers({ team_id: team_id, team_members: team_members });
+  };
+  const closeReassignVolunteers = () => {
+    setSelectedMembers(null);
+  };
   return (
-    <>
+    <div className="requests-content">
       {activeModal === "finalize" && selectedRoute && (
         <FinalizeRouteSetup
           onClose={closeModal}
@@ -250,72 +252,110 @@ export const RoutesAndPlanning = () => {
           selectedRoute={selectedRoute}
         ></ViewRoute>
       )}
-      <div className="routes-content">
-        <div className="section-header">
-          <h2>Distribution Routes & Schedules</h2>
+      {selectedMemeber && (
+        <ReAssignVolunteers
+          onClose={closeReassignVolunteers}
+          refreshData={fetchData}
+          team_members={selectedMemeber.team_members}
+          team_id={selectedMemeber.team_id}
+        ></ReAssignVolunteers>
+      )}
+      <div className="section-header">
+        <h2>Distribution Routes & Schedules</h2>
+        <button className="primary-btn" onClick={handleGenerateReport}>
+          Generate Report
+        </button>
+      </div>
+      {routeList.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            height: "100%",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span>No Request</span>
         </div>
-
-        <div className="routes-grid">
-          {routeList.map((route) => (
-            <div key={route.route_id} className="route-card">
-              <div className="route-header">
-                <h3>{route.route_name}</h3>
-                <span className={`status-badge ${route.status.toLowerCase()}`}>
-                  {route.status}
-                </span>
-              </div>
-              <div className="route-details">
-                <p>
-                  <strong>Route: </strong>
-                  {route.gathering_area} -{" "}
-                  {route.request?.use_different_end &&
-                  route.request.different_end_type === "barangay"
-                    ? route.request.barangay?.name
-                    : route.request?.evacuation_center?.name}{" "}
-                  {route.request?.lgu?.name}, Cebu
-                </p>
-                <p>
-                  <strong>Team: </strong>
-                  {route.assigned_team
-                    ? route.assigned_team.team_name
-                    : "No team have been assigned yet"}
-                </p>
-                <p>
-                  <strong>Schedule: </strong>
-                  {route.start_schedule && route.end_schedule
-                    ? `${formatDateTime(route.start_schedule)} - ${formatDateTime(route.end_schedule)}`
-                    : "No Schedule Yet"}
-                </p>
-                <div className="route-actions">
-                  {!route.gathering_area && (
-                    <button
-                      className="secondary-btn"
-                      onClick={() => openModal("finalize", route)}
-                    >
-                      Finalize Route Setup
-                    </button>
-                  )}
-                  {(route.status.toLowerCase() === "active" ||
-                    route.status.toLowerCase() === "in transit") && (
-                    <button
-                      className="secondary-btn"
-                      onClick={() => openModal("update", route)}
-                    >
-                      Update
-                    </button>
-                  )}
-                  <button
-                    className="primary-btn"
-                    onClick={() => openModal("view", route)}
-                  >
-                    View
-                  </button>
-                </div>
+      )}
+      <div className="requests-grid">
+        {routeList.map((route) => (
+          <div key={route.route_id} className="request-card">
+            <div className="request-header">
+              <div className="request-id">{route.route_name}</div>
+              <div className="request-badges">
+                <span className={`status-badge `}>{route.status}</span>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="request-content">
+              <p>
+                <strong>Route: </strong>
+                {route.gathering_area ?? "Unassigned"} -{" "}
+                {route.request?.use_different_end &&
+                route.request.different_end_type === "barangay"
+                  ? route.request.barangay?.name
+                  : route.request?.evacuation_center?.name}{" "}
+                {route.request?.lgu?.name}, Cebu
+              </p>
+              <p>
+                <strong>Team: </strong>
+                {route.assigned_team
+                  ? route.assigned_team.team_name
+                  : "No team have been assigned yet"}
+              </p>
+              <p>
+                <strong>Schedule: </strong>
+                {route.start_schedule && route.end_schedule
+                  ? `${formatDateTime(route.start_schedule)} - ${formatDateTime(route.end_schedule)}`
+                  : "No Schedule Yet"}
+              </p>
+              <div className="route-actions">
+                {!route.gathering_area && (
+                  <button
+                    className="action-btn"
+                    onClick={() => openModal("finalize", route)}
+                  >
+                    Finalize Route Setup
+                  </button>
+                )}
+                {(route.status.toLowerCase() === "active" ||
+                  route.status.toLowerCase() === "in transit") && (
+                  <button
+                    className="action-btn"
+                    onClick={() => openModal("update", route)}
+                  >
+                    Update
+                  </button>
+                )}
+                {route.assigned_team?.team_members?.some(
+                  (member) => member.status === "rejected",
+                ) && (
+                  <button
+                    className="action-btn"
+                    onClick={() =>
+                      openReassignVolunteers(
+                        route.assigned_team?.team_id ?? -1,
+                        route.assigned_team?.team_members ?? [],
+                      )
+                    }
+                  >
+                    Reassign Volunteers
+                  </button>
+                )}
+                <button
+                  className="action-btn"
+                  onClick={() => openModal("view", route)}
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 };

@@ -28,7 +28,7 @@ function isTokenExpired(token: string) {
 }
 
 export const API = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
   withCredentials: true,
 });
 
@@ -58,14 +58,13 @@ const PUBLIC_ENDPOINTS = [
 API.interceptors.request.use(async (config) => {
   console.log("Request URL:", config.url);
 
-  // ✅ Check if the request URL matches any public endpoint
-  const skipRefresh = PUBLIC_ENDPOINTS.some((endpoint) =>
+  // ✅ Check if request URL matches any public endpoint
+  const skipRequest = PUBLIC_ENDPOINTS.some((endpoint) =>
     config.url?.includes(endpoint)
   );
 
-  // If the request is public → skip token logic
-  if (skipRefresh) {
-    console.log("Skipping auth for public endpoint:", config.url);
+  if (skipRequest) {
+    console.log("Skipping auth for public endpoint or current page:", config.url);
     return config;
   }
 
@@ -75,17 +74,17 @@ API.interceptors.request.use(async (config) => {
   if (token === "" || isTokenExpired(token)) {
     try {
       console.log("Token expired or missing, refreshing...");
-      const res = await axios.post("http://localhost:8000/refresh", null, {
+      const res = await axios.post(API.defaults.baseURL + "/refresh", null, {
         withCredentials: true,
       });
       token = res.data.access_token;
+      console.log(`Token: ${token}`);
       setAccessToken(token);
       console.log("Token refreshed successfully");
     } catch (err) {
       console.error("Token refresh failed:", err);
       clearAccessToken();
-      // ✅ Optional: Redirect to login on refresh failure
-      // window.location.href = "/login";
+
       return Promise.reject(err);
     }
   }

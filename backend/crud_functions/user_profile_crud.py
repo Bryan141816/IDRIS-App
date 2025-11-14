@@ -48,6 +48,7 @@ class UserProfileCRUD:
                 .filter(UserProfile.user_id == user_id)
                 .first()
             )
+            print(user_profile)
             if not user_profile:
                 raise HTTPException(status_code=404, detail="User profile not found")
             return user_profile

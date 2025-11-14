@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any, Tuple, Set
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, select
+from collections import defaultdict
 from database import get_db
 from routers.auth.authentication import get_current_user_from_access_token as get_current_user
-
+from routers.GetUserId import GetUserId
 # ==== MODELS (match your schema) ====
 from models import (
     User,
@@ -16,6 +16,7 @@ from models import (
     LGURecords,
     BaranggayRecords,
     EvacuationCenter,
+    AdminUserProfile
 )
 
 router = APIRouter(prefix="/evacuation", tags=["Evacuation"])
@@ -274,3 +275,86 @@ def get_scope_address(
 ):
     # Same as /my_centers — returns LGU-wide scope and centers
     return get_my_centers(db=db, current_user=current_user)
+
+
+@router.get("/get_reports")
+def get_evacuation_data(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(GetUserId())
+):
+    # Base query
+    stmt = (
+        select(
+            LGURecords.lgu_name,
+            EvacuationCenter.name.label("evacuation_name"),
+            EvacuationCenter.capacity,
+            EvacuationCenter.occupied,
+            BaranggayRecords.name.label("barangay_name")
+        )
+        .join(
+            BaranggayRecords,
+            EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id
+        )
+        .join(LGURecords, LGURecords.id == BaranggayRecords.lgu_id)
+    )
+
+    # Check if user is an LGU
+    admin = (
+        db.query(AdminUserProfile)
+        .options(joinedload(AdminUserProfile.lgu))
+        .filter(AdminUserProfile.user_id == user_id)
+        .first()
+    )
+
+    lgu = admin.lgu if admin else None
+
+    # If LGU user, limit query to that LGU only
+    if lgu:
+        stmt = stmt.where(LGURecords.id == lgu.id)
+
+    result = db.execute(stmt).all()
+
+    # Group evacuations by LGU
+    lgu_dict = defaultdict(list)
+    for row in result:
+        lgu_dict[row.lgu_name].append({
+            "evacuation_name": row.evacuation_name,
+            "barangay_name": row.barangay_name,
+            "occupied": row.occupied,
+            "capacity": row.capacity,
+        })
+
+    # Build data list with per-LGU summaries
+    data_list = []
+    for lgu_name, evacuations in lgu_dict.items():
+        capacities = [e["capacity"] for e in evacuations]
+        occupied = [e["occupied"] for e in evacuations]
+
+        # Compute largest and smallest shelters
+        largest = max(evacuations, key=lambda x: x["capacity"])
+        smallest = min(evacuations, key=lambda x: x["capacity"])
+
+        data_list.append({
+            "lgu": lgu_name,
+            "evacuation_count": len(evacuations),  # only show for All LGU
+            "evacuation": evacuations,
+            "summary": {
+                "total_capacity": sum(capacities),
+                "total_occupied": sum(occupied),
+                "largest_shelter": f"{largest['evacuation_name']}, {largest['barangay_name']}",
+                "smallest_shelter": f"{smallest['evacuation_name']}, {smallest['barangay_name']}",
+            }
+        })
+
+    # Determine scope
+    scope_name = lgu.lgu_name if lgu else "All LGU"
+
+    # Final response
+    output = {
+        "scope": scope_name,
+        "total_count": len(result),
+        "data": data_list,
+    }
+
+    return output
+

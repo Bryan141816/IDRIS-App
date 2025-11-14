@@ -6,7 +6,7 @@ import ReportModal from "./reports_modal";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../../../UserContext";
 import { useUserRoleContext } from "../../../UserRoleContext";
-import { getAllVolunteers } from "../../../API_Handler/individual_volunter_handler";
+import { getAllVolunteers, getTopActiveVolunteers } from "../../../API_Handler/individual_volunter_handler";
 import { getAllOrganizationVolunteers } from "../../../API_Handler/organization_volunteer_handler";
 import { message, Empty } from "antd";
 import { MapPin, Calendar as CalendarIcon } from "lucide-react";
@@ -16,8 +16,7 @@ import {
 } from "../../../API_Handler/assignment_handler";
 import { API } from "../../../API_Handler/Axio_API_Handler";
 import Swal from "sweetalert2";
-import { getUserProfileByUserId } from '../../../API_Handler/user_profile_handler';
-
+import { getUserProfileByUserId } from "../../../API_Handler/user_profile_handler";
 interface IndividualVolunteerRead {
     volunteer_id: number;
     user_id: number;
@@ -41,6 +40,7 @@ interface IndividualVolunteerRead {
     tasks_joined?: number;
     active_tasks_joined?: number;
     events_joined?: number;
+    distributionprogramsjoined?: number;
     active_events_joined?: number;
     profile_image?: string | null;
 }
@@ -96,19 +96,16 @@ export default function IDRISDashboard() {
     >([]);
     const [hoveredDayKey, setHoveredDayKey] = useState<string | null>(null);
 
-    // NEW: current user's volunteer profiles (individual/org)
     const [myVolunteer, setMyVolunteer] =
         useState<IndividualVolunteerRead | null>(null);
     const [myOrgVolunteer, setMyOrgVolunteer] = useState<any | null>(null);
-    const [joining, setJoining] = useState<Record<number, boolean>>({}); // programId -> loading
+    const [joining, setJoining] = useState<Record<number, boolean>>({});
     const [isOrgCountModalOpen, setIsOrgCountModalOpen] = useState(false);
-    const [selectedProgram, setSelectedProgram] = useState<NewsAnnouncement | null>(null);
+    const [selectedProgram, setSelectedProgram] =
+        useState<NewsAnnouncement | null>(null);
     const [volunteerCount, setVolunteerCount] = useState<number>(1);
-    // ---------- helpers ----------
-    const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-
-
+    const API_BASE = API.defaults.baseURL;
 
     const toAbsoluteFileUrl = (p?: string) => {
         if (!p) return "";
@@ -135,15 +132,44 @@ export default function IDRISDashboard() {
             .replace(/\s+/g, " ")
             .trim();
 
-    // Top 3 “active volunteers”
-    const top3ActiveVolunteers = useMemo(() => {
-        const approved = volunteers.filter((v) => statusOf(v) === "approved");
-        const withCount = approved
-            .map((v) => ({ ...v, _events: Number(v.events_joined ?? 0) }))
-            .filter((v) => v._events > 0);
-        withCount.sort((a, b) => b._events - a._events);
-        return withCount.slice(0, 3);
-    }, [volunteers]);
+    const [top3ActiveVolunteers, setTop3ActiveVolunteers] = useState<any[]>([])
+    const [loadingTop3, setLoadingTop3] = useState(false)
+
+    useEffect(() => {
+        const fetchTop3 = async () => {
+            setLoadingTop3(true);
+            try {
+                const response = await API.get('/volunteer/top-active', {
+                    params: {
+                        limit: 10,  // ✅ Request more to ensure 3 after filtering
+                        includeprograms: true
+                    }
+                });
+
+                // Normalize and filter
+                const volunteers = (response.data.volunteers || [])
+                    .map((v: any) => ({
+                        ...v,
+                        firstname: v.firstname || v.first_name,
+                        middlename: v.middlename || v.middle_name,
+                        lastname: v.lastname || v.last_name,
+                        profileimage: v.profileimage || v.profile_image,
+                        totalPrograms: Number(v.totalPrograms ?? v.eventsjoined ?? 0),
+                    }))
+                    .filter((v: any) => v.totalPrograms > 0)  // ✅ Remove volunteers with 0 programs
+                    .slice(0, 3);  // ✅ Take only top 3
+
+                setTop3ActiveVolunteers(volunteers);
+            } catch (error) {
+                console.error('Error fetching top 3:', error);
+            } finally {
+                setLoadingTop3(false);
+            }
+        };
+
+        fetchTop3();
+    }, []);
+
 
     const getOrgLogoPath = (org: any): string | null => {
         if (
@@ -256,7 +282,6 @@ export default function IDRISDashboard() {
         [newsAnnouncements],
     );
 
-    // ---------- Fetch Programs ----------
     useEffect(() => {
         const toArray = (resp: any): any[] => {
             if (Array.isArray(resp)) return resp;
@@ -336,7 +361,6 @@ export default function IDRISDashboard() {
         fetchNewsAnnouncements();
     }, []);
 
-    // ---------- Calendar events derived from programs ----------
     const calendarEvents: CalendarEvent[] = useMemo(() => {
         return activeNewsAnnouncements.map((n) => {
             if (n.start_at && n.end_at) {
@@ -371,7 +395,6 @@ export default function IDRISDashboard() {
         });
     }, [activeNewsAnnouncements]);
 
-    // Map events to YYYY-MM-DD
     const eventsByDay = useMemo(() => {
         const map = new Map<string, CalendarEvent[]>();
 
@@ -411,7 +434,6 @@ export default function IDRISDashboard() {
         return map;
     }, [calendarEvents]);
 
-    // Month events list (for “Deployment Schedules”)
     const monthEvents = useMemo(() => {
         const start = startOfMonth(viewDate);
         const end = endOfMonth(viewDate);
@@ -433,7 +455,6 @@ export default function IDRISDashboard() {
             setVolunteerStatus("");
         }
     }, [myVolunteer, myOrgVolunteer, selectedVolunteer]);
-    console.log("volunteer status:", myVolunteer?.status)
 
     const fetchVolunteers = async () => {
         try {
@@ -463,57 +484,66 @@ export default function IDRISDashboard() {
         }
     };
 
-    const [joinedProgramIds, setJoinedProgramIds] = useState<Set<number>>(new Set());
+    const [joinedProgramIds, setJoinedProgramIds] = useState<Set<number>>(
+        new Set(),
+    );
 
     const fetchJoinedPrograms = async () => {
         if (!myVolunteer && !myOrgVolunteer) return;
 
         try {
-            const volunteerId = myVolunteer?.volunteer_id || myOrgVolunteer?.volunteer_id;
+            const volunteerId =
+                myVolunteer?.volunteer_id || myOrgVolunteer?.volunteer_id;
             if (!volunteerId) {
-                console.log("❌ No volunteer ID found");
                 return;
             }
 
-            console.log("🔍 Fetching joined programs for volunteer ID:", volunteerId);
-            console.log("Volunteer type:", myVolunteer ? "Individual" : "Organization");
+
 
             const allPrograms = await listPrograms();
-            console.log("📋 All programs:", allPrograms);
+
 
             const joinedIds = new Set<number>();
 
             for (const program of allPrograms) {
-                console.log(`\n--- Checking Program ID: ${program.id} - "${program.title}" ---`);
+                console.log(
+                    `\n--- Checking Program ID: ${program.id} - "${program.title}" ---`,
+                );
                 console.log("Program data:", program);
                 console.log("Assignments:", program.assignments);
-                console.log("Assigned volunteer IDs:", program.assigned_volunteer_ids || program.assigned_volunteer_ids);
+                console.log(
+                    "Assigned volunteer IDs:",
+                    program.assigned_volunteer_ids || program.assigned_volunteer_ids,
+                );
 
-                // Check assigned_volunteer_ids array (both naming conventions)
-                const assignedIds = program.assigned_volunteer_ids || program.assigned_volunteer_ids || [];
+                const assignedIds =
+                    program.assigned_volunteer_ids ||
+                    program.assigned_volunteer_ids ||
+                    [];
                 console.log("Checking assignedIds array:", assignedIds);
 
                 if (Array.isArray(assignedIds) && assignedIds.includes(volunteerId)) {
-                    console.log("✅ Found in assigned_volunteer_ids!");
+
                     joinedIds.add(program.id);
                     continue;
                 }
 
-                // Check through assignments array (works for both types)
                 if (program.assignments && Array.isArray(program.assignments)) {
-                    console.log("Checking assignments array, length:", program.assignments.length);
+                    console.log(
+                        "Checking assignments array, length:",
+                        program.assignments.length,
+                    );
 
                     for (const assignment of program.assignments) {
                         console.log("Assignment data:", assignment);
 
                         if (myVolunteer) {
-                            // Check all possible field names for individual volunteers
-                            const individualId =
-                                assignment.individual_volunteer_id ||
-                                assignment.individualvolunteerid ||
-                                assignment.individualVolunteerId;
+                            const individualId = assignment.individual_volunteer_id;
 
-                            console.log("Individual volunteer ID in assignment:", individualId);
+                            console.log(
+                                "Individual volunteer ID in assignment:",
+                                individualId,
+                            );
 
                             if (individualId === volunteerId) {
                                 console.log("✅ Found in assignments as individual volunteer!");
@@ -521,16 +551,14 @@ export default function IDRISDashboard() {
                                 break;
                             }
                         } else if (myOrgVolunteer) {
-                            // Check all possible field names for organization volunteers
-                            const orgId =
-                                assignment.organization_volunteer_id ||
-                                assignment.organizationvolunteerid ||
-                                assignment.organizationVolunteerId;
+                            const orgId = assignment.organization_volunteer_id;
 
                             console.log("Organization volunteer ID in assignment:", orgId);
 
                             if (orgId === volunteerId) {
-                                console.log("✅ Found in assignments as organization volunteer!");
+                                console.log(
+                                    "✅ Found in assignments as organization volunteer!",
+                                );
                                 joinedIds.add(program.id);
                                 break;
                             }
@@ -546,11 +574,8 @@ export default function IDRISDashboard() {
         }
     };
 
-
-
-
     useEffect(() => {
-        // try fetch "my"  individual/org volunteer profiles (requires auth)
+
         const fetchMyProfiles = async () => {
             try {
                 const iv = await API.get("/volunteer/my_profile");
@@ -573,16 +598,14 @@ export default function IDRISDashboard() {
 
         fetchVolunteers();
         fetchMyProfiles();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, []);
 
-    // Call fetchJoinedPrograms when volunteer profiles are loaded
     useEffect(() => {
         if (myVolunteer || myOrgVolunteer) {
             fetchJoinedPrograms();
         }
     }, [myVolunteer, myOrgVolunteer]);
-
 
     const totalVolunteersNumber = useMemo(() => {
         const ind = volunteers.filter((v) => statusOf(v) === "approved").length;
@@ -610,7 +633,8 @@ export default function IDRISDashboard() {
     const openReportModal = (): void => setIsReportsModalOpen(true);
     const closeReportModal = (): void => setIsReportsModalOpen(false);
     const isOpsAdmin =
-        userType === "admin" && userRoles.includes("operations admin") || userRoles.includes("superadmin");
+        (userType === "admin" && userRoles.includes("operations admin")) ||
+        userRoles.includes("superadmin");
 
     useEffect(() => {
         const savedDate = localStorage.getItem("viewDate");
@@ -673,8 +697,6 @@ export default function IDRISDashboard() {
         return days;
     };
 
-
-
     const isToday = (d: number) =>
         d === today.getDate() &&
         viewDate.getMonth() === today.getMonth() &&
@@ -693,7 +715,7 @@ export default function IDRISDashboard() {
     const formattedDate = formatDate(currentDate);
     const days = generateCalendarDays();
 
-    // ---- Derived: Approved Organizations for "Accredited Partners" ----
+
     const approvedPartners = useMemo(
         () =>
             organizationVolunteers.filter(
@@ -702,27 +724,34 @@ export default function IDRISDashboard() {
         [organizationVolunteers],
     );
 
-    // ---------- JOIN LOGIC ----------
+
     const canJoin = (n: NewsAnnouncement) =>
         n.lifecycle !== "finished" && n.currentVolunteers < n.maxVolunteers;
 
-    const joinProgram = async (n: NewsAnnouncement, orgVolunteerCount?: number) => {
+    const joinProgram = async (
+        n: NewsAnnouncement,
+        orgVolunteerCount?: number,
+    ) => {
         if (!canJoin(n)) return;
 
-        const iv = myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
-        const ov = myOrgVolunteer && statusOf(myOrgVolunteer) === "approved" ? myOrgVolunteer : null;
+        const iv =
+            myVolunteer && statusOf(myVolunteer) === "approved" ? myVolunteer : null;
+        const ov =
+            myOrgVolunteer && statusOf(myOrgVolunteer) === "approved"
+                ? myOrgVolunteer
+                : null;
 
         if (!iv && !ov) {
             Swal.fire({
                 icon: "warning",
                 title: "Volunteer Registration Required",
                 text: "You must be a registered volunteer to join programs. Please register as a volunteer first.",
-                confirmButtonText: "OK"
+                confirmButtonText: "OK",
             });
             return;
         }
 
-        // If organization volunteer and no count provided, show modal
+
         if (ov && !iv && !orgVolunteerCount) {
             setSelectedProgram(n);
             setVolunteerCount(1);
@@ -730,14 +759,16 @@ export default function IDRISDashboard() {
             return;
         }
 
-        // 1. Fetch the programs already joined by the volunteer
+
         let joinedPrograms: any[] = [];
         try {
             const volunteerId = iv?.volunteer_id || ov?.volunteer_id;
             const response = await API.get(`/assignments/volunteer/${volunteerId}`);
 
             joinedPrograms = Array.isArray(response.data)
-                ? response.data.map((assignment: any) => assignment.program || assignment)
+                ? response.data.map(
+                    (assignment: any) => assignment.program || assignment,
+                )
                 : [];
 
             console.log("Joined programs:", joinedPrograms);
@@ -745,9 +776,8 @@ export default function IDRISDashboard() {
             console.error("Failed to fetch joined programs:", error);
         }
 
-        // 2. Check if already joined THIS specific program
         const alreadyJoinedThisProgram = joinedPrograms.some(
-            (program: any) => (program.id || program.program_id) === n.id
+            (program: any) => (program.id || program.program_id) === n.id,
         );
 
         if (alreadyJoinedThisProgram) {
@@ -760,7 +790,7 @@ export default function IDRISDashboard() {
             return;
         }
 
-        // 3. Check volunteer availability against program dates
+
         const volunteerAvailability = iv?.availability || ov?.availability || "";
 
         if (volunteerAvailability && (n.start_at || n.end_at || n.task_date)) {
@@ -781,9 +811,22 @@ export default function IDRISDashboard() {
                     ? new Date(n.task_date + "T17:00:00")
                     : null;
 
-            if (programStart && programEnd && !isNaN(programStart.getTime()) && !isNaN(programEnd.getTime())) {
+            if (
+                programStart &&
+                programEnd &&
+                !isNaN(programStart.getTime()) &&
+                !isNaN(programEnd.getTime())
+            ) {
                 const programDays: string[] = [];
-                const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+                const dayNames = [
+                    "sunday",
+                    "monday",
+                    "tuesday",
+                    "wednesday",
+                    "thursday",
+                    "friday",
+                    "saturday",
+                ];
 
                 let currentDate = new Date(programStart);
                 const endDate = new Date(programEnd);
@@ -796,11 +839,13 @@ export default function IDRISDashboard() {
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
 
-                const unavailableDays = programDays.filter(day => !availableDays.includes(day));
+                const unavailableDays = programDays.filter(
+                    (day) => !availableDays.includes(day),
+                );
 
                 if (unavailableDays.length > 0) {
                     const formattedUnavailable = unavailableDays
-                        .map(day => day.charAt(0).toUpperCase() + day.slice(1))
+                        .map((day) => day.charAt(0).toUpperCase() + day.slice(1))
                         .join(", ");
 
                     Swal.fire({
@@ -820,11 +865,15 @@ export default function IDRISDashboard() {
             }
         }
 
-        // 4. Check for overlapping programs
+
         if (joinedPrograms.length > 0 && (n.start_at || n.end_at || n.task_date)) {
             for (const program of joinedPrograms) {
-                const programStart = new Date(program.start_at || program.startat || program.task_date || "");
-                const programEnd = new Date(program.end_at || program.endat || program.task_date || "");
+                const programStart = new Date(
+                    program.start_at || program.startat || program.task_date || "",
+                );
+                const programEnd = new Date(
+                    program.end_at || program.endat || program.task_date || "",
+                );
 
                 const newProgramStart = n.start_at
                     ? new Date(n.start_at)
@@ -839,11 +888,14 @@ export default function IDRISDashboard() {
                         : null;
 
                 if (
-                    newProgramStart && newProgramEnd &&
-                    !isNaN(programStart.getTime()) && !isNaN(programEnd.getTime())
+                    newProgramStart &&
+                    newProgramEnd &&
+                    !isNaN(programStart.getTime()) &&
+                    !isNaN(programEnd.getTime())
                 ) {
                     const hasOverlap =
-                        (newProgramStart <= programEnd && newProgramStart >= programStart) ||
+                        (newProgramStart <= programEnd &&
+                            newProgramStart >= programStart) ||
                         (newProgramEnd >= programStart && newProgramEnd <= programEnd) ||
                         (newProgramStart <= programStart && newProgramEnd >= programEnd);
 
@@ -852,7 +904,7 @@ export default function IDRISDashboard() {
                         const conflictDate = fmtRange(
                             program.start_at || program.startat,
                             program.end_at || program.endat,
-                            program.task_date || program.taskdate
+                            program.task_date || program.taskdate,
                         );
 
                         Swal.fire({
@@ -872,34 +924,40 @@ export default function IDRISDashboard() {
             }
         }
 
-        // 5. Check for skill match - ONLY FOR INDIVIDUAL VOLUNTEERS
-        if (iv) { // ✅ Only check skills for individual volunteers
+        if (iv) {
             const programSkills = n.skills || [];
             const volunteerSkills = iv.skills || [];
 
             const normalizedProgramSkills = Array.isArray(programSkills)
                 ? programSkills
                 : typeof programSkills === "string"
-                    ? programSkills.split(",").map((s: string) => s.trim()).filter(Boolean)
+                    ? (programSkills as string)
+                        .split(",")
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
                     : [];
 
             const normalizedVolunteerSkills = Array.isArray(volunteerSkills)
                 ? volunteerSkills
                 : typeof volunteerSkills === "string"
-                    ? volunteerSkills.split(",").map((s: string) => s.trim()).filter(Boolean)
+                    ? (volunteerSkills as string)
+                        .split(",")
+                        .map((s: string) => s.trim())
+                        .filter(Boolean)
                     : [];
 
             if (normalizedProgramSkills.length > 0) {
                 const skillMatch = normalizedProgramSkills.some((skill: string) =>
-                    normalizedVolunteerSkills.some((vSkill: string) =>
-                        vSkill.toLowerCase().trim() === skill.toLowerCase().trim()
-                    )
+                    normalizedVolunteerSkills.some(
+                        (vSkill: string) =>
+                            vSkill.toLowerCase().trim() === skill.toLowerCase().trim(),
+                    ),
                 );
 
                 if (!skillMatch) {
                     Swal.fire({
                         title: "Skill Mismatch",
-                        text: `Your skills do not match the requirements for this program.\n\nRequired: ${normalizedProgramSkills.join(', ')}\nYour skills: ${normalizedVolunteerSkills.join(', ')}`,
+                        text: `Your skills do not match the requirements for this program.\n\nRequired: ${normalizedProgramSkills.join(", ")}\nYour skills: ${normalizedVolunteerSkills.join(", ")}`,
                         icon: "error",
                         confirmButtonText: "OK",
                     });
@@ -907,9 +965,7 @@ export default function IDRISDashboard() {
                 }
             }
         }
-        // ✅ Organization volunteers skip skill check entirely
 
-        // 6. All checks passed - proceed with joining
         try {
             setJoining((prev) => ({ ...prev, [n.id]: true }));
 
@@ -943,14 +999,21 @@ export default function IDRISDashboard() {
                     x.id === n.id
                         ? {
                             ...x,
-                            currentVolunteers: Math.min(x.currentVolunteers + (orgVolunteerCount || 1), x.maxVolunteers),
-                            volunteersNeeded: Math.max(x.volunteersNeeded - (orgVolunteerCount || 1), 0),
+                            currentVolunteers: Math.min(
+                                x.currentVolunteers + (orgVolunteerCount || 1),
+                                x.maxVolunteers,
+                            ),
+                            volunteersNeeded: Math.max(
+                                x.volunteersNeeded - (orgVolunteerCount || 1),
+                                0,
+                            ),
                         }
-                        : x
-                )
+                        : x,
+                ),
             );
         } catch (e: any) {
-            const detail = e?.response?.data?.detail || e?.message || "Failed to join this event";
+            const detail =
+                e?.response?.data?.detail || e?.message || "Failed to join this event";
 
             if (e?.response?.status === 409) {
                 Swal.fire({
@@ -979,7 +1042,7 @@ export default function IDRISDashboard() {
         }
     };
 
-    // Handler for org volunteer count submission
+
     const handleOrgCountSubmit = () => {
         if (!selectedProgram) return;
 
@@ -992,7 +1055,10 @@ export default function IDRISDashboard() {
             return;
         }
 
-        if (volunteerCount > (selectedProgram.maxVolunteers - selectedProgram.currentVolunteers)) {
+        if (
+            volunteerCount >
+            selectedProgram.maxVolunteers - selectedProgram.currentVolunteers
+        ) {
             Swal.fire({
                 icon: "error",
                 title: "Exceeds Available Slots",
@@ -1008,7 +1074,6 @@ export default function IDRISDashboard() {
     if (loading) {
         return <div>Loading...</div>;
     }
-
 
     return (
         <div className="dashboard-container">
@@ -1032,22 +1097,29 @@ export default function IDRISDashboard() {
                                     >
                                         Manage Applicants
                                     </button>
-                                ) : (myVolunteer?.status === "submitted" || myVolunteer?.status === "verifying" ||
-                                    myOrgVolunteer?.status === "submitted" || myOrgVolunteer?.status === "verifying") ? (
+                                ) : myVolunteer?.status === "submitted" ||
+                                    myVolunteer?.status === "verifying" ||
+                                    myOrgVolunteer?.status === "submitted" ||
+                                    myOrgVolunteer?.status === "verifying" ? (
                                     <button
                                         className="manage-btn"
                                         style={{ fontSize: "88%" }}
                                         onClick={() =>
-                                            navigate("/volunteer_management/track_volunteer_application")
+                                            navigate(
+                                                "/volunteer_management/track_volunteer_application",
+                                            )
                                         }
                                     >
                                         Track Volunteer Application
                                     </button>
-                                ) : (myVolunteer?.status === "approved" || myOrgVolunteer?.status === "approved") ? (
+                                ) : myVolunteer?.status === "approved" ||
+                                    myOrgVolunteer?.status === "approved" ? (
                                     <button
                                         className="manage-btn"
                                         style={{ fontSize: "90%" }}
-                                        onClick={() => navigate("/volunteer_management/volunteer_profiles")}
+                                        onClick={() =>
+                                            navigate("/volunteer_management/volunteer_profiles")
+                                        }
                                     >
                                         Volunteer Profile
                                     </button>
@@ -1060,31 +1132,51 @@ export default function IDRISDashboard() {
                                         Become a Volunteer
                                     </button>
                                 )}
-
-
                             </div>
 
                             {isOrgCountModalOpen && (
-                                <div className="modal-overlay" onClick={() => setIsOrgCountModalOpen(false)}>
-                                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+                                <div
+                                    className="modal-overlay"
+                                    onClick={() => setIsOrgCountModalOpen(false)}
+                                >
+                                    <div
+                                        className="modal-content"
+                                        onClick={(e) => e.stopPropagation()}
+                                        style={{ maxWidth: "400px" }}
+                                    >
                                         <h2 style={{ marginBottom: "1rem", color: "#749ab6" }}>
                                             How many volunteers?
                                         </h2>
                                         <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-                                            As an organization, please specify how many volunteers you would like to add to this program.
+                                            As an organization, please specify how many volunteers you
+                                            would like to add to this program.
                                         </p>
 
                                         <div style={{ marginBottom: "1.5rem" }}>
-                                            <label htmlFor="volunteerCount" style={{ display: "block", marginBottom: "0.5rem", fontWeight: "500" }}>
+                                            <label
+                                                htmlFor="volunteerCount"
+                                                style={{
+                                                    display: "block",
+                                                    marginBottom: "0.5rem",
+                                                    fontWeight: "500",
+                                                }}
+                                            >
                                                 Number of Volunteers:
                                             </label>
                                             <input
                                                 id="volunteerCount"
                                                 type="number"
                                                 min="1"
-                                                max={selectedProgram ? selectedProgram.maxVolunteers - selectedProgram.currentVolunteers : 1}
+                                                max={
+                                                    selectedProgram
+                                                        ? selectedProgram.maxVolunteers -
+                                                        selectedProgram.currentVolunteers
+                                                        : 1
+                                                }
                                                 value={volunteerCount}
-                                                onChange={(e) => setVolunteerCount(parseInt(e.target.value) || 1)}
+                                                onChange={(e) =>
+                                                    setVolunteerCount(parseInt(e.target.value) || 1)
+                                                }
                                                 style={{
                                                     width: "100%",
                                                     padding: "0.5rem",
@@ -1093,12 +1185,28 @@ export default function IDRISDashboard() {
                                                     fontSize: "1rem",
                                                 }}
                                             />
-                                            <p style={{ marginTop: "0.5rem", fontSize: "0.875rem", color: "#666" }}>
-                                                Available slots: {selectedProgram ? selectedProgram.maxVolunteers - selectedProgram.currentVolunteers : 0}
+                                            <p
+                                                style={{
+                                                    marginTop: "0.5rem",
+                                                    fontSize: "0.875rem",
+                                                    color: "#666",
+                                                }}
+                                            >
+                                                Available slots:{" "}
+                                                {selectedProgram
+                                                    ? selectedProgram.maxVolunteers -
+                                                    selectedProgram.currentVolunteers
+                                                    : 0}
                                             </p>
                                         </div>
 
-                                        <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end" }}>
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                gap: "1rem",
+                                                justifyContent: "flex-end",
+                                            }}
+                                        >
                                             <button
                                                 onClick={() => setIsOrgCountModalOpen(false)}
                                                 style={{
@@ -1178,22 +1286,27 @@ export default function IDRISDashboard() {
                                         ) : (
                                             top3ActiveVolunteers.map((v) => {
                                                 const name = fullName(v) || "Unnamed Volunteer";
-                                                const programs = Number(v.events_joined ?? 0);
 
-                                                // ✅ CHANGE: Get profile_image directly from volunteer object
-                                                const picUrl = v.profile_image ? toAbsoluteFileUrl(v.profile_image) : null;
+                                                // ✅ CHANGE THIS:
+                                                const programs = Number(v.totalPrograms ?? v.eventsjoined ?? 0);
+                                                // OLD: const programs = Number(v.events_joined ?? 0);
+
+                                                const picUrl = v.profile_image
+                                                    ? toAbsoluteFileUrl(v.profile_image)
+                                                    : null;
 
                                                 return (
-                                                    <div key={v.volunteer_id} className="volunteer-item">
+                                                    // ✅ CHANGE THIS TOO:
+                                                    <div key={v.volunteerid} className="volunteer-item">
+                                                        {/* OLD: key={v.volunteer_id} */}
+
                                                         {picUrl ? (
-                                                            <img
-                                                                src={picUrl}
-                                                                alt={name}
-                                                                className="volunteer-avatar"
-                                                            />
+                                                            <img src={picUrl} alt={name} className="volunteer-avatar" />
                                                         ) : (
-                                                            <div className="volunteer-avatar placeholder" aria-label={`${name} placeholder`}>
-                                                                <span className="initial-avatar">{getInitial(name)}</span>
+                                                            <div className="volunteer-avatar placeholder">
+                                                                <span className="initial-avatar">
+                                                                    {getInitial(name)}
+                                                                </span>
                                                             </div>
                                                         )}
                                                         <div className="volunteer-info">
@@ -1207,6 +1320,7 @@ export default function IDRISDashboard() {
                                             })
                                         )}
                                     </div>
+
                                 </div>
 
                                 {/* Accredited Partners (dynamic) */}
@@ -1540,23 +1654,26 @@ export default function IDRISDashboard() {
                                                         </div>
 
                                                         {/* JOIN BUTTON */}
-                                                        {!isOpsAdmin && (
+                                                        {!isOpsAdmin &&
                                                             (() => {
-                                                                const alreadyJoined = joinedProgramIds.has(item.id);
-                                                                const disabled = !canJoin(item) || !!joining[item.id] || alreadyJoined;
+                                                                const alreadyJoined = joinedProgramIds.has(
+                                                                    item.id,
+                                                                );
+                                                                const disabled =
+                                                                    !canJoin(item) ||
+                                                                    !!joining[item.id] ||
+                                                                    alreadyJoined;
 
                                                                 const buttonLabel = alreadyJoined
                                                                     ? "Already Joined"
                                                                     : item.lifecycle === "finished"
                                                                         ? "Closed"
-                                                                        : item.currentVolunteers >= item.maxVolunteers
+                                                                        : item.currentVolunteers >=
+                                                                            item.maxVolunteers
                                                                             ? "Full"
                                                                             : joining[item.id]
                                                                                 ? "Joining..."
                                                                                 : "Join";
-
-                                                                // ✅ ADD: Debug logging
-                                                                console.log(`Program ${item.id} - Already Joined:`, alreadyJoined);
 
                                                                 return (
                                                                     <button
@@ -1577,18 +1694,16 @@ export default function IDRISDashboard() {
                                                                         {buttonLabel}
                                                                     </button>
                                                                 );
-                                                            })()
-                                                        )}
-
-
+                                                            })()}
                                                     </div>
-
 
                                                     {/* Assigned Capacity progress + Needed */}
                                                     <div className="mb-1">
                                                         {/* Assigned count */}
                                                         <div className="flex justify-between text-sm mb-1">
-                                                            <span className="text-gray-700">Volunteers Assigned</span>
+                                                            <span className="text-gray-700">
+                                                                Volunteers Assigned
+                                                            </span>
                                                             <span
                                                                 className={
                                                                     item.currentVolunteers >= item.maxVolunteers
@@ -1613,31 +1728,31 @@ export default function IDRISDashboard() {
                                                             <span className="text-gray-700">Needed</span>
                                                             <span
                                                                 className={
-                                                                    item.volunteersNeeded === 0 ? "text-green-600" : "text-gray-700"
+                                                                    item.volunteersNeeded === 0
+                                                                        ? "text-green-600"
+                                                                        : "text-gray-700"
                                                                 }
                                                             >
                                                                 {item.volunteersNeeded}
                                                             </span>
                                                         </div>
                                                     </div>
-
-                                                    {/* Required Skills - Exactly like Volunteer Assignment */}
                                                     {(() => {
-                                                        // Normalize skills to array (exact same logic as assignment page)
+
                                                         const reqSkills = Array.isArray(item.skills)
                                                             ? item.skills
                                                             : item.skills
-                                                                ? String(item.skills).split(",").map((s: string) => s.trim()).filter(Boolean)
+                                                                ? String(item.skills)
+                                                                    .split(",")
+                                                                    .map((s: string) => s.trim())
+                                                                    .filter(Boolean)
                                                                 : [];
-
-                                                        // Debug logging
-                                                        console.log("Program:", item.title);
-                                                        console.log("Raw skills:", item.skills);
-                                                        console.log("Normalized skills:", reqSkills);
 
                                                         return reqSkills.length > 0 ? (
                                                             <div className="mb-3">
-                                                                <p className="text-sm font-medium text-gray-700 mb-1">Required Skills</p>
+                                                                <p className="text-sm font-medium text-gray-700 mb-1">
+                                                                    Required Skills
+                                                                </p>
                                                                 <div className="flex flex-wrap gap-1">
                                                                     {reqSkills.map((skill) => (
                                                                         <span
@@ -1651,7 +1766,6 @@ export default function IDRISDashboard() {
                                                             </div>
                                                         ) : null;
                                                     })()}
-
                                                 </div>
                                             );
                                         })

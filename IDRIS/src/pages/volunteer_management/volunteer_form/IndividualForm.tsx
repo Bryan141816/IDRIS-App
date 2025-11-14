@@ -188,15 +188,6 @@ const IndividualForm: React.FC = () => {
         return Promise.resolve();
     };
 
-    const checkIfAlreadySubmitted = async (user_id: number): Promise<boolean> => {
-        try {
-            const response = await getVolunteerByUserId(user_id); // Your API function to check volunteer
-            return response ? true : false; // If response exists, user already submitted
-        } catch (error) {
-            console.error("Error checking submission:", error);
-            return false;
-        }
-    };
 const { email } = useUserContext();
     useEffect(() => {
   async function loadUserProfile() {
@@ -249,9 +240,6 @@ const { email } = useUserContext();
             <div className="breadcrumb-section">
                 <h2 className="page-title">Individual Application</h2>
                 <Breadcrumb>
-                    <Breadcrumb.Item href="#">
-                        <span>Home</span>
-                    </Breadcrumb.Item>
                     <Breadcrumb.Item>
                         <Link to="/volunteer_management/volunteer_dashboard">
                             Volunteer Dashboard

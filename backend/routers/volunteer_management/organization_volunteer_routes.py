@@ -187,7 +187,7 @@ async def update_organization_volunteer_status(
             "title": "Volunteer application approved",
             # ✅ Use organization_name or contact_person_name instead of first_name
             "message": f"Hi {ov.organization_name}, your organization volunteer application (ID {ov.volunteer_id}) is approved. You can now volunteer.",
-            "url_redirect": "/volunteer/my_profile",
+            "url_redirect": "/volunteer_management/volunteer_profiles",
             "isRead": False,
             "date": now_ph,
         }

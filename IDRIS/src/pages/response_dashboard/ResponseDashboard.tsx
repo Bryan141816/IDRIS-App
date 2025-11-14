@@ -25,7 +25,7 @@ import { API } from "../../API_Handler/Axio_API_Handler";
 
 interface MapPinBase {
   id: string;
-  type: "demand";
+  type: string;
   label: string;
   lat: number;
   lng: number;
@@ -42,9 +42,14 @@ interface DemandPin extends MapPinBase {
   priority: "low" | "medium" | "high" | "urgent";
   submitted_at: string;
   needs: {
-    id: number;
-    need: string;
-    amount: number | "critical";
+    type: string;
+    updated_at: string;
+    items: {
+      id: number;
+      need: string;
+      amount: number | "critical";
+      unit: string;
+    }[];
   }[];
 }
 
@@ -133,16 +138,17 @@ interface ReportData {
   };
 }
 
-const getIconByStatus = (status: DemandPin["status"]) => {
+const getIconByStatus = (type: DemandPin["type"]) => {
+  console.log(type);
   let iconUrl = "";
   let iconColor = "#6c757d"; // Default gray
 
-  if (status === "no response") {
-    iconColor = "#dc3545"; // Red for urgent/no response
-  } else if (status === "responded") {
+  if (type === "relief") {
     iconColor = "#ffc107"; // Yellow for responded
-  } else if (status === "completed") {
+  } else if (type === "procurement") {
     iconColor = "#28a745"; // Green for completed
+  } else if (type === "both") {
+    iconColor = "#2D00A9";
   }
 
   // Create a custom pin-shaped marker
@@ -182,7 +188,14 @@ const getIconByStatus = (status: DemandPin["status"]) => {
     popupAnchor: [0, -38], // Popup appears above the pin
   });
 };
-
+function formatShortDate(isoString: string) {
+  const date = new Date(isoString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 const FitBounds: React.FC<{ markers: MapPin[] }> = ({ markers }) => {
   const map = useMap();
 
@@ -216,7 +229,7 @@ const MapView: React.FC<{
         <Marker
           key={point.id}
           position={[point.lat, point.lng]}
-          icon={getIconByStatus(point.status)}
+          icon={getIconByStatus(point.type)}
         >
           <Popup>
             <div style={{ minWidth: "200px" }}>
@@ -238,23 +251,23 @@ const MapView: React.FC<{
                   {point.status}
                 </span>
               </p>
-              <p style={{ margin: "4px 0", fontSize: "0.9rem" }}>
-                <strong>Priority:</strong>{" "}
-                <span
-                  style={{
-                    color:
-                      point.priority === "urgent"
-                        ? "#dc3545"
-                        : point.priority === "high"
-                          ? "#fd7e14"
-                          : point.priority === "medium"
-                            ? "#ffc107"
-                            : "#28a745",
-                  }}
-                >
-                  {point.priority}
-                </span>
-              </p>
+              {/* <p style={{ margin: "4px 0", fontSize: "0.9rem" }}> */}
+              {/*   <strong>Priority:</strong>{" "} */}
+              {/*   <span */}
+              {/*     style={{ */}
+              {/*       color: */}
+              {/*         point.priority === "urgent" */}
+              {/*           ? "#dc3545" */}
+              {/*           : point.priority === "high" */}
+              {/*             ? "#fd7e14" */}
+              {/*             : point.priority === "medium" */}
+              {/*               ? "#ffc107" */}
+              {/*               : "#28a745", */}
+              {/*     }} */}
+              {/*   > */}
+              {/*     {point.priority} */}
+              {/*   </span> */}
+              {/* </p> */}
               <p style={{ margin: "4px 0", fontSize: "0.9rem" }}>
                 <strong>Address:</strong> {point.address}
               </p>
@@ -264,23 +277,54 @@ const MapView: React.FC<{
               </p>
               {point.needs && point.needs.length > 0 && (
                 <div style={{ marginTop: "8px" }}>
-                  <strong style={{ fontSize: "0.9rem" }}>Needs:</strong>
-                  <ul
-                    style={{
-                      margin: "4px 0",
-                      paddingLeft: "16px",
-                      fontSize: "0.8rem",
-                    }}
-                  >
-                    {point.needs.slice(0, 3).map((need) => (
-                      <li key={need.id}>
-                        {need.need}: {need.amount}
-                      </li>
-                    ))}
-                    {point.needs.length > 3 && (
-                      <li>... and {point.needs.length - 3} more</li>
-                    )}
-                  </ul>
+                  {point.needs && point.needs.length > 0 && (
+                    <div style={{ marginTop: "8px" }}>
+                      <strong style={{ fontSize: "0.9rem" }}>Needs:</strong>
+                      {point.needs.map((need) => (
+                        <div key={need.type} style={{ marginTop: "4px" }}>
+                          {/* Type + Updated At */}
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "0.9rem",
+                              fontWeight: 500,
+                            }}
+                          >
+                            <span>{need.type.toUpperCase()}</span>
+                            <span>{formatShortDate(need.updated_at)}</span>
+                          </div>
+
+                          {/* Items under this need */}
+                          <ul
+                            style={{
+                              margin: "2px 0 0 16px",
+                              padding: 0,
+                              listStyleType: "disc",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            {need.items.map((item) => (
+                              <li
+                                key={item.id}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  padding: "2px 0",
+                                  borderBottom: "1px dashed #ccc", // optional separator
+                                }}
+                              >
+                                <span>{item.need}</span>
+                                <span>
+                                  {item.amount} {item.unit}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -288,124 +332,91 @@ const MapView: React.FC<{
         </Marker>
       ))}
     </MapContainer>
-    {/**/}
-    {/* }
-    {/* <div */}
-    {/*   style={{ */}
-    {/*     position: "absolute", */}
-    {/*     bottom: "10px", */}
-    {/*     right: "10px", */}
-    {/*     backgroundColor: "rgba(255, 255, 255, 0.95)", */}
-    {/*     backdropFilter: "blur(8px)", */}
-    {/*     padding: "12px 16px", */}
-    {/*     borderRadius: "8px", */}
-    {/*     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)", */}
-    {/*     border: "1px solid rgba(0, 0, 0, 0.1)", */}
-    {/*     zIndex: 1000, */}
-    {/*     fontSize: "0.85rem", */}
-    {/*     minWidth: "160px", */}
-    {/*   }} */}
-    {/* > */}
-    {/*   <div */}
-    {/*     style={{ */}
-    {/*       fontWeight: "600", */}
-    {/*       marginBottom: "8px", */}
-    {/*       color: "#495057", */}
-    {/*       fontSize: "0.9rem", */}
-    {/*       display: "flex", */}
-    {/*       alignItems: "center", */}
-    {/*       gap: "6px", */}
-    {/*     }} */}
-    {/*   > */}
-    {/*     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: "#6c757d" }} /> */}
-    {/*     Status Legend */}
-    {/*   </div> */}
-    {/**/}
-    {/*   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}> */}
-    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
-    {/*       <div */}
-    {/*         style={{ */}
-    {/*           width: "12px", */}
-    {/*           height: "12px", */}
-    {/*           borderRadius: "50%", */}
-    {/*           backgroundColor: "#dc3545", */}
-    {/*           border: "2px solid white", */}
-    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
-    {/*           flexShrink: 0, */}
-    {/*         }} */}
-    {/*       ></div> */}
-    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
-    {/*         No Response */}
-    {/*       </span> */}
-    {/*     </div> */}
-    {/**/}
-    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
-    {/*       <div */}
-    {/*         style={{ */}
-    {/*           width: "12px", */}
-    {/*           height: "12px", */}
-    {/*           borderRadius: "50%", */}
-    {/*           backgroundColor: "#ffc107", */}
-    {/*           border: "2px solid white", */}
-    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
-    {/*           flexShrink: 0, */}
-    {/*         }} */}
-    {/*       ></div> */}
-    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
-    {/*         Responded */}
-    {/*       </span> */}
-    {/*     </div> */}
-    {/**/}
-    {/*     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}> */}
-    {/*       <div */}
-    {/*         style={{ */}
-    {/*           width: "12px", */}
-    {/*           height: "12px", */}
-    {/*           borderRadius: "50%", */}
-    {/*           backgroundColor: "#28a745", */}
-    {/*           border: "2px solid white", */}
-    {/*           boxShadow: "0 1px 3px rgba(0,0,0,0.2)", */}
-    {/*           flexShrink: 0, */}
-    {/*         }} */}
-    {/*       ></div> */}
-    {/*       <span style={{ color: "#495057", fontSize: "0.8rem" }}> */}
-    {/*         Completed */}
-    {/*       </span> */}
-    {/*     </div> */}
-    {/*   </div> */}
-    {/**/}
-    {/*   <div */}
-    {/*     style={{ */}
-    {/*       height: "1px", */}
-    {/*       backgroundColor: "#e9ecef", */}
-    {/*       margin: "8px 0", */}
-    {/*     }} */}
-    {/*   ></div> */}
-    {/**/}
-    {/*   <div */}
-    {/*     style={{ */}
-    {/*       fontSize: "0.75rem", */}
-    {/*       color: "#6c757d", */}
-    {/*       lineHeight: "1.4", */}
-    {/*     }} */}
-    {/*   > */}
-    {/*     <div>Total Points: {markers.length}</div> */}
-    {/*     <div */}
-    {/*       style={{ */}
-    {/*         display: "flex", */}
-    {/*         justifyContent: "space-between", */}
-    {/*         marginTop: "2px", */}
-    {/*       }} */}
-    {/*     > */}
-    {/*       <span> */}
-    {/*         Active: {markers.filter((m) => m.status !== "completed").length} */}
-    {/*       </span> */}
-    {/*       <span> */}
-    {/*         Done: {markers.filter((m) => m.status === "completed").length} */}
-    {/*       </span> */}
-    {/*     </div> */}
-    {/*   </div> */}
-    {/* </div> */}
+
+    <div
+      style={{
+        position: "absolute",
+        bottom: "10px",
+        right: "10px",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(8px)",
+        padding: "12px 16px",
+        borderRadius: "8px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+        border: "1px solid rgba(0, 0, 0, 0.1)",
+        zIndex: 1000,
+        fontSize: "0.85rem",
+        minWidth: "160px",
+      }}
+    >
+      <div
+        style={{
+          fontWeight: "600",
+          marginBottom: "8px",
+          color: "#495057",
+          fontSize: "0.9rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+        }}
+      >
+        <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: "#6c757d" }} />
+        Response Legend
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              width: "12px",
+              height: "12px",
+              borderRadius: "50%",
+              backgroundColor: "#ffc107",
+              border: "2px solid white",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              flexShrink: 0,
+            }}
+          ></div>
+          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
+            Relief Request
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              width: "12px",
+              height: "12px",
+              borderRadius: "50%",
+              backgroundColor: "#28a745",
+              border: "2px solid white",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              flexShrink: 0,
+            }}
+          ></div>
+          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
+            Procurement Request
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              width: "12px",
+              height: "12px",
+              borderRadius: "50%",
+              backgroundColor: "#2D00A9",
+              border: "2px solid white",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              flexShrink: 0,
+            }}
+          ></div>
+          <span style={{ color: "#495057", fontSize: "0.8rem" }}>
+            Relief and Procurement Request
+          </span>
+        </div>
+      </div>
+    </div>
   </div>
 );
 
@@ -475,6 +486,7 @@ type ReportSummary = {
   active_incidents: number;
   high_priority: number;
   response_time_avg: number;
+  completed_response: number;
 };
 
 // Enhanced supply item structure for detailed tracking - Updated categories
@@ -591,10 +603,6 @@ const ResponseDashboard = () => {
     fetchData<ReportSummary>(
       "/response_dashboard/report_summary",
       setReportSummary,
-    );
-    fetchData<RecentMapActivity[]>(
-      "/response_dashboard/recent_map_activity",
-      setRecentMapActivity,
     );
     fetchData<InventorySummary>(
       "/response_dashboard/in_kind_monitoring_detailed",
@@ -989,9 +997,9 @@ const ResponseDashboard = () => {
                   icon={faExclamationTriangle}
                   style={{ marginRight: "8px", color: "#fff" }}
                 />
-                Active Response Activity
+                Completed Response Activity
               </h1>
-              <div className="horizontal-container full-width space-between-container">
+              <div className="horizontal-container full-width text-center">
                 {reportSummary ? (
                   <span
                     style={{
@@ -1000,7 +1008,7 @@ const ResponseDashboard = () => {
                       fontWeight: "700",
                     }}
                   >
-                    {reportSummary.active_incidents}
+                    {reportSummary.completed_response}
                   </span>
                 ) : (
                   <span>Loading Data</span>
@@ -1012,7 +1020,7 @@ const ResponseDashboard = () => {
                     color: "rgba(255,255,255,0.8)",
                   }}
                 >
-                  High: {reportSummary?.high_priority || 0}
+                  {/* High: {reportSummary?.high_priority || 0} */}
                 </span>
               </div>
             </div>

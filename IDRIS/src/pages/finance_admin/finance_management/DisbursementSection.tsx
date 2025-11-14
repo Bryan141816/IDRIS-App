@@ -1,55 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { getDisbursements, updateDisbursement } from "../../../API_Handler/finance_disbursement_handler";
-
-const BUDGET_SOURCES = [
-  "Government Grants and Funds",
-  "Private Sector Contributions",
-  "Community-Based Initiatives",
-  "Monetary Donations",
-];
-
-interface Item {
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  unit: string;
-  unit_cost: number;
-  vendor: string;
-}
-
-interface DisbursementData {
-  disbursement_id: string;
-  disbursement_name: string;
-  status: "pending" | "approved";
-  date_created: string;
-  origin_name: string;
-  items: Item[];
-}
+import MultiSelect from "./MultiSelect";
+import './finance_management.scss';
+import {
+  getDisbursements,
+  updateDisbursement,
+  getDisbursement,
+} from "../../../API_Handler/finance_disbursement_handler";
+import { Disbursement as DisbursementType, DisbursementItem, BudgetItem } from "./types";
+import { getAttachmentSrc, toDateInputValue, formatDateOnly } from "./helpers";
+import { formatCurrency } from "../../helpers";
+import Swal from "sweetalert2";
 
 interface FormState {
-  dateOfPayment: string;
-  budgetSource: string;
-  items: Item[];
+  origin_name: string;
+  resolved_at: string;
+  budgetSource: string[];
+  items: DisbursementItem[];
   remarks: string;
-  attachment?: File;
+  attachment?: File | string;
 }
 
-const StatusBadge = ({ status }: { status:string }) => (
-  <span className={`status-badge ${status.toLowerCase()}`}>{status.toUpperCase()}</span>
+type DisbursementSectionProps = {
+  budgetData?: BudgetItem[];
+  refetchData: () => Promise<void>;
+};
+
+const StatusBadge = ({ status }: { status: string }) => (
+  <span className={`status-badge ${status.toLowerCase()}`}>
+    {status.toUpperCase()}
+  </span>
 );
 
-const DisbursementSection: React.FC = () => {
-  const [requests, setRequests] = useState<DisbursementData[]>([]);
+const DisbursementSection: React.FC<{
+  budgetData?: BudgetItem[],
+  refetchData?: () => void
+}> = ({ budgetData = [], refetchData }) => {
+  const [requests, setRequests] = useState<DisbursementType[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [isReadOnly, setIsReadOnly] = useState(false);
   const [form, setForm] = useState<FormState>({
-    dateOfPayment: "",
-    budgetSource: BUDGET_SOURCES[0],
-    items: [],            // now typed as Item[]
+    origin_name: "",
+    resolved_at: "",
+    budgetSource: [],
+    items: [],
     remarks: "",
     attachment: undefined,
   });
-  
+
   const fetchDisbursements = async () => {
     try {
       const data = await getDisbursements();
@@ -62,45 +60,94 @@ const DisbursementSection: React.FC = () => {
   useEffect(() => {
     fetchDisbursements();
   }, []);
-
+  const [availableAmount, setAvailableAmount] = useState(0);
 
   const handleDisburseClick = (idx: number) => {
     setSelectedIdx(idx);
-    setForm({
-      dateOfPayment: "",
-      budgetSource: requests[idx].origin_name,
-      items: requests[idx].items.map(i => ({ ...i, unitCost: 0, vendor: "" })), // Item[]
-      remarks: "",
-      attachment: undefined,
-    });
+    const disbursement = requests[idx];
+    console.log("selected disbursement", disbursement);
+
+    if (disbursement.status.toLocaleLowerCase() === "approved") {
+      setForm({
+        origin_name: disbursement.origin_name || "",
+        resolved_at: disbursement.resolved_at || "",
+        budgetSource: disbursement.budgetSource ? [disbursement.budgetSource] : [],
+        items: disbursement.items.map(item => ({
+          ...item,
+          unit_cost:
+            typeof item.unit_cost === "number"
+              ? item.unit_cost
+              : parseFloat(item.unit_cost),
+        })),
+        remarks: disbursement.remarks || "",
+        attachment: disbursement.attachment,
+      });
+      setIsReadOnly(true);
+    } else {
+      setForm({
+        origin_name: disbursement.origin_name,
+        resolved_at: "",
+        budgetSource: [],
+        items: disbursement.items.map((i) => ({
+          ...i,
+          unit_cost: 0,
+          vendor: "",
+        })),
+        remarks: "",
+        attachment: undefined,
+      });
+      setIsReadOnly(false);
+    }
     setShowModal(true);
   };
 
-  const onItemChange = <K extends keyof Item>(idx: number, field: K, value: Item[K]) => {
+  useEffect(() => {
+    const selectedSources = form.budgetSource;
+    const total = budgetData
+      .filter(b => selectedSources.includes(b.budget_for))
+      .reduce((acc, b) => acc + b.net_total, 0);
+    setAvailableAmount(total);
+  }, [form.budgetSource, budgetData]);
+
+  const onItemChange = <K extends keyof DisbursementItem>(idx: number, field: K, value: DisbursementItem[K]) => {
     setForm(prev => ({
       ...prev,
       items: prev.items.map((item, i) =>
-        i === idx ? { ...item, [field]: value } : item
+        i === idx ? { ...item, [field]: value } : item,
       ),
     }));
+  };
+
+  const handleBudgetSourceChange = (selected: string[]) => {
+    setForm(f => ({ ...f, budgetSource: selected }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedIdx === null || !form.attachment) return;
 
+    const totalCost = form.items.reduce((acc, item) => acc + item.unit_cost * item.quantity, 0);
+    if (totalCost > availableAmount) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Exceeds Budget',
+        text: `The total cost of items (₱${totalCost.toLocaleString()}) exceeds the available amount (₱${availableAmount.toLocaleString()}).`,
+      });
+      return;
+    }
+
     const disbursementToUpdate = requests[selectedIdx];
-    
+
     const formData = new FormData();
     formData.append("disbursementId", disbursementToUpdate.disbursement_id);
     formData.append("status", "approved");
     formData.append("remarks", form.remarks);
     formData.append("attachment", form.attachment);
-    formData.append("dateOfPayment", form.dateOfPayment);
-    formData.append("budgetSource", form.budgetSource);
-    
+    formData.append("resolved_at", form.resolved_at);
+    formData.append("budgetSource", JSON.stringify(form.budgetSource));
+
     // Serialize the items array to a JSON string
-    const itemsData = form.items.map(item => ({
+    const itemsData = form.items.map((item) => ({
       item_id: item.item_id,
       unit_cost: item.unit_cost,
       vendor: item.vendor,
@@ -110,7 +157,10 @@ const DisbursementSection: React.FC = () => {
     try {
       await updateDisbursement(disbursementToUpdate.disbursement_id, formData);
       setShowModal(false);
-      fetchDisbursements();
+      await Promise.allSettled([
+        fetchDisbursements(),
+        Promise.resolve().then(() => refetchData?.())
+      ]);
     } catch (error) {
       console.error("Failed to update disbursement:", error);
     }
@@ -121,42 +171,48 @@ const DisbursementSection: React.FC = () => {
       <div className="section-header">
         <h2>Disbursement</h2>
       </div>
-      <div className="outflows-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Request ID</th>
-              <th>Title</th>
-              <th>Date Requested</th>
-              <th>Status</th>
-              <th>Budget Source</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((row, idx) => (
-              <tr key={row.disbursement_id}>
-                <td>{row.disbursement_id}</td>
-                <td>{row.disbursement_name}</td>
-                <td>{row.date_created}</td>
-                <td>
-                  <StatusBadge status={row.status} />
-                </td>
-                <td>{row.origin_name}</td>
-                <td>
-                  <button
-                    className="action-btn"
-                    onClick={() => handleDisburseClick(idx)}
-                    disabled={row.status === "approved"}
-                  >
-                    Disburse
-                  </button>
-                </td>
+      {requests.length === 0 ? (
+        <p id="no-data">No Data Found</p>
+      ) : (
+        <div className="outflows-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Title</th>
+                <th>Date Requested</th>
+                <th>Status</th>
+                <th>Origin Name</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {requests.map((row, idx) => (
+                <tr key={row.disbursement_id}>
+                  <td>{row.disbursement_id}</td>
+                  <td>{row.disbursement_name}</td>
+                  <td>{formatDateOnly(row.date_created)}</td>
+                  <td>
+                    <StatusBadge status={row.status} />
+                  </td>
+                  <td>{row.origin_name}</td>
+                  <td>
+                    <button
+                      className="action-btn"
+                      onClick={() => handleDisburseClick(idx)}
+                      disabled={row.status === "approved"}
+                    >
+                      {row.status.toLocaleLowerCase() === "approved"
+                        ? "View Attachment"
+                        : "Disburse"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {showModal && selectedIdx !== null && (
         <div className="modal-overlay">
           <div className="modal compact-modal">
@@ -166,98 +222,194 @@ const DisbursementSection: React.FC = () => {
               </button>
             </div>
             <div className="modal-content compact-content">
-              <h3>Disburse Request #{requests[selectedIdx].disbursement_id}</h3>
+              <h3>
+                {!isReadOnly ? "View Disbursement" : "Disburse Request"} #
+                {requests[selectedIdx].disbursement_id}
+              </h3>
               <form onSubmit={handleSubmit}>
-                <div className="form-row">
-                  <label>Request Title</label>
-                  <input disabled value={requests[selectedIdx].disbursement_name} />
-                </div>
-                <div className="form-row">
-                  <label>Date of Payment</label>
-                  <input
-                    type="date"
-                    value={form.dateOfPayment}
-                    onChange={e => setForm(f => ({ ...f, dateOfPayment: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="form-row">
-                  <label>Budget Source</label>
-                  <select
-                    value={form.budgetSource}
-                    onChange={e => setForm(f => ({ ...f, budgetSource: e.target.value }))}
-                    required
-                  >
-                    {BUDGET_SOURCES.map(bs => (
-                      <option key={bs} value={bs}>{bs}</option>
-                    ))}
-                  </select>
-                </div>
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Request Title</label>
+                    <input
+                      disabled
+                      value={requests[selectedIdx].disbursement_name}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Date of Payment</label>
+                    <input
+                      type="date"
+                      value={toDateInputValue(form.resolved_at)}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, resolved_at: e.target.value }))
+                      }
+                      required
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Origin Name</label>
+                    <input disabled value={requests[selectedIdx].origin_name} />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Budget Source</label>
+                    <MultiSelect
+                      options={budgetData.map(b => ({ value: b.budget_for, label: b.budget_for }))}
+                      selected={form.budgetSource}
+                      onChange={handleBudgetSourceChange}
+                      isDisabled={isReadOnly}
+                    />
+                  </div>
+                }
+                {!isReadOnly &&
+                  <div className="form-row available-amount">
+                    <label>Available Amount:</label>
+                    <span>{formatCurrency(availableAmount)}</span>
+                  </div>
+                }
                 <label>Items</label>
-                <table className="modal-items-table">
-                  <thead>
-                    <tr>
-                      <th>Item Name</th>
-                      <th>Qty</th>
-                      <th>Unit</th>
-                      <th>Unit Cost</th>
-                      <th>Total Cost</th>
-                      <th>Vendor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.items.map((item, idx) => (
-                      <tr key={item.item_id}>
-                        <td>{item.item_name}</td>
-                        <td>{item.quantity}</td>
-                        <td>{item.unit}</td>
-                        <td>
-                          <input
-                            type="number"
-                            value={item.unit_cost}
-                            min="0"
-                            onChange={e => onItemChange(idx, "unit_cost", Number(e.target.value))}
-                            required
-                          />
-                        </td>
-                        <td className="amount">
-                          ₱{(item.unit_cost * item.quantity).toLocaleString()}
-                        </td>
-                        <td>
-                          <input
-                            type="text"
-                            value={item.vendor}
-                            onChange={e => onItemChange(idx, "vendor", e.target.value)}
-                            required
-                          />
-                        </td>
+                
+                  <table className="modal-items-table">
+                    <thead>
+                      <tr>
+                        <th>Item Name</th>
+                        <th>Qty</th>
+                        <th>Unit</th>
+                        <th>Unit Cost</th>
+                        <th>Total Cost</th>
+                        <th>Vendor</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {form.items.map((item, idx) => (
+                        <tr key={item.item_id}>
+                          <td>{item.item_name}</td>
+                          <td>{item.quantity}</td>
+                          <td>{item.unit}</td>
+                          <td>
+                            <input
+                              type="number"
+                              value={item.unit_cost}
+                              min="0"
+                              onChange={(e) =>
+                                onItemChange(
+                                  idx,
+                                  "unit_cost",
+                                  Number(e.target.value),
+                                )
+                              }
+                              required
+                              disabled={isReadOnly}
+                            />
+                          </td>
+                          <td className="amount">
+                            ₱{(item.unit_cost * item.quantity).toLocaleString()}
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={item.vendor}
+                              onChange={(e) =>
+                                onItemChange(idx, "vendor", e.target.value)
+                              }
+                              required
+                              disabled={isReadOnly}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                
                 <div className="form-row">
-                  <label>Attachments (Receipts)</label>
-                  <input
-                  required
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={e =>
-                      e.target.files && setForm(f => ({ ...f, attachment: e.target.files![0] }))
-                    }
-                  />
-                  {form.attachment && <span>{form.attachment.name}</span>}
+                  <label>Attachment (Receipts)</label>
+                  {!isReadOnly && (
+                    <input
+                      required={!isReadOnly}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) =>
+                        e.target.files &&
+                        setForm((f) => ({
+                          ...f,
+                          attachment: e.target.files![0],
+                        }))
+                      }
+                      disabled={isReadOnly}
+                    />
+                  )}
+                  {form.attachment && typeof form.attachment === "object" ? (
+                    <span>{form.attachment.name}</span>
+                  ) : form.attachment && typeof form.attachment === "string" ? (
+                    isReadOnly ? (
+                      <div>
+                        {form.attachment.endsWith(".pdf") ? (
+                          <iframe
+                            src={getAttachmentSrc(form.attachment)}
+                            width="100%"
+                            height="500px"
+                          />
+                        ) : (
+                          <img
+                            src={getAttachmentSrc(form.attachment)}
+                            alt="Attachment"
+                            style={{ maxWidth: "100%" }}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <a
+                        href={getAttachmentSrc(form.attachment)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View Attachment
+                      </a>
+                    )
+                  ) : null}
                 </div>
-                <div className="form-row">
-                  <label>Remarks</label>
-                  <textarea
-                    value={form.remarks}
-                    onChange={e => setForm(f => ({ ...f, remarks: e.target.value }))}
-                    rows={2}
-                  />
-                </div>
+                {!isReadOnly &&
+                  <div className="form-row">
+                    <label>Remarks</label>
+                    <textarea
+                      value={form.remarks}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, remarks: e.target.value }))
+                      }
+                      rows={2}
+                      disabled={isReadOnly}
+                    />
+                  </div>
+                }
                 <div className="modal-actions">
-                  <button type="submit" className="primary-btn">Disburse</button>
-                  <button type="button" className="secondary-btn" onClick={() => setShowModal(false)}>Cancel</button>
+                  {isReadOnly ? (
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => setShowModal(false)}
+                    >
+                      Close
+                    </button>
+                  ) : (
+                    <>
+                      <button type="submit" className="primary-btn">
+                        Disburse
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => setShowModal(false)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
                 </div>
               </form>
             </div>

@@ -10,6 +10,7 @@ from data_schemas.distribution_planning import (
     AssignTeam,
     UpdateRoute,
     FinalizeRoute,
+    ReassignVolunteer
 )
 from crud_functions.distribution_planning.distribution_planning import (
     DistributionAndPlanningCRUD,
@@ -29,11 +30,13 @@ from models import (
     AssignedStorage,
     InventoryItems,
     WarehouseZones,
-    DistributedItems
+    DistributedItems,
+    AdminUserProfile
 )
 from datetime import datetime, timezone
-
-
+from sqlalchemy import update, delete, or_
+from sqlalchemy.inspection import inspect
+from collections import Counter
 router = APIRouter(
     tags=["distribution_planning"],
     dependencies=[
@@ -73,12 +76,23 @@ def send_team_notifications(team_data: dict):
             )
 
             if volunteer and volunteer.user_id:
+                route = team_member.team.routes
+                request = route.request
+                address = f"{request.lgu.lgu_name}, Cebu"
+                if request.use_different_end:
+                    if request.end_barangay:
+                        address = f"{request.barangay.name}, {address}"
+                    elif request.end_evac:
+                        address = f"{request.evacuation_center.name}, {request.evacuation_center.barangay.name}, {address}"
+                        
                 notification_obj = {
                     "to": str(volunteer.user_id),
                     "from_origin": "Distribution Planning",
                     "title": "New Team Assignment - Action Required",
                     "message": (
-                        f"You have been assigned to {team_data['team_name']} as {team_member.role}. "
+                        f"You have been assigned to the {team_data['team_name']} team as {team_member.role}. "
+                        f"The distribution is scheduled from {shorten_date(route.start_schedule)} to {shorten_date(route.end_schedule)}, "
+                        f"with items to be delivered to {address}. The designated gathering area is {route.gathering_area}. "
                         f"Please accept or decline this assignment."
                     ),
                     # Include members_id in URL for easy extraction
@@ -158,15 +172,49 @@ def get_movement(db: Session = Depends(get_db)):
     return DistributionAndPlanningCRUD.get_all_routes_with_latest_log(db)
 
 
+
+def send_complete_notifications(route_id: int, status: str):
+    db = SessionLocal()
+
+    route = (
+        db.query(DistributionRoute)
+        .filter(DistributionRoute.route_id == route_id)
+        .first()
+    )
+
+    lgu_id = route.request.lgu_id
+
+    admins = (
+        db.query(AdminUserProfile)
+        .filter(AdminUserProfile.lgu_id == lgu_id)
+        .all()
+    )
+
+    notifications = []
+
+    for admin in admins:
+        notification_obj = {
+            "to": str(admin.user_id),
+            "from_origin": "Distribution Planning",
+            "title": "Procurement Request Update",
+            "message": f"Request {route.request.request_title} has been {status.lower()}",
+            "url_redirect": "/request_procurement",
+            "date": datetime.now(),
+            "isRead": False,
+        }
+        notifications.append(notification_obj)
+
+    if notifications:
+        asyncio.run(send_notifications_bulk(db, notifications))
+
 @router.post("/distribution_planning/update_route")
-def update_route(payload: UpdateRoute, db: Session = Depends(get_db)):
-    return DistributionAndPlanningCRUD.update_route(payload, db)
-
-
-@router.get("/distribution_planning/get_all_response")
-def get_all_response(db: Session = Depends(get_db)):
-    return DistributionAndPlanningCRUD.get_all_response(db)
-
+def update_route(payload: UpdateRoute,background_tasks: BackgroundTasks,db: Session = Depends(get_db)):
+    route = DistributionAndPlanningCRUD.update_route(payload, db)
+    status = payload.status.lower()
+    if(status == "completed" or status == "in transit" or status == "cancelled"):
+        route_dict = {c.key: getattr(route, c.key) for c in inspect(route).mapper.column_attrs}
+        background_tasks.add_task(send_complete_notifications,route_dict["route_id"], status)
+    return route
 
 # New endpoints for volunteer responses
 @router_generic.get("/distribution_planning/pending_assignments/{volunteer_id}")
@@ -413,7 +461,6 @@ def list_assigned_storage_by_category(
     db: Session = Depends(get_db),
 ):
     # Build query
-    print(category)
     rows = (
         db.query(
             AssignedStorage.assigned_id,
@@ -543,4 +590,239 @@ def finalize_route(
 
     return {
         "message": "Route is completed successfully",
+    }
+
+
+@router.post("/distributionAndplanning/reassigned_volunteers")
+def reassigned_volunteers(payload: List[ReassignVolunteer],background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    update_mappings = []
+    remove_members = []
+
+    for data in payload:
+        if data.reassign_type in ["retry", "change"]:
+            # Update mapping: use 'members_id' to identify the row
+            update_mappings.append({
+                "members_id": data.member_id,
+                "member": data.volunteer_id,  # maps to volunteer_id
+                "role": data.role,
+                "status": "pending"
+            })
+        else:
+            remove_members.append(data.member_id)
+
+    # Bulk update retry/change members
+    if update_mappings:
+        db.bulk_update_mappings(TeamMembers, update_mappings)
+
+    # Bulk delete removed members
+    if remove_members:
+        db.execute(
+            delete(TeamMembers)
+            .where(TeamMembers.members_id.in_(remove_members))
+        )
+
+    db.commit()    
+    retry_items = [item for item in payload if item.reassign_type in ["retry","change"]]
+    print(payload)
+    
+    background_tasks.add_task(send_retry_team_notifications,retry_items)
+    return {"message": "Reassignments processed successfully."}
+
+def shorten_date(dt: Optional[datetime] = None) -> str:
+    """
+    Returns a shortened date string like "Nov 9 2025".
+    If no datetime is provided, uses the current date.
+    """
+    if dt is None:
+        dt = datetime.now()
+    return dt.strftime("%b %-d %Y")
+
+def send_retry_team_notifications(members: List[ReassignVolunteer]):
+    """Send notifications to all assigned volunteers"""
+    db = SessionLocal()
+
+    try:
+        team_id = members[0].team_id
+        team = db.query(DistributionTeam).filter(DistributionTeam.team_id == team_id).first()
+
+
+        notifications = []
+        for team_member in members:
+            volunteer = (
+                db.query(IndividualVolunteer)
+                .filter(IndividualVolunteer.volunteer_id == team_member.volunteer_id)
+                .first()
+            )
+
+            if volunteer and volunteer.user_id:
+                route = team.routes
+                request = route.request
+                address = f"{request.lgu.lgu_name}, Cebu"
+                if request.use_different_end:
+                    if request.end_barangay:
+                        address = f"{request.barangay.name}, {address}"
+                    elif request.end_evac:
+                        address = f"{request.evacuation_center.name}, {request.evacuation_center.barangay.name}, {address}"
+
+                notification_obj = {
+                    "to": str(volunteer.user_id),
+                    "from_origin": "Distribution Planning",
+                    "title": "New Team Assignment - Action Required",
+
+                    "message": (
+                        f"You have been assigned to the {team.team_name} team as {team_member.role}. "
+                        f"The distribution is scheduled from {shorten_date(route.start_schedule)} to {shorten_date(route.end_schedule)}, "
+                        f"with items to be delivered to {address}. The designated gathering area is {route.gathering_area}. "
+                        f"Please confirm your participation by accepting or declining this assignment."
+                    ),
+
+                    # Include members_id in URL for easy extraction
+                    "url_redirect": f"/volunteer/assignment/{team_member.member_id}",
+                    "date": datetime.now(),
+                    "isRead": False,
+                }
+                notifications.append(notification_obj)
+
+        if notifications:
+            asyncio.run(send_notifications_bulk(db, notifications))
+
+    finally:
+        db.close()
+
+
+@router.get("/distribution_planning/get_report")
+def get_distributed_summary(
+    db: Session = Depends(get_db),
+    period: str = Query("monthly", description="Filter by period: monthly, quarterly, or yearly")
+):
+    # Get current date info
+    now = datetime.now()
+    current_year = now.year
+    current_month = now.month
+
+    # Determine the start and end dates based on the selected period
+    if period == "monthly":
+        start_date = datetime(current_year, current_month, 1)
+        if current_month == 12:
+            end_date = datetime(current_year + 1, 1, 1)
+        else:
+            end_date = datetime(current_year, current_month + 1, 1)
+
+    elif period == "quarterly":
+        # Determine which quarter we're in (1–4)
+        quarter = (current_month - 1) // 3 + 1
+        start_month = (quarter - 1) * 3 + 1
+        end_month = start_month + 3
+        start_date = datetime(current_year, start_month, 1)
+        if end_month > 12:
+            end_date = datetime(current_year + 1, 1, 1)
+        else:
+            end_date = datetime(current_year, end_month, 1)
+
+    elif period == "yearly":
+        start_date = datetime(current_year, 1, 1)
+        end_date = datetime(current_year + 1, 1, 1)
+
+    else:
+        return {"error": "Invalid period. Use 'monthly', 'quarterly', or 'yearly'."}
+
+    # Base query — get only routes that have completed distribution and match period
+    routes = (
+        db.query(DistributionRoute)
+        .join(ProcurementRequest, DistributionRoute.request_id == ProcurementRequest.request_id)
+        .join(LGURecords, ProcurementRequest.lgu_id == LGURecords.id)
+        .options(
+            joinedload(DistributionRoute.request)
+            .joinedload(ProcurementRequest.relief_items),
+            joinedload(DistributionRoute.request)
+            .joinedload(ProcurementRequest.procurement_items),
+            joinedload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.assigned_storage_rec)
+            .joinedload(AssignedStorage.inventory_item),
+            joinedload(DistributionRoute.distributed_items)
+            .joinedload(DistributedItems.procurement_item),
+            joinedload(DistributionRoute.assigned_team),
+        )
+        .filter(
+             or_(
+                DistributionRoute.status == "Completed",
+                DistributionRoute.status == "In Transit",
+                DistributionRoute.status == "Cancelled"
+            ),
+            DistributionRoute.updated_at >= start_date,
+            DistributionRoute.updated_at < end_date
+        )
+        .all()
+    )
+
+    data = []
+    total_distributed = len(routes)
+
+    # For summary
+    item_counter = Counter()
+    lgu_set = set()
+    barangay_set = set()
+
+    for route in routes:
+        request = route.request
+        lgu_name = request.lgu.lgu_name if request.lgu else "Unknown LGU"
+        request_type = request.request_type or "Unknown"
+        date_distributed = route.updated_at
+        team_name = route.assigned_team.team_name if route.assigned_team else "Unassigned"
+        status = route.status
+        if request.use_different_end:
+            if request.barangay:
+                barangay_set.add(request.barangay.name)
+            elif request.evacuation_center:
+                barangay_set.add(request.evacuation_center.name)
+        else:
+            lgu_set.add(lgu_name)
+
+        items_data = []
+
+        # Conditional logic depending on request type
+        if request_type.lower() == "relief":
+            for dist in route.distributed_items:
+                if dist.assigned_storage_rec and dist.assigned_storage_rec.inventory_item:
+                    item_name = dist.assigned_storage_rec.inventory_item.item_name
+                    qty = dist.quantity
+                    items_data.append({"item_name": item_name, "quantity": qty})
+                    item_counter[item_name] += qty
+
+        elif request_type.lower() == "procurement":
+            for dist in request.procurement_items:
+                if dist:
+                    item_name = dist.item_name
+                    qty = dist.quantity
+                    items_data.append({"item_name": item_name, "quantity": qty})
+                    item_counter[item_name] += qty
+
+
+        data.append({
+            "lgu_name": lgu_name,
+            "team_name": team_name,
+            "request_type": request_type,
+            "items": items_data,
+            "date_distributed": date_distributed,
+            "status": status
+        })
+
+    # Prepare summary
+    most_requested_items = [
+        {"item_name": name, "total_quantity": qty} 
+        for name, qty in item_counter.most_common(3)
+    ]
+
+    summary = {
+        "total_delivered": total_distributed,
+        "most_requested_items": most_requested_items,
+        "lgus_covered": len(lgu_set),
+        "barangays_covered": len(barangay_set),
+    }
+
+    return {
+        "period": period,
+        "total_distributed": total_distributed,
+        "summary": summary,
+        "data": data,
     }

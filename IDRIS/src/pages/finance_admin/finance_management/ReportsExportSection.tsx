@@ -7,18 +7,21 @@ type Mode = "reports" | "exports";
 
 type ExportModalState = { open: boolean; preset?: ExportPreset };
 
+export type InflowsSelection = "inflows" | "outflows" | "inflows&outflows";
+
 const ReportsView: React.FC<{
   onOpenGenerate: () => void;
   onOpenExport: (preset?: ExportPreset) => void;
   onOpenGenerateSummary: () => void;
   onOpenGenerateInflowsOrOutflows: () => void;
-  onInflowReportSelect: (isInflows: boolean) => void;
-}> = ({ onOpenGenerate, onOpenExport, onOpenGenerateSummary, onOpenGenerateInflowsOrOutflows, onInflowReportSelect }) => {
+  onInflowReportSelect: (selection: InflowsSelection) => void;
+  onClose?: () => void;
+}> = ({ onOpenGenerate, onOpenExport, onOpenGenerateSummary, onOpenGenerateInflowsOrOutflows, onInflowReportSelect, onClose }) => {
 
   return (
     <div className="reports-content">
       <div id='reports-content-header'>
-        <button id="modalOverlayClose">X</button>
+        <button id="modalOverlayClose" onClick={onClose}>X</button>
       </div>
 
       {/* <div className="section-header">
@@ -48,7 +51,7 @@ const ReportsView: React.FC<{
           <h3>Inflow Summary</h3>
           <p>Export donations, grants, and income sources</p>
           <button className="export-btn" onClick={() => {
-            onInflowReportSelect(true);
+            onInflowReportSelect("inflows");
             onOpenGenerateInflowsOrOutflows();
           }}>Export Inflows</button>
         </div>
@@ -58,7 +61,7 @@ const ReportsView: React.FC<{
           <h3>Expense Report</h3>
           <p>Export all expenditures and purchases</p>
           <button className="export-btn" onClick={() => {
-            onInflowReportSelect(false);
+            onInflowReportSelect("outflows");
             onOpenGenerateInflowsOrOutflows();
           }}>Export Expenses</button>
         </div>
@@ -68,18 +71,65 @@ const ReportsView: React.FC<{
           <h3>Inflows and Outflows Report</h3>
           <p>Export all Inflows and Outflows</p>
           <button className="export-btn" onClick={() => {
-            onInflowReportSelect(false);
+            onInflowReportSelect("inflows&outflows");
             onOpenGenerateInflowsOrOutflows();
           }}>Export</button>
         </div>
       </div>
       <div id='reports-content-footer'>
-        <button className="finance-report-cancel">Cancel</button>
+        <button className="finance-report-cancel" onClick={onClose}>Cancel</button>
       </div>
 
     </div>
   );
 };
+
+export const ReportsExportsSection: React.FC<{
+  mode: Mode;
+  onClose?: () => void;
+}> = ({ mode = [], onClose }) => {
+  const [openGen, setOpenGen] = useState(false);
+  const [openExport, setOpenExport] = useState<ExportModalState>({ open: false });
+  const [openSummary, setOpenSummary] = useState(false);
+  const [openGenInflowsOrOutflows, setOpenGenInflowsOrOutflows] = useState<boolean>(false);
+  const [_isInflows, setIsInflows] = useState<InflowsSelection | undefined>();
+
+  return (
+    <>
+      {mode === "reports" && (
+        <>
+          <ReportsView
+            onOpenGenerate={() => setOpenGen(true)}
+            onOpenExport={(preset) => setOpenExport({ open: true, preset })}
+            onOpenGenerateSummary={() => setOpenSummary(true)}
+            onOpenGenerateInflowsOrOutflows={() => setOpenGenInflowsOrOutflows(true)}
+            onInflowReportSelect={setIsInflows}
+            onClose={onClose}
+          />
+          <br />
+          {/* <ExportsView onOpen={(preset) => setOpenExport({ open: true, preset })} /> */}
+        </>
+      )
+      }
+
+      <GenerateReportModal open={openGen} onClose={() => setOpenGen(false)} />
+      <GenerateReportModal open={openSummary} onClose={() => setOpenSummary(false)} isSummary={true} />
+      <GenerateInflowsModal open={openGenInflowsOrOutflows} onClose={() => setOpenGenInflowsOrOutflows(false)} strType={_isInflows} />
+      
+      <ExportModal
+        open={openExport.open}
+        preset={openExport.preset}
+        onClose={() => setOpenExport({ open: false })}
+      />
+    </>
+  );
+};
+
+export default ReportsExportsSection;
+
+
+
+
 
 const ExportsView: React.FC<{
   onOpen: (preset?: ExportPreset) => void;
@@ -125,44 +175,3 @@ const ExportsView: React.FC<{
     </div>
   </div>
 );
-
-export const ReportsExportsSection: React.FC<{
-  mode: Mode;
-}> = ({ mode = [] }) => {
-  const [openGen, setOpenGen] = useState(false);
-  const [openExport, setOpenExport] = useState<ExportModalState>({ open: false });
-  const [openSummary, setOpenSummary] = useState(false);
-  const [openGenInflowsOrOutflows, setOpenGenInflowsOrOutflows] = useState<boolean>(false);
-  const [_isInflows, setIsInflows] = useState<boolean>();
-
-  return (
-    <>
-      {mode === "reports" && (
-        <>
-          <ReportsView
-            onOpenGenerate={() => setOpenGen(true)}
-            onOpenExport={(preset) => setOpenExport({ open: true, preset })}
-            onOpenGenerateSummary={() => setOpenSummary(true)}
-            onOpenGenerateInflowsOrOutflows={() => setOpenGenInflowsOrOutflows(true)}
-            onInflowReportSelect={setIsInflows}
-          />
-          <br />
-          {/* <ExportsView onOpen={(preset) => setOpenExport({ open: true, preset })} /> */}
-        </>
-      )
-      }
-
-      <GenerateReportModal open={openGen} onClose={() => setOpenGen(false)} />
-      <GenerateReportModal open={openSummary} onClose={() => setOpenSummary(false)} isSummary={true} />
-      <GenerateInflowsModal open={openGenInflowsOrOutflows} onClose={() => setOpenGenInflowsOrOutflows(false)} isInflows={_isInflows} />
-
-      <ExportModal
-        open={openExport.open}
-        preset={openExport.preset}
-        onClose={() => setOpenExport({ open: false })}
-      />
-    </>
-  );
-};
-
-export default ReportsExportsSection;

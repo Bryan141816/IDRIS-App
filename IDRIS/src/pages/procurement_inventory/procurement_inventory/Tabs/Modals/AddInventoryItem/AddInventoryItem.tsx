@@ -4,7 +4,7 @@ import {
   InventoryItemsProps,
 } from "../ModalDefault";
 import Swal from "sweetalert2";
-import { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 
 export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
@@ -31,7 +31,16 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const _submit = async () => {
       try {
         const response = await API.post(
@@ -74,6 +83,7 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               value={addForm.item_name}
               name="item_name"
               onChange={handleChange}
+              required
             />
           </div>
           <div className="form-group">
@@ -81,9 +91,10 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
             <input
               type="number"
               placeholder="Enter quantity"
-              value={addForm.quantity}
+              value={addForm.quantity === 0 ? "" : addForm.quantity}
               name="quantity"
               onChange={handleChange}
+              required
             />
           </div>
           <div className="form-group">
@@ -92,6 +103,7 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               value={addForm.category}
               name="category"
               onChange={handleChange}
+              required
             >
               <option value="" disabled>
                 Select category
@@ -110,7 +122,12 @@ export const AddInventoryItemTab: React.FC<DefaultInventoryModalProps> = ({
               type="date"
               value={addForm.expiry}
               name="expiry"
+              required={
+                addForm.category === "food item" ||
+                addForm.category === "medical supplies"
+              }
               onChange={handleChange}
+              min={new Date().toISOString().split("T")[0]}
             />
           </div>
         </div>

@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
-import { AddInventoryItemTab } from "./Modals/AddInventoryItem/AddInventoryItem";
-import { EditInventoryModal } from "./Modals/EditInventoryItemModal/EditInventoryItemModal";
+import React, { useEffect, useState } from "react";
 import { API } from "../../../../API_Handler/Axio_API_Handler";
-
+import Swal from "sweetalert2";
 export interface AvailableInKindItem {
   item_id: number;
   donor_name: string;
@@ -68,7 +66,7 @@ const Donations = () => {
           updateTable={updateTable}
         ></AddItemToInventory>
       )}
-      <div className="inventory-content">
+      <div className="requests-content">
         <div className="section-header">
           <h2>Donations</h2>
         </div>
@@ -99,6 +97,13 @@ const Donations = () => {
                   </td>
                 </tr>
               ))}
+              {inkindItem.length === 0 && (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center" }}>
+                    No Data
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -173,15 +178,43 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
       prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
     );
   };
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
+
     const submit = async () => {
+      const confirm = await Swal.fire({
+        title: "Are you sure you want to add this donation/s to the inventory?",
+        showCancelButton: true,
+        confirmButtonText: "Yes",
+      });
+      if (!confirm.isConfirmed) {
+        return;
+      }
       try {
         const response = await API.post(
           "/procurement_inventory/add_inventory_item_bulk",
           { inkind_id: inkind_id, items: donationsItem },
         );
-        updateTable();
-        onClose();
+        if (response.data) {
+          Swal.fire({
+            title: "Success!",
+            text: "Donation/s has been added.",
+            icon: "success",
+            timer: 1000, // 2 seconds
+            showConfirmButton: false, // hides the OK button
+            timerProgressBar: true, // optional progress bar
+          });
+          updateTable();
+          onClose();
+        }
       } catch (e: any) {
         console.log("Error adding donations to inventory: " + e);
       }
@@ -191,7 +224,7 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
 
   return (
     <div className="modal-overlay" style={{ zIndex: 900 }}>
-      <div
+      <form
         className="modal"
         style={{
           zIndex: 990,
@@ -201,7 +234,13 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
       >
         <div className="modal-header">
           <h3>Add Item to Inventory</h3>
-          <button className="close-btn" onClick={onClose}>
+          <button
+            className="close-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             ×
           </button>
         </div>
@@ -230,6 +269,7 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
                         onChange={(e) =>
                           handleChange(index, "category", e.target.value)
                         }
+                        required
                       >
                         <option value="" disabled>
                           Select category
@@ -256,6 +296,11 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
                         onChange={(e) =>
                           handleChange(index, "expiry", e.target.value)
                         }
+                        required={
+                          item.category === "food item" ||
+                          item.category === "medical supplies"
+                        }
+                        min={new Date().toISOString().split("T")[0]}
                       />
                     </td>
                   </tr>
@@ -266,14 +311,20 @@ const AddItemToInventory: React.FC<AddItemToInventoryProp> = ({
         </div>
 
         <div className="modal-actions">
-          <button className="secondary-btn" onClick={onClose}>
+          <button
+            className="secondary-btn"
+            onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+              e.preventDefault();
+              onClose();
+            }}
+          >
             Cancel
           </button>
           <button className="primary-btn" onClick={handleSubmit}>
             Add Items
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

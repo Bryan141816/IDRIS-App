@@ -53,7 +53,7 @@ const WarehouseZoneComponent = () => {
     handleFetch();
   }, []);
   return (
-    <>
+    <div className="requests-content">
       {activeModal === "view-storage" && (
         <ViewWarehouse
           onClose={closeModal}
@@ -89,7 +89,20 @@ const WarehouseZoneComponent = () => {
           + Create Zone
         </button>
       </div>
-
+      {warehouseZones.length === 0 && (
+        <div
+          style={{
+            display: "flex",
+            flex: 1,
+            height: "100%",
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span>No Warehouse Zones</span>
+        </div>
+      )}
       <div className="warehouses-grid">
         {warehouseZones.map((zone) => (
           <div key={zone.warehouse_id} className="warehouse-card">
@@ -176,7 +189,7 @@ const WarehouseZoneComponent = () => {
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 };
 

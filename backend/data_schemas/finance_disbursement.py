@@ -6,9 +6,9 @@ from decimal import Decimal
 class DisbursementItemBase(BaseModel):
     item_name: str
     quantity: int
-    unit: str
-    unit_cost: Decimal
-    vendor: str
+    unit: Optional[str] = None
+    unit_cost: Optional[Decimal] = None
+    vendor: Optional[str] = None
 
 class DisbursementItemCreate(DisbursementItemBase):
     pass
@@ -54,3 +54,5 @@ class DisbursementUpdate(BaseModel):
     remarks: Optional[str] = None
     items: Optional[List[DisbursementItemUpdate]] = None
     attachment: Optional[str] = None
+    budgetSource: Optional[List[str]] = None
+    resolved_at: Optional[datetime] = None

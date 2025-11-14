@@ -3,7 +3,7 @@ import {
   InventoryModal,
   InventoryItemsProps,
 } from "../ModalDefault";
-import { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import Swal from "sweetalert2";
 type Warehouse = {
@@ -24,7 +24,6 @@ type AssignedStorage = {
   quantity: number;
   warehouse_id: number;
   assigned_id: number;
-  unit_occupancy: number;
   warehouse: Warehouse;
 };
 
@@ -85,7 +84,16 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      const form = e.currentTarget.closest("form") as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity(); // shows native browser validation
+        return;
+      } else {
+        e.preventDefault();
+      }
+    }
     const _submit = async () => {
       const confirm = await Swal.fire({
         title: "Are you sure you want to edit this item?",
@@ -98,9 +106,12 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
       const response = await handleRequest();
       if (response) {
         Swal.fire({
-          title: "Add Inventory Item",
-          text: "Item has been updated succesfuly",
+          title: "Success!",
+          text: "Inventory has been updated.",
           icon: "success",
+          timer: 1000, // 2 seconds
+          showConfirmButton: false, // hides the OK button
+          timerProgressBar: true, // optional progress bar
         });
 
         refreshData();
@@ -126,6 +137,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
                 value={addForm.item_name}
                 name="item_name"
                 onChange={handleChange}
+                required
               />
             </div>
           )}
@@ -135,6 +147,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
               type="number"
               placeholder="Enter quantity"
               value={addForm.quantity}
+              required
               name="quantity"
               onChange={handleChange}
             />
@@ -146,6 +159,7 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
                 value={addForm.category}
                 name="category"
                 onChange={handleChange}
+                required
               >
                 <option value="" disabled>
                   Select category
@@ -168,6 +182,11 @@ export const EditInventoryModal: React.FC<EditInventoryModalProp> = ({
                 value={addForm.expiry}
                 name="expiry"
                 onChange={handleChange}
+                required={
+                  addForm.category === "food item" ||
+                  addForm.category === "medical supplies"
+                }
+                min={new Date().toISOString().split("T")[0]}
               />
             </div>
           )}

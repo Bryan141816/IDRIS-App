@@ -245,36 +245,6 @@ const EmegencyReport = () =>
     Component: m.default,
   }));
 
-const ReportList = () =>
-  import("./pages/response_dashboard/report_list/ReportList").then((m) => ({
-    Component: m.default,
-  }));
-
-const DemandAndResponseMap = () =>
-  import(
-    "./pages/response_dashboard/demand_and_response_map/DemandAndResponseMap"
-  ).then((m) => ({ Component: m.default }));
-
-const DemandAndResponseList = () =>
-  import(
-    "./pages/response_dashboard/demand_and_response_map/DemandAndResponseList"
-  ).then((m) => ({ Component: m.default }));
-
-const ModalityDistribution = () =>
-  import(
-    "./pages/response_dashboard/modality_distribution/ModalityDistribution"
-  ).then((m) => ({ Component: m.default }));
-
-const InKindMonitoring = () =>
-  import("./pages/response_dashboard/in_kind_monitoring/InKindMonitoring").then(
-    (m) => ({ Component: m.default }),
-  );
-
-const BudgetRecord = () =>
-  import("./pages/response_dashboard/budget_record/BudgetRecord").then((m) => ({
-    Component: m.default,
-  }));
-
 // Procurement Inventory
 const ProcurementInventory = () =>
   import(
@@ -295,7 +265,10 @@ const RequestProcurement = () =>
   import(
     "./pages/procurement_inventory/request_procurement/request_prcurement"
   ).then((m) => ({ Component: m.default }));
-
+const DistributionReport = () =>
+  import(
+    "./pages/procurement_inventory/distribution_planning/Tabs/DistributionReport"
+  ).then((m) => ({ Component: m.default }));
 // ✅ Router Definition (clean + merged)
 export const router = createBrowserRouter([
   {
@@ -328,44 +301,43 @@ export const router = createBrowserRouter([
       { path: "notifications", lazy: NotificationPage },
       { path: "oauth_callback", lazy: OauthCallback },
       {
-  path: "lgu_profiling",
-  children: [
-    {
-      path: "map_of_cebu",
-      lazy: MapOfCebu,
-    },
-    {
-      path: "evacuationandshelter",
-      lazy: EvacuationAndShelter,
-    },
-    {
-      path: "shelter_report_dashboard",
-      lazy: ShelterReportDashboard,
-    },
-    {
-      path: "LGU",
-      lazy: LGU,
-    },
-    {
-      path: "LGUmanagement",
-      lazy: ManageLGU,
-    },
-    {
-      path: "LGUofficermanagement", 
-      lazy: LGUofficermanagement,   
-    },
-        {
-      path: "LGUofficerSuperAdmin",
-      lazy: LGUofficerSuperAdmin,
-    },
+        path: "lgu_profiling",
+        children: [
+          {
+            path: "map_of_cebu",
+            lazy: MapOfCebu,
+          },
+          {
+            path: "evacuationandshelter",
+            lazy: EvacuationAndShelter,
+          },
+          {
+            path: "shelter_report_dashboard",
+            lazy: ShelterReportDashboard,
+          },
+          {
+            path: "LGU",
+            lazy: LGU,
+          },
+          {
+            path: "LGUmanagement",
+            lazy: ManageLGU,
+          },
+          {
+            path: "LGUofficermanagement",
+            lazy: LGUofficermanagement,
+          },
+          {
+            path: "LGUofficerSuperAdmin",
+            lazy: LGUofficerSuperAdmin,
+          },
 
-    {
-      path: "LGUSeeMore/:id",
-      lazy: LGUSeeMore,
-    },
-  ],
-}
-,
+          {
+            path: "LGUSeeMore/:id",
+            lazy: LGUSeeMore,
+          },
+        ],
+      },
       {
         path: "volunteer_management",
         children: [
@@ -445,55 +417,6 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: ResponseDashboard },
           { path: "emergency_report", lazy: EmegencyReport },
-          {
-            path: "report_list",
-            lazy: ReportList,
-            handle: {
-              allowedRoles: ["superadmin", "lgu officer", "logistics admin"],
-            },
-          },
-          {
-            path: "demand_and_response_map",
-            children: [
-              {
-                index: true,
-                lazy: DemandAndResponseMap,
-                handle: {
-                  allowedRoles: [
-                    "superadmin",
-                    "lgu officer",
-                    "logistics admin",
-                  ],
-                },
-              },
-              {
-                path: "list_view",
-                lazy: DemandAndResponseList,
-                handle: {
-                  allowedRoles: [
-                    "superadmin",
-                    "lgu officer",
-                    "logistics admin",
-                  ],
-                },
-              },
-            ],
-          },
-          {
-            path: "modality_distribution",
-            lazy: ModalityDistribution,
-            handle: { allowedRoles: ["operations admin"] },
-          },
-          {
-            path: "in_kind_monitoring",
-            lazy: InKindMonitoring,
-            handle: { allowedRoles: ["operations admin"] },
-          },
-          {
-            path: "budget_record",
-            lazy: BudgetRecord,
-            handle: { allowedRoles: ["operations admin"] },
-          },
         ],
       },
       { path: "reports_generation", lazy: ReportsGeneration },
@@ -501,8 +424,33 @@ export const router = createBrowserRouter([
       {
         path: "procurement_inventory",
         children: [
-          { path: "procurement_inventory", lazy: ProcurementInventory },
-          { path: "distribution_planning", lazy: DistributionPlanning },
+          {
+            path: "procurement_inventory",
+            children: [
+              { path: ":tab", lazy: ProcurementInventory },
+              {
+                index: true,
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/procurement_inventory/dashboard",
+                  ),
+              },
+            ],
+          },
+          { path: "distribution_report", lazy: DistributionReport },
+          {
+            path: "distribution_planning",
+            children: [
+              { path: ":tab", lazy: DistributionPlanning },
+              {
+                index: true,
+                loader: () =>
+                  redirect(
+                    "/procurement_inventory/distribution_planning/dashboard",
+                  ),
+              },
+            ],
+          },
           {
             path: "procurement_management",
             children: [
@@ -584,17 +532,11 @@ export const prefetchMap: Record<string, () => Promise<any>> = {
   "/donations_management/donation_records": DonationRecords,
   "/response_dashboard": ResponseDashboard,
   "/response_dashboard/emergency_report": EmegencyReport,
-  "/response_dashboard/report_list": ReportList,
-  "/response_dashboard/demand_and_response_map": DemandAndResponseMap,
-  "/response_dashboard/demand_and_response_map/list_view":
-    DemandAndResponseList,
-  "/response_dashboard/modality_distribution": ModalityDistribution,
-  "/response_dashboard/in_kind_monitoring": InKindMonitoring,
-  "/response_dashboard/budget_record": BudgetRecord,
   "/reports_generation": ReportsGeneration,
   "/damange_assessment": DamageAssessment,
   "/procurement_inventory/procurement_inventory": ProcurementInventory,
-  "/procurement_inventory/distribution_planning": DistributionPlanning,
+  "/procurement_inventory/distribution_planning/dashboard":
+    DistributionPlanning,
   "/procurement_inventory/procurement_management": ProcurementManagement,
   "/finance&admin/finance_management": FinanceManagement,
   "/finance_printable": FinancePrintPage,

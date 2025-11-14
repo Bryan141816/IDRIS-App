@@ -21,6 +21,28 @@ export enum SpendCategory {
   INFRASTRUCTURE_REPAIRS = "Infrastructure Repairs",
   DISBURSEMENT = "Disbursement",
 }
+export interface DisbursementItem {
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  unit: string;
+  unit_cost: number;
+  vendor: string;
+}
+
+export interface Disbursement {
+  disbursement_id: string;
+  disbursement_name: string;
+  status: "pending" | "approved" | "disapproved";
+  date_created: string;
+  resolved_at: string;
+  origin_name: string;
+  items: DisbursementItem[];
+  remarks?: string;
+  dateOfPayment?: string;
+  budgetSource?: string;
+  attachment?: string;
+}
 
 
 export enum TransactionType {
@@ -48,6 +70,8 @@ export type InflowItem = {
   purpose: string;
   inflow_type: string;
   attachment?: File;
+  created_at: string;
+  updated_at: string;
 };
 
 export type OutflowItem = {
@@ -59,6 +83,8 @@ export type OutflowItem = {
   purpose: string;
   inflow_source: string;
   attachment?: File | string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type BudgetItem = {

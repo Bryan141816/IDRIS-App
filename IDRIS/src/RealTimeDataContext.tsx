@@ -1,10 +1,11 @@
 // RealTimeDataContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-
+import { API } from "./API_Handler/Axio_API_Handler";
 export interface RealTimeEvent {
   event_type: string;
   data: any; // can be any object
 }
+import { useUserContext } from "./UserContext"; // <-- import your user context
 
 interface RealTimeDataContextType {
   event: RealTimeEvent | null;
@@ -18,17 +19,16 @@ export const RealTimeDataContext = createContext<RealTimeDataContextType>({
 
 interface RealTimeDataProviderProps {
   children: ReactNode;
-  url: string; // SSE endpoint
 }
 
 export const RealTimeDataProvider: React.FC<RealTimeDataProviderProps> = ({
   children,
-  url,
 }) => {
   const [event, setEvent] = useState<RealTimeEvent | null>(null);
   const [connected, setConnected] = useState(false);
-
+  const { userId } = useUserContext();
   useEffect(() => {
+    if (!userId) return;
     let eventSource: EventSource | null = null;
     let retryCount = 0;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -36,6 +36,7 @@ export const RealTimeDataProvider: React.FC<RealTimeDataProviderProps> = ({
     const connect = () => {
       if (eventSource) eventSource.close();
 
+      const url = `${API.defaults.baseURL}/real_time/${userId}`;
       eventSource = new EventSource(url);
 
       eventSource.onopen = () => {
@@ -74,7 +75,7 @@ export const RealTimeDataProvider: React.FC<RealTimeDataProviderProps> = ({
       eventSource?.close();
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [url]);
+  }, [userId]);
 
   return (
     <RealTimeDataContext.Provider value={{ event, connected }}>

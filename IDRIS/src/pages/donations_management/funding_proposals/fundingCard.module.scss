@@ -94,6 +94,14 @@
   }
 }
 
+.amountRaised {
+  font-size: 14px;
+  font-weight: 600;
+  color: $steel-blue;
+  text-align: center;
+  margin-top: 5px;
+}
+
 .fundingBody {
   display: flex;
   flex-direction: column;
@@ -126,7 +134,7 @@
 .fundingFooter {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   border-top: 1px solid #e3ebf5;
   padding: 14px 18px;
 
@@ -135,7 +143,7 @@
     border: none;
     border-radius: 10px;
     height: 15px;
-    margin: 7px 0;
+    margin-bottom: 5px;
 
     .progressBar {
       background-color: #22c55e;
@@ -167,7 +175,6 @@
     text-align: center;
     font-weight: bold;
     font-size: 1.1em;
-    padding: 8px 0;
   }
 
   .progressContainer {

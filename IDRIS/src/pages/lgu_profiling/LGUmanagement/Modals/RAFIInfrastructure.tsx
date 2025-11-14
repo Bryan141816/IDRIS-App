@@ -13,16 +13,13 @@ import { MapWithPin } from "../ModalProps";
 // Prefer Axios baseURL if you're already using it
 import { API } from "../../../../API_Handler/Axio_API_Handler";
 
-const API_BASE =
-  (API?.defaults?.baseURL as string) ||
-  (import.meta.env.VITE_API_BASE as string) ||
-  "http://localhost:8000";
+const API_BASE = API.defaults.baseURL;
 
 /** Accepts absolute http(s), blob:, data:, or relative server path; ALWAYS returns a string */
 const toAbs = (p?: string): string => {
   if (!p) return "";
   if (/^(https?:|blob:|data:)/i.test(p)) return p;
-  const base = API_BASE.replace(/\/+$/, "");
+  const base = (API_BASE ?? "").replace(/\/+$/, "");
   const rel = p.startsWith("/") ? p : `/${p}`;
   return `${base}${rel}`;
 };
@@ -78,12 +75,15 @@ export const AddRafiModal: React.FC<addRafiModalProp> = ({
     }
   }, [isModalOpen]);
 
-  const handleLocationPickerSubmit = (mapData: { lat: number; lng: number }) => {
+  const handleLocationPickerSubmit = (mapData: {
+    lat: number;
+    lng: number;
+  }) => {
     setForm((prev) => ({ ...prev, lat: mapData.lat, lng: mapData.lng }));
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, files } = e.target as HTMLInputElement;
     if (name === "rafi_pic") {
@@ -204,10 +204,16 @@ export const AddRafiModal: React.FC<addRafiModalProp> = ({
           </div>
 
           <div className="action-button">
-            <button style={{ backgroundColor: "#749AB6", color:"#ffff" }} onClick={submit}>
+            <button
+              style={{ backgroundColor: "#749AB6", color: "#ffff" }}
+              onClick={submit}
+            >
               Add
             </button>
-            <button style={{ backgroundColor: "#F84B4D", color:"#ffff"  }} onClick={cancel}>
+            <button
+              style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
+              onClick={cancel}
+            >
               Cancel
             </button>
           </div>
@@ -231,10 +237,10 @@ export const ViewRafiModalModal: React.FC<viewRafiModalProp> = ({
   }, [isModalOpen]);
 
   // ---------- Derive fields from selected row ----------
-  const idText   = String(selectedData?.data?.[0]?.text ?? "");
+  const idText = String(selectedData?.data?.[0]?.text ?? "");
   const nameText = String(selectedData?.data?.[1]?.text ?? "");
-  const latText  = String(selectedData?.data?.[2]?.text ?? "");
-  const lngText  = String(selectedData?.data?.[3]?.text ?? "");
+  const latText = String(selectedData?.data?.[2]?.text ?? "");
+  const lngText = String(selectedData?.data?.[3]?.text ?? "");
   const descText = String(selectedData?.data?.[4]?.text ?? "");
   const initialPicture = selectedData?.data?.[5]?.text as string | undefined;
 
@@ -244,7 +250,9 @@ export const ViewRafiModalModal: React.FC<viewRafiModalProp> = ({
 
   // ---------- Stable refs ----------
   const idRef = useRef(idText);
-  useEffect(() => { idRef.current = idText; }, [idText]);
+  useEffect(() => {
+    idRef.current = idText;
+  }, [idText]);
 
   const picRef = useRef<string>("");
 
@@ -288,7 +296,8 @@ export const ViewRafiModalModal: React.FC<viewRafiModalProp> = ({
     };
 
     document.addEventListener("rafi:updated", handler as EventListener);
-    return () => document.removeEventListener("rafi:updated", handler as EventListener);
+    return () =>
+      document.removeEventListener("rafi:updated", handler as EventListener);
   }, []);
 
   return (
@@ -296,10 +305,18 @@ export const ViewRafiModalModal: React.FC<viewRafiModalProp> = ({
       <div className="modal-container" style={{ paddingTop: "30px" }}>
         <div className="horizontal-container space-between-container">
           <span className="title-modal-text">RAFI Details</span>
-          <div className="horizontal-container" style={{ width: "auto", gap: "5px" }}>
+          <div
+            className="horizontal-container"
+            style={{ width: "auto", gap: "5px" }}
+          >
             <div className="more-options-container">
-              <button onClick={() => setIsMoreOptionVisible(!isMoreOptionVisible)}>
-                <FontAwesomeIcon icon={faEllipsisVertical} style={{ height: "20px" }} />
+              <button
+                onClick={() => setIsMoreOptionVisible(!isMoreOptionVisible)}
+              >
+                <FontAwesomeIcon
+                  icon={faEllipsisVertical}
+                  style={{ height: "20px" }}
+                />
               </button>
               {isMoreOptionVisible && (
                 <div className="more-options-viewer">
@@ -339,7 +356,14 @@ export const ViewRafiModalModal: React.FC<viewRafiModalProp> = ({
           </span>
         </div>
 
-        <div style={{ width: "100%", height: "35vh", borderRadius: 10, overflow: "hidden" }}>
+        <div
+          style={{
+            width: "100%",
+            height: "35vh",
+            borderRadius: 10,
+            overflow: "hidden",
+          }}
+        >
           {hasValidCoords ? (
             <MapWithPin lat={latNum as number} lng={lngNum as number} />
           ) : (
@@ -434,7 +458,7 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
   const [locationPickerIsOpen, setLocationPickerIsOpen] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value, files } = e.target as HTMLInputElement;
     if (name === "rafi_pic") {
@@ -467,13 +491,18 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
 
         try {
           // Support both async and sync handlers
-          const maybePromise = (handleEditRecord as unknown as (
-            id: string,
-            payload: FormData
-          ) => Promise<any> | void)(id, fd);
+          const maybePromise = (
+            handleEditRecord as unknown as (
+              id: string,
+              payload: FormData,
+            ) => Promise<any> | void
+          )(id, fd);
 
           let result: any | undefined = undefined;
-          if (maybePromise && typeof (maybePromise as any).then === "function") {
+          if (
+            maybePromise &&
+            typeof (maybePromise as any).then === "function"
+          ) {
             result = await (maybePromise as Promise<any>);
           }
 
@@ -488,7 +517,7 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
           document.dispatchEvent(
             new CustomEvent("rafi:updated", {
               detail: { id, rafi_pic: newPic }, // include new path if backend returns it
-            })
+            }),
           );
 
           // Optionally close the modal after success
@@ -496,7 +525,9 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
           setFile(null);
         } catch (err) {
           // Even on error, still signal a refresh attempt (uses old path + version bump)
-          document.dispatchEvent(new CustomEvent("rafi:updated", { detail: { id } }));
+          document.dispatchEvent(
+            new CustomEvent("rafi:updated", { detail: { id } }),
+          );
           console.error("Update failed:", err);
         }
       },
@@ -574,10 +605,16 @@ export const EditRafiModal: React.FC<editRafiModalProp> = ({
           </div>
 
           <div className="action-button">
-            <button style={{ backgroundColor: "#749AB6", color: "#ffff"  }} onClick={submit}>
+            <button
+              style={{ backgroundColor: "#749AB6", color: "#ffff" }}
+              onClick={submit}
+            >
               Update
             </button>
-            <button style={{ backgroundColor: "#F84B4D", color: "#ffff"  }} onClick={closeModal}>
+            <button
+              style={{ backgroundColor: "#F84B4D", color: "#ffff" }}
+              onClick={closeModal}
+            >
               Cancel
             </button>
           </div>

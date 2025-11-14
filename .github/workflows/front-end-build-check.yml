@@ -1,0 +1,27 @@
+name: Front End Build Check
+
+on:
+  pull_request:
+    branches:
+      - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20.19.5
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.5
+
+      - name: Install frontend dependencies
+        working-directory: IDRIS
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: IDRIS
+        run: npm run build

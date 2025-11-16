@@ -49,6 +49,7 @@
       background: rgba(252, 184, 20, 0.1);
     }
   }
+
 }
 .procurement-mains-content {
     padding: 2rem;
@@ -58,14 +59,15 @@
     flex-direction: column;
     height: 100%;
 }
+
 .requests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* shrinkable for mobile */
   gap: 1.5rem;
-
-     
-  
+  width: 100%;
+  box-sizing: border-box;
 }
+
 .requests-content {
   flex: 1 1 auto;
   display: flex;
@@ -239,3 +241,17 @@
   }
 }
 
+
+  @media(max-width: 738px){
+    .procurement-navigation{
+      display: grid;
+      grid-template-columns: repeat(2, 1fr)
+    }
+    .procurement-mains-content{
+      padding: 0px;
+    }
+    .stats-grid{
+      display: flex !important;
+      flex-direction: column;
+    }
+  }

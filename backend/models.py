@@ -428,30 +428,6 @@ class Donor(Base):
         )
 
 
-class TransparencyReport(Base):
-    __tablename__ = "transparency_report"
-    __random_pk_field__ = "transparency_report_id"
-    id = Column(Integer, index=True, server_default=Identity())
-
-    transparency_report_id = Column(Integer, primary_key=True)
-
-    file = Column(String, nullable=False)
-
-    file = Column(String, nullable=False)
-    file_name = Column(String(50), nullable=False)
-    date_issued = Column(DateTime(timezone=True), nullable=False)
-
-    date_uploaded = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    date_updated = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-
 class DonationFrequency(enum.Enum):
     ONE_TIME = "ONE_TIME"
     MONTHLY = "MONTHLY"

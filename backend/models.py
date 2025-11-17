@@ -582,7 +582,7 @@ class ProcurementRequest(Base):
         nullable=True,
     )
     priority = Column(String(255))
-    date_requested = Column(Date)
+    date_requested = Column(DateTime)
     disaster_type = Column(String(255), nullable=False)
     date_needed = Column(Date)
 

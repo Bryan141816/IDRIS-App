@@ -313,7 +313,7 @@ class FinanceRecordCRUD:
 
         # Second pass: process and nest outflows
         for r in outflows:
-            source_val = r.inflow_source
+            source_val = r.inflow_source.value if r.inflow_source else None
             if source_val and source_val in summary_map:
                 summary_map[source_val]["outflow_total"] += r.amount
                 child_record = {

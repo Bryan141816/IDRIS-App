@@ -36,11 +36,11 @@ const FinancialReportDashboard: React.FC = () => {
   const [exportMode, setExportMode] = useState(false);
 
   // state for API data
-  const [data, setData] = useState<FinanceRecordType>(emptyFinanceRecord);
+  const [summaryData, setSummaryData] = useState<FinanceRecordType | null>(null);
   const [tableData, setTableData] = useState<NestedAllocationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const today = new Date();
   const startOfYear = new Date(today.getFullYear(), 0, 1);
 
@@ -49,61 +49,50 @@ const FinancialReportDashboard: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const response = await getBudgetSummary(effectiveDateFrom, effectiveDateTo);
-        setData(response);
+        // Fetch both datasets in parallel
+        const [summary, nestedData] = await Promise.all([
+          getBudgetSummary(effectiveDateFrom, effectiveDateTo),
+          getNestedBudgetSummary(effectiveDateFrom, effectiveDateTo),
+        ]);
+        setSummaryData(summary);
+        setTableData(nestedData);
       } catch (err: any) {
-        console.error("Failed to fetch summary:", err);
-        setError("Could not load financial data.");
+        console.error("Failed to fetch financial data:", err);
+        setError("Could not load financial data. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchTableData = async () => {
-      try {
-        const response = await getNestedBudgetSummary(effectiveDateFrom, effectiveDateTo);
-        console.log("Nested BudgetSummary:", response);
-        setTableData(response);
-      } catch (err: any) {
-        console.error("Failed to fetch table data:", err);
-        setError("Could not load table data.");
-      }
-    }
-
     fetchData();
-    fetchTableData();
-  }, []);
-
-
+  }, [effectiveDateFrom, effectiveDateTo]);
+  
   if (loading) return <div>Loading report…</div>;
   if (error) return <div style={{ color: "red" }}>{error}</div>;
-  if (!data) return <div>No data available.</div>;
+  if (!summaryData) return <div>No data available.</div>;
+
 
   const title = state?.title || "Financial Report";
   const reportTitle = `${title} • ${
-    data.filters.from_date ? formatDateOnly(data.filters.from_date) : "N/A"
+    summaryData.filters.from_date ? formatDateOnly(summaryData.filters.from_date) : "N/A"
   } – ${
-    data.filters.to_date ? formatDateOnly(data.filters.to_date) : "N/A"
+    summaryData.filters.to_date ? formatDateOnly(summaryData.filters.to_date) : "N/A"
   }`;
-  
 
   companyInfo._reportTitle = reportTitle;
 
-  // Chart prep
-  const chartData = data.breakdown.allocation.map((item) => ({
-    name: item.allocation.replace(/_/g, " "),
-    inflow: parseFloat(item.inflow),
-    outflow: parseFloat(item.outflow),
-    net: parseFloat(item.net),
-    pending_inflow: parseFloat(item.pending_inflow),
-    pending_outflow: parseFloat(item.pending_outflow),
-    denied: parseFloat(item.denied),
+  // Chart prep using the more accurate nested data
+  const chartData = tableData.map(item => ({
+    name: item.budget_for.replace(/_/g, " "),
+    inflow: parseFloat(String(item.inflow_total)),
+    outflow: parseFloat(String(item.outflow_total)),
   }));
 
-  const pieData = chartData.map((item) => ({
-    name: item.name,
-    value: item.net,
+  const pieData = tableData.map(item => ({
+    name: item.budget_for.replace(/_/g, " "),
+    value: parseFloat(String(item.net_total)),
   }));
 
   return (
@@ -148,13 +137,13 @@ const FinancialReportDashboard: React.FC = () => {
                   Print Report
                 </button>
               </div>
-              <span>From {data.diagnostics.records_considered} records</span>
+              <span>From {summaryData.diagnostics.records_considered} records</span>
             </div>
           </div>
         </div>
 
         {/* Executive Summary */}
-        <ExecutiveSummary kpis={data.kpis} />
+        <ExecutiveSummary kpis={summaryData.kpis} />
 
         <div className="pageBreakBefore" />
 
@@ -185,7 +174,7 @@ const FinancialReportDashboard: React.FC = () => {
         <div className="pageBreakBefore" />
 
         {/* Detailed Breakdown */}
-        <DataTable tableData={tableData} kpis={data.kpis} />
+        <DataTable tableData={tableData} kpis={summaryData.kpis} />
 
         <div className="pageBreakBefore" />
 
@@ -208,7 +197,7 @@ const FinancialReportDashboard: React.FC = () => {
                   <span
                     className={`${styles.statusValue} ${styles.pendingInflow}`}
                   >
-                    {formatCurrency(getTotalPendingTransactions(data))}
+                    {formatCurrency(getTotalPendingTransactions(summaryData))}
                   </span>
                 </div>
                 <div className={styles.statusItem}>
@@ -216,7 +205,7 @@ const FinancialReportDashboard: React.FC = () => {
                   <span
                     className={`${styles.statusValue} ${styles.pendingInflow}`}
                   >
-                    {formatCurrency(data.kpis.pending_inflow)}
+                    {formatCurrency(summaryData.kpis.pending_inflow)}
                   </span>
                 </div>
                 <div className={styles.statusItem}>
@@ -224,7 +213,7 @@ const FinancialReportDashboard: React.FC = () => {
                   <span
                     className={`${styles.statusValue} ${styles.pendingOutflow}`}
                   >
-                    {formatCurrency(data.kpis.pending_outflow)}
+                    {formatCurrency(summaryData.kpis.pending_outflow)}
                   </span>
                 </div>
                 <div className={styles.statusItem}>
@@ -232,13 +221,13 @@ const FinancialReportDashboard: React.FC = () => {
                     Denied Transactions
                   </span>
                   <span className={`${styles.statusValue} ${styles.denied}`}>
-                    {formatCurrency(data.kpis.denied_total)}
+                    {formatCurrency(summaryData.kpis.denied_total)}
                   </span>
                 </div>
                 <div className={styles.actionBox}>
                   <p>
                     <strong>Action Required:</strong>{" "}
-                    {getActionRequired(data)}
+                    {getActionRequired(summaryData)}
                   </p>
                 </div>
               </div>
@@ -253,19 +242,19 @@ const FinancialReportDashboard: React.FC = () => {
               <h4>Report Parameters</h4>
               <p>
                 Date Range:{" "}
-                {new Date(data.filters.from_date).toLocaleDateString()} -{" "}
-                {new Date(data.filters.to_date).toLocaleDateString()}
+                {new Date(summaryData.filters.from_date).toLocaleDateString()} -{" "}
+                {new Date(summaryData.filters.to_date).toLocaleDateString()}
               </p>
             </div>
             <div className={styles.footerColumn}>
               <h4>Data Summary</h4>
-              <p>Records Processed: {data.diagnostics.records_considered}</p>
+              <p>Records Processed: {summaryData.diagnostics.records_considered}</p>
               <p>Allocation Categories: 3</p>
               <p>Report Accuracy: 99.4%</p>
             </div>
             <div className={styles.footerColumn}>
               <h4>Generated</h4>
-              <p>{formatDate(data.kpis.last_updated)}</p>
+              <p>{formatDate(summaryData.kpis.last_updated)}</p>
               <p>Financial Reports System</p>
               <p>Version 2.1</p>
             </div>

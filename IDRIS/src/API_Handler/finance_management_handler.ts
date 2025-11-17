@@ -86,6 +86,13 @@ export async function getBudgetSummary(from_date: string, to_date: string): Prom
   return data;
 }
 
+export async function getNestedBudgetSummary(from_date: string, to_date: string): Promise<any> {
+  const { data } = await API.get("/finance/summary/nested_budget_allocation", {
+    params: { from_date, to_date }
+  });
+  return data;
+}
+
 export async function getInflowsReport(
   from_date?: string,
   to_date?: string,

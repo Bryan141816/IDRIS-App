@@ -10,8 +10,9 @@ import PendingTransactionsChart from "./PendingTransactionChart";
 import DataTable from "./DataTable";
 
 import { jsPDF } from "jspdf";
-import { getBudgetSummary } from "../../../../API_Handler/finance_management_handler";
+import { getBudgetSummary, getNestedBudgetSummary } from "../../../../API_Handler/finance_management_handler";
 import { CompanyInfo, FinanceRecordType, emptyFinanceRecord } from "../types";
+import { NestedAllocationItem } from "./types";
 import { formatDate, formatDateOnly, getActionRequired, getTotalPendingTransactions } from "../helpers";
 import { formatCurrency } from "../../../helpers";
 
@@ -36,6 +37,7 @@ const FinancialReportDashboard: React.FC = () => {
 
   // state for API data
   const [data, setData] = useState<FinanceRecordType>(emptyFinanceRecord);
+  const [tableData, setTableData] = useState<NestedAllocationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -58,7 +60,19 @@ const FinancialReportDashboard: React.FC = () => {
       }
     };
 
+    const fetchTableData = async () => {
+      try {
+        const response = await getNestedBudgetSummary(effectiveDateFrom, effectiveDateTo);
+        console.log("Nested BudgetSummary:", response);
+        setTableData(response);
+      } catch (err: any) {
+        console.error("Failed to fetch table data:", err);
+        setError("Could not load table data.");
+      }
+    }
+
     fetchData();
+    fetchTableData();
   }, []);
 
 
@@ -171,7 +185,7 @@ const FinancialReportDashboard: React.FC = () => {
         <div className="pageBreakBefore" />
 
         {/* Detailed Breakdown */}
-        <DataTable data={data} kpis={data.kpis} />
+        <DataTable tableData={tableData} kpis={data.kpis} />
 
         <div className="pageBreakBefore" />
 

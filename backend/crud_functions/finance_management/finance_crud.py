@@ -256,3 +256,81 @@ class FinanceRecordCRUD:
 
         ordered = [result_map[cat] for cat in sorted(result_map.keys())]
         return ordered
+
+    @staticmethod
+    def summarize_by_nested_budget_allocation(
+        db: Session,
+        *,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        include_zero_rows: bool = True,
+    ) -> List[Dict[str, Any]]:
+        filters = [
+            (Donation.donation_type == None) | (Donation.donation_type != DonationType.INKIND)
+        ]
+        if start_date:
+            filters.append(FinanceRecord.date >= start_date)
+        if end_date:
+            filters.append(FinanceRecord.date <= end_date)
+
+        # Query for all relevant finance records
+        records_query = select(FinanceRecord).outerjoin(Donation).where(and_(*filters))
+        records = db.execute(records_query).scalars().all()
+
+        # In-memory processing
+        summary_map: Dict[str, Dict[str, Any]] = {}
+
+        # Initialize with all possible inflow sources
+        if include_zero_rows:
+            for source in InflowSource:
+                summary_map[source.value] = {
+                    "budget_for": source.value,
+                    "inflow_total": Decimal(0),
+                    "outflow_total": Decimal(0),
+                    "net_total": Decimal(0),
+                    "percentage_spent": Decimal(0),
+                    "children": []
+                }
+
+        outflows: List[FinanceRecord] = []
+
+        # First pass: aggregate inflows
+        for r in records:
+            if r.transaction_type == TransactionType.INFLOW and r.inflow_source:
+                source_val = r.inflow_source.value
+                if source_val not in summary_map:
+                     summary_map[source_val] = {
+                        "budget_for": source_val,
+                        "inflow_total": Decimal(0),
+                        "outflow_total": Decimal(0),
+                        "net_total": Decimal(0),
+                        "percentage_spent": Decimal(0),
+                        "children": []
+                    }
+                summary_map[source_val]["inflow_total"] += r.amount
+            elif r.transaction_type == TransactionType.OUTFLOW:
+                outflows.append(r)
+
+        # Second pass: process and nest outflows
+        for r in outflows:
+            source_val = r.inflow_source
+            if source_val and source_val in summary_map:
+                summary_map[source_val]["outflow_total"] += r.amount
+                child_record = {
+                    "budget_for": r.spend_category.value if r.spend_category else "Uncategorized",
+                    "inflow_total": Decimal(0),
+                    "outflow_total": r.amount,
+                    "net_total": -r.amount,
+                    "percentage_spent": Decimal(0), # Not applicable for children
+                }
+                summary_map[source_val]["children"].append(child_record)
+
+        # Final pass: calculate net and percentage
+        for source_val, summary in summary_map.items():
+            summary["net_total"] = summary["inflow_total"] - summary["outflow_total"]
+            if summary["inflow_total"] > 0:
+                summary["percentage_spent"] = (summary["outflow_total"] * 100) / summary["inflow_total"]
+            else:
+                summary["percentage_spent"] = Decimal(0)
+
+        return sorted(summary_map.values(), key=lambda x: x["budget_for"])

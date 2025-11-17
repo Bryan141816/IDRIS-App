@@ -181,6 +181,25 @@ def get_budget_allocation_summary(
     return result
 
 
+@router_admin.get("/summary/nested_budget_allocation")
+def get_nested_budget_allocation_summary(
+    start_date: Optional[date] = Query(None, description="Filter start date"),
+    end_date: Optional[date] = Query(None, description="Filter end date"),
+    include_zero_rows: bool = Query(True, description="Include categories with zero totals"),
+    db: Session = Depends(get_db),
+):
+    """
+    Summarize inflows and outflows grouped by budget allocation with nested outflows.
+    """
+    result = FinanceRecordCRUD.summarize_by_nested_budget_allocation(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        include_zero_rows=include_zero_rows,
+    )
+    return result
+
+
 @router_admin.get("/receipt/{finance_id}", response_model=FinanceReceiptSchema)
 def get_finance_receipt(finance_id: str, db: Session = Depends(get_db)):
     receipt_data = get_finance_receipt_data(db, finance_id)

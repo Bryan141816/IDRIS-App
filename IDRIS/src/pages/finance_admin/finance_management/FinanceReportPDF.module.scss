@@ -21,11 +21,11 @@ $gray-800: #1f2937;
   padding: 2rem;
 }
 
-.horizontalflex{
+.horizontalflex {
   display: flex;
   flex-direction: row;
   width: auto;
-  justify-content: space-between;  
+  justify-content: space-between;
 }
 
 .companyBranding {
@@ -58,7 +58,7 @@ $gray-800: #1f2937;
   margin: 0;
 }
 
-.companyInfo {  
+.companyInfo {
   text-align: right;
   font-size: 0.875rem;
   color: $gray-600;
@@ -189,9 +189,24 @@ $gray-800: #1f2937;
   gap: 1rem;
 }
 
+.totalContainers {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .summaryLabel {
   color: $gray-600;
   margin: 0;
+  padding-left: 10px;
+  border-left: 10px solid $primary-color;
+  border-radius: 20px;
+  background-color: $gray-300;
+
+}
+
+.redText{
+  color: $error-color;
 }
 
 .summaryValue {
@@ -240,6 +255,7 @@ $gray-800: #1f2937;
   text-align: center;
   font-size: 0.75rem;
   color: #6b7280;
+
   // display: none;
   p {
     margin: 0.25rem 0;
@@ -249,13 +265,15 @@ $gray-800: #1f2937;
 // Print Media Queries  
 @media print {
   @page {
-    size: letter portrait;         
-    margin: 0;               
+    size: letter portrait;
+    margin: 0;
   }
 
   body {
-    visibility: hidden;  /* Hide the body initially */
-    transform: scale(0.8);  /* Reduces size to 80% of the original */
+    visibility: hidden;
+    /* Hide the body initially */
+    transform: scale(0.8);
+    /* Reduces size to 80% of the original */
     transform-origin: top left;
   }
 
@@ -265,7 +283,8 @@ $gray-800: #1f2937;
   }
 
   /* Remove any default browser header/footer */
-  header, footer {
+  header,
+  footer {
     display: none;
   }
 
@@ -275,24 +294,24 @@ $gray-800: #1f2937;
   }
 
   .donationReport {
-    position: static;             // was absolute (caused overflow issues)
+    position: static; // was absolute (caused overflow issues)
     display: flex;
     flex-direction: column;
-    min-height: 100vh;            // fill the page height
-    width: 100%;                  // no max-content
-    height: auto;                 // don't lock to 11in
+    min-height: 100vh; // fill the page height
+    width: 100%; // no max-content
+    height: auto; // don't lock to 11in
     margin: 0;
-    padding: 0;  
+    padding: 0;
   }
 
   .reportHeader {
     break-inside: avoid;
     page-break-inside: avoid;
-    padding: 8mm 0 4mm 0;         // compact header
+    padding: 8mm 0 4mm 0; // compact header
   }
 
   .reportMain {
-    flex: 1 1 auto; 
+    flex: 1 1 auto;
   }
 
   .companyLogo {
@@ -329,7 +348,7 @@ $gray-800: #1f2937;
     background-color: $gray-100;
   }
 
-  .reportMain{
+  .reportMain {
     height: fit-content;
   }
 
@@ -348,28 +367,39 @@ $gray-800: #1f2937;
   }
 
   .donationsTable th:nth-child(1),
-  .donationsTable td:nth-child(1) { // ID column
-    width: 20%;  
+  .donationsTable td:nth-child(1) {
+    // ID column
+    width: 20%;
   }
+
   .donationsTable th:nth-child(2),
-  .donationsTable td:nth-child(2) { // Donor Name Column
-    width: 20%;  
+  .donationsTable td:nth-child(2) {
+    // Donor Name Column
+    width: 20%;
   }
+
   .donationsTable th:nth-child(3),
-  .donationsTable td:nth-child(3) { // Amount Column
-    width: 20%;  
+  .donationsTable td:nth-child(3) {
+    // Amount Column
+    width: 20%;
   }
+
   .donationsTable th:nth-child(4),
-  .donationsTable td:nth-child(4) { // Date Column
-    width: 20%;  
+  .donationsTable td:nth-child(4) {
+    // Date Column
+    width: 20%;
   }
+
   .donationsTable th:nth-child(5),
-  .donationsTable td:nth-child(5) { // Type Column
-    width: 20%;  
+  .donationsTable td:nth-child(5) {
+    // Type Column
+    width: 20%;
   }
+
   .donationsTable th:nth-child(6),
-  .donationsTable td:nth-child(6) { // Status Column
-    width: 20%;  
+  .donationsTable td:nth-child(6) {
+    // Status Column
+    width: 20%;
   }
 
   .amount {
@@ -409,11 +439,11 @@ $gray-800: #1f2937;
 
   .donationsTable {
     width: 100%;
-    table-layout: auto;           // let browser decide widths
+    table-layout: auto; // let browser decide widths
     page-break-inside: auto;
     border-collapse: collapse;
   }
-  
+
   .donationsTable tr {
     page-break-inside: avoid;
     page-break-after: auto;
@@ -432,20 +462,23 @@ $gray-800: #1f2937;
   }
 
   .summarySection {
-    break-inside: avoid;        // avoid splitting the summary box
+    break-inside: avoid; // avoid splitting the summary box
     page-break-inside: avoid;
     background-color: $gray-100;
     font-size: 0.875rem;
   }
 
   .printSection {
-    display: none;              // hide the print button
+    display: none; // hide the print button
   }
 
   // Optional: tame images/branding
-  .companyLogo { width: 3rem; height: 3rem; }
+  .companyLogo {
+    width: 3rem;
+    height: 3rem;
+  }
 
-  .noData{
+  .noData {
     text-align: center;
   }
 }

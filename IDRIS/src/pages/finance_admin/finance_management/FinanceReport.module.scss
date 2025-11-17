@@ -1,4 +1,4 @@
-/* donation_report.module.scss */
+@use '../../../styles/variables' as * ;
 
 // Variables
 $primary-color: #2563eb;
@@ -205,6 +205,10 @@ $gray-800: #1f2937;
 
   &.donorCount {
     color: $primary-color;
+  }
+
+  &.redText{
+    color: $scarlet;
   }
 }
 

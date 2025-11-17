@@ -46,7 +46,6 @@ const InflowModal: React.FC<{
 }> = ({ open, mode, initial, onClose, onSave }) => {
   const [form, setForm] = useState<Partial<InflowItem>>(initial || {});
   const readOnly = mode === 'view';
-
   useEffect(() => {
     if (open) {
       const isAdd = mode === 'add';
@@ -187,7 +186,16 @@ const InflowModal: React.FC<{
                   ))}
                 </select>
               </div>
-
+              <div className="form-group">
+                <label>Vendor:</label>
+                <input
+                  disabled={readOnly}
+                  type="text"
+                  min={0}
+                  placeholder="Enter fullname"
+                  onChange={e => setForm({ ...form, counterparty: e.target.value })}
+                />
+              </div>
               <div className="form-group">
                 <label>Amount (PHP)</label>
                 <div className="input-with-icon">
@@ -330,6 +338,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
             <thead>
               <tr>
                 <th>Inflow Source</th>
+                <th>Source Name</th>
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Purpose</th>
@@ -340,6 +349,7 @@ const InflowsSection: React.FC<{ inflows?: InflowItem[], refetchData?: () => voi
               {rows?.map((row, index) => (
                 <tr key={index}>
                   <td>{strip_underscores(row.inflow_source)}</td>
+                  <td>{row.counterparty}</td>
                   <td className="amount positive">{formatCurrency(row.amount)}</td>
                   <td>{new Date(row.date).toLocaleDateString()}</td>
                   <td>{row.purpose}</td>

@@ -32,25 +32,33 @@ export default function FinanceReport({
   const _finances = location.state?.finances;
 
   const repTitle =
-  (location.state as any)?.title ??
-  (location.state as any)?.reportTitle ??
-  undefined;
+    (location.state as any)?.title ??
+    (location.state as any)?.reportTitle ??
+    undefined;
 
   const specific = repTitle ?? reportTitle;
   const title = specific ? `Finance Report: ${specific}` : "Finance Report";
-  
+
   const hideCounterparty = reportType == 'inflows';
 
   // ------- Rows: no placeholders; show empty state instead -------
   const [rows, setRows] = useState<Finance[]>(Array.isArray(_finances) ? _finances : []);
-  console.log("Rows", rows);
 
 
-  const totalAmount = rows.reduce((sum, f) => sum + (Number.isFinite(f.amount) ? f.amount : 0), 0);
+  const totalInflows = rows
+    .filter(f => f.transaction_type === 'INFLOW')
+    .reduce((sum, f) => sum + (Number.isFinite(f.amount) ? f.amount : 0), 0);
+
+  const totalOutflows = rows
+    .filter(f => f.transaction_type === 'OUTFLOW')
+    .reduce((sum, f) => sum + (Number.isFinite(f.amount) ? f.amount : 0), 0);
+
+  const netBalance = totalInflows - totalOutflows;
+  console.log("ReportType:", specific);
 
   const handleDownloadPDF = async () => {
     const doc = new jsPDF({ orientation: "p", unit: "mm", format: "letter" });
-    const pageWidth  = doc.internal.pageSize.getWidth();
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const leftMargin = 15, rightMargin = 15, topMargin = 18, bottomMargin = 15;
 
@@ -108,25 +116,25 @@ export default function FinanceReport({
 
     const body = rows.length
       ? rows.map(r => [
-          hideCounterparty
-            ? [
-                String(r.finance_id),
-                formatCurrency(r.amount),
-                formatDateOnly(r.date),
-                r.inflow_source || r.spend_category || "—",
-                r.purpose,
-                r.transaction_type,
-              ]
-            : [
-                String(r.finance_id),
-                r.counterparty || "—",
-                formatCurrency(r.amount),
-                formatDateOnly(r.date),
-                r.inflow_source || r.spend_category || "—",
-                r.purpose,
-                r.transaction_type,
-              ]
-        ])
+        hideCounterparty
+          ? [
+            String(r.finance_id),
+            formatCurrency(r.amount),
+            formatDateOnly(r.date),
+            r.inflow_source || r.spend_category || "—",
+            r.purpose,
+            r.transaction_type,
+          ]
+          : [
+            String(r.finance_id),
+            r.counterparty || "—",
+            formatCurrency(r.amount),
+            formatDateOnly(r.date),
+            r.inflow_source || r.spend_category || "—",
+            r.purpose,
+            r.transaction_type,
+          ]
+      ])
       : [["No Data Found", "", "", "", "", "", ""]];
 
     autoTable(doc, {
@@ -143,10 +151,23 @@ export default function FinanceReport({
     const finalY: number = (lastTable?.finalY ?? topMargin + 40) as number;
 
     // Summary box (on last page)
+    const summaryLines = [];
+    if (reportType !== 'outflows') {
+      summaryLines.push(`Total Inflows: ${formatCurrency(totalInflows)}`);
+    }
+    if (reportType !== 'inflows') {
+      summaryLines.push(`Total Outflows: ${formatCurrency(totalOutflows)}`);
+    }
+    if (reportType !== 'inflows' && reportType !== 'outflows') {
+      summaryLines.push(`Net Balance: ${formatCurrency(netBalance)}`);
+    }
+    summaryLines.push(`Number of Transactions: ${rows.length}`);
+
     let sumY = finalY + 8;
     const boxX = leftMargin;
     const boxW = pageWidth - leftMargin - rightMargin;
-    const boxH = 22;
+    const lineSpacing = 6;
+    const boxH = 14 + (summaryLines.length * lineSpacing); // Dynamic height
 
     if (sumY + boxH > pageHeight - bottomMargin) {
       doc.addPage();
@@ -163,8 +184,11 @@ export default function FinanceReport({
     doc.text("Summary", boxX + 4, sumY + 7);
 
     doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(60);
-    doc.text(`Total Amount: ${formatCurrency(totalAmount)}`, boxX + 4, sumY + 13);
-    doc.text(`Number of Transactions: ${rows.length}`, boxX + 4, sumY + 19);
+    let currentY = sumY + 7 + lineSpacing;
+    summaryLines.forEach(line => {
+      doc.text(line, boxX + 4, currentY);
+      currentY += lineSpacing;
+    });
 
     const safeTitle = reportTitle.replace(/\s+/g, "_").toLowerCase();
     doc.save(`${safeTitle}.pdf`);
@@ -245,12 +269,30 @@ export default function FinanceReport({
         <div className={styles.summarySection}>
           <h3 className={styles.summaryTitle}>Summary</h3>
           <div className={styles.summaryGrid}>
-            <div className={styles.summaryItem}>
-              <p className={styles.summaryLabel}>Total Amount:</p>
-              <p className={`${styles.summaryValue} ${styles.totalAmount}`}>
-                {formatCurrency(totalAmount)}
-              </p>
-            </div>
+            {specific !== 'OUTFLOWS' && (
+              <div className={styles.summaryItem}>
+                <p className={styles.summaryLabel}>Total Inflows:</p>
+                <p className={`${styles.summaryValue} ${styles.totalAmount}`}>
+                  {formatCurrency(totalInflows)}
+                </p>
+              </div>
+            )}
+            {(specific !== 'INFLOWS' && specific !== 'OUTFLOWS') && (
+              <div className={styles.summaryItem}>
+                <p className={styles.summaryLabel}>Net Balance:</p>
+                <p className={`${styles.summaryValue} ${styles.totalAmount}`}>
+                  {formatCurrency(netBalance)}
+                </p>
+              </div>
+            )}
+            {specific !== 'INFLOWS' && (
+              <div className={styles.summaryItem}>
+                <p className={styles.summaryLabel}>Total Outflows:</p>
+                <p className={`${styles.summaryValue} ${styles.totalAmount} ${styles.redText}`}>
+                  {formatCurrency(totalOutflows)}
+                </p>
+              </div>
+            )}
             <div className={styles.summaryItem}>
               <p className={styles.summaryLabel}>Number of Transactions:</p>
               <p className={`${styles.summaryValue} ${styles.donorCount}`}>{rows.length}</p>

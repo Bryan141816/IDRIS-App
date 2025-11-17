@@ -314,6 +314,18 @@ $color-white: #ffffff;
   .cellUtil { font-weight: 500; }
   .totalsLabel { font-weight: 700; }
 
+  .childRow {
+    background-color: #f0f9ff; // A light blue to distinguish child rows
+  
+    &:hover {
+      background-color: #e0f2fe;
+    }
+  }
+  
+  .childCell {
+    padding-left: 3rem !important; // Indent child rows
+  }
+
   .footer {
     border-top: 2px solid #1f2937; /* gray-900 */
     padding-top: 1.5rem;

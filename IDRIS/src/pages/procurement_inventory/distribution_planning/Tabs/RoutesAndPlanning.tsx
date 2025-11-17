@@ -78,6 +78,7 @@ export interface ReliefItemRef {
   item_name: string;
   category: string;
   quantity: number;
+  unit: string;
 }
 
 export interface ProcurementItemRef {

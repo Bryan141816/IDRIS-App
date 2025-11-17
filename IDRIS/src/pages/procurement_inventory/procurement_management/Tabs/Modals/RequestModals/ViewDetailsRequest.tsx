@@ -366,6 +366,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
               <th style={{ textAlign: "start", padding: "10px" }}>
                 Quantity Needed
               </th>
+              <th style={{ textAlign: "start", padding: "10px" }}>Unit</th>
               {status.toLowerCase() !== "pending approval" && showInventory && (
                 <>
                   <th style={{ textAlign: "start", padding: "10px" }}>
@@ -393,6 +394,7 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
                   <td style={{ padding: "10px" }}>{item.name}</td>
                   <td style={{ padding: "10px" }}>{item.category}</td>
                   <td style={{ padding: "10px" }}>{item.quantity}</td>
+                  <td style={{ padding: "10px" }}>{item.unit}</td>
                   {status.toLowerCase() !== "pending approval" &&
                     showInventory && (
                       <>

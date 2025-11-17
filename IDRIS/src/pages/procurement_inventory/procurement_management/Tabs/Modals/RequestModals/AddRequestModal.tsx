@@ -329,7 +329,10 @@ export const SubmitProcurementRequest: React.FC<
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(4,1fr)",
+                    gridTemplateColumns:
+                      formData.request_type === "relief"
+                        ? "repeat(5,1fr)"
+                        : "repeat(4,1fr)",
                     gridTemplateRows: "repeat(2, auto)",
                     gap: "10px",
                   }}
@@ -344,7 +347,7 @@ export const SubmitProcurementRequest: React.FC<
                     <label>Category</label>
                   )}
                   <label>Quantity</label>
-                  {formData.request_type !== "relief" && <label>Unit</label>}
+                  <label>Unit</label>
                   <label>Action</label>
 
                   <input
@@ -396,24 +399,22 @@ export const SubmitProcurementRequest: React.FC<
                       }));
                     }}
                   />
-                  {formData.request_type !== "relief" && (
-                    <select
-                      value={itemForm.unit}
-                      onChange={(e) => {
-                        const { value } = e.target;
-                        setItemForm((prev) => ({
-                          ...prev,
-                          unit: value,
-                        }));
-                      }}
-                    >
-                      <option value="pcs">pcs</option>
-                      <option value="set">set</option>
-                      <option value="units">units</option>
-                      <option value="boxes">boxes</option>
-                      <option value="packs">packs</option>
-                    </select>
-                  )}
+                  <select
+                    value={itemForm.unit}
+                    onChange={(e) => {
+                      const { value } = e.target;
+                      setItemForm((prev) => ({
+                        ...prev,
+                        unit: value,
+                      }));
+                    }}
+                  >
+                    <option value="pcs">pcs</option>
+                    <option value="set">set</option>
+                    <option value="units">units</option>
+                    <option value="boxes">boxes</option>
+                    <option value="packs">packs</option>
+                  </select>
 
                   <button
                     className="secondary-btn"
@@ -431,10 +432,7 @@ export const SubmitProcurementRequest: React.FC<
                               ? itemForm.category
                               : undefined,
                           quantity: itemForm.quantity,
-                          unit:
-                            formData.request_type !== "relief"
-                              ? itemForm.unit
-                              : undefined,
+                          unit: itemForm.unit,
                         },
                       ]);
 
@@ -489,7 +487,10 @@ export const SubmitProcurementRequest: React.FC<
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(4,1fr)",
+                        gridTemplateColumns:
+                          formData.request_type === "relief"
+                            ? "repeat(5,1fr)"
+                            : "repeat(4,1fr)",
                         gap: "10px",
                         alignItems: "center",
                         justifyContent: "center",
@@ -504,9 +505,7 @@ export const SubmitProcurementRequest: React.FC<
 
                       <span>{item.quantity}</span>
 
-                      {formData.request_type !== "relief" && (
-                        <span>{item.unit}</span>
-                      )}
+                      <span>{item.unit}</span>
                       <div
                         style={{
                           display: "flex",

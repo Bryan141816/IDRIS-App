@@ -581,9 +581,6 @@ class ProcurementRequest(Base):
         ForeignKey("evacuation_center.evacuation_id", ondelete="SET NULL"),
         nullable=True,
     )
-    end_address = Column(String(255), nullable=True)
-    end_lat = Column(Float, nullable=True)
-    end_long = Column(Float, nullable=True)
     priority = Column(String(255))
     date_requested = Column(Date)
     disaster_type = Column(String(255), nullable=False)
@@ -683,7 +680,7 @@ class ReliefRequestItem(Base):
     item_name = Column(String(255), nullable=False)
     category = Column(String(255), nullable=False)
     quantity = Column(Integer, nullable=False)
-
+    unit = Column(String(255))
     # ✅ belongs to ONE request
     request = relationship("ProcurementRequest", back_populates="relief_items")
     distributions = relationship(

@@ -1,0 +1,119 @@
+.notification-page {
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: "Poppins", sans-serif;
+  
+    .notifications-title {
+      color: #333;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      text-align: center;
+      position: relative;
+    }
+  
+    .notifications-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+  
+    .no-notifications {
+      text-align: center;
+      padding: 50px;
+      color: #888;
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      font-size: 1.1rem;
+    }
+  
+    .notification-item {
+      background-color: #fff;
+      border-radius: 12px;
+      transition:
+        box-shadow 0.3s,
+        transform 0.3s;
+      border: 1px solid #e0e0e0;
+      position: relative;
+      overflow: hidden;
+  
+      &.unread {
+        border-left: 5px solid #1890ff;
+        background-color: #f7faff;
+      }
+  
+      &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      }
+  
+      .notification-button {
+        all: unset;
+        cursor: pointer;
+        display: block;
+        width: 100%;
+        padding: 20px;
+        text-align: left;
+  
+        .notification-content {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+  
+        .notification-title {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #2c3e50;
+        }
+  
+        .notification-message {
+          font-size: 1rem;
+          color: #555;
+        }
+  
+        .notification-date {
+          font-size: 0.85rem;
+          color: #888;
+          margin-top: 5px;
+        }
+      }
+    }
+  }
+  
+  /* Tablet Styles */
+  @media (max-width: 1024px) {
+    .notification-page {
+      padding: 15px;
+    }
+  
+    .notification-page .notification-item .notification-button {
+      padding: 18px;
+    }
+  }
+  
+  /* Mobile Styles */
+  @media (max-width: 767px) {
+    .notification-page {
+      padding: 10px;
+    }
+  
+    .notification-page .notifications-title {
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+    }
+  
+    .notification-page .notification-item .notification-button {
+      padding: 15px;
+  
+      .notification-title {
+        font-size: 1.1rem;
+      }
+      .notification-message {
+        font-size: 0.95rem;
+      }
+    }
+  }
+  

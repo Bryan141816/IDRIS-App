@@ -610,3 +610,74 @@ select {
   }
 }
 
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  #login-section #logo {
+    width: 50%;
+  }
+
+  #login-section #login-form {
+    max-width: 80%;
+    padding: 1.8rem;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 767px) {
+  #login-section {
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  #login-section #logo {
+    width: 90%;
+    margin-bottom: 1rem;
+
+    #logo-head {
+      flex-direction: column;
+      gap: 0;
+      img {
+        height: 80px;
+        width: 80px;
+        align-self: center;
+      }
+      p {
+        font-size: 4em;
+        letter-spacing: 5px;
+      }
+    }
+    #logo-app-name {
+      font-size: 1rem;
+    }
+  }
+
+  #login-section #login-form {
+    width: 100%;
+    max-width: 100%;
+    padding: 1.5rem;
+    box-shadow: none;
+    border: 1px solid #eee;
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .input-group input {
+      padding: 0.8rem 2.2rem 0.8rem 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    button {
+      padding: 0.8rem 1.2rem;
+      font-size: 0.95rem;
+    }
+  }
+
+  #select-userType button,
+  #select-userRole button,
+  #select-adminRole button {
+    width: 80%;
+  }
+}
+

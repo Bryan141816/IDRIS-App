@@ -52,6 +52,7 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
       item_name: string;
       category: string;
       quantity: number;
+      unit?: string;
     };
     type procurementType = {
       item_id: number;
@@ -86,13 +87,14 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
     if (requests.request_type === "relief") {
       requests.items.map((item) => {
         if ("category" in item) {
-          const { item_id, name, category, quantity } = item;
+          const { item_id, name, category, quantity, unit } = item;
           const relief_item: reliefType = {
             item_id: item_id,
             request_id: requests.request_id,
             item_name: name,
             category: category,
             quantity: quantity,
+            unit: unit ?? "pcs",
           };
           relief.push(relief_item);
         }

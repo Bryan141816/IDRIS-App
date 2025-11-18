@@ -168,6 +168,7 @@ export interface ReliefItem {
   name: string;
   category: string;
   quantity: number;
+  unit?: string;
 }
 
 export interface ProcurementItem {

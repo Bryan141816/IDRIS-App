@@ -723,8 +723,16 @@ const MapOfCebu = () => {
             </span>
           </div>
           <div style={{ ...progressWrap, marginTop: 8 }}>
-            <div style={{ width: `${utilPct}%`, height: "100%" }} />
-          </div>
+  <div
+    style={{
+      width: `${utilPct}%`,
+      height: "100%",
+      background: "#16a34a",  // <= make bar visible
+      transition: "width 0.3s ease"
+    }}
+  />
+</div>
+
         </div>
       </div>
     );

@@ -1,35 +1,30 @@
-/* ===== LGU MODALS – modern comfortable layout (final) ===== */
+/* ============================================================
+   LGU MODALS – CLEAN, FIXED, RESPONSIVE
+   ============================================================ */
+
+/* MAIN MODAL CONTAINER */
 .lgu-modal {
-  /* fill the Modal shell width; Modal's width prop controls outer max-width */
   width: 100%;
   max-width: none;
-  max-height: 90vh; /* scroll when tall */
+  max-height: 90vh;
   overflow-y: auto;
   overflow-x: hidden;
   margin: 0 auto;
-  padding: 20px 24px 16px;
+  padding: 20px 24px 20px;
   border-radius: 14px;
   background: #fff;
 
-  /* nice, thin scrollbar */
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-.lgu-modal::-webkit-scrollbar {
-  width: 8px;
-}
-.lgu-modal::-webkit-scrollbar-track {
-  background: transparent;
-}
+.lgu-modal::-webkit-scrollbar { width: 8px; }
 .lgu-modal::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 6px;
 }
-.lgu-modal::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+.lgu-modal::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* titles */
+/* TITLES */
 .lgu-modal .title-modal-text,
 .lgu-modal .details-title {
   font-size: 1.25rem;
@@ -37,47 +32,43 @@
   color: #0f172a;
 }
 
-/* section cards */
+/* SECTION CARDS */
 .lgu-modal .section-block {
-  background: #ffffff;
+  background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 18px 18px 14px;
-  box-shadow: 0 2px 12px rgba(2, 6, 23, 0.06);
   margin-bottom: 14px;
+  box-shadow: 0 2px 12px rgba(2, 6, 23, 0.06);
 }
 .lgu-modal .section-title {
-  margin: 0 0 10px 0;
+  margin-bottom: 10px;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
 }
 
-/* grid container inside sections (rows manage their own grid) */
+/* FORM GRID */
 .lgu-modal .lgu-modal-form {
   display: grid;
-  grid-template-columns: 1fr;
   gap: 14px;
 }
 
-/* rows: label | control | (optional lock/icon)
-   label flexes from 180→280px depending on width */
+/* ROW LAYOUT (Label | Control | Lock Icon) */
 .lgu-modal .lgu-row {
   display: grid;
-  grid-template-columns: minmax(180px, 280px) 1fr auto;
+  grid-template-columns: minmax(180px, 260px) 1fr auto;
   align-items: start;
   column-gap: 12px;
 }
 
-/* labels */
+/* LABELS */
 .lgu-modal .item-details-identifier {
   font-weight: 700;
   color: #334155;
   line-height: 1.25;
-  min-width: 0;
 }
 
-/* inputs/controls */
+/* INPUTS */
 .lgu-modal input[type="text"],
 .lgu-modal input[type="tel"],
 .lgu-modal input[type="number"],
@@ -92,13 +83,9 @@
   font-size: 0.97rem;
   color: #0f172a;
   outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
 }
 .lgu-modal textarea {
   min-height: 100px;
-  height: auto;
   resize: vertical;
 }
 .lgu-modal input:focus,
@@ -107,12 +94,14 @@
   border-color: #93c5fd;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
 }
-.lgu-modal .input-invalid {
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+
+/* INVALID INPUT */
+.input-invalid {
+  border: 2px solid #ef4444 !important;
+  background-color: #ffeaea !important;
 }
 
-/* file button (image pickers) */
+/* FILE-LIKE BUTTON */
 .lgu-modal .filelike {
   display: inline-flex;
   align-items: center;
@@ -121,160 +110,70 @@
   border: 1px dashed #cbd5e1;
   border-radius: 10px;
   background: #f8fafc;
-  color: #0f172a;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
 }
 .lgu-modal .filelike:hover {
   background: #f1f5f9;
   border-color: #93c5fd;
 }
 
-/* small previews */
+/* IMAGE THUMB */
 .lgu-modal .img-thumb {
   height: 64px;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
-  max-width: 100%;
 }
 
-/* footer actions (stick to bottom while scrolling) */
+/* ============================================================
+   FIXED STICKY FOOTER — NO MORE EXTRA SPACE
+   ============================================================ */
 .lgu-modal .action-button {
   position: sticky;
   bottom: 0;
   background: #fff;
+  padding: 12px 0 8px;
   display: flex;
-  gap: 8px;
   justify-content: flex-end;
-  padding-top: 10px;
+  gap: 10px;
   margin-top: 20px;
+  z-index: 5;
 }
-.lgu-modal .action-button > button {
-  border: none;
-  border-radius: 10px;
+.lgu-modal .action-button button {
   padding: 10px 16px;
+  border-radius: 10px;
   font-weight: 700;
+  border: none;
   cursor: pointer;
 }
-/* ensure content never hides behind the sticky action row */
-.lgu-modal {
-  padding-bottom: 72px; /* room for buttons while scrolling */
-}
 
-/* slightly lower max height on very short viewports */
-@media (max-height: 720px) {
-  .lgu-modal {
-    max-height: 84vh;
-  }
-}
-
-/* make label column a touch narrower on medium screens so values get more room */
-@media (max-width: 1200px) and (min-width: 901px) {
-  .lgu-modal .lgu-row {
-    grid-template-columns: minmax(160px, 240px) 1fr auto;
-  }
-}
-
-/* responsive: stack rows on narrow screens */
-@media (max-width: 900px) {
-  .lgu-modal {
-    padding: 16px;
-  }
-  .lgu-modal .lgu-row {
-    grid-template-columns: 1fr;
-    row-gap: 6px;
-  }
-}
-/* push the footer lower (closer to the bottom) */
-.lgu-modal {
-  padding-bottom: 20px; /* was ~72px – reduce the gap */
-}
-
-.lgu-modal .action-button {
-  position: sticky;
-  bottom: -10px; /* nudge below content area */
-  padding: 12px 0 4px; /* slimmer internal padding */
-  margin-top: 28px; /* a touch more space from content */
-  background: transparent; /* keep it solid over scroll */
-  z-index: 1;
-}
-
-/* optional: make the buttons sit even closer to the edge on tall screens */
-@media (min-height: 800px) {
-  .lgu-modal .action-button {
-    bottom: -16px;
-  }
-}
-/* --- Checkbox grids ----------------------------------------------------- */
+/* ============================================================
+   CHECKBOX GRID
+   ============================================================ */
 .lgu-checkgrid {
   display: grid;
   grid-template-columns: repeat(var(--cols, 3), minmax(160px, 1fr));
-  gap: 10px 24px; /* row-gap | column-gap */
-  align-items: center;
-  grid-auto-rows: 32px; /* equal row height for tidy alignment */
+  gap: 10px 20px;
 }
-
 .lgu-check {
   display: flex;
   align-items: center;
   gap: 8px;
-  line-height: 1; /* keep compact, no extra vertical wobble */
-  white-space: nowrap; /* avoid multi-line labels that misalign rows */
 }
-
 .lgu-check input {
   width: 16px;
   height: 16px;
 }
 
-.lgu-check-text {
-  font-weight: 500;
-  color: #0f172a;
-}
-
-/* Responsive: reduce columns gracefully */
-@media (max-width: 1000px) {
-  .lgu-checkgrid {
-    grid-template-columns: repeat(2, minmax(160px, 1fr));
-  }
-}
-@media (max-width: 600px) {
-  .lgu-checkgrid {
-    grid-template-columns: 1fr;
-  }
-  .lgu-checkgrid {
-    grid-auto-rows: auto;
-  } /* allow wrap on very small screens */
-  .lgu-check {
-    white-space: normal;
-  } /* let long labels wrap only on mobile */
-}
+/* ============================================================
+   IMAGES
+   ============================================================ */
 .lgu-media-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-top: 8px;
 }
-
-@media (max-width: 720px) {
-  .lgu-media-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-.lgu-media .img-thumb {
-  display: block;
-  width: 100%;
-  max-width: 260px;
-  height: auto;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
 .img-placeholder {
-  width: 260px;
+  width: 100%;
   height: 160px;
   display: grid;
   place-items: center;
@@ -282,22 +181,65 @@
   border: 1px dashed #cbd5e1;
   background: #f8fafc;
   color: #6b7280;
-  font-size: 0.925rem;
 }
-.input-invalid, .input-invalid:focus {
-  border: 2px solid #f44336 !important;
-  outline: none !important;
-  background-color: #ffeaea !important;
-  transition: border-color 0.2s, background 0.2s;
+
+/* ============================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================ */
+
+/* MEDIUM SCREENS */
+@media (max-width: 1200px) {
+  .lgu-modal .lgu-row {
+    grid-template-columns: minmax(150px, 220px) 1fr auto;
+  }
 }
-  
-/* LGUModal.css (or your global stylesheet) */
-.inline-warn {
-  color: #b91c1c;          /* red-700 */
-  font-size: 0.875rem;     /* 14px, tweak as you like */
-  margin-top: 4px;
+
+/* TABLETS */
+@media (max-width: 900px) {
+  .lgu-modal .lgu-row {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
 }
-.inline-warn::before {
-  content: "⚠ ";
-  font-size: 0.9em;
+
+/* MOBILE (perfect for 731px and below) */
+@media (max-width: 731px) {
+  .lgu-modal {
+    padding: 14px;
+    max-height: 88vh;
+  }
+
+  .lgu-modal .title-modal-text,
+  .lgu-modal .details-title {
+    text-align: center;
+    font-size: 1.15rem;
+  }
+
+  .lgu-modal .lgu-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lgu-modal input,
+  .lgu-modal select,
+  .lgu-modal textarea {
+    font-size: 0.9rem;
+  }
+
+  .lgu-checkgrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .lgu-media-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lgu-modal .action-button {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .lgu-modal .action-button button {
+    width: 100%;
+    font-size: 1rem;
+  }
 }

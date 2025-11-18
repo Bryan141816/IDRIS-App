@@ -1,18 +1,15 @@
-from crud_functions.procurement_manage.procurement_inventory import (
-    ProcurementInventoryCRUD,
-)
+
 import random
 import string
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, Query
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload, selectinload
-from database import Base, get_db
+from database import  get_db
 from models import (
     ProcurementRequest,
     LGURecords,
     DistributionRoute,
     DistributedItems,
-    InventoryItems,
     AssignedStorage,
     DistributionRouteLogs,
     ProcurementRequestItem,
@@ -23,25 +20,14 @@ from models import (
     TeamMembers,
     ProcurementRequestLog
 )
-from uuid import uuid4
 from datetime import datetime, timedelta, timezone, time
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from routers.role_checker import RoleChecker
-from fastapi import Request
-from sqlalchemy import func, desc, select, literal, and_, case
-from zoneinfo import ZoneInfo
-from data_schemas.procurement_management_schema import (
-    ProcurementRequestCreate,
-    ProcurementRequestSchema,
-    UpdateProcurementRequest,
-)
-from crud_functions.procurement_manage.procurement_management import (
-    ProcurementRequestCRUD,
-    UpdateProcurementRequest,
-)
-from routers.GetUserId import GetUserId
-from create_notification import send_notification
+from sqlalchemy import func, case
+
+
+
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.inspection import inspect
 router = APIRouter(
@@ -377,6 +363,26 @@ def approve_reject_request(
 
     try:
         # --- Create route & logs for relief requests ---
+        if type == "approve":
+            new_status = (
+                "Approved"
+                if query.request_type == "relief"
+                else "Waiting for Budget Approval"
+            )
+        else:
+            new_status = "Rejected"
+            query.status = new_status
+            db.commit()
+            db.refresh(query)
+
+            # Return a minimal, predictable response
+            return {
+                "request_id": query.request_id,
+                "status": query.status,
+                "request_type": query.request_type,
+            }
+
+        query.status = new_status
         if query.request_type == "relief":
             if not query.date_needed:
                 raise HTTPException(
@@ -410,60 +416,6 @@ def approve_reject_request(
             )
             db.add(log)
 
-            # --- Apply payload updates safely ---
-            # distributed = []
-            # if payload:
-            #     # Skip any client-side placeholders (assigned_id == -1)
-            #     cleaned = [item for item in payload if item.assigned_id != -1]
-            #
-            #     for item in cleaned:
-            #         assigned_inventory = (
-            #             db.query(AssignedStorage)
-            #             .options(selectinload(AssignedStorage.inventory_item))
-            #             .filter(
-            #                 AssignedStorage.assigned_id == item.assigned_id
-            #             )  # <-- correct use
-            #             .first()
-            #         )
-            #         if not assigned_inventory:
-            #             raise HTTPException(
-            #                 status_code=400,
-            #                 detail=f"Assigned storage {item.assigned_id} not found",
-            #             )
-            #         if not assigned_inventory.inventory_item:
-            #             raise HTTPException(
-            #                 status_code=400,
-            #                 detail=f"Inventory item for assigned {item.assigned_id} not found",
-            #             )
-            #
-            #         # Stock validations
-            #         if assigned_inventory.quantity < item.quantity_assigned:
-            #             raise HTTPException(
-            #                 status_code=400,
-            #                 detail=f"Insufficient assigned stock for assigned_id {item.assigned_id}",
-            #             )
-            #         if (
-            #             assigned_inventory.inventory_item.quantity
-            #             < item.quantity_assigned
-            #         ):
-            #             raise HTTPException(
-            #                 status_code=400,
-            #                 detail=f"Insufficient warehouse stock for item_id {item.item_id}",
-            #             )
-            #
-            #         assigned_inventory.quantity -= item.quantity_assigned
-            #         assigned_inventory.inventory_item.quantity -= item.quantity_assigned
-            #
-            #         obj = DistributedItems(
-            #             assigned_storage=item.assigned_id,
-            #             relief_id=item.item_id,
-            #             route=route.route_id,
-            #             quantity=item.quantity_assigned,
-            #         )
-            #         distributed.append(obj)
-            #
-            #     if distributed:
-            #         db.add_all(distributed)
 
         else:
             request_data = to_dict(query)
@@ -474,16 +426,7 @@ def approve_reject_request(
 
 
         # --- Update request status ---
-        if type == "approve":
-            new_status = (
-                "Approved"
-                if query.request_type == "relief"
-                else "Waiting for Budget Approval"
-            )
-        else:
-            new_status = "Rejected"
 
-        query.status = new_status
         db.commit()
         db.refresh(query)
 

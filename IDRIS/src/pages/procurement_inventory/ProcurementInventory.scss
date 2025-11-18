@@ -62,7 +62,7 @@
 
 .requests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* shrinkable for mobile */
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* shrinkable for mobile */
   gap: 1.5rem;
   width: 100%;
   box-sizing: border-box;

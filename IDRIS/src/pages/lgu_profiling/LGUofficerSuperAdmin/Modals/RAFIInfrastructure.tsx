@@ -440,7 +440,7 @@ const onImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
           <div className="action-button">
             <button style={{ background: "#749AB6", color: "#fff" }} onClick={handleSave}>Save</button>
-            <button style={{ background: "#F84B4D", color: "#fff" }} onClick={handleDelete}>Delete</button>
+            {/* <button style={{ background: "#F84B4D", color: "#fff" }} onClick={handleDelete}>Delete</button> */}
             <button style={{ background: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }} onClick={onClose}>Cancel</button>
           </div>
         </div>

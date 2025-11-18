@@ -360,3 +360,138 @@
   background: rgba(156, 163, 175, 0.5);
   border-radius: 4px;
 }
+/* ============================================
+   📱 IMPROVED MOBILE UI — 731px
+   ============================================ */
+@media screen and (max-width: 731px) {
+
+  .map-of-cebu-container {
+    flex-direction: column;
+  }
+
+  /* ----- FILTER BUTTONS (ONE LINE) ----- */
+  .map-buttons {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%); /* center horizontally */
+    display: flex;
+    gap: 4px;
+    flex-wrap: nowrap; /* force one line */
+    z-index: 5 !important;
+    width: 98%;
+    justify-content: center;
+  }
+
+  .map-button {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ----- SEARCH BAR BELOW BUTTONS ----- */
+  .map-search {
+    margin-top: 48px; /* moves below buttons */
+    width: 90% !important;
+    margin-left: 5% !important;
+    z-index: 10 !important;
+  }
+
+  .map-search input {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* ----- LEGEND SMALLER ----- */
+  .legend-box {
+    width: 130px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    bottom: 12px;
+    left: 8px;
+    z-index: 15 !important;
+  }
+
+  .legend-box h4 {
+    font-size: 13px !important;
+  }
+
+  .legend-color {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* ----- MAP HEIGHT FIX ----- */
+  .map-container {
+    width: 100% !important;
+    height: calc(100vh - 90px) !important;
+  }
+/* Sidebar on RIGHT SIDE (MOBILE) */
+.sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+
+  width: 300px !important;
+  height: 100vh !important;
+
+  background: #ffffff !important;
+  padding: 16px 12px !important;
+
+  overflow-y: auto !important;
+  border-left: 1px solid #ddd;
+
+  z-index:20 !important; /* 🔽 reduced from 99999 */
+}
+
+/* Close button adjust */
+.close-sidebar {
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 2100 !important; /* stays above sidebar but below header */
+}
+
+/* Map shrinks to make room for sidebar */
+.map-of-cebu-container.sidebar-open .map-container {
+  display: block !important;
+  width: calc(100% - 300px) !important;
+  z-index: -1 !important;
+}
+
+
+}
+/* ======================================================
+   ⭐ JUST MAKE BUTTONS + SEARCH BAR SMALLER (732–1100px)
+   ====================================================== */
+@media screen and (min-width: 732px) and (max-width: 1100px) {
+
+  /* LOWER the buttons layer */
+  .map-buttons {
+    z-index: 10 !important;   /* 🔽 very low */
+  }
+
+  /* Smaller buttons */
+  .map-buttons .map-button {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* Smaller search bar */
+  .map-search {
+    width: 300px !important;
+  }
+
+  .map-search input {
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+  }
+    .legend-box {
+    width: 150px !important;
+    padding: 7 10px !important;
+    font-size: 11px !important;
+    bottom: 12px;
+    left: 8px;
+    z-index: 15 !important;
+  }
+}

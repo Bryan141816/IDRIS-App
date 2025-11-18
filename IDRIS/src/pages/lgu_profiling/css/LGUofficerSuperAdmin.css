@@ -588,4 +588,104 @@ tfoot{border:none !important; outline: none !important;}
 }
 
 
-.is-sele
+.is-sele/* ============================================================
+   RESPONSIVE — LGU Officer SuperAdmin
+   ============================================================ */
+
+/* ---------- Tablet (max 1100px) --------- */
+@media screen and (max-width: 1100px) {
+
+  .app-container {
+    padding: 1.5rem;
+  }
+
+  .barangay-table,
+  .raffi-table,
+  #lgu-specific {
+    min-width: 900px;   /* prevent breaking header */
+    font-size: 14px;
+  }
+
+  td.col-action {
+    gap: 6px;
+  }
+
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+
+/* ---------- MOBILE VIEW (max-width: 731px) --------- */
+@media screen and (max-width: 731px) {
+
+  /* reduce whole page padding */
+  .app-container {
+    padding: 1rem;
+  }
+
+  /* Make header compact */
+  .lgu-header h1 {
+    font-size: 1.3rem;
+  }
+
+  /* ---------- Tables scroll horizontally ---------- */
+  .lgu-table-wrap,
+  .barangay-table-wrap,
+  .raffi-table-wrap {
+    overflow-x: auto;
+  }
+
+  .barangay-table,
+  .raffi-table,
+  #lgu-specific {
+    min-width: 760px !important;
+    font-size: 13px;
+  }
+
+  /* ---------- Buttons same size (View/Edit/Delete) ---------- */
+  .action-btn,
+  .action-btn.view,
+  .action-btn.edit,
+  .action-btn.delete,
+  .action-btn.edits {
+    padding: 6px 12px !important;
+    width: auto !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    margin-top: 0 !important;
+  }
+
+  td.col-action {
+    gap: 4px !important;
+  }
+
+  /* ---------- Back button smaller ---------- */
+  .back-button {
+    top: .8rem;
+    left: 1rem;
+    padding: .3rem .7rem;
+    font-size: .8rem;
+  }
+
+  /* ---------- Section headers readable ---------- */
+  .barangay-header h2,
+  .raffi-header h2,
+  .lgu-header h1 {
+    font-size: 1.1rem;
+    text-align: left;
+  }
+
+  /* ---------- Pagination Mobile Fix ---------- */
+  .table-pagination {
+    flex-direction: column;
+    gap: .5rem;
+    text-align: center;
+  }
+
+  .table-pagination .action-btn {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+}

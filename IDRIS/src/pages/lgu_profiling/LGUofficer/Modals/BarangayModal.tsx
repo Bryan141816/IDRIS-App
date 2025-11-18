@@ -146,7 +146,8 @@ export const BarangayViewModal: React.FC<ViewProps> = ({
 
         <div className="action-button">
           <button
-            style={{ backgroundColor: "#9CA3AF", color: "#fff" }}
+            style={{ backgroundColor: "rgb(248, 75, 77)", color: "rgb(255, 255, 255)" }}
+
             onClick={closeModal}
           >
             Close

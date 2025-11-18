@@ -226,3 +226,42 @@
         transform: scale(0.98);
     }
 }
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .profileForm {
+    width: 80%;
+    padding: 28px 24px;
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 767px) {
+  .activateFormContainer {
+    padding: 20px;
+    align-items: flex-start;
+  }
+
+  .profileForm {
+    width: 100%;
+    height: auto;
+    padding: 24px 18px;
+
+    h2 {
+      font-size: 1.6rem;
+    }
+  }
+
+  .columnContainer {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .inputContainers {
+    label {
+      font-size: 1rem;
+    }
+    input, select, textarea {
+      font-size: 1rem;
+    }
+  }
+}

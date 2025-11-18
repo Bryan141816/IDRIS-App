@@ -51,6 +51,7 @@ const FinanceAdmin: React.FC = () => {
 
       if (inflows) {
         setFundInFlows(inflows);
+        console.log("Inflows:", inflows)
       } else {
         console.error("Invalid response format for inflows:", inflows);
       }

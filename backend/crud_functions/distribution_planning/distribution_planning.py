@@ -317,9 +317,6 @@ class DistributionAndPlanningCRUD:
                     "status": r.request.status,
                     "end_barangay": r.request.end_barangay,
                     "end_evac": r.request.end_evac,
-                    "end_address": r.request.end_address,
-                    "end_lat": r.request.end_lat,
-                    "end_long": r.request.end_long,
                     "priority": r.request.priority,
                     "date_requested": (
                         r.request.date_requested.isoformat()
@@ -373,6 +370,7 @@ class DistributionAndPlanningCRUD:
                             "item_name": it.item_name,
                             "category": it.category,
                             "quantity": it.quantity,
+                            "unit": it.unit,
                         }
                         for it in (r.request.relief_items or [])
                     ],

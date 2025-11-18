@@ -71,6 +71,7 @@ export const FinalizeRouteSetup: React.FC<FinalizeRouteSetupProp> = ({
         name: item.item_name,
         category: item.category,
         quantity: item.quantity,
+        unit: item.unit,
         assigned_id: -1,
         inventory_name: "",
         warehouse_name: "",

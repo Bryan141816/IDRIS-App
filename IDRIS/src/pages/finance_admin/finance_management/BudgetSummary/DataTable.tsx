@@ -3,22 +3,16 @@ import React from "react";
 import styles from "./MainPage.module.scss";
 import { formatCurrency } from "../../../helpers";
 
-/* ========== Types ========== */
-export type AllocationItem = {
-  allocation: string;
-  inflow: number | string;
-  outflow: number | string;
-  net: number | string;
-  // pending_inflow: number | string;
-  // pending_outflow: number | string;
-  // denied: number | string;
-};
+import { NestedAllocationItem } from "./types";
 
+/* ========== Types ========== */
 export type FinanceData = {
   breakdown: {
-    allocation: AllocationItem[];
+    allocation: NestedAllocationItem[];
   };
 };
+
+export type TableData = NestedAllocationItem[];
 
 export type KPIs = {
   total_inflow: number | string;
@@ -30,11 +24,11 @@ export type KPIs = {
 };
 
 type Props = {
-  data: FinanceData;
+  tableData: TableData;
   kpis: KPIs;
 };
 
-const DataTable: React.FC<Props> = ({ data, kpis }) => {
+const DataTable: React.FC<Props> = ({ tableData, kpis }) => {
   const toNum = (v: number | string | null | undefined) => {
     const n = typeof v === "number" ? v : parseFloat(String(v ?? "0"));
     return Number.isFinite(n) ? n : 0;
@@ -58,56 +52,50 @@ const DataTable: React.FC<Props> = ({ data, kpis }) => {
               <th className={`${styles.th} ${styles.thRight}`}>Inflow</th>
               <th className={`${styles.th} ${styles.thRight}`}>Outflow</th>
               <th className={`${styles.th} ${styles.thRight}`}>Net Balance</th>
-              {/* <th className={`${styles.th} ${styles.thRight}`}>Pending In</th>
-              <th className={`${styles.th} ${styles.thRight}`}>Pending Out</th>
-              <th className={`${styles.th} ${styles.thRight}`}>Denied</th> */}
               <th className={`${styles.th} ${styles.thRight}`}>Utilization</th>
             </tr>
           </thead>
 
           <tbody className={styles.tableBody}>
-            {data.breakdown.allocation.map((item, index) => {
-              const inflow = toNum(item.inflow);
-              const outflow = toNum(item.outflow);
-              const util = inflow > 0 ? (((inflow - outflow) / inflow) * 100).toFixed(1) : "0.0";
+            {tableData.map((item, index) => {
+              const inflow = toNum(item.inflow_total);
+              const outflow = toNum(item.outflow_total);
+              const util = inflow > 0 ? ((outflow / inflow) * 100).toFixed(1) : "0.0";
 
               return (
-                <tr
-                  key={`${item.allocation}-${index}`}
-                  className={`${styles.row} ${index % 2 ? styles.rowAlt : ""}`}
-                >
-                  <td className={`${styles.cell} ${styles.cellLeft} ${styles.cellLabel}`}>
-                    {item.allocation.replace(/_/g, " ")}
-                  </td>
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellGreen} ${styles.cellStrong}`}>
-                    {formatCurrency(item.inflow)}
-                  </td>
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellRed} ${styles.cellStrong}`}>
-                    {formatCurrency(item.outflow)}
-                  </td>
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellBlue} ${styles.cellBold}`}>
-                    {formatCurrency(item.net)}
-                  </td>
-
-                  {/* <td className={`${styles.cell} ${styles.cellRight} ${styles.cellAmber}`}>
-                    {formatCurrency(item.pending_inflow)}
-                  </td>
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellOrange}`}>
-                    {formatCurrency(item.pending_outflow)}
-                  </td>
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellDanger}`}>
-                    {formatCurrency(item.denied)}
-                  </td> */}
-
-                  <td className={`${styles.cell} ${styles.cellRight} ${styles.cellUtil}`}>
-                    {util}%
-                  </td>
-                </tr>
+                <React.Fragment key={`${item.budget_for}-${index}`}>
+                  <tr className={`${styles.row} ${index % 2 ? styles.rowAlt : ""}`}>
+                    <td className={`${styles.cell} ${styles.cellLeft} ${styles.cellLabel}`}>
+                      {item.budget_for.replace(/_/g, " ")}
+                    </td>
+                    <td className={`${styles.cell} ${styles.cellRight} ${styles.cellGreen} ${styles.cellStrong}`}>
+                      {formatCurrency(item.inflow_total)}
+                    </td>
+                    <td className={`${styles.cell} ${styles.cellRight} ${styles.cellRed} ${styles.cellStrong}`}>
+                      {formatCurrency(item.outflow_total)}
+                    </td>
+                    <td className={`${styles.cell} ${styles.cellRight} ${styles.cellBlue} ${styles.cellBold}`}>
+                      {formatCurrency(item.net_total)}
+                    </td>
+                    <td className={`${styles.cell} ${styles.cellRight} ${styles.cellUtil}`}>
+                      {util}%
+                    </td>
+                  </tr>
+                  {/* Render child rows */}
+                  {item.children?.map((child, childIndex) => (
+                    <tr key={`${child.budget_for}-${childIndex}`} className={styles.childRow}>
+                      <td className={`${styles.cell} ${styles.cellLeft} ${styles.cellLabel} ${styles.childCell}`}>
+                        {child.budget_for.replace(/_/g, " ")}
+                      </td>
+                      <td className={`${styles.cell} ${styles.cellRight} ${styles.cellGreen}`}></td>
+                      <td className={`${styles.cell} ${styles.cellRight} ${styles.cellRed}`}>
+                        {formatCurrency(child.outflow_total)}
+                      </td>
+                      <td className={`${styles.cell} ${styles.cellRight} ${styles.cellBlue}`}></td>
+                      <td className={`${styles.cell} ${styles.cellRight}`}></td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               );
             })}
 

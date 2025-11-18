@@ -552,3 +552,79 @@ td.col-action {
 }
 
 /* ---------------------raffii table adjust------------------------ */
+
+
+/* ============================
+   MOBILE BREAKPOINT (max 731px)
+   ============================ */
+@media screen and (max-width: 731px) {
+
+  /* Reduce padding for mobile */
+  .app-container {
+    padding: 1rem;
+  }
+
+  /* Summary card becomes single column */
+  .lgu-summary-card {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+  }
+
+  .lgu-summary-left {
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .lgu-summary-img {
+    width: 120px;
+  }
+
+  /* Stack labels + values */
+  .lgu-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables scroll horizontally for mobile */
+  .barangay-table-wrap,
+  .raffi-table-wrap {
+    overflow-x: auto;
+  }
+
+  .barangay-table,
+  .raffi-table {
+    min-width: 700px;
+    font-size: 13px;
+  }
+
+  /* Page title smaller */
+  .lgu-page-title {
+    font-size: 1.3rem;
+  }
+
+  /* ================================
+     FIX: Uniform Action Button Sizes
+     ================================ */
+  .action-btn,
+  .action-btn.edit,
+  .action-btn.delete,
+  .action-btn.edits {
+    padding: 6px 12px !important;   /* same as View */
+    font-size: 13px !important;     /* same text size */
+    width: auto !important;         /* remove forced width */
+    margin-top: 0 !important;
+    border-radius: 6px !important;
+  }
+
+  /* Column spacing */
+  td.col-action {
+    gap: 4px;
+  }
+
+  /* Back button smaller */
+  .back-button {
+    top: 0.8rem;
+    left: 1rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+  }
+}

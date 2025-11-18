@@ -365,8 +365,8 @@ const OutflowsSection: React.FC<{
             <thead>
               <tr>
                 <th>Spend Category</th>
-                <th>Amount</th>
                 <th>Vendor</th>
+                <th>Amount</th>
                 <th>Date</th>
                 <th>Description</th>
                 <th>Actions</th>
@@ -376,8 +376,8 @@ const OutflowsSection: React.FC<{
               {rows.map((row, index) => (
                 <tr key={(row as any).finance_id ?? index}>
                   <td>{row.spend_category}</td>
-                  <td className="amount negative">{formatCurrency(row.amount)}</td>
                   <td>{row.counterparty}</td>
+                  <td className="amount negative">{formatCurrency(row.amount)}</td>
                   <td>{new Date(row.date).toLocaleDateString()}</td>
                   <td>{row.purpose}</td>
                   <td>

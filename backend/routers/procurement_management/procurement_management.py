@@ -114,6 +114,7 @@ def serialize_request(r: ProcurementRequest) -> dict:
                 "name": i.item_name,
                 "category": i.category,
                 "quantity": i.quantity,
+                "unit": i.unit,
             }
             for i in (r.relief_items or [])
         ]
@@ -250,11 +251,6 @@ def serialize_request(r: ProcurementRequest) -> dict:
         "use_different_end": r.use_different_end,
         "different_end_type": r.different_end_type,
         "end_target": end_target,
-        "fallback_end": {
-            "end_address": r.end_address,
-            "end_lat": r.end_lat,
-            "end_long": r.end_long,
-        },
         "items_source": item_source,
         "items": items,
         "route": route_list  # list of routes

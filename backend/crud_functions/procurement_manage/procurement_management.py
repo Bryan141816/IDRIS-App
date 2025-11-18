@@ -119,6 +119,7 @@ class ProcurementRequestCRUD:
                     item_name=item.name,
                     category=item.category,
                     quantity=item.quantity,
+                    unit=item.unit
                 )
                 for item in request.request_items
             ]

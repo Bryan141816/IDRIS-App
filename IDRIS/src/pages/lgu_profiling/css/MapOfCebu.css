@@ -65,18 +65,18 @@
 
 /* Sidebar styling */
 .map-of-cebu-container .sidebar {
-  width: 0; /* Initially hidden */
-  color: black !important;
-  background: #f9f9f9 !important;
-  padding: 20px;
-  overflow-y: auto;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-  position: absolute;
+  position: fixed;
   top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100; /* Ensure sidebar is above the map but below the buttons */
-  transition: width 0.3s ease; /* Smooth transition for width */
+  right: -470px; /* hidden off-screen */
+  width: 450px;
+  height: 100vh;
+  background: #fff !important;
+  padding: 20px;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+  overflow-y: auto;
+  z-index: 9999;
+  transition: right 0.35s ease-in-out; /* smooth slide animation */
+  border-left: 1px solid #ddd;
 }
 
 /* Sidebar image styling */
@@ -94,7 +94,7 @@
 
 /* When sidebar is open, increase width */
 .map-of-cebu-container.sidebar-open .sidebar {
-  width: 450px !important; /* Set the desired width */
+  right: 0 !important;
 }
 
 /* Ensure sidebar has proper styling */
@@ -160,26 +160,25 @@
 
 /* Modern Close Button Styling */
 .map-of-cebu-container .close-sidebar {
-  background-color: #e74c3c; /* Strong red for the button */
+  background-color: #e74c3c;
   color: white;
   border: none;
-  padding: 5px 10px; /* Increase padding for a more clickable button */
-  font-size: 12px; /* Larger font size for better visibility */
-  border-radius: 5px; /* Rounded corners */
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 5px;
   position: absolute;
   top: 10px;
   right: 10px;
   cursor: pointer;
-  z-index: 101;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
-  transition: all 0.3s ease; /* Smooth transition for hover effect */
+  z-index: 10000;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  transition: 0.2s ease;
 }
 
 /* Hover effect */
 .map-of-cebu-container .close-sidebar:hover {
-  background-color: #c0392b; /* Darker red for the hover effect */
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Increase shadow on hover */
-  transform: translateY(-2px); /* Slightly raise the button */
+  background-color: #c0392b;
+  transform: translateY(-2px);
 }
 
 /* Focus effect for accessibility */
@@ -371,24 +370,27 @@
 
   /* ----- FILTER BUTTONS (ONE LINE) ----- */
   .map-buttons {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%); /* center horizontally */
-    display: flex;
-    gap: 4px;
-    flex-wrap: nowrap; /* force one line */
-    z-index: 5 !important;
-    width: 98%;
-    justify-content: center;
-  }
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap !important;   /* <-- FIXED */
+  row-gap: 4px;
+  column-gap: 4px;
+  width: 95%;
+  justify-content: center;
+  z-index: 5 !important;
+}
 
-  .map-button {
-    padding: 6px 8px !important;
-    font-size: 11px !important;
-    border-radius: 4px;
-    white-space: nowrap;
-  }
+.map-button {
+  padding: 6px 8px !important;
+  font-size: 11px !important;
+  border-radius: 4px;
+  white-space: normal !important;   /* <-- allow wrapping */
+  text-align: center;
+  min-width: 70px; /* prevent them from shrinking too small */
+}
 
   /* ----- SEARCH BAR BELOW BUTTONS ----- */
   .map-search {
@@ -454,9 +456,7 @@
 
 /* Map shrinks to make room for sidebar */
 .map-of-cebu-container.sidebar-open .map-container {
-  display: block !important;
-  width: calc(100% - 300px) !important;
-  z-index: -1 !important;
+  width: calc(100% - 450px);
 }
 
 
@@ -465,7 +465,13 @@
    ⭐ JUST MAKE BUTTONS + SEARCH BAR SMALLER (732–1100px)
    ====================================================== */
 @media screen and (min-width: 732px) and (max-width: 1100px) {
-
+  .map-of-cebu-container.sidebar-open .map-buttons {
+    right: 380px !important; /* 360px + small breathing space */
+  }
+ .map-of-cebu-container .sidebar {
+    width: 360px !important;
+    right: -360px;
+  }
   /* LOWER the buttons layer */
   .map-buttons {
     z-index: 10 !important;   /* 🔽 very low */
@@ -493,5 +499,187 @@
     bottom: 12px;
     left: 8px;
     z-index: 15 !important;
+  }
+  .map-of-cebu-container.sidebar-open .sidebar {
+    right: 0 !important;
+  }
+
+  .map-of-cebu-container.sidebar-open .map-container {
+    width: calc(100% - 360px) !important;
+  }
+}
+/* ============================================
+   📱 MOBILE UI — max-width: 731px
+   ============================================ */@media screen and (max-width: 731px) {
+
+  /* Sidebar becomes fullscreen */
+  .map-of-cebu-container .sidebar {
+    width: 100% !important;
+    right: -100%;
+  }
+
+  .map-of-cebu-container {
+    flex-direction: column;
+  }
+
+  /* --- FILTER BUTTONS (TOP CENTER, WRAPS CLEANLY) --- */
+  .map-buttons {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap !important;      /* allow wrapping */
+    justify-content: center;
+    width: 95%;
+    gap: 3px !important;             /* tighter spacing */
+    row-gap: 3px !important;         /* reduce vertical gap */
+    z-index: 5 !important;
+  }
+
+  .map-button {
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    border-radius: 4px;
+    white-space: normal !important;  /* allows text wrap */
+    text-align: center;
+    min-width: 80px;                 /* consistent width */
+    flex: 1 1 calc(33% - 6px);       /* smooth 3-per-row layout */
+  }
+
+  /* --- SEARCH BAR BELOW BUTTONS --- */
+  .map-search {
+    margin-top: 60px; /* slightly more space for multi-row buttons */
+    width: 90% !important;
+    margin-left: 5% !important;
+    z-index: 10 !important;
+  }
+
+  .map-search input {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* --- LEGEND SMALLER --- */
+  .legend-box {
+    width: 130px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    bottom: 12px;
+    left: 8px;
+    z-index: 15 !important;
+  }
+
+  .legend-box h4 {
+    font-size: 13px !important;
+  }
+
+  .legend-color {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* --- MAP HEIGHT FIX --- */
+  .map-container {
+    width: 100% !important;
+    height: calc(100vh - 100px) !important;
+  }
+
+  /* Sidebar slides in */
+  .map-of-cebu-container.sidebar-open .sidebar {
+    right: 0 !important;
+  }
+
+  /* Map goes behind the sidebar */
+  .map-of-cebu-container.sidebar-open .map-container {
+    width: 100% !important;
+    z-index: -1 !important;
+  }
+
+  .close-sidebar {
+    top: 12px !important;
+    right: 12px !important;
+  }
+}
+@media screen and (max-width: 731px) {
+
+  /* SIDEBAR BEHAVIOR MOBILE */
+  .map-of-cebu-container .sidebar {
+    width: 100% !important;
+    right: -100%;
+  }
+
+  .map-of-cebu-container.sidebar-open .sidebar {
+    right: 0 !important;
+  }
+
+  .map-of-cebu-container.sidebar-open .map-container {
+    width: 100% !important;
+    z-index: -1 !important;
+  }
+
+  /* MOVE SEARCH BAR TO TOP */
+  .map-search {
+    position: absolute;
+    top: 10px !important;      /* now at very top */
+    left: 50%;
+    transform: translateX(-55%);
+    width: 92% !important;
+    z-index: 20 !important;
+  }
+
+  .map-search input {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* BUTTONS BELOW SEARCH BAR */
+  .map-buttons {
+    position: absolute;
+    top: 65px !important;      /* BELOW the search bar */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap !important;
+    justify-content: center;
+    width: 95%;
+    gap: 4px !important;
+    row-gap: 4px !important;
+    z-index: 10 !important;
+  }
+
+  .map-button {
+    padding: 5px 8px !important;
+    font-size: 10px !important;
+    border-radius: 4px;
+    flex: 1 1 calc(33% - 6px);   /* auto 3-per row */
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /* LEGEND */
+  .legend-box {
+    width: 130px !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    bottom: 12px;
+    left: 8px;
+    z-index: 15 !important;
+  }
+
+  .legend-color {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  /* MAP HEIGHT FIX */
+  .map-container {
+    width: 100% !important;
+    height: calc(100vh - 130px) !important; /* space for search + buttons */
+  }
+
+  .close-sidebar {
+    top: 12px !important;
+    right: 12px !important;
   }
 }

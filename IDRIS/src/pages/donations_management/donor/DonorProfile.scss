@@ -129,9 +129,10 @@
 }
 
 #donor-sub-info-container {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
   background: white;
 
@@ -439,9 +440,13 @@
     grid-template-columns: 1fr;
     gap: 24px;
 
-    .map-container, .profile-right {
+    .map-container {
       min-width: auto;
       width: 100%; /* Ensure both take full width */
+    }
+
+    .profile-right {
+      width: 50%;
     }
   }
 }
@@ -494,6 +499,8 @@
     gap: 20px;
 
     .profile-right {
+        width: 50%;
+
       .about-container {
         flex-direction: column;
 
@@ -569,6 +576,8 @@
     }
 
     .profile-right {
+      width: 100%;
+
       .about-title {
         font-size: 1.1rem;
         padding: 16px 20px 12px 20px;

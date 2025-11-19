@@ -32,6 +32,7 @@ export const FundingCard: React.FC<FundingProps> = ({
   className = "",
   total_donated,
 }) => {
+  console.log("donated in card:", donated);
   const navigate = useNavigate();
   const { userRoles } = useUserRoleContext();
 
@@ -61,7 +62,7 @@ export const FundingCard: React.FC<FundingProps> = ({
       {adminAccess &&
         <div className={styles["progress-container"]}>
           <p className={styles.amountRaised}>
-            {formatCurrency(total_donated || 0)} raised of {formatCurrency(target || 0)}
+            {formatCurrency(donated || 0)} raised of {formatCurrency(target || 0)}
           </p>
           <div className={styles["full-bar"]}>
             <div

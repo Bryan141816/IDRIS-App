@@ -14,8 +14,11 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import './css/VolunteerProfile.css';
 import { API } from '../../../API_Handler/Axio_API_Handler';
-import { Table, Tag, Collapse } from 'antd';
+import { Table, Tag, Collapse, Modal, Checkbox, Form, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+
+import Swal from 'sweetalert2';
+
 
 // Fix for Leaflet marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -95,6 +98,79 @@ const VolunteerProfile: React.FC = () => {
     const [isGeocoding, setIsGeocoding] = useState(false);
     const [programsHistory, setProgramsHistory] = useState<ProgramHistory[]>([]);
     const [loadingPrograms, setLoadingPrograms] = useState(false);
+    const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+    const [availabilityForm] = Form.useForm();
+    const [updatingAvailability, setUpdatingAvailability] = useState(false);
+    type CheckboxValueType = string | number | boolean;
+
+    const daysOfWeekOptions: CheckboxValueType[] = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+    ];
+
+    const handleUpdateAvailability = async (values: { availability: CheckboxValueType[] }) => {
+        try {
+            setUpdatingAvailability(true);
+
+            // Determine the endpoint based on volunteer type
+            const endpoint = isIndividual
+                ? `/volunteer/individual/${volunteerData?.volunteerId}/availability`
+                : `/organization_volunteer/${volunteerData?.volunteerId}/availability`;
+
+            // Send the update request
+            await API.put(endpoint, {
+                availability: values.availability.join(', ')
+            });
+
+            // Update local state
+            if (volunteerData) {
+                setVolunteerData({
+                    ...volunteerData,
+                    availability: values.availability.join(', ')
+                });
+            }
+
+            // Close modal first
+            setIsAvailabilityModalOpen(false);
+            availabilityForm.resetFields();
+
+            // Show SweetAlert2 success message
+            Swal.fire({
+                title: 'Success!',
+                text: 'Availability updated successfully!',
+                icon: 'success',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3085d6',
+                timer: 3000,
+                timerProgressBar: true
+            });
+
+        } catch (error: any) {
+            console.error('Error updating availability:', error);
+
+            // Get error message from backend
+            const errorMessage = error.response?.data?.detail ||
+                'Failed to update availability. Please try again.';
+
+            // Show SweetAlert2 error message
+            Swal.fire({
+                title: 'Cannot Update Availability',
+                text: errorMessage,
+                icon: 'error',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#d33'
+            });
+        } finally {
+            setUpdatingAvailability(false);
+        }
+    };
+
+
 
     const calculateAge = (birthDate: string): number => {
         const birth = dayjs(birthDate);
@@ -118,13 +194,23 @@ const VolunteerProfile: React.FC = () => {
         if (!joinDate) return 0;
 
         const start = dayjs(joinDate);
-        const end = lastActive && lastActive !== 'null' ? dayjs(lastActive) : dayjs(); // Use current date if no lastActive
+        const end = lastActive && lastActive !== null && lastActive !== undefined
+            ? dayjs(lastActive)
+            : dayjs(); // Use current date if no lastActive
 
-        const months = end.diff(start, "month");
+        // Calculate difference in months
+        const months = end.diff(start, 'month');
 
-        // Return at least 1 month if they've joined (avoid division by 0)
-        return Math.max(months, 1);
+        // If less than 1 month, calculate fractional months
+        if (months === 0) {
+            const days = end.diff(start, 'day');
+            // Return fractional month (e.g., 0.5 for ~15 days)
+            return Math.max(parseFloat((days / 30).toFixed(1)), 0.1);
+        }
+
+        return months;
     };
+
 
 
     // Geocode address to get accurate coordinates
@@ -691,26 +777,46 @@ const VolunteerProfile: React.FC = () => {
             case 'availability':
                 return (
                     <div className="info-content">
+                        {/* Update Button in Upper Right */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                            <Button
+                                type="primary"
+                                onClick={() => {
+                                    setIsAvailabilityModalOpen(true);
+                                    // Pre-fill form with current availability
+                                    if (volunteerData.availability && volunteerData.availability.trim() !== '') {
+                                        try {
+                                            const currentDays = volunteerData.availability
+                                                .split(',')
+                                                .map(day => day.trim())
+                                                .filter(day => daysOfWeekOptions.includes(day));
+                                            availabilityForm.setFieldsValue({ availability: currentDays });
+                                        } catch (error) {
+                                            console.error('Error parsing availability:', error);
+                                        }
+                                    }
+                                }}
+                            >
+                                Update Availability
+                            </Button>
+                        </div>
+
                         {volunteerData.availability && volunteerData.availability.trim() !== '' ? (
                             <div className="availability-list">
                                 {(() => {
-
                                     type AvailabilitySchedule = { day?: string; time?: string };
                                     let schedules: AvailabilitySchedule[] = [];
 
                                     try {
-                                        // Try parsing as JSON first
                                         const parsed = JSON.parse(volunteerData.availability);
 
                                         if (Array.isArray(parsed)) {
-                                            // If array of strings like ["Monday: 9am-5pm", ...]
                                             if (parsed.length > 0 && typeof parsed[0] === 'string') {
                                                 schedules = (parsed as string[]).map(part => {
                                                     const [day, time] = part.split(':').map(s => s.trim());
                                                     return { day, time };
                                                 });
                                             } else {
-                                                // Assume array of objects already in shape
                                                 schedules = parsed as AvailabilitySchedule[];
                                             }
                                         } else if (typeof parsed === 'string') {
@@ -720,11 +826,9 @@ const VolunteerProfile: React.FC = () => {
                                                 return { day, time };
                                             });
                                         } else if (typeof parsed === 'object' && parsed !== null) {
-                                            // Single object
                                             schedules = [parsed as AvailabilitySchedule];
                                         }
                                     } catch {
-                                        // If not JSON, parse as comma-separated string
                                         const parts = volunteerData.availability.split(',').map(s => s.trim());
                                         schedules = parts.map(part => {
                                             const [day, time] = part.split(':').map(s => s.trim());
@@ -735,13 +839,11 @@ const VolunteerProfile: React.FC = () => {
                                     return schedules.map((schedule: AvailabilitySchedule, index: number) => (
                                         <div key={index} className="availability-item">
                                             <div className="availability-info">
-
                                                 <div className="schedule-details">
                                                     <div className="schedule-day">{schedule.day || `Day ${index + 1}`}</div>
                                                     <div className="schedule-time">{schedule.time || ''}</div>
                                                 </div>
                                             </div>
-
                                         </div>
                                     ));
                                 })()}
@@ -751,6 +853,7 @@ const VolunteerProfile: React.FC = () => {
                         )}
                     </div>
                 );
+
 
             case 'credentials':
                 return (
@@ -821,7 +924,7 @@ const VolunteerProfile: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="volunteer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <div className="volunteer-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300vh' }}>
                 <Spin size="large" tip="Loading volunteer profile..." />
             </div>
         );
@@ -1038,6 +1141,60 @@ const VolunteerProfile: React.FC = () => {
 
                 </div>
             </div>
+            {/* Availability Update Modal */}
+            <Modal
+                title="Update Availability"
+                open={isAvailabilityModalOpen}
+                onCancel={() => {
+                    setIsAvailabilityModalOpen(false);
+                    availabilityForm.resetFields();
+                }}
+                footer={null}
+                width={500}
+            >
+                <Form
+                    form={availabilityForm}
+                    onFinish={handleUpdateAvailability}
+                    layout="vertical"
+                >
+                    <Form.Item
+                        name="availability"
+                        label="Select Available Days"
+                        rules={[
+                            { required: true, message: "Please select at least one available day" },
+                        ]}
+                    >
+                        <Checkbox.Group
+                            options={daysOfWeekOptions.map(day => ({
+                                label: day,
+                                value: day
+                            }))}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+                        />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginBottom: 0, marginTop: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <Button
+                                onClick={() => {
+                                    setIsAvailabilityModalOpen(false);
+                                    availabilityForm.resetFields();
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                loading={updatingAvailability}
+                            >
+                                Update
+                            </Button>
+                        </div>
+                    </Form.Item>
+                </Form>
+            </Modal>
+
         </div>
     );
 };

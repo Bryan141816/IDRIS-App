@@ -19,10 +19,15 @@ from crud_functions.volunteer_management.availability_crud import (
  refresh_all_availability
 )
 from routers.role_checker import RoleChecker
-from models import OrganizationVolunteer, VolunteerStatus
+from models import OrganizationVolunteer, TeamMembers, VolunteerStatus
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from create_notification import send_notification
+from pydantic import BaseModel
+
+# Add this after your imports, before the routers
+class AvailabilityUpdate(BaseModel):
+    availability: str
 
 # Role-based routers
 router_admin = APIRouter(
@@ -315,6 +320,54 @@ def delete_organization_volunteer_endpoint(volunteer_id: int, db: Session = Depe
     if not success:
         raise HTTPException(status_code=404, detail="Organization volunteer not found")
     return {"message": "Organization volunteer deleted successfully"}
+
+
+@router_admin_or_organization_volunteer.put("/{volunteer_id}/availability")
+async def update_organization_availability(
+    volunteer_id: int,
+    availability_data: AvailabilityUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update availability for an organization volunteer"""
+    try:
+        # Get the organization volunteer
+        volunteer = db.query(OrganizationVolunteer).filter(
+            OrganizationVolunteer.volunteer_id == volunteer_id
+        ).first()
+
+        if not volunteer:
+            raise HTTPException(status_code=404, detail="Organization volunteer not found")
+
+        # ✅ FIXED: TeamMembers.status is a string, so "pending" is valid here
+        active_team_membership = db.query(TeamMembers).filter(
+            TeamMembers.member == volunteer_id,
+            TeamMembers.status.in_(["pending", "accepted"])
+        ).first()
+
+        if active_team_membership:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update availability while part of active distribution teams. Please leave or complete your team assignments first."
+            )
+
+        # Update availability if no active assignments
+        volunteer.availability = availability_data.availability
+
+        db.commit()
+        db.refresh(volunteer)
+
+        return {
+            "success": True,
+            "message": "Availability updated successfully",
+            "volunteer_id": volunteer_id,
+            "availability": volunteer.availability
+        }
+
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 # Final router to include in main.py
 router = APIRouter()

@@ -33,6 +33,11 @@ from models import (
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from create_notification import send_notification
+from pydantic import BaseModel
+
+# Add this after your imports, before the routers
+class AvailabilityUpdate(BaseModel):
+    availability: str
 
 # Role-based routers
 router_admin = APIRouter(
@@ -500,6 +505,65 @@ def get_top_active_volunteers(
         "count": len(top_volunteers),
         "volunteers": top_volunteers
     }
+
+@router_admin_or_volunteer.put("/individual/{volunteer_id}/availability")
+async def update_individual_availability(
+    volunteer_id: int,
+    availability_data: AvailabilityUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update availability for an individual volunteer"""
+    try:
+        # Get the volunteer
+        volunteer = db.query(IndividualVolunteer).filter(
+            IndividualVolunteer.volunteer_id == volunteer_id
+        ).first()
+
+        if not volunteer:
+            raise HTTPException(status_code=404, detail="Volunteer not found")
+
+        # ✅ FIXED: Use correct enum values from AssignmentStatus
+        active_assignments = db.query(Assignment).filter(
+            Assignment.individual_volunteer_id == volunteer_id,
+            Assignment.status.in_(["applied", "invited", "accepted", "waitlisted"])
+        ).first()
+
+        if active_assignments:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update availability while assigned to active programs. Please complete your current assignments first."
+            )
+
+        
+        active_team_membership = db.query(TeamMembers).filter(
+            TeamMembers.member == volunteer_id,
+            TeamMembers.status.in_(["pending", "accepted"])
+        ).first()
+
+        if active_team_membership:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot update availability while part of active distribution teams. Please leave or complete your team assignments first."
+            )
+
+        # Update availability if no active assignments
+        volunteer.availability = availability_data.availability
+
+        db.commit()
+        db.refresh(volunteer)
+
+        return {
+            "success": True,
+            "message": "Availability updated successfully",
+            "volunteer_id": volunteer_id,
+            "availability": volunteer.availability
+        }
+
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 # Final router to include in main.py

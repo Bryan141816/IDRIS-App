@@ -189,8 +189,8 @@ const Login = () => {
           </div>
           <button type="submit">Login</button>
         </form>
-        <button onClick={handleGoogleLogin}>Login via Google</button>
-        <button onClick={handleMicrosoftLogin}>Login via Microsoft</button>
+        {/* <button onClick={handleGoogleLogin}>Login via Google</button> */}
+        {/* <button onClick={handleMicrosoftLogin}>Login via Microsoft</button> */}
       </div>
     </section>
   );

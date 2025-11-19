@@ -141,13 +141,7 @@ const IndividualForm: React.FC = () => {
             showConfirmButton: false,
             timer: 3000,
             timerProgressBar: true,
-            customClass: {
-                popup: 'custom-height-modal',
-                title: 'custom-swal-title',
-                htmlContainer: 'custom-swal-text',
-                confirmButton: 'custom-swal-button',
-                icon: 'custom-swal-icon',
-            },
+
         });
     };
 

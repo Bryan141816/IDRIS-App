@@ -325,9 +325,9 @@ const Register: React.FC = () => {
           <Link to="/login">Login</Link>
           <button type="submit">Signup</button>
         </form>
-
-        <button onClick={handleGoogleLogin}>Register via Google</button>
-        <button onClick={handleMicrosoftLogin}>Register via Microsoft</button>
+        {/**/}
+        {/* <button onClick={handleGoogleLogin}>Register via Google</button> */}
+        {/* <button onClick={handleMicrosoftLogin}>Register via Microsoft</button> */}
       </div>
 
       {/* Modal 1: Pick Admin/User */}

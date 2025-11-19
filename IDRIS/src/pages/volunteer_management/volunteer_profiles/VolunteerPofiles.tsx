@@ -16,7 +16,7 @@ import './css/VolunteerProfile.css';
 import { API } from '../../../API_Handler/Axio_API_Handler';
 import { Table, Tag, Collapse, Modal, Checkbox, Form, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { CheckboxValueType } from 'antd/es/checkbox/Group';
+
 import Swal from 'sweetalert2';
 
 
@@ -101,6 +101,7 @@ const VolunteerProfile: React.FC = () => {
     const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
     const [availabilityForm] = Form.useForm();
     const [updatingAvailability, setUpdatingAvailability] = useState(false);
+    type CheckboxValueType = string | number | boolean;
 
     const daysOfWeekOptions: CheckboxValueType[] = [
         "Sunday",

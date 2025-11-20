@@ -73,6 +73,7 @@ def build_email_template(email_type: str, link: str) -> str:
     else:
         raise ValueError("Invalid email_type. Must be 'activation', 'reset', or 'user_activated'.")
 
+    print(link)
     return f"""
     <!DOCTYPE html>
     <html lang="en">

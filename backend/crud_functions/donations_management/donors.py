@@ -315,18 +315,38 @@ class DonorCRUD:
     def get_donor_display_info(
         db: Session,
         search: Optional[str] = None,
-        order: str = "desc",
+        sort_by: str = "amount_desc",
         page: int = 1,
         limit: Optional[int] = 100,
     ) -> "ListOfDonorsResponse":
         UserAlias = aliased(User)
 
+        # 1. Create a subquery for total CASH donations per donor
+        #    We only care about COMPLETED and CASH donations for the sum.
+        donation_totals_sq = (
+            db.query(
+                Donation.donor_id,
+                func.coalesce(func.sum(Donation_Cash.amount), 0).label("total_amount")
+            )
+            .join(Donation_Cash, Donation.donation_id == Donation_Cash.donation_id)
+            .filter(
+                Donation.status == DonationStatus.COMPLETED,
+                Donation.donation_type == DonationType.CASH
+            )
+            .group_by(Donation.donor_id)
+            .subquery()
+        )
+
+        # 2. Main query: Join Donor with the totals subquery
+        #    We also join UserAlias for search/sorting by name.
         base_q = (
-            db.query(Donor)
+            db.query(Donor, func.coalesce(donation_totals_sq.c.total_amount, 0).label("total_donated"))
             .outerjoin(UserAlias, Donor.user_id == UserAlias.user_id)
+            .outerjoin(donation_totals_sq, Donor.donor_id == donation_totals_sq.c.donor_id)
             .options(joinedload(Donor.user).joinedload(User.user_profile))
         )
 
+        # 3. Filter by search term
         if search:
             term = f"%{search.strip()}%"
             base_q = base_q.filter(
@@ -339,65 +359,48 @@ class DonorCRUD:
 
         total_count = base_q.count()
 
-        if order == "asc":
+        # 4. Sorting logic
+        #    sort_by options: "amount_desc" (default), "name_asc", "name_desc"
+        if sort_by == "name_asc":
             base_q = base_q.order_by(
                 nulls_last(asc(Donor.organization_name)),
                 nulls_last(asc(UserAlias.username)),
                 asc(Donor.date_joined),
             )
-        else:
+        elif sort_by == "name_desc":
             base_q = base_q.order_by(
                 nulls_last(desc(Donor.organization_name)),
                 nulls_last(desc(UserAlias.username)),
                 desc(Donor.date_joined),
             )
+        else:
+            # Default: amount_desc
+            base_q = base_q.order_by(
+                desc("total_donated"),
+                nulls_last(asc(Donor.organization_name)), # Tie-breaker
+            )
 
+        # 5. Pagination
         if limit:
             offset = (page - 1) * limit
-            rows = base_q.offset(offset).limit(limit).all()
+            results = base_q.offset(offset).limit(limit).all()
             max_page = max(ceil(total_count / limit), 1)
         else:
-            rows = base_q.all()
+            results = base_q.all()
             max_page = 1
 
-        donor_ids = [d.donor_id for d in rows]
-
-        # Aggregate totals for CASH + IN-KIND (COMPLETED) per donor in the current page
-        totals_map = {}
-        if donor_ids:
-            totals_rows = (
-                db.query(
-                    Donation.donor_id.label("donor_id"),
-                    (
-                        func.coalesce(func.sum(Donation_Cash.amount), 0)
-                    ).label("total_donation"),
-                )
-                # FROM Donation -> join both children (outer joins; one or the other may be null)
-                .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
-                .outerjoin(Donation_InKind, Donation_InKind.donation_id == Donation.donation_id)
-                .filter(
-                    Donation.donor_id.in_(donor_ids),
-                    Donation.status == DonationStatus.COMPLETED,
-                    Donation.donation_type.in_([DonationType.CASH, DonationType.INKIND]),
-                )
-                .group_by(Donation.donor_id)
-                .all()
-            )
-            totals_map = {r.donor_id: float(r.total_donation or 0) for r in totals_rows}
-
+        # 6. Build response
         records = []
-        for d in rows:
-            # display_name = (
-            #     d.user.username
-            #     if (d.donor_type == "individual" and d.user)
-            #     else (d.organization_name or "Unknown Organization")
-            # )
+        for row in results:
+            # row is a tuple because we selected (Donor, total_donated)
+            d = row[0]
+            total_amt = row[1]
 
             records.append(
                 DonorItem(
                     name=d.donor_name,
                     organization_name=d.organization_name,
-                    total_donation=totals_map.get(d.donor_id, 0.0),
+                    total_donation=float(total_amt),
                     date_joined=d.date_joined,
                 )
             )

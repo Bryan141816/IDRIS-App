@@ -1,3 +1,4 @@
+
 import os
 import time
 from sqlalchemy import create_engine, text
@@ -14,13 +15,21 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Connection pool settings for better performance
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,  # Verify connections before use
-    pool_recycle=3600,  # Recycle connections every hour
-)
+if "sqlite" in DATABASE_URL:
+     engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Verify connections before use
+        pool_recycle=3600,  # Recycle connections every hour
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True,  # Verify connections before use
+        pool_recycle=3600,  # Recycle connections every hour
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

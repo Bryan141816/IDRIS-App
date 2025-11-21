@@ -151,12 +151,13 @@ def get_donor_profile(
 @router_admin_or_donor.get("/get_all_as_lists", response_model=ListOfDonorsResponse)  # mark used
 def get_donor_display_info_endpoint(
     search: Optional[str] = Query(None),
+    sort_by: str = Query("amount_desc", description="amount_desc, name_asc, or name_desc"),
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """Get all donors with pagination."""
-    return donor_crud.get_donor_display_info(db, search=search, page=page, limit=limit)
+    return donor_crud.get_donor_display_info(db, search=search, sort_by=sort_by, page=page, limit=limit)
 
 
 @router_admin_or_donor.get("/count", response_model=Number)  # mark used

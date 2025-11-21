@@ -69,8 +69,8 @@ const ListOfRAFIDonors = () => {
   const donorPerPage = 25;
   const [page, setPage] = useState<number>(1);
   const [maxPage, setMaxPage] = useState<number>(1);
-  const sortingItems = ["Ascending", "Descending"];
-  const [sorting, setSelectedSorting] = useState<string>("");
+  const sortingItems = ["Highest Donation", "Ascending", "Descending"];
+  const [sorting, setSelectedSorting] = useState<string>("Highest Donation");
   const [searched, searchState] = useState("");
 
   type DirectType = "prev" | "next";
@@ -89,12 +89,23 @@ const ListOfRAFIDonors = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [noResults, setNoResults] = useState(false);
 
+  // Map UI sorting selection to API parameter
+  const getSortParam = (sortOption: string) => {
+    switch (sortOption) {
+      case "Ascending": return "name_asc";
+      case "Descending": return "name_desc";
+      case "Highest Donation":
+      default: return "amount_desc";
+    }
+  };
+
   // Get List of Donors (with dummy fallback)
   useEffect(() => {
     async function fetchDonors() {
       setIsLoading(true);
       try {
-        const response = await getDonorsList(searched, page, donorPerPage);
+        const sortParam = getSortParam(sorting);
+        const response = await getDonorsList(searched, page, donorPerPage, sortParam);
 
         let records: DonorData[] = [];
         let max_page = 1;
@@ -120,28 +131,7 @@ const ListOfRAFIDonors = () => {
       }
     }
     fetchDonors();
-  }, [searched, page]);
-
-  // Create filtered and sorted donors
-  const filteredDonors = useMemo(() => {
-    let sortedDonors = [...donors];
-
-    if (sorting === "Ascending") {
-      sortedDonors.sort((a, b) => {
-        const nameA = (a.organization_name || a.donor_name || "").toLowerCase();
-        const nameB = (b.organization_name || b.donor_name || "").toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-    } else if (sorting === "Descending") {
-      sortedDonors.sort((a, b) => {
-        const nameA = (a.organization_name || a.donor_name || "").toLowerCase();
-        const nameB = (b.organization_name || b.donor_name || "").toLowerCase();
-        return nameB.localeCompare(nameA);
-      });
-    }
-
-    return sortedDonors;
-  }, [donors, sorting]);
+  }, [searched, page, sorting]);
 
   const currency = (n: number) =>
     new Intl.NumberFormat("en-PH", {
@@ -158,9 +148,9 @@ const ListOfRAFIDonors = () => {
       { text: "Total Monetary Donation", width: "25%" },
       { text: "Date Joined", width: "25%" },
     ],
-    table_datas: filteredDonors.map((donor, index) => ({
+    table_datas: donors.map((donor, index) => ({
       data: [
-        { type: "Text", text: (index + 1).toString(), font_weight: 600 },
+        { type: "Text", text: ((page - 1) * donorPerPage + index + 1).toString(), font_weight: 600 },
         {
           type: "Image",
           text: index % 3 === 0 ? Profile1 : index % 3 === 1 ? Profile2 : Profile3,
@@ -428,7 +418,7 @@ const ListOfRAFIDonors = () => {
 
       {isLoading ? (
         <p id="loading">Loading…</p>
-      ) : filteredDonors.length > 0 ? (
+      ) : donors.length > 0 ? (
         <DonorTable tableData={tableData} />
       ) : (
         <p id="no-donor">

@@ -43,7 +43,8 @@ class EvacuationOut(BaseModel):
     lng: float
     capacity: int
     occupied: int
-    barangay: Optional[List[BarangayMiniOut]] = None
+    barangay: Optional[BarangayMiniOut] = None
+
 
     class Config:
         from_attributes = True
@@ -65,18 +66,48 @@ class MyCentersOut(BaseModel):
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
-
-def _split_address(addr: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+def _split_address(addr: str, db: Session = None):
     """
-    Accepts strings like: 'Lamacan, Argao, Cebu, Philippines'
-    Returns (barangay, lgu, province)
+    Correctly identify LGU even if address is:
+    - Barangay, LGU, Province
+    - LGU, Province
+    - LGU, Province, ZIP
+    - LGU only
     """
-    parts = [p.strip() for p in (addr or "").split(",") if p.strip()]
-    brgy = parts[0] if len(parts) > 0 else None
-    lgu  = parts[1] if len(parts) > 1 else None
-    prov = parts[2] if len(parts) > 2 else None
-    return brgy, lgu, prov
+    if not addr:
+        return None, None, None
 
+    parts = [p.strip() for p in addr.split(",") if p.strip()]
+
+    # If database connection is provided → we can detect real LGU names
+    lgu_names = []
+    if db:
+        lgu_names = [
+            _norm(row.lgu_name)
+            for row in db.query(LGURecords.lgu_name).all()
+        ]
+
+    # Normalize parts
+    lower_parts = [_norm(p) for p in parts]
+
+    # CASE 1: If first part is an LGU (matches DB), treat it as LGU
+    if lower_parts and lower_parts[0] in lgu_names:
+        # LGU, Province, ZIP, Country...
+        return None, parts[0], parts[1] if len(parts) > 1 else None
+
+    # CASE 2: If 3+ parts → assume standard (barangay, lgu, province)
+    if len(parts) >= 3:
+        return parts[0], parts[1], parts[2]
+
+    # CASE 3: Only 2 parts → assume first is LGU
+    if len(parts) == 2:
+        return None, parts[0], parts[1]
+
+    # CASE 4: Only 1 part → assume LGU
+    if len(parts) == 1:
+        return None, parts[0], None
+
+    return None, None, None
 
 def _resolve_lgu(db: Session, lgu_name: Optional[str]) -> Optional[LGURecords]:
     if not lgu_name:
@@ -164,7 +195,8 @@ def _pack_centers(
                 lng=float(getattr(r, "lng", 0.0) or 0.0),
                 capacity=int(getattr(r, "capacity", 0) or 0),
                 occupied=int(getattr(r, "occupied", 0) or 0),
-                barangay=brgys or None,
+                barangay=brgys[0] if brgys else None,
+
             )
         )
     return packed
@@ -233,7 +265,7 @@ def _resolve_lgu_for_user(db: Session, user: User) -> Optional[LGURecords]:
     if prof:
         lgu_name = getattr(prof, "lgu_name", None)
         if not lgu_name:
-            _, parsed_lgu, _ = _split_address(getattr(prof, "address", "") or "")
+            _, parsed_lgu, _ = _split_address(getattr(prof, "address", "") or "", db)
             lgu_name = parsed_lgu
 
     if not lgu_name:

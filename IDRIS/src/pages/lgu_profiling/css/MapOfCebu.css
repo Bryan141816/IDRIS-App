@@ -13,6 +13,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  height: 100vh !important;
   z-index: 1; /* Keep the map under the buttons and sidebar */
 }
 
@@ -63,20 +64,28 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Sidebar styling */
+/* FIXED SIDEBAR (does NOT push map) */
 .map-of-cebu-container .sidebar {
   position: fixed;
   top: 0;
-  right: -470px; /* hidden off-screen */
-  width: 450px;
+  padding:10px;
+  right: -420px;  /* hidden */
+  width: 420px;
   height: 100vh;
-  background: #fff !important;
-  padding: 20px;
-  box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+  background: #fff;
   overflow-y: auto;
   z-index: 9999;
-  transition: right 0.35s ease-in-out; /* smooth slide animation */
-  border-left: 1px solid #ddd;
+  transition: right 0.35s ease;
+}
+
+/* When open */
+.map-of-cebu-container.sidebar-open .sidebar {
+  right: 0;
+}
+
+/* Map should ALWAYS stay full width */
+.map-of-cebu-container .map-container {
+  width: 100% !important;
 }
 
 /* Sidebar image styling */
@@ -97,19 +106,6 @@
   right: 0 !important;
 }
 
-/* Ensure sidebar has proper styling */
-.map-of-cebu-container .sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 300px;
-  height: 100%;
-  background-color: white;
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-  padding: 20px;
-  z-index: 9999; /* Ensure the sidebar is above other content */
-  overflow-y: auto; /* Allow scrolling if the content overflows */
-}
 
 /* Back button styling */
 .map-of-cebu-container .back-button {
@@ -427,7 +423,6 @@
   /* ----- MAP HEIGHT FIX ----- */
   .map-container {
     width: 100% !important;
-    height: calc(100vh - 90px) !important;
   }
 /* Sidebar on RIGHT SIDE (MOBILE) */
 .sidebar {
@@ -454,10 +449,6 @@
   z-index: 2100 !important; /* stays above sidebar but below header */
 }
 
-/* Map shrinks to make room for sidebar */
-.map-of-cebu-container.sidebar-open .map-container {
-  width: calc(100% - 450px);
-}
 
 
 }
@@ -582,7 +573,6 @@
   /* --- MAP HEIGHT FIX --- */
   .map-container {
     width: 100% !important;
-    height: calc(100vh - 100px) !important;
   }
 
   /* Sidebar slides in */
@@ -675,7 +665,7 @@
   /* MAP HEIGHT FIX */
   .map-container {
     width: 100% !important;
-    height: calc(100vh - 130px) !important; /* space for search + buttons */
+     /* space for search + buttons */
   }
 
   .close-sidebar {

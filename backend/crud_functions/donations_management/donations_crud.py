@@ -117,40 +117,6 @@ class DonationCRUD:
                 donor = db.get(Donor, donor_id)
                 donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
 
-            # --- FinanceRecord in the SAME transaction, NO extra commit ---
-            # try:
-            #     budget_for_value = BudgetAllocation.MONETARY_DONATIONS
-            # except Exception:
-            #     budget_for_value = BudgetAllocation("MONETARY_DONATIONS")
-
-            # FinanceRecord.date is a DATE in your Pydantic model; use today() to match
-            finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
-
-            if donation_type != DonationType.INKIND:
-                finance = FinanceRecord(
-                    # let DB default or your model factory generate if possible; otherwise:
-                    finance_id=uid_from_string(f"DON{random_suffix(8)}"),
-                    counterparty=donor_name,
-                    transaction_type=TransactionType.INFLOW,
-                    donation_id=donation.donation_id,
-                    amount=amount_for_finance,    # Decimal
-                    date=finance_date,            # date, not datetime
-                    purpose=desc_for_finance,
-                    inflow_source=InflowSource.MONETARY_DONATIONS,
-                )
-                db.add(finance)
-                db.flush()
-
-                # Generate and attach receipt
-                donation_details = {
-                    "donation_id": donation.donation_id,
-                    "donor_name": donor_name,
-                    "amount": amount_for_finance,
-                    "date": finance_date.strftime("%Y-%m-%d"),
-                }
-                receipt_path = generate_donation_receipt(donation_details)
-                finance.attachment = receipt_path
-
             # --- Commit all together ---
             db.commit()
             db.refresh(donation)
@@ -238,40 +204,6 @@ class DonationCRUD:
             amount_for_finance = Decimal(str(est_val or 0))
             desc_for_finance = f"In-kind donation: {item_desc or 'items'}"
 
-        # --- (optional) Create FinanceRecord if your system needs it ---
-        donor_name = None
-        try:
-            donor_name = donation.donor.donor_name  # may work if relationship populated
-        except Exception:
-            pass
-        if not donor_name:
-            donor = db.get(Donor, getattr(donation_data, "donor_id", None))
-            donor_name = getattr(donor, "donor_name", None) or "Unknown Donor"
-
-        finance_date: date = getattr(donation, "date", None) or datetime.now(timezone.utc).date()
-        if donation_type != DonationType.INKIND:
-            finance = FinanceRecord(
-                finance_id=uid_from_string(f"RDON{random_suffix(8)}"),
-                counterparty=donor_name,
-                transaction_type=TransactionType.INFLOW,
-                amount=amount_for_finance,
-                date=finance_date,
-                purpose=desc_for_finance,
-                inflow_source=InflowSource.MONETARY_DONATIONS,
-            )
-            db.add(finance)
-            db.flush()
-
-            # Generate and attach receipt
-            donation_details = {
-                "donation_id": donation.donation_id,
-                "donor_name": donor_name,
-                "amount": amount_for_finance,
-                "date": finance_date.strftime("%Y-%m-%d"),
-            }
-            receipt_path = generate_donation_receipt(donation_details)
-            finance.attachment = receipt_path
-
         db.commit()
         db.refresh(donation)
         return donation
@@ -297,12 +229,66 @@ class DonationCRUD:
         try:
             donation = (
                 db.query(Donation)
-                .options(joinedload(Donation.finance_record))
+                .options(
+                    joinedload(Donation.finance_record),
+                    joinedload(Donation.donor).joinedload(Donor.user),
+                    joinedload(Donation.cash),
+                )
                 .filter(Donation.donation_id == donation_id)
                 .one()
             )
             donation.status = DonationStatus.COMPLETED
-            
+
+            # Create Finance Record if not exists and not InKind
+            if not donation.finance_record and donation.donation_type != DonationType.INKIND:
+                amount_for_finance = Decimal("0")
+                desc_for_finance = "Donation"
+
+                if donation.donation_type == DonationType.CASH and donation.cash:
+                    amount_for_finance = donation.cash.amount
+                    desc_for_finance = "Cash donation"
+                else:
+                    # Handle cases where cash record might be missing or standard amount is used
+                    # Fallback to checking 'amount' if it existed on Donation, but since it doesn't,
+                    # we rely on donation.cash.amount.
+                    # If donation type is CASH but donation.cash is None, amount is effectively 0.
+                    pass
+
+                donor_name = "Unknown Donor"
+                if donation.donor:
+                    donor_name = donation.donor.donor_name
+
+                finance_date = (
+                    donation.donation_date.date()
+                    if donation.donation_date
+                    else datetime.now(timezone.utc).date()
+                )
+
+                prefix = "RDON" if donation.frequency != DonationFrequency.ONE_TIME else "DON"
+
+                finance = FinanceRecord(
+                    finance_id=uid_from_string(f"{prefix}{random_suffix(8)}"),
+                    counterparty=donor_name,
+                    transaction_type=TransactionType.INFLOW,
+                    donation_id=donation.donation_id,
+                    amount=amount_for_finance,
+                    date=finance_date,
+                    purpose=desc_for_finance,
+                    inflow_source=InflowSource.MONETARY_DONATIONS,
+                )
+                db.add(finance)
+                db.flush()
+
+                # Generate and attach receipt
+                donation_details = {
+                    "donation_id": donation.donation_id,
+                    "donor_name": donor_name,
+                    "amount": amount_for_finance,
+                    "date": finance_date.strftime("%Y-%m-%d"),
+                }
+                receipt_path = generate_donation_receipt(donation_details)
+                finance.attachment = receipt_path
+
             db.commit()
             db.refresh(donation)
             return donation

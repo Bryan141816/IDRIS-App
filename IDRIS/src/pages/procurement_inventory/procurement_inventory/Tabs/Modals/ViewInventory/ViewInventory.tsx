@@ -57,7 +57,7 @@ export const ViewInventory: React.FC<Omit<ViewProp, "refreshData">> = ({
   const remainingQuantity = selectedData.quantity - totalAssigned;
   return (
     <>
-      <InventoryModal onClose={onClose} modalType="view-item" maxWidth="55vw">
+      <InventoryModal onClose={onClose} modalType="view-item" maxWidth="90vw">
         <div className="modal-content">
           <div className="form-group">
             <label>Item Name</label>

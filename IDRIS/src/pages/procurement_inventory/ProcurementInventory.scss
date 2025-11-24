@@ -254,4 +254,7 @@
       display: flex !important;
       flex-direction: column;
     }
+    .requests-grid{
+       grid-template-columns: repeat(auto-fit, minmax(100%, 1fr));
+    }
   }

@@ -6,6 +6,7 @@ import { SelectBarangayEvacuation } from "./SelectBarangayEvacuation";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Swal from "sweetalert2";
+import "../../../procurement_request.scss";
 export const SubmitProcurementRequest: React.FC<
   ProcurementDefaultModalProps
 > = ({ onClose, refreshData, apiUrl }) => {
@@ -152,7 +153,7 @@ export const SubmitProcurementRequest: React.FC<
           <h3>Submit Procurement Request</h3>
           <div className="form-group">
             <label>Request Type</label>
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div className="request-selector">
               <button
                 className="secondary-btn"
                 style={{
@@ -264,7 +265,7 @@ export const SubmitProcurementRequest: React.FC<
             style={{ display: "flex", gap: "5px", flexDirection: "column" }}
           >
             <label>Delivery Location:</label>
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div className="request-selector">
               <button
                 className="secondary-btn"
                 style={{
@@ -326,127 +327,126 @@ export const SubmitProcurementRequest: React.FC<
             </label>
             <div>
               <div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      formData.request_type === "relief"
-                        ? "repeat(5,1fr)"
-                        : "repeat(4,1fr)",
-                    gridTemplateRows: "repeat(2, auto)",
-                    gap: "10px",
-                  }}
-                >
-                  <label>
-                    {formData.request_type === "relief"
-                      ? "Item"
-                      : "Item/Service"}{" "}
-                    Name
-                  </label>
-                  {formData.request_type === "relief" && (
-                    <label>Category</label>
-                  )}
-                  <label>Quantity</label>
-                  <label>Unit</label>
-                  <label>Action</label>
+                <div className="request-item">
+                  <div>
+                    <label>
+                      {formData.request_type === "relief"
+                        ? "Item"
+                        : "Item/Service"}{" "}
+                      Name
+                    </label>
 
-                  <input
-                    type="text"
-                    value={itemForm.name}
-                    onChange={(e) => {
-                      const { value } = e.target;
-                      setItemForm((prev) => ({
-                        ...prev,
-                        name: value,
-                      }));
-                    }}
-                  />
-
-                  {formData.request_type === "relief" && (
-                    <select
-                      value={itemForm.category}
+                    <input
+                      type="text"
+                      value={itemForm.name}
                       onChange={(e) => {
                         const { value } = e.target;
                         setItemForm((prev) => ({
                           ...prev,
-                          category: value,
+                          name: value,
+                        }));
+                      }}
+                    />
+                  </div>
+                  {formData.request_type === "relief" && (
+                    <div>
+                      <label>Category</label>
+                      <select
+                        value={itemForm.category}
+                        onChange={(e) => {
+                          const { value } = e.target;
+                          setItemForm((prev) => ({
+                            ...prev,
+                            category: value,
+                          }));
+                        }}
+                      >
+                        <option value="" disabled>
+                          Select category
+                        </option>
+                        <option value="food item">Food Item</option>
+                        <option value="hygiene & sanitation">
+                          Hygiene & Sanitation
+                        </option>
+                        <option value="shelter materials">
+                          Shelter Materials
+                        </option>
+                        <option value="medical supplies">
+                          Medical Supplies
+                        </option>
+                        <option value="clothing items">Clothing Items</option>
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label>Quantity</label>
+                    <input
+                      type="number"
+                      value={itemForm.quantity === -1 ? "" : itemForm.quantity}
+                      onChange={(e) => {
+                        const { value } = e.target;
+                        const val = value.trim() === "" ? -1 : Number(value);
+                        setItemForm((prev) => ({
+                          ...prev,
+                          quantity: val,
+                        }));
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label>Unit</label>
+
+                    <select
+                      value={itemForm.unit}
+                      onChange={(e) => {
+                        const { value } = e.target;
+                        setItemForm((prev) => ({
+                          ...prev,
+                          unit: value,
                         }));
                       }}
                     >
-                      <option value="" disabled>
-                        Select category
-                      </option>
-                      <option value="food item">Food Item</option>
-                      <option value="hygiene & sanitation">
-                        Hygiene & Sanitation
-                      </option>
-                      <option value="shelter materials">
-                        Shelter Materials
-                      </option>
-                      <option value="medical supplies">Medical Supplies</option>
-                      <option value="clothing items">Clothing Items</option>
+                      <option value="pcs">pcs</option>
+                      <option value="set">set</option>
+                      <option value="units">units</option>
+                      <option value="boxes">boxes</option>
+                      <option value="packs">packs</option>
                     </select>
-                  )}
-                  <input
-                    type="number"
-                    value={itemForm.quantity === -1 ? "" : itemForm.quantity}
-                    onChange={(e) => {
-                      const { value } = e.target;
-                      const val = value.trim() === "" ? -1 : Number(value);
-                      setItemForm((prev) => ({
-                        ...prev,
-                        quantity: val,
-                      }));
-                    }}
-                  />
-                  <select
-                    value={itemForm.unit}
-                    onChange={(e) => {
-                      const { value } = e.target;
-                      setItemForm((prev) => ({
-                        ...prev,
-                        unit: value,
-                      }));
-                    }}
-                  >
-                    <option value="pcs">pcs</option>
-                    <option value="set">set</option>
-                    <option value="units">units</option>
-                    <option value="boxes">boxes</option>
-                    <option value="packs">packs</option>
-                  </select>
+                  </div>
+                  <div>
+                    <label>Action</label>
+                    <button
+                      className="secondary-btn"
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                        e.preventDefault();
+                        // (optional) basic validation
+                        if (!itemForm.name || itemForm.quantity < 0) return;
 
-                  <button
-                    className="secondary-btn"
-                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.preventDefault();
-                      // (optional) basic validation
-                      if (!itemForm.name || itemForm.quantity < 0) return;
+                        setRequestItem((prev) => [
+                          ...prev,
+                          {
+                            name: itemForm.name,
+                            category:
+                              formData.request_type === "relief"
+                                ? itemForm.category
+                                : undefined,
+                            quantity: itemForm.quantity,
+                            unit: itemForm.unit,
+                          },
+                        ]);
 
-                      setRequestItem((prev) => [
-                        ...prev,
-                        {
-                          name: itemForm.name,
-                          category:
-                            formData.request_type === "relief"
-                              ? itemForm.category
-                              : undefined,
-                          quantity: itemForm.quantity,
-                          unit: itemForm.unit,
-                        },
-                      ]);
-
-                      // reset the input form
-                      setItemForm({
-                        name: "",
-                        category: "",
-                        quantity: -1,
-                        unit: "pcs",
-                      });
-                    }}
-                  >
-                    Add +
-                  </button>
+                        // reset the input form
+                        setItemForm({
+                          name: "",
+                          category: "",
+                          quantity: -1,
+                          unit: "pcs",
+                        });
+                      }}
+                    >
+                      Add +
+                    </button>
+                  </div>
                 </div>
                 <div
                   style={{

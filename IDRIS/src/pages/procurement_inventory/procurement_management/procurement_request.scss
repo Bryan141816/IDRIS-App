@@ -1,0 +1,29 @@
+.request-selector{
+  display: flex;
+  gap: 10px;
+}
+.request-item{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  & button{
+    width: 100% !important;
+  }
+}
+@media(max-width: 728px){
+  .request-selector{
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+    
+
+    & button{
+      width: 100% !important;
+    }
+  }
+  .request-item{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

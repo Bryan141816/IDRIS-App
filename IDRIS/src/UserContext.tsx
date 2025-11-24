@@ -5,7 +5,7 @@ type UserContextType = {
   userType: string;
   email: string;
   username: string;
-  userImage: string | null;
+  userImage?: string | null;
   isUserReady: boolean;
   setUserId: (id: number | null) => void;
   setUserType: (type: string) => void;

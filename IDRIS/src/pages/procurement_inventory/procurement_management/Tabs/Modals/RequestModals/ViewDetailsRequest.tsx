@@ -352,7 +352,14 @@ export const RequestItemsHandler: React.FC<RequestItemsHandlerProp> = ({
           }
         ></PickInventoryModal>
       )}
-      <div style={{ background: "white", width: "100%" }}>
+      <div
+        style={{
+          display: "flex",
+          background: "white",
+          width: "100%",
+          overflow: "auto",
+        }}
+      >
         <table style={{ width: "100%" }}>
           <thead
             style={{

@@ -9,6 +9,7 @@ import { MiniMap } from "../../MiniMap";
 type EditWarehouseZoneProp = DefaultInventoryModalProps & {
   selectedData: WarehouseZone;
 };
+import "./EditWarehouse.scss";
 import Swal from "sweetalert2";
 import { MapViewWithSearch } from "../../MapViewWithSearch";
 
@@ -202,7 +203,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
           (selectedData.is_assigned !== undefined || null) &&
           selectedData.is_assigned === false
             ? null
-            : "65vw"
+            : "90vw"
         }
       >
         <div className="modal-content">
@@ -307,26 +308,8 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
               </div>
             </>
           ) : (
-            <div
-              style={{
-                display: "flex",
-                height: "100%",
-                width: "100%",
-                gap: "5px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  width: "40%",
-                  flexShrink: 0, // prevents shrinking
-                  overflowY: "auto", // allows scroll
-                  overflowX: "hidden",
-                  paddingRight: "8px",
-                  boxSizing: "border-box",
-                }}
-              >
+            <div className="edit-item">
+              <div className="editor">
                 <div className="form-group">
                   <label>Status</label>
                   <select
@@ -365,14 +348,7 @@ export const EditWarehouseZone: React.FC<EditWarehouseZoneProp> = ({
                   />
                 </div>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  width: "60%",
-                  borderLeft: "1px solid #999",
-                  paddingLeft: "5px",
-                }}
-              >
+              <div className="item-changer">
                 {assignedStorage ? (
                   <div className="inventory-table">
                     <table>

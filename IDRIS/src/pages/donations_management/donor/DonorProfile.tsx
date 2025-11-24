@@ -1,14 +1,17 @@
-import './DonorProfile.scss';
+import "./DonorProfile.scss";
 import { useEffect, useState } from "react";
-import { getIndividualDonorProfile, getCurrentUserProfile } from '../../../API_Handler/donations_donors_handler';
-import { API } from '../../../API_Handler/Axio_API_Handler';
+import {
+  getIndividualDonorProfile,
+  getCurrentUserProfile,
+} from "../../../API_Handler/donations_donors_handler";
+import { API } from "../../../API_Handler/Axio_API_Handler";
 import { useUserRoleContext } from "../../../UserRoleContext";
 import NoImage from "../../images/no-image.jpg";
 import { Modal } from "../../../components/Page_Furniture/Modals";
-import DonorStatusButton from '../../../components/Page_Furniture/TwoModeButton';
-import { createNewDonor } from '../../../API_Handler/donations_donors_handler';
-import { fetchCurrentUserId } from '../../../API_Handler/auth';
-import { DonorDashboard } from './DonorDashboard';
+import DonorStatusButton from "../../../components/Page_Furniture/TwoModeButton";
+import { createNewDonor } from "../../../API_Handler/donations_donors_handler";
+import { fetchCurrentUserId } from "../../../API_Handler/auth";
+import { DonorDashboard } from "./DonorDashboard";
 import Swal from "sweetalert2";
 
 interface DonorProfile {
@@ -34,21 +37,27 @@ interface CurrentUserProfile {
 const UserProfile = () => {
   const { userRoles, setUserRoles } = useUserRoleContext();
   const [profile, setProfile] = useState<DonorProfile | null>(null);
-  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] =
+    useState<CurrentUserProfile | null>(null);
   const [donorId, setDonorId] = useState<number | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [isRegistered, setIsRegistered] = useState(false);
 
-  const [userProfilePicture, setUserProfilePicture] = useState<string | undefined>(undefined);
-  const [userBackgroundPicture, setUserBackgroundPicture] = useState<string | undefined>(undefined);
+  const [userProfilePicture, setUserProfilePicture] = useState<
+    string | undefined
+  >(undefined);
+  const [userBackgroundPicture, setUserBackgroundPicture] = useState<
+    string | undefined
+  >(undefined);
 
   const fetchProfile = async () => {
     try {
       const response = await getIndividualDonorProfile();
       console.log(response);
       setProfile(response);
-      const newDonorId = (response as any)?.donor_id ?? (response as any)?.donorId ?? null;
+      const newDonorId =
+        (response as any)?.donor_id ?? (response as any)?.donorId ?? null;
       setDonorId(newDonorId);
       if (newDonorId) {
         setIsRegistered(true);
@@ -65,7 +74,7 @@ const UserProfile = () => {
       setCurrentUserProfile(response);
       console.log(response);
       if (response && response.profile_image) {
-        setUserProfilePicture(`${API.defaults.baseURL}/${response.profile_image}`);
+        setUserProfilePicture(response.profile_image);
       }
     } catch (err) {
       console.error(err);
@@ -100,7 +109,10 @@ const UserProfile = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isIndividual && (!organizationName || organizationName.trim() === "")) {
+    if (
+      !isIndividual &&
+      (!organizationName || organizationName.trim() === "")
+    ) {
       Swal.fire({
         icon: "error",
         title: "Validation Error",
@@ -128,14 +140,13 @@ const UserProfile = () => {
         icon: "success",
         title: "Registration Successful",
         text: "Your donor registration has been completed.",
-        confirmButtonColor: "#16a34a"
+        confirmButtonColor: "#16a34a",
       });
 
       setIsRegistered(true);
       if (setUserRoles) {
         setUserRoles([...userRoles, "donor"]);
       }
-
     } catch (err) {
       console.error(err);
 
@@ -147,7 +158,7 @@ const UserProfile = () => {
         icon: "error",
         title: "Registration Failed",
         text: "We couldn’t complete your registration. Please try again.",
-        confirmButtonColor: "#ef4444"
+        confirmButtonColor: "#ef4444",
       });
     }
   };
@@ -157,14 +168,18 @@ const UserProfile = () => {
       <Modal isOpen={activeModal === "registration-form"} onClose={closeModal}>
         <h3 className="modal-title">Register as Donor</h3>
         <form id="donor-registration-form" onSubmit={handleSubmit}>
-          <img src={userProfilePicture || NoImage} alt="user-profile" className="profile-picture" />
+          <img
+            src={userProfilePicture || NoImage}
+            alt="user-profile"
+            className="profile-picture"
+          />
           <p>{profile?.donor_name}</p>
 
           <DonorStatusButton
             isFirstMode={isIndividual}
             onToggle={() => setIsIndividual(!isIndividual)}
-            firstLabel='Individual'
-            secondLabel='Organization'
+            firstLabel="Individual"
+            secondLabel="Organization"
             id="donor-status-button"
           />
 
@@ -180,7 +195,11 @@ const UserProfile = () => {
             </>
           )}
 
-          <button type="submit" className="green-modal-button" disabled={!userId}>
+          <button
+            type="submit"
+            className="green-modal-button"
+            disabled={!userId}
+          >
             Register
           </button>
         </form>
@@ -204,16 +223,22 @@ const UserProfile = () => {
 
       {/* USER NAME AND IMAGES */}
       <div id="profile-main-container">
-        {userProfilePicture
-          ? <img src={userProfilePicture} alt="profile" id="background-picture" />
-          : <img src={NoImage} alt="default" id="background-picture" />
-        }
+        {userProfilePicture ? (
+          <img src={userProfilePicture} alt="profile" id="background-picture" />
+        ) : (
+          <img src={NoImage} alt="default" id="background-picture" />
+        )}
 
         <div id="donor-main-info-container">
-          {userProfilePicture
-            ? <img src={userProfilePicture} alt="profile" className="profile-picture" />
-            : <img src={NoImage} alt="default" className="profile-picture" />
-          }
+          {userProfilePicture ? (
+            <img
+              src={userProfilePicture}
+              alt="profile"
+              className="profile-picture"
+            />
+          ) : (
+            <img src={NoImage} alt="default" className="profile-picture" />
+          )}
 
           <div id="donor-name-container">
             <p className="donor-name">
@@ -223,14 +248,20 @@ const UserProfile = () => {
               </span>
             </p>
             <p className="role-assigned">
-              {userRoles && userRoles.length > 0 ? userRoles[0].toUpperCase() : "USER"} ({donorId ?? "—"})
+              {userRoles && userRoles.length > 0
+                ? userRoles[0].toUpperCase()
+                : "USER"}{" "}
+              ({donorId ?? "—"})
             </p>
           </div>
 
-          <button id="register-button" onClick={() => setActiveModal("registration-form")} disabled={isRegistered}>
+          <button
+            id="register-button"
+            onClick={() => setActiveModal("registration-form")}
+            disabled={isRegistered}
+          >
             {isRegistered ? "Registered" : "Register as Donor"}
           </button>
-
         </div>
 
         <hr />
@@ -259,11 +290,13 @@ const UserProfile = () => {
                         <th>Birthday:</th>
                         <td>
                           {currentUserProfile.bday
-                            ? new Date(currentUserProfile.bday).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            }).replace(",", ",")
+                            ? new Date(currentUserProfile.bday)
+                                .toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                                .replace(",", ",")
                             : ""}
                         </td>
                       </tr>

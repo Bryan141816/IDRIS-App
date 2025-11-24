@@ -6,7 +6,7 @@ import {
 import { useState, useEffect } from "react";
 import { API } from "../../../../../../API_Handler/Axio_API_Handler";
 import { MiniMap } from "../../MiniMap";
-
+import "../EditWarehouseZone/EditWarehouse.scss";
 export interface InventoryItem {
   inventory_id: number;
   item_name: string;
@@ -49,33 +49,12 @@ export const ViewWarehouse: React.FC<
   }, []);
   return (
     <>
-      <InventoryModal onClose={onClose} modalType="view-item" maxWidth="65vw">
-        <div
-          className="modal-content"
-          style={{ height: "60vh", overflow: "hidden" }}
-        >
+      <InventoryModal onClose={onClose} modalType="view-item" maxWidth="90vw">
+        <div className="modal-content">
           <h3>View Warehouse Zone</h3>
-          <div
-            style={{
-              display: "flex",
-              height: "100%",
-              width: "100%",
-              gap: "5px",
-            }}
-          >
+          <div className="edit-item">
             {/* Left side (scrollable) */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                width: "40%",
-                flexShrink: 0, // prevents shrinking
-                overflowY: "auto", // allows scroll
-                overflowX: "hidden",
-                paddingRight: "8px",
-                boxSizing: "border-box",
-              }}
-            >
+            <div className="editor">
               <div className="form-group">
                 <label>Zone Name</label>
                 <input type="text" disabled value={selectedData.zone_name} />
@@ -111,14 +90,7 @@ export const ViewWarehouse: React.FC<
             </div>
 
             {/* Right side */}
-            <div
-              style={{
-                display: "flex",
-                width: "60%",
-                borderLeft: "1px solid #999",
-                paddingLeft: "5px",
-              }}
-            >
+            <div className="item-changer">
               {assignedStorage ? (
                 <div className="inventory-table">
                   <table>

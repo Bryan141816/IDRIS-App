@@ -114,7 +114,7 @@ class UserProfile(Base):
 
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    profile_image = Column(String(255), nullable=True)  # URL or path
+    profile_image = Column(Text, nullable=True)  # URL or path
     phone_number = Column(String(20), nullable=True)
     bday = Column(Date, nullable=True)
     gender = Column(String(10), nullable=True)  # e.g., "Male", "Female", "Other"

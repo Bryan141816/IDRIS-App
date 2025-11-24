@@ -611,7 +611,7 @@
   /* MOVE SEARCH BAR TO TOP */
   .map-search {
     position: absolute;
-    top: 10px !important;      /* now at very top */
+    top: 20px !important;      /* now at very top */
     left: 50%;
     transform: translateX(-55%);
     width: 92% !important;

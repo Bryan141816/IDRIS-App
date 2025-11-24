@@ -33,11 +33,8 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
   };
 
   const { email, username, userId, userImage } = useUserContext();
-  const profileImage = userImage
-    ? `${API.defaults.baseURL}/${userImage}`
-    : userProfile;
+  const profileImage = userImage;
 
-  console.log("User Image:", userImage);
   return (
     <header>
       <div id="left-items">
@@ -55,7 +52,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
           onClick={() => toggleUserSettingsVisibility()}
         >
           <img
-            src={profileImage}
+            src={profileImage || userProfile}
             alt="user-profile"
             style={{ borderRadius: "50%" }}
           />
@@ -67,7 +64,7 @@ const Header: React.FC<FooterProps> = ({ onIconClick }) => {
             <div id="user-account-settings-container">
               <div className="user-icon">
                 <img
-                  src={profileImage}
+                  src={profileImage || userProfile}
                   alt="user-profile"
                   style={{
                     height: "32px",

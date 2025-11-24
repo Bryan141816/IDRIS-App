@@ -261,7 +261,7 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
   };
   return (
     <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div className="modal" style={{ minWidth: "fit-content" }}>
+      <div className="modal" style={{ minWidth: "66vw" }}>
         <div className="modal-header">
           <h3>Select Location</h3>
           <button className="close-btn" onClick={onClose}>
@@ -274,7 +274,6 @@ export const MapViewWithSearch: React.FC<MapViewWithSearchProp> = ({
             display: "flex",
             flexDirection: "column",
             height: "65vh",
-            width: "65vw",
             gap: "10px",
           }}
         >

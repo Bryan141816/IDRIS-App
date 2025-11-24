@@ -59,7 +59,7 @@ from decouple import config
 from authlib.integrations.starlette_client import OAuth
 from fastapi.responses import RedirectResponse
 import jwt
-
+import base64
 
 router = APIRouter(tags=["users"])
 
@@ -402,24 +402,31 @@ async def activate_account(
         profile_data = json.loads(profile_info)
 
         # Handle file upload
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        default_image_path = UPLOAD_DIR / "defaultProfile.webp"
+        # UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        # default_image_path = UPLOAD_DIR / "defaultProfile.webp"
 
-        if profile_file and profile_file.filename:
-            ext = ".webp"
-            unique_name = f"{uuid4().hex}{ext}"
-            target_path = UPLOAD_DIR / unique_name
-            processed = process_image_to_webp(profile_file)
-            with target_path.open("wb") as f:
-                f.write(processed)
-            image_path = str(target_path).replace("\\", "/")
-        else:
-            image_path = str(default_image_path).replace("\\", "/")
-            if not default_image_path.exists():
-                from shutil import copyfile
+        # if profile_file and profile_file.filename:
+        #     ext = ".webp"
+        #     unique_name = f"{uuid4().hex}{ext}"
+        #     target_path = UPLOAD_DIR / unique_name
+        #     processed = process_image_to_webp(profile_file)
+        #     with target_path.open("wb") as f:
+        #         f.write(processed)
+        #     image_path = str(target_path).replace("\\", "/")
+        # else:
+        #     image_path = str(default_image_path).replace("\\", "/")
+        #     if not default_image_path.exists():
+        #         from shutil import copyfile
+        #
+        #         bundled_default = Path("media/defaultProfile.webp")
+        #         copyfile(bundled_default, default_image_path)
+        if profile_file is None:
+            return {"error": "No file uploaded"}
+        file_data = await profile_file.read()
+        encoded = base64.b64encode(file_data).decode("utf-8")
 
-                bundled_default = Path("media/defaultProfile.webp")
-                copyfile(bundled_default, default_image_path)
+        mime = profile_file.content_type  # e.g., "image/png"
+        data_url = f"data:{mime};base64,{encoded}"
 
         # Find or create user profile
         profile_db = db.query(UserProfile).filter(UserProfile.user_id == uid).first()
@@ -427,7 +434,7 @@ async def activate_account(
             # Update existing profile
             profile_db.first_name = profile_data.get("fname")
             profile_db.last_name = profile_data.get("lname")
-            profile_db.profile_image = image_path
+            profile_db.profile_image = data_url
             profile_db.phone_number = profile_data.get("contactInfo")
             profile_db.bday = profile_data.get("birthday")
             profile_db.gender = profile_data.get("gender")
@@ -442,7 +449,7 @@ async def activate_account(
                 ),
                 first_name=profile_data.get("fname"),
                 last_name=profile_data.get("lname"),
-                profile_image=image_path,
+                profile_image=data_url,
                 phone_number=profile_data.get("contactInfo"),
                 bday=profile_data.get("birthday"),
                 gender=profile_data.get("gender"),

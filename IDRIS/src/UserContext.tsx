@@ -5,7 +5,7 @@ type UserContextType = {
   userType: string;
   email: string;
   username: string;
-  userImage: string | null;
+  userImage: string;
   isUserReady: boolean;
   setUserId: (id: number | null) => void;
   setUserType: (type: string) => void;
@@ -20,7 +20,7 @@ export const UserContext = createContext<UserContextType>({
   userType: "",
   email: "",
   username: "",
-  userImage: null,
+  userImage: "",
   isUserReady: false,
   setUserId: () => {},
   setUserType: () => {},
@@ -31,3 +31,4 @@ export const UserContext = createContext<UserContextType>({
 });
 
 export const useUserContext = () => useContext(UserContext);
+

@@ -217,6 +217,10 @@ class DonationCRUD:
                 .filter(Donation.donation_id == donation_id)
                 .one()
             )
+            # Only mark as cancelled if it hasn't already completed/failed/cancelled
+            if donation.status not in (DonationStatus.COMPLETED, DonationStatus.FAILED, DonationStatus.CANCELLED):
+                donation.status = DonationStatus.CANCELLED
+                donation.is_active = False
 
             db.commit()
             db.refresh(donation)

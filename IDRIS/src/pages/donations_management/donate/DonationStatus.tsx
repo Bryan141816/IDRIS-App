@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { 
@@ -13,6 +13,7 @@ interface DonationStatusProps {
 }
 
 export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) => {
+  const [showPendingCard, setShowPendingCard] = useState<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   console.log("received donation id:", _donationId);
@@ -76,6 +77,8 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         return;
       }
 
+      setShowPendingCard(true);
+
       try {
         const startTime = Date.now();
         let finalResult: "success" | "pending" | "failed" | "unknown" = "unknown";
@@ -131,6 +134,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
 
         if (finalResult === "success") {
           Swal.hideLoading();
+          setShowPendingCard(false);
           Swal.update({
             icon: "success",
             title: "Donation Successful!",
@@ -152,6 +156,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
           navigate("/donations_management/funding_proposals", { replace: true });
         } else if (finalResult === "pending") {
           Swal.hideLoading();
+          setShowPendingCard(false);
           Swal.update({
             icon: "info",
             title: "Payment Pending",
@@ -161,6 +166,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
           });
         } else if (finalResult === "failed") {
           Swal.hideLoading();
+          setShowPendingCard(false);
           Swal.update({
             icon: "error",
             title: "Donation Not Completed",
@@ -179,6 +185,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
           }
         } else {
           Swal.hideLoading();
+          setShowPendingCard(false);
           Swal.update({
             icon: "warning",
             title: "Verification Timed Out",
@@ -190,6 +197,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
       } catch (err) {
         console.error("Payment verification failed:", err);
         Swal.hideLoading();
+        setShowPendingCard(false);
         Swal.update({
           icon: "error",
           title: "Verification Failed",
@@ -205,10 +213,63 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
     return () => {
       mounted = false;
       clearTimeout(timer);
+      setShowPendingCard(false);
     };
   }, [location, _donationId]);
 
-  return <></>;
+  const handleCancel = async () => {
+    setShowPendingCard(false);
+    Swal.close();
+    if (_donationId) {
+      try {
+        await failDonation(_donationId);
+      } catch (err) {
+        console.error("Failed to cancel donation from timer UI:", err);
+      }
+    }
+  };
+
+  return (
+    <>
+      {showPendingCard && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            background: "#fff",
+            border: "1px solid #e5e7eb",
+            borderRadius: "8px",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+            padding: "12px 16px",
+            zIndex: 2000,
+            maxWidth: "320px",
+            fontSize: "14px",
+            color: "#111827",
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: "4px" }}>Processing payment…</div>
+          <div style={{ marginBottom: "10px", color: "#4b5563" }}>
+            We’re waiting for PayMongo to confirm. You can cancel if you no longer wish to continue.
+          </div>
+          <button
+            onClick={handleCancel}
+            style={{
+              background: "#ef4444",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "8px 12px",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Cancel Donation
+          </button>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default DonationStatus;

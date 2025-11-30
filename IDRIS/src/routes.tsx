@@ -438,7 +438,13 @@ export const router = createBrowserRouter([
           {
             path: "procurement_inventory",
             children: [
-              { path: ":tab", lazy: ProcurementInventory },
+              { 
+                path: ":tab", 
+                lazy: ProcurementInventory,
+                handle: {
+                  allowedRoles: ["superadmin", "finance admin"],
+                },
+               },
               {
                 index: true,
                 loader: () =>

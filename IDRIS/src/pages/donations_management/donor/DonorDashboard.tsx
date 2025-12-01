@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import './DonorDashboard.scss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
 import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy, getPayMongoSession } from '../../../API_Handler/donations_donation_handler';
-import DonationStatus from "../donate/DonationStatus";
+import DonorPaymentStatus from "./DonorPaymentStatus";
 
 // Types
 type DonationType = "CASH" | "INKIND";
@@ -99,8 +99,10 @@ export const DonorDashboard: React.FC = () => {
   const [sortField, setSortField] = useState<string>('donation_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [resumingId, setResumingId] = useState<string | number | null>(null);
-  const [showDonationStatus, setShowDonationStatus] = useState<boolean>(false);
-  const [statusDonationId, setStatusDonationId] = useState<string | null>(null);
+  
+  // New state for payment monitoring
+  const [monitoringDonationId, setMonitoringDonationId] = useState<string | null>(null);
+  const [monitoringSessionId, setMonitoringSessionId] = useState<string | null>(null);
 
   // Data
   const [donorData, setDonorData] = useState<DonorAggregates>();
@@ -236,13 +238,6 @@ export const DonorDashboard: React.FC = () => {
     row.donation_type === "CASH" &&
     (row.cash?.payment_method ?? "").toLowerCase() === "paymongo";
 
-  const startStatusPoll = (donationId: string | number, checkoutId?: string | null) => {
-    if (!donationId || !checkoutId) return;
-    localStorage.setItem("paymongo_session_id", checkoutId);
-    setStatusDonationId(String(donationId));
-    setShowDonationStatus(true);
-  };
-  
   const handleResumePayment = async (row: DonationRow, e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!row.checkout_id) {
@@ -273,21 +268,34 @@ export const DonorDashboard: React.FC = () => {
         "noopener,noreferrer,width=900,height=700"
       );
   
-      if (!popup || popup.closed) {
-        alert("Popup blocked. Please allow popups for this site to continue payment.");
-        return;
-      }
+      // Removed alert per user request: "Disable message displaying showing pop up blocked"
+      // because it was showing up even when popup was allowed in some cases.
+      
+      popup?.focus?.();
   
-      popup.focus?.();
-  
-      // Kick off backend short poller; front-end no longer polls
-      await startStatusPoll(row.donation_id, row.checkout_id);
-      setResumingId(null);
+      // Start monitoring status with the new component
+      setMonitoringDonationId(String(row.donation_id));
+      setMonitoringSessionId(row.checkout_id);
+      
     } catch (err) {
       console.error("Failed to resume PayMongo checkout:", err);
       alert("Could not resume checkout. Please try again.");
+    } finally {
       setResumingId(null);
     }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Reload data to reflect the new status
+    reload();
+  };
+
+  const handlePaymentStatusClose = () => {
+    // Clear monitoring state
+    setMonitoringDonationId(null);
+    setMonitoringSessionId(null);
+    // Reload just in case (e.g. failure update)
+    reload();
   };
 
   if (loading) {
@@ -303,8 +311,13 @@ export const DonorDashboard: React.FC = () => {
 
   return (
     <div className="donor-dashboard">
-      {showDonationStatus && statusDonationId && (
-        <DonationStatus _donationId={statusDonationId} />
+      {monitoringDonationId && monitoringSessionId && (
+        <DonorPaymentStatus 
+          donationId={monitoringDonationId}
+          checkoutSessionId={monitoringSessionId}
+          onSuccess={handlePaymentSuccess}
+          onClose={handlePaymentStatusClose}
+        />
       )}
       <div className="dashboard-header">
         <div className="header-content">

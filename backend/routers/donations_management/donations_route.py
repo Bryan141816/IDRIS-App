@@ -389,6 +389,21 @@ async def paymongo_webhook(request: Request, db: Session = Depends(get_db)):
                 status_code=200, content="Donation for checkout ID not found."
             )
 
+        # Do not override already-final statuses (e.g., CANCELLED via manual action)
+        if donation.status != DonationStatus.PENDING:
+            logger.info(
+                "Webhook ignored: donation not pending",
+                extra={
+                    "donation_id": donation.donation_id,
+                    "checkout_id": checkout_id,
+                    "status": donation.status,
+                    "event_type": event_type,
+                },
+            )
+            return Response(
+                status_code=200, content="Donation not pending; no status change applied."
+            )
+
         # Update status based on event type
         if event_type == "checkout.session.payment.paid":
             CRUD.completed_donation_status(db, donation.donation_id)
@@ -442,8 +457,11 @@ router.include_router(router_donor)
 router.include_router(router_admin_or_donor)
 
 # --- PayMongo pending sweeper (background) ---
-SWEEP_INTERVAL_SECONDS = int(config("PAYMONGO_SWEEP_INTERVAL_SECONDS", default="300")) 
+SWEEP_INTERVAL_SECONDS = int(config("PAYMONGO_SWEEP_INTERVAL_SECONDS", default="300"))
 PAYMONGO_TIMEOUT_MINUTES = int(config("PAYMONGO_TIMEOUT_MINUTES", default="60"))
+PAYMONGO_PENDING_HARD_MAX_MINUTES = int(
+    config("PAYMONGO_PENDING_HARD_MAX_MINUTES", default="1440")
+)
 
 
 async def _fetch_paymongo_session(session_id: str) -> dict:
@@ -467,12 +485,14 @@ async def sweep_paymongo_pending_once():
     db = SessionLocal()
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(minutes=PAYMONGO_TIMEOUT_MINUTES)
+    hard_cutoff = now - timedelta(minutes=PAYMONGO_PENDING_HARD_MAX_MINUTES)
 
     try:
         logger.warning(
-            "PayMongo sweeper tick: interval=%ss timeout=%smin",
+            "PayMongo sweeper tick: interval=%ss timeout=%smin hard_max=%smin",
             SWEEP_INTERVAL_SECONDS,
             PAYMONGO_TIMEOUT_MINUTES,
+            PAYMONGO_PENDING_HARD_MAX_MINUTES,
         )
 
         pending = (
@@ -480,7 +500,6 @@ async def sweep_paymongo_pending_once():
             .join(Donation_Cash)
             .filter(
                 Donation.status == DonationStatus.PENDING,
-                Donation.checkout_id.isnot(None),
                 Donation_Cash.payment_method == "paymongo",
             )
             .all()
@@ -489,30 +508,68 @@ async def sweep_paymongo_pending_once():
         logger.warning("PayMongo sweeper: found %s pending paymongo donations", len(pending))
 
         for donation in pending:
-            if donation.donation_date and donation.donation_date < cutoff:
+            if getattr(donation, "status", None) != DonationStatus.PENDING:
+                logger.info(
+                    "Skipping donation not pending in sweeper pass",
+                    extra={
+                        "donation_id": getattr(donation, "donation_id", None),
+                        "status": getattr(donation, "status", None),
+                    },
+                )
+                continue
+            donation_date = donation.donation_date
+
+            if donation_date and donation_date < hard_cutoff:
                 try:
                     CRUD.failed_donation_status(db, donation.donation_id)
                 except Exception:
-                    logging.exception(
-                        "Sweeper failed to mark donation as FAILED (age)",
-                        extra={"donation_id": donation.donation_id},
+                    logger.exception(
+                        "Sweeper failed to mark donation as FAILED (hard max age)",
+                        extra={"donation_id": donation.donation_id, "checkout_id": donation.checkout_id},
                     )
                 continue
 
             checkout_id = donation.checkout_id
             if not checkout_id:
-                continue
+                if donation_date and donation_date < cutoff:
+                    try:
+                        CRUD.failed_donation_status(db, donation.donation_id)
+                        logger.info(
+                            "Marked pending PayMongo donation as FAILED (missing checkout_id after timeout)",
+                            extra={"donation_id": donation.donation_id},
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Sweeper failed to mark donation as FAILED (missing checkout_id timeout)",
+                            extra={"donation_id": donation.donation_id},
+                        )
+                    continue
+                else:
+                    logger.warning(
+                        "Pending PayMongo donation missing checkout_id; awaiting timeout",
+                        extra={"donation_id": donation.donation_id},
+                    )
+                    continue
 
             try:
                 session_resp = await _fetch_paymongo_session(checkout_id)
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 404 and donation.donation_date and donation.donation_date < cutoff:
+                is_404 = getattr(e.response, "status_code", None) == 404
+                if is_404 and donation_date and donation_date < cutoff:
                     try:
                         CRUD.failed_donation_status(db, donation.donation_id)
+                        logger.info(
+                            "Marked pending PayMongo donation as FAILED (404 after timeout)",
+                            extra={
+                                "donation_id": donation.donation_id,
+                                "checkout_id": checkout_id,
+                                "status_code": getattr(e.response, 'status_code', None),
+                            },
+                        )
                     except Exception:
                         logger.exception(
-                            "Sweeper failed to mark donation as FAILED (404)",
-                            extra={"donation_id": donation.donation_id},
+                            "Sweeper failed to mark donation as FAILED (404 timeout)",
+                            extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
                         )
                 else:
                     logger.warning(
@@ -567,7 +624,7 @@ async def sweep_paymongo_pending_once():
                 continue
 
             # Still pending; check age again to avoid stale records
-            if donation.donation_date and donation.donation_date < cutoff:
+            if donation_date and donation_date < cutoff:
                 try:
                     CRUD.failed_donation_status(db, donation.donation_id)
                 except Exception:
@@ -590,8 +647,9 @@ async def start_paymongo_sweeper():
             await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
 
     logger.warning(
-        "Starting PayMongo sweeper loop (interval=%ss, timeout=%smin)",
+        "Starting PayMongo sweeper loop (interval=%ss, timeout=%smin, hard_max=%smin)",
         SWEEP_INTERVAL_SECONDS,
         PAYMONGO_TIMEOUT_MINUTES,
+        PAYMONGO_PENDING_HARD_MAX_MINUTES,
     )
     asyncio.create_task(_runner())

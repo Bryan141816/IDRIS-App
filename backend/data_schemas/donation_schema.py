@@ -166,6 +166,7 @@ class DonationHistoryResponse(BaseModel):
     next_donation_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_active: Optional[bool] = None
+    checkout_id: Optional[str] = None
 
     # Missing nested objects
     cash: Optional[DonationCashResponse] = None

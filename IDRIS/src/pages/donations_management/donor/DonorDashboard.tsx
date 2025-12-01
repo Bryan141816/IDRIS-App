@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import './DonorDashboard.scss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
-import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy } from '../../../API_Handler/donations_donation_handler';
+import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy, getPayMongoSession } from '../../../API_Handler/donations_donation_handler';
+import DonationStatus from "../donate/DonationStatus";
 
 // Types
 type DonationType = "CASH" | "INKIND";
@@ -34,6 +35,7 @@ export interface DonationRow {
   is_active?: boolean | null;
   cash?: DonationCash | null;
   inkind?: DonationInKind | null;
+  checkout_id?: string | null;
   proposal_id?: number | null;
   proposal?: {
     title: string;
@@ -96,6 +98,9 @@ export const DonorDashboard: React.FC = () => {
   const [selectedDonation, setSelectedDonation] = useState<DonationRow | null>(null);
   const [sortField, setSortField] = useState<string>('donation_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [resumingId, setResumingId] = useState<string | number | null>(null);
+  const [showDonationStatus, setShowDonationStatus] = useState<boolean>(false);
+  const [statusDonationId, setStatusDonationId] = useState<string | null>(null);
 
   // Data
   const [donorData, setDonorData] = useState<DonorAggregates>();
@@ -226,6 +231,65 @@ export const DonorDashboard: React.FC = () => {
     URL.revokeObjectURL(a.href);
   };
 
+  const canResumePaymongo = (row: DonationRow) =>
+    row.status === "PENDING" &&
+    row.donation_type === "CASH" &&
+    (row.cash?.payment_method ?? "").toLowerCase() === "paymongo";
+
+  const startStatusPoll = (donationId: string | number, checkoutId?: string | null) => {
+    if (!donationId || !checkoutId) return;
+    localStorage.setItem("paymongo_session_id", checkoutId);
+    setStatusDonationId(String(donationId));
+    setShowDonationStatus(true);
+  };
+  
+  const handleResumePayment = async (row: DonationRow, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!row.checkout_id) {
+      alert("No PayMongo session found for this donation yet.");
+      return;
+    }
+  
+    setResumingId(row.donation_id);
+    try {
+      const resp = await getPayMongoSession(row.checkout_id);
+      const payload = resp?.data ?? resp;
+      const session = payload?.data ?? payload;
+      const attrs = session?.attributes ?? {};
+  
+      const checkoutUrl =
+        attrs?.checkout_url ||
+        attrs?.checkout_session_url ||
+        attrs?.url;
+  
+      if (!checkoutUrl) {
+        alert("Unable to retrieve the checkout link. Please try again later.");
+        return;
+      }
+  
+      const popup = window.open(
+        checkoutUrl,
+        "_blank",
+        "noopener,noreferrer,width=900,height=700"
+      );
+  
+      if (!popup || popup.closed) {
+        alert("Popup blocked. Please allow popups for this site to continue payment.");
+        return;
+      }
+  
+      popup.focus?.();
+  
+      // Kick off backend short poller; front-end no longer polls
+      await startStatusPoll(row.donation_id, row.checkout_id);
+      setResumingId(null);
+    } catch (err) {
+      console.error("Failed to resume PayMongo checkout:", err);
+      alert("Could not resume checkout. Please try again.");
+      setResumingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="donor-dashboard">
@@ -239,6 +303,9 @@ export const DonorDashboard: React.FC = () => {
 
   return (
     <div className="donor-dashboard">
+      {showDonationStatus && statusDonationId && (
+        <DonationStatus _donationId={statusDonationId} />
+      )}
       <div className="dashboard-header">
         <div className="header-content">
           <h2 className="dashboard-title">Donor Dashboard</h2>
@@ -387,6 +454,16 @@ export const DonorDashboard: React.FC = () => {
                         >
                           👁️
                         </button>
+                        {canResumePaymongo(row) && (
+                          <button
+                            className="resume-btn"
+                            disabled={resumingId === row.donation_id}
+                            onClick={(e) => handleResumePayment(row, e)}
+                            title="Continue payment"
+                          >
+                            {resumingId === row.donation_id ? "Opening..." : "Continue billing"}
+                          </button>
+                        )}
                         <button
                           className="download-btn"
                           disabled={row.status !== "COMPLETED"}

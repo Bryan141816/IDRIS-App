@@ -606,7 +606,7 @@ class ProcurementRequest(Base):
         foreign_keys=[end_barangay],
         lazy="joined",
     )
-
+    reject_reason = Column(Text, nullable=True)
     # ---- the two item collections (fix) ----
     relief_items = relationship(
         "ReliefRequestItem",

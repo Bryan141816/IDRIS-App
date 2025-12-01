@@ -133,6 +133,7 @@ export interface ProcurementRequest {
   date_needed: string;
   use_different_end: boolean;
   different_end_type: "barangay" | "evacuation" | null;
+  reject_reason: string;
 
   // Conditional destination target
   end_target: EndTarget | null;

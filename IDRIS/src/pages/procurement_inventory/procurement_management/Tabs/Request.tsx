@@ -255,6 +255,12 @@ const RequestTab: React.FC<RequestTabProps> = ({ apiUrl }) => {
                   <strong>Date Needed: </strong>
                   {formatDateTime(request.date_needed)}
                 </p>
+                {request.status === "Rejected" && request.reject_reason && (
+                  <p className="reject-reason">
+                    <strong>Reason for Rejection: </strong>
+                    {request.reject_reason}
+                  </p>
+                )}
 
                 <div className="request-actions">
                   <button

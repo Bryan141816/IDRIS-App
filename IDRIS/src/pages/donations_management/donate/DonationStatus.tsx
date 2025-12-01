@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { 
@@ -14,10 +14,12 @@ interface DonationStatusProps {
 
 export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) => {
   const [showPendingCard, setShowPendingCard] = useState<boolean>(false);
+  const cancelledRef = useRef<boolean>(false);
   const location = useLocation();
   const navigate = useNavigate();
   console.log("received donation id:", _donationId);
   useEffect(() => {
+    cancelledRef.current = false;
     const params = new URLSearchParams(location.search);
     const status = params.get("status");
 
@@ -57,7 +59,7 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
     }
 
     async function verifyPayment() {
-      if (!mounted) return;
+      if (!mounted || cancelledRef.current) return;
 
       Swal.fire({
         title: "Verifying payment",
@@ -77,6 +79,11 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         return;
       }
 
+      if (cancelledRef.current) {
+        Swal.close();
+        return;
+      }
+
       setShowPendingCard(true);
 
       try {
@@ -84,6 +91,9 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         let finalResult: "success" | "pending" | "failed" | "unknown" = "unknown";
 
         while (mounted && Date.now() - startTime < VERIFICATION_DURATION_MS) {
+          if (cancelledRef.current) {
+            break;
+          }
           const elapsedTime = Date.now() - startTime;
           const remainingMs = Math.max(0, VERIFICATION_DURATION_MS - elapsedTime);
           const remainingSeconds = Math.ceil(remainingMs / 1000);
@@ -131,6 +141,12 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         }
 
         localStorage.removeItem("paymongo_session_id");
+
+        if (cancelledRef.current) {
+          Swal.close();
+          setShowPendingCard(false);
+          return;
+        }
 
         if (finalResult === "success") {
           Swal.hideLoading();
@@ -212,12 +228,14 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
 
     return () => {
       mounted = false;
+      cancelledRef.current = true;
       clearTimeout(timer);
       setShowPendingCard(false);
     };
   }, [location, _donationId]);
 
   const handleCancel = async () => {
+    cancelledRef.current = true;
     setShowPendingCard(false);
     Swal.close();
     if (_donationId) {
@@ -248,9 +266,9 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
             color: "#111827",
           }}
         >
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>Processing payment…</div>
+          <div style={{ fontWeight: 600, marginBottom: "4px" }}>Processing payment...</div>
           <div style={{ marginBottom: "10px", color: "#4b5563" }}>
-            We’re waiting for PayMongo to confirm. You can cancel if you no longer wish to continue.
+            We're waiting for PayMongo to confirm. You can cancel if you no longer wish to continue.
           </div>
           <button
             onClick={handleCancel}

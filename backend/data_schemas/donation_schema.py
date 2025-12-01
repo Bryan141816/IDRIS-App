@@ -184,3 +184,4 @@ class PaginatedDonationHistoryResponse(BaseModel):
 class PayMongoCheckoutRequest(BaseModel):
     amount: float
     description: str
+    donation_id: str

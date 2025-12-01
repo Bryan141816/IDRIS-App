@@ -335,6 +335,28 @@ class DonationCRUD:
             raise HTTPException(status_code=500, detail="Database error while fetching donation.")
 
     @staticmethod
+    def attach_checkout_id(db: Session, donation_id: str, checkout_id: str) -> Donation:
+        """
+        Persist the PayMongo checkout/session id on the donation record for reconciliation/webhooks.
+        """
+        try:
+            donation = (
+                db.query(Donation)
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
+            donation.checkout_id = checkout_id
+            db.commit()
+            db.refresh(donation)
+            return donation
+        except NoResultFound:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
+
+    @staticmethod
     def get_donation_with_details_by_id(db: Session, donation_id: str) -> Optional[Donation]:
         """
         Retrieves a single donation with all its details, including donor and
@@ -692,7 +714,7 @@ class DonationCRUD:
             return donation
         except NoResultFound:
             raise HTTPException(status_code=404, detail="Donation not found")
-
+        
 def _add_months(orig: date, months: int) -> date:
     """Return date after adding `months` calendar months, clamping day to month length."""
     year = orig.year + (orig.month - 1 + months) // 12

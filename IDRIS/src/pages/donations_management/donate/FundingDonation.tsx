@@ -250,13 +250,17 @@ const DonationPage: React.FC = () => {
       if (!donationResponse || !donationResponse.data) {
         throw new Error('Failed to create donation record (no response)');
       }
-  
+
       createdDonationId = donationResponse.data.donation_id ?? null;
+      if (!createdDonationId) {
+        throw new Error('Failed to create donation record (missing donation_id)');
+      }
       if (createdDonationId) setDonationId(createdDonationId);
   
       const paymongoPayload = {
         amount: donationFormData.amount ? parseFloat(donationFormData.amount) : 0,
         description: donationFormData.description ?? '',
+        donation_id: createdDonationId,
       };
   
       const createPayMongoCheckoutWithRetry = async (

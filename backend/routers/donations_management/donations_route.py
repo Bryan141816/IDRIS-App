@@ -1,3 +1,4 @@
+import asyncio
 import logging, traceback
 import httpx
 from fastapi import APIRouter, Depends, Query, HTTPException, Request, Response
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from numbers import Number
 import hmac, hashlib, json
-from database import get_db
+from database import get_db, SessionLocal
 from decouple import config
 from data_schemas.donation_schema import (
     DonationCreate,
@@ -19,11 +20,11 @@ from data_schemas.donation_schema import (
     PaginatedDonationHistoryResponse,
 )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from routers.role_checker import RoleChecker
 
 from typing import Optional, List
-from models import User
+from models import User, Donation, Donation_Cash, DonationStatus
 from routers.auth.authentication import get_current_user_from_access_token
 from .helper import to_centavos, generate_donation_receipt
 
@@ -31,6 +32,9 @@ from crud_functions.donations_management.donation_receipt_crud import (
     get_donation_receipt_data,
 )
 from data_schemas.donation_receipt_schema import DonationReceiptSchema
+
+logger = logging.getLogger("paymongo_sweeper")
+logger.setLevel(logging.INFO)
 
 router = APIRouter()
 
@@ -229,7 +233,10 @@ def get_my_donations(
 
 
 @router.post("/paymongo/checkout")
-async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
+async def create_paymongo_checkout(
+    request: PayMongoCheckoutRequest,
+    db: Session = Depends(get_db),
+):
     PAYMONGO_SECRET_KEY = config("PAYMONGO_SECRET_KEY")
     if not PAYMONGO_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
@@ -264,7 +271,11 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
                 timeout=30.0,
             )
             resp.raise_for_status()
-            return resp.json()
+            resp_json = resp.json()
+            checkout_id = resp_json.get("data", {}).get("id")
+            if request.donation_id and checkout_id:
+                CRUD.attach_checkout_id(db, request.donation_id, checkout_id)
+            return resp_json
         except httpx.HTTPStatusError as e:
             # forward PayMongo error body with proper status
             raise HTTPException(
@@ -276,26 +287,12 @@ async def create_paymongo_checkout(request: PayMongoCheckoutRequest):
 
 @router.get("/paymongo/session/{session_id}")
 async def get_session_status(session_id: str):
-    secret = config("PAYMONGO_SECRET_KEY")
-
-    if not secret:
-        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
-
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(
-                f"https://api.paymongo.com/v1/checkout_sessions/{session_id}",
-                auth=(secret, ""),
-                timeout=30.0,
-            )
-            resp.raise_for_status()
-            return resp.json()
-        except httpx.HTTPStatusError as e:
-            raise HTTPException(
-                status_code=e.response.status_code, detail=e.response.text
-            )
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+    try:
+        return await _fetch_paymongo_session(session_id)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/all", response_model=PaginatedDonationHistoryResponse)
@@ -443,3 +440,158 @@ def get_donation_by_id(
 router.include_router(router_admin)
 router.include_router(router_donor)
 router.include_router(router_admin_or_donor)
+
+# --- PayMongo pending sweeper (background) ---
+SWEEP_INTERVAL_SECONDS = int(config("PAYMONGO_SWEEP_INTERVAL_SECONDS", default="300")) 
+PAYMONGO_TIMEOUT_MINUTES = int(config("PAYMONGO_TIMEOUT_MINUTES", default="60"))
+
+
+async def _fetch_paymongo_session(session_id: str) -> dict:
+    """Shared fetcher used by both the endpoint and sweeper."""
+    secret = config("PAYMONGO_SECRET_KEY")
+    if not secret:
+        raise HTTPException(status_code=500, detail="Missing PayMongo secret key")
+
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"https://api.paymongo.com/v1/checkout_sessions/{session_id}",
+            auth=(secret, ""),
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def sweep_paymongo_pending_once():
+    """Scan pending PayMongo donations and flip stale ones to FAILED/COMPLETED."""
+    db = SessionLocal()
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=PAYMONGO_TIMEOUT_MINUTES)
+
+    try:
+        logger.warning(
+            "PayMongo sweeper tick: interval=%ss timeout=%smin",
+            SWEEP_INTERVAL_SECONDS,
+            PAYMONGO_TIMEOUT_MINUTES,
+        )
+
+        pending = (
+            db.query(Donation)
+            .join(Donation_Cash)
+            .filter(
+                Donation.status == DonationStatus.PENDING,
+                Donation.checkout_id.isnot(None),
+                Donation_Cash.payment_method == "paymongo",
+            )
+            .all()
+        )
+
+        logger.warning("PayMongo sweeper: found %s pending paymongo donations", len(pending))
+
+        for donation in pending:
+            if donation.donation_date and donation.donation_date < cutoff:
+                try:
+                    CRUD.failed_donation_status(db, donation.donation_id)
+                except Exception:
+                    logging.exception(
+                        "Sweeper failed to mark donation as FAILED (age)",
+                        extra={"donation_id": donation.donation_id},
+                    )
+                continue
+
+            checkout_id = donation.checkout_id
+            if not checkout_id:
+                continue
+
+            try:
+                session_resp = await _fetch_paymongo_session(checkout_id)
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 404 and donation.donation_date and donation.donation_date < cutoff:
+                    try:
+                        CRUD.failed_donation_status(db, donation.donation_id)
+                    except Exception:
+                        logger.exception(
+                            "Sweeper failed to mark donation as FAILED (404)",
+                            extra={"donation_id": donation.donation_id},
+                        )
+                else:
+                    logger.warning(
+                        "Sweeper could not fetch PayMongo session",
+                        extra={
+                            "donation_id": donation.donation_id,
+                            "checkout_id": checkout_id,
+                            "status_code": getattr(e.response, 'status_code', None),
+                        },
+                    )
+                continue
+            except Exception:
+                logger.exception(
+                    "Sweeper encountered error fetching PayMongo session",
+                    extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
+                )
+                continue
+
+            attrs = session_resp.get("data", {}).get("attributes", {}) if session_resp else {}
+            session_status = attrs.get("status")
+            payment_status = None
+            try:
+                payment_status = attrs.get("payments", [{}])[0].get("attributes", {}).get("status")
+            except Exception:
+                payment_status = None
+
+            success_states = {"succeeded", "paid"}
+            fail_states = {"failed", "expired", "canceled", "cancelled"}
+
+            if (session_status and session_status.lower() in success_states) or (
+                payment_status and payment_status.lower() in success_states
+            ):
+                try:
+                    CRUD.completed_donation_status(db, donation.donation_id)
+                except Exception:
+                    logger.exception(
+                        "Sweeper failed to mark donation as COMPLETED",
+                        extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
+                    )
+                continue
+
+            if (session_status and session_status.lower() in fail_states) or (
+                payment_status and payment_status.lower() in fail_states
+            ):
+                try:
+                    CRUD.failed_donation_status(db, donation.donation_id)
+                except Exception:
+                    logger.exception(
+                        "Sweeper failed to mark donation as FAILED",
+                        extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
+                    )
+                continue
+
+            # Still pending; check age again to avoid stale records
+            if donation.donation_date and donation.donation_date < cutoff:
+                try:
+                    CRUD.failed_donation_status(db, donation.donation_id)
+                except Exception:
+                    logger.exception(
+                        "Sweeper failed to mark donation as FAILED (pending timeout)",
+                        extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
+                    )
+
+    finally:
+        db.close()
+
+
+async def start_paymongo_sweeper():
+    async def _runner():
+        while True:
+            try:
+                await sweep_paymongo_pending_once()
+            except Exception:
+                logger.exception("PayMongo sweeper loop encountered an error")
+            await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
+
+    logger.warning(
+        "Starting PayMongo sweeper loop (interval=%ss, timeout=%smin)",
+        SWEEP_INTERVAL_SECONDS,
+        PAYMONGO_TIMEOUT_MINUTES,
+    )
+    asyncio.create_task(_runner())

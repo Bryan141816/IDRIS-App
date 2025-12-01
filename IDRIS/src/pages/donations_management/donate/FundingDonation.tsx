@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUserRoleContext } from "../../../UserRoleContext";
 import DonorDonationForm from './DonationInfo';
@@ -12,7 +12,8 @@ import {
   createPayMongoCheckout,
   cancelDonation,
   completeDonation,
-  failDonation
+  failDonation,
+  getDonationById
 } from '../../../API_Handler/donations_donation_handler';
 import { getFundingProposalsById } from '../../../API_Handler/donations_funding_proposals_handler';
 import { formatCurrency, computePercentage } from '../helpers';
@@ -38,6 +39,7 @@ const DonationPage: React.FC = () => {
   const [donationKind, setDonationKind] = useState('In-Kind');
   const [donationFrequency, setDonationFrequency] = useState('One-time');
   const [paymentMethod, setPaymentMethod] = useState('paymongo');
+  const checkoutWindowRef = useRef<Window | null>(null);
 
   const [donationFormData, setDonationFormData] = useState({
     amount: '',
@@ -178,13 +180,49 @@ const DonationPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const donationStatusPollRef = useRef<number | null>(null);
 
+  // Poll donation status while pending to pick up webhook-driven updates
+  useEffect(() => {
+    if (!showDonationStatus || !donationId || !isDonationPending) {
+      if (donationStatusPollRef.current !== null) {
+        window.clearInterval(donationStatusPollRef.current);
+        donationStatusPollRef.current = null;
+      }
+      return;
+    }
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const latest = await getDonationById(donationId);
+        const status = latest?.status;
+        if (status && status !== 'PENDING') {
+          setIsDonationPending(false);
+          setShowDonationStatus(true); // keep showing status component to display final state
+          window.clearInterval(intervalId);
+          donationStatusPollRef.current = null;
+        }
+      } catch (err) {
+        console.error('Failed to poll donation status:', err);
+      }
+    }, 5000); // 5s cadence
+
+    donationStatusPollRef.current = intervalId;
+
+    return () => {
+      if (donationStatusPollRef.current !== null) {
+        window.clearInterval(donationStatusPollRef.current);
+        donationStatusPollRef.current = null;
+      }
+    };
+  }, [showDonationStatus, donationId, isDonationPending]);
+      
   const handlePayMongoCheckout = async () => {
     if ((window as any).__paymongoCheckoutSubmitting) return;
     (window as any).__paymongoCheckoutSubmitting = true;
     setIsSubmitting(true);
-
+  
     Swal.fire({
       title: 'Creating Checkout Request',
       text: 'Please wait while we prepare your secure checkout...',
@@ -193,7 +231,7 @@ const DonationPage: React.FC = () => {
         Swal.showLoading();
       },
     });
-
+  
     const formData = {
       donor_id: donorId,
       frequency: normalizeDonationFrequency(donationFrequency),
@@ -204,10 +242,9 @@ const DonationPage: React.FC = () => {
       payment_method: paymentMethod,
       category: donationFormData.category,
     };
-
-    let checkoutWindow: Window | null = null;
+  
     let createdDonationId: string | null = null;
-
+  
     try {
       const donationResponse = await createDonation(formData);
       if (!donationResponse || !donationResponse.data) {
@@ -215,14 +252,22 @@ const DonationPage: React.FC = () => {
       }
 
       createdDonationId = donationResponse.data.donation_id ?? null;
+      if (!createdDonationId) {
+        throw new Error('Failed to create donation record (missing donation_id)');
+      }
       if (createdDonationId) setDonationId(createdDonationId);
-
+  
       const paymongoPayload = {
         amount: donationFormData.amount ? parseFloat(donationFormData.amount) : 0,
         description: donationFormData.description ?? '',
+        donation_id: createdDonationId,
       };
-
-      const createPayMongoCheckoutWithRetry = async (payload: any, maxRetries = 4, initialDelayMs = 1000) => {
+  
+      const createPayMongoCheckoutWithRetry = async (
+        payload: any,
+        maxRetries = 4,
+        initialDelayMs = 1000
+      ) => {
         let lastError: any = null;
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
@@ -241,7 +286,7 @@ const DonationPage: React.FC = () => {
           } catch (err) {
             lastError = err;
           }
-
+  
           if (attempt < maxRetries) {
             const delay = initialDelayMs * Math.pow(2, attempt - 1);
             await new Promise((r) => setTimeout(r, delay));
@@ -249,34 +294,43 @@ const DonationPage: React.FC = () => {
         }
         throw lastError;
       };
-
-      const pmResponse = await createPayMongoCheckoutWithRetry(paymongoPayload, 4, 1000);
-
+  
+      const pmResponse = await createPayMongoCheckoutWithRetry(
+        paymongoPayload,
+        4,
+        1000
+      );
+  
       if (!pmResponse || !pmResponse.data) {
         throw new Error('No response from PayMongo after retries.');
       }
-
+  
       const checkoutUrl = pmResponse.data?.data?.attributes?.checkout_url;
       const sessionId = pmResponse.data?.data?.id;
       if (!checkoutUrl || !sessionId) {
         throw new Error('Missing checkoutUrl or sessionId in PayMongo response.');
       }
-
+  
       localStorage.setItem('paymongo_session_id', sessionId);
+      const popup = window.open(
+        checkoutUrl,
+        '_blank',
+        'noopener,noreferrer,width=900,height=700'
+      );
+      checkoutWindowRef.current = popup;
+
+      // If the popup was blocked or closed immediately, keep donation pending but stop timer UI
+      if (!popup || popup.closed) {
+        checkoutWindowRef.current = null;
+        setShowDonationStatus(true);
+        setIsDonationPending(true);
+        return;
+      }
+
+      popup.focus?.();
       setShowDonationStatus(true);
       setIsDonationPending(true);
-
-      checkoutWindow = window.open(checkoutUrl, '_blank', 'noopener,noreferrer,width=900,height=700');
-
-      // if (!checkoutWindow) {
-      //   if (createdDonationId) {
-      //     await failDonation(createdDonationId);
-      //   }
-      //   throw new Error('Your browser blocked the checkout window. Please allow popups for this site and try again.');
-      // } else {
-      //   checkoutWindow.focus();
-      // }
-
+  
     } catch (err) {
       const idToFail = createdDonationId ?? donationId ?? null;
       if (idToFail) {
@@ -286,25 +340,28 @@ const DonationPage: React.FC = () => {
           console.error('Failed to mark donation as failed:', failErr);
         }
       }
-
+  
       Swal.fire({
         icon: 'error',
         title: 'Checkout Error',
-        text: (err as Error)?.message ?? 'A connection problem occurred. Please try again.',
+        text:
+          (err as Error)?.message ??
+          'A connection problem occurred. Please try again.',
       });
-
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.close();
+  
+      if (checkoutWindowRef.current && !checkoutWindowRef.current.closed) {
+        checkoutWindowRef.current.close();
       }
-
+      checkoutWindowRef.current = null;
+  
       setShowDonationStatus(false);
       setIsDonationPending(false);
-
     } finally {
       (window as any).__paymongoCheckoutSubmitting = false;
       setIsSubmitting(false);
     }
   };
+  
 
 
 
@@ -314,7 +371,18 @@ const DonationPage: React.FC = () => {
     }
 
     if (paymentMethod === 'paymongo') {
-      handlePayMongoCheckout();
+      const { isConfirmed } = await Swal.fire({
+        title: 'Confirm Billing',
+        text: "Do you want to continue with the billing process? You'll be redirected to PayMongo to complete payment",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, continue',
+        cancelButtonText: 'No, cancel',
+      });
+
+      if (!isConfirmed) return;
+
+      await handlePayMongoCheckout();
     } else {
       handleOtherPayments();
     }

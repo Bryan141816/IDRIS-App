@@ -217,6 +217,14 @@ class DonationCRUD:
                 .filter(Donation.donation_id == donation_id)
                 .one()
             )
+            # Only mark as cancelled if it hasn't already completed/failed/cancelled
+            if donation.status not in (
+                DonationStatus.COMPLETED,
+                DonationStatus.FAILED,
+                DonationStatus.CANCELLED,
+            ):
+                donation.status = DonationStatus.CANCELLED
+                donation.is_active = False
 
             db.commit()
             db.refresh(donation)
@@ -308,6 +316,7 @@ class DonationCRUD:
                 .one()
             )
             donation.status = DonationStatus.FAILED
+            donation.is_active = False
 
             db.commit()
             db.refresh(donation)
@@ -329,6 +338,28 @@ class DonationCRUD:
             # Log the error for debugging
             # logger.error(f"Database error fetching donation by checkout_id {checkout_id}: {e}")
             raise HTTPException(status_code=500, detail="Database error while fetching donation.")
+
+    @staticmethod
+    def attach_checkout_id(db: Session, donation_id: str, checkout_id: str) -> Donation:
+        """
+        Persist the PayMongo checkout/session id on the donation record for reconciliation/webhooks.
+        """
+        try:
+            donation = (
+                db.query(Donation)
+                .filter(Donation.donation_id == donation_id)
+                .one()
+            )
+            donation.checkout_id = checkout_id
+            db.commit()
+            db.refresh(donation)
+            return donation
+        except NoResultFound:
+            db.rollback()
+            raise HTTPException(status_code=404, detail="Donation record does not exist")
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database error updating donation: {e}")
 
     @staticmethod
     def get_donation_with_details_by_id(db: Session, donation_id: str) -> Optional[Donation]:
@@ -688,7 +719,7 @@ class DonationCRUD:
             return donation
         except NoResultFound:
             raise HTTPException(status_code=404, detail="Donation not found")
-
+        
 def _add_months(orig: date, months: int) -> date:
     """Return date after adding `months` calendar months, clamping day to month length."""
     year = orig.year + (orig.month - 1 + months) // 12

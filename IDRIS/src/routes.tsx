@@ -297,7 +297,13 @@ export const router = createBrowserRouter([
       { path: "forgot_password", lazy: ForgotPassword },
       { path: "reset_password", lazy: ResetPassword },
       { path: "user_not_allowed", lazy: UserNotAllowed },
-      { path: "manage_users", lazy: UserManagement },
+      {
+        path: "manage_users",
+        lazy: UserManagement,
+        handle: {
+          allowedRoles: ["superadmin"],
+        },
+      },
       { path: "notifications", lazy: NotificationPage },
       { path: "oauth_callback", lazy: OauthCallback },
       {
@@ -330,6 +336,9 @@ export const router = createBrowserRouter([
           {
             path: "LGUofficerSuperAdmin",
             lazy: LGUofficerSuperAdmin,
+            handle: {
+              allowedRoles: ["superadmin"],
+            },
           },
 
           {
@@ -374,7 +383,6 @@ export const router = createBrowserRouter([
                 lazy: CreateFunding,
                 handle: {
                   allowedRoles: [
-                    "finance admin",
                     "operations admin",
                     "superadmin",
                   ],
@@ -385,7 +393,6 @@ export const router = createBrowserRouter([
                 lazy: UpdateFunding,
                 handle: {
                   allowedRoles: [
-                    "finance admin",
                     "operations admin",
                     "superadmin",
                   ],
@@ -399,7 +406,7 @@ export const router = createBrowserRouter([
             path: "donation_records",
             lazy: DonationRecords,
             handle: {
-              allowedRoles: ["finance admin", "operations admin", "superadmin"],
+              allowedRoles: ["operations admin", "superadmin"],
             },
           },
           { path: "donor_profile", lazy: DonorProfile },
@@ -409,7 +416,7 @@ export const router = createBrowserRouter([
         path: "donation_report",
         lazy: DonationsReport,
         handle: {
-          allowedRoles: ["finance admin", "operations admin", "superadmin"],
+          allowedRoles: ["operations admin", "superadmin"],
         },
       },
       {
@@ -419,7 +426,11 @@ export const router = createBrowserRouter([
           { path: "emergency_report", lazy: EmegencyReport },
         ],
       },
-      { path: "reports_generation", lazy: ReportsGeneration },
+      { path: "reports_generation", lazy: ReportsGeneration,
+        handle: {
+          allowedRoles: ["lgu officer", "logistics admin", "superadmin"],
+        },
+       },
       { path: "damange_assessment", lazy: DamageAssessment },
       {
         path: "procurement_inventory",
@@ -427,7 +438,13 @@ export const router = createBrowserRouter([
           {
             path: "procurement_inventory",
             children: [
-              { path: ":tab", lazy: ProcurementInventory },
+              { 
+                path: ":tab", 
+                lazy: ProcurementInventory,
+                handle: {
+                  allowedRoles: ["superadmin", "finance admin"],
+                },
+               },
               {
                 index: true,
                 loader: () =>
@@ -454,7 +471,16 @@ export const router = createBrowserRouter([
           {
             path: "procurement_management",
             children: [
-              { path: ":tab", lazy: ProcurementManagement },
+              {
+                path: ":tab",
+                lazy: ProcurementManagement,
+                handle: {
+                  allowedRoles: [
+                    "logistics admin",
+                    "superadmin",
+                  ],
+                },
+              },
               {
                 index: true,
                 loader: () =>
@@ -471,21 +497,21 @@ export const router = createBrowserRouter([
         path: "finance&admin/finance_management",
         lazy: FinanceManagement,
         handle: {
-          allowedRoles: ["operations admin", "superadmin", "finance admin"],
+          allowedRoles: ["superadmin", "finance admin"],
         },
       },
       {
         path: "/finance_printable",
         lazy: FinancePrintPage,
         handle: {
-          allowedRoles: ["operations admin", "superadmin", "finance admin"],
+          allowedRoles: ["superadmin", "finance admin"],
         },
       },
       {
         path: "/finance&admin/finance_management/budget_summary",
         lazy: FinanceBudgetSummary,
         handle: {
-          allowedRoles: ["operations admin", "superadmin", "finance admin"],
+          allowedRoles: ["superadmin", "finance admin"],
         },
       },
     ],

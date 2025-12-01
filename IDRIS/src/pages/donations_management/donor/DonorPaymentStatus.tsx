@@ -1,55 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { 
   getPayMongoSession, 
   completeDonation, 
-  failDonation, 
-  cancelDonation 
+  failDonation 
 } from "../../../API_Handler/donations_donation_handler";
 
-interface DonationStatusProps {
-  _donationId?: string;
+interface DonorPaymentStatusProps {
+  donationId: string;
+  checkoutSessionId: string;
+  onSuccess: () => void;
+  onClose: () => void;
 }
 
-export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) => {
+export const DonorPaymentStatus: React.FC<DonorPaymentStatusProps> = ({ 
+  donationId, 
+  checkoutSessionId,
+  onSuccess,
+  onClose
+}) => {
   const [showPendingCard, setShowPendingCard] = useState<boolean>(false);
   const cancelledRef = useRef<boolean>(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  console.log("received donation id:", _donationId);
+
   useEffect(() => {
     cancelledRef.current = false;
-    const params = new URLSearchParams(location.search);
-    const status = params.get("status");
-
-    // If explicit status query param is present (existing behavior)
-    if (status === "success") {
-      Swal.fire({
-        icon: "success",
-        title: "Donation Successful!",
-        text: "Thank you for your generous donation.",
-      }).then(() => {
-        console.log("Updating success donation id: ", _donationId);
-        if (_donationId) {
-          completeDonation(_donationId).catch(console.error);
-        }
-      });
-      return;
-    } else if (status === "failed") {
-      console.log("Updating failed donation id: ", _donationId);
-      Swal.fire({
-        icon: "error",
-        title: "Donation Failed",
-        text: "Something went wrong with your donation. Please try again.",
-      }).then(() => {
-        if (_donationId) {
-          failDonation(_donationId).catch(console.error);
-        }
-      });
-      return;
-    }
-
     let mounted = true;
     const POLL_INTERVAL_MS = 2000; // 2 seconds between attempts
     const VERIFICATION_DURATION_MS = 180000; // 3 minutes
@@ -71,16 +45,12 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         },
       });
 
-      const sessionIdFromQuery = params.get("checkout_session_id");
-      const sessionId = sessionIdFromQuery || localStorage.getItem("paymongo_session_id");
+      // Use the provided checkoutSessionId prop instead of searching URL/localStorage
+      const sessionId = checkoutSessionId;
 
       if (!sessionId) {
         Swal.close();
-        return;
-      }
-
-      if (cancelledRef.current) {
-        Swal.close();
+        onClose();
         return;
       }
 
@@ -140,40 +110,47 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
           await sleep(POLL_INTERVAL_MS);
         }
 
+        // Clean up localStorage just in case it was set elsewhere
         localStorage.removeItem("paymongo_session_id");
 
         if (cancelledRef.current) {
           Swal.close();
           setShowPendingCard(false);
+          onClose();
           return;
         }
 
         if (finalResult === "success") {
           Swal.hideLoading();
           setShowPendingCard(false);
-          Swal.update({
-            icon: "success",
-            title: "Donation Successful!",
-            text: "Thank you!",
-            showConfirmButton: true,
-            allowOutsideClick: true,
-          });
           
           // Update donation status to completed
-          if (_donationId) {
+          if (donationId) {
             try {
-              console.log(_donationId);
-              await completeDonation(_donationId);
+              await completeDonation(donationId);
+              // Show success message then trigger callback
+              await Swal.fire({
+                icon: "success",
+                title: "Donation Successful!",
+                text: "Thank you!",
+                showConfirmButton: true,
+                allowOutsideClick: true,
+              });
+              onSuccess();
             } catch (error) {
               console.error("Failed to update donation status to completed:", error);
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Payment successful but failed to update record. Please contact support.",
+              });
             }
           }
           
-          navigate("/donations_management/funding_proposals", { replace: true });
         } else if (finalResult === "pending") {
           Swal.hideLoading();
           setShowPendingCard(false);
-          Swal.update({
+          await Swal.fire({
             icon: "info",
             title: "Payment Pending",
             text: "Your payment is pending. If it doesn't complete, please check your donation history later.",
@@ -183,26 +160,27 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         } else if (finalResult === "failed") {
           Swal.hideLoading();
           setShowPendingCard(false);
-          Swal.update({
+          
+          // Update donation status to failed
+          if (donationId) {
+            try {
+              await failDonation(donationId);
+            } catch (error) {
+              console.error("Failed to update donation status to failed:", error);
+            }
+          }
+
+          await Swal.fire({
             icon: "error",
             title: "Donation Not Completed",
             text: "Payment failed, expired or was cancelled. Please try again.",
             showConfirmButton: true,
             allowOutsideClick: true,
           });
-          
-          // Update donation status to failed
-          if (_donationId) {
-            try {
-              await failDonation(_donationId);
-            } catch (error) {
-              console.error("Failed to update donation status to failed:", error);
-            }
-          }
         } else {
           Swal.hideLoading();
           setShowPendingCard(false);
-          Swal.update({
+          await Swal.fire({
             icon: "warning",
             title: "Verification Timed Out",
             text: "We couldn't confirm your payment status within 3 minutes. Please check your donation history later.",
@@ -214,13 +192,15 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
         console.error("Payment verification failed:", err);
         Swal.hideLoading();
         setShowPendingCard(false);
-        Swal.update({
+        await Swal.fire({
           icon: "error",
           title: "Verification Failed",
           text: "Could not verify payment. Please check your donation history later.",
           showConfirmButton: true,
           allowOutsideClick: true,
         });
+      } finally {
+        onClose(); // Ensure we clean up the parent state
       }
     }
 
@@ -232,19 +212,20 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
       clearTimeout(timer);
       setShowPendingCard(false);
     };
-  }, [location, _donationId]);
+  }, [donationId, checkoutSessionId]);
 
   const handleCancel = async () => {
     cancelledRef.current = true;
     setShowPendingCard(false);
     Swal.close();
-    if (_donationId) {
+    if (donationId) {
       try {
-        await failDonation(_donationId);
+        await failDonation(donationId);
       } catch (err) {
         console.error("Failed to cancel donation from timer UI:", err);
       }
     }
+    onClose();
   };
 
   return (
@@ -290,4 +271,4 @@ export const DonationStatus: React.FC<DonationStatusProps> = ({ _donationId }) =
   );
 };
 
-export default DonationStatus;
+export default DonorPaymentStatus;

@@ -175,6 +175,12 @@ async def on_startup():
     for route in app.routes:
         print(f"{getattr(route, 'path', route)}")
 
+    # Kick off PayMongo pending sweeper
+    try:
+        await donations_route.start_paymongo_sweeper()
+    except Exception as e:
+        print(f"Failed to start PayMongo sweeper: {e}")
+
 
 @app.on_event("shutdown")
 async def on_shutdown():

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import './DonorDashboard.scss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
-import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy } from '../../../API_Handler/donations_donation_handler';
+import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy, getPayMongoSession } from '../../../API_Handler/donations_donation_handler';
+import DonorPaymentStatus from "./DonorPaymentStatus";
 
 // Types
 type DonationType = "CASH" | "INKIND";
@@ -34,6 +35,7 @@ export interface DonationRow {
   is_active?: boolean | null;
   cash?: DonationCash | null;
   inkind?: DonationInKind | null;
+  checkout_id?: string | null;
   proposal_id?: number | null;
   proposal?: {
     title: string;
@@ -96,6 +98,11 @@ export const DonorDashboard: React.FC = () => {
   const [selectedDonation, setSelectedDonation] = useState<DonationRow | null>(null);
   const [sortField, setSortField] = useState<string>('donation_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [resumingId, setResumingId] = useState<string | number | null>(null);
+  
+  // New state for payment monitoring
+  const [monitoringDonationId, setMonitoringDonationId] = useState<string | null>(null);
+  const [monitoringSessionId, setMonitoringSessionId] = useState<string | null>(null);
 
   // Data
   const [donorData, setDonorData] = useState<DonorAggregates>();
@@ -226,6 +233,71 @@ export const DonorDashboard: React.FC = () => {
     URL.revokeObjectURL(a.href);
   };
 
+  const canResumePaymongo = (row: DonationRow) =>
+    row.status === "PENDING" &&
+    row.donation_type === "CASH" &&
+    (row.cash?.payment_method ?? "").toLowerCase() === "paymongo";
+
+  const handleResumePayment = async (row: DonationRow, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!row.checkout_id) {
+      alert("No PayMongo session found for this donation yet.");
+      return;
+    }
+  
+    setResumingId(row.donation_id);
+    try {
+      const resp = await getPayMongoSession(row.checkout_id);
+      const payload = resp?.data ?? resp;
+      const session = payload?.data ?? payload;
+      const attrs = session?.attributes ?? {};
+  
+      const checkoutUrl =
+        attrs?.checkout_url ||
+        attrs?.checkout_session_url ||
+        attrs?.url;
+  
+      if (!checkoutUrl) {
+        alert("Unable to retrieve the checkout link. Please try again later.");
+        return;
+      }
+  
+      const popup = window.open(
+        checkoutUrl,
+        "_blank",
+        "noopener,noreferrer,width=900,height=700"
+      );
+  
+      // Removed alert per user request: "Disable message displaying showing pop up blocked"
+      // because it was showing up even when popup was allowed in some cases.
+      
+      popup?.focus?.();
+  
+      // Start monitoring status with the new component
+      setMonitoringDonationId(String(row.donation_id));
+      setMonitoringSessionId(row.checkout_id);
+      
+    } catch (err) {
+      console.error("Failed to resume PayMongo checkout:", err);
+      alert("Could not resume checkout. Please try again.");
+    } finally {
+      setResumingId(null);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Reload data to reflect the new status
+    reload();
+  };
+
+  const handlePaymentStatusClose = () => {
+    // Clear monitoring state
+    setMonitoringDonationId(null);
+    setMonitoringSessionId(null);
+    // Reload just in case (e.g. failure update)
+    reload();
+  };
+
   if (loading) {
     return (
       <div className="donor-dashboard">
@@ -239,6 +311,14 @@ export const DonorDashboard: React.FC = () => {
 
   return (
     <div className="donor-dashboard">
+      {monitoringDonationId && monitoringSessionId && (
+        <DonorPaymentStatus 
+          donationId={monitoringDonationId}
+          checkoutSessionId={monitoringSessionId}
+          onSuccess={handlePaymentSuccess}
+          onClose={handlePaymentStatusClose}
+        />
+      )}
       <div className="dashboard-header">
         <div className="header-content">
           <h2 className="dashboard-title">Donor Dashboard</h2>
@@ -387,6 +467,16 @@ export const DonorDashboard: React.FC = () => {
                         >
                           👁️
                         </button>
+                        {canResumePaymongo(row) && (
+                          <button
+                            className="resume-btn"
+                            disabled={resumingId === row.donation_id}
+                            onClick={(e) => handleResumePayment(row, e)}
+                            title="Continue payment"
+                          >
+                            {resumingId === row.donation_id ? "Opening..." : "Continue billing"}
+                          </button>
+                        )}
                         <button
                           className="download-btn"
                           disabled={row.status !== "COMPLETED"}

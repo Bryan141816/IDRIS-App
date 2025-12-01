@@ -259,7 +259,8 @@
                 gap: 8px;
 
                 .view-btn,
-                .download-btn {
+                .download-btn,
+                .resume-btn {
                   padding: 6px 8px;
                   border: none;
                   border-radius: 6px;
@@ -282,6 +283,15 @@
                   
                   &:hover:not(:disabled) {
                     background: rgba(116, 154, 182, 0.2);
+                  }
+                }
+
+                .resume-btn {
+                  background: rgba(252, 184, 20, 0.1);
+                  color: #b27700;
+
+                  &:hover:not(:disabled) {
+                    background: rgba(252, 184, 20, 0.2);
                   }
                 }
 

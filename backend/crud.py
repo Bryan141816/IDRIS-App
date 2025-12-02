@@ -6,7 +6,6 @@ from models import (
 )
 from auth import hash_password, verify_password
 from schemas import (
-
     AdminUserProfileCreate,
     AdminUserProfileUpdate,
 )
@@ -292,6 +291,7 @@ def assign_roles(db: Session, user: User, role_names: list[str]):
     db.commit()
     db.refresh(user)
     return user
+
 
 def get_superadmins(db: Session) -> List[User]:
     return db.query(User).filter(User.roles.contains(["superadmin"])).all()

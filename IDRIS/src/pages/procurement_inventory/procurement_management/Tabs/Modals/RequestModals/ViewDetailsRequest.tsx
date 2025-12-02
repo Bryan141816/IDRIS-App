@@ -76,30 +76,56 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
       setRequestList(mapped);
     }
   }, []);
+
   const handleApproval = async (type: string) => {
+    let reason = "";
+
+    // If REJECT, ask for reason before confirmation
+    if (type.toLowerCase() === "reject") {
+      const { value: inputReason } = await Swal.fire({
+        title: "Reason for Rejection",
+        input: "textarea",
+        inputPlaceholder: "Enter reason...",
+        inputLabel: "Why are you rejecting this request?",
+        showCancelButton: true,
+        confirmButtonText: "Continue",
+      });
+
+      if (!inputReason) {
+        Swal.fire({
+          icon: "warning",
+          title: "A reason is required to reject.",
+        });
+        return;
+      }
+
+      reason = inputReason;
+    }
+
+    // General confirmation
     const confirm = await Swal.fire({
       title: `Are you sure you want to ${type} this request?`,
       showCancelButton: true,
       confirmButtonText: "Yes",
     });
-    if (!confirm.isConfirmed) {
-      return;
-    }
+
+    if (!confirm.isConfirmed) return;
+
     try {
-      // const cleanedList = requestList
-      //   ?.filter((item) => item.assigned_id !== -1) // keep only those with assigned_id not -1
-      //   .map(({ item_id, assigned_id, quantity_assigned }) => ({
-      //     item_id,
-      //     assigned_id,
-      //     quantity_assigned,
-      //   }));
-      const response = await API.post(
-        `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`,
-      );
+      const params =
+        type.toLowerCase() === "reject"
+          ? `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}&reason=${encodeURIComponent(reason)}`
+          : `procurement_management/approve_reject_request?request_id=${selectedItem?.request_id ?? -1}&type=${type}`;
+
+      const response = await API.post(params);
+
       Swal.fire({
-        title: `Request has been ${type.toLowerCase() === "approve" ? "Approved" : "Rejected"}`,
+        title: `Request has been ${
+          type.toLowerCase() === "approve" ? "Approved" : "Rejected"
+        }`,
         icon: "success",
       });
+
       refreshData();
       onClose();
     } catch (e: any) {
@@ -108,6 +134,7 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
       );
     }
   };
+
   const onReject = (e?: React.MouseEvent<HTMLButtonElement>) => {
     if (e) {
       e.preventDefault();
@@ -194,6 +221,14 @@ export const ViewDetails: React.FC<ViewDetailsProps> = ({
               <strong>Date Needed:</strong>
               <span>{formatDateShort(selectedItem?.date_needed ?? "")}</span>
             </div>
+            {selectedItem?.status === "Rejected" &&
+              selectedItem?.reject_reason && (
+                <div className="detail-row">
+                  <strong>Rejection Reason:</strong>
+                  <span>{selectedItem?.reject_reason}</span>
+                </div>
+              )}
+
             <div
               className="detail-row"
               style={{

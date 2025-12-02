@@ -13,13 +13,12 @@ from models import (
     DistributedItems,
     DistributionTeam,
     TeamMembers,
-    AssignedStorage
+    AssignedStorage,
 )  # no Role import datetime
 
 from routers.role_checker import RoleChecker
 
 from data_schemas.procurement_management_schema import (
-
     ProcurementRequestCreateSchema,
 )
 from crud_functions.procurement_manage.procurement_management import (
@@ -66,8 +65,6 @@ async def add_request(
     return await ProcurementRequestCRUD.create_procurement_request(db, request, lgu_id)
 
 
-
-
 def serialize_request(r: ProcurementRequest) -> dict:
     # ---- end target ----
     end_target = None
@@ -104,7 +101,7 @@ def serialize_request(r: ProcurementRequest) -> dict:
                 "name": i.item_name,
                 "category": i.category,
                 "quantity": i.quantity,
-                "unit": i.unit
+                "unit": i.unit,
             }
             for i in (r.relief_items or [])
         ]
@@ -121,11 +118,11 @@ def serialize_request(r: ProcurementRequest) -> dict:
         ]
 
     # ---- route info ----
-    route_list = None 
+    route_list = None
     if r.status == "Approved" and r.routes:
         route = r.routes
-        if route: 
-            route_list ={
+        if route:
+            route_list = {
                 "route_id": route.route_id,
                 "route_name": route.route_name,
                 "gathering_area": route.gathering_area,
@@ -133,36 +130,47 @@ def serialize_request(r: ProcurementRequest) -> dict:
                 "gathering_lng": route.gathering_lng,
                 "request_id": route.request_id,
                 "status": route.status,
-                "start_schedule": route.start_schedule.isoformat() if route.start_schedule else None,
-                "end_schedule": route.end_schedule.isoformat() if route.end_schedule else None,
+                "start_schedule": (
+                    route.start_schedule.isoformat() if route.start_schedule else None
+                ),
+                "end_schedule": (
+                    route.end_schedule.isoformat() if route.end_schedule else None
+                ),
                 "team_id": route.team,
-                "date_added": route.date_added.isoformat() if route.date_added else None,
-                "assigned_team": {
-                    "team_id": route.assigned_team.team_id,
-                    "team_name": route.assigned_team.team_name,
-                    "isActive": route.assigned_team.isActive,
-                    "status": route.assigned_team.status,
-                    "team_members": [
-                        {
-                            "members_id": m.members_id,
-                            "member": m.member,
-                            "role": m.role,
-                            "status": m.status,
-                            "volunteer": {
-                                "volunteer_id": m.volunteer.volunteer_id,
-                                "first_name": m.volunteer.first_name,
-                                "middle_name": m.volunteer.middle_name,
-                                "last_name": m.volunteer.last_name,
-                                "full_name": f"{m.volunteer.first_name} {m.volunteer.middle_name} {m.volunteer.last_name}",
-                                "email": m.volunteer.email,
-                                "phone_number": m.volunteer.phone_number,
-                                "address": m.volunteer.address,
-                                "gender": m.volunteer.gender,
-                                "age": m.volunteer.age
+                "date_added": (
+                    route.date_added.isoformat() if route.date_added else None
+                ),
+                "assigned_team": (
+                    {
+                        "team_id": route.assigned_team.team_id,
+                        "team_name": route.assigned_team.team_name,
+                        "isActive": route.assigned_team.isActive,
+                        "status": route.assigned_team.status,
+                        "team_members": [
+                            {
+                                "members_id": m.members_id,
+                                "member": m.member,
+                                "role": m.role,
+                                "status": m.status,
+                                "volunteer": {
+                                    "volunteer_id": m.volunteer.volunteer_id,
+                                    "first_name": m.volunteer.first_name,
+                                    "middle_name": m.volunteer.middle_name,
+                                    "last_name": m.volunteer.last_name,
+                                    "full_name": f"{m.volunteer.first_name} {m.volunteer.middle_name} {m.volunteer.last_name}",
+                                    "email": m.volunteer.email,
+                                    "phone_number": m.volunteer.phone_number,
+                                    "address": m.volunteer.address,
+                                    "gender": m.volunteer.gender,
+                                    "age": m.volunteer.age,
+                                },
                             }
-                        } for m in (route.assigned_team.team_members or [])
-                    ]
-                } if route.assigned_team else None,
+                            for m in (route.assigned_team.team_members or [])
+                        ],
+                    }
+                    if route.assigned_team
+                    else None
+                ),
                 "distributed_items": [
                     {
                         "item_id": d.item_id,
@@ -171,55 +179,73 @@ def serialize_request(r: ProcurementRequest) -> dict:
                         "procurement_request_id": d.procurement_request_id,
                         "route": d.route,
                         "quantity": d.quantity,
-                        "assigned_storage_rec": {
-                            "assigned_id": d.assigned_storage_rec.assigned_id,
-                            "quantity": d.assigned_storage_rec.quantity,
-                            "warehouse": {
-                                "warehouse_id": d.assigned_storage_rec.warehouse.warehouse_id,
-                                "address": d.assigned_storage_rec.warehouse.address,
-                                "lat": d.assigned_storage_rec.warehouse.lat,
-                                "long": d.assigned_storage_rec.warehouse.long,
-                                "status": d.assigned_storage_rec.warehouse.status,
-                                "zone_name": d.assigned_storage_rec.warehouse.zone_name,
-                                "zone_type": d.assigned_storage_rec.warehouse.zone_type,
-                                "capacity": d.assigned_storage_rec.warehouse.capacity,
-                                "manager": d.assigned_storage_rec.warehouse.manager
-                            },
-                            "inventory_item": {
-                                "inventory_id": d.assigned_storage_rec.inventory_item.inventory_id,
-                                "item_name": d.assigned_storage_rec.inventory_item.item_name,
-                                "quantity": d.assigned_storage_rec.inventory_item.quantity,
-                                "category": d.assigned_storage_rec.inventory_item.category,
-                                "batch": d.assigned_storage_rec.inventory_item.batch,
-                                "expiry": d.assigned_storage_rec.inventory_item.expiry.isoformat() if d.assigned_storage_rec.inventory_item.expiry else None,
-                                "status": d.assigned_storage_rec.inventory_item.status
+                        "assigned_storage_rec": (
+                            {
+                                "assigned_id": d.assigned_storage_rec.assigned_id,
+                                "quantity": d.assigned_storage_rec.quantity,
+                                "warehouse": {
+                                    "warehouse_id": d.assigned_storage_rec.warehouse.warehouse_id,
+                                    "address": d.assigned_storage_rec.warehouse.address,
+                                    "lat": d.assigned_storage_rec.warehouse.lat,
+                                    "long": d.assigned_storage_rec.warehouse.long,
+                                    "status": d.assigned_storage_rec.warehouse.status,
+                                    "zone_name": d.assigned_storage_rec.warehouse.zone_name,
+                                    "zone_type": d.assigned_storage_rec.warehouse.zone_type,
+                                    "capacity": d.assigned_storage_rec.warehouse.capacity,
+                                    "manager": d.assigned_storage_rec.warehouse.manager,
+                                },
+                                "inventory_item": {
+                                    "inventory_id": d.assigned_storage_rec.inventory_item.inventory_id,
+                                    "item_name": d.assigned_storage_rec.inventory_item.item_name,
+                                    "quantity": d.assigned_storage_rec.inventory_item.quantity,
+                                    "category": d.assigned_storage_rec.inventory_item.category,
+                                    "batch": d.assigned_storage_rec.inventory_item.batch,
+                                    "expiry": (
+                                        d.assigned_storage_rec.inventory_item.expiry.isoformat()
+                                        if d.assigned_storage_rec.inventory_item.expiry
+                                        else None
+                                    ),
+                                    "status": d.assigned_storage_rec.inventory_item.status,
+                                },
                             }
-                        } if d.assigned_storage_rec else None,
-                        "relief_item": {
-                            "item_id": d.relief_item.item_id,
-                            "request_id": d.relief_item.request_id,
-                            "item_name": d.relief_item.item_name,
-                            "category": d.relief_item.category,
-                            "quantity": d.relief_item.quantity
-                        } if d.relief_item else None,
-                        "procurement_item": {
-                            "item_id": d.procurement_item.item_id,
-                            "request_id": d.procurement_item.request_id,
-                            "item_name": d.procurement_item.item_name,
-                            "quantity": d.procurement_item.quantity,
-                            "unit": d.procurement_item.unit
-                        } if d.procurement_item else None
-                    } for d in (route.distributed_items or [])
+                            if d.assigned_storage_rec
+                            else None
+                        ),
+                        "relief_item": (
+                            {
+                                "item_id": d.relief_item.item_id,
+                                "request_id": d.relief_item.request_id,
+                                "item_name": d.relief_item.item_name,
+                                "category": d.relief_item.category,
+                                "quantity": d.relief_item.quantity,
+                            }
+                            if d.relief_item
+                            else None
+                        ),
+                        "procurement_item": (
+                            {
+                                "item_id": d.procurement_item.item_id,
+                                "request_id": d.procurement_item.request_id,
+                                "item_name": d.procurement_item.item_name,
+                                "quantity": d.procurement_item.quantity,
+                                "unit": d.procurement_item.unit,
+                            }
+                            if d.procurement_item
+                            else None
+                        ),
+                    }
+                    for d in (route.distributed_items or [])
                 ],
                 "logs": [
                     {
                         "log_id": log.log_id,
                         "route_id": log.route_id,
                         "log_message": log.log_message,
-                        "date": log.date.isoformat() if log.date else None
-                    } for log in reversed(route.logs or [])
+                        "date": log.date.isoformat() if log.date else None,
+                    }
+                    for log in reversed(route.logs or [])
                 ],
-        }
+            }
 
     return {
         "request_id": r.request_id,
@@ -227,7 +253,7 @@ def serialize_request(r: ProcurementRequest) -> dict:
             "id": r.lgu.id if r.lgu else None,
             "name": r.lgu.lgu_name if r.lgu else None,
             "lat": r.lgu.lat if r.lgu else None,
-            "lng": r.lgu.lng if r.lgu else None
+            "lng": r.lgu.lng if r.lgu else None,
         },
         "request_type": r.request_type,
         "request_ref_num": r.request_ref_num,
@@ -241,11 +267,11 @@ def serialize_request(r: ProcurementRequest) -> dict:
         "use_different_end": r.use_different_end,
         "different_end_type": r.different_end_type,
         "end_target": end_target,
+        "reject_reason": r.reject_reason if r.reject_reason else None,
         "items_source": item_source,
         "items": items,
-        "route": route_list  # list of routes
+        "route": route_list,  # list of routes
     }
-
 
 
 @router.get("/request_procurement/get_request")
@@ -270,51 +296,44 @@ def list_requests(
         db.query(ProcurementRequest)
         .options(
             # LGU and end targets
-            joinedload(ProcurementRequest.lgu).load_only(LGURecords.id, LGURecords.lgu_name),
+            joinedload(ProcurementRequest.lgu).load_only(
+                LGURecords.id, LGURecords.lgu_name
+            ),
             joinedload(ProcurementRequest.barangay),
             joinedload(ProcurementRequest.evacuation_center),
-
             # Request items
             selectinload(ProcurementRequest.relief_items),
             selectinload(ProcurementRequest.procurement_items),
-
             # Routes and nested relationships
             selectinload(ProcurementRequest.routes)
             .joinedload(DistributionRoute.assigned_team)
             .selectinload(DistributionTeam.team_members)
             .joinedload(TeamMembers.volunteer),
-
             selectinload(ProcurementRequest.routes)
             .selectinload(DistributionRoute.distributed_items)
             .joinedload(DistributedItems.assigned_storage_rec)
             .joinedload(AssignedStorage.warehouse),
-
             selectinload(ProcurementRequest.routes)
             .selectinload(DistributionRoute.distributed_items)
             .joinedload(DistributedItems.assigned_storage_rec)
             .joinedload(AssignedStorage.inventory_item),
-
             selectinload(ProcurementRequest.routes)
             .selectinload(DistributionRoute.distributed_items)
             .joinedload(DistributedItems.relief_item),
-
             selectinload(ProcurementRequest.routes)
             .selectinload(DistributionRoute.distributed_items)
             .joinedload(DistributedItems.procurement_item),
-
-            selectinload(ProcurementRequest.routes)
-            .selectinload(DistributionRoute.logs)
+            selectinload(ProcurementRequest.routes).selectinload(
+                DistributionRoute.logs
+            ),
         )
         .filter(ProcurementRequest.lgu_id == lgu_id)
-        .order_by(
-            ProcurementRequest.date_requested.asc()
-        )
+        .order_by(ProcurementRequest.date_requested.asc())
     )
 
     rows: list[ProcurementRequest] = query.all()
 
     return [serialize_request(r) for r in rows]
-
 
 
 @router.get("/request_procurement/barangay_evac_list")
@@ -349,22 +368,26 @@ def barangay_evac_list(
     )
 
     # Evacuation centers only linked to this LGU's barangays
-    q_evac = select(
-        EvacuationCenter.evacuation_id.label("id"),
-        EvacuationCenter.name.label("name"),
-        literal("evacuation").label("type"),
-    ).join(
-        BaranggayRecords,
-        EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id,
-    ).where(
-        BaranggayRecords.lgu_id == lgu_id
-    ).distinct()
+    q_evac = (
+        select(
+            EvacuationCenter.evacuation_id.label("id"),
+            EvacuationCenter.name.label("name"),
+            literal("evacuation").label("type"),
+        )
+        .join(
+            BaranggayRecords,
+            EvacuationCenter.evacuation_id == BaranggayRecords.evacucation_center_id,
+        )
+        .where(BaranggayRecords.lgu_id == lgu_id)
+        .distinct()
+    )
 
     # Combine both queries
     q = q_barangay.union_all(q_evac).order_by("name")
 
     rows = db.execute(q).mappings().all()
     return [dict(r) for r in rows]
+
 
 #
 # @router.post("/procurement_management/update_request")

@@ -538,10 +538,10 @@ async def sweep_paymongo_pending_once():
 
             if donation_date and donation_date < hard_cutoff:
                 try:
-                    CRUD.failed_donation_status(db, donation.donation_id)
+                    CRUD.cancel_donation_status(db, donation.donation_id)
                 except Exception:
                     logger.exception(
-                        "Sweeper failed to mark donation as FAILED (hard max age)",
+                        "Sweeper failed to mark donation as CANCELLED (hard max age)",
                         extra={"donation_id": donation.donation_id, "checkout_id": donation.checkout_id},
                     )
                 continue
@@ -550,14 +550,14 @@ async def sweep_paymongo_pending_once():
             if not checkout_id:
                 if donation_date and donation_date < cutoff:
                     try:
-                        CRUD.failed_donation_status(db, donation.donation_id)
+                        CRUD.cancel_donation_status(db, donation.donation_id)
                         logger.info(
-                            "Marked pending PayMongo donation as FAILED (missing checkout_id after timeout)",
+                            "Marked pending PayMongo donation as CANCELLED (missing checkout_id after timeout)",
                             extra={"donation_id": donation.donation_id},
                         )
                     except Exception:
                         logger.exception(
-                            "Sweeper failed to mark donation as FAILED (missing checkout_id timeout)",
+                            "Sweeper failed to mark donation as CANCELLED (missing checkout_id timeout)",
                             extra={"donation_id": donation.donation_id},
                         )
                     continue
@@ -574,9 +574,9 @@ async def sweep_paymongo_pending_once():
                 is_404 = getattr(e.response, "status_code", None) == 404
                 if is_404 and donation_date and donation_date < cutoff:
                     try:
-                        CRUD.failed_donation_status(db, donation.donation_id)
+                        CRUD.cancel_donation_status(db, donation.donation_id)
                         logger.info(
-                            "Marked pending PayMongo donation as FAILED (404 after timeout)",
+                            "Marked pending PayMongo donation as CANCELLED (404 after timeout)",
                             extra={
                                 "donation_id": donation.donation_id,
                                 "checkout_id": checkout_id,
@@ -585,7 +585,7 @@ async def sweep_paymongo_pending_once():
                         )
                     except Exception:
                         logger.exception(
-                            "Sweeper failed to mark donation as FAILED (404 timeout)",
+                            "Sweeper failed to mark donation as CANCELLED (404 timeout)",
                             extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
                         )
                 else:
@@ -614,7 +614,8 @@ async def sweep_paymongo_pending_once():
                 payment_status = None
 
             success_states = {"succeeded", "paid"}
-            fail_states = {"failed", "expired", "canceled", "cancelled"}
+            fail_states = {"failed"}
+            cancel_states = {"expired", "canceled", "cancelled"}
 
             if (session_status and session_status.lower() in success_states) or (
                 payment_status and payment_status.lower() in success_states
@@ -640,13 +641,25 @@ async def sweep_paymongo_pending_once():
                     )
                 continue
 
+            if (session_status and session_status.lower() in cancel_states) or (
+                payment_status and payment_status.lower() in cancel_states
+            ):
+                try:
+                    CRUD.cancel_donation_status(db, donation.donation_id)
+                except Exception:
+                    logger.exception(
+                        "Sweeper failed to mark donation as CANCELLED",
+                        extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
+                    )
+                continue
+
             # Still pending; check age again to avoid stale records
             if donation_date and donation_date < cutoff:
                 try:
-                    CRUD.failed_donation_status(db, donation.donation_id)
+                    CRUD.cancel_donation_status(db, donation.donation_id)
                 except Exception:
                     logger.exception(
-                        "Sweeper failed to mark donation as FAILED (pending timeout)",
+                        "Sweeper failed to mark donation as CANCELLED (pending timeout)",
                         extra={"donation_id": donation.donation_id, "checkout_id": checkout_id},
                     )
 

@@ -3,7 +3,8 @@ import Swal from "sweetalert2";
 import { 
   getPayMongoSession, 
   completeDonation, 
-  failDonation 
+  failDonation,
+  cancelDonation
 } from "../../../API_Handler/donations_donation_handler";
 
 interface DonorPaymentStatusProps {
@@ -58,7 +59,7 @@ export const DonorPaymentStatus: React.FC<DonorPaymentStatusProps> = ({
 
       try {
         const startTime = Date.now();
-        let finalResult: "success" | "pending" | "failed" | "unknown" = "unknown";
+        let finalResult: "success" | "pending" | "failed" | "cancelled" | "unknown" = "unknown";
 
         while (mounted && Date.now() - startTime < VERIFICATION_DURATION_MS) {
           if (cancelledRef.current) {
@@ -99,9 +100,14 @@ export const DonorPaymentStatus: React.FC<DonorPaymentStatusProps> = ({
             break; 
           }
           
-          if (["failed", "expired", "canceled", "cancelled"].includes(sessionStatus) ||
-              ["failed", "canceled", "cancelled", "expired"].includes(paymentStatus)) {
+          if (["failed"].includes(sessionStatus) || ["failed"].includes(paymentStatus)) {
             finalResult = "failed";
+            break;
+          }
+
+          if (["expired", "canceled", "cancelled"].includes(sessionStatus) ||
+              ["canceled", "cancelled", "expired"].includes(paymentStatus)) {
+            finalResult = "cancelled";
             break;
           }
 
@@ -172,8 +178,28 @@ export const DonorPaymentStatus: React.FC<DonorPaymentStatusProps> = ({
 
           await Swal.fire({
             icon: "error",
-            title: "Donation Not Completed",
-            text: "Payment failed, expired or was cancelled. Please try again.",
+            title: "Donation Failed",
+            text: "Payment failed. Please try again.",
+            showConfirmButton: true,
+            allowOutsideClick: true,
+          });
+        } else if (finalResult === "cancelled") {
+          Swal.hideLoading();
+          setShowPendingCard(false);
+          
+          // Update donation status to cancelled
+          if (donationId) {
+            try {
+              await cancelDonation(donationId);
+            } catch (error) {
+              console.error("Failed to update donation status to cancelled:", error);
+            }
+          }
+
+          await Swal.fire({
+            icon: "info",
+            title: "Donation Cancelled",
+            text: "Payment was cancelled or expired. Please try again if you wish to donate.",
             showConfirmButton: true,
             allowOutsideClick: true,
           });
@@ -220,7 +246,7 @@ export const DonorPaymentStatus: React.FC<DonorPaymentStatusProps> = ({
     Swal.close();
     if (donationId) {
       try {
-        await failDonation(donationId);
+        await cancelDonation(donationId);
       } catch (err) {
         console.error("Failed to cancel donation from timer UI:", err);
       }

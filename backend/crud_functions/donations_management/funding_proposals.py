@@ -109,7 +109,11 @@ class FundingProposalCRUD:
                 "updated_at": FundingProposal.updated_at,
             }
             col = sortable.get(sort, FundingProposal.created_at)
-            query = query.order_by(col.desc() if order == "desc" else col.asc())
+            
+            primary_order = FundingProposal.is_active.desc()
+            secondary_order = col.desc() if order == "desc" else col.asc()
+            
+            query = query.order_by(primary_order, secondary_order)
 
             if limit:
                 offset = (page - 1) * limit

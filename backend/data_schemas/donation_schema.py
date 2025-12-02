@@ -182,6 +182,12 @@ class PaginatedDonationHistoryResponse(BaseModel):
     donations: List[DonationHistoryResponse]
     total: int
 
+
+class DonorProfileSummary(BaseModel):
+    total_cash: float
+    completed_donations: int
+    active_recurring: int
+
 class PayMongoCheckoutRequest(BaseModel):
     amount: float
     description: str

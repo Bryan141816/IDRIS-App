@@ -137,8 +137,49 @@ const DonationPage: React.FC = () => {
     setPaymentFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCancel = () => {
-    // Handle cancel logic
+  const handleCancel = async () => {
+    // Only cancel when we actually have a pending donation to cancel
+    const idToCancel = isDonationPending ? donationId : null;
+
+    // Close any checkout window the user may have opened
+    if (checkoutWindowRef.current && !checkoutWindowRef.current.closed) {
+      checkoutWindowRef.current.close();
+    }
+
+    // Stop any polling loops
+    if (donationStatusPollRef.current !== null) {
+      window.clearInterval(donationStatusPollRef.current);
+      donationStatusPollRef.current = null;
+    }
+
+    setShowDonationStatus(false);
+    setIsDonationPending(false);
+
+    if (!idToCancel) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Donation cancelled',
+        text: 'No pending donation was created.',
+      });
+      return;
+    }
+
+    try {
+      await cancelDonation(idToCancel);
+      setDonationId(undefined);
+      Swal.fire({
+        icon: 'info',
+        title: 'Donation cancelled',
+        text: 'Your pending donation was cancelled.',
+      });
+    } catch (err) {
+      console.error('Failed to cancel donation:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Cancellation failed',
+        text: 'We could not cancel the donation. Please try again.',
+      });
+    }
   };
 
   const resetForms = () => {

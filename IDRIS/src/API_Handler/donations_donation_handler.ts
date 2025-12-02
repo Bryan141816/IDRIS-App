@@ -90,6 +90,12 @@ export interface DonorAggregates {
   active_recurring_count: number;
 }
 
+export interface DonorProfileSummary {
+  total_cash: number;
+  completed_donations: number;
+  active_recurring: number;
+}
+
 export async function getDonorAggregates_legacy(
   from?: string | null,
   to?: string | null
@@ -99,6 +105,11 @@ export async function getDonorAggregates_legacy(
   if (to)   params.to   = to;
 
   const { data } = await API.get("/donations/get/donor_aggregates", { params });
+  return data;
+}
+
+export async function getDonorProfileSummary(): Promise<DonorProfileSummary> {
+  const { data } = await API.get("/donations/get/donor_profile_summary");
   return data;
 }
 

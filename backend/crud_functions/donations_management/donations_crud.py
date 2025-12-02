@@ -494,7 +494,7 @@ class DonationCRUD:
                 func.coalesce(
                     func.sum(
                         case(
-                            (Donation.cash != None, Donation_Cash.amount),  # noqa: E711
+                            (Donation.cash != None, Donation_Cash.amount), 
                             else_=0,
                         )
                     ),
@@ -531,7 +531,9 @@ class DonationCRUD:
             q = q.filter(Donation.donation_date <= date_to)
         if status_vals:
             q = q.filter(Donation.status.in_(status_vals))
-
+        else:
+            q = q.filter(Donation.status == DonationStatus.COMPLETED)
+            
         total_cash, donation_count, active_recurring_count = q.one()
 
         def _to_float(x):
@@ -544,6 +546,75 @@ class DonationCRUD:
             "total_cash": _to_float(total_cash),
             "donation_count": int(donation_count or 0),
             "active_recurring_count": int(active_recurring_count or 0),
+        }
+
+    @staticmethod
+    def get_donor_profile_summary(db: Session, donor_id: str) -> dict:
+        """
+        Dedicated summary for donor profile cards.
+        Always computes totals on raw data (no table filters):
+          - total_cash: sum of cash amounts for COMPLETED donations only
+          - completed_donations: count of COMPLETED donations (any type)
+          - active_recurring: recurring donations marked active
+        """
+        q = (
+            db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                and_(
+                                    Donation.status == DonationStatus.COMPLETED,
+                                    Donation.cash != None,
+                                ),
+                                Donation_Cash.amount,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_cash"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Donation.status == DonationStatus.COMPLETED, 1),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("completed_donations"),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                and_(
+                                    Donation.frequency != DonationFrequency.ONE_TIME,
+                                    Donation.is_active.is_(True),
+                                ),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("active_recurring"),
+            )
+            .outerjoin(Donation_Cash, Donation_Cash.donation_id == Donation.donation_id)
+            .filter(Donation.donor_id == donor_id)
+        )
+
+        total_cash, completed_donations, active_recurring = q.one()
+
+        def _to_float(val):
+            try:
+                return float(val) if val is not None else 0.0
+            except Exception:
+                return 0.0
+
+        return {
+            "total_cash": _to_float(total_cash),
+            "completed_donations": int(completed_donations or 0),
+            "active_recurring": int(active_recurring or 0),
         }
 
     @staticmethod

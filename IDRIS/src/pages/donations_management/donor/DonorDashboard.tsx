@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import './DonorDashboard.scss';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer } from "recharts";
-import { DonorAggregates, fetchMyDonations, getDonorAggregates_legacy, getPayMongoSession } from '../../../API_Handler/donations_donation_handler';
+import { DonorProfileSummary, fetchMyDonations, getDonorProfileSummary, getPayMongoSession } from '../../../API_Handler/donations_donation_handler';
 import DonorPaymentStatus from "./DonorPaymentStatus";
 
 // Types
@@ -105,7 +105,7 @@ export const DonorDashboard: React.FC = () => {
   const [monitoringSessionId, setMonitoringSessionId] = useState<string | null>(null);
 
   // Data
-  const [donorData, setDonorData] = useState<DonorAggregates>();
+  const [donorSummary, setDonorSummary] = useState<DonorProfileSummary | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -114,17 +114,17 @@ export const DonorDashboard: React.FC = () => {
       const from = toISODate(date_from);
       const to = toISODate(date_to);
 
-      // Fetch aggregates
-      const aggData = await getDonorAggregates_legacy(from, to);
-      setDonorData(aggData);
+      const [summaryData, donationRows] = await Promise.all([
+        getDonorProfileSummary(),
+        handlefetchMyDonations({
+          from,
+          to,
+          status: status === "ALL" ? undefined : status,
+          type: dtype === "ALL" ? undefined : dtype,
+        }),
+      ]);
 
-      // Fetch donation history
-      const donationRows = await handlefetchMyDonations({
-        from,
-        to,
-        status: status === "ALL" ? undefined : status,
-        type: dtype === "ALL" ? undefined : dtype,
-      });
+      setDonorSummary(summaryData);
       setRows(donationRows);
 
     } catch (e: any) {
@@ -152,29 +152,11 @@ export const DonorDashboard: React.FC = () => {
     }
   }
 
-  // Aggregations
-  const totals = useMemo(() => {
-    let totalCash = 0;
-    let totalInKind = 0;
-    let recActive = 0;
-    let completed = 0;
-
-    rows.forEach((r) => {
-      if (r.status === "COMPLETED") completed += 1;
-      if (r.frequency !== "ONE_TIME" && r.is_active) recActive += 1;
-
-      if (r.donation_type === "CASH" && r.cash?.amount) {
-        const amt = Number(r.cash.amount);
-        if (!Number.isNaN(amt)) totalCash += amt;
-      }
-      if (r.donation_type === "INKIND" && r.inkind?.estimated_value) {
-        const val = Number(r.inkind.estimated_value);
-        if (!Number.isNaN(val)) totalInKind += val;
-      }
-    });
-
-    return { totalCash, totalInKind, recActive, completed };
-  }, [rows]);
+  const summaryTotals = donorSummary ?? {
+    total_cash: 0,
+    completed_donations: 0,
+    active_recurring: 0,
+  };
 
   const sortedRows = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -331,19 +313,19 @@ export const DonorDashboard: React.FC = () => {
         <div className="stat-card">
           <div className="stat-content">
             <h3 className="stat-title">Total Cash Donated</h3>
-            <p className="stat-value">{currency(totals.totalCash)}</p>
+            <p className="stat-value">{currency(summaryTotals.total_cash)}</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-content">
             <h3 className="stat-title">Completed Donations</h3>
-            <p className="stat-value">{totals.completed}</p>
+            <p className="stat-value">{summaryTotals.completed_donations}</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-content">
             <h3 className="stat-title">Active Recurring</h3>
-            <p className="stat-value">{totals.recActive}</p>
+            <p className="stat-value">{summaryTotals.active_recurring}</p>
           </div>
         </div>
       </div>

@@ -18,6 +18,7 @@ from data_schemas.donation_schema import (
     PayMongoCheckoutRequest,
     DonationUpdate,
     PaginatedDonationHistoryResponse,
+    DonorProfileSummary,
 )
 from crud_functions.donations_management.donations_crud import DonationCRUD as CRUD
 from datetime import datetime, timezone, date, timedelta
@@ -190,6 +191,22 @@ def recent_donations(
         date_to=_parse_iso(to),
         status=status_list,
     )
+
+
+@router.get("/get/donor_profile_summary", response_model=DonorProfileSummary)
+def get_donor_profile_summary(
+    current_user: User = Depends(get_current_user_from_access_token),
+    db: Session = Depends(get_db),
+):
+    donor_profiles = current_user.donor_profile
+
+    if not donor_profiles:
+        raise HTTPException(
+            status_code=404, detail="Donor profile not found for this user."
+        )
+
+    donor_id = donor_profiles[0].donor_id
+    return CRUD.get_donor_profile_summary(db, donor_id=donor_id)
 
 
 @router.get("/me", response_model=List[DonationHistoryResponse])

@@ -442,7 +442,7 @@ export const router = createBrowserRouter([
                 path: ":tab", 
                 lazy: ProcurementInventory,
                 handle: {
-                  allowedRoles: ["superadmin", "finance admin"],
+                  allowedRoles: ["superadmin", "logistics admin"],
                 },
                },
               {
